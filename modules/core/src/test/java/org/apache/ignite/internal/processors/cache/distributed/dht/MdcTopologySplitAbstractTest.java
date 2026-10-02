@@ -67,10 +67,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  * <p>{@link #split(String...)} cuts the given DCs off from the rest, and {@link #splitInto(List)} splits the DCs into
  * any number of segments: discovery connections between segments fail, and communication messages between them are
- * held. Either then waits, with a timeout, until every node sees exactly its own segment. {@link #heal(String...)}
- * drops the held messages (delivering them would replay one segment's view on another) and restarts the given DCs,
- * which then join the cluster again. Subclasses can hold more messages while the cluster is split through
- * {@link #blockMessage(ClusterNode, ClusterNode, Message)}.</p>
+ * held. Either then waits, with a timeout, until every node sees exactly its own segment.
+ * {@link #restartAllSegmentsExcept(String)} drops the held messages (delivering them would replay one segment's view
+ * on another) and restarts every segment but the given DC's, whose nodes then rejoin it. Subclasses can hold more
+ * messages while the cluster is split through {@link #blockMessage(ClusterNode, ClusterNode, Message)}.</p>
  *
  * <p>Unlike {@link IgniteCacheTopologySplitAbstractTest#splitAndWait()}, nothing here waits for one exact topology
  * version without a timeout, so a split that ends in an unexpected topology fails the test instead of hanging it.</p>
@@ -85,7 +85,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     /** */
     protected static final String DC3 = "DC3";
 
-    /** Time for the segments of a split to see only themselves, and for a healed cluster to become whole. */
+    /** Time for the segments of a split to see only themselves, and for the cluster to become whole after a restart. */
     protected static final long TOPOLOGY_TIMEOUT = 30_000;
 
     /** */
@@ -213,43 +213,33 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     }
 
     /**
-     * Restarts every node of the given DCs and waits until the cluster is whole again. Every held message is
-     * dropped and every message filter is removed, including those added by {@link #blockMessage}. The given DCs
-     * must be whole segments of the split, every segment but one, normally the segments that lost writes: they rejoin
-     * the remaining segment and rebalance from it. The segments form separate rings, which never merge on their own.
+     * Restarts every node of every segment except the segment of the given DC, and waits until the cluster is whole
+     * again. The restarted nodes rejoin the remaining segment and rebalance from it, so pass a DC of the segment whose
+     * data must survive, normally the one that kept writing. The segments form separate rings, which never merge on
+     * their own. Every held message is dropped and every message filter is removed, including those added by
+     * {@link #blockMessage}.
      *
-     * @param restartDcs DCs to restart.
+     * @param dc DC whose segment is not restarted.
      */
-    protected void heal(String... restartDcs) throws Exception {
+    protected void restartAllSegmentsExcept(String dc) throws Exception {
         Map<String, Integer> split = segmentNumByDc;
 
         assertFalse("Cluster is not split", split.isEmpty());
+        assertTrue("Unknown DC: " + dc, split.containsKey(dc));
 
-        Set<String> restartSet = new HashSet<>(Arrays.asList(restartDcs));
+        Integer keptSegment = split.get(dc);
 
-        Set<Integer> kept = new HashSet<>();
+        List<String> restartDcs = dataCenters().stream()
+            .filter(d -> !split.get(d).equals(keptSegment))
+            .collect(Collectors.toList());
 
-        for (Map.Entry<String, Integer> e : split.entrySet()) {
-            if (!restartSet.contains(e.getKey()))
-                kept.add(e.getValue());
-        }
-
-        boolean wholeSegments = split.keySet().containsAll(restartSet)
-            && restartSet.stream().noneMatch(dc -> kept.contains(split.get(dc)));
-
-        assertTrue("DCs to restart must be whole segments of the split " + split + ", every segment but one: " +
-            restartSet, wholeSegments && kept.size() == 1);
-
-        log.info(">>> Healing the split, restarting DCs " + Arrays.toString(restartDcs));
+        log.info(">>> Restarting DCs " + restartDcs + ", keeping the segment of " + dc);
 
         List<Integer> restart = new ArrayList<>();
 
-        for (String dc : dataCenters()) {
-            if (!restartSet.contains(dc))
-                continue;
-
-            restart.addAll(serverIndexes(dc));
-            restart.add(clientIndex(dc));
+        for (String restartDc : restartDcs) {
+            restart.addAll(serverIndexes(restartDc));
+            restart.add(clientIndex(restartDc));
         }
 
         for (int idx : restart)
@@ -278,7 +268,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
         awaitPartitionMapExchange();
 
-        log.info(">>> Heal done");
+        log.info(">>> Cluster is whole again");
     }
 
     /**
@@ -419,7 +409,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
     /**
      * Lets a subclass hold more messages while the cluster is split, in addition to those crossing the split.
-     * Held messages are dropped by {@link #heal(String...)}.
+     * Held messages are dropped by {@link #restartAllSegmentsExcept(String)}.
      *
      * @param locNode Sending node.
      * @param rmtNode Receiving node.

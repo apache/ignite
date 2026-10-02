@@ -81,7 +81,7 @@ public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
             }
         }
 
-        heal(DC2, DC3);
+        restartAllSegmentsExcept(DC1);
 
         for (Map.Entry<String, Map<Integer, Integer>> e : expected.entrySet())
             assertDataInEveryDc(e.getKey(), e.getValue());
@@ -129,7 +129,7 @@ public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
             assertEquals(Integer.valueOf(1), isolated.get(1));
         }
 
-        heal(isolatedDc);
+        restartAllSegmentsExcept(writerDc);
 
         for (Map.Entry<String, Map<Integer, Integer>> e : expected.entrySet())
             assertDataInEveryDc(e.getKey(), e.getValue());
