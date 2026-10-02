@@ -69,8 +69,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * any number of segments: discovery connections between segments fail, and communication messages between them are
  * held. Either then waits, with a timeout, until every node sees exactly its own segment.
  * {@link #restartAllSegmentsExcept(String)} drops the held messages (delivering them would replay one segment's view
- * on another) and restarts every segment but the given DC's, whose nodes then rejoin it. Subclasses can hold more
- * messages while the cluster is split through {@link #blockMessage(ClusterNode, ClusterNode, Message)}.</p>
+ * on another) and restarts every segment except the given DC's segment; the restarted nodes rejoin that segment.
+ * Subclasses can hold more messages while the cluster is split through
+ * {@link #blockMessage(ClusterNode, ClusterNode, Message)}.</p>
  *
  * <p>Unlike {@link IgniteCacheTopologySplitAbstractTest#splitAndWait()}, nothing here waits for one exact topology
  * version without a timeout, so a split that ends in an unexpected topology fails the test instead of hanging it.</p>
