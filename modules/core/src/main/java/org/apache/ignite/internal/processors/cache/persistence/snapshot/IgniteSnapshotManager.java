@@ -768,11 +768,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             for (File s : allStorages) {
                 // Extra storage's or root's sanpshot data.
-                if (!deleteDirectory(s) && s.exists() || s.equals(sft.nodeStorage())) {
+                if (!deleteDirectory(s) && s.exists()) {
                     res.set1(false);
 
                     continue;
                 }
+
+                // Proceed only for the extra storages.
+                if (s.equals(sft.nodeStorage()))
+                    continue;
 
                 // Extra storage's "db" directory.
                 s = s.getParentFile();
