@@ -30,19 +30,19 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  */
-public class RuntimeSortedIndexTest extends GridCommonAbstractTest {
+public class RuntimeSortedIndexTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final int UNIQUE_GROUPS = 10_000;
 

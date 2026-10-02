@@ -43,33 +43,36 @@ import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /** Check per node data consistency after exceptionally interceptor method call. */
-@RunWith(Parameterized.class)
-public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "txCoordRole={0}, persistence={1}, writeThrough={2}")
+@MethodSource("parameters")
+public class TxWithExceptionalInterceptorTest extends GridCommonAbstractWrapperTest {
     /** Node role. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public TxCoordNodeRole txCoord;
 
     /** Persistence flag. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean persistence;
 
     /** Write through flag. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean writeThrough;
 
     /** */
@@ -94,8 +97,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
     private static final MapCacheStoreStrategy strategy = new MapCacheStoreStrategy();
 
     /** */
-    @Parameterized.Parameters(name = "txCoordRole={0}, persistence={1}, writeThrough={2}")
-    public static Collection<?> parameters() {
+    private static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             List.of(TxCoordNodeRole.PRIMARY, TxCoordNodeRole.BACKUP, TxCoordNodeRole.COORDINATOR_NO_DATA, TxCoordNodeRole.THICK_CLIENT),
             List.of(true, false),
@@ -104,6 +106,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -116,6 +119,7 @@ public class TxWithExceptionalInterceptorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 

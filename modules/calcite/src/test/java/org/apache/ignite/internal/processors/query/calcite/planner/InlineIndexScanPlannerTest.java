@@ -22,7 +22,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Planner test for index inline scan.

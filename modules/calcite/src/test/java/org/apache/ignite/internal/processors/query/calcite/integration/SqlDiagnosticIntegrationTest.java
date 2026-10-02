@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -82,9 +83,12 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
-
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -111,6 +115,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Test SQL diagnostic tools.
  */
+@ExtendWith(SystemPropertiesExtension.class)
 public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String jdbcUrl = "jdbc:ignite:thin://127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT;
@@ -144,13 +149,18 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        // Clear log throttle.
+        LT.clear();
 
         cleanPersistenceDir();
 
@@ -874,7 +884,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(logLsnr2.check(1000L));
     }
 
-
     /** */
     @Test
     @WithSystemProperty(key = IGNITE_STARVATION_CHECK_INTERVAL, value = "100")
@@ -924,7 +933,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testUdfQueryDeadlockDetectionStripedExecutor() throws Exception {
+    public void testUdfQueryDeadlockDetectionStripedExecutor() {
         IgniteEx ignite = grid(0);
 
         assertTrue(queryProcessor(ignite).taskExecutor() instanceof StripedQueryTaskExecutor);

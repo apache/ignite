@@ -41,6 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
@@ -66,25 +67,19 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.provider.Arguments;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
-public class AbstractExecutionTest extends GridCommonAbstractTest {
+public class AbstractExecutionTest extends GridCommonAbstractWrapperTest {
     /** Last parameter number. */
     protected static final int LAST_PARAM_NUM = 1;
-
-    /** Params string. */
-    protected static final String PARAMS_STRING = "Task executor = {0}, Execution strategy = {1}";
 
     /** */
     public static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
@@ -156,9 +151,21 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Task executor. */
+    @Parameter(0)
+    public TaskExecutorType taskExecutorType;
+
+    /** Execution direction. */
+    @Parameter(LAST_PARAM_NUM)
+    public ExecutionStrategy execStgy;
+
     /** */
-    @Parameterized.Parameters(name = PARAMS_STRING)
-    public static List<Object[]> parameters() {
+    public static Stream<Arguments> parameters() {
+        return innerParams().stream().map(Arguments::of);
+    }
+
+    /** */
+    static List<Object[]> innerParams() {
         List<Object[]> params = Stream.of(ExecutionStrategy.values())
             .map(s -> new Object[] {TaskExecutorType.STRIPED, s})
             .collect(Collectors.toList());
@@ -168,16 +175,8 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         return params;
     }
 
-    /** Task executor. */
-    @Parameterized.Parameter
-    public TaskExecutorType taskExecutorType;
-
-    /** Execution direction. */
-    @Parameterized.Parameter(LAST_PARAM_NUM)
-    public ExecutionStrategy execStgy;
-
     /** */
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         nodes = IntStream.range(0, nodesCnt)
             .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
@@ -311,7 +310,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         taskExecutors.values().forEach(AbstractQueryTaskExecutor::tearDown);
 
