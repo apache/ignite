@@ -3424,7 +3424,13 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean detach, boolean deserialize) throws BinaryObjectException {
+    @Nullable private Object unmarshal(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        boolean detach,
+        boolean deserialize
+    ) throws BinaryObjectException {
         int start = in.position();
 
         byte flag = in.readByte();
