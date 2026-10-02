@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -75,8 +77,12 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl.DATAREGION_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -575,6 +581,92 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(memMetrics1.isEvictionsStarted());
         assertTrue(memMetrics2.isEvictionsStarted());
+    }
+
+    /**
+     * Verifies that the 'PersistenceEnabled' metric reflects the type of each data region (including internal system
+     * regions) on a node with both persistent and in-memory data regions.
+     */
+    @Test
+    public void testPersistenceEnabledMetric() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        checkPersistenceEnabledMetric(ignite, Map.of(
+            PERSISTENCE_REGION_1, true,
+            PERSISTENCE_REGION_2, true,
+            NO_PERSISTENCE_1, false,
+            NO_PERSISTENCE_2, false,
+            SYSTEM_DATA_REGION_NAME, true,
+            METASTORE_DATA_REGION_NAME, true,
+            VOLATILE_DATA_REGION_NAME, false));
+    }
+
+    /** Verifies that the 'PersistenceEnabled' metric is {@code false} for data regions of a node without persistence. */
+    @Test
+    public void testPersistenceEnabledMetricInMemoryNode() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setCacheConfiguration()
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setName(NO_PERSISTENCE_1))
+                .setDataRegionConfigurations(new DataRegionConfiguration()
+                    .setName(NO_PERSISTENCE_2)));
+
+        IgniteEx ignite = startGrid(cfg);
+
+        checkPersistenceEnabledMetric(ignite, Map.of(
+            NO_PERSISTENCE_1, false,
+            NO_PERSISTENCE_2, false,
+            SYSTEM_DATA_REGION_NAME, false,
+            VOLATILE_DATA_REGION_NAME, false));
+    }
+
+    /**
+     * Verifies that the 'PersistenceEnabled' metric is {@code false} for all data regions of a client node, even if
+     * persistence is enabled in its data region configuration: persistence is not supported on client nodes.
+     */
+    @Test
+    public void testPersistenceEnabledMetricClientNode() throws Exception {
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
+
+        IgniteEx client = startClientGrid(1);
+
+        DataStorageConfiguration dsCfg = client.configuration().getDataStorageConfiguration();
+
+        assertTrue(dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled());
+        assertTrue(dsCfg.getDataRegionConfigurations()[0].isPersistenceEnabled());
+
+        checkPersistenceEnabledMetric(client, Map.of(
+            PERSISTENCE_REGION_1, false,
+            PERSISTENCE_REGION_2, false,
+            NO_PERSISTENCE_1, false,
+            NO_PERSISTENCE_2, false,
+            SYSTEM_DATA_REGION_NAME, false,
+            VOLATILE_DATA_REGION_NAME, false));
+    }
+
+    /**
+     * Checks the 'PersistenceEnabled' metric of the given data regions both via the metric registry and the
+     * {@link DataRegionMetrics} snapshot.
+     *
+     * @param ignite Node.
+     * @param exp Expected metric values by data region name.
+     */
+    private void checkPersistenceEnabledMetric(IgniteEx ignite, Map<String, Boolean> exp) {
+        exp.forEach((regName, expMetricVal) -> {
+            DataRegionMetrics regMetrics = ignite.dataRegionMetrics(regName);
+
+            assertNotNull(regName, regMetrics);
+            assertEquals(regName, expMetricVal.booleanValue(), regMetrics.isPersistenceEnabled());
+
+            BooleanMetric persEnabled = ignite.context().metric().find(
+                metricName(DATAREGION_METRICS_PREFIX, regName, "PersistenceEnabled"), BooleanMetric.class);
+
+            assertNotNull(regName, persEnabled);
+            assertEquals(regName, expMetricVal.booleanValue(), persEnabled.value());
+        });
     }
 
     /**

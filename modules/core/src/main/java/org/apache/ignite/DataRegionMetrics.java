@@ -248,4 +248,11 @@ public interface DataRegionMetrics {
      * @return {@code true} if page eviction was triggered due to data region memory pressure.
      */
     public boolean isEvictionsStarted();
+
+    /**
+     * Indicates whether persistence is enabled for this data region.
+     *
+     * @return {@code true} if the data region is persistent, {@code false} if it is in-memory.
+     */
+    public boolean isPersistenceEnabled();
 }

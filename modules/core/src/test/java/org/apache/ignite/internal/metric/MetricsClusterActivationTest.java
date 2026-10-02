@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -166,6 +167,7 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
         assertTrue(offHeapSize <= region.config().getMaxSize());
         assertEquals(region.config().getInitialSize(), initSize);
         assertEquals(region.config().getMaxSize(), maxSize);
+        assertEquals(isPersistenceEnabled, mreg.<BooleanMetric>findMetric("PersistenceEnabled").value());
     }
 
     /** Checks cache groups metrics. */
