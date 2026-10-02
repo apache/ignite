@@ -561,7 +561,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = BinaryReaderExImpl.unmarshal(BinaryStreams.inputStream(arr, fieldPos), ctx, null);
+                val = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(arr, fieldPos), null, null, true, true).unmarshal(fieldPos);
 
                 break;
         }
