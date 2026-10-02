@@ -184,7 +184,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
             delRes = ig.compute().execute(new SnapshotDeleteTask(), new VisorTaskArgument<>(ig.localNode().id(), args, false)).result();
 
-            assertFalse(delRes == null);
+            assertNotNull(delRes);
         }
         else
             delRes = snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout());

@@ -1206,7 +1206,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testConcurrentSnapshotDeleteAndCheckOperations() throws Exception {
-        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> prepareGridsAndSnapshot(4, 3, 1, false),

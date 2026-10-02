@@ -189,14 +189,14 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
 
         // Tests missing snapshot deletion.
         if (customPath) {
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "delete", "--src",
                 cstSnpsRoot.getAbsolutePath(), "wrongSnapshot"));
 
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "delete", "--src",
                 cstSnpsRoot.getAbsolutePath() + "_wrongPath", "testSnapshot"));
         }
         else
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "wrongSnapshot"));
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "delete", "wrongSnapshot"));
 
         String out = testOut.toString();
 
@@ -208,11 +208,11 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         assertTrue(testOut.toString().isEmpty());
 
         if (customPath) {
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "--src",
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "delete", "--src",
                 cstSnpsRoot.getAbsolutePath(), "testSnapshot"));
         }
         else
-            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(), "--snapshot", "delete", "testSnapshot"));
+            assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "delete", "testSnapshot"));
 
         out = testOut.toString();
 

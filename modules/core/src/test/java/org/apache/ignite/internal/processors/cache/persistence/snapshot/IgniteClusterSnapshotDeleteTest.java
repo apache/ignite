@@ -594,7 +594,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a concurrent deletion of a snapshot with the same name but different name characters case is allowed. */
     @Test
     public void testConcurrentDeleteOfTheSameSnapshotDifferentNameCharactersCase() throws Exception {
-        assumeFalse(caseInsensetiveFs);
+        assumeFalse(caseInsensitiveFs);
 
         doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(true);
     }
@@ -674,7 +674,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
-        String firstOpSnpName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
             () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(firstOpSnpName, null, incremental ? 1 : 0)),
@@ -693,7 +693,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a snapshot deletion is declined when a snapshot create operation is in progress.*/
     @Test
     public void testSnapshotDeleteWhenCreateInProgress() throws Exception {
-        String firstOpSnpName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         doTestConcurrentSnapshotDelete(
             () -> snp(grid(0)).createSnapshot(firstOpSnpName, null, incremental, onlyPrimary),
@@ -714,7 +714,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a snapshot deletion is declined when a snapshot restore begins. */
     @Test
     public void testSnapshotDeleteWhenRestoreBegins() throws Exception {
-        String firstOpSnpName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         doTestConcurrentSnapshotDelete(
             () -> {
@@ -739,7 +739,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
     /** Tests that a snapshot deletion is declined when a snapshot restore is in progress. */
     @Test
     public void testSnapshotDeleteWhenRestoreInProgress() throws Exception {
-        String firstOpSnpName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         var restoreMsgs = F.asList(
             RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,

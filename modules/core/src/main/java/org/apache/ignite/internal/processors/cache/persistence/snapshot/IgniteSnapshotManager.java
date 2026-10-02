@@ -732,9 +732,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Tries to delete local snapshot data.
      *
      * @param sft Snapshot file tree.
-     * @param ignoreErrs If {@code true}, logs possible deletion exceptions and marks the result as not deleted.
      * @param scoped If {@code true}, deletes only node's data and deletes shared snapshot directories only if they are empty.
-     *               Otherwise, completely deletes all the snapshot data.
+     *               Otherwise, completely deletes entire snapshot data.
+     * @param ignoreErrs If {@code true}, logs possible deletion exceptions and marks the result as undeleted.
      * @return A pair of {@code boolean} values. The first indicates whether snapshot was completely deleted. The second
      *         indicates whether the snapshot was found.
      */
@@ -762,13 +762,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         // Assume we'll succeed.
         res.set1(true);
 
-        // The 'exists' checks are for a concurrent deletion when nodes share their working and snapshot directories.
-        // Nodes may steal removal jobs and the files aren't synchronized. There are gaps between and `exists()` and `delete()`.
-        // We try to delete first. If snapshot data wasn't deleted because it doesn't already exist is not a removal error here.
         try {
             for (File s : allStorages) {
-                // Extra storage's or root's sanpshot data.
-                if (!deleteDirectory(s) && s.exists()) {
+                // Extra storage's or root's snapshot node data.
+                if (!deleteDirectory(s, false)) {
                     res.set1(false);
 
                     continue;
@@ -781,7 +778,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 // Extra storage's "db" directory.
                 s = s.getParentFile();
 
-                if ((scoped && !s.delete() || !scoped && !deleteDirectory(s)) && s.exists()) {
+                if (!deleteDirectory(s, scoped)) {
                     res.set1(false);
 
                     continue;
@@ -790,18 +787,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 // Extra storage's snapshot root.
                 s = s.getParentFile();
 
-                if ((scoped && !s.delete() || !scoped && !deleteDirectory(s)) && s.exists())
+                if (!deleteDirectory(s, scoped))
                     res.set1(false);
             }
 
+            // Snapshots not-data directories.
             for (File p : F.asList(sft.binaryMeta(), sft.binaryMetaRoot(), sft.marshaller())) {
-                if (!deleteDirectory(p) && p.exists())
+                if (!deleteDirectory(p, false))
                     res.set1(false);
             }
 
-            File rootDbDir = sft.marshaller().getParentFile();
-
-            if ((scoped && !rootDbDir.delete() || !scoped && !deleteDirectory(rootDbDir)) && rootDbDir.exists())
+            // Root "db" directory.
+            if (!deleteDirectory(sft.marshaller().getParentFile(), scoped))
                 res.set1(false);
 
             // Remove the metadata at the end. For the scoped removal, delete anyway because it sets 'false' as the result
@@ -810,7 +807,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 res.set1(false);
 
             // Finally, delete the snapshot root directory.
-            if ((scoped && !sft.root().delete() || !scoped && !deleteDirectory(sft.root())) && sft.root().exists())
+            if (!deleteDirectory(sft.root(), scoped))
                 res.set1(false);
         }
         catch (Exception e) {
@@ -826,6 +823,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         return res;
+    }
+
+    /** @return {@code True} if {@code dir} was deleted or doesn't exist as result. */
+    private boolean deleteDirectory(File dir, boolean doNotTraverse) throws IOException {
+        // The 'exists' checks are for a concurrent deletion when nodes share their working and snapshot directories.
+        // Nodes may steal removal jobs and the files aren't synchronized. There are gaps between `exists()` and `delete()`.
+        // We try to delete first. If the snapshot data wasn't deleted because it doesn't exist anymore, it's not an error.
+        return !((doNotTraverse && !dir.delete() || !doNotTraverse && !deleteDirectory(dir)) && dir.exists());
     }
 
     /** Concurrently traverse the directory and delete all files. */

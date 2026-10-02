@@ -154,7 +154,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         IgniteSystemProperties.getInteger(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
 
     /** */
-    protected static boolean caseInsensetiveFs;
+    protected static boolean caseInsensitiveFs;
 
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();

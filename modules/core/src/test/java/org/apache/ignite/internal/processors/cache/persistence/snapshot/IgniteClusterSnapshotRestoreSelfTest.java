@@ -336,7 +336,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
     @Test
     public void testConcurrentSnapshotDeleteAndRestoreOperations() throws Exception {
-        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE),
