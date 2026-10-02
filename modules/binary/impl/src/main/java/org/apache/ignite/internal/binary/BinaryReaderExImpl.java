@@ -276,7 +276,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    desc = ctx.registerClass(doReadClass(in, ctx, ldr, typeId0), true, false);
+                    desc = ctx.registerClass(doReadClass(typeId0), true, false);
 
                     typeId = desc.typeId();
                 }
@@ -334,7 +334,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     public final Object unmarshal(int offset) throws BinaryObjectException {
         streamPosition(offset);
 
-        return in.position() >= 0 ? unmarshal(in, ctx, ldr) : null;
+        return in.position() >= 0 ? unmarshal() : null;
     }
 
     /**
@@ -344,7 +344,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      */
     public final Object unmarshalField(String fieldName) throws BinaryObjectException {
         try {
-            return findFieldByName(fieldName) ? unmarshal(in, ctx, ldr) : null;
+            return findFieldByName(fieldName) ? unmarshal() : null;
         }
         catch (Exception ex) {
             throw wrapFieldException(fieldName, ex);
@@ -357,7 +357,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     public final Object unmarshalField(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? unmarshal(in, ctx, ldr) : null;
+        return findFieldById(fieldId) ? unmarshal() : null;
     }
 
     /**
@@ -386,7 +386,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
             if (checkFlag(CLASS) == Flag.NULL)
                 return null;
 
-            return doReadClass(in, ctx, ldr);
+            return doReadClass();
         }
 
         return null;
@@ -431,7 +431,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Field.
      */
     private <T> T readHandleField() {
-        int handlePos = positionForHandle(in) - in.readInt();
+        int handlePos = positionForHandle() - in.readInt();
 
         Object obj = getHandle(handlePos);
 
@@ -440,7 +440,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
             streamPosition(handlePos);
 
-            obj = doReadObject(in, ctx, ldr);
+            obj = doReadObject();
 
             streamPosition(retPos);
         }
@@ -584,7 +584,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final boolean[] readBooleanArray() throws BinaryObjectException {
         switch (checkFlag(BOOLEAN_ARR)) {
             case NORMAL:
-                return doReadBooleanArray(in);
+                return doReadBooleanArray();
 
             case HANDLE:
                 return readHandleField();
@@ -650,7 +650,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final short[] readShortArray() throws BinaryObjectException {
         switch (checkFlag(SHORT_ARR)) {
             case NORMAL:
-                return doReadShortArray(in);
+                return doReadShortArray();
 
             case HANDLE:
                 return readHandleField();
@@ -716,7 +716,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final char[] readCharArray() throws BinaryObjectException {
         switch (checkFlag(CHAR_ARR)) {
             case NORMAL:
-                return doReadCharArray(in);
+                return doReadCharArray();
 
             case HANDLE:
                 return readHandleField();
@@ -782,7 +782,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final int[] readIntArray() throws BinaryObjectException {
         switch (checkFlag(INT_ARR)) {
             case NORMAL:
-                return doReadIntArray(in);
+                return doReadIntArray();
 
             case HANDLE:
                 return readHandleField();
@@ -848,7 +848,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final long[] readLongArray() throws BinaryObjectException {
         switch (checkFlag(LONG_ARR)) {
             case NORMAL:
-                return doReadLongArray(in);
+                return doReadLongArray();
 
             case HANDLE:
                 return readHandleField();
@@ -914,7 +914,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final float[] readFloatArray() throws BinaryObjectException {
         switch (checkFlag(FLOAT_ARR)) {
             case NORMAL:
-                return doReadFloatArray(in);
+                return doReadFloatArray();
 
             case HANDLE:
                 return readHandleField();
@@ -980,7 +980,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final double[] readDoubleArray() throws BinaryObjectException {
         switch (checkFlag(DOUBLE_ARR)) {
             case NORMAL:
-                return doReadDoubleArray(in);
+                return doReadDoubleArray();
 
             case HANDLE:
                 return readHandleField();
@@ -1011,7 +1011,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override @Nullable public final BigDecimal readDecimal() throws BinaryObjectException {
-        return checkFlagNoHandles(DECIMAL) == Flag.NORMAL ? doReadDecimal(in) : null;
+        return checkFlagNoHandles(DECIMAL) == Flag.NORMAL ? doReadDecimal() : null;
     }
 
     /** {@inheritDoc} */
@@ -1037,7 +1037,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Override @Nullable public final BigDecimal[] readDecimalArray() throws BinaryObjectException {
         switch (checkFlag(DECIMAL_ARR)) {
             case NORMAL:
-                return doReadDecimalArray(in);
+                return doReadDecimalArray();
 
             case HANDLE:
                 return readHandleField();
@@ -1125,7 +1125,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override @Nullable public final UUID readUuid() throws BinaryObjectException {
-        return checkFlagNoHandles(UUID) == Flag.NORMAL ? doReadUuid(in) : null;
+        return checkFlagNoHandles(UUID) == Flag.NORMAL ? doReadUuid() : null;
     }
 
     /** {@inheritDoc} */
@@ -1151,7 +1151,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Override @Nullable public final UUID[] readUuidArray() throws BinaryObjectException {
         switch (checkFlag(UUID_ARR)) {
             case NORMAL:
-                return doReadUuidArray(in);
+                return doReadUuidArray();
 
             case HANDLE:
                 return readHandleField();
@@ -1182,7 +1182,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override @Nullable public final Date readDate() throws BinaryObjectException {
-        return checkFlagNoHandles(DATE) == Flag.NORMAL ? doReadDate(in) : null;
+        return checkFlagNoHandles(DATE) == Flag.NORMAL ? doReadDate() : null;
     }
 
     /** {@inheritDoc} */
@@ -1208,7 +1208,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Override @Nullable public final Date[] readDateArray() throws BinaryObjectException {
         switch (checkFlag(DATE_ARR)) {
             case NORMAL:
-                return doReadDateArray(in);
+                return doReadDateArray();
 
             case HANDLE:
                 return readHandleField();
@@ -1239,7 +1239,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override @Nullable public final Timestamp readTimestamp() throws BinaryObjectException {
-        return checkFlagNoHandles(TIMESTAMP) == Flag.NORMAL ? doReadTimestamp(in) : null;
+        return checkFlagNoHandles(TIMESTAMP) == Flag.NORMAL ? doReadTimestamp() : null;
     }
 
     /** {@inheritDoc} */
@@ -1265,7 +1265,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Override @Nullable public final Timestamp[] readTimestampArray() throws BinaryObjectException {
         switch (checkFlag(TIMESTAMP_ARR)) {
             case NORMAL:
-                return doReadTimestampArray(in);
+                return doReadTimestampArray();
 
             case HANDLE:
                 return readHandleField();
@@ -1282,7 +1282,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Override @Nullable public final Time readTime() throws BinaryObjectException {
-        return checkFlagNoHandles(TIME) == Flag.NORMAL ? doReadTime(in) : null;
+        return checkFlagNoHandles(TIME) == Flag.NORMAL ? doReadTime() : null;
     }
 
     /** {@inheritDoc} */
@@ -1312,7 +1312,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Override @Nullable public final Time[] readTimeArray() throws BinaryObjectException {
         switch (checkFlag(TIME_ARR)) {
             case NORMAL:
-                return doReadTimeArray(in);
+                return doReadTimeArray();
             case HANDLE:
                 return readHandleField();
             default:
@@ -1323,7 +1323,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /** {@inheritDoc} */
     @Nullable @Override public final <T> T readObject(String fieldName) throws BinaryObjectException {
         try {
-            return findFieldByName(fieldName) ? (T)doReadObject(in, ctx, ldr) : null;
+            return findFieldByName(fieldName) ? (T)doReadObject() : null;
         }
         catch (Exception ex) {
             throw wrapFieldException(fieldName, ex);
@@ -1336,12 +1336,12 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @Nullable final Object readObject(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? doReadObject(in, ctx, ldr) : null;
+        return findFieldById(fieldId) ? doReadObject() : null;
     }
 
     /** {@inheritDoc} */
     @Override public final Object readObject() throws BinaryObjectException {
-        return doReadObject(in, ctx, ldr);
+        return doReadObject();
     }
 
     /** {@inheritDoc} */
@@ -1356,7 +1356,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         this.hnds = null;
 
         try {
-            return unmarshal(in, ctx, ldr, true, deserialize);
+            return unmarshal(true, deserialize);
         }
         finally {
             this.hnds = hnds;
@@ -1386,7 +1386,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     @Nullable @Override public final Object[] readObjectArray() throws BinaryObjectException {
         switch (checkFlag(OBJ_ARR)) {
             case NORMAL:
-                return doReadObjectArray(in, ctx, ldr, false, true);
+                return doReadObjectArray(false, true);
 
             case HANDLE:
                 Object arr = readHandleField();
@@ -1436,12 +1436,12 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     private Enum<?> readEnum0(@Nullable Class<?> cls) throws BinaryObjectException {
         if (checkFlagNoHandles(ENUM) == Flag.NORMAL) {
             // Read class even if we know it in advance to set correct stream position.
-            Class<?> cls0 = doReadClass(in, ctx, ldr);
+            Class<?> cls0 = doReadClass();
 
             if (cls == null)
                 cls = cls0;
 
-            return doReadEnum(in, cls);
+            return doReadEnum(cls);
         }
         else
             return null;
@@ -1465,7 +1465,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException If failed.
      */
     @Nullable final BinaryObjectEx readBinaryEnum(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? doReadBinaryEnum(in, ctx) : null;
+        return findFieldById(fieldId) ? doReadBinaryEnum() : null;
     }
 
     /**
@@ -1494,12 +1494,12 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         switch (checkFlag(ENUM_ARR)) {
             case NORMAL:
                 // Read class even if we know it in advance to set correct stream position.
-                Class<?> cls0 = doReadClass(in, ctx, ldr);
+                Class<?> cls0 = doReadClass();
 
                 if (cls == null)
                     cls = cls0;
 
-                return doReadEnumArray(in, ctx, ldr, cls);
+                return doReadEnumArray(cls);
 
             case HANDLE:
                 Object arr = readHandleField();
@@ -1569,10 +1569,10 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return doReadCollection(in, ctx, ldr, false, true, factory);
+                return doReadCollection(false, true, factory);
 
             case HANDLE: {
-                int handlePos = positionForHandle(in) - in.readInt();
+                int handlePos = positionForHandle() - in.readInt();
 
                 Object obj = getHandle(handlePos);
 
@@ -1647,10 +1647,10 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return doReadMap(in, ctx, ldr, false, true, factory);
+                return doReadMap(false, true, factory);
 
             case HANDLE: {
-                int handlePos = positionForHandle(in) - in.readInt();
+                int handlePos = positionForHandle() - in.readInt();
 
                 Object obj = getHandle(handlePos);
 
@@ -1689,7 +1689,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         else if (flag == HANDLE)
             return Flag.HANDLE;
 
-        int pos = positionForHandle(in);
+        int pos = positionForHandle();
 
         throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + fieldFlagName(expFlag) +
             ", actual=" + fieldFlagName(flag) + ']');
@@ -1710,7 +1710,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         else if (flag == NULL)
             return Flag.NULL;
 
-        int pos = positionForHandle(in);
+        int pos = positionForHandle();
 
         throw new BinaryObjectException("Unexpected field type [pos=" + pos + ", expected=" + fieldFlagName(expFlag) +
             ", actual=" + fieldFlagName(flag) + ']');
@@ -1779,7 +1779,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
                     streamPosition(handlePos);
 
-                    obj = doReadObject(in, ctx, ldr);
+                    obj = doReadObject();
 
                     streamPosition(retPos);
                 }
@@ -1842,7 +1842,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case DECIMAL:
-                obj = doReadDecimal(in);
+                obj = doReadDecimal();
 
                 break;
 
@@ -1852,22 +1852,22 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case UUID:
-                obj = doReadUuid(in);
+                obj = doReadUuid();
 
                 break;
 
             case DATE:
-                obj = doReadDate(in);
+                obj = doReadDate();
 
                 break;
 
             case TIMESTAMP:
-                obj = doReadTimestamp(in);
+                obj = doReadTimestamp();
 
                 break;
 
             case TIME:
-                obj = doReadTime(in);
+                obj = doReadTime();
 
                 break;
 
@@ -1877,42 +1877,42 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case SHORT_ARR:
-                obj = doReadShortArray(in);
+                obj = doReadShortArray();
 
                 break;
 
             case INT_ARR:
-                obj = doReadIntArray(in);
+                obj = doReadIntArray();
 
                 break;
 
             case LONG_ARR:
-                obj = doReadLongArray(in);
+                obj = doReadLongArray();
 
                 break;
 
             case FLOAT_ARR:
-                obj = doReadFloatArray(in);
+                obj = doReadFloatArray();
 
                 break;
 
             case DOUBLE_ARR:
-                obj = doReadDoubleArray(in);
+                obj = doReadDoubleArray();
 
                 break;
 
             case CHAR_ARR:
-                obj = doReadCharArray(in);
+                obj = doReadCharArray();
 
                 break;
 
             case BOOLEAN_ARR:
-                obj = doReadBooleanArray(in);
+                obj = doReadBooleanArray();
 
                 break;
 
             case DECIMAL_ARR:
-                obj = doReadDecimalArray(in);
+                obj = doReadDecimalArray();
 
                 break;
 
@@ -1922,69 +1922,69 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case UUID_ARR:
-                obj = doReadUuidArray(in);
+                obj = doReadUuidArray();
 
                 break;
 
             case DATE_ARR:
-                obj = doReadDateArray(in);
+                obj = doReadDateArray();
 
                 break;
 
             case TIMESTAMP_ARR:
-                obj = doReadTimestampArray(in);
+                obj = doReadTimestampArray();
 
                 break;
 
             case TIME_ARR:
-                obj = doReadTimeArray(in);
+                obj = doReadTimeArray();
 
                 break;
 
             case OBJ_ARR:
-                obj = doReadObjectArray(in, ctx, ldr, false, true);
+                obj = doReadObjectArray(false, true);
 
                 break;
 
             case COL:
-                obj = doReadCollection(in, ctx, ldr, false, true, null);
+                obj = doReadCollection(false, true, null);
 
                 break;
 
             case MAP:
-                obj = doReadMap(in, ctx, ldr, false, true, null);
+                obj = doReadMap(false, true, null);
 
                 break;
 
             case BINARY_OBJ:
-                obj = doReadBinaryObject(in, ctx, false);
+                obj = doReadBinaryObject(false);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
                 break;
 
             case ENUM:
-                obj = doReadEnum(in, doReadClass(in, ctx, ldr));
+                obj = doReadEnum(doReadClass());
 
                 break;
 
             case ENUM_ARR:
-                obj = doReadEnumArray(in, ctx, ldr, doReadClass(in, ctx, ldr));
+                obj = doReadEnumArray(doReadClass());
 
                 break;
 
             case BINARY_ENUM:
-                obj = doReadBinaryEnum(in, ctx);
+                obj = doReadBinaryEnum();
 
                 break;
 
             case CLASS:
-                obj = doReadClass(in, ctx, ldr);
+                obj = doReadClass();
 
                 break;
 
             case PROXY:
-                obj = doReadProxy(in, ctx, ldr);
+                obj = doReadProxy();
 
                 break;
 
@@ -2111,61 +2111,61 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 return BinaryUtils.doReadString(in());
 
             case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(in());
+                return doReadDecimal();
 
             case GridBinaryMarshaller.UUID:
-                return doReadUuid(in());
+                return doReadUuid();
 
             case GridBinaryMarshaller.TIME:
-                return doReadTime(in());
+                return doReadTime();
 
             case GridBinaryMarshaller.TIMESTAMP:
-                return doReadTimestamp(in());
+                return doReadTimestamp();
 
             case GridBinaryMarshaller.DATE:
-                return doReadDate(in());
+                return doReadDate();
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(in());
+                return doReadBooleanArray();
 
             case GridBinaryMarshaller.BYTE_ARR:
                 return BinaryUtils.doReadByteArray(in());
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(in());
+                return doReadCharArray();
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(in());
+                return doReadShortArray();
 
             case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(in());
+                return doReadIntArray();
 
             case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(in());
+                return doReadLongArray();
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(in());
+                return doReadFloatArray();
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(in());
+                return doReadDoubleArray();
 
             case GridBinaryMarshaller.STRING_ARR:
                 return BinaryUtils.doReadStringArray(in());
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(in());
+                return doReadDecimalArray();
 
             case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(in());
+                return doReadUuidArray();
 
             case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(in());
+                return doReadTimeArray();
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(in());
+                return doReadTimestampArray();
 
             case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(in());
+                return doReadDateArray();
 
             default:
                 in().position(in().position() - 1);
@@ -2888,19 +2888,17 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * Read binary enum.
      *
-     * @param in Input stream.
-     * @param ctx Binary context.
      * @return Enum.
      */
-    private BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
-        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
+    private BinaryObjectEx doReadBinaryEnum() {
+        return doReadBinaryEnum(doReadEnumType());
     }
 
     /**
      * @param cls Enum class.
      * @return Value.
      */
-    private Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
+    private Object[] doReadEnumArray(Class<?> cls)
         throws BinaryObjectException {
         int len = in.readInt();
 
@@ -2912,7 +2910,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr));
+                arr[i] = doReadEnum(doReadClass());
         }
 
         return arr;
@@ -2924,7 +2922,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @param cls Enum class.
      * @return Value.
      */
-    private Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls) throws BinaryObjectException {
+    private Enum<?> doReadEnum(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
         if (!cls.isEnum())
@@ -2991,7 +2989,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private boolean[] doReadBooleanArray(BinaryInputStream in) {
+    private boolean[] doReadBooleanArray() {
         int len = in.readInt();
 
         return in.readBooleanArray(len);
@@ -3000,7 +2998,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private short[] doReadShortArray(BinaryInputStream in) {
+    private short[] doReadShortArray() {
         int len = in.readInt();
 
         return in.readShortArray(len);
@@ -3009,7 +3007,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private char[] doReadCharArray(BinaryInputStream in) {
+    private char[] doReadCharArray() {
         int len = in.readInt();
 
         return in.readCharArray(len);
@@ -3018,7 +3016,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private int[] doReadIntArray(BinaryInputStream in) {
+    private int[] doReadIntArray() {
         int len = in.readInt();
 
         return in.readIntArray(len);
@@ -3027,7 +3025,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private long[] doReadLongArray(BinaryInputStream in) {
+    private long[] doReadLongArray() {
         int len = in.readInt();
 
         return in.readLongArray(len);
@@ -3036,7 +3034,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private float[] doReadFloatArray(BinaryInputStream in) {
+    private float[] doReadFloatArray() {
         int len = in.readInt();
 
         return in.readFloatArray(len);
@@ -3045,7 +3043,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private double[] doReadDoubleArray(BinaryInputStream in) {
+    private double[] doReadDoubleArray() {
         int len = in.readInt();
 
         return in.readDoubleArray(len);
@@ -3054,7 +3052,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private BigDecimal doReadDecimal(BinaryInputStream in) {
+    private BigDecimal doReadDecimal() {
         int scale = in.readInt();
         byte[] mag = BinaryUtils.doReadByteArray(in);
 
@@ -3074,14 +3072,14 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private UUID doReadUuid(BinaryInputStream in) {
+    private UUID doReadUuid() {
         return new UUID(in.readLong(), in.readLong());
     }
 
     /**
      * @return Value.
      */
-    private Date doReadDate(BinaryInputStream in) {
+    private Date doReadDate() {
         long time = in.readLong();
 
         return new Date(time);
@@ -3090,7 +3088,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private Timestamp doReadTimestamp(BinaryInputStream in) {
+    private Timestamp doReadTimestamp() {
         long time = in.readLong();
         int nanos = in.readInt();
 
@@ -3104,7 +3102,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private Time doReadTime(BinaryInputStream in) {
+    private Time doReadTime() {
         long time = in.readLong();
 
         return new Time(time);
@@ -3114,7 +3112,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private BigDecimal[] doReadDecimalArray(BinaryInputStream in) throws BinaryObjectException {
+    private BigDecimal[] doReadDecimalArray() throws BinaryObjectException {
         int len = in.readInt();
 
         BigDecimal[] arr = new BigDecimal[len];
@@ -3128,7 +3126,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 if (flag != GridBinaryMarshaller.DECIMAL)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadDecimal(in);
+                arr[i] = doReadDecimal();
             }
         }
 
@@ -3139,7 +3137,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private UUID[] doReadUuidArray(BinaryInputStream in) throws BinaryObjectException {
+    private UUID[] doReadUuidArray() throws BinaryObjectException {
         int len = in.readInt();
 
         UUID[] arr = new UUID[len];
@@ -3153,7 +3151,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 if (flag != GridBinaryMarshaller.UUID)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadUuid(in);
+                arr[i] = doReadUuid();
             }
         }
 
@@ -3164,7 +3162,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private Date[] doReadDateArray(BinaryInputStream in) throws BinaryObjectException {
+    private Date[] doReadDateArray() throws BinaryObjectException {
         int len = in.readInt();
 
         Date[] arr = new Date[len];
@@ -3178,7 +3176,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 if (flag != GridBinaryMarshaller.DATE)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadDate(in);
+                arr[i] = doReadDate();
             }
         }
 
@@ -3189,7 +3187,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private Timestamp[] doReadTimestampArray(BinaryInputStream in) throws BinaryObjectException {
+    private Timestamp[] doReadTimestampArray() throws BinaryObjectException {
         int len = in.readInt();
 
         Timestamp[] arr = new Timestamp[len];
@@ -3203,7 +3201,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 if (flag != GridBinaryMarshaller.TIMESTAMP)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadTimestamp(in);
+                arr[i] = doReadTimestamp();
             }
         }
 
@@ -3214,7 +3212,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private Time[] doReadTimeArray(BinaryInputStream in) throws BinaryObjectException {
+    private Time[] doReadTimeArray() throws BinaryObjectException {
         int len = in.readInt();
 
         Time[] arr = new Time[len];
@@ -3228,7 +3226,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 if (flag != GridBinaryMarshaller.TIME)
                     throw new BinaryObjectException("Invalid flag value: " + flag);
 
-                arr[i] = doReadTime(in);
+                arr[i] = doReadTime();
             }
         }
 
@@ -3238,7 +3236,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * @return Value.
      */
-    private BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
+    private BinaryObject doReadBinaryObject(boolean detach) {
         if (in.offheapPointer() > 0) {
             int len = in.readInt();
 
@@ -3264,26 +3262,20 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
      */
-    private Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
+    private Class doReadClass()
         throws BinaryObjectException {
-        return doReadClass(in, ctx, ldr, true);
+        return doReadClass(true);
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
      * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
      * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
      * @throws BinaryObjectException If failed.
      */
-    private Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, boolean deserialize)
+    private Class doReadClass(boolean deserialize)
         throws BinaryObjectException {
         int typeId = in.readInt();
 
@@ -3295,20 +3287,20 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
             return null;
         }
 
-        return doReadClass(in, ctx, ldr, typeId);
+        return doReadClass(typeId);
     }
 
     /**
      * @return Value.
      */
     @SuppressWarnings("ConstantConditions")
-    private Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr) {
+    private Object doReadProxy() {
         Class<?>[] intfs = new Class<?>[in.readInt()];
 
         for (int i = 0; i < intfs.length; i++)
-            intfs[i] = doReadClass(in, ctx, ldr);
+            intfs[i] = doReadClass();
 
-        InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr);
+        InvocationHandler ih = (InvocationHandler)doReadObject();
 
         return Proxy.newProxyInstance(ldr != null ? ldr : CommonUtils.gridClassLoader(), intfs, ih);
     }
@@ -3316,10 +3308,9 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * Read plain type.
      *
-     * @param in Input stream.
      * @return Plain type.
      */
-    private EnumType doReadEnumType(BinaryInputStream in) {
+    private EnumType doReadEnumType() {
         int typeId = in.readInt();
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
@@ -3332,14 +3323,11 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
      * @param typeId Type id.
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
      */
-    private Class doReadClass(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, int typeId)
+    private Class doReadClass(int typeId)
         throws BinaryObjectException {
         Class cls;
 
@@ -3366,24 +3354,19 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /**
      * Read binary enum.
      *
-     * @param in Input stream.
-     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
-    private BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
-        EnumType type) {
+    private BinaryObjectEx doReadBinaryEnum(EnumType type) {
         return BinaryUtils.binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
      * Read binary enum array.
      *
-     * @param in Input stream.
-     * @param ctx Binary context.
      * @return Enum array.
      */
-    private Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
+    private Object[] doReadBinaryEnumArray() {
         int len = in.readInt();
 
         Object[] arr = (Object[])Array.newInstance(BinaryUtils.binariesFactory.binaryEnumClass(), len);
@@ -3394,7 +3377,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
             if (flag == GridBinaryMarshaller.NULL)
                 arr[i] = null;
             else
-                arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in));
+                arr[i] = doReadBinaryEnum(doReadEnumType());
         }
 
         return arr;
@@ -3404,7 +3387,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr) throws BinaryObjectException {
+    @Nullable private Object doReadObject() throws BinaryObjectException {
         return new BinaryReaderExImpl(ctx, in, ldr, handles(), false, true).deserialize();
     }
 
@@ -3412,25 +3395,15 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private Object unmarshal(
-        BinaryInputStream in,
-        BinaryContext ctx,
-        ClassLoader ldr
-    ) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, false, false);
+    @Nullable private Object unmarshal() throws BinaryObjectException {
+        return unmarshal(false, false);
     }
 
     /**
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private Object unmarshal(
-        BinaryInputStream in,
-        BinaryContext ctx,
-        ClassLoader ldr,
-        boolean detach,
-        boolean deserialize
-    ) throws BinaryObjectException {
+    @Nullable private Object unmarshal(boolean detach, boolean deserialize) throws BinaryObjectException {
         int start = in.position();
 
         byte flag = in.readByte();
@@ -3449,7 +3422,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
                     in.position(handlePos);
 
-                    obj = unmarshal(in, ctx, ldr, detach, deserialize);
+                    obj = unmarshal(detach, deserialize);
 
                     in.position(retPos);
                 }
@@ -3511,98 +3484,98 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 return in.readBoolean();
 
             case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(in);
+                return doReadDecimal();
 
             case GridBinaryMarshaller.STRING:
                 return BinaryUtils.doReadString(in);
 
             case GridBinaryMarshaller.UUID:
-                return doReadUuid(in);
+                return doReadUuid();
 
             case GridBinaryMarshaller.DATE:
-                return doReadDate(in);
+                return doReadDate();
 
             case GridBinaryMarshaller.TIMESTAMP:
-                return doReadTimestamp(in);
+                return doReadTimestamp();
 
             case GridBinaryMarshaller.TIME:
-                return doReadTime(in);
+                return doReadTime();
 
             case GridBinaryMarshaller.BYTE_ARR:
                 return BinaryUtils.doReadByteArray(in);
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(in);
+                return doReadShortArray();
 
             case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(in);
+                return doReadIntArray();
 
             case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(in);
+                return doReadLongArray();
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(in);
+                return doReadFloatArray();
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(in);
+                return doReadDoubleArray();
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(in);
+                return doReadCharArray();
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(in);
+                return doReadBooleanArray();
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(in);
+                return doReadDecimalArray();
 
             case GridBinaryMarshaller.STRING_ARR:
                 return BinaryUtils.doReadStringArray(in);
 
             case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(in);
+                return doReadUuidArray();
 
             case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(in);
+                return doReadDateArray();
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(in);
+                return doReadTimestampArray();
 
             case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(in);
+                return doReadTimeArray();
 
             case GridBinaryMarshaller.OBJ_ARR:
                 if (BinaryUtils.useBinaryArrays() && !deserialize)
-                    return doReadBinaryArray(in, ctx, ldr, detach, deserialize, false);
+                    return doReadBinaryArray(detach, deserialize, false);
                 else
-                    return doReadObjectArray(in, ctx, ldr, detach, deserialize);
+                    return doReadObjectArray(detach, deserialize);
 
             case GridBinaryMarshaller.COL:
-                return doReadCollection(in, ctx, ldr, detach, deserialize, null);
+                return doReadCollection(detach, deserialize, null);
 
             case GridBinaryMarshaller.MAP:
-                return doReadMap(in, ctx, ldr, detach, deserialize, null);
+                return doReadMap(detach, deserialize, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
-                return doReadBinaryObject(in, ctx, detach);
+                return doReadBinaryObject(detach);
 
             case GridBinaryMarshaller.ENUM:
             case GridBinaryMarshaller.BINARY_ENUM:
-                return doReadBinaryEnum(in, ctx, doReadEnumType(in));
+                return doReadBinaryEnum(doReadEnumType());
 
             case GridBinaryMarshaller.ENUM_ARR:
                 if (BinaryUtils.useBinaryArrays() && !deserialize)
-                    return doReadBinaryArray(in, ctx, ldr, detach, deserialize, true);
+                    return doReadBinaryArray(detach, deserialize, true);
                 else {
-                    doReadEnumType(in); // Simply skip this part as we do not need it.
+                    doReadEnumType(); // Simply skip this part as we do not need it.
 
-                    return doReadBinaryEnumArray(in, ctx);
+                    return doReadBinaryEnumArray();
                 }
 
             case GridBinaryMarshaller.CLASS:
-                return doReadClass(in, ctx, ldr);
+                return doReadClass();
 
             case GridBinaryMarshaller.PROXY:
-                return doReadProxy(in, ctx, ldr);
+                return doReadProxy();
 
             case GridBinaryMarshaller.OPTM_MARSH:
                 return BinaryImplUtils.doReadOptimized(in, ctx, ldr);
@@ -3613,19 +3586,15 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
      * @param detach Detach flag.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-                                       boolean detach, boolean deserialize) throws BinaryObjectException {
-        int hPos = positionForHandle(in);
+    private Object[] doReadObjectArray(boolean detach, boolean deserialize) throws BinaryObjectException {
+        int hPos = positionForHandle();
 
-        Class compType = doReadClass(in, ctx, ldr, deserialize);
+        Class compType = doReadClass(deserialize);
 
         int len = in.readInt();
 
@@ -3636,7 +3605,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         setHandle(arr, hPos);
 
         for (int i = 0; i < len; i++) {
-            Object res = deserializeOrUnmarshal(in, ctx, ldr, detach, deserialize);
+            Object res = deserializeOrUnmarshal(detach, deserialize);
 
             if (deserialize && BinaryUtils.useBinaryArrays() && res instanceof BinaryObject)
                 arr[i] = ((BinaryObject)res).deserialize(ldr);
@@ -3648,17 +3617,13 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
-     * @param ldr Class loader.
      * @param detach Detach flag.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-                                          boolean detach, boolean deserialize, boolean isEnumArray) {
-        int hPos = positionForHandle(in);
+    private BinaryArray doReadBinaryArray(boolean detach, boolean deserialize, boolean isEnumArray) {
+        int hPos = positionForHandle();
 
         int compTypeId = in.readInt();
         String compClsName = null;
@@ -3677,7 +3642,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         setHandle(res, hPos);
 
         for (int i = 0; i < len; i++)
-            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, detach, deserialize);
+            arr[i] = deserializeOrUnmarshal(detach, deserialize);
 
         return res;
     }
@@ -3689,10 +3654,9 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Collection<?> doReadCollection(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        boolean detach, boolean deserialize, BinaryCollectionFactory factory)
+    private Collection<?> doReadCollection(boolean detach, boolean deserialize, BinaryCollectionFactory factory)
         throws BinaryObjectException {
-        int hPos = positionForHandle(in);
+        int hPos = positionForHandle();
 
         int size = in.readInt();
 
@@ -3749,7 +3713,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         setHandle(col, hPos);
 
         for (int i = 0; i < size; i++)
-            col.add(deserializeOrUnmarshal(in, ctx, ldr, detach, deserialize));
+            col.add(deserializeOrUnmarshal(detach, deserialize));
 
         return colType == GridBinaryMarshaller.SINGLETON_LIST ? CommonUtils.convertToSingletonList(col) : col;
     }
@@ -3761,10 +3725,9 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private Map<?, ?> doReadMap(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        boolean detach, boolean deserialize, BinaryMapFactory factory)
+    private Map<?, ?> doReadMap(boolean detach, boolean deserialize, BinaryMapFactory factory)
         throws BinaryObjectException {
-        int hPos = positionForHandle(in);
+        int hPos = positionForHandle();
 
         int size = in.readInt();
 
@@ -3801,8 +3764,8 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         setHandle(map, hPos);
 
         for (int i = 0; i < size; i++) {
-            Object key = deserializeOrUnmarshal(in, ctx, ldr, detach, deserialize);
-            Object val = deserializeOrUnmarshal(in, ctx, ldr, detach, deserialize);
+            Object key = deserializeOrUnmarshal(detach, deserialize);
+            Object val = deserializeOrUnmarshal(detach, deserialize);
 
             map.put(key, val);
         }
@@ -3816,9 +3779,8 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @param deserialize Deserialize.
      * @return Result.
      */
-    private Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        boolean detach, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr) : unmarshal(in, ctx, ldr, detach, deserialize);
+    private Object deserializeOrUnmarshal(boolean detach, boolean deserialize) {
+        return deserialize ? doReadObject() : unmarshal(detach, deserialize);
     }
 
     /**
@@ -3826,7 +3788,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      *
      * @return Position for handle.
      */
-    private int positionForHandle(BinaryInputStream in) {
+    private int positionForHandle() {
         return in.position() - 1;
     }
 
