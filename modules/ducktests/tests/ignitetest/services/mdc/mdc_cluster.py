@@ -204,6 +204,9 @@ class MdcCluster:
     :param client_connector: Whether to expose the thin client connector on servers.
     :param jmx_metrics: Whether to export the node metrics over JMX. Required by everything
            that reads one - see :meth:`cache_mdc_metrics`.
+    :param network_timeout: Network timeout in ms, for the nodes and for their discovery SPI
+           alike - the latter is how long a joining node waits for its join to complete.
+    :param tcp_connect_timeout: Communication SPI connect timeout in ms.
     """
     def __init__(self, test, ignite_version: str, dcs: Sequence[str] = DCS_2,
                  main_dc: Optional[str] = None,

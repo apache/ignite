@@ -138,7 +138,8 @@ def _fixture(dcs, top_validator=True):
     """
     An MdcCluster carrying only what _with_cache_params() reads - no services are built, so
     no ducktape cluster is needed. Bypassing the constructor is the point: it pins down how
-    little of the fixture the cache parameter compilation actually depends on.
+    little of the fixture the cache parameter compilation actually depends on. Checks of
+    other methods set the few more attributes those read.
     """
     mdc = MdcCluster.__new__(MdcCluster)
 
