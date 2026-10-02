@@ -306,10 +306,14 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     }
 
     /**
-     * @param dcs Every DC of the cluster.
+     * @param dcs Every DC of the cluster, an odd number of them.
      * @return Validator that lets a segment write while it sees a majority of the DCs.
      */
     protected static MdcTopologyValidator majorityValidator(String... dcs) {
+        // The validator accepts an even set too, and then an even split leaves no segment that writes.
+        assertTrue("Majority validation needs an odd number of DCs, use mainDcValidator() for an even one: " +
+            Arrays.toString(dcs), dcs.length % 2 == 1);
+
         MdcTopologyValidator validator = new MdcTopologyValidator();
 
         validator.setDatacenters(new HashSet<>(Arrays.asList(dcs)));
