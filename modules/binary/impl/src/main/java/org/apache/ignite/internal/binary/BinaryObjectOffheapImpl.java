@@ -375,7 +375,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
                 stream.position(fieldPos);
 
-                val = BinaryImplUtils.unmarshal(stream, ctx, null);
+                val = BinaryReaderExImpl.unmarshal(stream, ctx, null);
 
                 break;
         }
