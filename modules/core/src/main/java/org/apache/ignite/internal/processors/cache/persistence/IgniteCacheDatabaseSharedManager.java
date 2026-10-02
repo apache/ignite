@@ -1206,10 +1206,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * row does not fit into the currently available page space, data pages are evicted until either enough space is
      * freed or it becomes clear that the goal is unreachable (in which case an
      * {@link IgniteOutOfMemoryException} is thrown).
-     * <p>
-     * The size-aware reserve is required because page eviction by itself only keeps a steady-state pool of empty pages
-     * ({@link DataRegionConfiguration#getEmptyPagesPoolSize()}) and does not guarantee enough space for a single row
-     * larger than this pool.
      *
      * @param region Data region to be checked.
      * @param dataRowSize Size of data row to be inserted.
@@ -1262,10 +1258,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Size-aware reserve for an eviction-enabled non-persistent region. Runs eviction until the combined space
-     * (empty pages in the free list + unallocated headroom) is enough to accommodate the row, or throws
-     * {@link IgniteOutOfMemoryException} if the goal is unreachable / no progress can be made. Both empty pages and
-     * headroom are treated as concurrent resources: the fast path returns as soon as their sum covers the row, and
-     * the eviction loop only evicts the deficit (pages that neither headroom nor the free list can provide).
+     * (empty pages in the free list + unallocated headroom) is enough to accommodate the row <b>plus</b> the
+     * {@link DataRegionConfiguration#getEmptyPagesPoolSize() empty-pages pool}, or throws
+     * {@link IgniteOutOfMemoryException} if the goal is unreachable / no progress can be made. The pool margin is kept
+     * on top of the row's own requirement so that, after this thread consumes its pages, at least {@code poolSize}
+     * pages remain for concurrent writers; this makes the path safe for up to {@code poolSize} concurrent threads.
+     * Both empty pages and headroom are treated as concurrent resources: the fast path returns as soon as
+     * their sum covers the target, and the eviction loop only evicts the deficit.
      *
      * @param region Data region.
      * @param regCfg Data region configuration.
@@ -1295,11 +1294,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (requiredPages > totalPages)
             throw outOfMemory(regCfg);
 
+        long targetPages = Math.min(requiredPages + regCfg.getEmptyPagesPoolSize(), totalPages);
+
         long emptyPages = freeList.emptyDataPages();
 
         // Effective headroom accounts for per-segment allocation overhead (up to one page per segment),
         // so the fast path does not trust headroom that cannot actually be allocated.
-        if (emptyPages + effectiveHeadroom(totalPages, pageMem.loadedPages()) >= requiredPages)
+        if (emptyPages + effectiveHeadroom(totalPages, pageMem.loadedPages()) >= targetPages)
             return;
 
         PageEvictionTracker evictionTracker = region.evictionTracker();
@@ -1312,7 +1313,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
-        while (freeList.emptyDataPages() + effectiveHeadroom(totalPages, pageMem.loadedPages()) < requiredPages) {
+        while (freeList.emptyDataPages() + effectiveHeadroom(totalPages, pageMem.loadedPages()) < targetPages) {
             if (region.metrics().onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());

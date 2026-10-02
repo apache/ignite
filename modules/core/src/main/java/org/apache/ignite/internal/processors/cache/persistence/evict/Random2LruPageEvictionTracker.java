@@ -161,11 +161,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         firstTs = first(trackingData);
 
-                        // Under concurrent writes a fragment chain may be partially built (a concurrent writer
-                        // has not yet linked the head page), so after two hops the timestamp can still be
-                        // negative. Skip this sample and try another page.
-                        if (firstTs < 0)
-                            continue;
+                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
                     }
                 }
 
