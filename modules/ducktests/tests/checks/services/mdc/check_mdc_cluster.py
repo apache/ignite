@@ -23,6 +23,7 @@ to cut. All of that is compiled without a cluster, so it is checked without one.
 
 import pytest
 
+from checks.support.discovery_template import discovery_spi, render_discovery_spi
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, mdc_topology_params, min_backups, all_pairs, \
     isolation_pairs, cross_dc_network, per_dc, CACHE_TOP_VALIDATOR_GLOBAL, DCS_2, DCS_3, DC_1, DC_2, DC_3
 
@@ -190,3 +191,27 @@ class CheckMdcCacheParams:
         params = _fixture(DCS_3, top_validator=False)._with_cache_params({"createCache": True})
 
         assert params["topologyValidator"] is False
+
+
+class CheckMdcDiscovery:
+    """
+    Checks the discovery SPI every node of an MDC cluster joins through.
+    """
+    @pytest.mark.parametrize("spi_args", [{}, {"port_range": 100, "network_timeout": 1}])
+    def check_a_rejoin_tries_one_address_per_host_and_waits_the_cluster_timeout(self, spi_args):
+        """
+        A node that restarts across a slow cross-DC ring can outwait the SPI's own network
+        timeout before its join completes, and then retries the join address by address.
+        Both have to fit the ring: the cluster's timeout, and one address per host instead
+        of a whole port range.
+        """
+        mdc = _fixture(DCS_3)
+        mdc.network_timeout = 20_000
+
+        xml = render_discovery_spi(mdc._discovery_spi(discovery_spi(**spi_args)))
+
+        assert '<property name="networkTimeout" value="20000"/>' in xml
+
+        assert "<value>ducker02:47500</value>" in xml
+
+        assert ".." not in xml

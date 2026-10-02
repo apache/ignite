@@ -223,6 +223,8 @@ class MdcCluster:
 
         self.main_dc = main_dc if main_dc is not None else self.dcs[0]
 
+        self.network_timeout = network_timeout
+
         # A single discovery SPI (hence a single ip finder) shared by all DCs' server
         # services is what makes the DCs form ONE cluster: prepare_on_start() memoizes the
         # addresses of the first started DC into the shared ip finder, so every later DC
@@ -231,7 +233,7 @@ class MdcCluster:
         # sync_service_discovery().
         cfg_kwargs = {
             "version": IgniteVersion(ignite_version),
-            "discovery_spi": TcpDiscoverySpi(),
+            "discovery_spi": self._discovery_spi(TcpDiscoverySpi()),
             "network_timeout": network_timeout,
             "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout)
         }
@@ -318,15 +320,35 @@ class MdcCluster:
         that DC's addresses, so after a full stop its nodes would seed off themselves and
         form a separate cluster instead of rejoining the surviving DCs.
         """
-        discovery_spi = from_ignite_services(self.all_servers())
+        discovery_spi = self._discovery_spi(from_ignite_services(self.all_servers()))
 
         for service in self.all_servers():
             service.config = service.config._replace(discovery_spi=discovery_spi)
 
+    def _discovery_spi(self, spi: TcpDiscoverySpi) -> TcpDiscoverySpi:
+        """
+        Fits a discovery SPI to the cross-DC ring.
+
+        A node joining across DCs - above all one restarted after a split - may wait longer
+        for its join to complete than the SPI's own network timeout, which defaults to 5s and
+        is not the cluster's. It then retries the join address by address, ~200ms per refused
+        one, and a port range per host makes that hundreds of addresses, i.e. tens of seconds
+        while the rest of the cluster already waits for it in PME. So: the cluster's timeout,
+        and every node on the default port of its own host.
+
+        :param spi: SPI to fit, modified in place.
+        :return: The same SPI.
+        """
+        spi.port_range = 0
+        spi.network_timeout = self.network_timeout
+
+        return spi
+
     def _app_service(self, dc: str) -> IgniteApplicationService:
         # Seeding off the DC's first server service is enough: all of them are one cluster.
         client_cfg = self.ignite_config._replace(client_mode=True,
-                                                 discovery_spi=from_ignite_cluster(self.dc_servers(dc)[0]))
+                                                 discovery_spi=self._discovery_spi(
+                                                     from_ignite_cluster(self.dc_servers(dc)[0])))
 
         return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
 
