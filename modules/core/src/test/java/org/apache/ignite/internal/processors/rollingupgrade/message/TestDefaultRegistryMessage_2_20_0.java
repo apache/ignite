@@ -17,71 +17,73 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
-import java.util.List;
 import java.util.function.Predicate;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 
 /** */
-public interface TestMessage {
+public class TestDefaultRegistryMessage_2_20_0 extends TestDiscoveryMessage {
     /** */
-    String A = "A";
+    @Order(0)
+    String fldA;
 
     /** */
-    String B = "B";
+    @Order(value = 1, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
+    String fldB;
 
     /** */
-    String C = "C";
+    @Order(2)
+    String fldC;
 
     /** */
-    String D = "D";
+    @Order(3)
+    String fldD;
 
     /** */
-    String E = "E";
+    @Order(4)
+    String fldE;
 
     /** */
-    String F = "F";
+    @Order(5)
+    String fldF;
 
-    /**
-     * Fills the message with data. The implementation must take into account the final feature state of the release this
-     * message belongs to. This should imitate how Ignite processors fill messages with RU in mind (e.g. if the feature that
-     * deprecated a field is active, the field is not filled).
-     *
-     * @param featureStatusProvider Tells whether a feature is active in the cluster.
-     */
-    void fill(Predicate<IgniteFeature> featureStatusProvider);
-
-    /** */
-    default String fldA() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fldA = A;
+        fldB = B;
+        fldC = C;
+        fldD = D;
+        fldE = E;
+        fldF = F;
     }
 
-    /** */
-    default String fldB() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldA() {
+        return fldA;
     }
 
-    /** */
-    default String fldC() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldB() {
+        return fldB;
     }
 
-    /** */
-    default String fldD() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldC() {
+        return fldC;
     }
 
-    /** */
-    default String fldE() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldD() {
+        return fldD;
     }
 
-    /** */
-    default String fldF() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String fldE() {
+        return fldE;
     }
 
-    /** */
-    default List<TestMessage> nestedMessages() {
-        return List.of();
+    /** {@inheritDoc} */
+    @Override public String fldF() {
+        return fldF;
     }
 }
