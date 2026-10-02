@@ -17,20 +17,19 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteProcessResult;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Snapshot deletion command.
  *
- * @see SupportedFeatureRegistry#SNAPSHOT_DELETE_FEATURE
+ * @see CoreFeatureRegistry#SNAPSHOT_DELETE_FEATURE
  * @see SnapshotDeleteProcess
  */
 public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDeleteCommandArg, SnapshotDeleteProcessResult> {
@@ -38,22 +37,22 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
     public static final String DESC = "Deletes the snapshot and all its incremental snapshots from all online server nodes";
 
     /** */
-    public static final String UNSURED_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
-        "remove it completely ";
+    public static final String UNSURE_DELETION_PREF = "WARNING: the following nodes found snapshot data but might not " +
+        "remove it completely: ";
 
     /** */
-    public static final String REMOVED_PREF = "Snapshot removal is completed on ";
+    public static final String REMOVED_PREF = "Snapshot removal is completed on: ";
 
     /** */
     public static final String NODE_NOT_FOUND_PREF = "NOTE: the following nodes can't find any snapshot data, " +
-        "operation skipped ";
+        "operation skipped: ";
 
     /** */
     public static final String NOT_FOUND = "Snapshot not found on available server nodes.";
 
     /** */
     public static final String MISSING_BASELINES = "WARNING: the snapshot's baseline nodes with the following consistent " +
-        "ids are missing in current cluster ";
+        "ids are missing in current cluster: ";
 
     /**
      * {@inheritDoc}
@@ -79,7 +78,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
         if (!res.uncompletedNodes().isEmpty()) {
             found = true;
 
-            printer.accept(UNSURED_DELETION_PREF + nodeIdPairsStrLst(res.uncompletedNodes()));
+            printer.accept(UNSURE_DELETION_PREF + nodeIdPairsStrLst(res.uncompletedNodes()));
 
             printer.accept("");
         }
@@ -96,25 +95,17 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
                 printer.accept(NODE_NOT_FOUND_PREF + nodeIdPairsStrLst(res.emptyNodes()));
 
             if (!res.absentBaselines().isEmpty())
-                printer.accept(MISSING_BASELINES + nodeIdsStrLst(res.absentBaselines()));
+                printer.accept(MISSING_BASELINES + String.join(", ", res.absentBaselines()));
         }
-        else {
-            assert !res.emptyNodes().isEmpty();
-
+        else
             printer.accept(NOT_FOUND);
-        }
     }
 
     /** */
     private static String nodeIdPairsStrLst(Map<UUID, String> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + uuids.entrySet().stream()
+        return uuids.entrySet().stream()
             .map(e -> e.getValue() + " [uuid=" + e.getKey() + ']')
             .collect(Collectors.joining(", "));
-    }
-
-    /** */
-    private static String nodeIdsStrLst(Collection<String> uuids) {
-        return "[cnt=" + uuids.size() + "]: " + String.join(", ", uuids);
     }
 
     /** {@inheritDoc} */

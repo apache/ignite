@@ -1206,10 +1206,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testConcurrentSnapshotDeleteAndCheckOperations() throws Exception {
-        doTestConcurrentSnapshotDeleteOperation(
+        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> prepareGridsAndSnapshot(4, 3, 1, false),
-            () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, null).get(),
-            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
+            () -> snp(grid(2)).checkSnapshot(snapshotName, null).get(),
+            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(snapshotName)),
             true
         );
     }
@@ -1222,7 +1224,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
 
-        doTestConcurrentSnapshotDeleteOperation(
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> {
                 prepareGridsAndSnapshot(4, 3, 1, false);
 

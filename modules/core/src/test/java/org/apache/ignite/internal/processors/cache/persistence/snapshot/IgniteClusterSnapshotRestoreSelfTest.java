@@ -336,10 +336,12 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
     @Test
     public void testConcurrentSnapshotDeleteAndRestoreOperations() throws Exception {
-        doTestConcurrentSnapshotDeleteOperation(
+        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE),
-            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null).get(),
-            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(SNAPSHOT_NAME)),
+            () -> snp(grid(2)).restoreSnapshot(snapshotName, null).get(),
+            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(snapshotName)),
             true
         );
     }
@@ -349,7 +351,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     public void testConcurrentSnapshotDeleteAndRestoreOperationsWithDifferentPath() throws Exception {
         String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
 
-        doTestConcurrentSnapshotDeleteOperation(
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> {
                 startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
 

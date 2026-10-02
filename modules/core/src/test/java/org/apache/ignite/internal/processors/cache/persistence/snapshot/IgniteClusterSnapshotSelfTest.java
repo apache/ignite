@@ -621,13 +621,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testConcurrentSnapshotDeleteOperation() throws Exception {
-        doTestConcurrentSnapshotDeleteOperation(
+        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> {
                 startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+                snp(grid(2)).createSnapshot(snapshotName).get();
             },
-            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get(),
+            () -> snp(grid(2)).createSnapshot(snapshotName).get(),
             e -> e.getMessage().contains("Snapshot with given name already exists"),
             false
         );
@@ -640,7 +642,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testConcurrentSnapshotDeleteOperationWithDifferentPath() throws Exception {
         String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
 
-        doTestConcurrentSnapshotDeleteOperation(
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> {
                 startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 

@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -34,18 +36,15 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.SNAPSHOT_DELETE_FEATURE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
@@ -84,8 +83,8 @@ public class SnapshotDeleteProcess {
     /** Cluster-wide operation futures per request id on certain node. */
     private final Map<UUID, GridFutureAdapter<SnapshotDeleteProcessResult>> clusterOpFuts = new ConcurrentHashMap<>();
 
-    /** Process requests per snapshot name on each server node. */
-    private final Set<SnapshotDeleteRequest> requests = ConcurrentHashMap.newKeySet();
+    /** Current operations represented by the full canonical path. */
+    private final Set<File> requests = ConcurrentHashMap.newKeySet();
 
     /** The distributed process. */
     private final DistributedProcess<SnapshotDeleteRequest, SnapshotDeleteResponse> distrProc;
@@ -108,13 +107,13 @@ public class SnapshotDeleteProcess {
      * @param snpPath Snapshot directory path (optional).
      * @return Future that will be completed when the snapshot is deleted.
      */
-    public IgniteFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotDeleteProcessResult> start(String snpName, @Nullable String snpPath) {
         GridFutureAdapter<SnapshotDeleteProcessResult> clusterOpFut = new GridFutureAdapter<>();
 
         if (!kctx.rollingUpgrade().features().isActive(SNAPSHOT_DELETE_FEATURE)) {
             clusterOpFut.onDone(new IgniteIllegalStateException(OP_REJECT_FEATURE_MSG));
 
-            return new IgniteFutureImpl<>(clusterOpFut);
+            return clusterOpFut;
         }
 
         UUID reqId = UUID.randomUUID();
@@ -137,7 +136,7 @@ public class SnapshotDeleteProcess {
             clusterOpFut.onDone(t);
         }
 
-        return new IgniteFutureImpl<>(clusterOpFut);
+        return clusterOpFut;
     }
 
     /** */
@@ -171,52 +170,75 @@ public class SnapshotDeleteProcess {
                 "[req=" + req + ']'));
         }
 
+        File resolvedFullPath = null;
+
+        // Future to delete snapshot contents according to snapshot metadatas.
+        GridFutureAdapter<SnapshotDeleteResponse> resultFut = new GridFutureAdapter<>();
+
         try {
-            File path = resolvePath(req.snpPath);
+            resolvedFullPath = resolveFullPath(req.snpName, req.snpPath);
 
-            req.resolvedPath = path;
-
-            if (!requests.add(req)) {
+            if (!requests.add(resolvedFullPath)) {
                 return new GridFinishedFuture<>(new IgniteIllegalStateException("Deletion of the snapshot has already " +
                     "started [req=" + req + ']'));
             }
 
-            SnapshotFileTree snpFiles = new SnapshotFileTree(kctx, req.snpName, path.getAbsolutePath());
+            File rootPath = resolvedFullPath.getParentFile();
+
+            SnapshotFileTree snpFiles = new SnapshotFileTree(kctx, req.snpName, rootPath.getAbsolutePath());
 
             // We need to find and read snapshot metas to ensure the content is a snapshot. Also, the metas contain
             // initial cluster topology and actual snapshot folder names.
             List<SnapshotMetadata> locMetas = kctx.cache().context().snapshotMgr().readSnapshotMetadatas(snpFiles, false);
 
             if (locMetas.isEmpty()) {
-                requests.remove(req);
+                requests.remove(resolvedFullPath);
 
                 log.warning("Snapshot deletion won't process, no snapshot metadata found [req=" + req + ']');
 
                 return new GridFinishedFuture<>(new SnapshotDeleteResponse(SnapshotDeleteResponse.DeleteStatus.NOT_FOUND, null));
             }
 
-            // Future to delete snapshot contents according to snapshot metadatas.
-            GridCompoundFuture<SnapshotDeleteResponse, SnapshotDeleteResponse> resultFut =
-                new GridCompoundFuture<>(new MetaFuturesReducer());
+            File resolvedFullPath0 = resolvedFullPath;
 
-            resultFut.listen(fut -> requests.remove(req));
+            resultFut.listen(fut -> requests.remove(resolvedFullPath0));
+
+            // Per-metas results.
+            AtomicInteger pendingMetaFuts = new AtomicInteger(locMetas.size());
+            MetaFuturesReducer resReducer = new MetaFuturesReducer();
+            AtomicReference<Throwable> resErr = new AtomicReference<>();
 
             for (SnapshotMetadata meta : locMetas) {
                 GridFutureAdapter<SnapshotDeleteResponse> perMetaFut = new GridFutureAdapter<>();
 
+                // Allows to wait until all the per-meta futures are done.
+                perMetaFut.listen(metaFut -> {
+                    if (metaFut.error() != null)
+                        resErr.compareAndSet(null, metaFut.error());
+                    else
+                        resReducer.collect(metaFut.result());
+
+                    if (pendingMetaFuts.decrementAndGet() == 0) {
+                        if (resErr.get() == null)
+                            resultFut.onDone(resReducer.reduce());
+                        else
+                            resultFut.onDone(resErr.get());
+                    }
+                });
+
                 kctx.pools().getSnapshotExecutorService().submit(() -> {
                     try {
                         // Read file tree of the snapshot.
-                        var byMetaSft = new SnapshotFileTree(
+                        SnapshotFileTree byMetaSft = new SnapshotFileTree(
                             kctx.config(),
                             kctx.pdsFolderResolver().fileTree(),
                             req.snpName,
-                            req.snpPath == null ? null : path.getAbsolutePath(),
+                            req.snpPath == null ? null : rootPath.getAbsolutePath(),
                             meta.folderName(),
                             meta.consId
                         );
 
-                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft);
+                        T2<Boolean, Boolean> deleted = snpMgr.deleteLocalSnapshot(byMetaSft, false, true);
 
                         SnapshotDeleteResponse.DeleteStatus status;
 
@@ -244,31 +266,26 @@ public class SnapshotDeleteProcess {
                         perMetaFut.onDone(e);
                     }
                 });
-
-                resultFut.add(perMetaFut);
             }
-
-            resultFut.markInitialized();
 
             if (log.isInfoEnabled())
                 log.info("Deletion of snapshot initialized [req=" + req + ']');
-
-            return resultFut;
         }
         catch (Throwable t) {
-            requests.remove(req);
+            if (resolvedFullPath != null)
+                requests.remove(resolvedFullPath);
 
             log.warning("An error occurred during snapshot deletion [req=" + req + ']', t);
 
-            return new GridFinishedFuture<>(t);
+            resultFut.onDone(t);
         }
+
+        return resultFut;
     }
 
     /** */
-    private File resolvePath(@Nullable String path) throws IOException {
-        return path == null
-            ? kctx.pdsFolderResolver().fileTree().snapshotsRoot()
-            : new File(path).getCanonicalFile();
+    private File resolveFullPath(String name, @Nullable String path) throws IOException {
+        return new SnapshotFileTree(kctx, name, path).root().getCanonicalFile();
     }
 
     /** */
@@ -277,8 +294,6 @@ public class SnapshotDeleteProcess {
 
         if (clusterOpFut == null)
             return;
-
-        assert clusterOpFut != null;
 
         try {
             Map.Entry<UUID, Throwable> errP = F.isEmpty(errors) ? null : F.first(errors.entrySet());
@@ -295,7 +310,7 @@ public class SnapshotDeleteProcess {
             Map<UUID, String> completedNodes = U.newHashMap(results.size());
             Map<UUID, String> uncompletedNodes = U.newHashMap(results.size());
             Map<UUID, String> emptyNodes = U.newHashMap(results.size());
-            var snpNodes = new HashSet<String>();
+            Set<String> snpNodes = new HashSet<>();
 
             results.forEach((nodeId, nodeRes) -> {
                 if (!F.isEmpty(nodeRes.nodeIds))
@@ -304,13 +319,13 @@ public class SnapshotDeleteProcess {
                 if (nodeRes.status != null) {
                     switch (nodeRes.status) {
                         case NOT_FOUND:
-                            emptyNodes.put(nodeId, consistentId(nodeId));
+                            emptyNodes.put(nodeId, optionalConsistentId(nodeId));
                             break;
                         case DELETED:
-                            completedNodes.put(nodeId, consistentId(nodeId));
+                            completedNodes.put(nodeId, optionalConsistentId(nodeId));
                             break;
                         case PARTLY:
-                            uncompletedNodes.put(nodeId, consistentId(nodeId));
+                            uncompletedNodes.put(nodeId, optionalConsistentId(nodeId));
                             break;
                         default:
                             throw new IgniteIllegalStateException("Unknown snapshot deletion node result, [nodeRes=" +
@@ -332,7 +347,7 @@ public class SnapshotDeleteProcess {
     }
 
     /** */
-    private String consistentId(UUID nodeId) {
+    private String optionalConsistentId(UUID nodeId) {
         ClusterNode node = kctx.discovery().node(nodeId);
 
         if (node == null)
@@ -343,16 +358,16 @@ public class SnapshotDeleteProcess {
 
     /** */
     public boolean isDeleting(String snpName, @Nullable String snpPath) {
-        var rq = new SnapshotDeleteRequest(null, snpName, snpPath);
+        File fullPath;
 
         try {
-            rq.resolvedPath = resolvePath(rq.snpPath);
+            fullPath = resolveFullPath(snpName, snpPath);
         }
-        catch (IOException ignored) {
+        catch (IOException e) {
             return false;
         }
 
-        return requests.contains(rq);
+        return requests.contains(fullPath);
     }
 
     /**
@@ -362,8 +377,6 @@ public class SnapshotDeleteProcess {
         interrupted = true;
 
         clusterOpFuts.forEach((reqId, clusterOpFut) -> clusterOpFut.onDone(err));
-
-        clusterOpFuts.clear();
     }
 
     /** */
@@ -385,9 +398,9 @@ public class SnapshotDeleteProcess {
                 if (!F.isEmpty(res.nodeIds))
                     nodeIds.addAll(res.nodeIds);
 
-                if (status == null || status == res.status)
+                if (status == null)
                     status = res.status;
-                else
+                else if (status != res.status)
                     status = SnapshotDeleteResponse.DeleteStatus.PARTLY;
             }
 
