@@ -92,7 +92,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
     @Test
     public void testParallelRollingUpgradeInProgress() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
-            startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
+            startGrid(i, "2.19.4", i >= ALL_GRIDS - CLIENTS);
 
         grid(0).cluster().active(true);
 
@@ -105,7 +105,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
 
-            upgradeNodeVersion(i, "2.19.1");
+            upgradeNodeVersion(i, "2.19.4", "2.19.5");
         }
 
         spi(grid(testNodeIx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -147,7 +147,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
     /** */
     private void doTestSnapshotDeleteFeature(boolean useTask) throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
-            startGrid(i, "2.19.0", i >= ALL_GRIDS - CLIENTS);
+            startGrid(i, "2.19.4", i >= ALL_GRIDS - CLIENTS);
 
         grid(0).cluster().active(true);
 
@@ -160,7 +160,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
 
-            upgradeNodeVersion(i, "2.19.1");
+            upgradeNodeVersion(i, "2.19.4", "2.19.5");
 
             ensureSnapshotDeletionFailed(useTask);
         }
