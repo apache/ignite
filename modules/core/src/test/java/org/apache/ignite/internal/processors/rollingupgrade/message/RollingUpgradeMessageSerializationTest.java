@@ -20,21 +20,11 @@ package org.apache.ignite.internal.processors.rollingupgrade.message;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.MessagesPluginProvider;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.A;
@@ -43,58 +33,81 @@ import static org.apache.ignite.internal.processors.rollingupgrade.message.TestM
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.D;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.E;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.F;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.CONTAINER_MSG;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.CORE_MSG;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.DEFAULT_REGISTRY_MSG;
+import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessageType.PLUGIN_MSG;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgradeTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, String ver) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, ver);
-
-        cfg.setPluginProviders(org.apache.ignite.internal.util.typedef.F.concat(
-            cfg.getPluginProviders(),
-            new MessagesPluginProvider(
-                TestCoreMessage.class,
-                TestPluginMessage.class,
-                TestDefaultRegistryMessage.class))
-        );
-
-        return cfg;
+public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgradeMessageTest {
+    /** */
+    @Test
+    public void testSameOldVersion() throws Exception {
+        checkMutualCoreMessageSend("2.19.0", "2.19.0", A, B, C, D, null, null);
     }
 
     /** */
     @Test
-    public void testSameOldVersion() throws Exception {
-        checkMutualCoreMessageSend("2.19.0", "2.19.0", A, B, C, null, null, null);
+    public void testIntroducedField() throws Exception {
+        checkMutualCoreMessageSend("2.18.0", "2.19.0", A, B, C, null, null, null);
     }
 
     /** */
     @Test
     public void testMixedPair() throws Exception {
-        checkMutualCoreMessageSend("2.19.0", "2.20.0", A, B, C, null, null, null);
+        checkMutualCoreMessageSend("2.19.0", "2.20.0", A, B, C, D, null, null);
     }
 
     /** */
     @Test
     public void testSameNewVersion() throws Exception {
-        checkMutualCoreMessageSend("2.20.0", "2.20.0", A, B, C, D, E, null);
+        checkMutualCoreMessageSend("2.20.0", "2.20.0", A, null, null, null, E, null);
     }
 
     /** */
     @Test
-    public void testWindowOpenSameVersion() throws Exception {
-        checkMutualCoreMessageSend("2.19.2", "2.19.2", A, B, C, D, null, null);
+    public void testDeprecatedFieldEmptyAfterFinalization() throws Exception {
+        checkMutualCoreMessageSend("2.19.2", "2.19.2", A, B, null, D, null, null);
     }
 
     /** */
     @Test
-    public void testWindowOpenMixedPair() throws Exception {
-        checkMutualCoreMessageSend("2.19.2", "2.20.0", A, B, C, D, null, null);
+    public void testDeprecationUnknownToOlderPeer() throws Exception {
+        checkMutualCoreMessageSend("2.19.2", "2.20.0", A, B, null, D, null, null);
     }
 
     /** */
     @Test
-    public void testWindowClosed() throws Exception {
-        checkMutualCoreMessageSend("2.20.0", "2.20.1", A, null, C, null, E, null);
+    public void testDeprecationKnownToOlderPeer() throws Exception {
+        checkMutualCoreMessageSend("2.20.0", "2.20.1", A, null, null, null, E, null);
+    }
+
+    /** */
+    @Test
+    public void testDeprecatedFieldDropped() throws Exception {
+        checkMutualCoreMessageSend("2.20.0", "2.21.0", A, null, null, null, E, null);
+    }
+
+    /** */
+    @Test
+    public void testDeprecatedFieldDroppedNewFieldShared() throws Exception {
+        checkMutualCoreMessageSend("2.20.1", "2.21.0", A, null, null, null, E, F);
+    }
+
+    /** */
+    @Test
+    public void testBackportedFeature() throws Exception {
+        checkMutualCoreMessageSend("2.19.3", "2.20.1", A, B, null, D, null, F);
+    }
+
+    /** */
+    @Test
+    public void testNestedMessages() throws Exception {
+        startServerNodes("2.20.0", "2.21.0");
+
+        checkNestedMessages(grid(0), grid(1), A, null, null, null, E, null);
+        checkNestedMessages(grid(1), grid(0), A, null, null, null, E, null);
     }
 
     /** */
@@ -106,7 +119,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         startClientGrid(1, "2.20.0");
 
-        checkCoreMessageBroadcast(srv, A, B, C, null, null, null);
+        checkCoreMessageBroadcast(srv, A, B, C, D, null, null);
     }
 
     /** */
@@ -120,7 +133,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         startClientGrid(2, "2.19.0");
 
-        checkCoreMessageBroadcast(cli1, A, B, C, null, null, null);
+        checkCoreMessageBroadcast(cli1, A, B, C, D, null, null);
     }
 
     /** */
@@ -134,13 +147,38 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         upgradeNodeVersion(0, "2.20.0");
         upgradeNodeVersion(1, "2.20.0");
 
+        stopGrid(0);
+
         IgniteEx newVerCli = startClientGrid(2, "2.20.0");
         IgniteEx oldVerCli = startClientGrid(3, "2.19.0");
 
-        Map<String, TestCoreMessage> receivedMsgs = sendOverDiscovery(grid(1), TestCoreMessage.build());
+        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCli.name()));
-        assertFields(A, B, C, null, null, null, receivedMsgs.get(oldVerCli.name()));
+        assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerCli.name()));
+
+        checkMutualCoreMessageSend(newVerCli, oldVerCli, A, B, C, D, null, null);
+    }
+
+    /** */
+    @Test
+    public void testDiscoveryClientRouterChange() throws Exception {
+        IgniteEx oldVerSrv = startGrid(0, "2.19.0");
+
+        ru(oldVerSrv).enableVersionUpgrade();
+
+        IgniteEx cli = startClientGrid(1, "2.20.0");
+        IgniteEx newVerSrv = startGrid(2, "2.20.0");
+
+        assertEquals(oldVerSrv.localNode().id(), routerId(cli));
+
+        assertFields(A, B, C, D, null, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
+
+        stopGrid(0);
+
+        assertTrue(waitForCondition(() -> newVerSrv.localNode().id().equals(routerId(cli)), getTestTimeout()));
+
+        assertFields(A, B, C, D, E, null, sendOverDiscovery(newVerSrv, CORE_MSG).get(cli.name()));
     }
 
     /** */
@@ -152,7 +190,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         IgniteEx client = startClientGrid(1, "2.20.0");
 
-        checkMutualCoreMessageSend(srv, client, A, B, C, null, null, null);
+        checkMutualCoreMessageSend(srv, client, A, B, C, D, null, null);
     }
 
     /** */
@@ -160,7 +198,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testDefaultRegistryMixedPair() throws Exception {
         startServerNodes("2.19.0", "2.20.0");
 
-        checkMutualMessageSend(grid(0), grid(1), TestDefaultRegistryMessage::build, A, null, C, D, E, F);
+        checkMutualMessageSend(grid(0), grid(1), DEFAULT_REGISTRY_MSG, A, null, C, D, E, F);
     }
 
     /** */
@@ -170,7 +208,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(1, "2.20.0");
         startGrid(2, "2.20.0");
 
-        checkCoreMessageBroadcast(grid(1), A, B, C, D, E, null);
+        checkCoreMessageBroadcast(grid(1), A, null, null, null, E, null);
     }
 
     /** */
@@ -183,16 +221,36 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(1, "2.20.0");
         startGrid(2, "2.20.0");
 
-        checkCoreMessageBroadcast(grid(1), A, B, C, null, null, null);
+        checkCoreMessageBroadcast(grid(1), A, B, C, D, null, null);
     }
 
     /** */
     @Test
-    public void testCommunicationUpgradeOpensWindow() throws Exception {
+    public void testDiscoveryRingSendFromNewerNode() throws Exception {
+        startGrid(0, "2.19.0");
+
+        ru(0).enableVersionUpgrade();
+
+        IgniteEx newVerCrd = startGrid(1, "2.20.0");
+        IgniteEx oldVerSrv = startGrid(2, "2.19.0");
+
+        stopGrid(0);
+
+        IgniteEx newVerSrv = startGrid(3, "2.20.0");
+
+        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(newVerSrv, CORE_MSG);
+
+        assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCrd.name()));
+        assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerSrv.name()));
+    }
+
+    /** */
+    @Test
+    public void testDeprecatedFieldKeptUntilFinalization() throws Exception {
         startGrid(0, "2.19.0");
         startGrid(1, "2.19.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, null, null, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, null, null);
 
         ru(1).enableVersionUpgrade();
 
@@ -208,17 +266,17 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(0, "2.19.2");
         startGrid(1, "2.19.2");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, null, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, null, null);
 
         ru(1).enableVersionUpgrade();
 
         upgradeNodeVersion(0, "2.19.2", "2.20.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, null, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, null, null);
 
         upgradeNodeVersion(1, "2.19.2", "2.20.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, E, null);
     }
 
     /** */
@@ -226,9 +284,9 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPluginDiffersCoreMatches() throws Exception {
         startServerNodes("2.20.0 | 1.0.0", "2.20.0 | 2.0.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, null);
 
-        checkMutualMessageSend(grid(0), grid(1), TestPluginMessage::build, A, B, C, D, null, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, B, C, D, null, null);
     }
 
     /** */
@@ -236,47 +294,82 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPluginSameVersion() throws Exception {
         startServerNodes("2.20.0 | 2.0.0", "2.20.0 | 2.0.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, null);
 
-        checkMutualMessageSend(grid(0), grid(1), TestPluginMessage::build, A, B, C, D, E, null);
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, null, E, null);
     }
 
     /** */
     @Test
-    public void testPluginMissingOnClient() throws Exception {
-        IgniteEx srv = startGrid(0, "2.20.0 | 2.0.0");
+    public void testPluginDeprecatedFieldDropped() throws Exception {
+        startServerNodes("2.20.0 | 2.0.0", "2.20.0 | 3.0.0");
+
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, null, C, null, E, null);
+    }
+
+    /** */
+    @Test
+    public void testCoreAndPluginDiffer() throws Exception {
+        startServerNodes("2.19.2 | 1.0.0", "2.20.0 | 2.0.0");
+
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, null, null);
+
+        checkMutualMessageSend(grid(0), grid(1), PLUGIN_MSG, A, B, C, D, null, null);
+    }
+
+    /** */
+    @Test
+    public void testPluginWithoutFeaturesOnClient() throws Exception {
+        IgniteEx srv = startGrid(0, "2.20.0 | 1.1.0");
 
         ru(srv).enableVersionUpgrade();
 
-        IgniteEx cli = startClientGrid(1, "2.20.0");
+        IgniteEx cli = startClientGrid(1, "2.20.0 | 0.9.0");
 
-        checkMutualMessageSend(srv, cli, TestPluginMessage::build, A, B, C, null, null, null);
+        checkReceivedMessageFields(srv, cli, PLUGIN_MSG, A, null, C, null, null, null);
+        checkReceivedMessageFields(cli, srv, PLUGIN_MSG, A, B, C, null, null, null);
 
-        checkMutualCoreMessageSend(srv, cli, A, B, C, D, E, null);
+        checkMutualCoreMessageSend(srv, cli, A, null, null, null, E, null);
     }
 
     /** */
     @Test
     public void testWholeUpgradeProcess() throws Exception {
-        startGrid(0, "2.19.0");
-        startGrid(1, "2.19.0");
-        startClientGrid(2, "2.19.0");
+        startGrid(0, "2.18.0");
+        startGrid(1, "2.18.0");
+        startClientGrid(2, "2.18.0");
 
         checkMessagesTransmissionBetweenAllNodes(A, B, C, null, null, null);
 
         ru(1).enableVersionUpgrade();
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, null, null, null);
-
-        upgradeNodeVersion(0, "2.19.0", "2.19.2");
+        upgradeNodeVersion(0, "2.18.0", "2.19.0");
 
         checkMessagesTransmissionBetweenAllNodes(A, B, C, null, null, null);
 
-        upgradeNodeVersion(1, "2.19.0", "2.19.2");
+        upgradeNodeVersion(1, "2.18.0", "2.19.0");
 
         checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, null, null);
         checkMutualCoreMessageSend(grid(0), grid(2), A, B, C, null, null, null);
         checkMutualCoreMessageSend(grid(1), grid(2), A, B, C, null, null, null);
+
+        upgradeNodeVersion(2, "2.18.0", "2.19.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+
+        finalizeClusterVersion(0, "2.19.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+
+        ru(1).enableVersionUpgrade();
+
+        upgradeNodeVersion(0, "2.19.0", "2.19.2");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+
+        upgradeNodeVersion(1, "2.19.0", "2.19.2");
+
+        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
 
         upgradeNodeVersion(2, "2.19.0", "2.19.2");
 
@@ -284,49 +377,65 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         finalizeClusterVersion(0, "2.19.2");
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+        checkMessagesTransmissionBetweenAllNodes(A, B, null, D, null, null);
 
         ru(1).enableVersionUpgrade();
 
         upgradeNodeVersion(0, "2.19.2", "2.20.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, null, null);
+        checkMessagesTransmissionBetweenAllNodes(A, B, null, D, null, null);
 
         upgradeNodeVersion(1, "2.19.2", "2.20.0");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, E, null);
-        checkMutualCoreMessageSend(grid(0), grid(2), A, B, C, D, null, null);
-        checkMutualCoreMessageSend(grid(1), grid(2), A, B, C, D, null, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(2), A, B, null, D, null, null);
+        checkMutualCoreMessageSend(grid(1), grid(2), A, B, null, D, null, null);
 
         upgradeNodeVersion(2, "2.19.2", "2.20.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, E, null);
+        checkMessagesTransmissionBetweenAllNodes(A, B, null, D, E, null);
 
         finalizeClusterVersion(0, "2.20.0");
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, E, null);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, null);
 
         ru(1).enableVersionUpgrade();
 
         upgradeNodeVersion(0, "2.20.0", "2.20.1");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, null, C, null, E, null);
-        checkMutualCoreMessageSend(grid(0), grid(2), A, null, C, null, E, null);
-        checkMutualCoreMessageSend(grid(1), grid(2), A, B, C, D, E, null);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, null);
 
         upgradeNodeVersion(1, "2.20.0", "2.20.1");
 
-        checkMutualCoreMessageSend(grid(0), grid(1), A, B, C, D, E, F);
-        checkMutualCoreMessageSend(grid(0), grid(2), A, null, C, null, E, null);
-        checkMutualCoreMessageSend(grid(1), grid(2), A, null, C, null, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, F);
+        checkMutualCoreMessageSend(grid(0), grid(2), A, null, null, null, E, null);
+        checkMutualCoreMessageSend(grid(1), grid(2), A, null, null, null, E, null);
 
         upgradeNodeVersion(2, "2.20.0", "2.20.1");
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
 
         finalizeClusterVersion(0, "2.20.1");
 
-        checkMessagesTransmissionBetweenAllNodes(A, B, C, D, E, F);
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
+
+        ru(1).enableVersionUpgrade();
+
+        upgradeNodeVersion(0, "2.20.1", "2.21.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
+
+        upgradeNodeVersion(1, "2.20.1", "2.21.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
+
+        upgradeNodeVersion(2, "2.20.1", "2.21.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
+
+        finalizeClusterVersion(0, "2.21.0");
+
+        checkMessagesTransmissionBetweenAllNodes(A, null, null, null, E, F);
     }
 
     /** */
@@ -375,7 +484,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        checkMutualMessageSend(first, second, TestCoreMessage::build, expA, expB, expC, expD, expE, expF);
+        checkMutualMessageSend(first, second, CORE_MSG, expA, expB, expC, expD, expE, expF);
     }
 
     /** */
@@ -388,17 +497,17 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        Collection<TestCoreMessage> receivedMsgs = sendOverDiscovery(from, TestCoreMessage.build()).values();
+        Collection<TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(from, CORE_MSG).values();
 
-        for (TestCoreMessage msg : receivedMsgs)
-            assertFields(expA, expB, expC, expD, expE, expF, msg);
+        for (TestDiscoveryMessage rcvd : receivedMsgs)
+            assertFields(expA, expB, expC, expD, expE, expF, rcvd);
     }
 
     /** */
-    private <T extends DiscoveryCustomMessage & TestMessage> void checkMutualMessageSend(
+    private void checkMutualMessageSend(
         IgniteEx first,
         IgniteEx second,
-        Supplier<T> msgFactory,
+        TestMessageType msgType,
         String expA,
         String expB,
         String expC,
@@ -406,15 +515,15 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        checkReceivedMessageFields(first, second, msgFactory, expA, expB, expC, expD, expE, expF);
-        checkReceivedMessageFields(second, first, msgFactory, expA, expB, expC, expD, expE, expF);
+        checkReceivedMessageFields(first, second, msgType, expA, expB, expC, expD, expE, expF);
+        checkReceivedMessageFields(second, first, msgType, expA, expB, expC, expD, expE, expF);
     }
 
     /** */
-    private <T extends DiscoveryCustomMessage & TestMessage> void checkReceivedMessageFields(
+    private void checkReceivedMessageFields(
         IgniteEx from,
         IgniteEx to,
-        Supplier<T> msgFactory,
+        TestMessageType msgType,
         String expA,
         String expB,
         String expC,
@@ -422,72 +531,40 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        assertFields(expA, expB, expC, expD, expE, expF, send(from, to, msgFactory.get()));
+        assertFields(expA, expB, expC, expD, expE, expF, send(from, to, msgType));
 
-        assertFields(expA, expB, expC, expD, expE, expF, sendOverDiscovery(from, msgFactory.get()).get(to.name()));
+        assertFields(expA, expB, expC, expD, expE, expF, sendOverDiscovery(from, msgType).get(to.name()));
     }
 
     /** */
-    private <T extends Message & TestMessage> T send(IgniteEx from, IgniteEx to, T msg) throws Exception {
-        AtomicReference<T> got = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-
-        String topic = msg.getClass().getName();
-
-        to.context().io().addMessageListener(topic, (nodeId, rcvd, plc) -> {
-            got.set((T)rcvd);
-
-            latch.countDown();
-        });
-
-        ClusterNode rcvNode = from.context().discovery().node(to.localNode().id());
-
-        from.context().io().sendToCustomTopic(rcvNode, topic, msg, GridIoPolicy.PUBLIC_POOL);
-
-        assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        return got.get();
-    }
-
-    /** */
-    private <T extends DiscoveryCustomMessage & TestMessage> Map<String, T> sendOverDiscovery(
+    private void checkNestedMessages(
         IgniteEx from,
-        T msg
+        IgniteEx to,
+        String expA,
+        String expB,
+        String expC,
+        String expD,
+        String expE,
+        String expF
     ) throws Exception {
-        List<Ignite> clusterNodes = Ignition.allGrids();
+        List<TestMessage> receivedMsgs = List.of(
+            send(from, to, CONTAINER_MSG),
+            sendOverDiscovery(from, CONTAINER_MSG).get(to.name())
+        );
 
-        Map<String, T> receivedMsgs = new ConcurrentHashMap<>();
+        for (TestMessage rcvd : receivedMsgs) {
+            List<TestMessage> nestedMsgs = rcvd.nestedMessages();
 
-        CountDownLatch latch = new CountDownLatch(clusterNodes.size());
+            assertEquals(6, nestedMsgs.size());
 
-        for (Ignite rcv : clusterNodes) {
-            String name = rcv.name();
-
-            ((IgniteEx)rcv).context().discovery().setCustomEventListener((Class<T>)msg.getClass(),
-                (v, n, m) -> {
-                    receivedMsgs.put(name, m);
-
-                    latch.countDown();
-                });
+            for (TestMessage nestedMsg : nestedMsgs)
+                assertFields(expA, expB, expC, expD, expE, expF, nestedMsg);
         }
-
-        from.context().discovery().sendCustomEvent(msg);
-
-        assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        receivedMsgs.remove(from.name());
-
-        return receivedMsgs;
     }
 
     /** */
-    private void startServerNodes(String firstVer, String secondVer) throws Exception {
-        IgniteEx first = startGrid(0, firstVer);
-
-        if (!firstVer.equals(secondVer))
-            ru(first).enableVersionUpgrade();
-
-        startGrid(1, secondVer);
+    private static UUID routerId(IgniteEx cli) {
+        return ((TcpDiscoveryNode)cli.localNode()).clientRouterNodeId();
     }
 
     /** */

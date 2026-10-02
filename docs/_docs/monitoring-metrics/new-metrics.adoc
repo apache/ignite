@@ -108,7 +108,7 @@ Register name: `cache.{cache_name}.{near}`
 |CacheMisses | long | A miss is a get request that is not satisfied.
 |CachePuts | long | The total number of puts to the cache.
 |CacheRemovals | long | The total number of removals from the cache.
-|CacheSize | long | Local cache size.
+|CacheSize | long | Local cache size, the number of primary copies of entries on the node.
 |CacheTxCommits | long | Total number of transaction commits.
 |CacheTxRollbacks | long | Total number of transaction rollbacks.
 |CommitTime | histogram | Commit time in nanoseconds.

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
 /** */
-public class TestIgniteReleaseFeatures_2_19_0 {
+public class TestPluginReleaseFeatures_1_1_0 {
     /** */
-    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
+    public static final IgniteFeature VER_1_0_0_ID_0_FEATURE = new TestPluginFeature(0);
 
     /** */
-    public static final IgniteFeature VER_2_19_0_ID_1_FEATURE = new IgniteCoreFeature(1);
+    public static final IgniteFeature VER_1_1_0_ID_1_FEATURE = new TestPluginFeature(1);
 }
