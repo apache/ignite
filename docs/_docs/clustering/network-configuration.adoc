@@ -70,7 +70,7 @@ link:https://bugs.openjdk.java.net/browse/JDK-8219658[potential deadlocks with S
 as a side effect, this can prolong the detection of cluster node failures. Alternatively, update your JRE version to the
 one with the SSL issue fixed and adjust this setting accordingly. | `0`
 | `reconnectCount` | The number of times the node tries to (re)establish connection to another node. |`10`
-| `networkTimeout` |  The maximum network timeout in milliseconds for network operations. |`5000`
+| `networkTimeout` |  The maximum network timeout in milliseconds for network operations. It also bounds how long a joining node waits for its join to complete before it repeats the join; increase it for clusters that span data centers (see link:clustering/multi-data-center#join-timeout-across-data-centers[Multi Data Center Deployment]). This property is separate from `IgniteConfiguration.networkTimeout`, which does not affect discovery. |`5000`
 | `socketTimeout` |  The socket operations timeout. This timeout is used to limit connection time and write-to-socket time. |`5000`
 | `ackTimeout`| The acknowledgement timeout for discovery messages.
 If an acknowledgement is not received within this timeout, the discovery SPI tries to resend the message.  |  `5000`

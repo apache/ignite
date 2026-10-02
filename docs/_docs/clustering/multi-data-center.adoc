@@ -75,6 +75,31 @@ Client nodes also use the data center ID during discovery.
 If a client has a data center ID, it tries to connect through a server node from the same data center.
 If no server node from the same data center is available, the client connects through any available server node.
 
+=== Join Timeout Across Data Centers
+
+A joining server node waits for its join request to pass the whole discovery ring.
+The wait is bounded by `TcpDiscoverySpi.networkTimeout`, which is 5000 milliseconds by default.
+In a ring that spans data centers, every cross-data-center hop adds its round trip, so the join can take longer than that.
+The node then gives up, logs `Node has not been connected to topology and will repeat join process`, and sends
+its join request again, while the rest of the cluster may already be waiting for it in partition map exchange.
+
+This timeout is a property of `TcpDiscoverySpi` and is not affected by `IgniteConfiguration.networkTimeout`.
+Set it on the discovery SPI to a value that covers a full pass of the ring with your round trip between data centers:
+
+[source,java]
+----
+TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+
+discoverySpi.setNetworkTimeout(15000);
+
+IgniteConfiguration cfg = new IgniteConfiguration();
+
+cfg.setDiscoverySpi(discoverySpi);
+----
+
+Keep the IP finder addresses precise as well: a repeated join tries the configured addresses one by one, so a long list
+of addresses where no node runs (for example, wide port ranges) makes each retry slower.
+
 == Cache Topology Validation
 
 Use `MdcTopologyValidator` to protect caches from updates when the visible topology does not contain enough data centers.
