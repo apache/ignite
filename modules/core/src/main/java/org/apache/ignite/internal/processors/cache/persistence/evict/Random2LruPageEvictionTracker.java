@@ -123,7 +123,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage() throws IgniteCheckedException {
+    @Override public boolean evictDataPage(boolean tryLock) throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -161,7 +161,11 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         firstTs = first(trackingData);
 
-                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
+                        // Under concurrent writes a fragment chain may be partially built (a concurrent writer
+                        // has not yet linked the head page), so after two hops the timestamp can still be
+                        // negative. Skip this sample and try another page.
+                        if (firstTs < 0)
+                            continue;
                     }
                 }
 
@@ -187,17 +191,19 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
                     LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
 
-                    return;
+                    return false;
                 }
             }
 
-            if (evictDataPage(pageIdx(lruTrackingIdx)))
-                return;
+            if (evictDataPage(pageIdx(lruTrackingIdx), tryLock))
+                return true;
 
             evictAttemptsCnt++;
         }
 
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+
+        return false;
     }
 
     /** {@inheritDoc} */
