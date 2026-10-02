@@ -67,10 +67,7 @@ public class FailureProcessorMetricsTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /**
-     * Tests that per-type ignored failures count metrics start at zero and are incremented per each suppressed
-     * failure of the matching type, while processed (not ignored) failures do not affect any counter.
-     */
+    /** */
     @Test
     public void testPerTypeIgnoredFailuresCountMetrics() throws Exception {
         ignoredTypes = Set.of(SYSTEM_CRITICAL_OPERATION_TIMEOUT, SYSTEM_WORKER_BLOCKED);
@@ -88,7 +85,6 @@ public class FailureProcessorMetricsTest extends GridCommonAbstractTest {
         assertEquals(1, criticalTimeoutCnt.value());
         assertEquals(0, workerBlockedCnt.value());
 
-        // A processed (not ignored) failure must not affect any ignored counter.
         ignite.context().failure().process(new FailureContext(SEGMENTATION, new Throwable(ERR_MSG)));
 
         assertEquals(1, criticalTimeoutCnt.value());
@@ -105,7 +101,7 @@ public class FailureProcessorMetricsTest extends GridCommonAbstractTest {
         assertEquals(1, workerBlockedCnt.value());
     }
 
-    /** Tests that no {@code failure.ignored.*} metrics are registered when the handler ignores no failure types. */
+    /** */
     @Test
     public void testNoMetricsRegisteredWhenNothingIgnored() throws Exception {
         ignoredTypes = Collections.emptySet();

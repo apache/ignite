@@ -207,10 +207,7 @@ public class FailureProcessor extends GridProcessorAdapter {
             return false;
 
         if (failureTypeIgnored(failureCtx, hnd)) {
-            AtomicLongMetric m = ignoredFailuresCntMetrics.get(failureCtx.type());
-
-            if (m != null)
-                m.increment();
+            ignoredFailuresCntMetrics.get(failureCtx.type()).increment();
 
             U.quietAndWarn(ignite.log(), IGNORED_FAILURE_LOG_MSG +
                 "[hnd=" + hnd + ", failureCtx=" + failureCtx + ']', failureCtx.error());
