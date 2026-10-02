@@ -16,10 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.FunctionParameter;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 
 /** Function parameter that exposes its SQL type to validation. */
 class IgniteFunctionParameter implements FunctionParameter {
@@ -44,7 +46,10 @@ class IgniteFunctionParameter implements FunctionParameter {
     /** {@inheritDoc} */
     @Override public RelDataType getType(RelDataTypeFactory typeFactory) {
         // Normalize UDF metadata without losing Java types used to convert query results.
-        return ((JavaTypeFactory)typeFactory).toSql(delegate.getType(typeFactory));
+        RelDataType type = IgniteTypeFactory.toSql(typeFactory, delegate.getType(typeFactory));
+
+        // Use Ignite's generic type to support arbitrary values and prevent inferring a record from a Java object.
+        return type.getSqlTypeName() == SqlTypeName.OTHER ? new OtherType(type.isNullable()) : type;
     }
 
     /** {@inheritDoc} */

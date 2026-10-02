@@ -17,62 +17,47 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.message;
 
+import java.util.function.Predicate;
 import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_1;
-import org.apache.ignite.lang.IgniteUuid;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_3;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_3.VER_2_19_2_ID_2_FEATURE;
 
 /** */
-@FeatureGated(registry = TestIgniteReleaseFeatures_2_20_1.class)
-public class TestCoreMessage extends DiscoveryCustomMessage implements TestMessage {
+@FeatureGated(registry = TestIgniteReleaseFeatures_2_19_3.class)
+public class TestCoreMessage_2_19_3 extends TestDiscoveryMessage {
     /** */
     @Order(0)
     String fldA;
 
     /** */
-    @Order(value = 1, deprecatedBy = "VER_2_20_0_ID_3_FEATURE")
+    @Order(1)
     String fldB;
 
     /** */
-    @Order(2)
+    @Order(value = 2, deprecatedBy = "VER_2_19_2_ID_2_FEATURE")
     String fldC;
 
     /** */
-    @Order(value = 3, introducedBy = "VER_2_19_2_ID_1_FEATURE", deprecatedBy = "VER_2_20_0_ID_3_FEATURE")
+    @Order(value = 3, introducedBy = "VER_2_19_0_ID_1_FEATURE")
     String fldD;
 
     /** */
-    @Order(value = 4, introducedBy = "VER_2_20_0_ID_3_FEATURE")
-    String fldE;
-
-    /** */
-    @Order(value = 5, introducedBy = "VER_2_20_1_ID_6_FEATURE")
+    @Order(value = 4, introducedBy = "VER_2_19_3_ID_6_FEATURE")
     String fldF;
 
-    /** */
-    public TestCoreMessage() {
-        super(IgniteUuid.randomUuid());
-    }
-
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        return null;
-    }
+    @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fldA = A;
+        fldB = B;
 
-    /** */
-    public static TestCoreMessage build() {
-        TestCoreMessage msg = new TestCoreMessage();
+        if (!featureStatusProvider.test(VER_2_19_2_ID_2_FEATURE))
+            fldC = C;
 
-        msg.fldA = A;
-        msg.fldB = B;
-        msg.fldC = C;
-        msg.fldD = D;
-        msg.fldE = E;
-        msg.fldF = F;
-
-        return msg;
+        fldD = D;
+        fldF = F;
     }
 
     /** {@inheritDoc} */
@@ -93,11 +78,6 @@ public class TestCoreMessage extends DiscoveryCustomMessage implements TestMessa
     /** {@inheritDoc} */
     @Override public String fldD() {
         return fldD;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String fldE() {
-        return fldE;
     }
 
     /** {@inheritDoc} */
