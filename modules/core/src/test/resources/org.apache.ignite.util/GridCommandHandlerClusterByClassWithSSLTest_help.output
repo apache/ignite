@@ -470,6 +470,12 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       --interval interval          - Interval between samples (millis, 10 to 60000, 100 by default).
       --payload-size payload_size  - Payload size (bytes, max 64 KiB, 100 by default).
 
+  Reload TLS certificates on all cluster nodes by re-reading the configured key and trust stores. New connections use the updated certificates while established sessions are not interrupted:
+    control.(sh|bat) --ssl reload [--dry-run] [--yes]
+
+    Parameters:
+      --dry-run  - Report whether the certificates on disk can be used, without putting them in use.
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

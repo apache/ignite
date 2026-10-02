@@ -14,20 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
- * Integration tests for Grid REST functionality; Jetty is under the hood.
+ * Internal SSL support shared by the node transports.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    RestProcessorAuthorizationTest.class,
-    RestSetupSimpleTest.class,
-    IgniteRestExtensionTest.class,
-    JettySslContextReloadTest.class
-})
-public class GridRestSuite {
-}
+package org.apache.ignite.internal.ssl;

@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.nio.ByteOrder;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -71,7 +72,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .sendQueueLimit(0)
             .filters(
                 new GridNioCodecFilter(parser, log, false),
-                new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), log, null, null));
+                new GridNioSslFilter(new SslContextProvider(() -> sslCtx), true, ByteOrder.nativeOrder(), log, null, null));
     }
 
     /** {@inheritDoc} */
