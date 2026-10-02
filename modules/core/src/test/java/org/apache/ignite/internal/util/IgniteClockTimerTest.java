@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -25,9 +26,6 @@ import org.junit.Test;
  * Tests that {@link U#currentTimeMillis()} keeps being updated when the test clock is used.
  */
 public class IgniteClockTimerTest extends GridCommonAbstractTest {
-    /** Name prefix of the internal clock timer thread started by {@link IgniteUtils#onGridStart(String)}. */
-    private static final String INTERNAL_CLOCK_THREAD_PREFIX = "ignite-clock-#";
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -56,7 +54,8 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
 
     /**
      * Emulates a node left running by a previous test before the test clock was started
-     * (see IGNITE-29084): stopping such a node must not leave {@link U#currentTimeMillis()} frozen.
+     * (see IGNITE-29084): such a node must neither override the mocked time while it is alive
+     * nor leave {@link U#currentTimeMillis()} frozen after it is stopped.
      *
      * @throws Exception If failed.
      */
@@ -72,12 +71,27 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
 
             assertTrue(internalClockRunning());
 
-            // The same steps GridAbstractTest performs on class initialization.
+            // GridAbstractTest starts the test clock on class initialization regardless of running nodes.
             assertTrue(GridTestClockTimer.startTestTimer());
 
-            new GridTestClockTimer();
+            IgniteUtils.useExternalClock();
 
             assertFalse(internalClockRunning());
+
+            // The mocked time must not be overridden by the internal clock timer of the leaked node.
+            long mockedTime = U.currentTimeMillis();
+
+            GridTestClockTimer.timeSupplier(() -> mockedTime);
+
+            try {
+                // Several periods of the internal clock timer.
+                doSleep(100);
+
+                assertEquals(mockedTime, U.currentTimeMillis());
+            }
+            finally {
+                GridTestClockTimer.timeSupplier(GridTestClockTimer.DFLT_TIME_SUPPLIER);
+            }
 
             // Stopping the leaked node must not affect the time updates.
             stopAllGrids();
@@ -97,11 +111,12 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return {@code True} if the internal clock timer thread is running.
+     * @return {@code True} if the internal clock timer is running.
      */
     private static boolean internalClockRunning() {
-        return Thread.getAllStackTraces().keySet().stream()
-            .anyMatch(t -> t.isAlive() && t.getName().startsWith(INTERNAL_CLOCK_THREAD_PREFIX));
+        synchronized (IgniteUtils.mux) {
+            return GridTestUtils.getFieldValue(CommonUtils.class, "timer") != null;
+        }
     }
 
     /**

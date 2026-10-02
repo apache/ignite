@@ -41,10 +41,10 @@ public class GridTestClockTimer implements Runnable {
             // and prevents it from being started on subsequent grid starts.
             IgniteUtils.useExternalClock();
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignored) {
+            // The internal clock timer is already interrupted and will stop shortly. Do not throw: this constructor
+            // is called from GridAbstractTest static initializer, and a failure there breaks all subsequent tests.
             Thread.currentThread().interrupt();
-
-            throw new IllegalStateException("Interrupted while switching to the test clock.", e);
         }
     }
 
