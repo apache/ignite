@@ -118,9 +118,9 @@ class MdcMajorityPartitionTest(IgniteTest):
 
             net.disable_network_partitions(*cut)
 
-            # The isolated DC may be the one the others discovered through, in which case the
-            # shared ip finder holds only its own addresses and a restart would seed it off
-            # itself. Point discovery at every DC so it rejoins the majority ring either way.
+            # DC1 is the DC the others discovered through, so the shared ip finder holds only
+            # its own addresses and a restart would seed it off itself. Point discovery at
+            # every DC so the isolated DC rejoins the majority ring.
             mdc.sync_service_discovery()
 
             # Split-brain does not self-heal: the read-only segment rejoins via restart.
