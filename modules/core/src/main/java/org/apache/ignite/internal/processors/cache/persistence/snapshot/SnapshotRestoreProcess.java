@@ -660,7 +660,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             if (snpMgr.isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
-                throw new IgniteException(OP_REJECT_MSG + "A snapshot '" + req.snapshotName() +
+                throw new IgniteCheckedException(OP_REJECT_MSG + "A snapshot '" + req.snapshotName() +
                     "' delete operation is in progress.");
             }
 
