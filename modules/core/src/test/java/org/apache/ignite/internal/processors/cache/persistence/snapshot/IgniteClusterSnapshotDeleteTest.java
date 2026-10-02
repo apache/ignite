@@ -37,6 +37,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -233,7 +234,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             assertEquals(2, res.completedNodes().size());
         }
         finally {
-            if (pathRef.get() != null && pathRef.get() != null)
+            if (pathRef.get() != null && prevPerms.get() != null)
                 Files.setPosixFilePermissions(pathRef.get(), prevPerms.get());
         }
     }
@@ -567,7 +568,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         if (incremental)
             addIncrementalSnapshot(null);
 
-        IgniteFuture<SnapshotDeleteProcessResult> delFut = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null);
 
         assertTrue(beginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
@@ -636,8 +637,8 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         commSpi1.blockMessages((node, msg) ->
             msg instanceof SingleNodeMessage<?> msg0 && msg0.type() == DELETE_SNAPSHOT.ordinal());
 
-        IgniteFuture<SnapshotDeleteProcessResult> delFut0 = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
-        IgniteFuture<SnapshotDeleteProcessResult> delFut1 = snp(grid(1)).deleteSnapshot(secondSnpName, secondSnpPath);
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut0 = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut1 = snp(grid(1)).deleteSnapshot(secondSnpName, secondSnpPath);
 
         commSpi1.waitForBlocked(2, getTestTimeout());
 
@@ -699,7 +700,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
             F.asList(START_SNAPSHOT, END_SNAPSHOT),
             false,
             () -> {
-                snp(grid(0)).deleteSnapshot(firstOpSnpName, null).get(getTestTimeout());
+                new IgniteFutureImpl<>(snp(grid(0)).deleteSnapshot(firstOpSnpName, null)).get(getTestTimeout());
 
                 if (incremental)
                     snp(grid(0)).createSnapshot(firstOpSnpName).get(getTestTimeout());
