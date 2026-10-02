@@ -30,8 +30,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
- * Cuts one DC off the cluster: the side the topology validator lets write keeps writing, the cut-off DC only reads,
- * and after the cut-off DC restarts every DC holds the same data. Also splits three DCs three ways, where no side
+ * Cuts one DC off the cluster: the segment the topology validator lets write keeps writing, the cut-off DC only reads,
+ * and after the cut-off DC restarts every DC holds the same data. Also splits three DCs three ways, where no segment
  * writes.
  */
 public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
@@ -58,7 +58,7 @@ public class MdcDcIsolationTest extends MdcTopologySplitAbstractTest {
         checkIsolation(Arrays.asList(DC1, DC2, DC3), majorityValidator(DC1, DC2, DC3), DC1, DC2);
     }
 
-    /** Three DCs with majority validation split three ways: no side writes, every side reads. */
+    /** Three DCs with majority validation split three ways: no segment writes, every segment reads. */
     @Test
     public void testThreeWaySplit() throws Exception {
         dcs = Arrays.asList(DC1, DC2, DC3);

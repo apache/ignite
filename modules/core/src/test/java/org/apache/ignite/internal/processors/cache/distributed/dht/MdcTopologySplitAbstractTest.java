@@ -62,14 +62,14 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  * <p>The cluster has {@link #serversPerDc()} servers and one client in each DC of {@link #dataCenters()}.
  * Servers {@code 0 .. dcs * serversPerDc - 1} go DC by DC; the client of DC {@code i} has index
- * {@code dcs * serversPerDc + i}. A client knows only the servers of its own DC, so it stays on its DC's side of
- * a split.</p>
+ * {@code dcs * serversPerDc + i}. A client knows only the servers of its own DC, so it stays in its DC's segment
+ * of a split.</p>
  *
  * <p>{@link #split(String...)} cuts the given DCs off from the rest, and {@link #splitInto(List)} splits the DCs into
- * any number of sides: discovery connections between sides fail, and communication messages between them are held.
- * Either then waits, with a timeout, until every node sees exactly its own side. {@link #heal(String...)} drops the
- * held messages (delivering them would replay one side's view on another) and restarts the given DCs, which then
- * join the cluster again. Subclasses can hold more messages while the cluster is split through
+ * any number of segments: discovery connections between segments fail, and communication messages between them are
+ * held. Either then waits, with a timeout, until every node sees exactly its own segment. {@link #heal(String...)}
+ * drops the held messages (delivering them would replay one segment's view on another) and restarts the given DCs,
+ * which then join the cluster again. Subclasses can hold more messages while the cluster is split through
  * {@link #blockMessage(ClusterNode, ClusterNode, Message)}.</p>
  *
  * <p>Unlike {@link IgniteCacheTopologySplitAbstractTest#splitAndWait()}, nothing here waits for one exact topology
@@ -85,7 +85,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     /** */
     protected static final String DC3 = "DC3";
 
-    /** Time for the sides of a split to see only themselves, and for a healed cluster to become whole. */
+    /** Time for the segments of a split to see only themselves, and for a healed cluster to become whole. */
     protected static final long TOPOLOGY_TIMEOUT = 30_000;
 
     /** */
@@ -94,8 +94,11 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     /** Message of the exception a write gets when the topology validator rejects it. */
     private static final String VALIDATOR_REJECTION = "cache topology is not valid";
 
-    /** Side of each DC in the current split, numbered from 0; empty when the cluster is whole. */
-    private volatile Map<String, Integer> sideOfDc = Collections.emptyMap();
+    /**
+     * Segment number of each DC in the current split, from 0: DCs with the same number are in one segment. Empty
+     * when the cluster is whole.
+     */
+    private volatile Map<String, Integer> segmentNumByDc = Collections.emptyMap();
 
     /** @return DCs of the cluster, in the order their servers are numbered. */
     protected abstract List<String> dataCenters();
@@ -134,7 +137,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        sideOfDc = Collections.emptyMap();
+        segmentNumByDc = Collections.emptyMap();
 
         stopAllGrids();
 
@@ -156,7 +159,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     }
 
     /**
-     * Cuts the given DCs off from the rest of the cluster and waits until each side sees only itself.
+     * Cuts the given DCs off from the rest of the cluster and waits until each segment sees only itself.
      *
      * @param dcs DCs to cut off.
      */
@@ -171,40 +174,40 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     }
 
     /**
-     * Splits the DCs into the given sides and waits until each side sees only itself.
+     * Splits the DCs into the given segments and waits until each segment sees only itself.
      *
-     * @param sides Sides of the split: two at least, together holding every DC exactly once.
+     * @param segments Segments of the split: two at least, together holding every DC exactly once.
      */
-    protected void splitInto(List<List<String>> sides) throws Exception {
-        assertTrue("Cluster is split already: " + sideOfDc, sideOfDc.isEmpty());
-        assertTrue("A split needs two sides at least: " + sides, sides.size() >= 2);
+    protected void splitInto(List<List<String>> segments) throws Exception {
+        assertTrue("Cluster is split already: " + segmentNumByDc, segmentNumByDc.isEmpty());
+        assertTrue("A split needs two segments at least: " + segments, segments.size() >= 2);
 
         Map<String, Integer> split = new HashMap<>();
 
-        for (int side = 0; side < sides.size(); side++) {
-            assertFalse("Every side must have a DC: " + sides, sides.get(side).isEmpty());
+        for (int seg = 0; seg < segments.size(); seg++) {
+            assertFalse("Every segment must have a DC: " + segments, segments.get(seg).isEmpty());
 
-            for (String dc : sides.get(side)) {
+            for (String dc : segments.get(seg)) {
                 assertTrue("Unknown DC: " + dc, dataCenters().contains(dc));
-                assertNull("DC is listed twice: " + dc, split.put(dc, side));
+                assertNull("DC is listed twice: " + dc, split.put(dc, seg));
             }
         }
 
-        assertEquals("Every DC must be on a side: " + sides, dataCenters().size(), split.size());
+        assertEquals("Every DC must be in a segment: " + segments, dataCenters().size(), split.size());
 
-        log.info(">>> Splitting DCs into " + sides);
+        log.info(">>> Splitting DCs into " + segments);
 
-        Map<String, Integer> sideMap = Collections.unmodifiableMap(split);
+        Map<String, Integer> segmentMap = Collections.unmodifiableMap(split);
 
         // Hold communication first, then cut discovery: no message crosses the split once any node sees it.
         for (Ignite ignite : G.allGrids())
-            communication(ignite).blockMessages(new MdcSplitBlocker(ignite.cluster().localNode(), sideMap));
+            communication(ignite).blockMessages(new MdcSplitBlocker(ignite.cluster().localNode(), segmentMap));
 
-        sideOfDc = sideMap;
+        segmentNumByDc = segmentMap;
 
         long start = System.nanoTime();
 
-        awaitSidesSeeThemselves();
+        awaitSegmentsSeeThemselves();
 
         log.info(">>> Split done in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + " ms");
     }
@@ -212,13 +215,13 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     /**
      * Restarts every node of the given DCs and waits until the cluster is whole again. Every held message is
      * dropped and every message filter is removed, including those added by {@link #blockMessage}. The given DCs
-     * must be whole sides of the split, every side but one, normally the sides that lost writes: they rejoin the
-     * remaining side and rebalance from it. The sides form separate rings, which never merge on their own.
+     * must be whole segments of the split, every segment but one, normally the segments that lost writes: they rejoin
+     * the remaining segment and rebalance from it. The segments form separate rings, which never merge on their own.
      *
      * @param restartDcs DCs to restart.
      */
     protected void heal(String... restartDcs) throws Exception {
-        Map<String, Integer> split = sideOfDc;
+        Map<String, Integer> split = segmentNumByDc;
 
         assertFalse("Cluster is not split", split.isEmpty());
 
@@ -231,11 +234,11 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
                 kept.add(e.getValue());
         }
 
-        boolean wholeSides = split.keySet().containsAll(restartSet)
+        boolean wholeSegments = split.keySet().containsAll(restartSet)
             && restartSet.stream().noneMatch(dc -> kept.contains(split.get(dc)));
 
-        assertTrue("DCs to restart must be whole sides of the split " + split + ", every side but one: " +
-            restartSet, wholeSides && kept.size() == 1);
+        assertTrue("DCs to restart must be whole segments of the split " + split + ", every segment but one: " +
+            restartSet, wholeSegments && kept.size() == 1);
 
         log.info(">>> Healing the split, restarting DCs " + Arrays.toString(restartDcs));
 
@@ -252,7 +255,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
         for (int idx : restart)
             stopGrid(idx, true);
 
-        sideOfDc = Collections.emptyMap();
+        segmentNumByDc = Collections.emptyMap();
 
         for (Ignite ignite : G.allGrids())
             communication(ignite).stopBlock(false);
@@ -304,7 +307,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
     /**
      * @param dcs Every DC of the cluster.
-     * @return Validator that lets a side write while it sees a majority of the DCs.
+     * @return Validator that lets a segment write while it sees a majority of the DCs.
      */
     protected static MdcTopologyValidator majorityValidator(String... dcs) {
         MdcTopologyValidator validator = new MdcTopologyValidator();
@@ -316,7 +319,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
     /**
      * @param mainDc Main DC.
-     * @return Validator that lets a side write while it sees the main DC.
+     * @return Validator that lets a segment write while it sees the main DC.
      */
     protected static MdcTopologyValidator mainDcValidator(String mainDc) {
         MdcTopologyValidator validator = new MdcTopologyValidator();
@@ -425,7 +428,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
 
     /** {@inheritDoc} */
     @Override protected boolean segmented() {
-        return !sideOfDc.isEmpty();
+        return !segmentNumByDc.isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -437,35 +440,35 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
     /**
      * @param dc1 DC.
      * @param dc2 DC.
-     * @return {@code True} if the DCs are on different sides of the current split.
+     * @return {@code True} if the DCs are in different segments of the current split.
      */
-    private boolean acrossSplit(String dc1, String dc2) {
-        Map<String, Integer> split = sideOfDc;
+    private boolean dcsAreInDifferentSegments(String dc1, String dc2) {
+        Map<String, Integer> split = segmentNumByDc;
 
         return !split.isEmpty() && !split.get(dc1).equals(split.get(dc2));
     }
 
     /** {@inheritDoc} */
     @Override protected int segment(ClusterNode node) {
-        // Side of the node in the current split, or 0 when the cluster is whole. There can be more than the
-        // template's two sides: its splitAndWait(), which expects two, is not used.
-        return sideOfDc.getOrDefault(node.dataCenterId(), 0);
+        // Segment of the node in the current split, or 0 when the cluster is whole. There can be more than the
+        // template's two segments: its splitAndWait(), which expects two, is not used.
+        return segmentNumByDc.getOrDefault(node.dataCenterId(), 0);
     }
 
-    /** Waits until every node sees exactly the nodes of its own side, and its last exchange is done. */
-    private void awaitSidesSeeThemselves() throws Exception {
-        Map<Integer, Set<UUID>> sides = new HashMap<>();
+    /** Waits until every node sees exactly the nodes of its own segment, and its last exchange is done. */
+    private void awaitSegmentsSeeThemselves() throws Exception {
+        Map<Integer, Set<UUID>> segments = new HashMap<>();
 
         for (Ignite ignite : G.allGrids()) {
             ClusterNode node = ignite.cluster().localNode();
 
-            sides.computeIfAbsent(segment(node), s -> new HashSet<>()).add(node.id());
+            segments.computeIfAbsent(segment(node), s -> new HashSet<>()).add(node.id());
         }
 
         boolean done = GridTestUtils.waitForCondition(() -> G.allGrids().stream().allMatch(ignite -> {
             Set<UUID> seen = ignite.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet());
 
-            if (!seen.equals(sides.get(segment(ignite.cluster().localNode()))))
+            if (!seen.equals(segments.get(segment(ignite.cluster().localNode()))))
                 return false;
 
             GridDhtPartitionsExchangeFuture exchFut =
@@ -475,7 +478,8 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
                 && exchFut.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion();
         }), TOPOLOGY_TIMEOUT);
 
-        assertTrue("Sides of the split did not separate within " + TOPOLOGY_TIMEOUT + " ms: " + topologyViews(), done);
+        assertTrue("Segments of the split did not separate within " + TOPOLOGY_TIMEOUT + " ms: " + topologyViews(),
+            done);
     }
 
     /** @return What each node sees, for failure messages. */
@@ -557,7 +561,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
         return (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
     }
 
-    /** Holds communication messages between the sides of a split, and those {@link #blockMessage} picks. */
+    /** Holds communication messages between the segments of a split, and those {@link #blockMessage} picks. */
     private class MdcSplitBlocker implements IgniteBiPredicate<ClusterNode, Message> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -565,28 +569,28 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
         /** Local node. */
         private final ClusterNode locNode;
 
-        /** Side of each DC in the split. */
-        private final Map<String, Integer> sideOfDc;
+        /** Segment number of each DC in the split. */
+        private final Map<String, Integer> segmentNumByDc;
 
         /**
          * @param locNode Local node.
-         * @param sideOfDc Side of each DC in the split.
+         * @param segmentNumByDc Segment number of each DC in the split.
          */
-        MdcSplitBlocker(ClusterNode locNode, Map<String, Integer> sideOfDc) {
+        MdcSplitBlocker(ClusterNode locNode, Map<String, Integer> segmentNumByDc) {
             this.locNode = locNode;
-            this.sideOfDc = sideOfDc;
+            this.segmentNumByDc = segmentNumByDc;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node, Message msg) {
-            return !sideOfDc.get(locNode.dataCenterId()).equals(sideOfDc.get(node.dataCenterId()))
+            return !segmentNumByDc.get(locNode.dataCenterId()).equals(segmentNumByDc.get(node.dataCenterId()))
                 || blockMessage(locNode, node, msg);
         }
     }
 
     /**
-     * Discovery SPI that fails connections from its node to servers on the other side of the current split.
-     * The side is taken from the node's DC, not from its local port: a client has no port of its own.
+     * Discovery SPI that fails connections from its node to servers in another segment of the current split.
+     * The segment is taken from the node's DC, not from its local port: a client has no port of its own.
      */
     private class MdcSplitDiscoverySpi extends SplitTcpDiscoverySpi {
         /** DC of the local node. */
@@ -601,7 +605,7 @@ public abstract class MdcTopologySplitAbstractTest extends IgniteCacheTopologySp
         @Override protected boolean segmented(InetSocketAddress sockAddr) {
             String rmtDc = dataCenterOfPort(sockAddr.getPort());
 
-            return rmtDc != null && acrossSplit(dc, rmtDc);
+            return rmtDc != null && dcsAreInDifferentSegments(dc, rmtDc);
         }
     }
 }
