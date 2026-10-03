@@ -222,7 +222,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         assertTrue(workDir.exists());
 
-        caseInsensetiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
+        caseInsensitiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
             new File(workDir.getAbsolutePath().toUpperCase()).exists();
     }
 
