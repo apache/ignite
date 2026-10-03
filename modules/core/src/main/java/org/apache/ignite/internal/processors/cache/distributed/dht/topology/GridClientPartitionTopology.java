@@ -681,15 +681,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return nodes(p, AffinityTopologyVersion.NONE, MOVING, null);
     }
 
-    /**
-     * @param p Partition.
-     * @param topVer Topology version.
-     * @return List of nodes in state OWNING or MOVING.
-     */
-    private List<ClusterNode> ownersAndMoving(int p, AffinityTopologyVersion topVer) {
-        return nodes(p, topVer, OWNING, MOVING_STATES);
-    }
-
     /** {@inheritDoc} */
     @Override public long updateSequence() {
         return updateSeq.get();

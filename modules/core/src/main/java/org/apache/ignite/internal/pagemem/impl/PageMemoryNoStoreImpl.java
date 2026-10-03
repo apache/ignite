@@ -397,23 +397,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return pageSize();
     }
 
-    /**
-     * @return Next index.
-     */
-    private int nextRoundRobinIndex() {
-        while (true) {
-            int idx = selector.get();
-
-            int nextIdx = idx + 1;
-
-            if (nextIdx >= segments.length)
-                nextIdx = 0;
-
-            if (selector.compareAndSet(idx, nextIdx))
-                return nextIdx;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public long loadedPages() {
         return allocatedPages.get();
