@@ -657,7 +657,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
         // Doesn't matter here.
         assumeFalse(onlyPrimary || incremental);
 
-        String snapshotName = caseInsensetiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
 
         doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true),
