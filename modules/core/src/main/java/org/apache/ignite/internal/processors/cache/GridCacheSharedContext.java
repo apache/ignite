@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -141,6 +143,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
+
+    /** Copy-on-write snapshot of {@link #ctxMap} to look up a context by primitive cache ID without boxing. */
+    private volatile IntMap<GridCacheContext<K, V>> ctxById = new IntHashMap<>();
 
     /** Tx metrics. */
     private final TransactionMetricsAdapter txMetrics;
@@ -557,6 +562,19 @@ public class GridCacheSharedContext<K, V> {
             locStoreCnt.incrementAndGet();
 
         ctxMap.put(cacheCtx.cacheId(), cacheCtx);
+
+        updateContextsSnapshot();
+    }
+
+    /** Rebuilds {@link #ctxById} from {@link #ctxMap}. */
+    private void updateContextsSnapshot() {
+        synchronized (ctxMap) {
+            IntMap<GridCacheContext<K, V>> ctxById0 = new IntHashMap<>(ctxMap.size());
+
+            ctxMap.forEach(ctxById0::put);
+
+            ctxById = ctxById0;
+        }
     }
 
     /**
@@ -566,6 +584,8 @@ public class GridCacheSharedContext<K, V> {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
+
+        updateContextsSnapshot();
 
         CacheStoreManager mgr = cacheCtx.store();
 
@@ -600,7 +620,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Cache context.
      */
     public GridCacheContext<K, V> cacheContext(int cacheId) {
-        return ctxMap.get(cacheId);
+        return ctxById.get(cacheId);
     }
 
     /**
@@ -609,7 +629,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheId Cache id.
      */
     @Nullable public CacheObjectContext cacheObjectContext(int cacheId) throws IgniteCheckedException {
-        GridCacheContext<K, V> ctx = ctxMap.get(cacheId);
+        GridCacheContext<K, V> ctx = ctxById.get(cacheId);
 
         if (ctx != null)
             return ctx.cacheObjectContext();

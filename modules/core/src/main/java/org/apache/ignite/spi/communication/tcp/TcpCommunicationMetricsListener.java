@@ -117,7 +117,7 @@ public class TcpCommunicationMetricsListener {
     private final Object msgTypeMapMux = new Object();
 
     /** Message type map. */
-    private volatile Map<Short, String> msgTypeMap;
+    private volatile IntMap<String> msgTypeMap;
 
     /**
      * @param ignite Ignite instance.
@@ -341,7 +341,7 @@ public class TcpCommunicationMetricsListener {
             if (metric.name().startsWith(prefix)) {
                 short directType = Short.parseShort(metric.name().substring(prefix.length()));
 
-                Map<Short, String> msgTypeMap0 = msgTypeMap;
+                IntMap<String> msgTypeMap0 = msgTypeMap;
 
                 if (msgTypeMap0 != null) {
                     String typeName = msgTypeMap0.get(directType);
@@ -430,25 +430,19 @@ public class TcpCommunicationMetricsListener {
     private void updateMessageTypeMap(Message msg) {
         short typeId = msg.directType();
 
-        Map<Short, String> msgTypeMap0 = msgTypeMap;
+        IntMap<String> msgTypeMap0 = msgTypeMap;
 
         if (msgTypeMap0 == null || !msgTypeMap0.containsKey(typeId)) {
             synchronized (msgTypeMapMux) {
-                if (msgTypeMap == null) {
-                    msgTypeMap0 = new HashMap<>();
+                msgTypeMap0 = msgTypeMap;
+
+                if (msgTypeMap0 == null || !msgTypeMap0.containsKey(typeId)) {
+                    // Copy-on-write: published map is never modified, so it is safe to read it without boxing and locks.
+                    msgTypeMap0 = msgTypeMap0 == null ? new IntHashMap<>() : new IntHashMap<>(msgTypeMap0);
 
                     msgTypeMap0.put(typeId, msg.getClass().getName());
 
                     msgTypeMap = msgTypeMap0;
-                }
-                else {
-                    if (!msgTypeMap.containsKey(typeId)) {
-                        msgTypeMap0 = new HashMap<>(msgTypeMap);
-
-                        msgTypeMap0.put(typeId, msg.getClass().getName());
-
-                        msgTypeMap = msgTypeMap0;
-                    }
                 }
             }
         }
