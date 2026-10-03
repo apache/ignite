@@ -638,16 +638,16 @@ public final class CollocationModel {
         // Query expressions can not be distributed as well.
         SplitterContext ctx = SplitterContext.get();
 
-        if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
-            return CollocationModelMultiplier.COLLOCATED;
+        //if (!ctx.distributedJoins() || !ses.isJoinBatchEnabled() || ses.isPreparingQueryExpression())
+        return CollocationModelMultiplier.COLLOCATED;
 
-        assert filters != null;
+/*        assert filters != null;
 
         clearViewIndexCache(ses);
 
         CollocationModel model = buildCollocationModel(ctx, ses.getSubQueryInfo(), filters, filter, false);
 
-        return model.multiplier(false);
+        return model.multiplier(false);*/
     }
 
     /**
@@ -725,9 +725,9 @@ public final class CollocationModel {
 
         CollocationModelType type = mdl.type(true);
 
-        if (!type.isCollocated() && mdl.multiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
+/*        if (!type.isCollocated() && mdl.multiplier == CollocationModelMultiplier.REPLICATED_NOT_LAST)
             throw new CacheException("Failed to execute query: for distributed join " +
-                "all REPLICATED caches must be at the end of the joined tables list.");
+                "all REPLICATED caches must be at the end of the joined tables list.");*/
 
         return type.isCollocated();
     }
