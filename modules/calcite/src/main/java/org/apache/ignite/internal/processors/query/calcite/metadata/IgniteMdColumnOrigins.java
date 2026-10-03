@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -33,9 +34,11 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.SetOp;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.core.TableFunctionScan;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
@@ -51,8 +54,11 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSlot;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
-import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,8 +67,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.ColumnOrigin> {
     /** */
-    public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.COLUMN_ORIGIN.method, new IgniteMdColumnOrigins());
+    public static final RelMetadataProvider SOURCE =
+        ReflectiveRelMetadataProvider.reflectiveSource(
+            new IgniteMdColumnOrigins(), BuiltInMetadata.ColumnOrigin.Handler.class);
 
     /** {@inheritDoc} */
     @Override public MetadataDef<BuiltInMetadata.ColumnOrigin> getDef() {
@@ -261,10 +268,10 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         int iOutputColumn
     ) {
         if (rel.projects() != null) {
-            RexNode proj = rel.projects().get(iOutputColumn);
+            RexNode node = rel.projects().get(iOutputColumn);
             Set<RexSlot> sources = new HashSet<>();
 
-            getOperands(proj, RexSlot.class, sources);
+            getOperands(node, RexSlot.class, sources);
 
             boolean derived = sources.size() > 1;
             Set<RelColumnOrigin> res = new HashSet<>();
@@ -281,7 +288,19 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
             return res;
         }
 
-        return Collections.singleton(rel.columnOriginsByRelLocalRef(iOutputColumn));
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
+        RelOptTable table = rel.getTable();
+
+        if (requiredColumns != null) {
+            Mappings.TargetMapping trimming = Commons.projectedMapping(requiredColumns, table.getRowType().getFieldCount());
+
+            iOutputColumn = trimming.getSourceOpt(iOutputColumn);
+
+            if (iOutputColumn == -1)
+                return null;
+        }
+
+        return Set.of(new RelColumnOrigin(table, iOutputColumn, false));
     }
 
     /**
@@ -301,6 +320,38 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
             for (RexNode op : operands)
                 getOperands(op, cls, res);
         }
+    }
+
+    /**
+     * Provides column origins for a subset.
+     *
+     * <p>Origins are resolved through the original (logical) expression of the set rather than through the current best
+     * plan: the best expression changes during optimization, and metadata depending on it makes row count estimates
+     * of the same expression unstable, which in turn leads to inconsistent costs and cyclic best plans in Volcano memo.
+     * Column origins are a property of the logical expression, so the original expression is a stable source of them.
+     */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelSubset rel,
+        RelMetadataQuery mq, int outputColumn) {
+        RelNode original = rel.getOriginal();
+
+        try {
+            return mq.getColumnOrigins(original != null ? original :
+                rel.stripped(), outputColumn);
+        }
+        catch (CyclicMetadataException ignore) {
+            // Cyclic set (see CALCITE-1048): origins are unknown, callers fall back to generic estimations.
+            return null;
+        }
+    }
+
+    /** Spools pass rows of their input through, so column origins are the same as the origins of the input. */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(Spool rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
+    }
+
+    /** Limit passes rows of its input through, so column origins are the same as the origins of the input. */
+    public @Nullable Set<RelColumnOrigin> getColumnOrigins(IgniteLimit rel, RelMetadataQuery mq, int iOutputColumn) {
+        return mq.getColumnOrigins(rel.getInput(), iOutputColumn);
     }
 
     /**
@@ -369,15 +420,15 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
         final Set<RelColumnOrigin> set = new HashSet<>();
 
         final RexVisitor<Void> visitor = new RexVisitorImpl<Void>(true) {
-                @Override public Void visitInputRef(RexInputRef inputRef) {
-                    Set<RelColumnOrigin> inputSet = mq.getColumnOrigins(input, inputRef.getIndex());
+            @Override public Void visitInputRef(RexInputRef inputRef) {
+                Set<RelColumnOrigin> inputSet = mq.getColumnOrigins(input, inputRef.getIndex());
 
-                    if (inputSet != null)
-                        set.addAll(inputSet);
+                if (inputSet != null)
+                    set.addAll(inputSet);
 
-                    return null;
-                }
-            };
+                return null;
+            }
+        };
 
         rexNode.accept(visitor);
 
