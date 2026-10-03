@@ -21,7 +21,7 @@ import re
 
 from ignitetest.services.utils.decorators import memoize
 
-DEFAULT_HEAP = "768M"
+DEFAULT_HEAP = "4G"
 
 GC_G1 = "G1"
 GC_PARALLEL = "PARALLEL"
