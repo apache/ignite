@@ -16,10 +16,15 @@
  */
 package org.apache.ignite.internal.binary;
 
+import java.io.ByteArrayInputStream;
+
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import static org.apache.ignite.internal.binary.BinaryUtils.length;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary utils used only in implementation.
@@ -317,4 +322,60 @@ public class BinaryImplUtils {
 
         return hash;
     }
+
+    /**
+     * Check protocol version.
+     *
+     * @param protoVer Protocol version.
+     */
+    public static void checkProtocolVersion(byte protoVer) {
+        if (GridBinaryMarshaller.PROTO_VER != protoVer)
+            throw new BinaryObjectException("Unsupported protocol version: " + protoVer);
+    }
+
+    /**
+     * Get binary object length.
+     *
+     * @param in Input stream.
+     * @param start Start position.
+     * @return Length.
+     */
+    public static int length(BinaryPositionReadable in, int start) {
+        return in.readIntPositioned(start + GridBinaryMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
+     * @param in Input stream.
+     * @return Class name.
+     */
+    static String doReadClassName(BinaryInputStream in) {
+        byte flag = in.readByte();
+
+        if (flag != GridBinaryMarshaller.STRING)
+            throw new BinaryObjectException("Failed to read class name [position=" + (in.position() - 1) + ']');
+
+        return BinaryUtils.doReadString(in);
+    }
+
+    /**
+     * Read object serialized using optimized marshaller.
+     *
+     * @return Result.
+     */
+    public static Object doReadOptimized(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader clsLdr) {
+        int len = in.readInt();
+
+        ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
+
+        try {
+            return ctx.optimizedMarsh().unmarshal(input, CommonUtils.resolveClassLoader(clsLdr, ctx.classLoader()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
+        }
+        finally {
+            in.position(in.position() + len);
+        }
+    }
+
 }

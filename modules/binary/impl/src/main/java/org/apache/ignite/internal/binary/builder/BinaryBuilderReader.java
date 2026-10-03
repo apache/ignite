@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryImplUtils;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -492,7 +492,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos + 1);
 
-                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, CommonUtils.resolveClassLoader(null, ctx.classLoader()));
+                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, CommonUtils.resolveClassLoader(null, ctx.classLoader()));
 
                 return obj;
             }
@@ -844,7 +844,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos);
 
-                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, CommonUtils.resolveClassLoader(null, ctx.classLoader()));
+                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, CommonUtils.resolveClassLoader(null, ctx.classLoader()));
 
                 pos = bin.position();
 
