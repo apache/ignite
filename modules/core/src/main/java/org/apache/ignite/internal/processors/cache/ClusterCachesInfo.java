@@ -46,6 +46,7 @@ import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CacheConfigurationInternalAccessor;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -1893,7 +1894,8 @@ public class ClusterCachesInfo {
      */
     private CacheConfiguration<?, ?> mergeConfigurations(CacheConfiguration<?, ?> loc, CacheConfiguration<?, ?> received) {
         // Schema is supposed to get merged earlier.
-        loc.setQueryEntities(received.getQueryEntities());
+        CacheConfigurationInternalAccessor.replaceQueryEntities(loc, received.getQueryEntities());
+
         loc.setSqlSchema(received.getSqlSchema());
         loc.setSqlFunctionClasses(received.getSqlFunctionClasses());
         loc.setSqlEscapeAll(received.isSqlEscapeAll());
