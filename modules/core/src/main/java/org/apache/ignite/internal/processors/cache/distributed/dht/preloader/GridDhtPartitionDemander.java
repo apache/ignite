@@ -308,13 +308,6 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
-     */
-    Collection<UUID> remainingNodes() {
-        return rebalanceFut.remainingNodes();
-    }
-
-    /**
      * This method initiates new rebalance process from given {@code assignments} by creating new rebalance
      * future based on them. Cancels previous rebalance future and sends rebalance started event.
      * In case of delayed rebalance method schedules the new one with configured delay based on {@code lastExchangeFut}.
@@ -1618,13 +1611,6 @@ public class GridDhtPartitionDemander {
                     ctx.exchange().refreshPartitions(Collections.singleton(grp));
                 }
             }
-        }
-
-        /**
-         * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
-         */
-        private synchronized Collection<UUID> remainingNodes() {
-            return remaining.keySet();
         }
 
         /**
