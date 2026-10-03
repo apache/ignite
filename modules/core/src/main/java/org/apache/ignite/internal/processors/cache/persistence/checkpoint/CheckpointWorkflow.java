@@ -48,6 +48,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -491,7 +492,7 @@ public class CheckpointWorkflow {
                 cpPagesPerRegion.add(new T2<>(regPages.getKey(), pages));
         }
 
-        if (checkpointWriteOrder == CheckpointWriteOrder.SEQUENTIAL) {
+        if (checkpointWriteOrder != CheckpointWriteOrder.RANDOM) {
             Comparator<FullPageId> cmp = Comparator.comparingInt(FullPageId::groupId)
                 .thenComparingLong(FullPageId::effectivePageId);
 
@@ -506,9 +507,56 @@ public class CheckpointWorkflow {
 
             if (pool != null)
                 pool.shutdown();
+
+            if (checkpointWriteOrder == CheckpointWriteOrder.SEQUENTIAL_WITH_PREALLOCATION) {
+                for (T2<PageMemoryEx, FullPageId[]> pagesPerReg : cpPagesPerRegion)
+                    arrangeForPreallocation(pagesPerReg.getValue());
+            }
         }
 
         return new GridConcurrentMultiPairQueue<>(cpPagesPerRegion);
+    }
+
+    /**
+     * Arranges the array of pages in such a way that for each new partition, the first page is one with the
+     * maximum page id, followed by pages sorted in ascending order. As a result, the first page for a given partition
+     * preallocates all necessary disk space for the file on the current checkpoint.
+     *
+     * @param pageIds Sorted (by group id and page id) array of page ids.
+     */
+    public static void arrangeForPreallocation(FullPageId[] pageIds) {
+        if (pageIds.length <= 1)
+            return;
+
+        int partStartIdx = 0;
+        FullPageId prevFullPageId = pageIds[0];
+        int prevGrpId = prevFullPageId.groupId();
+        int prevPartId = PageIdUtils.partId(prevFullPageId.pageId());
+
+        for (int i = 1; i < pageIds.length; i++) {
+            assert pageIds[i].groupId() >= pageIds[i - 1].groupId() : "Unsorted page IDs array";
+            assert pageIds[i].groupId() != pageIds[i - 1].groupId()
+                || pageIds[i].effectivePageId() >= pageIds[i - 1].effectivePageId() : "Unsorted page IDs array";
+
+            int curGrpId = pageIds[i].groupId();
+            int curPartId = PageIdUtils.partId(pageIds[i].pageId());
+
+            if (curGrpId == prevGrpId && curPartId == prevPartId) {
+                FullPageId tmp = pageIds[i];
+                pageIds[i] = prevFullPageId;
+                prevFullPageId = tmp;
+                continue;
+            }
+
+            pageIds[partStartIdx] = prevFullPageId;
+
+            prevGrpId = curGrpId;
+            prevPartId = curPartId;
+            prevFullPageId = pageIds[i];
+            partStartIdx = i;
+        }
+
+        pageIds[partStartIdx] = prevFullPageId;
     }
 
     /**
