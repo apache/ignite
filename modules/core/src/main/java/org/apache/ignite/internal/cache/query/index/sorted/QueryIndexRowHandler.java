@@ -74,8 +74,11 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
             else if (propName.equals(QueryUtils.VAL_FIELD_NAME) || propName.equals(type.valueFieldName())
                 || propName.equals(type.valueFieldAlias()))
                 prop = new KeyOrValPropertyWrapper(false, propName, type.valueClass());
-            else
+            else if (propName.equals(QueryUtils.ROW_ID_FIELD_NAME)) {
+                prop = new RowIdPropertyWrapper();
+            } else {
                 prop = type.property(propName);
+            }
 
             assert prop != null : propName;
 
@@ -160,6 +163,14 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
             super(key, name, cls);
         }
 
+        /** {@inheritDoc} */
+        @Override public Object value(Object key, Object val) {
+            return key() ? unwrap((CacheObject)key) : unwrap((CacheObject)val);
+        }
+    }
+
+    /** */
+    private class RowIdPropertyWrapper extends QueryUtils.RowIdProperty {
         /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) {
             return key() ? unwrap((CacheObject)key) : unwrap((CacheObject)val);
