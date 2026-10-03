@@ -225,52 +225,59 @@ This product bundles JSR107 API and SPI which is available under the following:
 JSR-000107 JCACHE 2.9 Public Review - Updated Specification License. https://raw.github.com/jsr107/jsr107spec/master/LICENSE.txt
 
 ==============================================================================
-For JSch (http://www.jcraft.com/jsch/) com.jcraft:jsch:jar:0.1.50
+For SQLLine (https://github.com/julianhyde/sqlline) sqlline:sqlline:jar:1.9.0
 ==============================================================================
-This product bundles JSch which is available under the following:
-Revised BSD. For details, see http://www.jcraft.com/jsch/LICENSE.txt.
+This product bundles SQLLine which is available under the following:
+BSD 3-Clause. For details, see https://opensource.org/licenses/BSD-3-Clause.
 
 ==============================================================================
-For JLine (http://nexus.sonatype.org/oss-repository-hosting.html/jline) jline:jline:jar:2.12.1
+For JLine (https://github.com/jline/jline3) org.jline:*:jar:3.12.1
 ==============================================================================
 This product bundles JLine which is available under the following:
-The BSD License. For details, see http://www.opensource.org/licenses/bsd-license.php.
+BSD 3-Clause. For details, see https://opensource.org/licenses/BSD-3-Clause.
 
 ==============================================================================
-For Scala Library (http://www.scala-lang.org/) org.scala-lang:scala-library:jar:2.*
+For Java Native Access (https://github.com/java-native-access/jna) net.java.dev.jna:jna:jar:4.5.2
 ==============================================================================
-This product bundles Scala Library which is available under the following:
-BSD 3-Clause. For details, see http://www.scala-lang.org/license.html.
+This product bundles Java Native Access, which is dual-licensed. Apache Ignite
+uses it under the Apache License, Version 2.0. For details, see
+https://github.com/java-native-access/jna/blob/master/LICENSE.
 
 ==============================================================================
-For H2 Database Engine (http://www.h2database.com) com.h2database:h2:jar:1.4.191
+For H2 Database Engine (http://www.h2database.com) com.h2database:h2:jar:1.4.197
 ==============================================================================
 This product bundles H2 Database Engine which is available under the following:
 MPL 2.0, and EPL 1.0. For details, see http://h2database.com/html/license.html.
 
 ==============================================================================
-For JTidy (http://jtidy.sourceforge.net) net.sf.jtidy:jtidy:jar:r938
+For JTidy (https://github.com/jtidy/jtidy) com.github.jtidy:jtidy:jar:1.0.5
 ==============================================================================
 This product bundles JTidy which is available under the following:
-Java HTML Tidy License. For details, see http://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95.
+Java HTML Tidy License. For details, see
+https://raw.githubusercontent.com/jtidy/jtidy/master/LICENSE.txt.
 
 ==============================================================================
-For tomcat-servlet-api (http://tomcat.apache.org/) org.apache.tomcat:tomcat-servlet-api:jar:9.0.10
+For tomcat-servlet-api (https://tomcat.apache.org/) org.apache.tomcat:tomcat-servlet-api:jar:10.0.27
 ==============================================================================
 This product bundles tomcat-servlet-api which is available under the following:
-Apache License, Version 2.0 and Common Development And Distribution License (CDDL) Version 1.0. For details, see http://www.apache.org/licenses/LICENSE-2.0.txt and http://www.opensource.org/licenses/cddl1.txt.
+Apache License, Version 2.0; Common Development And Distribution License (CDDL)
+Version 1.0 for Java EE schema files; and Eclipse Public License - v 2.0 for
+Jakarta EE schema files. For details, see
+https://tomcat.apache.org/tomcat-10.0-doc/project-license.html.
 
 ==============================================================================
-For AOP alliance (http://aopalliance.sourceforge.net) aopalliance:aopalliance:jar:1.0
+For JTS Topology Suite (https://locationtech.github.io/jts/) org.locationtech.jts*:jar:1.19.0
 ==============================================================================
-This product bundles AOP alliance which is available under the following:
-Public Domain.
+This product bundles JTS Topology Suite, which is dual-licensed. Apache Ignite
+uses it under the Eclipse Distribution License 1.0, a BSD-style license. For
+details, see https://locationtech.github.io/jts/.
 
 ==============================================================================
-For AspectJ (http://www.aspectj.org) org.aspectj:*:jar:1.7.2
+For jnr-posix (https://github.com/jnr/jnr-posix) com.github.jnr:jnr-posix:jar:3.1.15
 ==============================================================================
-This product bundles AspectJ which is available under the following:
-Eclipse Public License - v 1.0. For details, see http://www.eclipse.org/legal/epl-v10.html.
+This product bundles jnr-posix, which is tri-licensed. Apache Ignite uses it
+under the Eclipse Public License - v 1.0. For details, see
+optional/ignite-compress/licenses/jnr-posix-LICENSE.txt.
 
 ==============================================================================
 For Java Transaction API (http://java.sun.com/products/jta) javax.transaction:jta:jar:1.1
@@ -279,20 +286,27 @@ This product bundles Java Transaction API which is available under it's own lice
 See http://download.oracle.com/otndocs/jcp/jta-1.1-classes-oth-JSpec/jta-1.1-classes-oth-JSpec-license.html for details.
 
 ==============================================================================
-For ASM All (http://asm.objectweb.org/asm-all/) org.ow2.asm:asm-all:jar:5.0.3
+For ASM (https://asm.ow2.io/) org.ow2.asm:*:jar:9.*
 ==============================================================================
-This product bundles ASM All which is available under the following:
-BSD. For details, see http://asm.objectweb.org/license.html.
+This product bundles ASM which is available under the following:
+BSD 3-Clause. For details, see https://asm.ow2.io/license.html.
 
 ==============================================================================
-For Jetty (http://www.eclipse.org/jetty) org.eclipse.jetty:*:jar:9.2.11.v20150529
+For Jetty (https://jetty.org) org.eclipse.jetty:*:jar:11.0.25
 ==============================================================================
-This product bundles Jetty which is available under the following:
-Apache Software License - Version 2.0. For details, see http://www.apache.org/licenses/LICENSE-2.0.
-Eclipse Public License - Version 1.0. For details, see http://www.eclipse.org/org/documents/epl-v10.php.
+This product bundles Jetty. Apache Ignite uses Jetty under the Apache License,
+Version 2.0. Jetty is also available under the Eclipse Public License - v 2.0.
+For details, see https://www.apache.org/licenses/LICENSE-2.0 and
+https://www.eclipse.org/legal/epl-2.0/.
 
 ==============================================================================
-For SLF4J API Module (http://www.slf4j.org) org.slf4j:slf4j-api:jar:1.6.4
+For SLF4J API Module (https://www.slf4j.org) org.slf4j:slf4j-api:jar:2.0.17
 ==============================================================================
 This product bundles SLF4J API Module which is available under the following:
-MIT License. For details, see http://www.opensource.org/licenses/mit-license.php.
+MIT License. For details, see https://www.slf4j.org/license.html.
+
+==============================================================================
+For compression libraries in optional/ignite-compress
+==============================================================================
+This product bundles zstd-jni, lz4-java, and snappy-java. For details, see the
+license files in optional/ignite-compress/licenses.
