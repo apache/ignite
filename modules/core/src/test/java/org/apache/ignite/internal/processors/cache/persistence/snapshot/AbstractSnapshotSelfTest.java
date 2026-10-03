@@ -36,7 +36,9 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -90,6 +92,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -98,6 +101,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -148,6 +153,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final int PAGE_SIZE =
         IgniteSystemProperties.getInteger(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
 
+    /** */
+    protected static boolean caseInsensitiveFs;
+
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
 
@@ -173,6 +181,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         return valBuilder;
     }
 
+    /** */
+    protected @Nullable AbstractTestPluginProvider pluginProvider;
+
+    /** */
+    protected boolean removeAllWorkingDirectories = true;
+
     /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
     @Parameterized.Parameter
     public boolean encryption;
@@ -182,7 +196,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     public boolean onlyPrimary;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}")
     public static Collection<Object[]> params() {
         List<Object[]> res = new ArrayList<>();
 
@@ -201,6 +215,18 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        File workDir = new File(U.defaultWorkDirectory());
+
+        assertTrue(workDir.exists());
+
+        caseInsensitiveFs = new File(workDir.getAbsolutePath().toLowerCase()).exists() &&
+            new File(workDir.getAbsolutePath().toUpperCase()).exists();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -216,6 +242,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         if (cfg.isClientMode())
             return cfg;
+
+        if (pluginProvider != null)
+            cfg.setPluginProviders(pluginProvider);
 
         return cfg.setConsistentId(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -281,6 +310,25 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        if (!removeAllWorkingDirectories())
+            return;
+
+        // Clean all: also separated snapshot working directories and custom snapshot paths.
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
+            for (Path path : files)
+                U.delete(path);
+        }
+    }
+
+    /** @return Whether a test removes all content of the working directory in {@link #cleanPersistenceDir()}. */
+    protected boolean removeAllWorkingDirectories() {
+        return removeAllWorkingDirectories;
     }
 
     /**
@@ -701,8 +749,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param ignite Ignite instance.
      * @return Snapshot manager related to given ignite instance.
      */
-    public static IgniteSnapshotManager snp(IgniteEx ignite) {
-        return ignite.context().cache().context().snapshotMgr();
+    public static IgniteSnapshotManager snp(Ignite ignite) {
+        return ((IgniteEx)ignite).context().cache().context().snapshotMgr();
     }
 
     /**
@@ -745,7 +793,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         List<BlockingExecutor> execs = new ArrayList<>();
 
         for (Ignite grid : grids) {
-            IgniteSnapshotManager mgr = snp((IgniteEx)grid);
+            IgniteSnapshotManager mgr = snp(grid);
             Function<SnapshotFileTree, SnapshotSender> old = mgr.localSnapshotSenderFactory();
 
             BlockingExecutor block = new BlockingExecutor(mgr.snapshotExecutorService());
@@ -812,6 +860,86 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         File snpDir = new SharedFileTree(srv.configuration()).snapshotsRoot();
 
         assertEquals("Snapshot directory must be empty due to snapshot cancelled", 0, snpDir.list().length);
+    }
+
+    /** Tests concurrent snapshot operation when snapshot deletion with the same name is active. */
+    protected void doConcurrentSnapshotOperationWhenDeletionIsActive(
+        ExRunnable prepareCluster,
+        ExRunnable concurrentOp,
+        @Nullable Function<Exception, Boolean> errValidator,
+        boolean rerunAtTheEnd
+    ) throws Exception {
+        CountDownLatch delProcInitLatch = new CountDownLatch(1);
+        CountDownLatch delProcProceedLatch = new CountDownLatch(1);
+
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
+                            delProcInitLatch.countDown();
+
+                            try {
+                                assertTrue(delProcProceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                            }
+                            catch (InterruptedException e) {
+                                throw new RuntimeException("Interrupted.", e);
+                            }
+
+                            return super.deleteLocalSnapshot(sft, scoped, ignoreErrs);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        prepareCluster.run();
+
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(delProcInitLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        try {
+            concurrentOp.run();
+
+            if (errValidator != null)
+                throw new IllegalStateException("Exception is not thrown.");
+        }
+        catch (Exception e) {
+            if (errValidator == null || !errValidator.apply(e))
+                throw new IllegalStateException("Unexpected exception: " + e.getMessage(), e);
+        }
+
+        delProcProceedLatch.countDown();
+
+        delFut.get(getTestTimeout());
+
+        for (Ignite node : G.allGrids())
+            assertFalse(new SnapshotFileTree(((IgniteEx)node).context(), SNAPSHOT_NAME, null).root().exists());
+
+        if (!rerunAtTheEnd)
+            return;
+
+        assertThrowsAnyCause(
+            null,
+            () -> {
+                concurrentOp.run();
+
+                return null;
+            },
+            IllegalArgumentException.class,
+            "Snapshot does not exists "
+        );
     }
 
     /**
@@ -992,6 +1120,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         public void waitBlockedSize(int size, long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> blocked.size() == size, timeout);
         }
+    }
+
+    /** */
+    @FunctionalInterface
+    protected interface ExRunnable {
+        /** */
+        void run() throws Exception;
     }
 
     /** */

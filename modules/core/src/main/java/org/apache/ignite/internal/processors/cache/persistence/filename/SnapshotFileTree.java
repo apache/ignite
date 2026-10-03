@@ -457,7 +457,6 @@ public class SnapshotFileTree extends NodeFileTree {
         return res;
     }
 
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotFileTree.class, this);

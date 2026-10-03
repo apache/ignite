@@ -1,0 +1,931 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
+
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.DELETE_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_INCREMENTAL_SNAPSHOT_START;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
+/** */
+public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
+    /** */
+    private static final int CACHE_KEYS_RANGE = 10;
+
+    /** */
+    private static final int INC_CACHE_KEYS_RANGE = 15;
+
+    /** Extra storage path. */
+    private static final String EXT_STORAGE_PATH = "extStorage";
+
+    /** */
+    private static boolean posixPermissions;
+
+    /** */
+    private boolean separatedWorkDir;
+
+    /** */
+    private boolean extraStorages;
+
+    /** */
+    @Parameter(2)
+    public boolean incremental = true;
+
+    /** */
+    private @Nullable String cstIdSuffix;
+
+    /** */
+    private @Nullable String[] extStoragePaths;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, incremental={2}")
+    public static Collection<?> runParams() {
+        /** Use {@link #incremental} only. */
+        return F.asList(
+            new Object[] {false, false, false},
+            new Object[] {false, false, true}
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        var cfg = super.getConfiguration(igniteInstanceName);
+
+        String workDir = separatedWorkDir
+            ? new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath()
+            : U.defaultWorkDirectory();
+
+        cfg.setWorkDirectory(workDir);
+
+        if (cstIdSuffix != null)
+            cfg.setConsistentId(cfg.getConsistentId().toString() + '_' + cstIdSuffix);
+
+        if (extraStorages) {
+            cfg.getDataStorageConfiguration().setExtraStoragePaths(
+                workDir + File.separator,
+                workDir + File.separator + EXT_STORAGE_PATH
+            );
+
+            extStoragePaths = cfg.getDataStorageConfiguration().getExtraStoragePaths();
+
+            cfg.getDataStorageConfiguration().setExtraSnapshotPaths("", EXT_STORAGE_PATH);
+        }
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTestSnapshot() throws Exception {
+        super.afterTestSnapshot();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeTestSnapshot() throws Exception {
+        super.beforeTestSnapshot();
+
+        /** Handy if test running is interrupted and {@link #afterTestSnapshot()} isn't invoked. */
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        File workDir = new File(U.defaultWorkDirectory());
+
+        assertTrue(workDir.exists());
+
+        Path workPath = workDir.toPath();
+
+        try {
+            Files.getPosixFilePermissions(workPath);
+
+            posixPermissions = true;
+        }
+        catch (UnsupportedOperationException ignored) {
+            // No-op.
+        }
+    }
+
+    /** */
+    @Test
+    public void testDeniedPermissions() throws Exception {
+        assumeTrue(posixPermissions);
+
+        // Doesn't matter here.
+        assumeFalse(incremental);
+
+        separatedWorkDir = true;
+
+        AtomicReference<Set<PosixFilePermission>> prevPerms = new AtomicReference<>();
+        AtomicReference<Path> pathRef = new AtomicReference<>();
+
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id())) {
+                                Path path = sft.root().toPath();
+
+                                pathRef.set(path);
+
+                                try {
+                                    prevPerms.set(Files.getPosixFilePermissions(path));
+
+                                    // Denies writing (deletion).
+                                    Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("r-xr-x---"));
+                                }
+                                catch (Exception e) {
+                                    throw new IgniteException("Unable to set the posix permissions.", e);
+                                }
+                            }
+
+                            return super.deleteLocalSnapshot(sft, scoped, ignoreErrs);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+        try {
+            SnapshotDeleteProcessResult res = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+            assertEquals(1, res.uncompletedNodes().size());
+            assertEquals(2, res.completedNodes().size());
+        }
+        finally {
+            if (pathRef.get() != null && prevPerms.get() != null)
+                Files.setPosixFilePermissions(pathRef.get(), prevPerms.get());
+        }
+    }
+
+    /** */
+    @Test
+    public void testExtraStoragesDeleted() throws Exception {
+        extraStorages = true;
+
+        dfltCacheCfg = null;
+
+        startGridsMultiThreaded(3);
+
+        assertFalse(F.isEmpty(extStoragePaths));
+
+        assertTrue(grid(0).cache(DEFAULT_CACHE_NAME) == null);
+
+        dfltCacheCfg = defaultCacheConfiguration();
+
+        // Works only with a shared work directory.
+        dfltCacheCfg.setStoragePaths(extStoragePaths);
+
+        grid(0).createCache(dfltCacheCfg);
+        awaitPartitionMapExchange();
+
+        // Fills the cache.
+        startGridsWithCache(0, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        for (Ignite ig : G.allGrids()) {
+            SnapshotFileTree snpTree = new SnapshotFileTree(((IgniteEx)ig).context(), SNAPSHOT_NAME, null);
+
+            assertEquals(2, snpTree.extraStorages().size());
+
+            for (File extSnpStorage : snpTree.allStorages().toList()) {
+                assertTrue(extSnpStorage.exists());
+                assertTrue(extSnpStorage.isDirectory());
+            }
+        }
+
+        snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        for (Ignite ig : G.allGrids()) {
+            SnapshotFileTree snpTree = new SnapshotFileTree(((IgniteEx)ig).context(), SNAPSHOT_NAME, null);
+
+            for (File extSnpStorage : snpTree.allStorages().toList()) {
+                // Snapshot root, even in an external storage.
+                extSnpStorage = extSnpStorage.getParentFile().getParentFile();
+
+                assertEquals(SNAPSHOT_NAME, extSnpStorage.getName());
+
+                assertFalse(extSnpStorage.exists());
+            }
+        }
+    }
+
+    /** Tests snapshot deletion when one node finds snapshot but fails to delete its data. */
+    @Test
+    public void testUncompletedNodes() throws Exception {
+        separatedWorkDir = true;
+
+        // Simulates a deletion error on some node.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            // Simulates the deletion failure.
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id()))
+                                return new T2<>(false, true);
+
+                            return super.deleteLocalSnapshot(sft, scoped, ignoreErrs);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        SnapshotDeleteProcessResult delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertTrue(delSnpRes.emptyNodes().isEmpty());
+        assertEquals(1, delSnpRes.uncompletedNodes().size());
+        assertTrue(delSnpRes.uncompletedNodes().containsKey(grid(1).localNode().id()));
+    }
+
+    /** Tests the snapshot deletion when cluster restarts with changed nodes consistent ids. */
+    @Test
+    public void testDeleteOtherConsistentId() throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true);
+
+        stopAllGrids();
+
+        cstIdSuffix = "_ext";
+
+        startGridsMultiThreaded(3);
+
+        SnapshotDeleteProcessResult delRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        for (var ig : G.allGrids()) {
+            assertTrue(Files.list(((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsRoot().toPath())
+                .findFirst().isEmpty());
+        }
+
+        assertEquals(3, delRes.absentBaselines().size());
+    }
+
+    /** Tests that snapshot is not deleted if snaphot metadata is not found. Shared working directory. */
+    @Test
+    public void testDeleteSnapshotNoMetaSharedDirectory() throws Exception {
+        doTestDeleteNotSnapshot(false, false);
+    }
+
+    /** Tests that snapshot is not deleted if snaphot metadata is not found. Dedicated working directories. */
+    @Test
+    public void testDeleteSnapshotNoMetaDedicatedDirectories() throws Exception {
+        doTestDeleteNotSnapshot(true, false);
+    }
+
+    /** Tests that snapshot is not deleted if snaphot metadata cannot be read (corrupted). Shared working directory. */
+    @Test
+    public void testDeleteSnapshotCorruptedMetaSharedDirectory() throws Exception {
+        doTestDeleteNotSnapshot(false, true);
+    }
+
+    /** Tests that snapshot is not deleted if snaphot metadata cannot be read (corrupted). Dedicated working directories. */
+    @Test
+    public void testDeleteSnapshotCorruptedMetaDedicatedDirectories() throws Exception {
+        doTestDeleteNotSnapshot(true, true);
+    }
+
+    /**
+     * Tests that snapshot is not deleted if snaphot metadata isn't found or cannot be read (corrupted).
+     *
+     * @param separatedWorkDir If {@code true}, the dedicated dirictories is used for the nodes. If {@code false},
+     *                         the nodes use a shared working directory.
+     * @param corruptSnpMeta If {@code true}, corrupts the snapshot metadata file. If {@code false}, removes the snapshot
+     *                         metadata file
+     */
+    protected void doTestDeleteNotSnapshot(boolean separatedWorkDir, boolean corruptSnpMeta) throws Exception {
+        // Doesn't matter here;
+        assumeFalse(onlyPrimary);
+
+        this.separatedWorkDir = separatedWorkDir;
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg);
+
+        snp(grid(1)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        var snpSft = new SnapshotFileTree(grid(1).context(), SNAPSHOT_NAME, null);
+
+        // Ensure that all the snapshot node folders exist.
+        assertTrue(snpSft.binaryMeta().exists());
+        assertTrue(new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null, folderName(0), consistentId(0))
+            .binaryMeta().exists());
+        assertTrue(new SnapshotFileTree(grid(2).context(), SNAPSHOT_NAME, null, folderName(2), consistentId(2))
+            .binaryMeta().exists());
+
+        assertTrue(snpSft.meta().exists());
+
+        if (corruptSnpMeta) {
+            try (var rwf = new RandomAccessFile(snpSft.meta(), "rw")) {
+                byte[] slop = new byte[128];
+
+                new Random().nextBytes(slop);
+
+                rwf.write(slop);
+            }
+        }
+        else {
+            assertTrue(U.delete(snpSft.meta()));
+            assertFalse(snpSft.meta().exists());
+        }
+
+        var delSnpRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        // Check the result.
+        if (separatedWorkDir) {
+            // One node doesn't find meta, decided not a snapshot.
+            assertTrue(delSnpRes.uncompletedNodes().isEmpty());
+            assertEquals(2, delSnpRes.completedNodes().size());
+            assertEquals(1, delSnpRes.emptyNodes().size());
+            assertTrue(delSnpRes.emptyNodes().containsKey(grid(1).localNode().id()));
+            assertTrue(snpSft.binaryMeta().exists());
+        }
+        else
+            assertEquals(3, delSnpRes.uncompletedNodes().size() + delSnpRes.completedNodes().size() + delSnpRes.emptyNodes().size());
+
+        assertFalse(new SnapshotFileTree(grid(0).context(), SNAPSHOT_NAME, null, folderName(0), consistentId(0))
+            .binaryMeta().exists());
+        assertFalse(new SnapshotFileTree(grid(2).context(), SNAPSHOT_NAME, null, folderName(2), consistentId(2))
+            .binaryMeta().exists());
+    }
+
+    /** */
+    private String consistentId(int gridIdx) {
+        return grid(gridIdx).configuration().getConsistentId().toString();
+    }
+
+    /** */
+    private String folderName(int gridIdx) {
+        return grid(gridIdx).context().pdsFolderResolver().fileTree().folderName();
+    }
+
+    /** Tests snapshot deletion when one node has no snapshot data. */
+    @Test
+    public void testEmptyNodes() throws Exception {
+        separatedWorkDir = true;
+
+        startGridsWithCache(2, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        IgniteEx additionalNode = startGrid(G.allGrids().size());
+
+        SnapshotDeleteProcessResult delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertFalse(delSnpRes.emptyNodes().isEmpty());
+        assertTrue(delSnpRes.emptyNodes().containsKey(additionalNode.localNode().id()));
+        assertTrue(delSnpRes.uncompletedNodes().isEmpty());
+    }
+
+    /** Tests snapshot deletion repeat after an offline node restarts. */
+    @Test
+    public void testDeletionRepeatAfterOfflineNodeStarts() throws Exception {
+        separatedWorkDir = true;
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        int stoppedNodeIdx = G.allGrids().size() - 1;
+
+        UUID stoppedNodeId = grid(stoppedNodeIdx).localNode().id();
+
+        stopGrid(stoppedNodeIdx);
+
+        SnapshotDeleteProcessResult delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertEquals(2, delSnpRes.completedNodes().size());
+        assertFalse(delSnpRes.completedNodes().containsKey(stoppedNodeId));
+
+        assertTrue(delSnpRes.uncompletedNodes().isEmpty());
+        assertTrue(delSnpRes.emptyNodes().isEmpty());
+
+        startGrid(stoppedNodeIdx);
+
+        stoppedNodeId = grid(stoppedNodeIdx).localNode().id();
+
+        delSnpRes = snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertEquals(1, delSnpRes.completedNodes().size());
+        assertTrue(delSnpRes.completedNodes().containsKey(stoppedNodeId));
+
+        assertTrue(delSnpRes.uncompletedNodes().isEmpty());
+        assertEquals(2, delSnpRes.emptyNodes().size());
+    }
+
+    /** Test snapshot deletion process when one node leaves. */
+    @Test
+    public void testNodeStopsInTheMiddle() throws Exception {
+        separatedWorkDir = true;
+
+        CountDownLatch beginLatch = new CountDownLatch(1);
+        CountDownLatch proceedLatch = new CountDownLatch(1);
+
+        // Simulates a deletion error on some node.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public T2<Boolean, Boolean> deleteLocalSnapshot(
+                            SnapshotFileTree sft,
+                            boolean scoped,
+                            boolean ignoreErrs
+                        ) {
+                            if (ctx.localNode().id().equals(grid(1).localNode().id())) {
+                                beginLatch.countDown();
+
+                                try {
+                                    assertTrue(proceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException e) {
+                                    throw new RuntimeException("Interrupted.", e);
+                                }
+                            }
+
+                            return super.deleteLocalSnapshot(sft, scoped, ignoreErrs);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(null);
+
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null);
+
+        assertTrue(beginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        UUID stoppedGridId = grid(1).localNode().id();
+
+        stopGrid(1);
+
+        proceedLatch.countDown();
+
+        var delRes = delFut.get(getTestTimeout());
+
+        assertEquals(2, delRes.completedNodes().size());
+        assertFalse(delRes.completedNodes().containsKey(stoppedGridId));
+
+        startGrid(1);
+
+        delRes = snp(grid(2)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+
+        assertEquals(1, delRes.completedNodes().size());
+        assertTrue(delRes.completedNodes().containsKey(grid(1).localNode().id()));
+    }
+
+    /** Tests that a concurrent deletion of a snapshot with the same name but different name characters case is allowed. */
+    @Test
+    public void testConcurrentDeleteOfTheSameSnapshotDifferentNameCharactersCase() throws Exception {
+        assumeFalse(caseInsensitiveFs);
+
+        doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(true);
+    }
+
+    /** Tests that a concurrent deletion of a snapshot with the same name but different path is allowed. */
+    @Test
+    public void testConcurrentDeleteOfTheSameSnapshotDifferentPath() throws Exception {
+        doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(false);
+    }
+
+    /**
+     * Tests that a concurrent deletion of a snapshot with the same name but different path is allowed.
+     *
+     * @param useNameCharactersCase If {@code true}, uses a changed characters case of snapshot name as the other snapshot path.
+     *                              If {@code false}, uses different snapshot root path.
+     */
+    private void doTestConcurrentDeleteOfTheSameSnapshotDifferentPath(boolean useNameCharactersCase) throws Exception {
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(TIMEOUT);
+
+        if (incremental)
+            addIncrementalSnapshot(SNAPSHOT_NAME, null);
+
+        String secondSnpPath = null;
+        String secondSnpName = SNAPSHOT_NAME.toLowerCase();
+
+        if (!useNameCharactersCase) {
+            secondSnpPath = new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots").getAbsolutePath();
+            secondSnpName = SNAPSHOT_NAME;
+        }
+
+        snp(grid(0)).createSnapshot(secondSnpName, secondSnpPath, false, onlyPrimary).get(getTestTimeout());
+
+        if (incremental)
+            addIncrementalSnapshot(secondSnpName, secondSnpPath);
+
+        TestRecordingCommunicationSpi commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
+
+        commSpi1.blockMessages((node, msg) ->
+            msg instanceof SingleNodeMessage<?> msg0 && msg0.type() == DELETE_SNAPSHOT.ordinal());
+
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut0 = snp(grid(0)).deleteSnapshot(SNAPSHOT_NAME, null);
+        IgniteInternalFuture<SnapshotDeleteProcessResult> delFut1 = snp(grid(1)).deleteSnapshot(secondSnpName, secondSnpPath);
+
+        commSpi1.waitForBlocked(2, getTestTimeout());
+
+        commSpi1.stopBlock();
+
+        var delRes0 = delFut0.get(getTestTimeout());
+        var delRes1 = delFut1.get(getTestTimeout());
+
+        assertTrue(!delRes0.completedNodes().isEmpty() || !delRes0.uncompletedNodes().isEmpty());
+        assertTrue(!delRes1.completedNodes().isEmpty() || !delRes1.uncompletedNodes().isEmpty());
+    }
+
+    /** Tests that a concurrent deletion of the same snapshot is declined. */
+    @Test
+    public void testConcurrentDeleteOfTheSameSnapshot() throws Exception {
+        // Doesn't matter here.
+        assumeFalse(onlyPrimary || incremental);
+
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE, false, true),
+            () -> snp(grid(1)).deleteSnapshot(snapshotName, null).get(getTestTimeout()),
+            e -> e.getMessage().contains("Deletion of the snapshot has already started"),
+            false
+        );
+    }
+
+    /**
+     * Tests that a snapshot deletion is declined when a snapshot check operation is in progress.
+     *
+     * @see SnapshotCheckProcess#isSnapshotChecking(String)
+     */
+    @Test
+    public void testSnapshotDeleteWhenCheckInProgress() throws Exception {
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        SnapshotPartitionsVerifyResult res = doTestConcurrentSnapshotDelete(
+            () -> new IgniteFutureImpl<>(snp(grid(2)).checkSnapshot(firstOpSnpName, null, incremental ? 1 : 0)),
+            F.asList(CHECK_SNAPSHOT_METAS),
+            true,
+            null,
+            SnapshotDeleteProcess.BEING_CREATED_PREF,
+            false,
+            true
+        );
+
+        assertFalse(res == null);
+        assertTrue(F.isEmpty(res.exceptions()));
+    }
+
+    /** Tests that a snapshot deletion is declined when a snapshot create operation is in progress.*/
+    @Test
+    public void testSnapshotDeleteWhenCreateInProgress() throws Exception {
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doTestConcurrentSnapshotDelete(
+            () -> snp(grid(0)).createSnapshot(firstOpSnpName, null, incremental, onlyPrimary),
+            F.asList(START_SNAPSHOT, END_SNAPSHOT),
+            false,
+            () -> {
+                new IgniteFutureImpl<>(snp(grid(0)).deleteSnapshot(firstOpSnpName, null)).get(getTestTimeout());
+
+                if (incremental)
+                    snp(grid(0)).createSnapshot(firstOpSnpName).get(getTestTimeout());
+            },
+            "Snapshot with the same name is being created",
+            false,
+            false
+        );
+    }
+
+    /** Tests that a snapshot deletion is declined when a snapshot restore begins. */
+    @Test
+    public void testSnapshotDeleteWhenRestoreBegins() throws Exception {
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doTestConcurrentSnapshotDelete(
+            () -> {
+                if (incremental)
+                    return snp(grid(2)).restoreSnapshot(firstOpSnpName, null, 1);
+                else
+                    return snp(grid(2)).restoreSnapshot(firstOpSnpName, null);
+            },
+            F.asList(CHECK_SNAPSHOT_METAS, CHECK_SNAPSHOT_PARTS),
+            true,
+            () -> {
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+            },
+            SnapshotDeleteProcess.BEING_CHECKED_PREF,
+            false,
+            false
+        );
+    }
+
+    /** Tests that a snapshot deletion is declined when a snapshot restore is in progress. */
+    @Test
+    public void testSnapshotDeleteWhenRestoreInProgress() throws Exception {
+        String firstOpSnpName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        var restoreMsgs = F.asList(
+            RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+            RESTORE_CACHE_GROUP_SNAPSHOT_START
+        );
+
+        if (incremental) {
+            restoreMsgs = new ArrayList<>(restoreMsgs);
+            restoreMsgs.add(RESTORE_INCREMENTAL_SNAPSHOT_START);
+        }
+
+        doTestConcurrentSnapshotDelete(
+            () -> {
+                if (incremental)
+                    return snp(grid(2)).restoreSnapshot(firstOpSnpName, null, 1);
+                else
+                    return snp(grid(2)).restoreSnapshot(firstOpSnpName, null);
+            },
+            restoreMsgs,
+            true,
+            () -> {
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+            },
+            SnapshotDeleteProcess.BEING_RESTORED_PREF,
+            false,
+            false
+        );
+    }
+
+    /** Tests that a snapshot deletion is declined when a snapshot restore is in progress but fails. */
+    @Test
+    public void testSnapshotDeleteWhenRestoreProgressFails() throws Exception {
+        // An in-the-middle failure won't allow to start restoring the incrementals.
+        assumeFalse(incremental);
+
+        var restoreMsgs = F.asList(RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK);
+
+        if (incremental) {
+            restoreMsgs = new ArrayList<>(restoreMsgs);
+            restoreMsgs.add(RESTORE_INCREMENTAL_SNAPSHOT_START);
+        }
+
+        doTestConcurrentSnapshotDelete(
+            () -> {
+                if (incremental)
+                    return snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null, 1);
+                else
+                    return snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, null);
+            },
+            restoreMsgs,
+            true,
+            () -> {
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+
+                SnapshotFileTree sft = snapshotFileTree(grid(1), SNAPSHOT_NAME);
+
+                String failingFilePath = sft.partitionFile(dfltCacheCfg, primaries[0]).getAbsolutePath()
+                    .replace(sft.nodeStorage().getAbsolutePath(), "");
+
+                grid(1).context().cache().context().snapshotMgr().ioFactory((file, modes) -> {
+                    FileIO delegate = new RandomAccessFileIOFactory().create(file, modes);
+
+                    if (file.getPath().endsWith(failingFilePath))
+                        throw new RuntimeException("Test exception");
+
+                    return delegate;
+                });
+            },
+            SnapshotDeleteProcess.BEING_RESTORED_PREF,
+            true,
+            false
+        );
+    }
+
+    /**
+     * @param firstOp First cluster-wide snapshot operation.
+     * @param msgsToWatch {@link SingleNodeMessage#type()} relating to {@code firstOp} to block on one node.
+     * @param precreateSnp If {@code true}, creates snapshot after the cluster start.
+     * @param prepareIteration If not {@code null}, is invoked in the beginning of test iteration at each {@code msgsToWatch}.
+     * @param concurrentMsgErr Test of failed concurrent to {@code firstOp} delete snapshot operation to watch.
+     * @param ignoreFirstOpFailure  If {@code true}, possible failure of {@code firstOp} is ignored.
+     * @param ignoreDeleteOpFailure If {@code true}, possible failure of the deletion operation is ignored. Allows to
+     *                              focus on the first operation's result.
+     */
+    protected <T> @Nullable T doTestConcurrentSnapshotDelete(
+        Supplier<IgniteFuture<T>> firstOp,
+        Collection<DistributedProcess.DistributedProcessType> msgsToWatch,
+        boolean precreateSnp,
+        @Nullable Runnable prepareIteration,
+        String concurrentMsgErr,
+        boolean ignoreFirstOpFailure,
+        boolean ignoreDeleteOpFailure
+    ) throws Exception {
+        startGridsWithCache(3, CACHE_KEYS_RANGE, i -> i, dfltCacheCfg);
+
+        if (precreateSnp) {
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary)
+                .get(TIMEOUT);
+
+            if (incremental)
+                addIncrementalSnapshot(null);
+        }
+
+        TestRecordingCommunicationSpi commSpi1 = (TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi();
+
+        T res = null;
+
+        for (var nodeResMsgType : msgsToWatch) {
+            if (log.isInfoEnabled())
+                log.info("Iteration with message-to-wait-for type: " + nodeResMsgType);
+
+            if (prepareIteration != null)
+                prepareIteration.run();
+
+            commSpi1.blockMessages((node, msg) ->
+                msg instanceof SingleNodeMessage<?> msg0 && msg0.type() == nodeResMsgType.ordinal());
+
+            IgniteFuture<T> firstFut = firstOp.get();
+
+            commSpi1.waitForBlocked(1, getTestTimeout());
+
+            if (ignoreDeleteOpFailure) {
+                try {
+                    snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout());
+                }
+                catch (Exception e) {
+                    if (log.isDebugEnabled())
+                        log.debug("The deletion operation failed but a failure is expected, err: " + e.getMessage());
+                }
+            }
+            else {
+                assertThrowsAnyCause(
+                    null,
+                    () -> snp(grid(1)).deleteSnapshot(SNAPSHOT_NAME, null).get(getTestTimeout()),
+                    IgniteIllegalStateException.class,
+                    concurrentMsgErr
+                );
+            }
+
+            commSpi1.stopBlock();
+
+            if (ignoreFirstOpFailure) {
+                try {
+                    res = firstFut.get(getTestTimeout());
+                }
+                catch (Exception e) {
+                    if (log.isDebugEnabled())
+                        log.debug("The first operation failed but a failure is expected, err: " + e.getMessage());
+
+                    return null;
+                }
+            }
+            else
+                res = firstFut.get(getTestTimeout());
+        }
+
+        return res;
+    }
+
+    /** */
+    private void addIncrementalSnapshot(String name, @Nullable String path) {
+        try (var ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = CACHE_KEYS_RANGE; i < INC_CACHE_KEYS_RANGE; i++)
+                ds.addData(i, i);
+        }
+
+        snp(grid(0)).createSnapshot(name, path, true, onlyPrimary)
+            .get(getTestTimeout());
+    }
+
+    /** */
+    private void addIncrementalSnapshot(@Nullable String path) {
+        addIncrementalSnapshot(SNAPSHOT_NAME, path);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void awaitPartitionMapExchange() {
+        try {
+            super.awaitPartitionMapExchange();
+        }
+        catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted.", e);
+        }
+    }
+}

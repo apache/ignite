@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -32,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -131,7 +133,7 @@ public class SnapshotCheckProcess {
             return new GridFinishedFuture<>();
 
         try {
-            contexts.remove(ctx.req.snapshotName());
+            contexts.remove(ctx.req.snapshotName().toLowerCase(Locale.ROOT));
 
             GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = clusterOpFuts.get(reqId);
 
@@ -473,7 +475,7 @@ public class SnapshotCheckProcess {
     private @Nullable SnapshotCheckContext context(@Nullable String snpName, UUID reqId) {
         return snpName == null
             ? contexts.values().stream().filter(ctx0 -> ctx0.req.requestId().equals(reqId)).findFirst().orElse(null)
-            : contexts.get(snpName);
+            : contexts.get(snpName.toLowerCase(Locale.ROOT));
     }
 
     /** Phase 1 beginning: prepare, collect and check local metas. */
@@ -487,12 +489,17 @@ public class SnapshotCheckProcess {
             if (nodeStopping)
                 return new GridFinishedFuture<>(new NodeStoppingException("The node is stopping: " + kctx.localNodeId()));
 
-            ctx = contexts.computeIfAbsent(req.snapshotName(), snpName -> new SnapshotCheckContext(req));
+            ctx = contexts.computeIfAbsent(req.snapshotName().toLowerCase(Locale.ROOT), snpName -> new SnapshotCheckContext(req));
         }
 
         if (!ctx.req.requestId().equals(req.requestId())) {
-            return new GridFinishedFuture<>(new IllegalStateException("Validation of snapshot '" + req.snapshotName()
-                + "' has already started [ctx=" + ctx + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException("Validation of snapshot '" + req.snapshotName()
+                + "' has already started [req=" + req + ']'));
+        }
+
+        if (kctx.cache().context().snapshotMgr().isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
+            return new GridFinishedFuture<>(new IgniteIllegalStateException("Snapshot '" + req.snapshotName()
+                + "' is being deleted [req=" + req + ']'));
         }
 
         // Excludes non-baseline initiator.
@@ -588,7 +595,7 @@ public class SnapshotCheckProcess {
             if (ctx != null) {
                 unregisterMetrics(ctx.req.snapshotName());
 
-                contexts.remove(ctx.req.snapshotName());
+                contexts.remove(ctx.req.snapshotName().toLowerCase(Locale.ROOT));
             }
 
             if (clusterOpFut != null)
@@ -694,7 +701,7 @@ public class SnapshotCheckProcess {
 
     /** @return {@code True} if snapshot with specified name is checking. */
     boolean isSnapshotChecking(String snpName) {
-        return contexts.get(snpName) != null;
+        return contexts.get(snpName.toLowerCase(Locale.ROOT)) != null;
     }
 
     /** @return {@code True} if node with the provided id is in the cluster and is a baseline node. {@code False} otherwise. */
@@ -770,7 +777,7 @@ public class SnapshotCheckProcess {
          */
         @Nullable private volatile List<SnapshotMetadata> metas;
 
-        /** Map of snapshot pathes per consistent id for {@link #metas}. */
+        /** Map of snapshot paths per consistent id for {@link #metas}. */
         @GridToStringInclude
         @Nullable private Map<String, SnapshotFileTree> locFileTree;
 
