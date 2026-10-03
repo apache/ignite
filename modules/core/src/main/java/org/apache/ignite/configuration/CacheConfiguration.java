@@ -53,7 +53,6 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.processors.query.QueryEntityMerger;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -359,6 +358,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
+    /** API used to configure query entities in this configuration instance. */
+    private transient QueryEntityConfigurationSource qryEntityCfgSrc;
+
     /** Partition loss policy. */
     private PartitionLossPolicy partLossPlc = DFLT_PARTITION_LOSS_POLICY;
 
@@ -470,6 +472,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
         pluginCfgs = cc.getPluginConfigurations();
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        qryEntityCfgSrc = cc.qryEntityCfgSrc;
         qryParallelism = cc.getQueryParallelism();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
@@ -1934,9 +1937,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * <p>
      * To expose fields of these types onto SQL level and to index them you have to use annotations
      * from package {@link org.apache.ignite.cache.query.annotations}.
+     * <p>
+     * This method must not be used together with {@link #setQueryEntities(Collection)}.
+     * Repeated calls replace the indexed types, query entities and key configuration configured by the previous call.
      *
      * @param indexedTypes Key and value type pairs.
      * @return {@code this} for chaining.
+     * @throws CacheException If query entities have already been configured through {@link #setQueryEntities(Collection)}.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
         if (F.isEmpty(indexedTypes))
@@ -1950,8 +1957,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
         A.ensure((len & 1) == 0,
             "Number of indexed types is expected to be even. Refer to method javadoc for details.");
 
-        if (this.indexedTypes != null)
-            throw new CacheException("Indexed types can be set only once.");
+        checkQueryEntityConfigurationSource(QueryEntityConfigurationSource.INDEXED_TYPES);
 
         Class<?>[] newIndexedTypes = new Class<?>[len];
 
@@ -1962,56 +1968,56 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
             newIndexedTypes[i] = U.box(indexedTypes[i]);
         }
 
-        if (qryEntities == null)
-            qryEntities = new ArrayList<>();
+        Collection<QueryEntity> newQryEntities = new ArrayList<>();
+        Collection<CacheKeyConfiguration> newKeyCfgs = new ArrayList<>();
 
         for (int i = 0; i < len; i += 2) {
             Class<?> keyCls = newIndexedTypes[i];
             Class<?> valCls = newIndexedTypes[i + 1];
 
-            QueryEntity incomingEntity = new QueryEntity(keyCls, valCls);
+            QueryEntity newEntity = new QueryEntity(keyCls, valCls);
 
-            QueryEntity existingEntity = findQueryEntity(incomingEntity.findValueType());
+            boolean dup = false;
 
-            if (existingEntity == null)
-                qryEntities.add(incomingEntity);
-            else {
-                QueryEntity mergedEntity = QueryEntityMerger.merge(getName(), existingEntity, incomingEntity);
+            for (QueryEntity entity : newQryEntities) {
+                if (Objects.equals(entity.findValueType(), newEntity.findValueType())) {
+                    dup = true;
 
-                replaceQueryEntity(existingEntity, mergedEntity);
+                    break;
+                }
             }
+
+            if (!dup)
+                newQryEntities.add(newEntity);
 
             // Set key configuration if needed.
             String affFieldName = BinaryUtils.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
-                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(incomingEntity.getKeyType(), affFieldName);
+                CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
 
-                if (F.isEmpty(keyCfg))
-                    keyCfg = new CacheKeyConfiguration[] { newKeyCfg };
-                else {
-                    boolean keyCfgDup = false;
+                boolean keyCfgDup = false;
 
-                    for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
-                        if (Objects.equals(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
-                            keyCfgDup = true;
+                for (CacheKeyConfiguration oldKeyCfg : newKeyCfgs) {
+                    if (Objects.equals(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                        keyCfgDup = true;
 
-                            break;
-                        }
-                    }
-
-                    if (!keyCfgDup) {
-                        CacheKeyConfiguration[] keyCfg0 = new CacheKeyConfiguration[keyCfg.length + 1];
-
-                        System.arraycopy(keyCfg, 0, keyCfg0, 0, keyCfg.length);
-
-                        keyCfg0[keyCfg0.length - 1] = newKeyCfg;
-
-                        keyCfg = keyCfg0;
+                        break;
                     }
                 }
+
+                if (!keyCfgDup)
+                    newKeyCfgs.add(newKeyCfg);
             }
         }
+
+        this.indexedTypes = newIndexedTypes;
+
+        qryEntities = newQryEntities;
+
+        keyCfg = newKeyCfgs.isEmpty() ? null : newKeyCfgs.toArray(new CacheKeyConfiguration[0]);
+
+        qryEntityCfgSrc = QueryEntityConfigurationSource.INDEXED_TYPES;
 
         return this;
     }
@@ -2073,38 +2079,34 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /**
      * Sets query entities configuration.
+     * <p>
+     * This method must not be used together with {@link #setIndexedTypes(Class[])}.
+     * Repeated calls replace the query entities configured by the previous call.
      *
      * @param qryEntities Query entities.
      * @return {@code this} for chaining.
+     * @throws CacheException If query entities have already been configured through {@link #setIndexedTypes(Class[])}.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
-        if (this.qryEntities == null)
-            this.qryEntities = new ArrayList<>();
+        checkQueryEntityConfigurationSource(QueryEntityConfigurationSource.QUERY_ENTITIES);
 
-        for (QueryEntity incomingEntity : qryEntities) {
-            String valType = incomingEntity.findValueType();
+        this.qryEntities = new ArrayList<>(qryEntities);
 
-            QueryEntity existingEntity = findQueryEntity(valType);
-
-            if (existingEntity == null)
-                this.qryEntities.add(incomingEntity);
-            else {
-                QueryEntity mergedEntity = QueryEntityMerger.merge(getName(), existingEntity, incomingEntity);
-
-                replaceQueryEntity(existingEntity, mergedEntity);
-            }
-        }
+        qryEntityCfgSrc = QueryEntityConfigurationSource.QUERY_ENTITIES;
 
         return this;
     }
 
     /**
-     * Clear query entities.
+     * Clears query entities.
+     * <p>
+     * Calling this method does not reset the API used to configure query entities and does not allow switching between
+     * {@link #setIndexedTypes(Class[])} and {@link #setQueryEntities(Collection)}.
      *
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> clearQueryEntities() {
-        this.qryEntities = null;
+        qryEntities = null;
 
         return this;
     }
@@ -2492,6 +2494,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     }
 
     /** */
+    void replaceQueryEntities(Collection<QueryEntity> qryEntities) {
+        this.qryEntities = new ArrayList<>(qryEntities);
+    }
+
+    /** */
+    private void checkQueryEntityConfigurationSource(QueryEntityConfigurationSource src) {
+        if (qryEntityCfgSrc != null && qryEntityCfgSrc != src) {
+            throw new CacheException("Query entities can be configured either with setIndexedTypes or setQueryEntities, " +
+                "but not both [cacheName=" + name + ']');
+        }
+    }
+
+    /** */
     private void replaceQueryEntity(QueryEntity oldEntity, QueryEntity newEntity) {
         Collection<QueryEntity> updated = new ArrayList<>(qryEntities.size());
 
@@ -2499,6 +2514,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
             updated.add(entity == oldEntity ? newEntity : entity);
 
         qryEntities = updated;
+    }
+
+    /** API used to configure query entities. */
+    private enum QueryEntityConfigurationSource {
+        /** */
+        INDEXED_TYPES,
+
+        /** */
+        QUERY_ENTITIES
     }
 
     /**
