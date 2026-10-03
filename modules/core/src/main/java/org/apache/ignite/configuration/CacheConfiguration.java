@@ -2481,19 +2481,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     }
 
     /** */
-    private QueryEntity findQueryEntity(String valType) {
-        if (qryEntities == null)
-            return null;
-
-        for (QueryEntity entity : qryEntities) {
-            if (Objects.equals(entity.findValueType(), valType))
-                return entity;
-        }
-
-        return null;
-    }
-
-    /** */
     void replaceQueryEntities(Collection<QueryEntity> qryEntities) {
         this.qryEntities = new ArrayList<>(qryEntities);
     }
@@ -2504,16 +2491,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
             throw new CacheException("Query entities can be configured either with setIndexedTypes or setQueryEntities, " +
                 "but not both [cacheName=" + name + ']');
         }
-    }
-
-    /** */
-    private void replaceQueryEntity(QueryEntity oldEntity, QueryEntity newEntity) {
-        Collection<QueryEntity> updated = new ArrayList<>(qryEntities.size());
-
-        for (QueryEntity entity : qryEntities)
-            updated.add(entity == oldEntity ? newEntity : entity);
-
-        qryEntities = updated;
     }
 
     /** API used to configure query entities. */
