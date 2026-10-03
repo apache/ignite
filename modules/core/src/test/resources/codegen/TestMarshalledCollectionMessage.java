@@ -19,9 +19,9 @@ package org.apache.ignite.internal;
 
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestMarshalledCollectionMessage implements Message {
+public class TestMarshalledCollectionMessage extends AbstractMessage {
     @Marshalled("keysArr")
     Set<GridCacheVersion> keys;
 

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * All changes must be made with the respect of RU rules.
  */
-public class SnapshotMetadata implements Message, Serializable {
+public class SnapshotMetadata extends AbstractMessage implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

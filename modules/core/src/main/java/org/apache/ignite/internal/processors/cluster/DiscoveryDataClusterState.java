@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +43,7 @@ import static org.apache.ignite.cluster.ClusterState.INACTIVE;
  * <p>
  * TODO https://issues.apache.org/jira/browse/IGNITE-7640 This class must be immutable, transitionRes must be set by calling finish().
  */
-public class DiscoveryDataClusterState implements Message {
+public class DiscoveryDataClusterState extends AbstractMessage {
     /** Current cluster state. */
     @Order(0)
     ClusterState state;

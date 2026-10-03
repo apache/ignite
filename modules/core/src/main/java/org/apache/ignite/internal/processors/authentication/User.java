@@ -23,13 +23,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 import org.mindrot.BCrypt;
 
 /**
  */
-public class User implements Serializable, Message {
+public class User extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

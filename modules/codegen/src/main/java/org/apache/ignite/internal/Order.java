@@ -48,6 +48,9 @@ public @interface Order {
      * <p>An annotated field is included in message serialization only when doing so does not break backward compatibility
      * during a Rolling Upgrade.</p>
      *
+     * <p>A field is gated by one feature at a time: a field introduced by a feature can be deprecated only after that
+     * feature is retired. A feature can gate only one field of a message class hierarchy.</p>
+     *
      * @return Name of the Ignite feature that introduced this field, or an empty string if the field is not gated.
      */
     String introducedBy() default "";
@@ -59,6 +62,9 @@ public @interface Order {
      *
      * <p>An annotated field is excluded from message serialization only when doing so does not break backward compatibility
      * during a Rolling Upgrade.</p>
+     *
+     * <p>A field is gated by one feature at a time: a field introduced by a feature can be deprecated only after that
+     * feature is retired. A feature can gate only one field of a message class hierarchy.</p>
      *
      * @return Name of the Ignite feature that deprecated this field, or an empty string if the field is not gated.
      */

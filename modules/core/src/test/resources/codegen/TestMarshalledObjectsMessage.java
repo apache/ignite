@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestMarshalledObjectsMessage implements Message {
+public class TestMarshalledObjectsMessage extends AbstractMessage {
     @Order(0)
     Collection<byte[]> dataBytes;
 

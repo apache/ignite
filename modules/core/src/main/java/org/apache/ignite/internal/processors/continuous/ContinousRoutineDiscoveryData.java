@@ -24,10 +24,10 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Continous routine Discovery data. */
-public final class ContinousRoutineDiscoveryData implements Message {
+public final class ContinousRoutineDiscoveryData extends AbstractMessage {
     /** Node ID.  */
     @Order(0)
     UUID nodeId;

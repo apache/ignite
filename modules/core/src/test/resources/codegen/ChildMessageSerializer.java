@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.AbstractMessage;
+import java.util.List;
+import org.apache.ignite.internal.AbstractTestMessage;
 import org.apache.ignite.internal.ChildMessage;
 import org.apache.ignite.internal.MessageSerializationContext;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -41,13 +44,13 @@ public final class ChildMessageSerializer implements MessageSerializer<ChildMess
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt(((AbstractMessage)msg).id))
+                if (!writer.writeInt(((AbstractTestMessage)msg).id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte(((AbstractMessage)msg).flags))
+                if (!writer.writeByte(((AbstractTestMessage)msg).flags))
                     return false;
 
                 writer.incrementState();
@@ -63,6 +66,14 @@ public final class ChildMessageSerializer implements MessageSerializer<ChildMess
                     return false;
 
                 writer.incrementState();
+
+            case 4:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
+
+                writer.incrementState();
         }
 
         return true;
@@ -72,7 +83,7 @@ public final class ChildMessageSerializer implements MessageSerializer<ChildMess
     @Override public final boolean readFrom(ChildMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                ((AbstractMessage)msg).id = reader.readInt();
+                ((AbstractTestMessage)msg).id = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -80,7 +91,7 @@ public final class ChildMessageSerializer implements MessageSerializer<ChildMess
                 reader.incrementState();
 
             case 1:
-                ((AbstractMessage)msg).flags = reader.readByte();
+                ((AbstractTestMessage)msg).flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -100,6 +111,19 @@ public final class ChildMessageSerializer implements MessageSerializer<ChildMess
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 4:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

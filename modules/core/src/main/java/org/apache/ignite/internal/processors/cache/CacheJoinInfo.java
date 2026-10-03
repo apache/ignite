@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Cache information exchanged during node join. */
-public class CacheJoinInfo implements Message {
+public class CacheJoinInfo extends AbstractMessage {
     /** */
     @Order(0)
     @GridToStringInclude

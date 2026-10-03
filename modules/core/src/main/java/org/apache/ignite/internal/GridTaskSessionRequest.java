@@ -23,12 +23,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Task session request.
  */
-public class GridTaskSessionRequest implements Message {
+public class GridTaskSessionRequest extends AbstractMessage {
     /** Task session ID. */
     @Order(0)
     IgniteUuid sesId;

@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class TestFeatureConflictMessage implements Message {
+@FeatureGated(registry = TestFeatureRegistry.class)
+public class TestMixedRegistryBaseMessage extends AbstractMessage {
     /** */
-    @Order(value = 0, introducedBy = "ROLLING_UPGRADE_FEATURE", deprecatedBy = "ROLLING_UPGRADE_FEATURE")
-    int fld;
+    @Order(value = 0, deprecatedBy = "FIRST_FEATURE")
+    int oldFld;
 }

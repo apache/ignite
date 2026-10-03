@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * A joining node receives this message, extracts the current {@link DiscoveryDataClusterState},
  * and replays the {@link BaselineTopologyHistory} items into its local history.</p>
  */
-public class BaselineStateAndHistoryData implements Message {
+public class BaselineStateAndHistoryData extends AbstractMessage {
     /** Current cluster state (active/inactive, baseline topology, transition info). */
     @Order(0)
     DiscoveryDataClusterState globalState;
