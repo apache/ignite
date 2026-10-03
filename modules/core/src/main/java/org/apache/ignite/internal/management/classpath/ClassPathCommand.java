@@ -15,41 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.management.classpath;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.classpath.IgniteClassPath;
+import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 
-/**
- * Thin client payload input channel.
- */
-class PayloadInputChannel {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Input stream. */
-    private final BinaryInputStream in;
-
-    /**
-     * Constructor.
-     */
-    PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        this.ch = ch;
-        in = BinaryStreams.inputStream(payload);
-    }
-
-    /**
-     * Gets client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
-
-    /**
-     * Gets input stream.
-     */
-    public BinaryInputStream in() {
-        return in;
+/** Command to manage {@link IgniteClassPath}. */
+public class ClassPathCommand extends CommandRegistryImpl {
+    /** */
+    public ClassPathCommand() {
+        super(
+            new ClassPathCreateCommand(),
+            new ClassPathRemoveCommand()
+        );
     }
 }

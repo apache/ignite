@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -36,6 +38,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
@@ -49,6 +52,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.eviction.paged.TestObject;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
@@ -438,6 +442,49 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
         }
 
         checkDflt.run();
+    }
+
+    /** */
+    @Test
+    public void testClassPathUploadFilePart() throws Exception {
+        File tmpFile = File.createTempFile("file", "temp");
+
+        tmpFile.deleteOnExit();
+
+        // Client has no permission to invoke internal methods.
+        // Trying to invoke without specifying "management client" flag must fail.
+        for (String name: new String[] {CLIENT, ADMIN}) {
+            assertThrows(log, () -> {
+                try (IgniteClient cli = startClient(name)) {
+                    ((TcpIgniteClient)cli).uploadClasspathFile(F.first(cli.cluster().nodes()), UUID.randomUUID(), tmpFile.toPath());
+                    return null;
+                }
+            }, ClientConnectionException.class, "Channel is closed");
+        }
+
+        userAttrs = F.asMap(MANAGEMENT_CLIENT_ATTR, "true");
+
+        try {
+            // Trying to invoke as CLIENT with "management client" flag must fail, because of security.
+            // CLIENT has no ADMIN_OPS permission.
+            assertThrows(log, () -> {
+                try (IgniteClient cli = startClient(CLIENT)) {
+                    ((TcpIgniteClient)cli).uploadClasspathFile(F.first(cli.cluster().nodes()), UUID.randomUUID(), tmpFile.toPath());
+                    return null;
+                }
+            }, ClientConnectionException.class, "Channel is closed");
+
+            // Check that request actually invoked and failed due to unknown ClassPath.
+            assertThrows(log, () -> {
+                try (IgniteClient cli = startClient(ADMIN)) {
+                    ((TcpIgniteClient)cli).uploadClasspathFile(F.first(cli.cluster().nodes()), UUID.randomUUID(), tmpFile.toPath());
+                    return null;
+                }
+            }, ClientException.class, "ClassPath not found");
+        }
+        finally {
+            userAttrs = null;
+        }
     }
 
     /**

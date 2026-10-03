@@ -15,41 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.classpath;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.TransmissionHandler;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Thin client payload input channel.
+ * Message to initiate download of classpath files from remote node.
+ *
+ * @see TransmissionHandler
+ * @see ClassPathFilesTransmissionHandler
+ * @see DownloadClassPathFailureMessage
  */
-class PayloadInputChannel {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Input stream. */
-    private final BinaryInputStream in;
-
+public class DownloadClassPathMessage implements Message {
     /**
-     * Constructor.
+     * Classpath ID.
+     *
+     * @see IgniteClassPath#id()
      */
-    PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        this.ch = ch;
-        in = BinaryStreams.inputStream(payload);
+    @Order(0)
+    UUID icpId;
+
+    /** */
+    public DownloadClassPathMessage() {
+        // No-op.
     }
 
-    /**
-     * Gets client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
-
-    /**
-     * Gets input stream.
-     */
-    public BinaryInputStream in() {
-        return in;
+    /** */
+    public DownloadClassPathMessage(IgniteClassPath icp) {
+        this.icpId = icp.id();
     }
 }
