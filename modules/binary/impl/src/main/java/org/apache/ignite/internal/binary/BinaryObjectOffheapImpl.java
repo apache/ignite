@@ -128,7 +128,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+        return reader().getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -196,12 +196,12 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F)reader(null, false).unmarshalField(fieldName);
+        return (F)reader().unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F)reader(null, false).unmarshalField(fieldId);
+        return (F)reader().unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -390,12 +390,12 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, false).unmarshalField(fieldName);
+        return (F)reader(rCtx, ctx.classLoader(), false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null, false).findFieldByName(fieldName);
+        return reader().findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -487,18 +487,16 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @return Deserialized value.
      */
     private Object deserializeValue() {
-        return reader(null, true).deserialize();
+        return reader(null, ctx.classLoader(), true).deserialize();
     }
 
     /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
-     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, ctx.classLoader(), forUnmarshal);
+    private BinaryReaderExImpl reader() {
+        return reader(null, ctx.classLoader(), false);
     }
 
     /**
@@ -509,8 +507,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-        boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);

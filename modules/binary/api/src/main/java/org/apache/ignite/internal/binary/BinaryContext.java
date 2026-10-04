@@ -130,10 +130,10 @@ public class BinaryContext {
     private final @Nullable ClassLoader clsLdr;
 
     /** Actual marshaller. */
-    private BinaryMarshaller marsh;
+    private final BinaryMarshaller marsh;
 
     /** */
-    private MarshallerContext marshCtx;
+    private final MarshallerContext marshCtx;
 
     /** */
     private final @Nullable BinarySerializer dfltSerializer;
@@ -279,14 +279,17 @@ public class BinaryContext {
 
         if (marsh != null) {
             this.marsh = marsh;
-
-            marshCtx = marsh.getContext();
+            this.marshCtx = marsh.getContext();
 
             assert marshCtx != null;
 
             optmMarsh.setContext(marshCtx);
 
             configure(nameMapper, idMapper, dfltSerializer, typeCfgs, affFlds);
+        }
+        else {
+            this.marsh = null;
+            this.marshCtx = null;
         }
     }
 

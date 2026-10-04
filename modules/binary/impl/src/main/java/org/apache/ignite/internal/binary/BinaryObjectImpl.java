@@ -387,12 +387,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F)reader(null, false).unmarshalField(fieldName);
+        return (F)reader().unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F)reader(null, false).unmarshalField(fieldId);
+        return (F)reader().unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -687,12 +687,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, false).unmarshalField(fieldName);
+        return (F)reader(rCtx, null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null, false).findFieldByName(fieldName);
+        return reader().findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -744,7 +744,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+        return reader().getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -811,8 +811,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-        boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.classLoader();
 
@@ -827,12 +826,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, null, forUnmarshal);
+    private BinaryReaderExImpl reader() {
+        return reader(null, null, false);
     }
 
     /**

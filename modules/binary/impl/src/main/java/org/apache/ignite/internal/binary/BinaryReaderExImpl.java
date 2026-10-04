@@ -112,9 +112,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /** Class loaded. */
     private final ClassLoader ldr;
 
-    /** Reader context which is constantly passed between objects. */
-    private BinaryReaderHandles hnds;
-
     /** */
     private final int start;
 
@@ -132,9 +129,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** Footer end. */
     private final int footerLen;
-
-    /** Class descriptor. */
-    private BinaryClassDescriptor desc;
 
     /** Mapper. */
     private final BinaryInternalMapper mapper;
@@ -162,6 +156,12 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** Whether stream is in raw mode. */
     private boolean raw;
+
+    /** Reader context which is constantly passed between objects. */
+    private BinaryReaderHandles hnds;
+
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
 
     /**
      * Constructor.
