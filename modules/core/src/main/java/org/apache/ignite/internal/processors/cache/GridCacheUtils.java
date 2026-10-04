@@ -1681,8 +1681,12 @@ public class GridCacheUtils {
      * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @throws IgniteCheckedException If configuration is not valid.
      */
-    public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx, boolean recoveryMode) throws IgniteCheckedException {
+    public static void initializeConfigDefaults(
+        IgniteLogger log,
+        CacheConfiguration cfg,
+        CacheObjectContext cacheObjCtx,
+        boolean recoveryMode
+    ) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 

@@ -22,13 +22,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
@@ -185,10 +190,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
         assertEquals("secondAffinityKey", keyCfg[0].getAffinityKeyFieldName());
     }
 
-    /**
-     * Verifies that {@link CacheConfiguration#setIndexedTypes} replaces an explicitly configured
-     * key configuration.
-     */
+    /** Verifies that {@link CacheConfiguration#setIndexedTypes} replaces an explicitly configured key configuration. */
     @Test
     public void testSetIndexedTypesReplacesExplicitKeyConfiguration() {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
@@ -442,6 +444,65 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
         assertTrue(entityEx.sql());
         assertTrue(entityEx.isPreserveKeysOrder());
         assertTrue(entityEx.fillAbsentPKsWithDefaults());
+    }
+
+    /** Verifies that CREATE TABLE configures query entities for a new cache. */
+    @Test
+    public void testCreateTableConfiguresQueryEntities() throws Exception {
+        IgniteEx node = startGrid(0);
+
+        node.cluster().state(ACTIVE);
+
+        IgniteCache<Integer, Person> dfltCache =
+            node.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        assertNull(node.context().cache().cacheDescriptor(CACHE_NAME));
+
+        dfltCache.query(new SqlFieldsQuery(
+            "CREATE TABLE TEST_TBL (" +
+                "ID1 INT, " +
+                "ID2 INT, " +
+                "VAL VARCHAR NOT NULL, " +
+                "PRIMARY KEY (ID1, ID2)" +
+                ") WITH \"CACHE_NAME=" + CACHE_NAME + "\""
+        )).getAll();
+
+        QueryEntity entity = singleQueryEntity(node);
+
+        assertEquals("TEST_TBL", entity.getTableName());
+        assertTrue(entity instanceof QueryEntityEx);
+
+        QueryEntityEx entityEx = (QueryEntityEx)entity;
+
+        assertTrue(entityEx.sql());
+        assertTrue(entityEx.isPreserveKeysOrder());
+        assertTrue(entityEx.fillAbsentPKsWithDefaults());
+    }
+
+    /** Verifies that query entities supplied by a thin client are correctly read and applied when creating a cache. */
+    @Test
+    public void testCreateCacheWithQueryEntitiesThroughThinClient() throws Exception {
+        IgniteEx node = startGrid(0);
+
+        QueryEntity entity = configuredEntity(Person.class);
+
+        ClientCacheConfiguration ccfg = new ClientCacheConfiguration()
+            .setName(CACHE_NAME)
+            .setQueryEntities(entity);
+
+        try (IgniteClient client = Ignition.startClient(
+            new ClientConfiguration().setAddresses("127.0.0.1:10800")
+        )) {
+            client.createCache(ccfg);
+
+            assertNotNull(node.cache(CACHE_NAME));
+
+            QueryEntity actual = singleQueryEntity(node);
+
+            assertEquals(entity.getKeyType(), actual.getKeyType());
+            assertEquals(entity.getValueType(), actual.getValueType());
+            assertEquals(entity.getFields(), actual.getFields());
+        }
     }
 
     /** */

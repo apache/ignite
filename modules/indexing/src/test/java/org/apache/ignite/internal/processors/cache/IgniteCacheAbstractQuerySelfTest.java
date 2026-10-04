@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -247,9 +248,39 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @return cache instance
      */
     protected <K, V> IgniteCache<K, V> jcache(Ignite ig, Class<K> clsK, Class<V> clsV) {
-        IgniteCache<K, V> cache = jcache(ig, cacheConfiguration(), clsK, clsV);
+        return jcacheWithPreparedCacheConfiguration(ig, cacheConfiguration(), clsK, clsV);
+    }
 
-        return cache;
+    /**
+     * @param ig Ignite.
+     * @param cfg Cache configuration.
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcacheWithPreparedCacheConfiguration(
+        Ignite ig,
+        CacheConfiguration cfg,
+        Class<K> clsK,
+        Class<V> clsV
+    ) {
+        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(cfg);
+
+        List<QueryEntity> entities = new ArrayList<>(ccfg.getQueryEntities());
+
+        QueryEntity entity = new QueryEntity(clsK, clsV);
+
+        boolean configured = entities.stream().anyMatch(
+            existing -> Objects.equals(existing.getValueType(), entity.getValueType())
+        );
+
+        if (!configured)
+            entities.add(entity);
+
+        ccfg.setQueryEntities(entities);
+
+        return jcache(ig, ccfg, clsK.getSimpleName() + "-" + clsV.getSimpleName());
     }
 
     /**
@@ -630,11 +661,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     public void testSimpleCustomTableName() {
         CacheConfiguration<Integer, Object> cacheConf = new CacheConfiguration<Integer, Object>(cacheConfiguration())
-            .setName(DEFAULT_CACHE_NAME)
-            .setQueryEntities(Arrays.asList(
-                new QueryEntity(Integer.class, Type1.class),
-                new QueryEntity(Integer.class, Type2.class)
-            ));
+            .setName(DEFAULT_CACHE_NAME);
 
         final IgniteCache<Integer, Object> cache = ignite().getOrCreateCache(cacheConf);
 
@@ -959,7 +986,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cfg.setOnheapCacheEnabled(true);
 
-        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), cfg, Integer.class, ObjectValue.class);
+        IgniteCache<Integer, ObjectValue> cache = jcacheWithPreparedCacheConfiguration(ignite(), cfg, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 
@@ -1186,7 +1213,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             new QueryEntity(String.class, ObjectValueOther.class)
         ));
 
-        IgniteCache<Object, Object> c = jcache(ignite(), conf, Object.class, Object.class);
+        IgniteCache<Object, Object> c = jcache(ignite(), conf, "Object-Object");
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
@@ -1232,7 +1259,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testPaginationIteratorDefaultCache() throws Exception {
-        testPaginationIterator(jcache(ignite(), cacheConfiguration(), DEFAULT_CACHE_NAME, Integer.class, Integer.class));
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration();
+        ccfg.setName(DEFAULT_CACHE_NAME);
+
+        testPaginationIterator(jcacheWithPreparedCacheConfiguration(ignite(), ccfg, Integer.class, Integer.class));
     }
 
     /**
@@ -1240,7 +1270,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testPaginationIteratorNamedCache() throws Exception {
-        testPaginationIterator(jcache(ignite(), cacheConfiguration(), Integer.class, Integer.class));
+        testPaginationIterator(jcache(ignite(), Integer.class, Integer.class));
     }
 
     /**
@@ -1274,7 +1304,10 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testPaginationGetDefaultCache() throws Exception {
-        testPaginationGet(jcache(ignite(), cacheConfiguration(), DEFAULT_CACHE_NAME, Integer.class, Integer.class));
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration();
+        ccfg.setName(DEFAULT_CACHE_NAME);
+
+        testPaginationGet(jcacheWithPreparedCacheConfiguration(ignite(), ccfg, Integer.class, Integer.class));
     }
 
     /**
@@ -1282,7 +1315,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testPaginationGetNamedCache() throws Exception {
-        testPaginationGet(jcache(ignite(), cacheConfiguration(), Integer.class, Integer.class));
+        testPaginationGet(jcache(ignite(), Integer.class, Integer.class));
     }
 
     /**
