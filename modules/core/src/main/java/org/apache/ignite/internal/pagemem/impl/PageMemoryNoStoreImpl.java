@@ -148,9 +148,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private final DataRegionMetricsImpl dataRegionMetrics;
 
     /** */
-    private final AtomicInteger selector = new AtomicInteger();
-
-    /** */
     private final OffheapReadWriteLock rwLock;
 
     /** Concurrency lvl. */

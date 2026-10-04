@@ -74,9 +74,6 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
  */
 @GridToStringExclude
 public class GridClientPartitionTopology implements GridDhtPartitionTopology {
-    /** */
-    private static final GridDhtPartitionState[] MOVING_STATES = new GridDhtPartitionState[] {MOVING};
-
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 

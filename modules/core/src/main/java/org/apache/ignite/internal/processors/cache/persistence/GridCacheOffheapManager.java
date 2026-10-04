@@ -81,9 +81,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDa
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAllocationRange;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -769,46 +766,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         return cntrsPageId;
-    }
-
-    /**
-     * @param part Local partition.
-     * @param map Map to add values to.
-     * @param metaPageAddr Meta page address
-     * @param io Page Meta IO
-     * @param grpId Cache Group ID.
-     * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, grpId]</code>
-     */
-    private static boolean addPartition(
-        GridDhtLocalPartition part,
-        PartitionAllocationMap map,
-        long metaPageAddr,
-        PageMetaIO io,
-        int grpId,
-        int partId,
-        int currAllocatedPageCnt,
-        long partSize
-    ) {
-        if (part != null) {
-            boolean reserved = part.reserve();
-
-            if (!reserved)
-                return false;
-        }
-        else
-            assert partId == PageIdAllocator.INDEX_PARTITION : partId;
-
-        assert PageIO.getPageId(metaPageAddr) != 0;
-
-        int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
-
-        int curPageCnt = partSize == 0 ? 0 : currAllocatedPageCnt;
-
-        map.put(
-            new GroupPartitionId(grpId, partId),
-            new PagesAllocationRange(lastAllocatedPageCnt, curPageCnt));
-
-        return true;
     }
 
     /** {@inheritDoc} */

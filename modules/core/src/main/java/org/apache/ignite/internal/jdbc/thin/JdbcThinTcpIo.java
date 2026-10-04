@@ -28,10 +28,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
@@ -129,9 +127,6 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
-
-    /** Random. */
-    private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
