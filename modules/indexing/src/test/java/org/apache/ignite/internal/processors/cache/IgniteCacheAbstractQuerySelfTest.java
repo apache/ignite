@@ -251,15 +251,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         return jcacheWithPreparedCacheConfiguration(ig, cacheConfiguration(), clsK, clsV);
     }
 
-    /**
-     * @param ig Ignite.
-     * @param cfg Cache configuration.
-     * @param clsK Key class.
-     * @param clsV Value class.
-     *
-     * @return cache instance
-     */
-    protected <K, V> IgniteCache<K, V> jcacheWithPreparedCacheConfiguration(
+    /** */
+    private <K, V> IgniteCache<K, V> jcacheWithPreparedCacheConfiguration(
         Ignite ig,
         CacheConfiguration cfg,
         Class<K> clsK,
