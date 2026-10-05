@@ -19,7 +19,10 @@ package org.apache.ignite.internal.ssl;
 
 import org.jetbrains.annotations.Nullable;
 
-/** Outcome of the reloads of one SSL context: when it last succeeded, and how it has been failing since. */
+/**
+ * Outcome of the reloads of one SSL context, by the {@code --ssl reload} command or by automatic renewal: when it last
+ * succeeded, how it has been failing since, and when the next automatic renewal is due.
+ */
 public class SslReloadState {
     /** Time of the last successful reload, {@code 0} if there was none. */
     private volatile long lastSuccessTime;
@@ -32,6 +35,9 @@ public class SslReloadState {
 
     /** Failed reloads in a row since the last successful one. */
     private volatile int failures;
+
+    /** Time of the next automatic renewal, {@code 0} if none is planned. */
+    private volatile long nextRenewalTime;
 
     /** Records a successful reload. */
     public synchronized void onSuccess() {
@@ -70,5 +76,46 @@ public class SslReloadState {
     /** @return Failed reloads in a row since the last successful one. */
     public int failures() {
         return failures;
+    }
+
+    /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
+    public long nextRenewalTime() {
+        return nextRenewalTime;
+    }
+
+    /**
+     * @param nextRenewalTime Time of the next automatic renewal, {@code 0} if none is planned.
+     */
+    public void nextRenewalTime(long nextRenewalTime) {
+        this.nextRenewalTime = nextRenewalTime;
+    }
+
+    /**
+     * @param e Failure to describe.
+     * @return Messages along its chain of causes, each once. A failure out of a user-supplied factory may carry no
+     *      message at all, and is then named by its type.
+     */
+    public static String reason(Throwable e) {
+        StringBuilder sb = new StringBuilder();
+
+        int depth = 0;
+
+        for (Throwable t = e; t != null && depth < 10; t = t.getCause(), depth++) {
+            String msg = t.getMessage();
+
+            // A wrapper made out of its cause alone carries nothing but the cause's own description.
+            if (msg == null || msg.isEmpty() || (t.getCause() != null && msg.equals(t.getCause().toString())))
+                continue;
+
+            if (sb.indexOf(msg) >= 0)
+                continue;
+
+            if (sb.length() > 0)
+                sb.append(": ");
+
+            sb.append(msg);
+        }
+
+        return sb.length() > 0 ? sb.toString() : e.toString();
     }
 }

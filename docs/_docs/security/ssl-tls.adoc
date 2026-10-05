@@ -158,6 +158,8 @@ include::{javaFile}[tag=disable-validation,indent=0]
 
 == Upgrading Certificates
 If your SSL certificates are about to expire or have been compromised, you can install new certificates without shutting down the whole cluster.
+The `control.sh --ssl reload` command puts new certificates in use without restarting the nodes, see
+link:tools/control-script#tls-certificates[TLS Certificates].
 
 The following is a procedure for updating certificate.
 
@@ -178,6 +180,59 @@ Now all nodes trust the new certificates.
 
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
+
+== Renewing Certificates Automatically [[renewing-certificates]]
+
+A node can renew its certificate by itself before it expires, when the certificate comes from a certificate
+authority service rather than from a file. Configure the node with an SSL context factory that implements
+`RenewableSslContextFactory`. Its `create()` method must request a newly issued certificate every time it is called.
+
+The node calls `create()` again once the certificate in use enters the renewal window, the last part of its lifetime.
+By default the window is 15% of the lifetime: a certificate valid for 30 days is renewed four and a half days before
+it expires. The new certificate goes through the same checks as one put in use by `control.sh --ssl reload`. It is
+also turned down if it expires no later than the one in use, since such a renewal gains nothing. New connections use
+the new certificate, and existing ones keep the one they were opened with.
+
+If a renewal fails, the node keeps its certificate and tries again until it succeeds. The pause doubles after each
+failure, from 1 minute to 1 hour, though never longer than a quarter of the window, and a random delay is added to
+it. Each failure is logged as a warning, and as an error once less than half of the window remains. A successful
+renewal, or a successful `--ssl reload`, stops the retries, and the next renewal is planned by the new certificate.
+
+Each node renews on its own schedule. The node log shows every certificate put in use and when the next renewal is
+planned. `control.sh --ssl status` and the `NextRenewalTime` metric show the next renewal as well.
+
+The schedule is set by methods of `RenewableSslContextFactory`, each with a default:
+
+[width="100%", cols="30%, 60%, 10%"]
+|=================
+| Method | Description | Default
+
+|`getRenewBeforeFraction()`
+|Share of the certificate lifetime left when the node renews it. The lifetime runs from the start of the certificate to
+the earliest expiry in its chain. A share rather than a fixed time keeps a service that issues shorter certificates
+than asked for from making the node come back for a new one over and over.
+|`0.15`
+
+|`getRenewBefore()`
+|Time before expiry when the node renews the certificate at the latest, in milliseconds. The node takes the smaller of
+this window and the share above. `0` leaves the window to the share alone.
+|`0`
+
+|`getRenewalJitter()`
+|Share of the window, from `0` to `1`, by which the node brings the renewal forward at random. Certificates issued at
+once expire at once, and the shift keeps their nodes from all coming for new ones at the same moment.
+|`0`
+
+|`getRenewalRetryMinInterval()`
+|Pause after the first failed renewal, in milliseconds. The node also never renews more often than this.
+|`60000`
+
+|`getRenewalRetryMaxInterval()`
+|Longest pause between failed renewals, in milliseconds.
+|`3600000`
+|=================
+
+A node with settings out of range does not start.
 
 == SslContextFactory Properties
 

@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslReloadState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -102,7 +103,7 @@ public class SslReloadTask extends SslTask<SslReloadCommandArg> {
                     // user-supplied factory.
                     failed = true;
 
-                    String reason = reason(e);
+                    String reason = SslReloadState.reason(e);
 
                     if (!arg.dryRun())
                         comp.reloadState().onFailure(reason);
@@ -185,35 +186,6 @@ public class SslReloadTask extends SslTask<SslReloadCommandArg> {
             }
 
             return res;
-        }
-
-        /**
-         * @param e Failure to describe.
-         * @return Messages along its chain of causes, each once. A failure out of a user-supplied factory may carry
-         *      no message at all, and is then named by its type.
-         */
-        private static String reason(Throwable e) {
-            StringBuilder sb = new StringBuilder();
-
-            int depth = 0;
-
-            for (Throwable t = e; t != null && depth < 10; t = t.getCause(), depth++) {
-                String msg = t.getMessage();
-
-                // A wrapper made out of its cause alone carries nothing but the cause's own description.
-                if (msg == null || msg.isEmpty() || (t.getCause() != null && msg.equals(t.getCause().toString())))
-                    continue;
-
-                if (sb.indexOf(msg) >= 0)
-                    continue;
-
-                if (sb.length() > 0)
-                    sb.append(": ");
-
-                sb.append(msg);
-            }
-
-            return sb.length() > 0 ? sb.toString() : e.toString();
         }
 
         /**

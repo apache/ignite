@@ -30,7 +30,8 @@ import org.apache.ignite.internal.ssl.SslReloadState;
 import org.apache.ignite.internal.visor.VisorJob;
 
 /**
- * Reports the TLS certificates every mapped node serves, which authorities it trusts, and how its last reload went.
+ * Reports the TLS certificates every mapped node serves, which authorities it trusts, how its last reload went, and
+ * when the next automatic renewal is due.
  * A node whose certificate is no longer, or not yet, valid fails the command; a node whose last reload failed makes
  * it end with a warning.
  */
@@ -121,6 +122,9 @@ public class SslStatusTask extends SslTask<NoArg> {
                     lines.add("    last reload succeeded at " + Instant.ofEpochMilli(state.lastSuccessTime()));
                 else
                     lines.add("    not reloaded since the node started");
+
+                if (state.nextRenewalTime() > 0)
+                    lines.add("    next automatic renewal at " + Instant.ofEpochMilli(state.nextRenewalTime()));
             }
 
             String res = String.join("\n", lines);

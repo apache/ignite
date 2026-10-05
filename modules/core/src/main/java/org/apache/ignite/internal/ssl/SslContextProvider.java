@@ -65,6 +65,9 @@ public class SslContextProvider implements SslContextReloadable {
     /** Outcome of the reloads. */
     private final SslReloadState state = new SslReloadState();
 
+    /** Told about every context the reload command puts in use, {@code null} if nobody listens. */
+    private volatile Runnable reloadLsnr;
+
     /**
      * @param factory Factory to build the context with.
      */
@@ -101,6 +104,14 @@ public class SslContextProvider implements SslContextReloadable {
         return Collections.unmodifiableCollection(users);
     }
 
+    /**
+     * @param lsnr Told about every context {@link #reload()} puts in use. Called while the provider is locked, so it
+     *      must only hand the news over.
+     */
+    public void onReload(Runnable lsnr) {
+        reloadLsnr = lsnr;
+    }
+
     /** {@inheritDoc} */
     @Override public synchronized boolean reload() throws IgniteCheckedException {
         SSLContext rebuilt = rebuild();
@@ -108,15 +119,46 @@ public class SslContextProvider implements SslContextReloadable {
         if (rebuilt == null)
             return false;
 
-        ctx = rebuilt;
+        put(rebuilt, null);
 
-        trusted = readTrustedAuthorities();
+        Runnable lsnr = reloadLsnr;
+
+        if (lsnr != null)
+            lsnr.run();
 
         return true;
     }
 
+    /**
+     * Puts in use a context built anew, provided its certificate expires later than the one in use: a renewal that
+     * does not move the expiry gains nothing and would be due again at once.
+     *
+     * @throws IgniteCheckedException If the context could not be built, an inter-node transport would refuse it, or
+     *      its certificate does not expire later than the one in use.
+     */
+    public synchronized void renew() throws IgniteCheckedException {
+        SSLContext rebuilt = rebuild();
+
+        if (rebuilt == null)
+            throw new IgniteCheckedException("The factory handed back the SSL context already in use");
+
+        X509Certificate[] next = SslContextValidator.servedChain(rebuilt);
+
+        if (next == null)
+            throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
+
+        X509Certificate[] cur = servedChain();
+
+        if (cur != null && SslCertificates.chainNotAfter(next) <= SslCertificates.chainNotAfter(cur)) {
+            throw new IgniteCheckedException("The new certificate expires no later than the one in use [new: " +
+                SslCertificates.describe(next[0]) + "; in use: " + SslCertificates.describe(cur[0]) + ']');
+        }
+
+        put(rebuilt, next);
+    }
+
     /** {@inheritDoc} */
-    @Override public boolean check() throws IgniteCheckedException {
+    @Override public synchronized boolean check() throws IgniteCheckedException {
         return rebuild() != null;
     }
 
@@ -141,6 +183,19 @@ public class SslContextProvider implements SslContextReloadable {
     /** {@inheritDoc} */
     @Override public SslReloadState reloadState() {
         return state;
+    }
+
+    /**
+     * @param rebuilt Context to put in use.
+     * @param chain Chain it presents, {@code null} if not worked out yet.
+     */
+    private void put(SSLContext rebuilt, @Nullable X509Certificate[] chain) {
+        ctx = rebuilt;
+
+        if (chain != null)
+            served = new Served(rebuilt, chain);
+
+        trusted = readTrustedAuthorities();
     }
 
     /**

@@ -132,5 +132,9 @@ public class SslMetrics {
         reg.register("ReloadFailures",
             () -> comp.reloadState().failures(),
             "Failed reloads in a row since the last successful one.");
+
+        reg.register("NextRenewalTime",
+            () -> comp.reloadState().nextRenewalTime(),
+            "Time of the next automatic renewal of the certificates, in milliseconds; 0 if none is planned.");
     }
 }

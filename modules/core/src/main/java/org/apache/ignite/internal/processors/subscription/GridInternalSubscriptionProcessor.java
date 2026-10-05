@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
@@ -35,6 +36,8 @@ import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.ssl.SslMetrics;
+import org.apache.ignite.internal.ssl.SslRenewal;
+import org.apache.ignite.ssl.RenewableSslContextFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -75,11 +78,32 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** Everything on this node whose certificates the reload command can replace. Read from the management pool. */
     private final Collection<SslContextReloadable> sslCtxReloadables = new CopyOnWriteArrayList<>();
 
+    /** Renews the certificates of the contexts built by a {@link RenewableSslContextFactory}. */
+    private final SslRenewal sslRenewal;
+
     /**
      * @param ctx Kernal context.
      */
     public GridInternalSubscriptionProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        sslRenewal = new SslRenewal(ctx.igniteInstanceName(), ctx.log(SslRenewal.class));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        sslRenewal.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        sslRenewal.stop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        // A node that failed to start is not stopped through onKernalStop.
+        sslRenewal.stop();
     }
 
     /** */
@@ -183,10 +207,17 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
         SslContextProvider provider = sslCtxProviders.get(factory);
 
         if (provider == null) {
+            // Checked before the factory is first asked for a context, which may mean a request to an issuer.
+            if (factory instanceof RenewableSslContextFactory)
+                SslRenewal.validate((RenewableSslContextFactory)factory);
+
             provider = new SslContextProvider(factory);
 
             sslCtxProviders.put(factory, provider);
             sslCtxReloadables.add(provider);
+
+            if (factory instanceof RenewableSslContextFactory)
+                sslRenewal.register(provider, (RenewableSslContextFactory)factory);
         }
 
         // A transport that can still fail to start says so later, once it has taken its port.

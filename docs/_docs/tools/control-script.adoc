@@ -1861,6 +1861,14 @@ The authorities are listed when the transport runs on an SSL context factory tha
 the line says `unknown`. A chain whose intermediate authority expires before the certificate itself is shown with
 the earlier date, since peers refuse the chain from then on.
 
+A transport whose certificates the node renews by itself, as link:security/ssl-tls#renewing-certificates[Renewing
+Certificates Automatically] describes, also shows when the next renewal is due:
+
+[source,text]
+----
+    next automatic renewal at 2027-01-19T00:00:00Z
+----
+
 The command ends with an error when a node serves a certificate that is not valid now, and with a warning when the
 last reload on a node failed: the node then still serves the certificate it had, and the line names the reason.
 
@@ -1868,7 +1876,8 @@ The same information is available through the metric API, one registry per trans
 `ssl.discovery`, `ssl.client.connector`, `ssl.rest.binary` and `ssl.rest.http`. Each holds `CertificateSubject`,
 `CertificateIssuer`, `CertificateSerialNumber`, `CertificateSubjectAlternativeNames`, `CertificateNotBefore`,
 `CertificateNotAfter`, `CertificateChainNotAfter`, `TrustedAuthorities`, `LastReloadTime`, `LastReloadFailureTime`,
-`LastReloadFailure` and `ReloadFailures`. Times are in milliseconds since the epoch, and `0` means unknown or never.
+`LastReloadFailure`, `ReloadFailures` and `NextRenewalTime`. Times are in milliseconds since the epoch, and `0` means
+unknown or never. A failed automatic renewal counts as a failed reload.
 
 === Replacing the Certificate Authority
 
