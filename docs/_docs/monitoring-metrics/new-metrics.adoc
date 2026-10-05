@@ -523,10 +523,10 @@ Register name: `io.discovery`
 |Next | UUID | Next in the ring node ID.
 |PendingMessagesRegistered | integer | Pending messages registered count.
 |RejectedSslConnectionsCount | integer | TCP discovery connections count that were rejected due to SSL errors.
+|SocketWriteTimeoutsCount | integer | TCP discovery socket write operations count that timed out.
 |SslEnabled | boolean | Whether SSL is enabled.
 |TotalProcessedMessages | integer | Total processed messages count.
 |TotalReceivedMessages | integer | Total received messages count.
-|SocketWriteTimeoutsCount | long | TCP discovery socket write timeouts count.
 |===
 
 NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
