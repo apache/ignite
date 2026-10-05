@@ -81,7 +81,6 @@ public class SslReloadTask extends SslTask {
                     lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; serving " + desc));
                 }
                 catch (Exception e) {
-                    // Every component is tried, so that one broken transport keeps neither the others nor their outcome from the report.
                     failed = true;
 
                     String reason = comp.onFailure(e);

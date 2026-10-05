@@ -1678,20 +1678,29 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param sock Socket accepted by the server.
-     * @return Server-side SSL socket over it built from the SSL context in use, or the socket itself if SSL is disabled.
-     * @throws IOException If failed.
+     * @return Server-side SSL socket over it on the SSL context in use, the socket itself if SSL is disabled, or {@code null} if the peer
+     *      hung up before TLS could be set up.
      */
-    Socket acceptedSocket(Socket sock) throws IOException {
+    @Nullable Socket acceptedSocket(Socket sock) {
         if (!isSslEnabled())
             return sock;
 
-        SSLSocket sslSock = (SSLSocket)sslCtxProvider.context().getSocketFactory().createSocket(sock, null, sock.getPort(), true);
+        try {
+            SSLSocket sslSock = (SSLSocket)sslCtxProvider.context().getSocketFactory().createSocket(sock, null, sock.getPort(), true);
 
-        // Set after the factory has applied the configured SSL parameters, which carry the default client auth mode.
-        sslSock.setUseClientMode(false);
-        sslSock.setNeedClientAuth(true);
+            sslSock.setUseClientMode(false);
+            sslSock.setNeedClientAuth(true);
 
-        return sslSock;
+            return sslSock;
+        }
+        catch (IOException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to set TLS up on an accepted connection [rmtAddr=" + sock.getInetAddress() + ", err=" + e + ']');
+
+            U.closeQuiet(sock);
+
+            return null;
+        }
     }
 
     /**

@@ -6294,7 +6294,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    // A plain socket even with SSL: accepted connections are wrapped one by one, so reloaded certificates need no rebind.
                     srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
@@ -6341,18 +6340,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    try {
-                        sock = spi.acceptedSocket(sock);
-                    }
-                    catch (IOException e) {
-                        // Wrapping does no handshake, only a peer that hung up gets here; rethrown, it would end the accept worker.
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to set TLS up [rmtAddr=" + sock.getInetAddress() + ", err=" + e + ']');
+                    sock = spi.acceptedSocket(sock);
 
-                        U.closeQuiet(sock);
-
+                    if (sock == null)
                         continue;
-                    }
 
                     if (log.isInfoEnabled()) {
                         log.info("TCP discovery accepted incoming connection " +

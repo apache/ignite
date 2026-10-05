@@ -96,7 +96,7 @@ public abstract class SslContextReloadable {
         String desc = SslCertificates.describe(servedCertificate());
 
         if (log.isInfoEnabled()) {
-            log.info("TLS certificates reloaded [transports=" + String.join(", ", transports()) + ", " + desc +
+            log.info("TLS certificates reloaded [transports=" + String.join(", ", transports()) + (desc.isEmpty() ? "" : ", " + desc) +
                 ", initiator=" + initiator + ']');
         }
 

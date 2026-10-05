@@ -157,8 +157,7 @@ public class SslContextProvider extends SslContextReloadable {
                 Instant.ofEpochMilli(now) + ']');
         }
 
-        // Clients may legitimately trust differently, so only a context between nodes is worth a handshake with itself.
-        if (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY)) {
+        if (connectsNodes()) {
             try {
                 SslCertificates.validateInterNode(rebuilt);
             }
@@ -169,5 +168,10 @@ public class SslContextProvider extends SslContextReloadable {
         }
 
         return next;
+    }
+
+    /** @return Whether nodes connect on the context, so that both ends run the configuration a handshake with itself checks. */
+    private boolean connectsNodes() {
+        return transports.contains(COMMUNICATION) || transports.contains(DISCOVERY);
     }
 }

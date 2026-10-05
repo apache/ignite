@@ -94,8 +94,7 @@ public class SslCertificates {
 
             return chain;
         }
-        catch (Exception ignored) {
-            // The certificate is only described, never relied on, so a context that cannot tell says nothing.
+        catch (Exception cannotTell) {
             return null;
         }
     }
@@ -120,7 +119,7 @@ public class SslCertificates {
      */
     public static @Nullable X509Certificate invalidAt(X509Certificate[] chain, long time) {
         for (X509Certificate cert : chain) {
-            if (time < cert.getNotBefore().getTime() || time >= cert.getNotAfter().getTime())
+            if (time < cert.getNotBefore().getTime() || time > cert.getNotAfter().getTime())
                 return cert;
         }
 
@@ -150,8 +149,9 @@ public class SslCertificates {
         for (Throwable t = e; t != null && depth < 10; t = t.getCause(), depth++) {
             String msg = t.getMessage();
 
-            // A wrapper made out of its cause alone carries nothing but the cause's own description.
-            if (msg == null || msg.isEmpty() || (t.getCause() != null && msg.equals(t.getCause().toString())) || sb.indexOf(msg) >= 0)
+            boolean wrapsCauseOnly = t.getCause() != null && t.getCause().toString().equals(msg);
+
+            if (msg == null || msg.isEmpty() || wrapsCauseOnly || sb.indexOf(msg) >= 0)
                 continue;
 
             if (sb.length() > 0)
@@ -211,8 +211,9 @@ public class SslCertificates {
                 return true;
 
             case NEED_WRAP:
-                // The peer has not read the previous flight yet, let it run first.
-                if (out.hasRemaining())
+                boolean peerReadPrevious = !out.hasRemaining();
+
+                if (!peerReadPrevious)
                     return false;
 
                 out.clear();

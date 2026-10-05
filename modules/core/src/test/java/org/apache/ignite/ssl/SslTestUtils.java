@@ -25,6 +25,7 @@ import java.util.UUID;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
@@ -96,7 +97,8 @@ public class SslTestUtils {
         for (IgniteEx node : nodes)
             ids.add(node.localNode().id());
 
-        // Over the whole cluster, as the command itself does: the default facade covers server nodes only.
-        return nodes[0].compute(nodes[0].cluster()).execute(task, new VisorTaskArgument<>(ids, new NoArg(), false)).result();
+        ClusterGroup serversAndClients = nodes[0].cluster();
+
+        return nodes[0].compute(serversAndClients).execute(task, new VisorTaskArgument<>(ids, new NoArg(), false)).result();
     }
 }

@@ -75,7 +75,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // The base keeps the cluster for the next test, but every test here starts from the certificate it places.
         stopAllGrids();
 
         super.afterTest();

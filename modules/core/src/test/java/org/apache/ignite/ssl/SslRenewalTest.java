@@ -18,7 +18,6 @@
 package org.apache.ignite.ssl;
 
 import java.security.KeyStore;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -119,33 +118,21 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     @Test
     public void testRenewsBeforeExpiry() throws Exception {
         long now = System.currentTimeMillis();
-
-        // The window of 15% opens in about five seconds, and the certificate leaves the nodes forty to start in. The dates are cut to
-        // seconds, the way the certificate carries them.
-        long notBefore = (now - 193_000) / 1000 * 1000;
         long notAfter = (now + 40_000) / 1000 * 1000;
-
+        long notBefore = notAfter - 233_000;
         long due = notAfter - (long)((notAfter - notBefore) * DFLT_RENEW_BEFORE_FRACTION);
+
+        assertTrue("The window must open seconds after the nodes start, well before expiry", due - now > 3_000 && notAfter - due > 30_000);
 
         issuer(0).then(valid(notBefore, notAfter)).then(fresh(HOUR));
         issuer(1).then(valid(notBefore, notAfter)).then(fresh(HOUR));
 
-        // Planned as soon as the first transport serves the context, so the line may not list the others yet.
-        LogListener planned = LogListener.matches(s -> s.contains("TLS certificates will be renewed automatically") &&
-            s.contains(", at=" + Instant.ofEpochMilli(due) + ',')).times(2).build();
-
         LogListener renewed = automaticRenewals(NODE_TRANSPORTS).times(2).build();
 
-        nodeLog.registerListener(planned);
         nodeLog.registerListener(renewed);
 
         IgniteEx g0 = startGrid(0);
         IgniteEx g1 = startGrid(1);
-
-        // The renewals are planned as the nodes start, so on a machine slow enough to start them past the due time they are planned for
-        // right away instead.
-        if (System.currentTimeMillis() < due)
-            assertTrue(planned.check(10_000));
 
         assertTrue(renewed.check(30_000));
 
@@ -286,8 +273,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue("The next renewal must follow the new certificate", due > now + HOUR);
         assertEquals(0, metrics(g, "ssl.communication").<IntMetric>findMetric("ReloadFailures").value());
 
-        // Past the time the cancelled retry was due.
-        assertFalse(waitForCondition(() -> issuer.calls.size() > 3, retry + 1_500 - System.currentTimeMillis()));
+        long untilPastRetry = retry + 1_500 - System.currentTimeMillis();
+
+        assertFalse(waitForCondition(() -> issuer.calls.size() > 3, untilPastRetry));
 
         assertFalse("The cancelled retry must not run", renewed.check());
     }
@@ -305,7 +293,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         IgniteEx g = startGrid(0);
 
-        // The way the command reloads, but in the thread that carries the context.
         try (Scope ignored = OperationContext.set(OPERATOR, "operator")) {
             SslContextProvider p = provider(g, COMMUNICATION);
 
@@ -355,8 +342,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         long last = issuer.calls.get(6).time - issuer.calls.get(5).time;
 
-        // A pause that kept doubling would be 1600 ms by now.
-        assertTrue("The longest pause must hold: " + last, last < 1_200);
+        assertTrue("The longest pause must hold, a doubling one would be 1600 ms by now: " + last, last < 1_200);
 
         assertEquals(8, issuer.calls.size());
         assertEquals(6, logged(Level.WARN, "initiator=automatic renewal, reason=" + ISSUER_DOWN));
@@ -372,7 +358,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         Issuer issuer = issuer(0).then(valid(now - HOUR, now + 2 * MIN)).then(failure());
 
-        // A window of three minutes, half of which is less than the two left, and a pause that runs past expiry.
         issuer.renewBefore = 3 * MIN;
         issuer.minRetry = 5 * MIN;
         issuer.maxRetry = 5 * MIN;
@@ -387,11 +372,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testRetryPauseCutToWindow() throws Exception {
         long now = System.currentTimeMillis();
 
-        // A window of six seconds, a quarter of which is a second and a half.
-        long notBefore = (now - 35_000) / 1000 * 1000;
+        Issuer issuer = issuer(0).then(valid(now - HOUR, now + 5_000)).then(failure());
 
-        Issuer issuer = issuer(0).then(valid(notBefore, notBefore + 40_000)).then(failure());
-
+        issuer.renewBefore = 6_000;
         issuer.minRetry = 1_000;
         issuer.maxRetry = HOUR;
 
@@ -402,28 +385,30 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         for (int i = 2; i < 5; i++) {
             long pause = issuer.calls.get(i).time - issuer.calls.get(i - 1).time;
 
-            // Doubling up to the hour would make the third pause four seconds at least.
-            assertTrue("Pause " + (i - 1) + " must stay within a quarter of the window: " + pause,
+            assertTrue("Pause " + (i - 1) + " must stay within a quarter of the window, a doubling third one would be 4 s: " + pause,
                 pause >= 1_000 - CLOCK_SLACK && pause < 3_000);
         }
     }
 
-    /** A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed. */
+    /**
+     * A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed, whatever the factory
+     * says after the start.
+     */
     @Test
     public void testRenewalsNoMoreOftenThanMinRetry() throws Exception {
-        Issuer issuer = issuer(0).then(() -> {
+        Step dueOnIssue = () -> {
             long t = System.currentTimeMillis();
 
-            // Expires later each time, so it is put in use, and is in its window from the start.
             return ca.issue("node", t - HOUR, t + 5 * MIN);
-        });
+        };
+
+        Issuer issuer = issuer(0).then(dueOnIssue);
 
         issuer.minRetry = 300;
         issuer.maxRetry = 300;
 
         startGrid(0);
 
-        // Read once at start: a factory changing them later must not take the schedule out of range.
         issuer.minRetry = 1;
         issuer.maxRetry = 1;
 

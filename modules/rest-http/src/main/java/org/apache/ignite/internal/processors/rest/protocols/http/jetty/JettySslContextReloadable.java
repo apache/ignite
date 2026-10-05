@@ -59,20 +59,27 @@ public class JettySslContextReloadable extends SslContextReloadable {
         SSLContext cur = sslCtxFactory.getSslContext();
 
         try {
-            // Dropping the pinned context makes Jetty read the stores again, which also recovers it from an earlier pin.
-            sslCtxFactory.reload(factory -> factory.setSslContext(null));
+            rebuild(null);
         }
         catch (Exception e) {
             try {
-                sslCtxFactory.reload(factory -> factory.setSslContext(cur));
+                rebuild(cur);
             }
-            catch (Exception ignored) {
-                // Nothing better is available: the connector already serves no TLS.
+            catch (Exception pinFailure) {
+                e.addSuppressed(pinFailure);
             }
 
             throw new IgniteCheckedException("Failed to rebuild the HTTP REST SSL context [keyStore=" + sslCtxFactory.getKeyStorePath() +
                 ", trustStore=" + sslCtxFactory.getTrustStorePath() + ']', e);
         }
+    }
+
+    /**
+     * @param ctx Context for Jetty to use, {@code null} to read the stores.
+     * @throws Exception If failed.
+     */
+    private void rebuild(@Nullable SSLContext ctx) throws Exception {
+        sslCtxFactory.reload(factory -> factory.setSslContext(ctx));
     }
 
     /** {@inheritDoc} */
@@ -82,8 +89,7 @@ public class JettySslContextReloadable extends SslContextReloadable {
         try {
             ctx = sslCtxFactory.getSslContext();
         }
-        catch (IllegalStateException ignored) {
-            // Thrown after a rebuild by Jetty itself failed, when it watches the key store.
+        catch (IllegalStateException failedJettyReload) {
             return null;
         }
 

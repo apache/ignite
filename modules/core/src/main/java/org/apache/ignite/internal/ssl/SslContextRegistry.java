@@ -61,7 +61,6 @@ public class SslContextRegistry {
         SslContextProvider provider = providers.get(factory);
 
         if (provider == null) {
-            // Checked before the factory is asked for a context, which may mean a request to an issuer.
             SslRenewal.Settings settings = factory instanceof RenewableSslContextFactory
                 ? new SslRenewal.Settings((RenewableSslContextFactory)factory) : null;
 

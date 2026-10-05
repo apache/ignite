@@ -173,16 +173,9 @@ public class SslRenewal {
             this.settings = settings;
         }
 
-        /** Plans the next renewal by the certificate in use, in the renewal thread, as told of every new certificate. */
+        /** Plans the next renewal in the renewal thread; called for every new certificate. */
         private void replan() {
-            // The renewals belong to the node: the executor would otherwise carry the operation context of whoever ran the reload, its
-            // security subject included, into every renewal from then on.
-            try (Scope clean = OperationContext.restoreSnapshot(null)) {
-                exec.execute(this::plan);
-            }
-            catch (RejectedExecutionException ignored) {
-                // The node is stopping.
-            }
+            submit(this::plan, 0);
         }
 
         /** Plans the next renewal by the certificate in use. */
@@ -199,7 +192,6 @@ public class SslRenewal {
 
                 String msg = "Cannot tell when the TLS certificate expires, so it is not renewed automatically";
 
-                // A failure, so that the status command and the metrics show that the renewal is off.
                 provider.onFailure(new IgniteException(msg));
 
                 U.warn(log, msg + " [transports=" + transports() + ']');
@@ -209,11 +201,9 @@ public class SslRenewal {
 
             long expiry = SslCertificates.chainNotAfter(chain);
             long window = window(chain);
-            long shift = (long)(ThreadLocalRandom.current().nextDouble() * settings.jitter * window);
-
-            // A certificate due for renewal as soon as it is issued must not make the node come back for another one without a pause, and a
-            // window open already means now.
-            long at = Math.max(Math.max(expiry - window - shift, lastAttempt + settings.minRetry), U.currentTimeMillis());
+            long due = expiry - window - (long)(ThreadLocalRandom.current().nextDouble() * settings.jitter * window);
+            long earliest = lastAttempt + settings.minRetry;
+            long at = Math.max(Math.max(due, earliest), U.currentTimeMillis());
 
             schedule(at);
 
@@ -223,30 +213,21 @@ public class SslRenewal {
             }
         }
 
-        /** Puts a context with a renewed certificate in use, which plans the next renewal, or plans another attempt. */
+        /** Puts a renewed certificate in use; whatever the factory throws plans another attempt. */
         private void attempt() {
             lastAttempt = U.currentTimeMillis();
 
-            boolean renewed;
-
             try {
-                renewed = provider.renew(planned);
+                if (provider.renew(planned))
+                    provider.onReloaded(log, INITIATOR);
             }
             catch (Throwable e) {
-                // Anything may come out of a user-supplied factory, and an attempt that plans no next one ends the renewals for good.
                 onFailure(e);
-
-                return;
             }
-
-            // A reload by the command put a certificate in use while this attempt waited, and planned the next renewal by it.
-            if (renewed)
-                provider.onReloaded(log, INITIATOR);
         }
 
         /** @param e Why the attempt failed. */
         private void onFailure(Throwable e) {
-            // Stopping the node interrupts the attempt, which is no failure of the certificate.
             if (exec.isShutdown())
                 return;
 
@@ -261,17 +242,16 @@ public class SslRenewal {
             schedule(at);
 
             long expiry = chain == null ? 0 : SslCertificates.chainNotAfter(chain);
+            boolean expired = chain != null && now >= expiry;
+            boolean lessThanHalfWindowLeft = chain != null && now >= expiry - window(chain) / 2;
+            boolean nextAttemptAfterExpiry = chain != null && at >= expiry;
 
-            // Also when the next attempt only comes after expiry, as it may with a window shorter than the pause.
-            boolean late = chain != null && (now >= expiry - window(chain) / 2 || at >= expiry);
+            String msg = "Failed to reload TLS certificates, the ones in use stay" +
+                (expired ? ", though they have expired" : lessThanHalfWindowLeft || nextAttemptAfterExpiry ? " and expire soon" : "") +
+                " [transports=" + transports() + ", initiator=" + INITIATOR + ", reason=" + reason +
+                (chain == null ? "" : ", expiry=" + Instant.ofEpochMilli(expiry)) + ", nextAttempt=" + Instant.ofEpochMilli(at) + ']';
 
-            String state = chain != null && now >= expiry ? ", though they have expired" : late ? " and expire soon" : "";
-
-            String msg = "Failed to reload TLS certificates, the ones in use stay" + state + " [transports=" + transports() +
-                ", initiator=" + INITIATOR + ", reason=" + reason + (chain == null ? "" : ", expiry=" + Instant.ofEpochMilli(expiry)) +
-                ", nextAttempt=" + Instant.ofEpochMilli(at) + ']';
-
-            if (late)
+            if (lessThanHalfWindowLeft || nextAttemptAfterExpiry)
                 U.error(log, msg, e);
             else
                 U.warn(log, msg, e);
@@ -279,7 +259,7 @@ public class SslRenewal {
 
         /**
          * @param chain Chain in use, {@code null} if unknown.
-         * @return Pause before the next attempt after the failed ones.
+         * @return Pause before the next attempt after the failed ones, spread at random.
          */
         private long pause(@Nullable X509Certificate[] chain) {
             long max = chain == null ? settings.maxRetry :
@@ -292,7 +272,6 @@ public class SslRenewal {
 
             pause = Math.min(pause, max);
 
-            // Nodes that fail together would otherwise come back together.
             return pause + ThreadLocalRandom.current().nextLong(pause / 2 + 1);
         }
 
@@ -314,12 +293,7 @@ public class SslRenewal {
 
             provider.nextRenewalTime(at);
 
-            try {
-                next = exec.schedule(this::attempt, Math.max(0, at - U.currentTimeMillis()), TimeUnit.MILLISECONDS);
-            }
-            catch (RejectedExecutionException ignored) {
-                // The node is stopping.
-            }
+            next = submit(this::attempt, Math.max(0, at - U.currentTimeMillis()));
         }
 
         /** */
@@ -328,6 +302,23 @@ public class SslRenewal {
                 next.cancel(false);
 
                 next = null;
+            }
+        }
+
+        /**
+         * Runs the task in the renewal thread in the operation context of the node, never of whoever caused it, such as an operator
+         * running {@code --ssl reload} under their security subject.
+         *
+         * @param task Task.
+         * @param delay Delay, in milliseconds.
+         * @return Future of the task, {@code null} if the node is stopping.
+         */
+        private @Nullable ScheduledFuture<?> submit(Runnable task, long delay) {
+            try (Scope nodeCtx = OperationContext.restoreSnapshot(null)) {
+                return exec.schedule(task, delay, TimeUnit.MILLISECONDS);
+            }
+            catch (RejectedExecutionException stopping) {
+                return null;
             }
         }
 

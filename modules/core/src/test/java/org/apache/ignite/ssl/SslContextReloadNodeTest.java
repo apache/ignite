@@ -130,7 +130,6 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         IgniteEx g0 = startGrid(0);
         IgniteEx g1 = startGrid(1);
 
-        // Both nodes name the node the command came through.
         LogListener logged = LogListener.matches(Pattern.compile("TLS certificates reloaded \\[transports=" + ALL_TRANSPORTS +
             ", subject=CN=node02, .*initiator=management command, originNodeId=" + g0.localNode().id())).times(2).build();
 
@@ -149,7 +148,6 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         assertEquals("CN=node02", served(g0.context().clientListener().port()));
 
-        // Discovery accepts on a plain socket and secures every connection separately, so the listening socket does not pin a certificate.
         assertEquals("CN=node02", served(discoveryPort(g0)));
 
         String status = status(g0);
@@ -161,8 +159,9 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertContains(log, metric(g0, "CertificateIssuer"), "CN=twoca");
         assertTrue(Long.parseLong(metric(g0, "LastReloadTime")) > 0);
 
-        // twoca expires before node02 itself, and peers refuse the chain from then on.
-        assertContains(log, status, "chainNotAfter=" + Instant.ofEpochMilli(Long.parseLong(metric(g0, "CertificateNotAfter"))));
+        long chainNotAfter = Long.parseLong(metric(g0, "CertificateNotAfter"));
+
+        assertContains(log, status, "chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter));
 
         cache.put(1, 1);
 
@@ -381,7 +380,6 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
     /** @return Subject of the certificate the node presents on a new connection to the port. */
     private static String served(int port) throws Exception {
-        // A fresh context has an empty session cache, so the handshake cannot resume a session on the certificate served before.
         SSLContext probe = GridTestUtils.sslTrustedFactory("node01", "trustboth").create();
 
         return servedCertificate(probe, port).getSubjectX500Principal().getName();

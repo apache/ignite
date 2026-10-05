@@ -25,12 +25,12 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.visor.VisorJob;
 
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
 import static org.apache.ignite.internal.ssl.SslCertificates.describe;
+import static org.apache.ignite.internal.ssl.SslCertificates.invalidAt;
 
 /** Reports the TLS certificates of every mapped node; a node serving a certificate that is not valid now fails the command. */
 @GridInternal
@@ -81,15 +81,17 @@ public class SslStatusTask extends SslTask {
                     lines.add("    serving " + describe(chain[0]) +
                         (notAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(notAfter) : ""));
 
-                    if (SslCertificates.invalidAt(chain, now) != null) {
+                    if (invalidAt(chain, now) != null) {
                         invalid = true;
 
                         lines.add("    PROBLEM: the certificate is not valid now, peers refuse it");
                     }
                 }
 
-                if (comp.failures() > 0) {
-                    lines.add("    last reload failed " + comp.failures() + " time(s) in a row, the last at " +
+                int failures = comp.failures();
+
+                if (failures > 0) {
+                    lines.add("    last reload failed " + failures + " time(s) in a row, the last at " +
                         Instant.ofEpochMilli(comp.lastFailureTime()) + ": " + comp.lastFailure());
                 }
                 else if (comp.lastSuccessTime() > 0)

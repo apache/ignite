@@ -151,14 +151,7 @@ public class TestCertificateAuthority {
         sig.initSign(keys.getPrivate());
         sig.update(tbs);
 
-        byte[] sigBytes = sig.sign();
-
-        // A BIT STRING opens with the number of unused bits in its last byte.
-        byte[] bits = new byte[sigBytes.length + 1];
-
-        System.arraycopy(sigBytes, 0, bits, 1, sigBytes.length);
-
-        byte[] der = seq(tbs, SIG_ALG, tlv(0x03, bits));
+        byte[] der = seq(tbs, SIG_ALG, bitString(sig.sign()));
 
         return (X509Certificate)CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(der));
     }
@@ -200,6 +193,18 @@ public class TestCertificateAuthority {
             out.write(part, 0, part.length);
 
         return tlv(0x30, out.toByteArray());
+    }
+
+    /**
+     * @param bytes Bytes, all of their bits used.
+     * @return DER of the BIT STRING of them.
+     */
+    private static byte[] bitString(byte[] bytes) {
+        byte[] val = new byte[bytes.length + 1];
+
+        System.arraycopy(bytes, 0, val, 1, bytes.length);
+
+        return tlv(0x03, val);
     }
 
     /**

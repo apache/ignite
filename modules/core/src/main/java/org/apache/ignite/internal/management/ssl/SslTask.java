@@ -45,10 +45,10 @@ public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, String> 
             else {
                 failed = true;
 
+                String id = jobRes.getNode().id().toString();
                 String msg = e.getMessage() != null ? e.getMessage() : e.toString();
 
-                // The job names its node in every line, anything else that failed has to be attributed here.
-                res.append(msg.startsWith(jobRes.getNode().id().toString()) ? msg : jobRes.getNode().id() + ": " + msg);
+                res.append(msg.startsWith(id) ? msg : id + ": " + msg);
             }
 
             res.append('\n');
