@@ -572,8 +572,12 @@ public class WindowExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    private Node<Object[]> createWindowNode(ExecutionContext<Object[]> ctx, Window.Group grp,
-        Node<Object[]> input, boolean streaming) {
+    private Node<Object[]> createWindowNode(
+        ExecutionContext<Object[]> ctx,
+        Window.Group grp,
+        Node<Object[]> input,
+        boolean streaming
+    ) {
         Class<?>[] outFields = new Class<?>[input.rowType().getFieldCount() + grp.aggCalls.size()];
         Arrays.fill(outFields, int.class);
         RelDataType outRowType = TypeUtils.createRowType(typeFactory, outFields);

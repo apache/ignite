@@ -37,8 +37,11 @@ public final class WindowPartitionFactory<Row> {
     }
 
     /** Creates streaming window partition for provieded group, aggragates and input row type, */
-    public StreamingWindowPartition<Row> newStreamingPartition(Window.Group grp, List<AggregateCall> calls,
-        RelDataType inputRowType) {
+    public StreamingWindowPartition<Row> newStreamingPartition(
+        Window.Group grp,
+        List<AggregateCall> calls,
+        RelDataType inputRowType
+    ) {
 
         assert WindowFunctions.streamable(grp);
 
@@ -46,16 +49,23 @@ public final class WindowPartitionFactory<Row> {
     }
 
     /** Creates buffering window partition for provieded group, aggragates and input row type, */
-    public BufferingWindowPartition<Row> newBufferingPartition(Window.Group grp, List<AggregateCall> calls,
-        RelDataType inputRowType) {
+    public BufferingWindowPartition<Row> newBufferingPartition(
+        Window.Group grp,
+        List<AggregateCall> calls,
+        RelDataType inputRowType
+    ) {
 
         return createPartition(grp, calls, inputRowType, (peerCmp, funcFactory, rowFactory)
             -> new BufferingWindowPartition<>(peerCmp, funcFactory, rowFactory, ctx, grp, inputRowType));
     }
 
     /** */
-    private <T extends WindowPartition<Row>> T createPartition(Window.Group grp, List<AggregateCall> calls,
-        RelDataType inputRowType, PartitionCreator<Row, T> creator) {
+    private <T extends WindowPartition<Row>> T createPartition(
+        Window.Group grp,
+        List<AggregateCall> calls,
+        RelDataType inputRowType,
+        PartitionCreator<Row, T> creator
+    ) {
         Comparator<Row> peerCmp;
         if (grp.isRows)
             // peer comparator in meaningless in rows frame.
@@ -77,5 +87,4 @@ public final class WindowPartitionFactory<Row> {
         /** */
         T create(Comparator<Row> peerCmp, WindowFunctionFactory<Row> funcFactory, RowHandler.RowFactory<Row> rowFactory);
     }
-
 }

@@ -84,7 +84,7 @@ public class BufferingWindowNode<Row> extends AbstractNode<Row> implements Singl
         if (inLoop)
             return;
 
-        if (part.ready() > 0 || waiting < 0)
+        if (part.isReady() || waiting < 0)
             context().execute(this::flush, this::onError);
         else if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -118,7 +118,7 @@ public class BufferingWindowNode<Row> extends AbstractNode<Row> implements Singl
         if (inLoop)
             return;
 
-        if (part.ready() > 0)
+        if (part.isReady())
             flush();
         else if (waiting == 0 && requested > 0)
             context().execute(() -> source().request(waiting = IN_BUFFER_SIZE), this::onError);
@@ -134,7 +134,7 @@ public class BufferingWindowNode<Row> extends AbstractNode<Row> implements Singl
 
         checkState();
 
-        // append partition for remaining rows if any.
+        // Append partition for remaining rows if any.
         if (!F.isEmpty(inBuf)) {
             part.appendPartition(inBuf, inBufTracker::reset);
             inBuf = null;
@@ -204,7 +204,7 @@ public class BufferingWindowNode<Row> extends AbstractNode<Row> implements Singl
         if (waiting == 0 && requested > 0)
             context().execute(() -> source().request(waiting = IN_BUFFER_SIZE), this::onError);
 
-        if (waiting < 0 && requested > 0 && part.ready() == 0) {
+        if (waiting < 0 && requested > 0 && !part.isReady()) {
             requested = 0;
             downstream().end();
         }

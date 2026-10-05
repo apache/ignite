@@ -98,9 +98,9 @@ public final class BufferingWindowPartition<Row> extends WindowPartitionBase<Row
         return resultRow;
     }
 
-    /** Returns the number of rows can be evaluted. */
-    public int ready() {
-        return ready;
+    /** Returns {@code true} if the partition contains at least one pending row. */
+    public boolean isReady() {
+        return ready != 0;
     }
 
     /** {@inheritDoc} */
