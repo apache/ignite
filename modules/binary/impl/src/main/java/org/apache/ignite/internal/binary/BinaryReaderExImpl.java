@@ -1351,15 +1351,15 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public final Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        BinaryReaderHandles hnds = this.hnds;
+        BinaryReaderHandles prevHnds = hnds;
 
-        this.hnds = null;
+        hnds = null;
 
         try {
             return unmarshal(true, deserialize);
         }
         finally {
-            this.hnds = hnds;
+            hnds = prevHnds;
         }
     }
 
@@ -2941,7 +2941,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      *
      * @param cls Class.
      */
-    private <T> T uncachedEnumValue(Class<?> cls, int ord) throws BinaryObjectException {
+    private static <T> T uncachedEnumValue(Class<?> cls, int ord) throws BinaryObjectException {
         assert cls != null;
 
         if (ord >= 0) {
@@ -2963,7 +2963,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Instance.
      * @throws BinaryObjectException In case of error.
      */
-    private Object newInstance(@Nullable Constructor<?> ctor, Class<?> cls) throws BinaryObjectException {
+    private static Object newInstance(@Nullable Constructor<?> ctor, Class<?> cls) throws BinaryObjectException {
         try {
             return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
         }

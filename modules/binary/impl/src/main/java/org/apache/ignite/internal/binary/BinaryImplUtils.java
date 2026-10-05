@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.ByteArrayInputStream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -377,5 +376,4 @@ public class BinaryImplUtils {
             in.position(in.position() + len);
         }
     }
-
 }
