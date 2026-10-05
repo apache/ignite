@@ -115,13 +115,6 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     protected abstract WALMode walMode();
 
     /**
-     * find first cause's message
-     */
-    private String findSourceMessage(Throwable ex) {
-        return ex.getCause() == null ? ex.getMessage() : findSourceMessage(ex.getCause());
-    }
-
-    /**
      * Correct delete archived wal files.
      */
     @Test

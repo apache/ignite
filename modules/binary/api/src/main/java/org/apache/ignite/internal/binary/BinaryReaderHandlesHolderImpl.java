@@ -25,11 +25,6 @@ class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder {
     private BinaryReaderHandles hnds;
 
     /** {@inheritDoc} */
-    @Override public void setHandle(Object obj) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void setHandle(Object obj, int pos) {
         handles().put(pos, obj);
     }

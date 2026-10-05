@@ -22,14 +22,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test reserved keywords.
  */
-public class SqlReservedWordsTest extends GridCommonAbstractTest {
+public class SqlReservedWordsTest extends GridCommonAbstractWrapperTest {
     /** List of keywords reserved in Ignite SQL. */
     private static final Set<String> RESERVED_WORDS = new HashSet<>(Arrays.asList(
         "ALL", // UNION ALL

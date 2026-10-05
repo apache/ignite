@@ -25,26 +25,29 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.google.common.io.CharStreams;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests ensures a planner generates optimal plan for TPC-H queries.
  *
  * @code org.apache.ignite.internal.sql.engine.benchmarks.TpchParseBenchmark
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "queryId={0}")
+@MethodSource("parameters")
 public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     /** Set to {@code true} to write plan files, instead of checking. */
     private static final boolean UPDATE_PLAN = false;
@@ -62,18 +65,17 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     public static final String RSRC_DIR = "modules/calcite/src/test/resources/" + TPCH;
 
     /** */
-    @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<String> params() throws IOException {
+    public static Stream<Arguments> parameters() throws IOException {
         return Files.list(FileSystems.getDefault().getPath(U.resolveIgnitePath(RSRC_DIR).getPath()))
             .map(p -> p.getFileName().toString())
             .filter(p -> p.endsWith(".sql") && !p.endsWith("ddl.sql"))
             .map(p -> p.replace(".sql", ""))
             .sorted(Comparator.comparingInt(p -> Integer.parseInt(p.replace("variant_q", "").replace("q", ""))))
-            .collect(Collectors.toList());
+            .map(Arguments::of);
     }
 
     /** Query id. */
-    @Parameterized.Parameter
+    @Parameter
     public String qryId;
 
     /** {@inheritDoc} */
@@ -86,6 +88,7 @@ public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

@@ -34,25 +34,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
-import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -141,7 +136,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi spi = (specialSpi != null) ? specialSpi : new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = (specialSpi != null) ? specialSpi : new TestTcpDiscoverySpi();
 
         if (usePortFromNodeName)
             spi.setLocalPort(Integer.parseInt(igniteInstanceName.split("-")[1]));
@@ -444,11 +439,11 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        final CountDownLatch failLatch = new CountDownLatch(2);
+        Set<UUID> failedIds = new GridConcurrentHashSet<>();
 
         for (int i = 0; i < gridCnt; i++) {
             ignite(i).events().localListen(evt -> {
-                failLatch.countDown();
+                failedIds.add(((DiscoveryEvent)evt).eventNode().id());
 
                 return true;
             }, EVT_NODE_FAILED);
@@ -471,14 +466,24 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         else
             failedNodes.add(4);
 
-        failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::suspend));
+        Set<UUID> frozenIds = failedNodes.stream().map(this::nodeId).collect(Collectors.toSet());
+
+        Set<UUID> healthyIds = G.allGrids().stream().map(ig -> ig.cluster().localNode().id())
+            .filter(id -> !frozenIds.contains(id)).collect(Collectors.toSet());
+
+        failedNodes.forEach(idx -> ((TestTcpDiscoverySpi)spi(ignite(idx))).freeze());
 
         try {
-            failLatch.await(10, TimeUnit.SECONDS);
+            assertTrue(waitForCondition(() -> failedIds.containsAll(frozenIds) && G.allGrids().stream()
+                .filter(ig -> healthyIds.contains(ig.cluster().localNode().id()))
+                .allMatch(ig -> healthyIds.equals(ig.cluster().nodes().stream().map(ClusterNode::id)
+                    .collect(Collectors.toSet()))), 10_000));
         }
         finally {
-            failedNodes.forEach(idx -> processNetworkThreads(ignite(idx), Thread::resume));
+            failedNodes.forEach(idx -> ((TestTcpDiscoverySpi)spi(ignite(idx))).unfreeze());
         }
+
+        assertEquals(frozenIds, failedIds);
 
         for (int i = 0; i < gridCnt; i++) {
             if (!failedNodes.contains(i))
@@ -545,25 +550,6 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         TcpDiscoveryIoSession ses = GridTestUtils.getFieldValue(((Object[])spis)[0], "impl", "msgWorker", "ses");
 
         ses.socket().getOutputStream().close();
-    }
-
-    /**
-     * Simulates network failure on certain node.
-     */
-    private void processNetworkThreads(Ignite ignite, Consumer<Thread> proc) {
-        DiscoverySpi disco = ignite.configuration().getDiscoverySpi();
-
-        ServerImpl serverImpl = U.field(disco, "impl");
-
-        for (Thread thread : serverImpl.threads())
-            proc.accept(thread);
-
-        CommunicationSpi<?> comm = ignite.configuration().getCommunicationSpi();
-
-        GridNioServerWrapper nioServerWrapper = U.field(comm, "nioSrvWrapper");
-
-        for (GridWorker worker : nioServerWrapper.nio().workers())
-            proc.accept(worker.runner());
     }
 
     /** */
