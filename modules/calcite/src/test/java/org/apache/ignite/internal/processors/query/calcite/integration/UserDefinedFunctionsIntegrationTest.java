@@ -63,6 +63,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Integration test for user defined functions.
@@ -513,6 +514,43 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testBinaryFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("binary-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BinaryFunctionsLibrary.class));
+
+        byte[] bytes = {1, 2, 3};
+        Consumer<List<List<?>>> binaryResultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
+        };
+
+        // Scalar function arguments.
+        assertQuery("SELECT binaryLength(x'010203')").returns(3).check();
+        assertQuery("SELECT binaryLength(?)").withParams(bytes).returns(3).check();
+
+        // Scalar function results.
+        assertQuery("SELECT binaryValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(x'010203')").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(binaryValue())").returns(3).check();
+
+        // Table function results.
+        assertQuery("SELECT * FROM binaryTableValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT * FROM binaryTable(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(bytes) FROM binaryTableValue()").returns(3).check();
+        assertQuery("SELECT binaryLength(bytes) FROM binaryTableValue()").returns(3).check();
+
+        // Table function arguments.
+        assertQuery("SELECT * FROM binaryTableLength(x'010203')").returns(3).check();
+        assertQuery("SELECT * FROM binaryTableLength(?)").withParams(bytes).returns(3).check();
+        assertQuery("SELECT * FROM TABLE(binaryTableLength(binaryValue()))").returns(3).check();
+        assertQuery("SELECT * FROM binaryTable(x'010203')").withResultChecker(binaryResultChecker).check();
+    }
+
+    /** */
+    @Test
     public void testBinaryObjectFunctions() {
         client.getOrCreateCache(new CacheConfiguration<>("binary-object-functions")
             .setSqlSchema("PUBLIC")
@@ -693,8 +731,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 for (int i = 0; i < exp.length; i++) {
                     Object actual = rows.get(0).get(i);
 
-                    assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
-                    assertEquals("Unexpected value at index " + i, exp[i], actual);
+                    assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
                 }
             })
             .check();
@@ -710,9 +747,10 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * FROM serializableTableValues()")
             .withResultChecker(rows -> {
                 assertEquals(1, rows.size());
-                assertEquals(1, rows.get(0).size());
+                assertEquals(2, rows.get(0).size());
                 assertEquals(Date.class, rows.get(0).get(0).getClass());
                 assertEquals(Date.valueOf("2020-01-01"), rows.get(0).get(0));
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(1));
             })
             .check();
     }
@@ -1058,6 +1096,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         Object[] temporalValues = temporalValues();
 
         return new Object[] {
+            new byte[] {1, 2, 3},
             true,
             (byte)1,
             (short)2,
@@ -1503,6 +1542,45 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    public static class BinaryFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static int binaryLength(byte[] bytes) {
+            return bytes.length;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryValue() {
+            return new byte[] {1, 2, 3};
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryEcho(byte[] bytes) {
+            return bytes;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {int.class}, columnNames = {"LENGTH"})
+        public static Iterable<Object[]> binaryTableLength(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes.length});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTableValue() {
+            return Collections.singletonList(new Object[] {new byte[] {1, 2, 3}});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTable(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes});
+        }
+    }
+
+    /** */
     public static class BinaryObjectFunctionsLibrary {
         /** */
         @QuerySqlFunction
@@ -1630,9 +1708,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     /** */
     public static class SerializableFunctionsLibrary {
         /** */
-        @QuerySqlTableFunction(columnTypes = {Serializable.class}, columnNames = {"D"})
+        @QuerySqlTableFunction(columnTypes = {Serializable.class, Serializable.class}, columnNames = {"D", "B"})
         public static Iterable<Object[]> serializableTableValues() {
-            return Collections.singletonList(new Object[] {Date.valueOf("2020-01-01")});
+            return Collections.singletonList(new Object[] {Date.valueOf("2020-01-01"), new byte[] {1, 2, 3}});
         }
     }
 
@@ -1685,9 +1763,11 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 Object.class,
                 Object.class,
                 Object.class,
+                Object.class,
                 Object.class
             },
             columnNames = {
+                "BYTES",
                 "BOOLEAN_VALUE",
                 "BYTE_VALUE",
                 "SHORT_VALUE",
