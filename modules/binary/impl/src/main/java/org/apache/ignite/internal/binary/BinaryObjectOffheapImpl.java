@@ -415,7 +415,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserializeValue();
+        return (T)reader(null, ctx.classLoader(), true).deserialize();
     }
 
     /** {@inheritDoc} */
@@ -481,13 +481,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     /** {@inheritDoc} */
     @Override public int size() {
         return length();
-    }
-
-    /**
-     * @return Deserialized value.
-     */
-    private Object deserializeValue() {
-        return reader(null, ctx.classLoader(), true).deserialize();
     }
 
     /**
