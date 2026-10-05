@@ -561,7 +561,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 break;
 
             default:
-                val = new BinaryReaderExImpl(ctx, BinaryStreams.inputStream(arr, fieldPos), null, null, true, true).unmarshal(fieldPos);
+                val = new SimpleBinaryReader(ctx, BinaryStreams.inputStream(arr, fieldPos), null).unmarshal();
 
                 break;
         }
@@ -686,8 +686,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, null, false).unmarshalField(fieldName);
+    @Nullable @Override protected <F> F field(BinaryReaderHandles hnds, String fieldName) {
+        return (F)reader(hnds, null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -806,19 +806,19 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
+     * @param hnds Reader context.
      * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles hnds, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.classLoader();
 
         return new BinaryReaderExImpl(ctx,
             BinaryStreams.inputStream(arr, start),
             ldr,
-            rCtx,
+            hnds,
             false,
             forUnmarshal);
     }

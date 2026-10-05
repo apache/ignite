@@ -375,7 +375,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
                 stream.position(fieldPos);
 
-                val = new BinaryReaderExImpl(ctx, stream, null, null, true, true).unmarshal(fieldPos);
+                val = new SimpleBinaryReader(ctx, stream, null).unmarshal();
 
                 break;
         }
@@ -389,8 +389,8 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, ctx.classLoader(), false).unmarshalField(fieldName);
+    @Nullable @Override protected <F> F field(BinaryReaderHandles hnds, String fieldName) {
+        return (F)reader(hnds, ctx.classLoader(), false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -502,12 +502,12 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
+     * @param hnds Reader context.
      * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles hnds, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
@@ -515,7 +515,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         return new BinaryReaderExImpl(ctx,
             stream,
             ldr,
-            rCtx,
+            hnds,
             false,
             forUnmarshal);
     }

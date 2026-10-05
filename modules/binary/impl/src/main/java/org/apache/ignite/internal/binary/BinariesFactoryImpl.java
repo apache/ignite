@@ -67,7 +67,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     /** {@inheritDoc} */
     @Override public @Nullable Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
         throws BinaryObjectException {
-        return new BinaryReaderExImpl(ctx, in, ldr, null, true, true).unmarshal(in.position());
+        return new SimpleBinaryReader(ctx, in, ldr).unmarshal();
     }
 
     /** {@inheritDoc} */
