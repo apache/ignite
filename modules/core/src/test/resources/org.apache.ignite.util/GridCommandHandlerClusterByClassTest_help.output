@@ -476,6 +476,9 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     Parameters:
       --dry-run  - Report whether the certificates on disk can be used, without putting them in use.
 
+  Show the TLS certificates every cluster node serves, the authorities it trusts, and how its last reload went:
+    control.(sh|bat) --ssl status
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

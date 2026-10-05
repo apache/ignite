@@ -19,6 +19,8 @@ package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,9 +76,29 @@ public interface SslContextReloadable {
     public boolean check() throws IgniteCheckedException;
 
     /**
+     * @return Chain this component presents on new connections, its own certificate first, or {@code null} if it
+     *      cannot be told.
+     */
+    public @Nullable X509Certificate[] servedChain();
+
+    /**
      * @return Certificate this component presents on new connections, or {@code null} if it cannot be told.
      */
     public default @Nullable X509Certificate servedCertificate() {
-        return null;
+        X509Certificate[] chain = servedChain();
+
+        return chain == null ? null : chain[0];
     }
+
+    /**
+     * @return Authorities this component trusts, or an empty list if they cannot be read from its configuration.
+     */
+    public default List<X509Certificate> trustedAuthorities() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * @return Outcome of the reloads of this component.
+     */
+    public SslReloadState reloadState();
 }

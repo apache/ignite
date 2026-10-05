@@ -1839,6 +1839,37 @@ interrupts them, so for a while a node serves both.
 control.sh|bat --ssl reload --dry-run
 ----
 
+=== Checking Certificates
+
+`--ssl status` shows, for every node and every transport, the certificate it serves, the authorities its trust store
+holds, and how its last reload went:
+
+[source, shell]
+----
+control.sh|bat --ssl status
+----
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000: client connector, communication, discovery
+    serving CN=node01, issued by CN=ca, serial 1a2b3c, valid from 2026-02-14T00:00:00Z until 2027-02-14T00:00:00Z
+    trusts CN=ca until 2036-01-01
+    last reload succeeded at 2026-10-05T09:12:44Z
+----
+
+The authorities are listed when the transport runs on an SSL context factory that names a trust store file; otherwise
+the line says `unknown`. A chain whose intermediate authority expires before the certificate itself is shown with
+the earlier date, since peers refuse the chain from then on.
+
+The command ends with an error when a node serves a certificate that is not valid now, and with a warning when the
+last reload on a node failed: the node then still serves the certificate it had, and the line names the reason.
+
+The same information is available through the metric API, one registry per transport: `ssl.communication`,
+`ssl.discovery`, `ssl.client.connector`, `ssl.rest.binary` and `ssl.rest.http`. Each holds `CertificateSubject`,
+`CertificateIssuer`, `CertificateSerialNumber`, `CertificateSubjectAlternativeNames`, `CertificateNotBefore`,
+`CertificateNotAfter`, `CertificateChainNotAfter`, `TrustedAuthorities`, `LastReloadTime`, `LastReloadFailureTime`,
+`LastReloadFailure` and `ReloadFailures`. Times are in milliseconds since the epoch, and `0` means unknown or never.
+
 === Replacing the Certificate Authority
 
 Nodes and clients authenticate each other, so the order is not a matter of taste: everything has to trust the new
@@ -1938,8 +1969,7 @@ control.sh|bat --ssl reload
 that still presents a certificate from it is locked out. This is the gate for that step, not a formality.
 +
 --
-*Nodes.* Step 2 has already answered this for every node that was in the topology: its report names the authority
-that issued what each of them serves.
+*Nodes.* `control.sh --ssl status` names the authority that issued what every node serves, for every transport.
 
 *Everything the command does not reach* — applications that present a certificate of their own, and whatever nodes
 and applications are provisioned from, such as images and configuration management. Nothing reports on those, so

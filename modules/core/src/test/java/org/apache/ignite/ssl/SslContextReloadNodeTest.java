@@ -38,14 +38,21 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.CommandWarningException;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadCommandArg;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
+import org.apache.ignite.internal.management.ssl.SslStatusTask;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslMetrics;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -548,6 +555,126 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         String res = reload(g);
 
         assertContains(log, res, "SSL is not configured");
+    }
+
+    /**
+     * Status must name, for every transport, the certificate it serves, the authorities it trusts and how its last
+     * reload went, including a client connector that runs on a factory of its own.
+     */
+    @Test
+    public void testStatusReportsEveryTransport() throws Exception {
+        trustStore = "trustboth";
+        ownClientConnectorFactory = true;
+
+        IgniteEx g = startGrid(0);
+
+        String res = status(g);
+
+        String id = g.localNode().id().toString();
+
+        assertContains(log, res, id + ": " + CLIENT_CONNECTOR + "\n    serving CN=node01, issued by ");
+        assertContains(log, res, id + ": " + COMMUNICATION + ", " + DISCOVERY + "\n    serving CN=node01, issued by ");
+        assertContains(log, res, "CN=oneca");
+        assertContains(log, res, "    trusts ");
+        assertContains(log, res, "CN=twoca");
+        assertContains(log, res, "not reloaded since the node started");
+    }
+
+    /** After a reload, status must name the new certificate and say when the reload succeeded. */
+    @Test
+    public void testStatusAfterReload() throws Exception {
+        IgniteEx g = startGrid(0);
+
+        placeKeys("node02");
+
+        reload(g);
+
+        String res = status(g);
+
+        assertContains(log, res, "serving CN=node02");
+        assertContains(log, res, "last reload succeeded at ");
+    }
+
+    /** A failed reload must make status end with a warning that names the reason, while the old certificate stays. */
+    @Test
+    public void testStatusWarnsAfterFailedReload() throws Exception {
+        trustStore = "trustone";
+
+        IgniteEx g = startGrid(0);
+
+        placeKeys("node02");
+
+        GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null);
+
+        Throwable e = GridTestUtils.assertThrows(log, () -> status(g), Exception.class, null);
+
+        assertTrue("A failed reload must make status end with a warning", X.hasCause(e, CommandWarningException.class));
+
+        String res = X.getFullStackTrace(e);
+
+        assertContains(log, res, "serving CN=node01");
+        assertContains(log, res, "last reload failed 1 time(s) in a row");
+        assertContains(log, res, "A handshake between nodes on the new certificate was refused");
+    }
+
+    /** A certificate that is not valid any more must fail status, not only be listed. */
+    @Test
+    public void testStatusFailsOnExpiredCertificate() throws Exception {
+        place("node02old", keyStore(getTestIgniteInstanceName(0)));
+
+        IgniteEx g = startGrid(0);
+
+        Throwable e = GridTestUtils.assertThrows(log, () -> status(g), Exception.class, null);
+
+        assertFalse("An expired certificate is a failure, not a warning", X.hasCause(e, CommandWarningException.class));
+
+        assertContains(log, X.getFullStackTrace(e), "PROBLEM: the certificate is not valid now");
+    }
+
+    /** The metrics of a transport must follow the certificate it serves and the outcome of its reloads. */
+    @Test
+    public void testMetrics() throws Exception {
+        trustStore = "trustboth";
+
+        IgniteEx g = startGrid(0);
+
+        MetricRegistryImpl reg = g.context().metric().registry(SslMetrics.registryName(CLIENT_CONNECTOR));
+
+        assertEquals("CN=node01", reg.<ObjectMetric<String>>findMetric("CertificateSubject").value());
+        assertContains(log, reg.<ObjectMetric<String>>findMetric("TrustedAuthorities").value(), "CN=twoca");
+        assertEquals(0, reg.<LongMetric>findMetric("LastReloadTime").value());
+
+        placeKeys("node02");
+
+        reload(g);
+
+        X509Certificate cert = servedCertificate(clientConnectorPort(g));
+
+        assertEquals("CN=node02", reg.<ObjectMetric<String>>findMetric("CertificateSubject").value());
+        assertEquals(cert.getNotAfter().getTime(), reg.<LongMetric>findMetric("CertificateNotAfter").value());
+        assertTrue(reg.<LongMetric>findMetric("LastReloadTime").value() > 0);
+
+        Files.write(keyStore(g.name()), "not a key store".getBytes());
+
+        GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null);
+
+        assertEquals(1, reg.<IntMetric>findMetric("ReloadFailures").value());
+        assertContains(log, reg.<ObjectMetric<String>>findMetric("LastReloadFailure").value(),
+            "Failed to initialize key store");
+
+        // The certificate in use stays, and so do its metrics.
+        assertEquals("CN=node02", reg.<ObjectMetric<String>>findMetric("CertificateSubject").value());
+    }
+
+    /**
+     * @param node Node to run on.
+     * @return Status report of that node.
+     */
+    private String status(IgniteEx node) throws Exception {
+        VisorTaskResult<String> res = node.compute(node.cluster()).execute(SslStatusTask.class,
+            new VisorTaskArgument<>(node.localNode().id(), new NoArg(), false));
+
+        return res.result();
     }
 
     /** @param nodes Nodes to reload certificates on. */

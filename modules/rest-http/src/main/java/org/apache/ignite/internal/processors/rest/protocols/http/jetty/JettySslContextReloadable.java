@@ -24,6 +24,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.ssl.SslContextValidator;
+import org.apache.ignite.internal.ssl.SslReloadState;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +38,15 @@ import org.jetbrains.annotations.Nullable;
 public class JettySslContextReloadable implements SslContextReloadable {
     /** SSL factory of the running connector. */
     private final SslContextFactory.Server sslCtxFactory;
+
+    /** Outcome of the reloads. */
+    private final SslReloadState state = new SslReloadState();
+
+    /** Context the chain below was worked out for. */
+    private SSLContext servedCtx;
+
+    /** Chain {@link #servedCtx} presents, {@code null} if it cannot be told. */
+    private X509Certificate[] servedChain;
 
     /**
      * @param sslCtxFactory SSL factory of the running connector.
@@ -85,10 +95,24 @@ public class JettySslContextReloadable implements SslContextReloadable {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable X509Certificate servedCertificate() {
+    @Override public synchronized @Nullable X509Certificate[] servedChain() {
         SSLContext ctx = sslCtxFactory.getSslContext();
 
-        return ctx == null ? null : SslContextValidator.servedCertificate(ctx);
+        if (ctx == null)
+            return null;
+
+        // Metrics read this on every poll, so the handshake runs once per context rather than once per read.
+        if (ctx != servedCtx) {
+            servedChain = SslContextValidator.servedChain(ctx);
+            servedCtx = ctx;
+        }
+
+        return servedChain;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SslReloadState reloadState() {
+        return state;
     }
 
     /**

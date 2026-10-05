@@ -20,31 +20,23 @@ package org.apache.ignite.internal.management.ssl;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSession;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
-import org.apache.ignite.internal.ssl.SslContextValidator;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
 
 /** Reloads TLS certificates on every mapped node, or only reports whether they can be reloaded. */
 @GridInternal
-public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, String, String> {
+public class SslReloadTask extends SslTask<SslReloadCommandArg> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -58,56 +50,9 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable String reduce0(List<ComputeJobResult> results) throws IgniteException {
-        StringBuilder res = new StringBuilder();
-
-        boolean failed = false;
-
-        boolean warned = false;
-
-        for (ComputeJobResult jobRes : results) {
-            IgniteException e = jobRes.getException();
-
-            if (e == null)
-                res.append(jobRes.getData().toString());
-            else if (X.hasCause(e, ClusterTopologyException.class, ClusterTopologyCheckedException.class)) {
-                // The node may have reloaded before it left, so nothing is claimed about its certificates.
-                res.append(jobRes.getNode().id()).append(": left the cluster, outcome unknown");
-            }
-            else {
-                if (X.hasCause(e, CommandWarningException.class))
-                    warned = true;
-                else
-                    failed = true;
-
-                String msg = e.getMessage() != null ? e.getMessage() : e.toString();
-
-                // The job reports every node with its id; anything else that failed has to be attributed too.
-                res.append(msg.startsWith(jobRes.getNode().id().toString())
-                    ? msg
-                    : jobRes.getNode().id() + ": " + msg);
-            }
-
-            res.append('\n');
-        }
-
-        // Every node is listed before the failure is raised: nodes reload independently, so the operator has to see
-        // which of them moved to the new certificates and which did not.
-        if (failed)
-            throw new IgniteException(res.toString());
-
-        if (warned)
-            throw warning(res.toString());
-
-        return res.toString();
-    }
-
-    /**
-     * @param res Report to return.
-     * @return Exception that makes the command end with warnings and print the report.
-     */
-    private static IgniteException warning(String res) {
-        return new IgniteException(res, new CommandWarningException(new IgniteException(res)));
+    @Override protected String leftCluster() {
+        // The node may have reloaded before it left, so nothing is claimed about its certificates.
+        return "left the cluster, outcome unknown";
     }
 
     /** */
@@ -126,27 +71,12 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
         /** {@inheritDoc} */
         @Override protected String run(SslReloadCommandArg arg) throws IgniteException {
-            Collection<SslContextReloadable> comps =
-                ignite.context().internalSubscriptionProcessor().getSslContextReloadables();
+            String nothing = nothingServed(ignite);
 
-            if (comps.isEmpty())
-                return ignite.localNode().id() + ": SSL is not configured";
+            if (nothing != null)
+                return nothing;
 
-            // Sorted, so that the report of a node does not depend on the order the components started in.
-            // A provider whose transport never started serves nothing, so it has nothing to report either.
-            List<SslContextReloadable> sorted = new ArrayList<>();
-
-            for (SslContextReloadable comp : comps) {
-                if (!comp.users().isEmpty())
-                    sorted.add(comp);
-            }
-
-            // Configured but serving nothing is a different answer from not configured at all: it means a
-            // transport did not start, which the operator would otherwise have to find out some other way.
-            if (sorted.isEmpty())
-                return ignite.localNode().id() + ": SSL is configured, but no transport is serving it";
-
-            sorted.sort(Comparator.comparing(comp -> String.join(", ", comp.users())));
+            List<SslContextReloadable> sorted = serving(ignite);
 
             IgniteLogger log = ignite.log();
 
@@ -173,6 +103,9 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
                     failed = true;
 
                     String reason = reason(e);
+
+                    if (!arg.dryRun())
+                        comp.reloadState().onFailure(reason);
 
                     lines.add(ignite.localNode().id() + ": " + (arg.dryRun() ? "would fail on " : "failed on ") +
                         users + " (" + reason + ')');
@@ -203,6 +136,8 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
                     continue;
                 }
 
+                comp.reloadState().onSuccess();
+
                 // The certificates are in use by now. Whatever goes wrong while describing them must not turn the
                 // reload into a reported failure.
                 X509Certificate cert = null;
@@ -217,7 +152,7 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
                 lines.add(ignite.localNode().id() + ": reloaded " + users + served(cert));
 
                 if (log.isInfoEnabled()) {
-                    String desc = SslContextValidator.describe(cert);
+                    String desc = SslCertificates.describe(cert);
 
                     log.info("TLS certificates reloaded [transports=" + users + (desc.isEmpty() ? "" : ", " + desc) +
                         ", initiator=" + initiator + ']');

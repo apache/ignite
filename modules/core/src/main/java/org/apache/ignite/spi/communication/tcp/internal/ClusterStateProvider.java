@@ -132,6 +132,20 @@ public class ClusterStateProvider {
     }
 
     /**
+     * Names an inter-node transport that has started serving this provider's context.
+     *
+     * @param user Transport.
+     */
+    public void addSslUser(String user) {
+        SslContextProvider provider = sslContextProvider();
+
+        if (ignite instanceof IgniteEx)
+            ((IgniteEx)ignite).context().internalSubscriptionProcessor().addSslUser(provider, user, true);
+        else
+            provider.addUser(user, true);
+    }
+
+    /**
      * @return {@link SSLEngine} for ssl connections.
      */
     public SSLEngine createSSLEngine() {

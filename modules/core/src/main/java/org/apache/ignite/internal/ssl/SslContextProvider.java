@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.ssl;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,6 +56,15 @@ public class SslContextProvider implements SslContextReloadable {
     /** Context in use. */
     private volatile SSLContext ctx;
 
+    /** What the context in use presents, worked out once per context; {@code null} until asked. */
+    private volatile Served served;
+
+    /** Authorities the context in use trusts, read when it was built. */
+    private volatile List<X509Certificate> trusted;
+
+    /** Outcome of the reloads. */
+    private final SslReloadState state = new SslReloadState();
+
     /**
      * @param factory Factory to build the context with.
      */
@@ -56,6 +72,8 @@ public class SslContextProvider implements SslContextReloadable {
         this.factory = factory;
 
         ctx = factory.create();
+
+        trusted = readTrustedAuthorities();
     }
 
     /**
@@ -92,6 +110,8 @@ public class SslContextProvider implements SslContextReloadable {
 
         ctx = rebuilt;
 
+        trusted = readTrustedAuthorities();
+
         return true;
     }
 
@@ -101,8 +121,26 @@ public class SslContextProvider implements SslContextReloadable {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable X509Certificate servedCertificate() {
-        return SslContextValidator.servedCertificate(ctx);
+    @Override public @Nullable X509Certificate[] servedChain() {
+        SSLContext ctx0 = ctx;
+
+        Served served0 = served;
+
+        // Metrics read this on every poll, so the handshake runs once per context rather than once per read.
+        if (served0 == null || served0.ctx != ctx0)
+            served = served0 = new Served(ctx0, SslContextValidator.servedChain(ctx0));
+
+        return served0.chain;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<X509Certificate> trustedAuthorities() {
+        return trusted;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SslReloadState reloadState() {
+        return state;
     }
 
     /**
@@ -121,12 +159,67 @@ public class SslContextProvider implements SslContextReloadable {
                 SslContextValidator.validateInterNode(rebuilt);
             }
             catch (SSLException e) {
+                X509Certificate[] chain = SslContextValidator.servedChain(rebuilt);
+
                 throw new IgniteCheckedException("A handshake between nodes on the new certificate was refused, " +
                     "checked against this node's own trust store [" +
-                    SslContextValidator.describe(SslContextValidator.servedCertificate(rebuilt)) + ']', e);
+                    SslCertificates.describe(chain == null ? null : chain[0]) + ']', e);
             }
         }
 
         return rebuilt;
+    }
+
+    /**
+     * @return Authorities in the trust store the factory reads, or an empty list if the factory is not one that
+     *      names a trust store file, or the file cannot be read.
+     */
+    private List<X509Certificate> readTrustedAuthorities() {
+        if (!(factory instanceof SslContextFactory))
+            return Collections.emptyList();
+
+        SslContextFactory f = (SslContextFactory)factory;
+
+        if (f.getTrustStoreFilePath() == null)
+            return Collections.emptyList();
+
+        try (InputStream in = new FileInputStream(f.getTrustStoreFilePath())) {
+            KeyStore store = KeyStore.getInstance(f.getTrustStoreType());
+
+            store.load(in, f.getTrustStorePassword());
+
+            List<X509Certificate> res = new ArrayList<>();
+
+            for (String alias : Collections.list(store.aliases())) {
+                Certificate cert = store.getCertificate(alias);
+
+                if (cert instanceof X509Certificate)
+                    res.add((X509Certificate)cert);
+            }
+
+            return Collections.unmodifiableList(res);
+        }
+        catch (Exception ignored) {
+            // Only shown to the operator; the context itself was built from the same file without trouble.
+            return Collections.emptyList();
+        }
+    }
+
+    /** Chain a context presents, kept together with the context it was worked out for. */
+    private static class Served {
+        /** Context the chain was worked out for. */
+        private final SSLContext ctx;
+
+        /** Chain the context presents, {@code null} if it cannot be told. */
+        private final X509Certificate[] chain;
+
+        /**
+         * @param ctx Context the chain was worked out for.
+         * @param chain Chain the context presents, {@code null} if it cannot be told.
+         */
+        private Served(SSLContext ctx, @Nullable X509Certificate[] chain) {
+            this.ctx = ctx;
+            this.chain = chain;
+        }
     }
 }

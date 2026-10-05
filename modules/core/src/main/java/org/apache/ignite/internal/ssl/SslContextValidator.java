@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.ssl;
 
 import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -75,13 +76,14 @@ public class SslContextValidator {
     }
 
     /**
-     * Tells which certificate the context presents, the way any peer sees it: against a client that trusts anything
-     * and presents nothing. Works for every transport, including the ones only clients connect to.
+     * Tells which certificates the context presents, the way any peer sees them: against a client that trusts
+     * anything and presents nothing. Works for every transport, including the ones only clients connect to.
      *
      * @param ctx SSL context to ask.
-     * @return Certificate the context presents, or {@code null} if the exchange did not get that far.
+     * @return Chain the context presents, its own certificate first, or {@code null} if the exchange did not get
+     *      that far.
      */
-    public static @Nullable X509Certificate servedCertificate(SSLContext ctx) {
+    public static @Nullable X509Certificate[] servedChain(SSLContext ctx) {
         try {
             SSLContext probe = SSLContext.getInstance("TLS");
 
@@ -95,24 +97,12 @@ public class SslContextValidator {
 
             cli.setUseClientMode(true);
 
-            return handshake(cli, srv) ? presented(cli) : null;
+            return handshake(cli, srv) ? presentedChain(cli) : null;
         }
         catch (Exception ignored) {
             // The certificate is only described, never relied on, so a context that cannot tell says nothing.
             return null;
         }
-    }
-
-    /**
-     * @param cert Certificate to describe, {@code null} if unknown.
-     * @return The certificate as log lines and errors name it, or an empty string if it is unknown.
-     */
-    public static String describe(@Nullable X509Certificate cert) {
-        return cert == null ? "" : "subject=" + cert.getSubjectX500Principal() +
-            ", issuer=" + cert.getIssuerX500Principal() +
-            ", serial=" + cert.getSerialNumber().toString(16) +
-            ", notBefore=" + cert.getNotBefore().toInstant() +
-            ", notAfter=" + cert.getNotAfter().toInstant();
     }
 
     /**
@@ -149,8 +139,25 @@ public class SslContextValidator {
      * @return Certificate its peer presented, or {@code null} if the peer did not present one.
      */
     private static @Nullable X509Certificate presented(SSLEngine cli) {
+        X509Certificate[] chain = presentedChain(cli);
+
+        return chain == null ? null : chain[0];
+    }
+
+    /**
+     * @param cli Client side of a completed handshake.
+     * @return Chain its peer presented, its own certificate first, or {@code null} if the peer presented none.
+     */
+    private static @Nullable X509Certificate[] presentedChain(SSLEngine cli) {
         try {
-            return (X509Certificate)cli.getSession().getPeerCertificates()[0];
+            Certificate[] certs = cli.getSession().getPeerCertificates();
+
+            X509Certificate[] chain = new X509Certificate[certs.length];
+
+            for (int i = 0; i < certs.length; i++)
+                chain[i] = (X509Certificate)certs[i];
+
+            return chain;
         }
         catch (SSLPeerUnverifiedException ignored) {
             return null;

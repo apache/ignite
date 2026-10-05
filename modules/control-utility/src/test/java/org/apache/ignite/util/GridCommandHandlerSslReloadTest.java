@@ -181,6 +181,23 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         assertEquals("CN=node01", servedCertificate(grid(0)).getSubjectX500Principal().getName());
     }
 
+    /** Status must report what every node serves and end with success when nothing is wrong. */
+    @Test
+    public void testStatus() throws Exception {
+        startGrids(2);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--ssl", "status"));
+
+        String out = testOut.toString();
+
+        for (int i = 0; i < 2; i++)
+            assertContains(log, out, grid(i).localNode().id() + ": binary REST, client connector, communication, discovery");
+
+        assertContains(log, out, "serving CN=node01");
+    }
+
     /**
      * @param node Node whose client connector is probed.
      * @return Certificate the connector presents on a new TLS connection.

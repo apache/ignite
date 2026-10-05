@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslMetrics;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -162,6 +163,9 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
         requireNonNull(reloadable, "SSL context reloadable should be not-null.");
 
         sslCtxReloadables.add(reloadable);
+
+        for (String user : reloadable.users())
+            SslMetrics.register(ctx.metric(), user, reloadable);
     }
 
     /**
@@ -187,9 +191,22 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
         // A transport that can still fail to start says so later, once it has taken its port.
         if (user != null)
-            provider.addUser(user, interNode);
+            addSslUser(provider, user, interNode);
 
         return provider;
+    }
+
+    /**
+     * Names a transport the provider now serves, which also gives the transport its certificate metrics.
+     *
+     * @param provider Provider the transport takes its context from.
+     * @param user Transport.
+     * @param interNode Whether that transport connects nodes to each other.
+     */
+    public void addSslUser(SslContextProvider provider, String user, boolean interNode) {
+        provider.addUser(user, interNode);
+
+        SslMetrics.register(ctx.metric(), user, provider);
     }
 
     /** */

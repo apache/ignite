@@ -254,7 +254,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             // Named only once the port is taken: a busy range leaves the node without binary REST altogether.
             if (sslCtxProvider != null)
-                sslCtxProvider.addUser(SslContextReloadable.BINARY_REST, false);
+                ctx.internalSubscriptionProcessor().addSslUser(sslCtxProvider, SslContextReloadable.BINARY_REST, false);
 
             return true;
         }

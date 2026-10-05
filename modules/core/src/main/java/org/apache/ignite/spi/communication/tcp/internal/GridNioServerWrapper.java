@@ -973,7 +973,7 @@ public class GridNioServerWrapper {
 
                 // Named only once the port is taken: a busy port makes this method try the next one.
                 if (stateProvider.isSslEnabled())
-                    stateProvider.sslContextProvider().addUser(SslContextReloadable.COMMUNICATION, true);
+                    stateProvider.addSslUser(SslContextReloadable.COMMUNICATION);
 
                 if (mreg != null)
                     U.registerNioServerMetrics(srvr, filtersArr, mreg);
