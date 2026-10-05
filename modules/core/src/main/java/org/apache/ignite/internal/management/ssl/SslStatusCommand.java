@@ -22,14 +22,12 @@ import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.jetbrains.annotations.Nullable;
 
 /** */
 public class SslStatusCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Show the TLS certificates every cluster node serves, the authorities it trusts, and how its last " +
-            "reload went";
+        return "Show the TLS certificates of all cluster nodes and how their reloads went";
     }
 
     /** {@inheritDoc} */
@@ -43,7 +41,7 @@ public class SslStatusCommand implements ComputeCommand<NoArg, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
         return nodes;
     }
 

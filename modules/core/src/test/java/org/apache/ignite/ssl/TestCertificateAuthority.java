@@ -19,22 +19,18 @@ package org.apache.ignite.ssl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
-import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -42,22 +38,24 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 
 /**
- * Certificate authority for tests that need certificates valid for a chosen time, which the stores checked into the
- * repository cannot give. Certificates are put together in memory, with the platform's own security providers only.
+ * Certificate authority for tests that need certificates valid for a chosen time, which the stores checked into the repository cannot give.
+ * Certificates are put together in memory, with the platform's own security providers only.
  */
 public class TestCertificateAuthority {
     /** Password of every store made here. */
-    static final char[] PWD = "123456".toCharArray();
+    private static final char[] PWD = "123456".toCharArray();
 
     /** DER of {@code ecdsa-with-SHA256}, the algorithm every certificate here is signed with. */
-    private static final byte[] SIG_ALG =
-        seq(new byte[] {0x06, 0x08, 0x2A, (byte)0x86, 0x48, (byte)0xCE, 0x3D, 0x04, 0x03, 0x02});
+    private static final byte[] SIG_ALG = seq(new byte[] {0x06, 0x08, 0x2A, (byte)0x86, 0x48, (byte)0xCE, 0x3D, 0x04, 0x03, 0x02});
 
     /** DER of a critical {@code basicConstraints} extension that makes a certificate a CA. */
     private static final byte[] CA_EXT = tlv(0xA3, seq(seq(
         new byte[] {0x06, 0x03, 0x55, 0x1D, 0x13},
         new byte[] {0x01, 0x01, (byte)0xFF},
         tlv(0x04, seq(new byte[] {0x01, 0x01, (byte)0xFF})))));
+
+    /** Format of {@code UTCTime}, which covers the years up to 2049. */
+    private static final DateTimeFormatter UTC_TIME = DateTimeFormatter.ofPattern("yyMMddHHmmss'Z'").withZone(ZoneOffset.UTC);
 
     /** */
     private static final SecureRandom RND = new SecureRandom();
@@ -71,10 +69,8 @@ public class TestCertificateAuthority {
     /** */
     private final X509Certificate cert;
 
-    /**
-     * @param cn Common name of the authority.
-     */
-    public TestCertificateAuthority(String cn) throws GeneralSecurityException {
+    /** @param cn Common name of the authority. */
+    public TestCertificateAuthority(String cn) throws Exception {
         name = new X500Principal("CN=" + cn);
         keys = keyPair();
 
@@ -89,7 +85,7 @@ public class TestCertificateAuthority {
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the certificate, its key and the authority behind it.
      */
-    public KeyStore issue(String cn, long notBefore, long notAfter) throws GeneralSecurityException {
+    public KeyStore issue(String cn, long notBefore, long notAfter) throws Exception {
         KeyPair pair = keyPair();
 
         X509Certificate leaf = sign(new X500Principal("CN=" + cn), pair, notBefore, notAfter, false);
@@ -101,10 +97,8 @@ public class TestCertificateAuthority {
         return store;
     }
 
-    /**
-     * @return Trust store with this authority alone.
-     */
-    public KeyStore trustStore() throws GeneralSecurityException {
+    /** @return Trust store with this authority alone. */
+    public KeyStore trustStore() throws Exception {
         KeyStore store = emptyStore();
 
         store.setCertificateEntry(name.getName(), cert);
@@ -117,7 +111,7 @@ public class TestCertificateAuthority {
      * @param trustStore Store with the authorities to trust.
      * @return Context that presents and trusts them.
      */
-    public static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws GeneralSecurityException {
+    public static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws Exception {
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
         kmf.init(keyStore, PWD);
@@ -138,18 +132,15 @@ public class TestCertificateAuthority {
      * @param subjKeys Key pair of the subject.
      * @param notBefore Time the certificate becomes valid.
      * @param notAfter Time it expires.
-     * @param ca Whether the certificate is an authority's own.
-     * @return Certificate signed by this authority, or by the subject itself if it is the authority being made.
+     * @param ca Whether the certificate is the authority's own.
+     * @return Certificate signed by this authority.
      */
-    private X509Certificate sign(X500Principal subj, KeyPair subjKeys, long notBefore, long notAfter, boolean ca)
-        throws GeneralSecurityException {
-        PrivateKey signer = ca ? subjKeys.getPrivate() : keys.getPrivate();
-
+    private X509Certificate sign(X500Principal subj, KeyPair subjKeys, long notBefore, long notAfter, boolean ca) throws Exception {
         byte[] tbs = seq(
             tlv(0xA0, tlv(0x02, new byte[] {2})),
             tlv(0x02, new BigInteger(64, RND).add(BigInteger.ONE).toByteArray()),
             SIG_ALG,
-            (ca ? subj : name).getEncoded(),
+            name.getEncoded(),
             seq(time(notBefore), time(notAfter)),
             subj.getEncoded(),
             subjKeys.getPublic().getEncoded(),
@@ -157,23 +148,23 @@ public class TestCertificateAuthority {
 
         Signature sig = Signature.getInstance("SHA256withECDSA");
 
-        sig.initSign(signer);
+        sig.initSign(keys.getPrivate());
         sig.update(tbs);
 
         byte[] sigBytes = sig.sign();
 
+        // A BIT STRING opens with the number of unused bits in its last byte.
         byte[] bits = new byte[sigBytes.length + 1];
 
         System.arraycopy(sigBytes, 0, bits, 1, sigBytes.length);
 
         byte[] der = seq(tbs, SIG_ALG, tlv(0x03, bits));
 
-        return (X509Certificate)CertificateFactory.getInstance("X.509")
-            .generateCertificate(new ByteArrayInputStream(der));
+        return (X509Certificate)CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(der));
     }
 
     /** */
-    private static KeyPair keyPair() throws GeneralSecurityException {
+    private static KeyPair keyPair() throws Exception {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
 
         gen.initialize(new ECGenParameterSpec("secp256r1"));
@@ -182,30 +173,20 @@ public class TestCertificateAuthority {
     }
 
     /** */
-    private static KeyStore emptyStore() throws GeneralSecurityException {
+    private static KeyStore emptyStore() throws Exception {
         KeyStore store = KeyStore.getInstance("PKCS12");
 
-        try {
-            store.load(null, PWD);
-        }
-        catch (IOException e) {
-            throw new GeneralSecurityException(e);
-        }
+        store.load(null, PWD);
 
         return store;
     }
 
     /**
      * @param millis Time.
-     * @return DER of the time as {@code UTCTime}, which covers the years up to 2049.
+     * @return DER of the time as {@code UTCTime}.
      */
     private static byte[] time(long millis) {
-        // The root locale keeps the Gregorian calendar whatever the locale of the machine.
-        SimpleDateFormat fmt = new SimpleDateFormat("yyMMddHHmmss'Z'", Locale.ROOT);
-
-        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-        return tlv(0x17, fmt.format(new Date(millis)).getBytes());
+        return tlv(0x17, UTC_TIME.format(Instant.ofEpochMilli(millis)).getBytes());
     }
 
     /**

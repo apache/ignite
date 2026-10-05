@@ -19,22 +19,12 @@ package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * A node component whose TLS certificates can be replaced at runtime, without a node restart.
- * <p>
- * A node registers one of these per configured SSL context factory once it has set SSL up, so an empty registry
- * means the node does not use SSL at all. Each registers under the names of the transports it serves, which is
- * also how the reload command reports it, so they are part of what an operator sees and scripts against.
- * <p>
- * Every node reloads on its own. Nothing is coordinated between nodes, so a reload that fails on some of them leaves
- * the others on the new certificates.
- */
-public interface SslContextReloadable {
+/** Node component whose TLS certificates can be replaced at runtime, together with the outcome of its reloads. */
+public abstract class SslContextReloadable {
     /** */
     public static final String COMMUNICATION = "communication";
 
@@ -50,55 +40,112 @@ public interface SslContextReloadable {
     /** */
     public static final String HTTP_REST = "HTTP REST";
 
-    /**
-     * @return Transports served, as the reload command reports them.
-     */
-    public Collection<String> users();
+    /** Guards the outcome fields, which are written together. */
+    private final Object mux = new Object();
+
+    /** Time of the last successful reload, {@code 0} if there was none. */
+    private volatile long lastSuccessTime;
+
+    /** Time of the last failed reload since the last successful one, {@code 0} if there was none. */
+    private volatile long lastFailureTime;
+
+    /** Reason of the last failed reload since the last successful one. */
+    private volatile String lastFailure;
+
+    /** Failed reloads in a row since the last successful one. */
+    private volatile int failures;
+
+    /** Time of the next automatic renewal, {@code 0} if none is planned. */
+    private volatile long nextRenewalTime;
+
+    /** @return Transports served, as the commands and the node log name them. */
+    public abstract Collection<String> transports();
 
     /**
-     * Builds the certificates that are on disk now, checks them and puts them in use. Connections opened afterwards
-     * use the new certificates, established ones are not interrupted.
+     * Builds the certificates the configuration points at now, checks them and puts them in use for new connections.
      *
-     * @return {@code True} if new certificates were put in use. {@code False} if the source handed back the context
-     *      already in use, so there is nothing to read again.
-     * @throws IgniteCheckedException If the certificates could not be built or would not be accepted. The ones in
-     *      use stay.
+     * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
      */
-    public boolean reload() throws IgniteCheckedException;
+    public abstract void reload() throws IgniteCheckedException;
 
-    /**
-     * Builds the certificates that are on disk now and checks them, without putting them in use.
-     *
-     * @return {@code True} if there is something new to put in use, {@code false} if the source would hand back the
-     *      context already in use.
-     * @throws IgniteCheckedException If the certificates could not be built or would not be accepted.
-     */
-    public boolean check() throws IgniteCheckedException;
+    /** @return Chain presented on new connections, own certificate first, or {@code null} if it cannot be told. */
+    public abstract @Nullable X509Certificate[] servedChain();
 
-    /**
-     * @return Chain this component presents on new connections, its own certificate first, or {@code null} if it
-     *      cannot be told.
-     */
-    public @Nullable X509Certificate[] servedChain();
-
-    /**
-     * @return Certificate this component presents on new connections, or {@code null} if it cannot be told.
-     */
-    public default @Nullable X509Certificate servedCertificate() {
+    /** @return Certificate presented on new connections, or {@code null} if it cannot be told. */
+    public @Nullable X509Certificate servedCertificate() {
         X509Certificate[] chain = servedChain();
 
         return chain == null ? null : chain[0];
     }
 
     /**
-     * @return Authorities this component trusts, or an empty list if they cannot be read from its configuration.
+     * Records a successful reload and logs the certificate now in use.
+     *
+     * @param log Logger.
+     * @param initiator Who asked for the reload.
+     * @return The certificate now in use, described.
      */
-    public default List<X509Certificate> trustedAuthorities() {
-        return Collections.emptyList();
+    public String onReloaded(IgniteLogger log, String initiator) {
+        synchronized (mux) {
+            lastSuccessTime = System.currentTimeMillis();
+            lastFailureTime = 0;
+            lastFailure = null;
+            failures = 0;
+        }
+
+        String desc = SslCertificates.describe(servedCertificate());
+
+        if (log.isInfoEnabled()) {
+            log.info("TLS certificates reloaded [transports=" + String.join(", ", transports()) + ", " + desc +
+                ", initiator=" + initiator + ']');
+        }
+
+        return desc;
     }
 
     /**
-     * @return Outcome of the reloads of this component.
+     * @param e Why the reload failed.
+     * @return The reason, as the commands and the node log show it.
      */
-    public SslReloadState reloadState();
+    public String onFailure(Throwable e) {
+        String reason = SslCertificates.reason(e);
+
+        synchronized (mux) {
+            lastFailureTime = System.currentTimeMillis();
+            lastFailure = reason;
+            failures++;
+        }
+
+        return reason;
+    }
+
+    /** @return Time of the last successful reload, {@code 0} if there was none. */
+    public long lastSuccessTime() {
+        return lastSuccessTime;
+    }
+
+    /** @return Time of the last failed reload since the last successful one, {@code 0} if there was none. */
+    public long lastFailureTime() {
+        return lastFailureTime;
+    }
+
+    /** @return Reason of the last failed reload since the last successful one, {@code null} if there was none. */
+    public @Nullable String lastFailure() {
+        return lastFailure;
+    }
+
+    /** @return Failed reloads in a row since the last successful one. */
+    public int failures() {
+        return failures;
+    }
+
+    /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
+    public long nextRenewalTime() {
+        return nextRenewalTime;
+    }
+
+    /** @param nextRenewalTime Time of the next automatic renewal, {@code 0} if none is planned. */
+    void nextRenewalTime(long nextRenewalTime) {
+        this.nextRenewalTime = nextRenewalTime;
+    }
 }

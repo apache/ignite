@@ -22,148 +22,76 @@ import java.util.Collection;
 import java.util.Collections;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
-import org.apache.ignite.internal.ssl.SslContextValidator;
-import org.apache.ignite.internal.ssl.SslReloadState;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Certificate reload for the Jetty connector serving HTTP REST.
- * <p>
- * Jetty rebuilds the context in place and has no rollback of its own: once its own reload has failed, the connector
- * serves no TLS at all until the next successful one. The stores are therefore verified on a throw-away factory
- * first, and the context in use is pinned back if the rebuild fails regardless.
+ * Certificate reload of the Jetty connector serving HTTP REST. Jetty rebuilds the context in place and serves no TLS at all after a failed
+ * rebuild, so the context in use is pinned back then.
  */
-public class JettySslContextReloadable implements SslContextReloadable {
+public class JettySslContextReloadable extends SslContextReloadable {
     /** SSL factory of the running connector. */
     private final SslContextFactory.Server sslCtxFactory;
 
-    /** Outcome of the reloads. */
-    private final SslReloadState state = new SslReloadState();
-
-    /** Context the chain below was worked out for. */
+    /** Context the chain below was worked out for: Jetty may also replace the context by itself, when it watches the key store. */
     private SSLContext servedCtx;
 
     /** Chain {@link #servedCtx} presents, {@code null} if it cannot be told. */
     private X509Certificate[] servedChain;
 
-    /**
-     * @param sslCtxFactory SSL factory of the running connector.
-     */
+    /** @param sslCtxFactory SSL factory of the running connector. */
     public JettySslContextReloadable(SslContextFactory.Server sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> users() {
-        return Collections.singleton(SslContextReloadable.HTTP_REST);
+    @Override public Collection<String> transports() {
+        return Collections.singleton(HTTP_REST);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean check() throws IgniteCheckedException {
-        if (!rebuildable())
-            return false;
-
-        verifyStores();
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized boolean reload() throws IgniteCheckedException {
-        if (!rebuildable())
-            return false;
-
-        verifyStores();
+    @Override public synchronized void reload() throws IgniteCheckedException {
+        if (sslCtxFactory.getKeyStorePath() == null)
+            throw new IgniteCheckedException("HTTP REST runs on a ready-made SSL context, there is nothing to read again");
 
         SSLContext cur = sslCtxFactory.getSslContext();
 
         try {
-            // Dropping the pinned context makes Jetty read the stores again, which also recovers the factory if an
-            // earlier attempt had to pin one.
+            // Dropping the pinned context makes Jetty read the stores again, which also recovers it from an earlier pin.
             sslCtxFactory.reload(factory -> factory.setSslContext(null));
         }
         catch (Exception e) {
-            pin(cur);
+            try {
+                sslCtxFactory.reload(factory -> factory.setSslContext(cur));
+            }
+            catch (Exception ignored) {
+                // Nothing better is available: the connector already serves no TLS.
+            }
 
-            throw new IgniteCheckedException("Failed to rebuild the HTTP REST SSL context [keyStore=" +
-                sslCtxFactory.getKeyStorePath() + ", trustStore=" + sslCtxFactory.getTrustStorePath() + ']', e);
+            throw new IgniteCheckedException("Failed to rebuild the HTTP REST SSL context [keyStore=" + sslCtxFactory.getKeyStorePath() +
+                ", trustStore=" + sslCtxFactory.getTrustStorePath() + ']', e);
         }
-
-        return sslCtxFactory.getSslContext() != cur;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized @Nullable X509Certificate[] servedChain() {
-        SSLContext ctx = sslCtxFactory.getSslContext();
+        SSLContext ctx;
 
-        if (ctx == null)
+        try {
+            ctx = sslCtxFactory.getSslContext();
+        }
+        catch (IllegalStateException ignored) {
+            // Thrown after a rebuild by Jetty itself failed, when it watches the key store.
             return null;
+        }
 
-        // Metrics read this on every poll, so the handshake runs once per context rather than once per read.
         if (ctx != servedCtx) {
-            servedChain = SslContextValidator.servedChain(ctx);
+            servedChain = ctx == null ? null : SslCertificates.servedChain(ctx);
             servedCtx = ctx;
         }
 
         return servedChain;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SslReloadState reloadState() {
-        return state;
-    }
-
-    /**
-     * @return {@code True} if the connector was configured with stores on disk. A connector handed a ready-made
-     *      context by the Jetty configuration has nothing to re-read.
-     */
-    private boolean rebuildable() {
-        return sslCtxFactory.getKeyStorePath() != null;
-    }
-
-    /**
-     * Loads the configured stores into a throw-away factory, so that a broken one is reported before it can reach
-     * the connector.
-     *
-     * @throws IgniteCheckedException If the stores could not be loaded.
-     */
-    private void verifyStores() throws IgniteCheckedException {
-        SslContextFactory.Server probe = new SslContextFactory.Server();
-
-        probe.setKeyStorePath(sslCtxFactory.getKeyStorePath());
-        probe.setKeyStoreType(sslCtxFactory.getKeyStoreType());
-        probe.setKeyStoreProvider(sslCtxFactory.getKeyStoreProvider());
-        probe.setKeyStorePassword(sslCtxFactory.getKeyStorePassword());
-        probe.setKeyManagerPassword(sslCtxFactory.getKeyManagerPassword());
-
-        try {
-            probe.start();
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to load the HTTP REST key store [path=" +
-                sslCtxFactory.getKeyStorePath() + ']', e);
-        }
-        finally {
-            try {
-                probe.stop();
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    /**
-     * @param ctx Context to keep serving after a failed rebuild.
-     */
-    private void pin(SSLContext ctx) {
-        try {
-            sslCtxFactory.reload(factory -> factory.setSslContext(ctx));
-        }
-        catch (Exception ignored) {
-            // Nothing better is available: the connector is already unable to serve TLS.
-        }
     }
 }

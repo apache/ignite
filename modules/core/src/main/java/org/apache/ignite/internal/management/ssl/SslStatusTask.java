@@ -20,37 +20,27 @@ package org.apache.ignite.internal.management.ssl;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
-import org.apache.ignite.internal.ssl.SslReloadState;
 import org.apache.ignite.internal.visor.VisorJob;
 
-/**
- * Reports the TLS certificates every mapped node serves, which authorities it trusts, how its last reload went, and
- * when the next automatic renewal is due.
- * A node whose certificate is no longer, or not yet, valid fails the command; a node whose last reload failed, or whose
- * automatic renewal is overdue, makes it end with a warning.
- */
+import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
+import static org.apache.ignite.internal.ssl.SslCertificates.describe;
+
+/** Reports the TLS certificates of every mapped node; a node serving a certificate that is not valid now fails the command. */
 @GridInternal
-public class SslStatusTask extends SslTask<NoArg> {
+public class SslStatusTask extends SslTask {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** How long a renewal may run past its due time before the status calls it overdue, in milliseconds. */
-    private static final long RENEWAL_OVERDUE = 60_000L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, String> job(NoArg arg) {
         return new SslStatusJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String leftCluster() {
-        return "left the cluster";
     }
 
     /** */
@@ -65,10 +55,12 @@ public class SslStatusTask extends SslTask<NoArg> {
 
         /** {@inheritDoc} */
         @Override protected String run(NoArg arg) throws IgniteException {
-            String nothing = nothingServed(ignite);
+            String id = ignite.localNode().id().toString();
 
-            if (nothing != null)
-                return nothing;
+            Collection<SslContextReloadable> comps = reloadables(ignite);
+
+            if (comps.isEmpty())
+                return id + ": SSL is not configured";
 
             long now = System.currentTimeMillis();
 
@@ -76,75 +68,41 @@ public class SslStatusTask extends SslTask<NoArg> {
 
             boolean invalid = false;
 
-            boolean reloadFailed = false;
-
-            for (SslContextReloadable comp : serving(ignite)) {
-                lines.add(ignite.localNode().id() + ": " + String.join(", ", comp.users()));
+            for (SslContextReloadable comp : comps) {
+                lines.add(id + ": " + String.join(", ", comp.transports()));
 
                 X509Certificate[] chain = comp.servedChain();
 
                 if (chain == null)
-                    lines.add("    serving: unknown");
+                    lines.add("    serving unknown");
                 else {
-                    X509Certificate cert = chain[0];
+                    long notAfter = chainNotAfter(chain);
 
-                    long chainNotAfter = SslCertificates.chainNotAfter(chain);
+                    lines.add("    serving " + describe(chain[0]) +
+                        (notAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(notAfter) : ""));
 
-                    String san = SslCertificates.subjectAlternativeNames(cert);
-
-                    lines.add("    serving " + cert.getSubjectX500Principal() +
-                        ", issued by " + cert.getIssuerX500Principal() +
-                        ", serial " + SslCertificates.serial(cert) +
-                        ", valid from " + Instant.ofEpochMilli(cert.getNotBefore().getTime()) +
-                        " until " + Instant.ofEpochMilli(cert.getNotAfter().getTime()) +
-                        (chainNotAfter < cert.getNotAfter().getTime()
-                            ? ", chain valid until " + Instant.ofEpochMilli(chainNotAfter)
-                            : "") +
-                        (san.isEmpty() ? "" : ", SAN " + san));
-
-                    if (now > chainNotAfter || now < cert.getNotBefore().getTime()) {
+                    if (SslCertificates.invalidAt(chain, now) != null) {
                         invalid = true;
 
                         lines.add("    PROBLEM: the certificate is not valid now, peers refuse it");
                     }
                 }
 
-                List<X509Certificate> trusted = comp.trustedAuthorities();
-
-                lines.add("    trusts " + (trusted.isEmpty() ? "unknown" : SslCertificates.authorities(trusted)));
-
-                SslReloadState state = comp.reloadState();
-
-                if (state.failures() > 0) {
-                    reloadFailed = true;
-
-                    lines.add("    last reload failed " + state.failures() + " time(s) in a row, the last at " +
-                        Instant.ofEpochMilli(state.lastFailureTime()) + ": " + state.lastFailure());
+                if (comp.failures() > 0) {
+                    lines.add("    last reload failed " + comp.failures() + " time(s) in a row, the last at " +
+                        Instant.ofEpochMilli(comp.lastFailureTime()) + ": " + comp.lastFailure());
                 }
-                else if (state.lastSuccessTime() > 0)
-                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(state.lastSuccessTime()));
-                else
-                    lines.add("    not reloaded since the node started");
+                else if (comp.lastSuccessTime() > 0)
+                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(comp.lastSuccessTime()));
 
-                if (state.nextRenewalTime() > 0) {
-                    lines.add("    next automatic renewal at " + Instant.ofEpochMilli(state.nextRenewalTime()));
-
-                    // An attempt reschedules itself once it ends, whatever the outcome.
-                    if (now - state.nextRenewalTime() > RENEWAL_OVERDUE) {
-                        reloadFailed = true;
-
-                        lines.add("    the renewal due then has not ended, the request for a certificate may hang");
-                    }
-                }
+                if (comp.nextRenewalTime() > 0)
+                    lines.add("    next automatic renewal at " + Instant.ofEpochMilli(comp.nextRenewalTime()));
             }
 
             String res = String.join("\n", lines);
 
             if (invalid)
                 throw new IgniteException(res);
-
-            if (reloadFailed)
-                throw warning(res);
 
             return res;
         }

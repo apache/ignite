@@ -17,301 +17,157 @@
 
 package org.apache.ignite.internal.ssl;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
+import static org.apache.ignite.internal.ssl.SslCertificates.describe;
+
 /**
- * Owns the SSL context built out of one configured factory, and hands it to everything that factory was given to.
- * <p>
- * A transport asks for the context whenever it opens a connection, so replacing the context here is what puts
- * rotated certificates in use: connections opened afterwards get the new one, established ones are not touched.
- * One provider stands for one factory, however many transports share it, so a rotation cannot leave them on
- * certificates read at different moments.
+ * Owns the SSL context of one configured factory for every transport configured with it. Transports take the context on each new
+ * connection, so replacing it here puts new certificates in use for new connections without touching established ones.
  */
-public class SslContextProvider implements SslContextReloadable {
-    /** Builds a context out of whatever the configured stores hold at the moment of the call. */
+public class SslContextProvider extends SslContextReloadable {
+    /** */
     private final Factory<SSLContext> factory;
 
-    /** Transports served, sorted, as the reload command reports them. */
-    private final Set<String> users = new ConcurrentSkipListSet<>();
-
-    /** Whether any user connects nodes to each other, which is what makes a context worth checking before use. */
-    private volatile boolean interNode;
+    /** */
+    private final Set<String> transports = new ConcurrentSkipListSet<>();
 
     /** Context in use. */
     private volatile SSLContext ctx;
 
-    /** What the context in use presents, worked out once per context; {@code null} until asked. */
-    private volatile Served served;
+    /** Chain the context in use presents, {@code null} if it cannot be told. */
+    private volatile X509Certificate[] chain;
 
-    /** Authorities the context in use trusts, read when it was built. */
-    private volatile List<X509Certificate> trusted;
-
-    /** Outcome of the reloads. */
-    private final SslReloadState state = new SslReloadState();
-
-    /** Told about every context the reload command puts in use, {@code null} if nobody listens. */
+    /** Told about every new context once it is recorded, {@code null} if nobody listens. */
     private volatile Runnable reloadLsnr;
 
-    /**
-     * @param factory Factory to build the context with.
-     */
+    /** @param factory Factory to build the context with. */
     public SslContextProvider(Factory<SSLContext> factory) {
         this.factory = factory;
 
         ctx = factory.create();
-
-        trusted = readTrustedAuthorities();
+        chain = SslCertificates.servedChain(ctx);
     }
 
-    /**
-     * @return Context to open the next connection with.
-     */
+    /** @return Context to open the next connection with. */
     public SSLContext context() {
         return ctx;
     }
 
-    /**
-     * @param user Transport the context is handed to.
-     * @param interNode Whether that transport connects nodes to each other.
-     */
-    public void addUser(String user, boolean interNode) {
-        users.add(user);
-
-        if (interNode)
-            this.interNode = true;
+    /** @param transport Transport the context is handed to. */
+    public void addTransport(String transport) {
+        transports.add(transport);
     }
 
-    /**
-     * @return Factory the context is built with.
-     */
-    public Factory<SSLContext> factory() {
-        return factory;
+    /** {@inheritDoc} */
+    @Override public Collection<String> transports() {
+        return Collections.unmodifiableCollection(transports);
     }
 
-    /**
-     * @return Transports this provider serves.
-     */
-    public Collection<String> users() {
-        return Collections.unmodifiableCollection(users);
+    /** {@inheritDoc} */
+    @Override public @Nullable X509Certificate[] servedChain() {
+        return chain;
     }
 
-    /**
-     * @param lsnr Told about every context {@link #reload()} puts in use. Called while the provider is locked, so it
-     *      must only hand the news over.
-     */
+    /** @param lsnr Told about every new context once it is recorded; must not block. */
     public void onReload(Runnable lsnr) {
         reloadLsnr = lsnr;
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean reload() throws IgniteCheckedException {
-        SSLContext rebuilt = rebuild();
+    @Override public synchronized void reload() throws IgniteCheckedException {
+        SSLContext rebuilt = factory.create();
 
-        if (rebuilt == null)
-            return false;
+        chain = check(rebuilt);
+        ctx = rebuilt;
+    }
 
-        put(rebuilt, null);
+    /** {@inheritDoc} */
+    @Override public String onReloaded(IgniteLogger log, String initiator) {
+        String desc = super.onReloaded(log, initiator);
 
         Runnable lsnr = reloadLsnr;
 
         if (lsnr != null)
             lsnr.run();
 
-        return true;
+        return desc;
     }
 
     /**
-     * Puts in use a context built anew, provided its certificate is valid now and its chain expires later than the one
-     * in use: a renewal that does not move the expiry gains nothing and would be due again at once.
+     * Puts in use a context built anew, provided its chain expires later than the one in use: a renewal that does not move the expiry gains
+     * nothing and would be due again at once.
      *
      * @param expected Context the renewal was planned for.
-     * @return {@code False} if another context was put in use since the renewal was planned, which leaves nothing to
-     *      renew.
-     * @throws IgniteCheckedException If the context could not be built, an inter-node transport would refuse it, or
-     *      its certificate is not valid now or does not expire later than the one in use.
+     * @return {@code False} if another context was put in use since then, which leaves nothing to renew.
+     * @throws IgniteCheckedException If the new context fails the checks of {@link #reload()}, or does not expire later.
      */
     public synchronized boolean renew(SSLContext expected) throws IgniteCheckedException {
         if (ctx != expected)
             return false;
 
-        SSLContext rebuilt = rebuild();
+        SSLContext rebuilt = factory.create();
 
-        if (rebuilt == null)
-            throw new IgniteCheckedException("The factory handed back the SSL context already in use");
-
-        X509Certificate[] next = SslContextValidator.servedChain(rebuilt);
+        X509Certificate[] next = check(rebuilt);
 
         if (next == null)
             throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
 
-        long now = System.currentTimeMillis();
-
-        // A transport that only clients connect to is not checked by a handshake, which would catch this otherwise.
-        for (X509Certificate cert : next) {
-            if (now < cert.getNotBefore().getTime() || now >= cert.getNotAfter().getTime()) {
-                throw new IgniteCheckedException("The new certificate chain is not valid now, so peers would refuse " +
-                    "it [" + SslCertificates.describe(cert) + ", now=" + Instant.ofEpochMilli(now) + ']');
-            }
+        if (chain != null && chainNotAfter(next) <= chainNotAfter(chain)) {
+            throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [" + describe(next[0]) +
+                ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(next)) +
+                ", inUseChainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(chain)) + ']');
         }
 
-        X509Certificate[] cur = servedChain();
-
-        if (cur != null && SslCertificates.chainNotAfter(next) <= SslCertificates.chainNotAfter(cur)) {
-            throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [new: " +
-                expiry(next) + "; in use: " + expiry(cur) + ']');
-        }
-
-        put(rebuilt, next);
+        chain = next;
+        ctx = rebuilt;
 
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public synchronized boolean check() throws IgniteCheckedException {
-        return rebuild() != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable X509Certificate[] servedChain() {
-        SSLContext ctx0 = ctx;
-
-        Served served0 = served;
-
-        // Metrics read this on every poll, so the handshake runs once per context rather than once per read.
-        if (served0 == null || served0.ctx != ctx0)
-            served = served0 = new Served(ctx0, SslContextValidator.servedChain(ctx0));
-
-        return served0.chain;
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<X509Certificate> trustedAuthorities() {
-        return trusted;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SslReloadState reloadState() {
-        return state;
-    }
-
     /**
-     * @param chain Chain.
-     * @return Its own certificate and when the chain expires, naming the certificate that expires first.
+     * @param rebuilt Context built anew.
+     * @return Chain it presents, {@code null} if it cannot be told.
+     * @throws IgniteCheckedException If it is the context in use, a certificate it presents is not valid now, or nodes refuse it.
      */
-    private static String expiry(X509Certificate[] chain) {
-        X509Certificate first = SslCertificates.expiresFirst(chain);
-
-        return SslCertificates.describe(chain[0]) + ", chain expires " + first.getNotAfter().toInstant() +
-            " with " + first.getSubjectX500Principal();
-    }
-
-    /**
-     * @param rebuilt Context to put in use.
-     * @param chain Chain it presents, {@code null} if not worked out yet.
-     */
-    private void put(SSLContext rebuilt, @Nullable X509Certificate[] chain) {
-        ctx = rebuilt;
-
-        if (chain != null)
-            served = new Served(rebuilt, chain);
-
-        trusted = readTrustedAuthorities();
-    }
-
-    /**
-     * @return Context built from the stores as they are now, or {@code null} if the factory handed back the one
-     *      already in use and there is therefore nothing to put in use.
-     * @throws IgniteCheckedException If the context could not be built, or an inter-node transport would refuse it.
-     */
-    private @Nullable SSLContext rebuild() throws IgniteCheckedException {
-        SSLContext rebuilt = factory.create();
-
+    private @Nullable X509Certificate[] check(SSLContext rebuilt) throws IgniteCheckedException {
         if (rebuilt == ctx)
-            return null;
+            throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
 
-        if (interNode) {
+        X509Certificate[] next = SslCertificates.servedChain(rebuilt);
+
+        long now = System.currentTimeMillis();
+
+        X509Certificate invalid = next == null ? null : SslCertificates.invalidAt(next, now);
+
+        if (invalid != null) {
+            throw new IgniteCheckedException("The new certificate chain is not valid now [" + describe(invalid) + ", now=" +
+                Instant.ofEpochMilli(now) + ']');
+        }
+
+        // Clients may legitimately trust differently, so only a context between nodes is worth a handshake with itself.
+        if (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY)) {
             try {
-                SslContextValidator.validateInterNode(rebuilt);
+                SslCertificates.validateInterNode(rebuilt);
             }
             catch (SSLException e) {
-                X509Certificate[] chain = SslContextValidator.servedChain(rebuilt);
-
-                throw new IgniteCheckedException("A handshake between nodes on the new certificate was refused, " +
-                    "checked against this node's own trust store [" +
-                    SslCertificates.describe(chain == null ? null : chain[0]) + ']', e);
+                throw new IgniteCheckedException("A handshake between nodes on the new certificate was refused, checked against this " +
+                    "node's own trust store [" + describe(next == null ? null : next[0]) + ']', e);
             }
         }
 
-        return rebuilt;
-    }
-
-    /**
-     * @return Authorities in the trust store the factory reads, or an empty list if the factory is not one that
-     *      names a trust store file, or the file cannot be read.
-     */
-    private List<X509Certificate> readTrustedAuthorities() {
-        if (!(factory instanceof SslContextFactory))
-            return Collections.emptyList();
-
-        SslContextFactory f = (SslContextFactory)factory;
-
-        if (f.getTrustStoreFilePath() == null)
-            return Collections.emptyList();
-
-        try (InputStream in = new FileInputStream(f.getTrustStoreFilePath())) {
-            KeyStore store = KeyStore.getInstance(f.getTrustStoreType());
-
-            store.load(in, f.getTrustStorePassword());
-
-            List<X509Certificate> res = new ArrayList<>();
-
-            for (String alias : Collections.list(store.aliases())) {
-                Certificate cert = store.getCertificate(alias);
-
-                if (cert instanceof X509Certificate)
-                    res.add((X509Certificate)cert);
-            }
-
-            return Collections.unmodifiableList(res);
-        }
-        catch (Exception ignored) {
-            // Only shown to the operator; the context itself was built from the same file without trouble.
-            return Collections.emptyList();
-        }
-    }
-
-    /** Chain a context presents, kept together with the context it was worked out for. */
-    private static class Served {
-        /** Context the chain was worked out for. */
-        private final SSLContext ctx;
-
-        /** Chain the context presents, {@code null} if it cannot be told. */
-        private final X509Certificate[] chain;
-
-        /**
-         * @param ctx Context the chain was worked out for.
-         * @param chain Chain the context presents, {@code null} if it cannot be told.
-         */
-        private Served(SSLContext ctx, @Nullable X509Certificate[] chain) {
-            this.ctx = ctx;
-            this.chain = chain;
-        }
+        return next;
     }
 }

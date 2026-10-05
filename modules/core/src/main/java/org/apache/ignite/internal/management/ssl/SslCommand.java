@@ -23,9 +23,6 @@ import org.apache.ignite.internal.management.api.CommandRegistryImpl;
 public class SslCommand extends CommandRegistryImpl {
     /** */
     public SslCommand() {
-        super(
-            new SslReloadCommand(),
-            new SslStatusCommand()
-        );
+        super(new SslReloadCommand(), new SslStatusCommand());
     }
 }

@@ -17,47 +17,32 @@
 
 package org.apache.ignite.internal.management.ssl;
 
-import java.security.cert.X509Certificate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
-import org.apache.ignite.internal.ssl.SslReloadState;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.resources.TaskSessionResource;
-import org.jetbrains.annotations.Nullable;
 
-/** Reloads TLS certificates on every mapped node, or only reports whether they can be reloaded. */
+/** Reloads TLS certificates on every mapped node. */
 @GridInternal
-public class SslReloadTask extends SslTask<SslReloadCommandArg> {
+public class SslReloadTask extends SslTask {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final String READY_MADE =
-        " - the SSL context is handed over ready-made, so there is nothing to read again";
-
     /** {@inheritDoc} */
-    @Override protected VisorJob<SslReloadCommandArg, String> job(SslReloadCommandArg arg) {
+    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
         return new SslReloadJob(arg, debug);
     }
 
-    /** {@inheritDoc} */
-    @Override protected String leftCluster() {
-        // The node may have reloaded before it left, so nothing is claimed about its certificates.
-        return "left the cluster, outcome unknown";
-    }
-
     /** */
-    private static class SslReloadJob extends VisorJob<SslReloadCommandArg, String> {
+    private static class SslReloadJob extends VisorJob<NoArg, String> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -66,20 +51,18 @@ public class SslReloadTask extends SslTask<SslReloadCommandArg> {
         private transient ComputeTaskSession ses;
 
         /** */
-        protected SslReloadJob(SslReloadCommandArg arg, boolean debug) {
+        protected SslReloadJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(SslReloadCommandArg arg) throws IgniteException {
-            String nothing = nothingServed(ignite);
+        @Override protected String run(NoArg arg) throws IgniteException {
+            String id = ignite.localNode().id().toString();
 
-            if (nothing != null)
-                return nothing;
+            Collection<SslContextReloadable> comps = reloadables(ignite);
 
-            List<SslContextReloadable> sorted = serving(ignite);
-
-            IgniteLogger log = ignite.log();
+            if (comps.isEmpty())
+                return id + ": SSL is not configured";
 
             String initiator = initiator();
 
@@ -87,76 +70,26 @@ public class SslReloadTask extends SslTask<SslReloadCommandArg> {
 
             boolean failed = false;
 
-            boolean readyMade = false;
-
-            for (SslContextReloadable comp : sorted) {
-                String users = String.join(", ", comp.users());
-
-                boolean rebuilt;
+            for (SslContextReloadable comp : comps) {
+                String transports = String.join(", ", comp.transports());
 
                 try {
-                    rebuilt = arg.dryRun() ? comp.check() : comp.reload();
+                    comp.reload();
+
+                    String desc = comp.onReloaded(ignite.log(), initiator);
+
+                    lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; serving " + desc));
                 }
                 catch (Exception e) {
-                    // Every provider is attempted, so that one broken transport neither hides the state of the rest
-                    // nor keeps them from being reloaded. Anything may be thrown here: the context comes from a
-                    // user-supplied factory.
+                    // Every component is tried, so that one broken transport keeps neither the others nor their outcome from the report.
                     failed = true;
 
-                    String reason = SslReloadState.reason(e);
+                    String reason = comp.onFailure(e);
 
-                    if (!arg.dryRun())
-                        comp.reloadState().onFailure(reason);
+                    lines.add(id + ": failed on " + transports + " (" + reason + ')');
 
-                    lines.add(ignite.localNode().id() + ": " + (arg.dryRun() ? "would fail on " : "failed on ") +
-                        users + " (" + reason + ')');
-
-                    log.warning((arg.dryRun()
-                        ? "TLS certificates on disk cannot be used, the ones in use stay"
-                        : "Failed to reload TLS certificates, the ones in use stay") +
-                        " [transports=" + users + ", initiator=" + initiator + ", reason=" + reason + ']', e);
-
-                    continue;
-                }
-
-                if (!rebuilt) {
-                    readyMade = true;
-
-                    lines.add(ignite.localNode().id() + ": " + (arg.dryRun() ? "cannot be reloaded " : "not reloaded ") +
-                        users + READY_MADE);
-
-                    U.warn(log, "TLS certificates cannot be reloaded, the SSL context is handed over ready-made " +
-                        "[transports=" + users + ", initiator=" + initiator + ']');
-
-                    continue;
-                }
-
-                if (arg.dryRun()) {
-                    lines.add(ignite.localNode().id() + ": can be reloaded " + users);
-
-                    continue;
-                }
-
-                comp.reloadState().onSuccess();
-
-                // The certificates are in use by now. Whatever goes wrong while describing them must not turn the
-                // reload into a reported failure.
-                X509Certificate cert = null;
-
-                try {
-                    cert = comp.servedCertificate();
-                }
-                catch (Exception ignored) {
-                    // Described as unknown.
-                }
-
-                lines.add(ignite.localNode().id() + ": reloaded " + users + served(cert));
-
-                if (log.isInfoEnabled()) {
-                    String desc = SslCertificates.describe(cert);
-
-                    log.info("TLS certificates reloaded [transports=" + users + (desc.isEmpty() ? "" : ", " + desc) +
-                        ", initiator=" + initiator + ']');
+                    ignite.log().warning("Failed to reload TLS certificates, the ones in use stay [transports=" + transports +
+                        ", initiator=" + initiator + ", reason=" + reason + ']', e);
                 }
             }
 
@@ -165,15 +98,10 @@ public class SslReloadTask extends SslTask<SslReloadCommandArg> {
             if (failed)
                 throw new IgniteException(res);
 
-            if (readyMade)
-                throw warning(res);
-
             return res;
         }
 
-        /**
-         * @return Who asked for the reload, as the node log names it.
-         */
+        /** @return Who asked for the reload, as the node log names it. */
         private String initiator() {
             IgniteSecurity security = ignite.context().security();
 
@@ -186,16 +114,6 @@ public class SslReloadTask extends SslTask<SslReloadCommandArg> {
             }
 
             return res;
-        }
-
-        /**
-         * @param cert Certificate the transports serve, {@code null} if it cannot be told without a peer.
-         * @return The certificate, ready to append to a report line.
-         */
-        private static String served(@Nullable X509Certificate cert) {
-            return cert == null ? "" : "; serving " + cert.getSubjectX500Principal() + " until " +
-                cert.getNotAfter().toInstant().atOffset(ZoneOffset.UTC).toLocalDate() +
-                ", issued by " + cert.getIssuerX500Principal();
         }
     }
 }

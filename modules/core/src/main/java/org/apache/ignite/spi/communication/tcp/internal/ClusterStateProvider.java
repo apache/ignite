@@ -19,8 +19,6 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import java.util.function.Supplier;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
@@ -32,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.ssl.SslContextReloadable.COMMUNICATION;
 
 /**
  * The role of this is aggregate logic of cluster states.
@@ -60,8 +61,8 @@ public class ClusterStateProvider {
     /** Ignite ex supplier. */
     private final Supplier<Ignite> igniteExSupplier;
 
-    /** Owner of the SSL context of this transport; resolved once, then asked on every outgoing connection. */
-    private SslContextProvider sslCtxProvider;
+    /** SSL context of the connections, {@code null} if SSL is disabled. */
+    private final @Nullable SslContextProvider sslCtxProvider;
 
     /**
      * @param ignite Ignite.
@@ -88,6 +89,9 @@ public class ClusterStateProvider {
         this.spiCtxWithoutLatchSupplier = spiCtxWithoutLatchSupplier;
         this.log = log;
         this.igniteExSupplier = igniteExSupplier;
+
+        sslCtxProvider = isSslEnabled() ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContexts()
+            .provider(ignite.configuration().getSslContextFactory(), COMMUNICATION) : null;
     }
 
     /**
@@ -115,41 +119,15 @@ public class ClusterStateProvider {
     }
 
     /**
-     * @return Owner of the SSL context this transport opens connections with.
-     */
-    public synchronized SslContextProvider sslContextProvider() {
-        if (sslCtxProvider == null) {
-            Factory<SSLContext> factory = ignite.configuration().getSslContextFactory();
-
-            // A node that is not an IgniteEx cannot be reached by the reload command, so it owns its context alone
-            // instead of sharing a provider through the registry. The transport says its name once it has bound.
-            sslCtxProvider = ignite instanceof IgniteEx
-                ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContextProvider(factory, null, true)
-                : new SslContextProvider(factory);
-        }
-
-        return sslCtxProvider;
-    }
-
-    /**
-     * Names an inter-node transport that has started serving this provider's context.
-     *
-     * @param user Transport.
-     */
-    public void addSslUser(String user) {
-        SslContextProvider provider = sslContextProvider();
-
-        if (ignite instanceof IgniteEx)
-            ((IgniteEx)ignite).context().internalSubscriptionProcessor().addSslUser(provider, user, true);
-        else
-            provider.addUser(user, true);
-    }
-
-    /**
      * @return {@link SSLEngine} for ssl connections.
      */
     public SSLEngine createSSLEngine() {
-        return sslContextProvider().context().createSSLEngine();
+        return sslCtxProvider.context().createSSLEngine();
+    }
+
+    /** @return SSL context of the connections, {@code null} if SSL is disabled. */
+    public @Nullable SslContextProvider sslContextProvider() {
+        return sslCtxProvider;
     }
 
     /**

@@ -29,9 +29,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Represents abstract implementation of SSL Context Factory that builds an {@link SSLContext} out of the current
- * configuration on every {@link AbstractSslContextFactory#create()}, re-reading whatever the stores hold at that
- * moment. Holding on to the context, and deciding when to replace it, is up to the caller.
+ * Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}; keeping
+ * it, and deciding when to replace it, is up to the caller.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */

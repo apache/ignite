@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
@@ -47,8 +48,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
-import org.apache.ignite.internal.ssl.SslContextProvider;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -82,6 +81,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
+import static org.apache.ignite.internal.ssl.SslContextReloadable.CLIENT_CONNECTOR;
 
 /**
  * Client connector processor.
@@ -496,10 +496,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to create client listener " +
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
-            SslContextProvider sslCtxProvider = ctx.internalSubscriptionProcessor()
-                .sslContextProvider(sslCtxFactory, SslContextReloadable.CLIENT_CONNECTOR, false);
+            Supplier<SSLContext> sslCtx = ctx.internalSubscriptionProcessor().sslContexts()
+                .provider(sslCtxFactory, CLIENT_CONNECTOR)::context;
 
-            GridNioSslFilter sslFilter = U.sslFilter(sslCtxProvider::context,
+            GridNioSslFilter sslFilter = U.sslFilter(sslCtx,
                 true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);

@@ -17,61 +17,22 @@
   limitations under the License.
 -->
 
-<!--
-    Jetty over TLS, with the key store taken from a system property so that a test can replace the file on disk.
--->
-
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-    <Arg>
-        <New class="org.eclipse.jetty.util.thread.QueuedThreadPool">
-            <Set name="minThreads">10</Set>
-            <Set name="maxThreads">200</Set>
-        </New>
-    </Arg>
-
-    <New id="httpsCfg" class="org.eclipse.jetty.server.HttpConfiguration">
-        <Set name="secureScheme">https</Set>
-        <Set name="securePort"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>
-        <Set name="sendServerVersion">true</Set>
-        <Set name="sendDateHeader">true</Set>
-        <Call name="addCustomizer">
-            <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
-        </Call>
-    </New>
-
-    <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-        <Set name="keyStorePath"><SystemProperty name="IGNITE_TEST_JETTY_KEY_STORE"/></Set>
-        <Set name="keyStorePassword">123456</Set>
-        <Set name="keyManagerPassword">123456</Set>
-    </New>
-
     <Call name="addConnector">
         <Arg>
             <New class="org.eclipse.jetty.server.ServerConnector">
                 <Arg><Ref refid="Server"/></Arg>
                 <Arg>
-                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
-                        <Item>
-                            <New class="org.eclipse.jetty.server.SslConnectionFactory">
-                                <Arg><Ref refid="sslContextFactory"/></Arg>
-                                <Arg>http/1.1</Arg>
-                            </New>
-                        </Item>
-                        <Item>
-                            <New class="org.eclipse.jetty.server.HttpConnectionFactory">
-                                <Arg><Ref refid="httpsCfg"/></Arg>
-                            </New>
-                        </Item>
-                    </Array>
+                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+                        <Set name="keyStorePath"><SystemProperty name="IGNITE_TEST_JETTY_KEY_STORE"/></Set>
+                        <Set name="keyStorePassword">123456</Set>
+                    </New>
                 </Arg>
                 <Set name="host"><SystemProperty name="IGNITE_JETTY_HOST" default="127.0.0.1"/></Set>
                 <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>
-                <Set name="idleTimeout">30000</Set>
-                <Set name="reuseAddress">true</Set>
             </New>
         </Arg>
     </Call>
-    <Set name="stopAtShutdown">false</Set>
 </Configure>

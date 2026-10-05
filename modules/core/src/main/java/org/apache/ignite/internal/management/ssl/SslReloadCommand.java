@@ -21,19 +21,18 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.management.api.NoArg;
 
 /** */
-public class SslReloadCommand implements ComputeCommand<SslReloadCommandArg, String> {
+public class SslReloadCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Reload TLS certificates on all cluster nodes by re-reading the configured key and trust stores. " +
-            "New connections use the updated certificates while established sessions are not interrupted";
+        return "Reload TLS certificates on all cluster nodes from the configured key and trust stores";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SslReloadCommandArg> argClass() {
-        return SslReloadCommandArg.class;
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
@@ -42,18 +41,17 @@ public class SslReloadCommand implements ComputeCommand<SslReloadCommandArg, Str
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, SslReloadCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
         return nodes;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(SslReloadCommandArg arg, String res, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, String res, Consumer<String> printer) {
         printer.accept(res);
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable String confirmationPrompt(SslReloadCommandArg arg) {
-        // A dry run changes nothing, so there is nothing to confirm.
-        return arg.dryRun() ? null : "Warning: the command will reload TLS certificates on all cluster nodes.";
+    @Override public String confirmationPrompt(NoArg arg) {
+        return "Warning: the command will reload TLS certificates on all cluster nodes.";
     }
 }
