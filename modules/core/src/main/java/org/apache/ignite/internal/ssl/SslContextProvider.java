@@ -102,17 +102,7 @@ public class SslContextProvider implements SslContextReloadable {
 
     /** {@inheritDoc} */
     @Override public @Nullable X509Certificate servedCertificate() {
-        if (!interNode)
-            return null;
-
-        try {
-            return SslContextValidator.validateInterNode(ctx);
-        }
-        catch (SSLException ignored) {
-            // The certificate is reported next to what was reloaded, so a context that cannot tell simply says
-            // nothing rather than failing the command.
-            return null;
-        }
+        return SslContextValidator.servedCertificate(ctx);
     }
 
     /**
@@ -121,19 +111,22 @@ public class SslContextProvider implements SslContextReloadable {
      * @throws IgniteCheckedException If the context could not be built, or an inter-node transport would refuse it.
      */
     private @Nullable SSLContext rebuild() throws IgniteCheckedException {
-        try {
-            SSLContext rebuilt = factory.create();
+        SSLContext rebuilt = factory.create();
 
-            if (rebuilt == ctx)
-                return null;
+        if (rebuilt == ctx)
+            return null;
 
-            if (interNode)
+        if (interNode) {
+            try {
                 SslContextValidator.validateInterNode(rebuilt);
+            }
+            catch (SSLException e) {
+                throw new IgniteCheckedException("A handshake between nodes on the new certificate was refused, " +
+                    "checked against this node's own trust store [" +
+                    SslContextValidator.describe(SslContextValidator.servedCertificate(rebuilt)) + ']', e);
+            }
+        }
 
-            return rebuilt;
-        }
-        catch (SSLException e) {
-            throw new IgniteCheckedException(e);
-        }
+        return rebuilt;
     }
 }

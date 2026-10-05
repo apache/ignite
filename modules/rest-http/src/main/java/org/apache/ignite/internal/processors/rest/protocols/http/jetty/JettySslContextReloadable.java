@@ -20,12 +20,11 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Set;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextValidator;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.ssl.X509;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -78,7 +77,8 @@ public class JettySslContextReloadable implements SslContextReloadable {
         catch (Exception e) {
             pin(cur);
 
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Failed to rebuild the HTTP REST SSL context [keyStore=" +
+                sslCtxFactory.getKeyStorePath() + ", trustStore=" + sslCtxFactory.getTrustStorePath() + ']', e);
         }
 
         return sslCtxFactory.getSslContext() != cur;
@@ -86,14 +86,9 @@ public class JettySslContextReloadable implements SslContextReloadable {
 
     /** {@inheritDoc} */
     @Override public @Nullable X509Certificate servedCertificate() {
-        Set<String> aliases = sslCtxFactory.getAliases();
+        SSLContext ctx = sslCtxFactory.getSslContext();
 
-        if (aliases.isEmpty())
-            return null;
-
-        X509 x509 = sslCtxFactory.getX509(aliases.iterator().next());
-
-        return x509 == null ? null : x509.getCertificate();
+        return ctx == null ? null : SslContextValidator.servedCertificate(ctx);
     }
 
     /**
@@ -123,7 +118,8 @@ public class JettySslContextReloadable implements SslContextReloadable {
             probe.start();
         }
         catch (Exception e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Failed to load the HTTP REST key store [path=" +
+                sslCtxFactory.getKeyStorePath() + ']', e);
         }
         finally {
             try {

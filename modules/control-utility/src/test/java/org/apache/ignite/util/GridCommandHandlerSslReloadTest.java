@@ -27,6 +27,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
@@ -84,10 +85,15 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
             Files.deleteIfExists(keyStore);
     }
 
-    /** One invocation has to put the certificates on disk in use on every node and report what each serves. */
+    /**
+     * One invocation has to reach every node of the cluster, client nodes included, put the certificates on disk in
+     * use there, and report what each of them serves.
+     */
     @Test
     public void testReloadAppliesAndReports() throws Exception {
         startGrids(2);
+
+        IgniteEx cli = startClientGrid(2);
 
         copyKeyStore("node02");
 
@@ -97,10 +103,15 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         String out = testOut.toString();
 
-        assertContains(log, out, ": reloaded ");
+        for (IgniteEx node : F.asList(grid(0), grid(1), cli))
+            assertContains(log, out, node.localNode().id() + ": reloaded ");
+
+        // The binary REST connector shares the factory of the node, so it is reloaded and reported with it.
+        assertContains(log, out, "reloaded binary REST, client connector, communication, discovery");
         assertContains(log, out, "serving CN=node02");
 
         assertEquals("CN=node02", servedCertificate(grid(0)).getSubjectX500Principal().getName());
+        assertEquals("CN=node02", servedCertificate(grid(1)).getSubjectX500Principal().getName());
     }
 
     /** Answering the question with no must leave every node on the certificate it is running. */
@@ -136,7 +147,12 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         assertFalse("A failed reload must not end with success", execute("--ssl", "reload") == EXIT_CODE_OK);
 
-        assertContains(log, testOut.toString(), "failed on");
+        String out = testOut.toString();
+
+        assertContains(log, out, "failed on");
+
+        // The reason names the store that could not be read.
+        assertContains(log, out, "Failed to initialize key store");
 
         assertEquals("CN=node01", servedCertificate(grid(0)).getSubjectX500Principal().getName());
     }

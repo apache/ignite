@@ -22,10 +22,16 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  * Tests the owner of an SSL context: it has to hand out one context until told to reload, and to pick the rotated
@@ -113,20 +119,67 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         Files.write(keyStore, "not a key store".getBytes());
 
-        GridTestUtils.assertThrowsWithCause(() -> provider.reload(), Exception.class);
+        GridTestUtils.assertThrowsWithCause(() -> provider.reload(), SSLException.class);
 
         assertSame(before, provider.context());
+    }
+
+    /**
+     * Where nodes connect to each other, a certificate the provider's own trust store refuses must not be put in use,
+     * and the failure must name the certificate.
+     */
+    @Test
+    public void testUntrustedCertificateNotApplied() throws Exception {
+        SslContextProvider provider = new SslContextProvider(fileFactory("trustone"));
+
+        provider.addUser(SslContextReloadable.COMMUNICATION, true);
+
+        SSLContext before = provider.context();
+
+        // node02 is issued by "twoca", which the "trust-one" store does not contain.
+        placeStore("node02");
+
+        Throwable e = GridTestUtils.assertThrows(log, () -> provider.reload(), IgniteCheckedException.class,
+            "A handshake between nodes on the new certificate was refused");
+
+        assertContains(log, e.getMessage(), "subject=CN=node02");
+
+        assertSame(before, provider.context());
+    }
+
+    /** The certificate in use must be told for any provider, not only for the ones that connect nodes. */
+    @Test
+    public void testServedCertificateOfClientFacingProvider() throws Exception {
+        SslContextProvider provider = new SslContextProvider(fileFactory());
+
+        provider.addUser(SslContextReloadable.CLIENT_CONNECTOR, false);
+
+        assertEquals("CN=node01", provider.servedCertificate().getSubjectX500Principal().getName());
     }
 
     /**
      * @return Factory reading the store this test rotates.
      */
     private Factory<SSLContext> fileFactory() {
+        return fileFactory(null);
+    }
+
+    /**
+     * @param trustStore Test trust store to trust peers by, {@code null} to trust any peer.
+     * @return Factory reading the store this test rotates.
+     */
+    private Factory<SSLContext> fileFactory(@Nullable String trustStore) {
         SslContextFactory factory = new SslContextFactory();
 
         factory.setKeyStoreFilePath(keyStore.toString());
         factory.setKeyStorePassword(GridTestUtils.keyStorePassword().toCharArray());
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+
+        if (trustStore == null)
+            factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+        else {
+            factory.setTrustStoreFilePath(GridTestUtils.keyStorePath(trustStore));
+            factory.setTrustStorePassword(GridTestUtils.keyStorePassword().toCharArray());
+        }
 
         return factory;
     }

@@ -74,8 +74,7 @@ public interface SslContextReloadable {
     public boolean check() throws IgniteCheckedException;
 
     /**
-     * @return Certificate this component presents on new connections, or {@code null} if it cannot be told without
-     *      a peer, which is the case for the transports a client connects to.
+     * @return Certificate this component presents on new connections, or {@code null} if it cannot be told.
      */
     public default @Nullable X509Certificate servedCertificate() {
         return null;

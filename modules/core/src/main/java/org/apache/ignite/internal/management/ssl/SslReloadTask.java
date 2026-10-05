@@ -25,14 +25,21 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.management.api.CommandWarningException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextValidator;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
 
 /** Reloads TLS certificates on every mapped node, or only reports whether they can be reloaded. */
@@ -56,15 +63,22 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
         boolean failed = false;
 
+        boolean warned = false;
+
         for (ComputeJobResult jobRes : results) {
             IgniteException e = jobRes.getException();
 
             if (e == null)
                 res.append(jobRes.getData().toString());
-            else if (X.hasCause(e, ClusterTopologyCheckedException.class))
-                res.append(jobRes.getNode().id()).append(": left the cluster, nothing to reload");
+            else if (X.hasCause(e, ClusterTopologyException.class, ClusterTopologyCheckedException.class)) {
+                // The node may have reloaded before it left, so nothing is claimed about its certificates.
+                res.append(jobRes.getNode().id()).append(": left the cluster, outcome unknown");
+            }
             else {
-                failed = true;
+                if (X.hasCause(e, CommandWarningException.class))
+                    warned = true;
+                else
+                    failed = true;
 
                 String msg = e.getMessage() != null ? e.getMessage() : e.toString();
 
@@ -82,13 +96,28 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
         if (failed)
             throw new IgniteException(res.toString());
 
+        if (warned)
+            throw warning(res.toString());
+
         return res.toString();
+    }
+
+    /**
+     * @param res Report to return.
+     * @return Exception that makes the command end with warnings and print the report.
+     */
+    private static IgniteException warning(String res) {
+        return new IgniteException(res, new CommandWarningException(new IgniteException(res)));
     }
 
     /** */
     private static class SslReloadJob extends VisorJob<SslReloadCommandArg, String> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Session of the task, which names the node the command came through. */
+        @TaskSessionResource
+        private transient ComputeTaskSession ses;
 
         /** */
         protected SslReloadJob(SslReloadCommandArg arg, boolean debug) {
@@ -127,32 +156,15 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
             boolean failed = false;
 
+            boolean readyMade = false;
+
             for (SslContextReloadable comp : sorted) {
                 String users = String.join(", ", comp.users());
 
-                String outcome;
+                boolean rebuilt;
 
                 try {
-                    if (arg.dryRun())
-                        outcome = comp.check() ? "can be reloaded " + users : "cannot be reloaded " + users + READY_MADE;
-                    else if (comp.reload()) {
-                        X509Certificate cert = comp.servedCertificate();
-
-                        outcome = "reloaded " + users + served(cert);
-
-                        if (log.isInfoEnabled()) {
-                            log.info("TLS certificates reloaded [transports=" + users + describe(cert) +
-                                ", initiator=" + initiator + ']');
-                        }
-                    }
-                    else {
-                        outcome = "not reloaded " + users + READY_MADE + served(comp.servedCertificate());
-
-                        if (log.isInfoEnabled()) {
-                            log.info("TLS certificates not reloaded, the SSL context is handed over ready-made " +
-                                "[transports=" + users + ", initiator=" + initiator + ']');
-                        }
-                    }
+                    rebuilt = arg.dryRun() ? comp.check() : comp.reload();
                 }
                 catch (Exception e) {
                     // Every provider is attempted, so that one broken transport neither hides the state of the rest
@@ -162,21 +174,63 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
 
                     String reason = reason(e);
 
-                    outcome = (arg.dryRun() ? "would fail on " : "failed on ") + users + " (" + reason + ')';
+                    lines.add(ignite.localNode().id() + ": " + (arg.dryRun() ? "would fail on " : "failed on ") +
+                        users + " (" + reason + ')');
 
                     log.warning((arg.dryRun()
                         ? "TLS certificates on disk cannot be used, the ones in use stay"
                         : "Failed to reload TLS certificates, the ones in use stay") +
                         " [transports=" + users + ", initiator=" + initiator + ", reason=" + reason + ']', e);
+
+                    continue;
                 }
 
-                lines.add(ignite.localNode().id() + ": " + outcome);
+                if (!rebuilt) {
+                    readyMade = true;
+
+                    lines.add(ignite.localNode().id() + ": " + (arg.dryRun() ? "cannot be reloaded " : "not reloaded ") +
+                        users + READY_MADE);
+
+                    U.warn(log, "TLS certificates cannot be reloaded, the SSL context is handed over ready-made " +
+                        "[transports=" + users + ", initiator=" + initiator + ']');
+
+                    continue;
+                }
+
+                if (arg.dryRun()) {
+                    lines.add(ignite.localNode().id() + ": can be reloaded " + users);
+
+                    continue;
+                }
+
+                // The certificates are in use by now. Whatever goes wrong while describing them must not turn the
+                // reload into a reported failure.
+                X509Certificate cert = null;
+
+                try {
+                    cert = comp.servedCertificate();
+                }
+                catch (Exception ignored) {
+                    // Described as unknown.
+                }
+
+                lines.add(ignite.localNode().id() + ": reloaded " + users + served(cert));
+
+                if (log.isInfoEnabled()) {
+                    String desc = SslContextValidator.describe(cert);
+
+                    log.info("TLS certificates reloaded [transports=" + users + (desc.isEmpty() ? "" : ", " + desc) +
+                        ", initiator=" + initiator + ']');
+                }
             }
 
             String res = String.join("\n", lines);
 
             if (failed)
                 throw new IgniteException(res);
+
+            if (readyMade)
+                throw warning(res);
 
             return res;
         }
@@ -187,9 +241,15 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
         private String initiator() {
             IgniteSecurity security = ignite.context().security();
 
-            return security.enabled()
-                ? "management command, login=" + security.securityContext().subject().login()
-                : "management command";
+            String res = "management command, originNodeId=" + ses.getTaskNodeId();
+
+            if (security.enabled()) {
+                SecuritySubject subj = security.securityContext().subject();
+
+                res += ", login=" + subj.login() + ", address=" + subj.address();
+            }
+
+            return res;
         }
 
         /**
@@ -229,18 +289,6 @@ public class SslReloadTask extends VisorMultiNodeTask<SslReloadCommandArg, Strin
             return cert == null ? "" : "; serving " + cert.getSubjectX500Principal() + " until " +
                 cert.getNotAfter().toInstant().atOffset(ZoneOffset.UTC).toLocalDate() +
                 ", issued by " + cert.getIssuerX500Principal();
-        }
-
-        /**
-         * @param cert Certificate the transports serve, {@code null} if it cannot be told without a peer.
-         * @return The certificate, ready to append to a log line.
-         */
-        private static String describe(@Nullable X509Certificate cert) {
-            return cert == null ? "" : ", subject=" + cert.getSubjectX500Principal() +
-                ", issuer=" + cert.getIssuerX500Principal() +
-                ", serial=" + cert.getSerialNumber().toString(16) +
-                ", notBefore=" + cert.getNotBefore().toInstant() +
-                ", notAfter=" + cert.getNotAfter().toInstant();
         }
     }
 }

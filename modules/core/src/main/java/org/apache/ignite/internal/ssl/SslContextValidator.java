@@ -24,13 +24,16 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 
 /**
- * Runs a TLS handshake in memory to tell whether an SSL context can still serve connections between nodes.
+ * Runs TLS handshakes in memory: to tell whether an SSL context can still serve connections between nodes, and which
+ * certificate a context presents.
  * <p>
  * Only a refused handshake counts as a failure. An exchange that cannot be driven to completion for any other
  * reason lets the context through: the check is here to catch a certificate that would break the cluster, not to
@@ -68,6 +71,57 @@ public class SslContextValidator {
 
         cli.setUseClientMode(true);
 
+        return handshake(cli, srv) ? presented(cli) : null;
+    }
+
+    /**
+     * Tells which certificate the context presents, the way any peer sees it: against a client that trusts anything
+     * and presents nothing. Works for every transport, including the ones only clients connect to.
+     *
+     * @param ctx SSL context to ask.
+     * @return Certificate the context presents, or {@code null} if the exchange did not get that far.
+     */
+    public static @Nullable X509Certificate servedCertificate(SSLContext ctx) {
+        try {
+            SSLContext probe = SSLContext.getInstance("TLS");
+
+            probe.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
+
+            SSLEngine srv = ctx.createSSLEngine();
+
+            srv.setUseClientMode(false);
+
+            SSLEngine cli = probe.createSSLEngine();
+
+            cli.setUseClientMode(true);
+
+            return handshake(cli, srv) ? presented(cli) : null;
+        }
+        catch (Exception ignored) {
+            // The certificate is only described, never relied on, so a context that cannot tell says nothing.
+            return null;
+        }
+    }
+
+    /**
+     * @param cert Certificate to describe, {@code null} if unknown.
+     * @return The certificate as log lines and errors name it, or an empty string if it is unknown.
+     */
+    public static String describe(@Nullable X509Certificate cert) {
+        return cert == null ? "" : "subject=" + cert.getSubjectX500Principal() +
+            ", issuer=" + cert.getIssuerX500Principal() +
+            ", serial=" + cert.getSerialNumber().toString(16) +
+            ", notBefore=" + cert.getNotBefore().toInstant() +
+            ", notAfter=" + cert.getNotAfter().toInstant();
+    }
+
+    /**
+     * @param cli Client engine.
+     * @param srv Server engine.
+     * @return {@code True} if the handshake completed, {@code false} if it could not be driven to the end.
+     * @throws SSLException If either side refused the handshake.
+     */
+    private static boolean handshake(SSLEngine cli, SSLEngine srv) throws SSLException {
         SSLSession ses = cli.getSession();
 
         ByteBuffer cliNet = flipped(ses.getPacketBufferSize());
@@ -81,13 +135,13 @@ public class SslContextValidator {
             boolean progress = step(cli, cliNet, srvNet, app) | step(srv, srvNet, cliNet, app);
 
             if (done(cli) && done(srv))
-                return presented(cli);
+                return true;
 
             if (!progress)
-                return null;
+                return false;
         }
 
-        return null;
+        return false;
     }
 
     /**

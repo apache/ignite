@@ -114,6 +114,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -134,6 +135,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -186,7 +188,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -7754,7 +7755,7 @@ public abstract class IgniteUtils extends CommonUtils {
     /**
      * Creates an SSL NIO filter, wiring its metrics from the given registry.
      *
-     * @param sslCtxProvider Provider of the context new sessions are opened with.
+     * @param sslCtx Source of the SSL context, asked once per new session.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -7762,7 +7763,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return SSL NIO filter.
      */
     public static GridNioSslFilter sslFilter(
-        SslContextProvider sslCtxProvider,
+        Supplier<SSLContext> sslCtx,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
@@ -7777,6 +7778,6 @@ public abstract class IgniteUtils extends CommonUtils {
             GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "TCP sessions count that were rejected due to SSL errors.")::increment;
 
-        return new GridNioSslFilter(sslCtxProvider, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+        return new GridNioSslFilter(sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }

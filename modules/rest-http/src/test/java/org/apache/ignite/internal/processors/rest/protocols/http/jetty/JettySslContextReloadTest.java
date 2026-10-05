@@ -121,16 +121,13 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A connector handed a ready-made context, the way a Jetty configuration does it instead of naming a key store,
-     * has nothing to read again. It must report that it has nothing to apply, which is a normal configuration, and
-     * not that the run never reached it.
+     * A connector handed a ready-made context instead of a key store path, the way a Jetty configuration can set it,
+     * has nothing to read again: neither a check nor a reload may claim otherwise.
      */
     @Test
-    public void testReadyMadeContextReportedAsNothingToApply() throws Exception {
+    public void testReadyMadeContextNotReloaded() throws Exception {
         SslContextFactory.Server jettyFactory = new SslContextFactory.Server();
 
-        // What makes it unable to reload is the absence of a key store path, which is what such a configuration
-        // looks like: the context is handed over instead.
         jettyFactory.setSslContext(SSLContext.getDefault());
 
         JettySslContextReloadable reloadable = new JettySslContextReloadable(jettyFactory);

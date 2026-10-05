@@ -1776,7 +1776,7 @@ A reload never revokes anything. A peer you removed from a trust store keeps its
 on their own.
 
 Everything reloads except two arrangements, which the report names as `not reloaded`, and a dry run as
-`cannot be reloaded`, rather than as a success:
+`cannot be reloaded`. The command then ends with a warning rather than as a success:
 
 * a factory of your own whose `create()` hands back a cached context;
 * a Jetty configuration for HTTP REST that sets a ready-made `sslContext` instead of a key store path.
@@ -1823,7 +1823,8 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, 
 ----
 
 Fix the cause on the nodes that failed and run the command again. A node that leaves while the command runs is
-reported as having left, which on its own does not fail the command.
+reported as having left, with nothing said about its certificates: it may have reloaded before it left. That alone
+does not fail the command.
 
 Each node also writes the outcome to its log: the certificate it put in use, with its subject, issuer, serial number
 and validity, and who asked for the reload, or the reason it could not.
@@ -1872,8 +1873,9 @@ keytool -importcert -keystore trust.jks.new -alias newca -file newca.crt -noprom
 mv trust.jks.new trust.jks
 ----
 
-*Applications.* The same edit to their own trust store, with the path each one is configured with. Any moment
-before step 2 will do. From that step on the cluster presents a certificate issued by the new authority, and an
+*Applications.* The same edit to their own trust store, with the path each one is configured with, before step 2.
+A JDBC or ODBC application reads it on its next connection; a thin client that is already running has to be
+restarted to read it. From step 2 on the cluster presents a certificate issued by the new authority, and an
 application that does not trust it yet cannot open a connection.
 
 *Once for the whole cluster.* Put it in use on the nodes:
@@ -1918,9 +1920,9 @@ The store and the private key inside it have to open with the one password the n
 opens both with that one. Keep one key entry per store as well: if it holds several, the JSSE key manager picks one
 of them and you cannot influence which.
 
-*Applications that present a certificate of their own.* Place the new key store at any moment after step 1 and
-before step 3. Earlier, the cluster does not trust the new authority yet; later, step 3 has already checked what
-the application was given.
+*Applications that present a certificate of their own.* Place the new key store after step 1 and before step 3,
+and restart a thin client that is already running so that it presents the new certificate. Earlier, the cluster
+does not trust the new authority yet; later, step 3 removes the old one.
 
 *Once for the whole cluster.* This is the step that catches a node whose new key store its own trust store does
 not accept, which is what a skipped step 1 looks like on that node. Such a node keeps its old certificate and is
@@ -1949,7 +1951,8 @@ read back the issuer of the certificate each of them holds, and expect the new a
 keytool -list -v -keystore node.jks -alias node | grep Issuer
 ----
 
-What matters here is the key stores, not the connections.
+A thin client that is already running presents the certificate it read at start, whatever its key store holds now,
+so it has to have been restarted after its key store was replaced.
 --
 
 . *Stop trusting the old authority.* Nothing presents a certificate signed by it, so nothing loses trust.
@@ -1983,8 +1986,7 @@ mv trust.jks.new trust.jks
 
 *Applications.* The same edit to their own trust store, in any order with the nodes — by now nothing presents a
 certificate from the old authority. A JDBC or ODBC application uses the narrowed store on its next connection; a
-thin client that is already running keeps the wider one until it is restarted, because nothing refuses its
-handshake any more.
+thin client that is already running keeps the wider one until it is restarted.
 
 *Once for the whole cluster.* A node that never got its new certificate is reported as failed here, because its
 own trust store no longer accepts what it presents:

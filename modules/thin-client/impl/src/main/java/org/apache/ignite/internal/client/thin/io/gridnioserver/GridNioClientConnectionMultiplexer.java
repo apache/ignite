@@ -37,7 +37,6 @@ import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
-import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
@@ -87,9 +86,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         sslCtx = ClientSslUtils.getSslContext(cfg);
 
         if (sslCtx != null) {
-            // The client builds its context once, at start; the filter only needs a holder to take it from.
-            GridNioSslFilter sslFilter = new GridNioSslFilter(new SslContextProvider(() -> sslCtx), true,
-                ByteOrder.nativeOrder(), gridLog, null, null);
+            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog, null, null);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};
         }

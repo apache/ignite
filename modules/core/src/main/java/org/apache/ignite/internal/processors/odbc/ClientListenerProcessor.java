@@ -499,7 +499,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             SslContextProvider sslCtxProvider = ctx.internalSubscriptionProcessor()
                 .sslContextProvider(sslCtxFactory, SslContextReloadable.CLIENT_CONNECTOR, false);
 
-            GridNioSslFilter sslFilter = U.sslFilter(sslCtxProvider,
+            GridNioSslFilter sslFilter = U.sslFilter(sslCtxProvider::context,
                 true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);

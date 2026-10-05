@@ -920,7 +920,7 @@ public class GridNioServerWrapper {
 
                 if (stateProvider.isSslEnabled()) {
                     GridNioSslFilter sslFilter = U.sslFilter(
-                        stateProvider.sslContextProvider(),
+                        stateProvider.sslContextProvider()::context,
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,
