@@ -41,17 +41,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.configuration.CacheConfiguration.MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 
 /** Tests query entity configuration in {@link CacheConfiguration}. */
 public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     /** */
-    private static final String MIXED_QUERY_ENTITIES_API_ERROR =
-        "Query entities can be configured either with setIndexedTypes or setQueryEntities, but not both [cacheName=%s]";
-
-    /** */
-    private static final String CACHE_NAME = "query-entity-merge-cache";
+    private static final String CACHE_NAME = "query-entity-cache";
 
     /** */
     private static final String NAME_FIELD = "name";
@@ -100,13 +97,11 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         QueryEntity first = new QueryEntity()
             .setKeyType(Integer.class.getName())
-            .setValueType(Person.class.getName())
-            .setFields(fields(NAME_FIELD, String.class));
+            .setValueType(Person.class.getName());
 
         QueryEntity second = new QueryEntity()
             .setKeyType(Integer.class.getName())
-            .setValueType(AnnotatedPerson.class.getName())
-            .setFields(fields(NAME_FIELD, String.class));
+            .setValueType(AnnotatedPerson.class.getName());
 
         ccfg.setQueryEntities(Collections.singleton(first));
         ccfg.setQueryEntities(Collections.singleton(second));
@@ -118,9 +113,8 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         QueryEntity entity = singleQueryEntity(node);
 
-        assertEquals(AnnotatedPerson.class.getName(), entity.getValueType());
-        assertEquals(Integer.class.getName(), entity.getKeyType());
-        assertEquals(second.getFields(), entity.getFields());
+        assertEquals(second.getKeyType(), entity.getKeyType());
+        assertEquals(second.getValueType(), entity.getValueType());
     }
 
     /**
@@ -135,13 +129,11 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         QueryEntity first = new QueryEntity()
             .setKeyType(Integer.class.getName())
-            .setValueType(Person.class.getName())
-            .setFields(fields(NAME_FIELD, String.class));
+            .setValueType(Person.class.getName());
 
         QueryEntity second = new QueryEntity()
             .setKeyType(String.class.getName())
-            .setValueType(Person.class.getName())
-            .setFields(fields(NAME_FIELD, String.class));
+            .setValueType(Person.class.getName());
 
         ccfg.setQueryEntities(Collections.singleton(first));
         ccfg.setQueryEntities(Collections.singleton(second));
@@ -152,9 +144,8 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         QueryEntity entity = singleQueryEntity(node);
 
-        assertEquals(Person.class.getName(), entity.getValueType());
-        assertEquals(String.class.getName(), entity.getKeyType());
-        assertEquals(second.getFields(), entity.getFields());
+        assertEquals(second.getKeyType(), entity.getKeyType());
+        assertEquals(second.getValueType(), entity.getValueType());
     }
 
     /**
@@ -195,9 +186,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     public void testSetIndexedTypesReplacesExplicitKeyConfiguration() {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setKeyConfiguration(
-            new CacheKeyConfiguration("ExplicitKey", "explicitAffinityKey")
-        );
+        ccfg.setKeyConfiguration(new CacheKeyConfiguration("ExplicitKey", "explicitAffinityKey"));
 
         ccfg.setIndexedTypes(SecondKey.class, Person.class);
 
@@ -216,15 +205,13 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     @Test
     public void testSetQueryEntitiesAfterSetIndexedTypesFails() {
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
-            .setIndexedTypes(Integer.class, AnnotatedPerson.class);
-
-        String msg = String.format(MIXED_QUERY_ENTITIES_API_ERROR, CACHE_NAME);
+            .setIndexedTypes(Integer.class, Person.class);
 
         assertThrows(
             log,
             () -> ccfg.setQueryEntities(Collections.singleton(configuredEntity(AnnotatedPerson.class))),
             CacheException.class,
-            msg
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
         );
     }
 
@@ -235,15 +222,13 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     @Test
     public void testSetIndexedTypesAfterSetQueryEntitiesFails() {
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
-            .setQueryEntities(Collections.singleton(configuredEntity(AnnotatedPerson.class)));
-
-        String msg = String.format(MIXED_QUERY_ENTITIES_API_ERROR, CACHE_NAME);
+            .setQueryEntities(Collections.singleton(configuredEntity(Person.class)));
 
         assertThrows(
             log,
             () -> ccfg.setIndexedTypes(Integer.class, AnnotatedPerson.class),
             CacheException.class,
-            msg
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
         );
     }
 
@@ -262,7 +247,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
             log,
             () -> ccfg.setQueryEntities(Collections.singleton(configuredEntity(Person.class))),
             CacheException.class,
-            String.format(MIXED_QUERY_ENTITIES_API_ERROR, CACHE_NAME)
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
         );
     }
 
@@ -281,7 +266,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
             log,
             () -> ccfg.setIndexedTypes(Integer.class, Person.class),
             CacheException.class,
-            String.format(MIXED_QUERY_ENTITIES_API_ERROR, CACHE_NAME)
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
         );
     }
 
@@ -338,7 +323,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
             log,
             () -> copy.setQueryEntities(Collections.singleton(configuredEntity(Person.class))),
             CacheException.class,
-            String.format(MIXED_QUERY_ENTITIES_API_ERROR, CACHE_NAME)
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
         );
     }
 
@@ -354,7 +339,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
             log,
             () -> copy.setIndexedTypes(Integer.class, Person.class),
             CacheException.class,
-            String.format(MIXED_QUERY_ENTITIES_API_ERROR, CACHE_NAME)
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
         );
     }
 
@@ -365,7 +350,6 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     @Test
     public void testCacheConfiguredWithIndexedTypesStartsSuccessfully() throws Exception {
         staticCfg = true;
-
         indexedTypesCfg = true;
 
         IgniteEx node = startGrid(0);
@@ -374,6 +358,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         QueryEntity entity = singleQueryEntity(node);
 
+        assertEquals(Integer.class.getName(), entity.getKeyType());
         assertEquals(Person.class.getName(), entity.getValueType());
     }
 
@@ -396,6 +381,7 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         QueryEntity entity = singleQueryEntity(node1);
 
+        assertEquals(Integer.class.getName(), entity.getKeyType());
         assertEquals(Person.class.getName(), entity.getValueType());
     }
 
@@ -413,29 +399,18 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(0);
 
-        node.cluster().state(ACTIVE);
-
         DynamicCacheDescriptor desc = node.context().cache().cacheDescriptor(CACHE_NAME);
 
         assertTrue(desc.cacheConfiguration().getQueryEntities().isEmpty());
 
         node.cache(CACHE_NAME).query(new SqlFieldsQuery(
-            "CREATE TABLE TEST_TBL (" +
-                "ID1 INT, " +
-                "ID2 INT, " +
-                "VAL VARCHAR NOT NULL, " +
-                "PRIMARY KEY (ID1, ID2)" +
+            "CREATE TABLE TEST_TBL (ID1 INT, ID2 INT, VAL VARCHAR NOT NULL, PRIMARY KEY (ID1, ID2)" +
                 ") WITH \"CACHE_NAME=" + CACHE_NAME + "\""
         )).getAll();
 
-        Collection<QueryEntity> entities = node.context().cache()
-            .cacheDescriptor(CACHE_NAME)
-            .cacheConfiguration()
-            .getQueryEntities();
+        QueryEntity entity = singleQueryEntity(node);
 
-        assertEquals(1, entities.size());
-
-        QueryEntity entity = entities.iterator().next();
+        assertEquals("TEST_TBL", entity.getTableName());
 
         assertTrue(entity instanceof QueryEntityEx);
 
@@ -451,25 +426,19 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     public void testCreateTableConfiguresQueryEntities() throws Exception {
         IgniteEx node = startGrid(0);
 
-        node.cluster().state(ACTIVE);
-
-        IgniteCache<Integer, Person> dfltCache =
-            node.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Person> dfltCache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         assertNull(node.context().cache().cacheDescriptor(CACHE_NAME));
 
         dfltCache.query(new SqlFieldsQuery(
-            "CREATE TABLE TEST_TBL (" +
-                "ID1 INT, " +
-                "ID2 INT, " +
-                "VAL VARCHAR NOT NULL, " +
-                "PRIMARY KEY (ID1, ID2)" +
+            "CREATE TABLE TEST_TBL (ID1 INT, ID2 INT, VAL VARCHAR NOT NULL, PRIMARY KEY (ID1, ID2)" +
                 ") WITH \"CACHE_NAME=" + CACHE_NAME + "\""
         )).getAll();
 
         QueryEntity entity = singleQueryEntity(node);
 
         assertEquals("TEST_TBL", entity.getTableName());
+
         assertTrue(entity instanceof QueryEntityEx);
 
         QueryEntityEx entityEx = (QueryEntityEx)entity;
@@ -522,18 +491,6 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
             res.setIndexes(Arrays.asList(indexes));
 
         return res;
-    }
-
-    /** */
-    private static LinkedHashMap<String, String> fields(Object... vals) {
-        assertTrue(vals.length % 2 == 0);
-
-        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
-
-        for (int i = 0; i < vals.length; i += 2)
-            fields.put((String)vals[i], ((Class<?>)vals[i + 1]).getName());
-
-        return fields;
     }
 
     /** */

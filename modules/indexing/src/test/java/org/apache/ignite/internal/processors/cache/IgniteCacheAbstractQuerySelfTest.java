@@ -248,11 +248,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @return cache instance
      */
     protected <K, V> IgniteCache<K, V> jcache(Ignite ig, Class<K> clsK, Class<V> clsV) {
-        return jcacheWithPreparedCacheConfiguration(ig, cacheConfiguration(), clsK, clsV);
+        return jcache(ig, cacheConfiguration(), clsK, clsV);
     }
 
-    /** */
-    private <K, V> IgniteCache<K, V> jcacheWithPreparedCacheConfiguration(
+    /** {@inheritDoc} */
+    @Override protected <K, V> IgniteCache<K, V> jcache(
         Ignite ig,
         CacheConfiguration cfg,
         Class<K> clsK,
@@ -979,7 +979,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cfg.setOnheapCacheEnabled(true);
 
-        IgniteCache<Integer, ObjectValue> cache = jcacheWithPreparedCacheConfiguration(ignite(), cfg, Integer.class, ObjectValue.class);
+        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), cfg, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 
@@ -1255,7 +1255,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration();
         ccfg.setName(DEFAULT_CACHE_NAME);
 
-        testPaginationIterator(jcacheWithPreparedCacheConfiguration(ignite(), ccfg, Integer.class, Integer.class));
+        testPaginationIterator(jcache(ignite(), ccfg, Integer.class, Integer.class));
     }
 
     /**
@@ -1300,7 +1300,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration();
         ccfg.setName(DEFAULT_CACHE_NAME);
 
-        testPaginationGet(jcacheWithPreparedCacheConfiguration(ignite(), ccfg, Integer.class, Integer.class));
+        testPaginationGet(jcache(ignite(), ccfg, Integer.class, Integer.class));
     }
 
     /**

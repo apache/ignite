@@ -1746,9 +1746,7 @@ public class GridCacheUtils {
 
         if (!F.isEmpty(entities)) {
             CacheConfigurationInternalAccessor.replaceQueryEntities(
-                cfg,
-                QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg)
-            );
+                cfg, QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
         }
     }
 
