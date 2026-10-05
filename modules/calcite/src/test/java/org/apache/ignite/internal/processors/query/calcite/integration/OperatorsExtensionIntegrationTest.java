@@ -80,6 +80,8 @@ import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+
 /**
  * Tests SQL engine extension with plugin.
  */
@@ -140,6 +142,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             OperatorsExtensionIntegrationTest.class.getMethod("toNumber", String.class),
                             NullPolicy.STRICT
                         );
+
+                        RexImpTable.INSTANCE.defineReflective(
+                            OperatorTable.REFLECTIVE_BINARY_LENGTH,
+                            OperatorsExtensionIntegrationTest.class.getMethod("binaryLength", byte[].class)
+                        );
+
+                        RexImpTable.INSTANCE.defineReflective(
+                            OperatorTable.REFLECTIVE_BINARY_VALUE,
+                            OperatorsExtensionIntegrationTest.class.getMethod("binaryValue")
+                        );
                     }
                     catch (NoSuchMethodException e) {
                         throw new RuntimeException(e);
@@ -156,6 +168,11 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             RexImpTable.FALSE_EXPR
                         ), NullPolicy.ARG0, false
                     ));
+
+                    // A plugin can declare a Java return type while its implementor returns an internal SQL value.
+                    RexImpTable.INSTANCE.define(OperatorTable.JAVA_BINARY_IDENTITY, RexImpTable.createRexCallImplementor(
+                        (translator, call, translatedOperands) -> translatedOperands.get(0), NullPolicy.ARG0, false
+                    ));
                 }
             });
     }
@@ -169,6 +186,54 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         assertQuery("SELECT rtrim('aabcda', 'ad')").returns("aabc").check();
         assertQuery("SELECT trunc(TIMESTAMP '2021-01-01 01:02:03')")
             .returns(Timestamp.valueOf("2021-01-01 00:00:00")).check();
+    }
+
+    /** */
+    @Test
+    public void testByteArrayFunctions() {
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(x'010203')").returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(?)").withParams((Object)new byte[] {1, 2, 3}).returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
+
+        assertQuery("SELECT OCTET_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
+
+        assertQuery("SELECT REFLECTIVE_BINARY_VALUE()")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(1, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnType() {
+        assertQuery("SELECT JAVA_BINARY_IDENTITY(x'010203'), JAVA_BINARY_IDENTITY(x''), "
+            + "JAVA_BINARY_IDENTITY(CAST(NULL AS VARBINARY))")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(3, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+                assertArrayEquals(new byte[0], (byte[])rows.get(0).get(1));
+                assertNull(rows.get(0).get(2));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnTypeDynamicParameters() {
+        for (byte[] bytes : new byte[][] {new byte[] {1, 2, 3}, new byte[0], null}) {
+            assertQuery("SELECT JAVA_BINARY_IDENTITY(?)")
+                .withParams((Object)bytes)
+                .withResultChecker(rows -> {
+                    assertEquals(1, rows.size());
+                    assertEquals(1, rows.get(0).size());
+                    assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
+                })
+                .check();
+        }
     }
 
     /** */
@@ -346,6 +411,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         return new BigDecimal(s);
     }
 
+    /** Implementor for {@code REFLECTIVE_BINARY_LENGTH} function. */
+    public static int binaryLength(byte[] bytes) {
+        return bytes.length;
+    }
+
+    /** Implementor for {@code REFLECTIVE_BINARY_VALUE} function. */
+    public static byte[] binaryValue() {
+        return new byte[] {1, 2, 3};
+    }
+
     /** Extended operator table. */
     public static class OperatorTable extends ReflectiveSqlOperatorTable {
         /** */
@@ -393,6 +468,36 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
         /** */
         public static final SqlAggFunction TEST_COUNT_PAIRS = new SqlTestCountPairsAggFunction();
+
+        /** */
+        public static final SqlFunction REFLECTIVE_BINARY_LENGTH = new SqlFunction(
+            "REFLECTIVE_BINARY_LENGTH",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.INTEGER_NULLABLE,
+            null,
+            OperandTypes.BINARY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction REFLECTIVE_BINARY_VALUE = new SqlFunction(
+            "REFLECTIVE_BINARY_VALUE",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.VARBINARY),
+            null,
+            OperandTypes.NILADIC,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction JAVA_BINARY_IDENTITY = new SqlFunction(
+            "JAVA_BINARY_IDENTITY",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createJavaType(byte[].class),
+            null,
+            OperandTypes.BINARY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
     }
 
     /** Extended convertlet table. */
