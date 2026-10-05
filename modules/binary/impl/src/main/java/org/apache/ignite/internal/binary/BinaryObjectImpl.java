@@ -185,8 +185,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (obj0 == null || (cpy && needCopy(ctx))) {
             if (ldr != null)
                 obj0 = deserialize(ldr);
-            else
-                obj0 = deserializeValue(ctx);
+            else {
+                obj0 = deserializeValue();
+
+                if (ctx != null && ctx.storeValue())
+                    obj = obj0;
+            }
         }
 
         return (T)obj0;
@@ -715,7 +719,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         Object obj0 = obj;
 
         if (obj0 == null)
-            obj0 = deserializeValue(null);
+            obj0 = deserializeValue();
 
         return (T)obj0;
     }
@@ -777,20 +781,16 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /**
      * Runs value deserialization regardless of whether obj already has the deserialized value.
      * Will set obj if descriptor is configured to keep deserialized values.
-     * @param coCtx CacheObjectContext.
      * @return Object.
      */
-    private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
-        BinaryReaderExImpl reader = reader(null, coCtx != null ? coCtx.classLoader() : ctx.classLoader(), true);
+    private Object deserializeValue() {
+        BinaryReaderExImpl reader = reader(null, ctx.classLoader(), true);
 
         Object obj0 = reader.deserialize();
 
         BinaryClassDescriptor desc = reader.descriptor();
 
         assert desc != null;
-
-        if (coCtx != null && coCtx.storeValue())
-            obj = obj0;
 
         return obj0;
     }
