@@ -49,15 +49,15 @@ import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate
 public class GridCacheMvccCandidate implements CacheLockCandidates {
     /** Locking node ID. */
     @GridToStringInclude
-    private UUID nodeId;
+    private final UUID nodeId;
 
     /** Lock version. */
     @GridToStringInclude
-    private GridCacheVersion ver;
+    private final GridCacheVersion ver;
 
     /** Thread ID. */
     @GridToStringInclude
-    private long threadId;
+    private final long threadId;
 
     /** Use flags approach to preserve space. */
     @GridToStringExclude
