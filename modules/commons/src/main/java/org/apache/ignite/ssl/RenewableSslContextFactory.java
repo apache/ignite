@@ -26,18 +26,34 @@ import javax.net.ssl.SSLContext;
  * Every {@link #create()} must return a context with a newly obtained certificate, typically one requested from a
  * certificate authority service. The node calls it again once the certificate in use enters the renewal window, the
  * last part of its lifetime. The new context goes through the same checks as one the {@code --ssl reload} command
- * puts in use. It is also turned down if its certificate expires no later than the one in use, since such a renewal
- * gains nothing. A node does not call {@link #create()} again before the previous call has returned.
+ * puts in use. It is also turned down if a certificate in its chain is not valid at that moment, or if the chain
+ * expires no later than the one in use, since such a renewal gains nothing.
+ * <p>
+ * The check made between nodes uses the trusted authorities of the context {@link #create()} returns. Take them from
+ * a source local to the node, such as a trust store file, rather than from the response of the issuing service:
+ * otherwise a certificate from an authority the other nodes do not trust yet passes the check.
+ * <p>
+ * Renewals run in a thread of their own, one per node, which also renews the other contexts of the node. A call that
+ * waits for the service without a limit stops them all and keeps the {@code --ssl reload} command waiting, so bound
+ * every wait well below {@link #getRenewalRetryMinInterval()}, and give way when the thread is interrupted: that is
+ * how a stopping node ends an attempt. A node does not call {@link #create()} of the same instance again before the
+ * previous call has returned. Nodes sharing an instance in one JVM do call it at once.
  * <p>
  * The window is a share of the lifetime of the certificate in use, from its start to the earliest expiry in its chain.
  * A service that issues shorter certificates than asked for therefore cannot make the node come back for a new one
  * over and over. An absolute window can be set as well, and the node then takes the smaller of the two.
  * <p>
  * A failed renewal is retried until it succeeds. The pause doubles after each failure, from
- * {@link #getRenewalRetryMinInterval()} up to {@link #getRenewalRetryMaxInterval()}, but never grows longer than a
- * quarter of the window, and a random delay is added to it. Each failure is logged as a warning, and as an error once
- * less than half of the window remains. A successful renewal, or a successful {@code --ssl reload}, stops the retries,
- * and the next renewal is planned by the new certificate.
+ * {@link #getRenewalRetryMinInterval()} up to {@link #getRenewalRetryMaxInterval()}, and a random delay of up to half
+ * of it is added. The longest pause is also cut down to a quarter of the window, though not below
+ * {@link #getRenewalRetryMinInterval()}. Each failure is logged as a warning, and as an error once less than half of
+ * the window remains or the next attempt would come after expiry. A successful renewal, or a successful
+ * {@code --ssl reload}, stops the retries, and the next renewal is planned by the new certificate.
+ * <p>
+ * The node reads the settings below once, when a transport starts serving the context; renewals start at that moment,
+ * before the node joins the cluster. Transports configured with the same instance share the context and its
+ * renewals. The node does not release whatever the factory holds, such as a client of the issuing service; do that
+ * when the node stops, for example from a lifecycle bean.
  */
 public interface RenewableSslContextFactory extends Factory<SSLContext> {
     /** Default share of the certificate lifetime left when the node renews it. */
@@ -58,9 +74,10 @@ public interface RenewableSslContextFactory extends Factory<SSLContext> {
     }
 
     /**
-     * @return Time before expiry when the node renews the certificate at the latest, in milliseconds. The node takes
-     *      the smaller of this window and the one {@link #getRenewBeforeFraction()} gives. {@code 0}, the default,
-     *      leaves the window to the share of the lifetime alone.
+     * @return Longest time before expiry the window may take, in milliseconds: the node renews the certificate no
+     *      earlier than this before it expires. The node takes the smaller of this window and the one
+     *      {@link #getRenewBeforeFraction()} gives. {@code 0}, the default, leaves the window to the share of the
+     *      lifetime alone.
      */
     public default long getRenewBefore() {
         return 0;
@@ -69,7 +86,8 @@ public interface RenewableSslContextFactory extends Factory<SSLContext> {
     /**
      * @return Share of the window, from {@code 0} to {@code 1}, by which the node brings the renewal forward at random.
      *      Certificates issued at once expire at once, and the shift keeps their nodes from all coming for new ones
-     *      at the same moment. Default is {@code 0}, no shift.
+     *      at the same moment. Together with {@link #getRenewBeforeFraction()} it must keep the earliest renewal
+     *      within the lifetime: {@code renewBeforeFraction * (1 + renewalJitter) < 1}. Default is {@code 0}, no shift.
      */
     public default double getRenewalJitter() {
         return 0;

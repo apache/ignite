@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -98,6 +99,13 @@ public class SslContextProvider implements SslContextReloadable {
     }
 
     /**
+     * @return Factory the context is built with.
+     */
+    public Factory<SSLContext> factory() {
+        return factory;
+    }
+
+    /**
      * @return Transports this provider serves.
      */
     public Collection<String> users() {
@@ -130,13 +138,19 @@ public class SslContextProvider implements SslContextReloadable {
     }
 
     /**
-     * Puts in use a context built anew, provided its certificate expires later than the one in use: a renewal that
-     * does not move the expiry gains nothing and would be due again at once.
+     * Puts in use a context built anew, provided its certificate is valid now and its chain expires later than the one
+     * in use: a renewal that does not move the expiry gains nothing and would be due again at once.
      *
+     * @param expected Context the renewal was planned for.
+     * @return {@code False} if another context was put in use since the renewal was planned, which leaves nothing to
+     *      renew.
      * @throws IgniteCheckedException If the context could not be built, an inter-node transport would refuse it, or
-     *      its certificate does not expire later than the one in use.
+     *      its certificate is not valid now or does not expire later than the one in use.
      */
-    public synchronized void renew() throws IgniteCheckedException {
+    public synchronized boolean renew(SSLContext expected) throws IgniteCheckedException {
+        if (ctx != expected)
+            return false;
+
         SSLContext rebuilt = rebuild();
 
         if (rebuilt == null)
@@ -147,14 +161,26 @@ public class SslContextProvider implements SslContextReloadable {
         if (next == null)
             throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
 
+        long now = System.currentTimeMillis();
+
+        // A transport that only clients connect to is not checked by a handshake, which would catch this otherwise.
+        for (X509Certificate cert : next) {
+            if (now < cert.getNotBefore().getTime() || now >= cert.getNotAfter().getTime()) {
+                throw new IgniteCheckedException("The new certificate chain is not valid now, so peers would refuse " +
+                    "it [" + SslCertificates.describe(cert) + ", now=" + Instant.ofEpochMilli(now) + ']');
+            }
+        }
+
         X509Certificate[] cur = servedChain();
 
         if (cur != null && SslCertificates.chainNotAfter(next) <= SslCertificates.chainNotAfter(cur)) {
-            throw new IgniteCheckedException("The new certificate expires no later than the one in use [new: " +
-                SslCertificates.describe(next[0]) + "; in use: " + SslCertificates.describe(cur[0]) + ']');
+            throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [new: " +
+                expiry(next) + "; in use: " + expiry(cur) + ']');
         }
 
         put(rebuilt, next);
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -183,6 +209,17 @@ public class SslContextProvider implements SslContextReloadable {
     /** {@inheritDoc} */
     @Override public SslReloadState reloadState() {
         return state;
+    }
+
+    /**
+     * @param chain Chain.
+     * @return Its own certificate and when the chain expires, naming the certificate that expires first.
+     */
+    private static String expiry(X509Certificate[] chain) {
+        X509Certificate first = SslCertificates.expiresFirst(chain);
+
+        return SslCertificates.describe(chain[0]) + ", chain expires " + first.getNotAfter().toInstant() +
+            " with " + first.getSubjectX500Principal();
     }
 
     /**

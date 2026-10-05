@@ -33,6 +33,7 @@ import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
@@ -46,7 +47,7 @@ import javax.security.auth.x500.X500Principal;
  */
 public class TestCertificateAuthority {
     /** Password of every store made here. */
-    private static final char[] PWD = "123456".toCharArray();
+    static final char[] PWD = "123456".toCharArray();
 
     /** DER of {@code ecdsa-with-SHA256}, the algorithm every certificate here is signed with. */
     private static final byte[] SIG_ALG =
@@ -79,7 +80,7 @@ public class TestCertificateAuthority {
 
         long now = System.currentTimeMillis();
 
-        cert = sign(name, keys, now - TimeUnit.DAYS.toMillis(1), now + TimeUnit.DAYS.toMillis(3650), true);
+        cert = sign(name, keys, now - TimeUnit.DAYS.toMillis(1), now + TimeUnit.DAYS.toMillis(365), true);
     }
 
     /**
@@ -199,7 +200,8 @@ public class TestCertificateAuthority {
      * @return DER of the time as {@code UTCTime}, which covers the years up to 2049.
      */
     private static byte[] time(long millis) {
-        SimpleDateFormat fmt = new SimpleDateFormat("yyMMddHHmmss'Z'");
+        // The root locale keeps the Gregorian calendar whatever the locale of the machine.
+        SimpleDateFormat fmt = new SimpleDateFormat("yyMMddHHmmss'Z'", Locale.ROOT);
 
         fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
 

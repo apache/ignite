@@ -91,11 +91,6 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        sslRenewal.start();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         sslRenewal.stop();
     }
@@ -215,9 +210,6 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
             sslCtxProviders.put(factory, provider);
             sslCtxReloadables.add(provider);
-
-            if (factory instanceof RenewableSslContextFactory)
-                sslRenewal.register(provider, (RenewableSslContextFactory)factory);
         }
 
         // A transport that can still fail to start says so later, once it has taken its port.
@@ -228,7 +220,8 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Names a transport the provider now serves, which also gives the transport its certificate metrics.
+     * Names a transport the provider now serves, which also gives the transport its certificate metrics and, if the
+     * factory renews its certificates, starts renewing them.
      *
      * @param provider Provider the transport takes its context from.
      * @param user Transport.
@@ -238,6 +231,9 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
         provider.addUser(user, interNode);
 
         SslMetrics.register(ctx.metric(), user, provider);
+
+        if (provider.factory() instanceof RenewableSslContextFactory)
+            sslRenewal.register(provider, (RenewableSslContextFactory)provider.factory());
     }
 
     /** */

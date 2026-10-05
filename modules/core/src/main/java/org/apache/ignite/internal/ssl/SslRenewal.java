@@ -19,15 +19,19 @@ package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.RenewableSslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -37,9 +41,9 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 /**
  * Renews the certificates of the contexts a {@link RenewableSslContextFactory} builds, before they expire.
  * <p>
- * All the planning and every attempt of a node run in a thread of their own: an attempt may wait on a certificate
- * authority service for long and must not hold up anything else. A single thread also keeps an attempt from racing
- * the planning that follows a reload by the {@code --ssl reload} command.
+ * All the planning and every attempt of a node run in a thread of their own, so that a request to a certificate
+ * authority service never holds up a thread of the node. A single thread also keeps an attempt from racing the
+ * planning that follows a reload by the {@code --ssl reload} command.
  */
 public class SslRenewal {
     /** How the node log names an automatic renewal among those who start a reload. */
@@ -57,14 +61,11 @@ public class SslRenewal {
     /** */
     private final IgniteLogger log;
 
-    /** Contexts renewed. */
-    private final List<Renewal> renewals = new ArrayList<>();
+    /** Providers renewed, so that one serving several transports is renewed once. */
+    private final Set<SslContextProvider> renewed = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /** Thread the renewals run in, created when the first renewable context shows up. */
     private volatile ScheduledExecutorService exec;
-
-    /** Whether the node has started, which is when renewals may begin. */
-    private boolean started;
 
     /** Whether the node is stopping. */
     private boolean stopped;
@@ -83,14 +84,20 @@ public class SslRenewal {
      * @throws IgniteException If a setting is out of range.
      */
     public static void validate(RenewableSslContextFactory factory) {
+        double fraction = factory.getRenewBeforeFraction();
+        double jitter = factory.getRenewalJitter();
+
         String err = null;
 
-        if (!(factory.getRenewBeforeFraction() > 0 && factory.getRenewBeforeFraction() < 1))
+        if (!(fraction > 0 && fraction < 1))
             err = "renewBeforeFraction must be greater than 0 and less than 1";
         else if (factory.getRenewBefore() < 0)
             err = "renewBefore must not be negative";
-        else if (!(factory.getRenewalJitter() >= 0 && factory.getRenewalJitter() <= 1))
+        else if (!(jitter >= 0 && jitter <= 1))
             err = "renewalJitter must be from 0 to 1";
+        else if (fraction * (1 + jitter) >= 1)
+            err = "renewBeforeFraction * (1 + renewalJitter) must be less than 1, or a renewal may fall before " +
+                "the certificate becomes valid";
         else if (factory.getRenewalRetryMinInterval() <= 0)
             err = "renewalRetryMinInterval must be positive";
         else if (factory.getRenewalRetryMaxInterval() < factory.getRenewalRetryMinInterval())
@@ -99,22 +106,23 @@ public class SslRenewal {
         if (err != null) {
             throw new IgniteException("Invalid automatic renewal settings of the SSL context factory, " + err +
                 " [factory=" + factory.getClass().getName() +
-                ", renewBeforeFraction=" + factory.getRenewBeforeFraction() +
+                ", renewBeforeFraction=" + fraction +
                 ", renewBefore=" + factory.getRenewBefore() +
-                ", renewalJitter=" + factory.getRenewalJitter() +
+                ", renewalJitter=" + jitter +
                 ", renewalRetryMinInterval=" + factory.getRenewalRetryMinInterval() +
                 ", renewalRetryMaxInterval=" + factory.getRenewalRetryMaxInterval() + ']');
         }
     }
 
     /**
-     * Renews the certificates of the provider from the moment the node starts, or right away if it has.
+     * Starts renewing the certificates of the provider, unless they are renewed already. Called once the provider
+     * serves a transport: a context that serves nothing is not worth a request to the issuer.
      *
      * @param provider Provider whose context the factory builds.
      * @param factory Factory, with its settings checked by {@link #validate}.
      */
     public synchronized void register(SslContextProvider provider, RenewableSslContextFactory factory) {
-        if (stopped)
+        if (stopped || !renewed.add(provider))
             return;
 
         if (exec == null)
@@ -122,23 +130,15 @@ public class SslRenewal {
 
         Renewal renewal = new Renewal(provider, factory);
 
-        renewals.add(renewal);
-
         provider.onReload(renewal::replan);
 
-        if (started)
-            renewal.replan();
+        renewal.replan();
     }
 
-    /** Plans the first renewals, once the node has started. */
-    public synchronized void start() {
-        started = true;
-
-        for (Renewal renewal : renewals)
-            renewal.replan();
-    }
-
-    /** Stops the renewals, interrupting an attempt in progress. */
+    /**
+     * Stops the renewals, interrupting an attempt in progress. An attempt that does not give way to the interrupt
+     * is left to finish, and whatever it brings is dropped.
+     */
     public synchronized void stop() {
         stopped = true;
 
@@ -151,11 +151,26 @@ public class SslRenewal {
         /** */
         private final SslContextProvider provider;
 
+        /** Read once, so that a factory cannot take the schedule out of the range checked at start. */
+        private final double fraction;
+
         /** */
-        private final RenewableSslContextFactory factory;
+        private final long renewBefore;
+
+        /** */
+        private final double jitter;
+
+        /** */
+        private final long minRetry;
+
+        /** */
+        private final long maxRetry;
 
         /** Next attempt, {@code null} if none is planned. */
         private ScheduledFuture<?> next;
+
+        /** Context in use when the next attempt was planned. */
+        private SSLContext planned;
 
         /** Failed attempts in a row. */
         private int failures;
@@ -169,16 +184,23 @@ public class SslRenewal {
          */
         private Renewal(SslContextProvider provider, RenewableSslContextFactory factory) {
             this.provider = provider;
-            this.factory = factory;
+
+            fraction = factory.getRenewBeforeFraction();
+            renewBefore = factory.getRenewBefore();
+            jitter = factory.getRenewalJitter();
+            minRetry = factory.getRenewalRetryMinInterval();
+            maxRetry = factory.getRenewalRetryMaxInterval();
         }
 
         /**
-         * Plans the next renewal by the certificate in use and drops the retries: the node has started, or a reload
-         * has just put a new certificate in use. Only hands the work over to the renewal thread, as it is called
-         * with the provider locked.
+         * Plans the next renewal by the certificate in use and drops the retries: the provider has started serving,
+         * or a reload has just put a new certificate in use. Only hands the work over to the renewal thread, as it is
+         * called with the provider locked.
          */
         private void replan() {
-            try {
+            // The renewals belong to the node, not to whoever ran the reload: the executor would otherwise carry the
+            // operation context of the caller, its security subject included, into every renewal from then on.
+            try (Scope clean = OperationContext.restoreSnapshot(null)) {
                 exec.execute(() -> {
                     failures = 0;
 
@@ -192,6 +214,9 @@ public class SslRenewal {
 
         /** Plans the next renewal by the certificate in use. */
         private void plan() {
+            if (exec.isShutdown())
+                return;
+
             X509Certificate[] chain = provider.servedChain();
 
             if (chain == null) {
@@ -199,8 +224,12 @@ public class SslRenewal {
 
                 provider.reloadState().nextRenewalTime(0);
 
-                U.warn(log, "Cannot tell when the TLS certificate expires, so it will not be renewed automatically " +
-                    "[transports=" + users() + ']');
+                String reason = "Cannot tell when the TLS certificate expires, so it is not renewed automatically";
+
+                // Recorded as a failure, so that the status command and the metrics show that renewal is off.
+                provider.reloadState().onFailure(reason);
+
+                U.warn(log, reason + " [transports=" + users() + ']');
 
                 return;
             }
@@ -209,11 +238,11 @@ public class SslRenewal {
 
             long window = window(chain);
 
-            long shift = (long)(ThreadLocalRandom.current().nextDouble() * factory.getRenewalJitter() * window);
+            long shift = (long)(ThreadLocalRandom.current().nextDouble() * jitter * window);
 
             // A certificate due for renewal as soon as it is issued must not make the node come back for another one
             // without a pause.
-            long at = Math.max(expiry - window - shift, lastAttempt + factory.getRenewalRetryMinInterval());
+            long at = Math.max(expiry - window - shift, lastAttempt + minRetry);
 
             // A window that is open already means now, and that is what the log and the metrics must say.
             at = Math.max(at, U.currentTimeMillis());
@@ -230,8 +259,10 @@ public class SslRenewal {
         private void attempt() {
             lastAttempt = U.currentTimeMillis();
 
+            boolean renewed;
+
             try {
-                provider.renew();
+                renewed = provider.renew(planned);
             }
             catch (Throwable e) {
                 // Anything may come out of a user-supplied factory, and an attempt that ends without planning the
@@ -240,6 +271,11 @@ public class SslRenewal {
 
                 return;
             }
+
+            // A reload by the command put a certificate in use while this attempt waited for the provider, and has
+            // planned the next renewal by it already. A stopping node drops whatever the attempt brought.
+            if (!renewed || exec.isShutdown())
+                return;
 
             failures = 0;
 
@@ -281,7 +317,8 @@ public class SslRenewal {
 
             boolean expired = chain != null && now >= expiry;
 
-            boolean late = chain != null && now >= expiry - window(chain) / 2;
+            // Also when the next attempt only comes after expiry, as it may with a window shorter than the pause.
+            boolean late = chain != null && (now >= expiry - window(chain) / 2 || at >= expiry);
 
             String msg = "Failed to reload TLS certificates, the ones in use stay" +
                 (expired ? ", though they have expired" : late ? " and expire soon" : "") +
@@ -300,14 +337,12 @@ public class SslRenewal {
          * @return Pause before the next attempt after {@link #failures} failed ones.
          */
         private long pause(@Nullable X509Certificate[] chain) {
-            long min = factory.getRenewalRetryMinInterval();
-
-            long max = factory.getRenewalRetryMaxInterval();
+            long max = maxRetry;
 
             if (chain != null)
-                max = Math.max(min, Math.min(max, window(chain) / ATTEMPTS_IN_WINDOW));
+                max = Math.max(minRetry, Math.min(max, window(chain) / ATTEMPTS_IN_WINDOW));
 
-            long pause = min;
+            long pause = minRetry;
 
             for (int i = 1; i < failures && pause < max; i++)
                 pause = pause > max / 2 ? max : pause * 2;
@@ -325,9 +360,9 @@ public class SslRenewal {
         private long window(X509Certificate[] chain) {
             long lifetime = Math.max(0, SslCertificates.chainNotAfter(chain) - chain[0].getNotBefore().getTime());
 
-            long window = (long)(lifetime * factory.getRenewBeforeFraction());
+            long window = (long)(lifetime * fraction);
 
-            return factory.getRenewBefore() > 0 ? Math.min(window, factory.getRenewBefore()) : window;
+            return renewBefore > 0 ? Math.min(window, renewBefore) : window;
         }
 
         /**
@@ -335,6 +370,8 @@ public class SslRenewal {
          */
         private void schedule(long at) {
             cancel();
+
+            planned = provider.context();
 
             provider.reloadState().nextRenewalTime(at);
 

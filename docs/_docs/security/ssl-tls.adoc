@@ -184,24 +184,48 @@ Now all nodes trust the new certificates.
 == Renewing Certificates Automatically [[renewing-certificates]]
 
 A node can renew its certificate by itself before it expires, when the certificate comes from a certificate
-authority service rather than from a file. Configure the node with an SSL context factory that implements
-`RenewableSslContextFactory`. Its `create()` method must request a newly issued certificate every time it is called.
+authority service rather than from a file. Set an SSL context factory that implements `RenewableSslContextFactory`
+wherever a factory is set:
 
-The node calls `create()` again once the certificate in use enters the renewal window, the last part of its lifetime.
-By default the window is 15% of the lifetime: a certificate valid for 30 days is renewed four and a half days before
-it expires. The new certificate goes through the same checks as one put in use by `control.sh --ssl reload`. It is
-also turned down if it expires no later than the one in use, since such a renewal gains nothing. New connections use
-the new certificate, and existing ones keep the one they were opened with.
+* `IgniteConfiguration.sslContextFactory` for discovery and communication, and for the client connector and binary
+REST when they use the node's factory;
+* `ClientConnectorConfiguration.sslContextFactory` for thin clients, JDBC and ODBC;
+* `ConnectorConfiguration.sslFactory` for binary REST.
+
+Transports set with the same factory instance share the certificate and its renewals. HTTP REST takes its
+certificate from the Jetty configuration and is not renewed automatically.
+
+The factory's `create()` method must request a newly issued certificate every time it is called. The node calls it
+again once the certificate in use enters the renewal window, the last part of its lifetime. By default the window is
+15% of the lifetime: a certificate valid for 30 days is renewed four and a half days before it expires. The new
+certificate goes through the same checks as one put in use by `control.sh --ssl reload`. It is also turned down if a
+certificate in its chain is not valid at that moment, or if the chain expires no later than the one in use, since
+such a renewal gains nothing. New connections use the new certificate, and existing ones keep the one they were
+opened with.
+
+The check between nodes uses the trusted authorities of the context `create()` returns. Take them from a trust store
+file on the node rather than from the response of the issuing service, or a certificate from an authority the other
+nodes do not trust yet passes the check.
 
 If a renewal fails, the node keeps its certificate and tries again until it succeeds. The pause doubles after each
-failure, from 1 minute to 1 hour, though never longer than a quarter of the window, and a random delay is added to
-it. Each failure is logged as a warning, and as an error once less than half of the window remains. A successful
-renewal, or a successful `--ssl reload`, stops the retries, and the next renewal is planned by the new certificate.
+failure, from 1 minute to 1 hour, and a random delay of up to half of it is added. The longest pause is also cut down
+to a quarter of the window, though not below the first one. Each failure is logged as a warning, and as an error once
+less than half of the window remains or the next attempt would come after expiry. A successful renewal, or a
+successful `--ssl reload`, stops the retries, and the next renewal is planned by the new certificate.
 
-Each node renews on its own schedule. The node log shows every certificate put in use and when the next renewal is
-planned. `control.sh --ssl status` and the `NextRenewalTime` metric show the next renewal as well.
+Each node renews on its own schedule, starting as soon as a transport starts serving the certificate, before the node
+joins the cluster. The node log shows every certificate put in use and when the next renewal is planned.
+`control.sh --ssl status` and the `NextRenewalTime` metric show the next renewal as well, and the status ends with a
+warning when a renewal has run more than a minute past its time.
 
-The schedule is set by methods of `RenewableSslContextFactory`, each with a default:
+All renewals of a node run in one thread. A `create()` that waits for the issuing service without a limit stops them
+all and keeps `--ssl reload` waiting, so bound every wait well below the pause after the first failure, and give way
+when the thread is interrupted: that is how a stopping node ends an attempt. The node does not release what the
+factory holds, such as a client of the issuing service; do that when the node stops, for example from a lifecycle
+bean.
+
+The schedule is set by methods of `RenewableSslContextFactory`, each with a default. The node reads them once, when a
+transport starts serving the certificate.
 
 [width="100%", cols="30%, 60%, 10%"]
 |=================
@@ -214,13 +238,15 @@ than asked for from making the node come back for a new one over and over.
 |`0.15`
 
 |`getRenewBefore()`
-|Time before expiry when the node renews the certificate at the latest, in milliseconds. The node takes the smaller of
-this window and the share above. `0` leaves the window to the share alone.
+|Longest time before expiry the window may take, in milliseconds: the node renews the certificate no earlier than
+this before it expires. The node takes the smaller of this window and the share above. `0` leaves the window to the
+share alone.
 |`0`
 
 |`getRenewalJitter()`
 |Share of the window, from `0` to `1`, by which the node brings the renewal forward at random. Certificates issued at
-once expire at once, and the shift keeps their nodes from all coming for new ones at the same moment.
+once expire at once, and the shift keeps their nodes from all coming for new ones at the same moment. The earliest
+renewal must stay within the lifetime: `renewBeforeFraction * (1 + renewalJitter)` must be less than `1`.
 |`0`
 
 |`getRenewalRetryMinInterval()`

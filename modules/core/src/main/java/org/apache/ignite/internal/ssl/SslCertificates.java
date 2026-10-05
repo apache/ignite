@@ -93,6 +93,21 @@ public class SslCertificates {
     }
 
     /**
+     * @param chain Chain, its own certificate first.
+     * @return The certificate in the chain that expires first, which is what limits the chain.
+     */
+    public static X509Certificate expiresFirst(X509Certificate[] chain) {
+        X509Certificate res = chain[0];
+
+        for (X509Certificate cert : chain) {
+            if (cert.getNotAfter().before(res.getNotAfter()))
+                res = cert;
+        }
+
+        return res;
+    }
+
+    /**
      * @param certs Authorities.
      * @return Them as {@code subject until date}, semicolon-separated.
      */

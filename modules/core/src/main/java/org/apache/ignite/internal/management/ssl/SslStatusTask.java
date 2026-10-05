@@ -32,13 +32,16 @@ import org.apache.ignite.internal.visor.VisorJob;
 /**
  * Reports the TLS certificates every mapped node serves, which authorities it trusts, how its last reload went, and
  * when the next automatic renewal is due.
- * A node whose certificate is no longer, or not yet, valid fails the command; a node whose last reload failed makes
- * it end with a warning.
+ * A node whose certificate is no longer, or not yet, valid fails the command; a node whose last reload failed, or whose
+ * automatic renewal is overdue, makes it end with a warning.
  */
 @GridInternal
 public class SslStatusTask extends SslTask<NoArg> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** How long a renewal may run past its due time before the status calls it overdue, in milliseconds. */
+    private static final long RENEWAL_OVERDUE = 60_000L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, String> job(NoArg arg) {
@@ -123,8 +126,16 @@ public class SslStatusTask extends SslTask<NoArg> {
                 else
                     lines.add("    not reloaded since the node started");
 
-                if (state.nextRenewalTime() > 0)
+                if (state.nextRenewalTime() > 0) {
                     lines.add("    next automatic renewal at " + Instant.ofEpochMilli(state.nextRenewalTime()));
+
+                    // An attempt reschedules itself once it ends, whatever the outcome.
+                    if (now - state.nextRenewalTime() > RENEWAL_OVERDUE) {
+                        reloadFailed = true;
+
+                        lines.add("    the renewal due then has not ended, the request for a certificate may hang");
+                    }
+                }
             }
 
             String res = String.join("\n", lines);
