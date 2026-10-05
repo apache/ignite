@@ -239,9 +239,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
     /**
      * Verifies that the data region can be filled beyond the eviction threshold (default 0.9) — at least to
-     * 95% of total pages — without triggering eviction. Before the fix, the headroom gate
-     * caused the size-aware reserve to ignore headroom above the threshold, so the region effectively stopped
-     * growing at ~90% and evicted pre-filled entries unnecessarily.
+     * 95% of total pages — without triggering eviction.
      *
      * @throws Exception If failed.
      */

@@ -126,7 +126,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
-                int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
+                int origSampleIdx = sampleTrackingIdx;
+
+                int origSampleData = GridUnsafe.getIntVolatile(null, trackingArrPtr + origSampleIdx * 4L);
+
+                int compactTs = origSampleData;
 
                 if (compactTs < 0) {
                     // For page containing fragmented row data timestamps stored in the row's head page are used.
@@ -141,7 +145,19 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
-                        assert compactTs >= 0 : "[compactTs=" + compactTs + "]";
+                        if (compactTs < 0) {
+                            GridUnsafe.compareAndSwapInt(null, trackingArrPtr + origSampleIdx * 4L, origSampleData, 0);
+
+                            sampleSpinCnt++;
+
+                            if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
+                                LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
+
+                                return false;
+                            }
+
+                            continue;
+                        }
                     }
                 }
 

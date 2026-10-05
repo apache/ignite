@@ -140,7 +140,11 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                int origTrackingIdx = trackingIdx;
+
+                long origTrackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + origTrackingIdx * 8L);
+
+                long trackingData = origTrackingData;
 
                 int firstTs = first(trackingData);
 
@@ -161,7 +165,19 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         firstTs = first(trackingData);
 
-                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
+                        if (firstTs < 0) {
+                            GridUnsafe.compareAndSwapLong(null, trackingArrPtr + origTrackingIdx * 8L, origTrackingData, 0L);
+
+                            sampleSpinCnt++;
+
+                            if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
+                                LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
+
+                                return false;
+                            }
+
+                            continue;
+                        }
                     }
                 }
 

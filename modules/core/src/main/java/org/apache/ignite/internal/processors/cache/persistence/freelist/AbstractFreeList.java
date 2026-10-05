@@ -871,8 +871,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             assert nextLink != FAIL_L; // Can't fail here.
 
-            evictionTracker.forgetPage(pageId);
-
             while (nextLink != 0L) {
                 memMetrics.decrementLargeEntriesPages();
 
