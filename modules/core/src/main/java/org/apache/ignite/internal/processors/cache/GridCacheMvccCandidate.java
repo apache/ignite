@@ -17,20 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -53,14 +46,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate
 /**
  * Lock candidate.
  */
-public class GridCacheMvccCandidate implements Externalizable,
-    Comparable<GridCacheMvccCandidate>, CacheLockCandidates {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** ID generator. */
-    private static final AtomicLong IDGEN = new AtomicLong();
-
+public class GridCacheMvccCandidate implements CacheLockCandidates {
     /** Locking node ID. */
     @GridToStringInclude
     private UUID nodeId;
@@ -77,56 +63,45 @@ public class GridCacheMvccCandidate implements Externalizable,
     @GridToStringExclude
     private short flags;
 
-    /** ID. */
-    private long id;
-
     /** Topology version. */
-    @SuppressWarnings( {"TransientFieldNotInitialized"})
     @GridToStringInclude
-    private transient volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
+    private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
     /** Linked reentry. */
     private GridCacheMvccCandidate reentry;
 
     /** Previous lock for the thread. */
     @GridToStringExclude
-    private transient volatile GridCacheMvccCandidate prev;
+    private volatile GridCacheMvccCandidate prev;
 
     /** Next lock for the thread. */
     @GridToStringExclude
-    private transient volatile GridCacheMvccCandidate next;
+    private volatile GridCacheMvccCandidate next;
 
     /** Parent entry. */
     @GridToStringExclude
-    private transient GridCacheEntryEx parent;
+    private GridCacheEntryEx parent;
 
     /** Alternate node ID specifying additional node involved in this lock. */
-    private transient volatile UUID otherNodeId;
+    private volatile UUID otherNodeId;
 
     /** Other lock version (near version vs dht version). */
-    private transient GridCacheVersion otherVer;
+    private GridCacheVersion otherVer;
 
     /** Mapped DHT node IDs. */
     @GridToStringInclude
-    private transient volatile Collection<ClusterNode> mappedDhtNodes;
+    private volatile Collection<ClusterNode> mappedDhtNodes;
 
     /** Mapped near node IDs. */
     @GridToStringInclude
-    private transient volatile Collection<ClusterNode> mappedNearNodes;
+    private volatile Collection<ClusterNode> mappedNearNodes;
 
     /** Owned lock version by the moment this candidate was added. */
     @GridToStringInclude
-    private transient volatile GridCacheVersion ownerVer;
+    private volatile GridCacheVersion ownerVer;
 
     /** */
     private GridCacheVersion serOrder;
-
-    /**
-     * Empty constructor required by {@link Externalizable}.
-     */
-    public GridCacheMvccCandidate() {
-        /* No-op. */
-    }
 
     /**
      * @param parent Parent entry.
@@ -179,8 +154,6 @@ public class GridCacheMvccCandidate implements Externalizable,
         mask(NEAR_LOCAL, nearLoc);
         mask(DHT_LOCAL, dhtLoc);
         mask(READ, read);
-
-        id = IDGEN.incrementAndGet();
     }
 
     /**
@@ -622,57 +595,6 @@ public class GridCacheMvccCandidate implements Externalizable,
     /** {@inheritDoc} */
     @Override public boolean hasCandidate(GridCacheVersion ver) {
         return this.ver.equals(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        IgniteUtils.writeUuid(out, nodeId);
-
-        out.writeBoolean(ver == null);
-
-        if (ver != null) {
-            out.writeBoolean(ver instanceof GridCacheVersionEx);
-
-            ver.writeExternal(out);
-        }
-
-        out.writeLong(threadId);
-        out.writeLong(id);
-        out.writeShort(flags());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = IgniteUtils.readUuid(in);
-
-        if (!in.readBoolean()) {
-            ver = in.readBoolean() ? new GridCacheVersionEx() : new GridCacheVersion();
-
-            ver.readExternal(in);
-        }
-
-        threadId = in.readLong();
-        id = in.readLong();
-
-        short flags = in.readShort();
-
-        mask(OWNER, OWNER.get(flags));
-        mask(USED, USED.get(flags));
-        mask(TX, TX.get(flags));
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(GridCacheMvccCandidate o) {
-        if (o == this)
-            return 0;
-
-        int c = ver.compareTo(o.ver);
-
-        // This is done, so compare and equals methods will be consistent.
-        if (c == 0)
-            return key().equals(o.key()) ? 0 : id < o.id ? -1 : 1;
-
-        return c;
     }
 
     /** {@inheritDoc} */
