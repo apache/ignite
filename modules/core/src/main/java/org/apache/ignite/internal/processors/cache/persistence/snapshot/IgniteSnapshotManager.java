@@ -850,6 +850,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
                 // Skip files which can be concurrently removed from FileTree.
+                res.set(false);
+
                 return FileVisitResult.CONTINUE;
             }
 
