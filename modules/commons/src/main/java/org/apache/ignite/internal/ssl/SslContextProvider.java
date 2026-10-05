@@ -21,7 +21,6 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -49,9 +48,6 @@ public class SslContextProvider implements SslContextReloadable {
 
     /** Context in use. */
     private volatile SSLContext ctx;
-
-    /** What one attempt built and checked, waiting to be put in use; {@code null} when there is nothing prepared. */
-    private volatile Staged staged;
 
     /**
      * @param factory Factory to build the context with.
@@ -87,62 +83,25 @@ public class SslContextProvider implements SslContextReloadable {
         return Collections.unmodifiableCollection(users);
     }
 
-    /**
-     * Builds the certificates on disk and puts them in use in one step, for callers that have no operator to show
-     * them to first.
-     *
-     * @return {@code True} if new certificates were put in use.
-     * @throws IgniteCheckedException If they could not be built or would not be accepted.
-     */
-    public boolean reload() throws IgniteCheckedException {
-        UUID token = UUID.randomUUID();
+    /** {@inheritDoc} */
+    @Override public synchronized boolean reload() throws IgniteCheckedException {
+        SSLContext rebuilt = rebuild();
 
-        return prepare(token) && commit(token) == Commit.APPLIED;
+        if (rebuilt == null)
+            return false;
+
+        ctx = rebuilt;
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean prepare(UUID token) throws IgniteCheckedException {
-        // Dropped first, so that a rebuild that throws leaves nothing behind that any attempt could still apply.
-        discard();
-
-        staged = rebuild(token);
-
-        return staged.ctx != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized Commit commit(UUID token) {
-        Staged staged0 = staged;
-
-        // Applying what another attempt prepared would put certificates in use that this one never showed to the
-        // operator, so a token that does not match counts as nothing prepared here.
-        if (staged0 == null || !staged0.token.equals(token))
-            return Commit.NOT_PREPARED;
-
-        discard();
-
-        if (staged0.ctx == null)
-            return Commit.NOTHING_TO_APPLY;
-
-        ctx = staged0.ctx;
-
-        return Commit.APPLIED;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void discard() {
-        staged = null;
+    @Override public boolean check() throws IgniteCheckedException {
+        return rebuild() != null;
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable X509Certificate servedCertificate() {
-        Staged staged0 = staged;
-
-        // Once something is prepared, this is the certificate the node is about to serve. That is what an operator
-        // has to see before confirming: what is in use now is what they are replacing.
-        if (staged0 != null && staged0.ctx != null)
-            return staged0.cert;
-
         if (!interNode)
             return null;
 
@@ -157,49 +116,24 @@ public class SslContextProvider implements SslContextReloadable {
     }
 
     /**
-     * @param token Attempt to build for.
-     * @return Context built from the stores as they are now, holding no context if the factory handed back the one
+     * @return Context built from the stores as they are now, or {@code null} if the factory handed back the one
      *      already in use and there is therefore nothing to put in use.
      * @throws IgniteCheckedException If the context could not be built, or an inter-node transport would refuse it.
      */
-    private Staged rebuild(UUID token) throws IgniteCheckedException {
+    private @Nullable SSLContext rebuild() throws IgniteCheckedException {
         try {
             SSLContext rebuilt = factory.create();
 
             if (rebuilt == ctx)
-                return new Staged(token, null, null);
+                return null;
 
-            // The check hands back the certificate the rebuilt context presents, which is what the report names.
-            return new Staged(token, rebuilt, interNode ? SslContextValidator.validateInterNode(rebuilt) : null);
+            if (interNode)
+                SslContextValidator.validateInterNode(rebuilt);
+
+            return rebuilt;
         }
         catch (SSLException e) {
             throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
-     * Result of one attempt to prepare, kept as a whole so that a commit cannot take the token of one attempt
-     * together with the context of another.
-     */
-    private static class Staged {
-        /** Attempt this was built for. */
-        private final UUID token;
-
-        /** Context to put in use, {@code null} when the attempt found nothing to apply. */
-        private final SSLContext ctx;
-
-        /** Certificate that context presents, {@code null} if it cannot be told without a peer. */
-        private final X509Certificate cert;
-
-        /**
-         * @param token Attempt this was built for.
-         * @param ctx Context to put in use, {@code null} if there is nothing to apply.
-         * @param cert Certificate that context presents, {@code null} if it cannot be told without a peer.
-         */
-        private Staged(UUID token, @Nullable SSLContext ctx, @Nullable X509Certificate cert) {
-            this.token = token;
-            this.ctx = ctx;
-            this.cert = cert;
         }
     }
 }

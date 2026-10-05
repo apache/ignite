@@ -23,15 +23,13 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.SslMode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientSslUtils;
@@ -47,7 +45,6 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.logger.NullLogger;
 
 import static org.apache.ignite.internal.client.thin.ClientUtils.awaitFutureResult;
@@ -66,11 +63,8 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     /** */
     private final GridNioServer<ByteBuffer> srv;
 
-    /** Owner of the SSL context, {@code null} if SSL is disabled. */
-    private final SslContextProvider sslCtxProvider;
-
-    /** Set when a TLS handshake was refused, so that the next connection is opened on rebuilt certificates. */
-    private final AtomicBoolean reloadSsl = new AtomicBoolean();
+    /** */
+    private final SSLContext sslCtx;
 
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -90,19 +84,17 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioClientParser(), gridLog, false);
 
-        if (cfg.getSslMode() != SslMode.DISABLED) {
-            sslCtxProvider = new SslContextProvider(() -> ClientSslUtils.getSslContext(cfg));
+        sslCtx = ClientSslUtils.getSslContext(cfg);
 
-            GridNioSslFilter sslFilter =
-                new GridNioSslFilter(sslCtxProvider, true, ByteOrder.nativeOrder(), gridLog, null, null);
-
+        if (sslCtx != null) {
+            // The client builds its context once, at start; the filter only needs a holder to take it from.
+            GridNioSslFilter sslFilter = new GridNioSslFilter(new SslContextProvider(() -> sslCtx), true,
+                ByteOrder.nativeOrder(), gridLog, null, null);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};
         }
-        else {
-            sslCtxProvider = null;
+        else
             filters = new GridNioFilter[] {codecFilter};
-        }
 
         connTimeout = cfg.getHandshakeTimeout();
 
@@ -162,9 +154,6 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         rwLock.readLock().lock();
 
         try {
-            if (reloadSsl.compareAndSet(true, false))
-                reloadSslContext();
-
             SocketChannel ch = null;
 
             try {
@@ -197,26 +186,13 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         }
     }
 
-    /**
-     * Rebuilds the SSL context out of the files on disk, so that connections opened afterwards use the certificates
-     * that are there now. The context in use is kept if the new one cannot be built.
-     */
-    private void reloadSslContext() {
-        try {
-            sslCtxProvider.reload();
-        }
-        catch (Exception ignored) {
-            // The connection attempt fails on its own, and the certificates in use stay untouched.
-        }
-    }
-
     /** */
     private GridNioSession createNioSession(SocketChannel ch) throws IgniteCheckedException {
         Map<Integer, Object> meta = new HashMap<>();
 
         GridFutureAdapter<?> sslHandshakeFut = null;
 
-        if (sslCtxProvider != null) {
+        if (sslCtx != null) {
             sslHandshakeFut = new GridFutureAdapter<>();
 
             meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
@@ -247,13 +223,6 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             awaitFutureResult(sslHandshakeFut, connTimeout, "SSL handshake");
         }
         catch (Exception e) {
-            // A refused handshake may mean the certificates on disk have been rotated since, so the next attempt is
-            // made with them. A connection that merely dropped or timed out must not count: that happens on every
-            // node restart, and rebuilding the context there would also pick up a key store the operator has staged
-            // but not yet put in use anywhere else.
-            if (X.hasCause(e, SSLHandshakeException.class))
-                reloadSsl.set(true);
-
             ses.close();
 
             throw e;

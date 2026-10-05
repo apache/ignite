@@ -20,11 +20,9 @@ package org.apache.ignite.ssl;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.ssl.SslContextProvider;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -92,41 +90,30 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertSame(readyMade, provider.context());
     }
 
-    /** What one attempt prepared must not be applied by another: the operator was shown different certificates. */
+    /** A check must tell that the stores can be used, and leave the context in use alone. */
     @Test
-    public void testCommitAppliesOnlyWhatTheSameAttemptPrepared() throws Exception {
+    public void testCheckLeavesContextInUse() throws Exception {
         SslContextProvider provider = new SslContextProvider(fileFactory());
 
         SSLContext before = provider.context();
 
         placeStore("node02");
 
-        assertTrue(provider.prepare(UUID.randomUUID()));
+        assertTrue("A rotated store must be reported as usable", provider.check());
 
-        assertEquals("A foreign attempt must not apply what this one prepared",
-            SslContextReloadable.Commit.NOT_PREPARED, provider.commit(UUID.randomUUID()));
-
-        // Nothing was applied, and nothing was thrown away either.
         assertSame(before, provider.context());
     }
 
-    /** A dry run keeps nothing: what it built must not become applicable later. */
+    /** A store that cannot be read must fail the reload and leave the context in use alone. */
     @Test
-    public void testDiscardLeavesNothingToApply() throws Exception {
+    public void testBrokenStoreKeepsContextInUse() throws Exception {
         SslContextProvider provider = new SslContextProvider(fileFactory());
 
         SSLContext before = provider.context();
 
-        placeStore("node02");
+        Files.write(keyStore, "not a key store".getBytes());
 
-        UUID token = UUID.randomUUID();
-
-        assertTrue(provider.prepare(token));
-
-        provider.discard();
-
-        assertEquals("Discarded work must not be applicable",
-            SslContextReloadable.Commit.NOT_PREPARED, provider.commit(token));
+        GridTestUtils.assertThrowsWithCause(() -> provider.reload(), Exception.class);
 
         assertSame(before, provider.context());
     }

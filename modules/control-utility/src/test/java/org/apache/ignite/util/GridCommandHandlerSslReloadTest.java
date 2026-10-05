@@ -37,8 +37,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
- * Tests {@code --ssl reload} as an operator runs it: one invocation of the command line handler drives both phases,
- * with the question in between deciding whether the second one happens at all.
+ * Tests {@code --ssl reload} as an operator runs it, through the command line handler: what it asks, what it changes on
+ * the nodes and what it reports.
  */
 public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractTest {
     /** Key store the nodes run on; replaced on disk to rotate the certificate. */
@@ -84,9 +84,9 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
             Files.deleteIfExists(keyStore);
     }
 
-    /** One invocation has to check every node first, then put in use what it checked, and report both. */
+    /** One invocation has to put the certificates on disk in use on every node and report what each serves. */
     @Test
-    public void testBothPhasesRunInOneInvocation() throws Exception {
+    public void testReloadAppliesAndReports() throws Exception {
         startGrids(2);
 
         copyKeyStore("node02");
@@ -97,16 +97,13 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         String out = testOut.toString();
 
-        assertContains(log, out, "can be reloaded");
-        assertContains(log, out, "will serve CN=node02");
-
         assertContains(log, out, ": reloaded ");
         assertContains(log, out, "serving CN=node02");
 
         assertEquals("CN=node02", servedCertificate(grid(0)).getSubjectX500Principal().getName());
     }
 
-    /** Answering the question with no leaves every node on the certificate it is running. */
+    /** Answering the question with no must leave every node on the certificate it is running. */
     @Test
     public void testDeclinedConfirmationAppliesNothing() throws Exception {
         startGrids(2);
@@ -122,11 +119,24 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         String out = testOut.toString();
 
-        // The check ran and named what the node would serve, and that is all that happened.
-        assertContains(log, out, "can be reloaded");
-        assertContains(log, out, "will serve CN=node02");
-
+        assertContains(log, out, "Operation cancelled");
         assertNotContains(log, out, ": reloaded ");
+
+        assertEquals("CN=node01", servedCertificate(grid(0)).getSubjectX500Principal().getName());
+    }
+
+    /** A reload that failed on a node must fail the command, name the reason, and leave that node as it was. */
+    @Test
+    public void testFailureReturnsError() throws Exception {
+        startGrids(2);
+
+        Files.write(keyStore, "not a key store".getBytes());
+
+        injectTestSystemOut();
+
+        assertFalse("A failed reload must not end with success", execute("--ssl", "reload") == EXIT_CODE_OK);
+
+        assertContains(log, testOut.toString(), "failed on");
 
         assertEquals("CN=node01", servedCertificate(grid(0)).getSubjectX500Principal().getName());
     }

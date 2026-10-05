@@ -6716,14 +6716,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    SSLException sslErr = X.cause(e, SSLException.class);
-
-                    if (sslErr != null && spi.isSslEnabled() && !spi.isNodeStopping0()) {
-                        LT.warn(log, "Failed to initialize connection [rmtAddr=" + sock.getInetAddress() +
-                            ", err=" + sslErr.getMessage() + "]. The remote " +
-                            "node has no SSL configured, or presents a certificate this node does not trust. " +
-                            "While certificates are being rotated, a new authority has to be trusted everywhere " +
-                            "before anything presents a certificate issued by it.", true);
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
+                        LT.warn(log, "Failed to initialize connection " +
+                            "(missing SSL configuration on remote node?) " +
+                            "[rmtAddr=" + sock.getInetAddress() + ']', true);
 
                         spi.stats.onSslConnectionRejected();
                     }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
 import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
  * A node registers one of these per configured SSL context factory once it has set SSL up, so an empty registry
  * means the node does not use SSL at all. Each registers under the names of the transports it serves, which is
  * also how the reload command reports it, so they are part of what an operator sees and scripts against.
+ * <p>
+ * Every node reloads on its own. Nothing is coordinated between nodes, so a reload that fails on some of them leaves
+ * the others on the new certificates.
  */
 public interface SslContextReloadable {
     /** */
@@ -52,41 +54,24 @@ public interface SslContextReloadable {
     public Collection<String> users();
 
     /**
-     * Builds the certificates that are on disk now, checks them, and keeps the result aside without touching what
-     * is in use. Everything that can fail happens here, so that the phase which does put them in use cannot leave
-     * the cluster on two different certificates.
+     * Builds the certificates that are on disk now, checks them and puts them in use. Connections opened afterwards
+     * use the new certificates, established ones are not interrupted.
      *
-     * @param token Identifies this attempt; {@link #commit(UUID)} applies only what was prepared under the same one.
-     * @return {@code True} if there is something new to put in use. {@code False} if the source handed back the
-     *      context already in use and there is nothing to apply.
-     * @throws IgniteCheckedException If the certificates could not be built or would not be accepted. Nothing is
-     *      kept aside in that case, and what is in use stays.
+     * @return {@code True} if new certificates were put in use. {@code False} if the source handed back the context
+     *      already in use, so there is nothing to read again.
+     * @throws IgniteCheckedException If the certificates could not be built or would not be accepted. The ones in
+     *      use stay.
      */
-    public boolean prepare(UUID token) throws IgniteCheckedException;
-
-    /** What {@link #commit(UUID)} found to do. */
-    public enum Commit {
-        /** The prepared certificates are now in use. */
-        APPLIED,
-
-        /** This attempt prepared and found the certificates already in use, so there was nothing to apply. */
-        NOTHING_TO_APPLY,
-
-        /** This attempt prepared nothing here, which is what a node that joined between the phases looks like. */
-        NOT_PREPARED
-    }
+    public boolean reload() throws IgniteCheckedException;
 
     /**
-     * Puts in use what {@link #prepare(UUID)} kept aside under the same token. Connections opened afterwards use the
-     * new certificates, established sessions are not interrupted.
+     * Builds the certificates that are on disk now and checks them, without putting them in use.
      *
-     * @param token Attempt whose result is to be applied.
-     * @return What there was to do.
+     * @return {@code True} if there is something new to put in use, {@code false} if the source would hand back the
+     *      context already in use.
+     * @throws IgniteCheckedException If the certificates could not be built or would not be accepted.
      */
-    public Commit commit(UUID token);
-
-    /** Drops whatever was kept aside, leaving what is in use alone. */
-    public void discard();
+    public boolean check() throws IgniteCheckedException;
 
     /**
      * @return Certificate this component presents on new connections, or {@code null} if it cannot be told without

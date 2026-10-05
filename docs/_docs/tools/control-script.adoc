@@ -1763,8 +1763,7 @@ too;
 * *JDBC and ODBC applications* — nothing to run and nothing to restart: every new connection reads the stores from
 disk again;
 * *thin-client applications* — nothing to run either, but one that is already running keeps the stores it read at
-start. It reads them again only after a handshake was refused: that attempt fails, and the next one uses the files
-that are on disk now.
+start until it is restarted.
 
 The command reaches what is in the topology at the moment it is started, and nothing else. Applications are never reached, which
 is why the steps below say when each of their files has to be in place; a node that was down during a step comes
@@ -1774,11 +1773,10 @@ Place a file by writing it next to the one in use and renaming it over, so that 
 store.
 
 A reload never revokes anything. A peer you removed from a trust store keeps its open connections until they close
-on their own. A node logs a refused handshake with the reason reported by the TLS engine, so a rotation done out of
-order is visible rather than silent.
+on their own.
 
-Everything reloads except two arrangements, which the first report names as `cannot be reloaded` and the second
-as `not reloaded`, rather than as a success:
+Everything reloads except two arrangements, which the report names as `not reloaded`, and a dry run as
+`cannot be reloaded`, rather than as a success:
 
 * a factory of your own whose `create()` hands back a cached context;
 * a Jetty configuration for HTTP REST that sets a ready-made `sslContext` instead of a key store path.
@@ -1796,41 +1794,7 @@ the configuration changes: the node re-reads what it points at.
 control.sh|bat --ssl reload
 ----
 
-The command works in two phases. First every node builds the certificates that are on disk and checks them,
-without putting any of them in use, and reports what each of them would then serve:
-
-[source,text]
-----
-e1e18f84-0fb5-484d-a623-15ffe3800000: can be reloaded client connector, communication, discovery; will serve CN=node01 until 2041-02-14, issued by CN=ca
-0cf9e4e2-bb7a-466a-a113-b6230b500001: can be reloaded client connector, communication, discovery; will serve CN=node01 until 2041-02-14, issued by CN=ca
-----
-
-One line per SSL context factory: transports configured with the same one share the context, so they are reloaded
-together and reported together. A node configured with several factories answers with several lines.
-
-Nearly everything that can fail happens in this phase; the one thing that can fail later is named further down. A
-node that would not be able to use the new certificate says so, and the command stops without having changed
-anything on any node:
-
-[source,text]
-----
-e1e18f84-0fb5-484d-a623-15ffe3800000: can be reloaded client connector, communication, discovery; will serve CN=node01 until 2041-02-14, issued by CN=newca
-46db5416-d199-48d6-a807-88b7f1300000: would fail on client connector, communication, discovery (No trusted certificate found)
-----
-
-Every node is in the report either way, so it also shows which of them were ready. The command ends with an error,
-not with a result.
-
-A certificate the node's own trust store rejects counts as unusable, and is checked whenever any of the transports
-sharing that factory connects nodes to each other. This assumes every node runs the same key and trust store
-configuration. The same answer comes back when the trust stores hold the node certificates themselves rather than
-the certificate of an authority, which is the scheme the link:security/ssl-tls[SSL/TLS] page describes; replacing
-a certificate is then a change of trust, so give the new one to every trust store first, the way the next section
-gives them a new authority.
-
-When every node is ready, the command asks before it goes on. The second phase then puts in use exactly what the
-first one checked — a node applies only what the same run prepared, never what some other run left behind — and
-reports it:
+Every node reloads on its own and reports what it did:
 
 [source,text]
 ----
@@ -1838,20 +1802,36 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, 
 0cf9e4e2-bb7a-466a-a113-b6230b500001: reloaded client connector, communication, discovery; serving CN=node01 until 2041-02-14, issued by CN=ca
 ----
 
-A node that joined while the question was on screen has nothing prepared, is reported as not reloaded, and keeps
-the certificates it read when it started. A node that left is reported as having left, which on its own does not
-fail the command. Run the command again once the topology has settled.
+One line per SSL context factory: transports configured with the same one share the context, so they are reloaded
+together and reported together. A node configured with several factories answers with several lines.
 
-The HTTP REST connector is the one part that rebuilds in place instead of holding the new certificates aside, so
-it is also the only one that can still fail in this phase. It is then reported as failed and keeps serving the
-certificate it had, while everything else on that node, and on every other node, has already moved. It carries no
-traffic between nodes, so a failure there cannot split the cluster.
+Before a node puts a new certificate in use, it checks it against its own trust store, whenever any of the
+transports sharing that factory connects nodes to each other. A certificate the check rejects is not put in use, and
+the node keeps serving the one it had. This assumes every node runs the same key and trust store configuration. The
+check also rejects a new certificate when the trust stores hold the node certificates themselves rather than the
+certificate of an authority, which is the scheme the link:security/ssl-tls[SSL/TLS] page describes; replacing a
+certificate is then a change of trust, so give the new one to every trust store first, the way the next section gives
+them a new authority.
+
+Nodes do not wait for each other. When some of them fail, the rest have already moved to the new certificates, and
+the command ends with an error that lists every node:
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, discovery; serving CN=node01 until 2041-02-14, issued by CN=newca
+46db5416-d199-48d6-a807-88b7f1300000: failed on client connector, communication, discovery (No trusted certificate found)
+----
+
+Fix the cause on the nodes that failed and run the command again. A node that leaves while the command runs is
+reported as having left, which on its own does not fail the command.
+
+Each node also writes the outcome to its log: the certificate it put in use, with its subject, issuer, serial number
+and validity, and who asked for the reload, or the reason it could not.
 
 New connections use the new certificate. Existing ones keep the certificate they were opened with, and nothing
 interrupts them, so for a while a node serves both.
 
-`--dry-run` stops after the first phase and throws away what it built, so it changes nothing and asks nothing.
-The report is the same one, so it also names the certificate each node would serve:
+`--dry-run` builds and checks the certificates on every node without putting them in use, and asks nothing:
 
 [source, shell]
 ----
@@ -1943,8 +1923,8 @@ before step 3. Earlier, the cluster does not trust the new authority yet; later,
 the application was given.
 
 *Once for the whole cluster.* This is the step that catches a node whose new key store its own trust store does
-not accept, which is what a skipped step 1 looks like on that node. The command reports it before it puts anything
-in use anywhere, so read the report and answer the question it asks:
+not accept, which is what a skipped step 1 looks like on that node. Such a node keeps its old certificate and is
+reported as failed:
 
 [source, shell]
 ----
@@ -2006,8 +1986,8 @@ certificate from the old authority. A JDBC or ODBC application uses the narrowed
 thin client that is already running keeps the wider one until it is restarted, because nothing refuses its
 handshake any more.
 
-*Once for the whole cluster.* A node that never got its new certificate is refused here, because its own trust
-store no longer accepts what it presents. Read the report and answer the question it asks:
+*Once for the whole cluster.* A node that never got its new certificate is reported as failed here, because its
+own trust store no longer accepts what it presents:
 
 [source, shell]
 ----

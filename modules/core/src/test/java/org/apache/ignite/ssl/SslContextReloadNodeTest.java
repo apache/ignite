@@ -41,6 +41,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -80,9 +82,14 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** Whether the client connector runs on a factory of its own, rather than sharing the one of the node. */
     private boolean ownClientConnectorFactory;
 
+    /** Log of the nodes under test, to see what a reload leaves there. */
+    private ListeningTestLogger nodeLog;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setGridLogger(nodeLog);
 
         if (ssl) {
             cfg.setSslContextFactory(nodeSslContextFactory());
@@ -105,6 +112,8 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         keyStore = Files.createTempFile("ignite-ssl-reload-node-", ".jks");
+
+        nodeLog = new ListeningTestLogger(log);
 
         copyKeyStore("node01");
     }
@@ -239,8 +248,9 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * One factory that cannot rebuild the context must not hide the state of the rest: the node runs the client
-     * connector on a factory of its own here, so a broken node-level one leaves a healthy provider beside it.
+     * One factory that cannot rebuild the context must neither hide the state of the rest nor hold them back: the
+     * node runs the client connector on a factory of its own here, so a broken node-level one has a healthy provider
+     * beside it.
      */
     @Test
     public void testFailingFactoryReportedPerComponent() throws Exception {
@@ -249,20 +259,22 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         IgniteEx g = startGrid(0);
 
-        X509Certificate certBefore = servedCertificate(clientConnectorPort(g));
+        X509Certificate discoCertBefore = servedCertificate(discoveryPort(g));
+        X509Certificate cliCertBefore = servedCertificate(clientConnectorPort(g));
+
+        copyKeyStore("node02");
 
         FAIL_RELOAD.set(true);
 
         // The whole chain, so that the assertions do not depend on how the compute framework wraps the failure.
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
-        assertContains(log, res, "would fail on " + COMMUNICATION + ", " + DISCOVERY);
+        assertContains(log, res, "failed on " + COMMUNICATION + ", " + DISCOVERY);
         assertContains(log, res, FAILURE_MSG);
+        assertContains(log, res, "reloaded " + CLIENT_CONNECTOR);
 
-        // The provider that could rebuild is reported as such, next to the one that could not.
-        assertContains(log, res, "can be reloaded " + CLIENT_CONNECTOR);
-
-        assertKept("A failed reload", certBefore, servedCertificate(clientConnectorPort(g)));
+        assertKept("A factory that failed", discoCertBefore, servedCertificate(discoveryPort(g)));
+        assertRotated("A factory beside the failed one", cliCertBefore, servedCertificate(clientConnectorPort(g)));
     }
 
     /**
@@ -282,7 +294,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null));
 
-        assertContains(log, res, "would fail on");
+        assertContains(log, res, "failed on");
         assertContains(log, res, COMMUNICATION);
         assertContains(log, res, DISCOVERY);
 
@@ -312,6 +324,43 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
             (Integer)1, g0.<Integer, Integer>cache(DEFAULT_CACHE_NAME).get(1));
     }
 
+    /** Every certificate put in use must be named in the node log, together with who asked for it. */
+    @Test
+    public void testReloadLogged() throws Exception {
+        LogListener lsnr = LogListener.matches("TLS certificates reloaded [transports=" + CLIENT_CONNECTOR + ", " +
+            COMMUNICATION + ", " + DISCOVERY + ", subject=CN=node02").andMatches("initiator=management command").build();
+
+        nodeLog.registerListener(lsnr);
+
+        IgniteEx g = startGrid(0);
+
+        copyKeyStore("node02");
+
+        reload(g);
+
+        assertTrue("The node log must name the certificate put in use", lsnr.check());
+    }
+
+    /** A reload that failed must leave its reason in the node log, not only in the answer to the command. */
+    @Test
+    public void testFailedReloadLogged() throws Exception {
+        trustStore = "trustone";
+
+        LogListener lsnr = LogListener.matches("Failed to reload TLS certificates, the ones in use stay [transports=" +
+            CLIENT_CONNECTOR + ", " + COMMUNICATION + ", " + DISCOVERY).andMatches("reason=").build();
+
+        nodeLog.registerListener(lsnr);
+
+        IgniteEx g = startGrid(0);
+
+        // node02 is issued by "twoca", which the "trust-one" store does not contain.
+        copyKeyStore("node02");
+
+        GridTestUtils.assertThrows(log, () -> reload(g), Exception.class, null);
+
+        assertTrue("The node log must name the reason a reload failed", lsnr.check());
+    }
+
     /** A dry run must accept a valid rotation and still leave the node on the certificate it is running. */
     @Test
     public void testDryRunAcceptsWithoutApplying() throws Exception {
@@ -325,11 +374,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         assertContains(log, res, "can be reloaded");
         assertContains(log, res, DISCOVERY);
-
-        // The point of a rehearsal is to see what one is about to get, so the report has to name the certificate
-        // on disk rather than the one still in use.
-        assertContains(log, res, "will serve CN=node02");
-        assertNotContains(log, res, "CN=node01");
+        assertNotContains(log, res, ": reloaded");
 
         assertKept("An accepted but not applied certificate", certBefore, servedCertificate(discoveryPort(g)));
     }
@@ -400,28 +445,9 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         SslReloadCommandArg arg = new SslReloadCommandArg();
 
         arg.dryRun(dryRun);
-        arg.token(UUID.randomUUID());
 
-        String prepared = run(arg, ids, nodes[0]);
-
-        if (dryRun)
-            return prepared;
-
-        // Both phases, the way the command drives them: prepare reports what would happen, commit puts it in use.
-        arg.commit(true);
-
-        return run(arg, ids, nodes[0]);
-    }
-
-    /**
-     * @param arg Argument carrying the phase.
-     * @param ids Nodes to run on.
-     * @param from Node to run from.
-     * @return Report of that phase.
-     */
-    private String run(SslReloadCommandArg arg, List<UUID> ids, IgniteEx from) throws Exception {
         // Over the whole cluster, as the command itself does: the default facade covers server nodes only.
-        VisorTaskResult<String> res = from.compute(from.cluster()).execute(SslReloadTask.class,
+        VisorTaskResult<String> res = nodes[0].compute(nodes[0].cluster()).execute(SslReloadTask.class,
             new VisorTaskArgument<>(ids, arg, false));
 
         return res.result();

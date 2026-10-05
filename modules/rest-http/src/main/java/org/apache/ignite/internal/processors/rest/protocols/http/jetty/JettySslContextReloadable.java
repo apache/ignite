@@ -21,10 +21,8 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.UUID;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
@@ -38,9 +36,6 @@ import org.jetbrains.annotations.Nullable;
  * first, and the context in use is pinned back if the rebuild fails regardless.
  */
 public class JettySslContextReloadable implements SslContextReloadable {
-    /** Attempt whose check this connector passed, {@code null} when there is nothing prepared. */
-    private volatile UUID prepared;
-
     /** SSL factory of the running connector. */
     private final SslContextFactory.Server sslCtxFactory;
 
@@ -56,56 +51,18 @@ public class JettySslContextReloadable implements SslContextReloadable {
         return Collections.singleton(SslContextReloadable.HTTP_REST);
     }
 
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Jetty rebuilds its context in place, so nothing can be held aside here: this checks the stores and remembers
-     * that they were readable. The connector is therefore the one place a rotation can still stop half way, which
-     * is bounded — it takes no part in the traffic between nodes.
-     */
-    @Override public boolean prepare(UUID token) throws IgniteCheckedException {
-        // Dropped first, so that a check that throws leaves nothing behind that any attempt could still apply.
-        discard();
+    /** {@inheritDoc} */
+    @Override public boolean check() throws IgniteCheckedException {
+        if (!rebuildable())
+            return false;
 
-        boolean rebuildable = rebuildable();
+        verifyStores();
 
-        if (rebuildable)
-            verifyStores();
-
-        // Remembered even when there is nothing to re-read, so that the second phase reports a connector handed a
-        // ready-made context as having nothing to apply, rather than as one this attempt never reached.
-        prepared = token;
-
-        return rebuildable;
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public Commit commit(UUID token) {
-        UUID prepared0 = prepared;
-
-        if (prepared0 == null || !prepared0.equals(token))
-            return Commit.NOT_PREPARED;
-
-        discard();
-
-        try {
-            return reload() ? Commit.APPLIED : Commit.NOTHING_TO_APPLY;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void discard() {
-        prepared = null;
-    }
-
-    /**
-     * @return {@code True} if the connector now serves a rebuilt context.
-     * @throws IgniteCheckedException If it could not be rebuilt. The context in use is kept.
-     */
-    private boolean reload() throws IgniteCheckedException {
+    @Override public synchronized boolean reload() throws IgniteCheckedException {
         if (!rebuildable())
             return false;
 
