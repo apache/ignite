@@ -92,7 +92,7 @@ public class IgniteClusterSnapshotDeleteTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Parameter(2)
-    public boolean incremental = true;
+    public boolean incremental;
 
     /** */
     private @Nullable String cstIdSuffix;
