@@ -174,6 +174,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /** Default disk page compression algorithm. */
     public static final DiskPageCompression DFLT_DISK_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
 
+    /** Error message template for configuring query entities through both setIndexedTypes and setQueryEntities. */
+    public static final String MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE =
+        "Query entities can be configured either with setIndexedTypes or setQueryEntities, but not both [cacheName=%s]";
+
     /** Cache name. */
     private String name;
 
@@ -1938,12 +1942,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * To expose fields of these types onto SQL level and to index them you have to use annotations
      * from package {@link org.apache.ignite.cache.query.annotations}.
      * <p>
-     * This method must not be used together with {@link #setQueryEntities(Collection)}.
+     * This method must not be used together with {@link #setQueryEntities}.
      * Repeated calls replace the indexed types, query entities and key configuration configured by the previous call.
      *
      * @param indexedTypes Key and value type pairs.
      * @return {@code this} for chaining.
-     * @throws CacheException If query entities have already been configured through {@link #setQueryEntities(Collection)}.
+     * @throws CacheException If query entities have already been configured through {@link #setQueryEntities}.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
         if (F.isEmpty(indexedTypes))
@@ -2080,12 +2084,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
     /**
      * Sets query entities configuration.
      * <p>
-     * This method must not be used together with {@link #setIndexedTypes(Class[])}.
+     * This method must not be used together with {@link #setIndexedTypes}.
      * Repeated calls replace the query entities configured by the previous call.
      *
      * @param qryEntities Query entities.
      * @return {@code this} for chaining.
-     * @throws CacheException If query entities have already been configured through {@link #setIndexedTypes(Class[])}.
+     * @throws CacheException If query entities have already been configured through {@link #setIndexedTypes}.
      */
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
         checkQueryEntityConfigurationSource(QueryEntityConfigurationSource.QUERY_ENTITIES);
@@ -2101,7 +2105,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * Clears query entities.
      * <p>
      * Calling this method does not reset the API used to configure query entities and does not allow switching between
-     * {@link #setIndexedTypes(Class[])} and {@link #setQueryEntities(Collection)}.
+     * {@link #setIndexedTypes} and {@link #setQueryEntities}.
      *
      * @return {@code this} for chaining.
      */
@@ -2487,10 +2491,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /** */
     private void checkQueryEntityConfigurationSource(QueryEntityConfigurationSource src) {
-        if (qryEntityCfgSrc != null && qryEntityCfgSrc != src) {
-            throw new CacheException("Query entities can be configured either with setIndexedTypes or setQueryEntities, " +
-                "but not both [cacheName=" + name + ']');
-        }
+        if (qryEntityCfgSrc != null && qryEntityCfgSrc != src)
+            throw new CacheException(String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, name));
     }
 
     /** API used to configure query entities. */
