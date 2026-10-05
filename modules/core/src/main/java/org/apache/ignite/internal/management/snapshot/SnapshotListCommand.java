@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.sql.Date;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
@@ -38,9 +39,13 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     /** */
     public static final String NODE_PREF = "Node ";
 
-    /**
-     * {@inheritDoc}
-     */
+    /** */
+    private static final String PATTERN_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
+
+    /** */
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(PATTERN_FORMAT).withZone(ZoneId.systemDefault());
+
+    /** {@inheritDoc} */
     @Override public String description() {
         return DESC;
     }
@@ -67,23 +72,40 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
             SnapshotListJobResult nodeSnps = res.snapshots()[n];
 
-            if(nodeSnps.snapshotNames().length==0) {
+            if (nodeSnps.snapshotNames().length == 0) {
                 printer.accept("\t\t" + NO_SNAPSHOTS);
 
                 continue;
             }
 
-            for (int s = 0; s < nodeSnps.snapshotNames().length; s++) {
-                String name = nodeSnps.snapshotNames()[s];
-                long size = nodeSnps.sizes()[s];
-                long epochTime = nodeSnps.creationTimes()[s];
+            for (int snpIdx = 0; snpIdx < nodeSnps.snapshotNames().length; snpIdx++) {
+                String name = nodeSnps.snapshotNames()[snpIdx];
+                long size = nodeSnps.sizes()[snpIdx];
+                long dateLong = nodeSnps.creationTimes()[snpIdx];
 
-                printer.accept("\t\tSnapshot '%s' [size=%s (%db), created='%s' (epochSeconds=%d)]".formatted(
+                printer.accept("\t\tSnapshot '%s': size=%s (%db), created='%s' (epoch=%d)".formatted(
                     name,
                     U.humanReadableByteCount(size),
                     size,
-                    Date.from(Instant.ofEpochSecond(epochTime)).toString(),
-                    epochTime
+                    DATE_FORMATTER.format(Instant.ofEpochMilli(dateLong)),
+                    dateLong
+                ));
+
+                // Also incremental snapshots exist.
+                if (nodeSnps.incrementalsCount()[snpIdx] == 0)
+                    continue;
+
+                // Also incremental snapshots exist.
+                int cnt = nodeSnps.incrementalsCount()[snpIdx];
+                size = nodeSnps.incrementalsSizes()[snpIdx];
+                dateLong = nodeSnps.creationTimes()[snpIdx];
+
+                printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s (%db), modified='%s' (epoch=%d)".formatted(
+                    cnt,
+                    U.humanReadableByteCount(size),
+                    size,
+                    DATE_FORMATTER.format(Instant.ofEpochMilli(dateLong)),
+                    dateLong
                 ));
             }
         }

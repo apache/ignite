@@ -28,6 +28,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommand;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,6 +41,7 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
@@ -65,10 +67,10 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(false, true), // Use custom snapshot path
-            F.asList(false, true), // Separated (own) work directory
-            F.asList(false, true), // Add server node
-            F.asList(2) // TODO : Number of incremental snapshots
+            F.asList(false, true), // Custom snapshot path
+            F.asList(false, true), // Separated (own) work directories
+            F.asList(false, true), // Add a server node after the snapshot creation
+            F.asList(0, 2) // Number of incremental snapshots
         );
     }
 
@@ -115,27 +117,43 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** */
     @Test
     public void testNoSnapshots() throws Exception {
-        doTestSnapshotsLists(0);
+        // Doesn't matter here.
+        assumeFalse(incCnt > 0 || addExtraSrvr);
+
+        doTestSnapshotsLists(0, false);
     }
 
     /** */
     @Test
     public void testSingleSnapshot() throws Exception {
-        doTestSnapshotsLists(1);
+        doTestSnapshotsLists(1, false);
     }
 
     /** */
     @Test
     public void testSeveralSnapshots() throws Exception {
-        doTestSnapshotsLists(4);
+        doTestSnapshotsLists(4, false);
     }
 
     /** */
-    private void doTestSnapshotsLists(int snpCnt) throws Exception {
+    @Test
+    public void testSeveralSnapshotsOneNodeMisses() throws Exception {
+        // Doesn't matter here.
+        assumeFalse(incCnt > 0);
+
+        doTestSnapshotsLists(2, true);
+    }
+
+    /** */
+    private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode) throws Exception {
+        assert !deleteOnOneNode || snpCnt > 0;
+
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeTrue(!customPath || !separatedWorkDir);
-
+        // Let's make just one node doesn't see the snapshot.
+        assumeTrue(!deleteOnOneNode || separatedWorkDir);
+        // No need to create incremental snapshots if no snapshots are required at all.
         assumeTrue(incCnt < 1 || snpCnt > 0);
 
         int srvrsCnt = 3;
@@ -151,23 +169,38 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             ? new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
             : null;
 
+        // Flag if 'testSnapshot0' deleted on node0.
+        boolean grid0HasNoSnp0 = false;
+
         // Create shapshots.
         if (snpCnt > 0) {
-            createCacheAndPreload(ig, 10);
+            createCacheAndPreload(ig, entriesCnt);
 
-            for (int s = 0; s < snpCnt; ++s) {
-                snp(ig).createSnapshot("testSnapshot" + s, customPath ? cstSnpsRoot.getAbsolutePath() : null, false, false)
-                    .get(getTestTimeout());
+            String path = null;
 
-                for (int i = 0; i < incCnt; ++i) {
+            for (int snpIdx = 0; snpIdx < snpCnt; snpIdx++) {
+                path = customPath ? cstSnpsRoot.getAbsolutePath() : null;
+
+                snp(ig).createSnapshot("testSnapshot" + snpIdx, path, false, false).get(getTestTimeout());
+
+                for (int incIdx = 0; incIdx < incCnt; incIdx++) {
                     try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-                        for (int k = (i + 1) * entriesCnt; k < (i + 2) * entriesCnt; ++k)
-                            ds.addData(k, k);
+                        for (int val = (snpIdx + incIdx + 1) * entriesCnt; val < (snpIdx + incIdx + 2) * entriesCnt; val++)
+                            ds.addData(val, val);
                     }
 
-                    snp(ig).createSnapshot("testSnapshot" + s, customPath ? cstSnpsRoot.getAbsolutePath() : null, true, false)
-                        .get(getTestTimeout());
+                    snp(ig).createSnapshot("testSnapshot" + snpIdx, path, true, false).get(getTestTimeout());
                 }
+            }
+
+            if (deleteOnOneNode) {
+                SnapshotFileTree sft = new SnapshotFileTree(grid(0).context(), "testSnapshot0", path);
+
+                assertTrue(sft.root().exists());
+                assertTrue(U.delete(sft.root()));
+                assertFalse(sft.root().exists());
+
+                grid0HasNoSnp0 = true;
             }
         }
 
@@ -212,13 +245,20 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         );
 
         // Find the snapshots in the output.
-        for (int i = 0; i < snpCnt; ++i)
-            assertEquals(snpsRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + i + "'"));
+        for (int snpIdx = 0; snpIdx < snpCnt; snpIdx++) {
+            // 'testSnapshot0' has fewer records if was deleted on one node.
+            int certainSnpRecordsCnt = snpIdx == 0 && grid0HasNoSnp0
+                ? snpsRecordsCnt - 1
+                : snpsRecordsCnt;
+
+            assertEquals(certainSnpRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + snpIdx + "'"));
+
+            for (int i = 0; i < incCnt; i++)
+                assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "incremental snapshots: cnt=" + incCnt));
+        }
     }
 
-    /**
-     * Counts occurrences of the node prefix in the output.
-     */
+    /** Counts occurrences of the node prefix in the output. */
     private int countNodeOccurrences(String output) {
         int cnt = 0;
         int idx = 0;
@@ -237,6 +277,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         txt = txt.replaceAll(entry, "");
 
-        return  (prev.length() - txt.length()) / entry.length();
+        return (prev.length() - txt.length()) / entry.length();
     }
 }

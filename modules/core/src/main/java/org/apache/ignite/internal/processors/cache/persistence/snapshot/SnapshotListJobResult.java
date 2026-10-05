@@ -26,25 +26,29 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Snapshot names. */
     @Order(0)
-    String[] snpNames;
+    String[] snpName;
 
-    /** */
+    /** Snapshot sizes. */
     @Order(1)
-    long[] sizes;
+    long[] sz;
 
-    /** */
+    /** Creation times. */
     @Order(2)
-    long[] creationTimes;
+    long[] creationTime;
 
-    /** */
+    /** Last modified times. Actual if {@link #incCnt}[n] > 0. */
     @Order(3)
+    long[] editTime;
+
+    /** Numbers of related incremental snapshots. */
+    @Order(4)
     int[] incCnt;
 
-    /** */
-    @Order(4)
-    long[] incSizes;
+    /** Total sizes of related incremental snapshots. */
+    @Order(5)
+    long[] incSize;
 
     /** Default constructor for serialization purposes. */
     public SnapshotListJobResult() {
@@ -52,27 +56,33 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public SnapshotListJobResult(String[] snpNames, long[] sizes, long[] creationTimes, int[] incCnt, long[] incSizes) {
-        this.snpNames = snpNames;
-        this.sizes = sizes;
-        this.creationTimes = creationTimes;
+    public SnapshotListJobResult(String[] name, long[] sz, long[] createTime, long[] editTime, int[] incCnt, long[] incSize) {
+        this.snpName = name;
+        this.sz = sz;
+        this.creationTime = createTime;
+        this.editTime = editTime;
         this.incCnt = incCnt;
-        this.incSizes = incSizes;
+        this.incSize = incSize;
     }
 
     /** */
     public String[] snapshotNames() {
-        return snpNames;
+        return snpName;
     }
 
     /** */
     public long[] sizes() {
-        return sizes;
+        return sz;
     }
 
     /** */
     public long[] creationTimes() {
-        return creationTimes;
+        return creationTime;
+    }
+
+    /** */
+    public long[] editTimes() {
+        return editTime;
     }
 
     /** */
@@ -82,6 +92,6 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
 
     /** */
     public long[] incrementalsSizes() {
-        return incSizes;
+        return incSize;
     }
 }
