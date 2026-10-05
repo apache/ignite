@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
+import org.jetbrains.annotations.Nullable;
 
 /** Accumulated result of {@link SnapshotListTask}. */
 public final class SnapshotListJobResult extends IgniteDataTransferObject {
@@ -32,23 +33,27 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
 
     /** Snapshot sizes. */
     @Order(1)
-    long[] sz;
+    long[] size;
 
     /** Creation times. */
     @Order(2)
     long[] creationTime;
 
-    /** Last modified times. Actual if {@link #incCnt}[n] > 0. */
-    @Order(3)
-    long[] editTime;
-
     /** Numbers of related incremental snapshots. */
-    @Order(4)
+    @Order(3)
     int[] incCnt;
 
-    /** Total sizes of related incremental snapshots. */
-    @Order(5)
+    /** Total sizes of incremental snapshots. */
+    @Order(4)
     long[] incSize;
+
+    /** Last modified times. Actual if {@link #incCnt}[n] > 0. */
+    @Order(5)
+    long[] editTime;
+
+    /** Total sizes of external-storage snapshots. */
+    @Order(6)
+    long[] extSize;
 
     /** Default constructor for serialization purposes. */
     public SnapshotListJobResult() {
@@ -56,13 +61,24 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public SnapshotListJobResult(String[] name, long[] sz, long[] createTime, long[] editTime, int[] incCnt, long[] incSize) {
-        this.snpName = name;
-        this.sz = sz;
-        this.creationTime = createTime;
-        this.editTime = editTime;
+    public SnapshotListJobResult(
+        String[] name,
+        long[] size,
+        long[] createTime,
+        @Nullable int[] incCnt,
+        @Nullable long[] incSize,
+        @Nullable long[] editTime,
+        @Nullable long[] extSize
+    ) {
+        snpName = name;
+        this.size = size;
+        creationTime = createTime;
+
         this.incCnt = incCnt;
         this.incSize = incSize;
+        this.editTime = editTime;
+
+        this.extSize = extSize;
     }
 
     /** */
@@ -72,7 +88,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
 
     /** */
     public long[] sizes() {
-        return sz;
+        return size;
     }
 
     /** */
@@ -81,17 +97,22 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public long[] editTimes() {
-        return editTime;
-    }
-
-    /** */
-    public int[] incrementalsCount() {
+    public @Nullable int[] incrementalsCount() {
         return incCnt;
     }
 
     /** */
-    public long[] incrementalsSizes() {
+    public @Nullable long[] incrementalsSizes() {
         return incSize;
+    }
+
+    /** */
+    public @Nullable long[] editTimes() {
+        return editTime;
+    }
+
+    /** */
+    public @Nullable long[] externalSizes() {
+        return extSize;
     }
 }

@@ -49,6 +49,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 @GridInternal
@@ -155,25 +156,27 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             String[] snpNames;
             long[] sizes;
             long[] creationTimes;
-            long[] editTimes;
-            int[] incCnts;
-            long[] incSizes;
+
+            int[] incCnts = null;
+            long[] incSizes = null;
+            long[] editTimes = null;
+
+            long[] extSizes = null;
 
             try {
-                File resolvedPath = new SnapshotFileTree(ignite.context(), "snpName", arg.src()).root().getParentFile()
+                File readMetasDir = new SnapshotFileTree(ignite.context(), "snpName", arg.src()).root().getParentFile()
                     .getCanonicalFile();
 
                 List<T2<SnapshotFileTree, Long>> locSnps = readMetas(
-                    resolvedPath,
-                    snpMgr.localSnapshotNames(resolvedPath.getAbsolutePath())
+                    arg.src(),
+                    snpMgr.localSnapshotNames(readMetasDir.getAbsolutePath())
                 );
 
                 snpNames = new String[locSnps.size()];
                 sizes = new long[locSnps.size()];
                 creationTimes = new long[locSnps.size()];
-                editTimes = new long[locSnps.size()];
-                incCnts = new int[locSnps.size()];
-                incSizes = new long[locSnps.size()];
+
+                extSizes = new long[locSnps.size()];
 
                 for (int s = 0; s < locSnps.size(); s++) {
                     SnapshotFileTree sft = locSnps.get(s).get1();
@@ -186,6 +189,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                     // Found incremental snapshots.
                     if (incRes.get1() > 0) {
+                        if (incCnts == null) {
+                            incCnts = new int[locSnps.size()];
+                            incSizes = new long[locSnps.size()];
+                            editTimes = new long[locSnps.size()];
+                        }
+
                         incCnts[s] = incRes.get1();
                         incSizes[s] = incRes.get2();
                         editTimes[s] = incRes.get3();
@@ -196,18 +205,18 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
             }
 
-            return new SnapshotListJobResult(snpNames, sizes, creationTimes, editTimes, incCnts, incSizes);
+            return new SnapshotListJobResult(snpNames, sizes, creationTimes, incCnts, incSizes, editTimes, extSizes);
         }
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
-        private List<T2<SnapshotFileTree, Long>> readMetas(File path, List<String> folderNames) {
+        private List<T2<SnapshotFileTree, Long>> readMetas(@Nullable String customSnpRoot, List<String> folderNames) {
             List<T2<SnapshotFileTree, Long>> res = new ArrayList<>(folderNames.size());
 
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             folderNames.forEach(fn -> {
                 // Snapshot tree being used as a path, to read the metas only.
-                SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), fn, path.getAbsolutePath());
+                SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), fn, customSnpRoot);
 
                 List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(sft, false);
 
@@ -218,7 +227,14 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         .orElse(new SnapshotMetadata());
 
                     // Real, meta-based snapshot file tree. Can belong to other cluster, other baseline.
-                    sft = new SnapshotFileTree(ignite.context(), fn, path.getAbsolutePath(), snpMeta.folderName(), snpMeta.consistentId());
+                    sft = new SnapshotFileTree(
+                        ignite.configuration(),
+                        ignite.context().pdsFolderResolver().fileTree(),
+                        fn,
+                        customSnpRoot,
+                        snpMeta.folderName(),
+                        snpMeta.consistentId()
+                    );
 
                     res.add(new T2<>(sft, snpMeta.snapshotTime()));
                 }

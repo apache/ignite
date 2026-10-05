@@ -25,6 +25,7 @@ import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommand;
@@ -32,7 +33,9 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Snapshot
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
@@ -46,6 +49,9 @@ import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
 public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstractTest {
+    /** Extra storage path. */
+    private static final String EXT_STORAGE_PATH = "extStorage";
+
     /** */
     @Parameter(1)
     public boolean customPath;
@@ -61,6 +67,12 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** */
     @Parameter(4)
     public int incCnt;
+
+    /** */
+    private boolean extraStorages;
+
+    /** */
+    private @Nullable String[] extStoragePaths;
 
     /** */
     @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3},incCnt={4}")
@@ -106,10 +118,24 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (separatedWorkDir)
-            cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
+        String workDir = separatedWorkDir
+            ? new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath()
+            : U.defaultWorkDirectory();
+
+        cfg.setWorkDirectory(workDir);
 
         cfg.getDataStorageConfiguration().setWalCompactionEnabled(incCnt > 0);
+
+        if (extraStorages) {
+            cfg.getDataStorageConfiguration().setExtraStoragePaths(
+                workDir + File.separator,
+                workDir + File.separator + EXT_STORAGE_PATH
+            );
+
+            extStoragePaths = cfg.getDataStorageConfiguration().getExtraStoragePaths();
+
+            cfg.getDataStorageConfiguration().setExtraSnapshotPaths("", EXT_STORAGE_PATH);
+        }
 
         return cfg;
     }
@@ -145,16 +171,16 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     }
 
     /** */
-    private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode) throws Exception {
-        assert !deleteOnOneNode || snpCnt > 0;
+    @Test
+    public void testExtraStorages() throws Exception {
+        extraStorages = true;
 
-        // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
-        // work directories are set.
-        assumeTrue(!customPath || !separatedWorkDir);
-        // Let's make just one node doesn't see the snapshot.
-        assumeTrue(!deleteOnOneNode || separatedWorkDir);
-        // No need to create incremental snapshots if no snapshots are required at all.
-        assumeTrue(incCnt < 1 || snpCnt > 0);
+        doTestSnapshotsLists(2, false);
+    }
+
+    /** */
+    private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode) throws Exception {
+        filterTests(snpCnt, deleteOnOneNode, extraStorages);
 
         int srvrsCnt = 3;
         int entriesCnt = 20;
@@ -165,23 +191,23 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         ig.cluster().state(ACTIVE);
 
-        File cstSnpsRoot = customPath
+        File snpsRootFile = customPath
             ? new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
             : null;
 
         // Flag if 'testSnapshot0' deleted on node0.
-        boolean grid0HasNoSnp0 = false;
+        boolean grid0HasNoSnapshot0 = false;
 
         // Create shapshots.
         if (snpCnt > 0) {
             createCacheAndPreload(ig, entriesCnt);
 
-            String path = null;
+            String absPathStr = null;
 
             for (int snpIdx = 0; snpIdx < snpCnt; snpIdx++) {
-                path = customPath ? cstSnpsRoot.getAbsolutePath() : null;
+                absPathStr = customPath ? snpsRootFile.getAbsolutePath() : null;
 
-                snp(ig).createSnapshot("testSnapshot" + snpIdx, path, false, false).get(getTestTimeout());
+                snp(ig).createSnapshot("testSnapshot" + snpIdx, absPathStr, false, false).get(getTestTimeout());
 
                 for (int incIdx = 0; incIdx < incCnt; incIdx++) {
                     try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
@@ -189,18 +215,18 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
                             ds.addData(val, val);
                     }
 
-                    snp(ig).createSnapshot("testSnapshot" + snpIdx, path, true, false).get(getTestTimeout());
+                    snp(ig).createSnapshot("testSnapshot" + snpIdx, absPathStr, true, false).get(getTestTimeout());
                 }
             }
 
             if (deleteOnOneNode) {
-                SnapshotFileTree sft = new SnapshotFileTree(grid(0).context(), "testSnapshot0", path);
+                SnapshotFileTree sft = new SnapshotFileTree(grid(0).context(), "testSnapshot0", absPathStr);
 
                 assertTrue(sft.root().exists());
                 assertTrue(U.delete(sft.root()));
                 assertFalse(sft.root().exists());
 
-                grid0HasNoSnp0 = true;
+                grid0HasNoSnapshot0 = true;
             }
         }
 
@@ -213,7 +239,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // Requests snapshots.
         if (customPath) {
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list", "--src",
-                cstSnpsRoot.getAbsolutePath()));
+                snpsRootFile.getAbsolutePath()));
         }
         else
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list"));
@@ -247,7 +273,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // Find the snapshots in the output.
         for (int snpIdx = 0; snpIdx < snpCnt; snpIdx++) {
             // 'testSnapshot0' has fewer records if was deleted on one node.
-            int certainSnpRecordsCnt = snpIdx == 0 && grid0HasNoSnp0
+            int certainSnpRecordsCnt = snpIdx == 0 && grid0HasNoSnapshot0
                 ? snpsRecordsCnt - 1
                 : snpsRecordsCnt;
 
@@ -256,6 +282,41 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             for (int i = 0; i < incCnt; i++)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "incremental snapshots: cnt=" + incCnt));
         }
+    }
+
+
+
+    /** */
+    @Override protected CacheConfiguration<?, ?> testCacheConfiguration(
+        String cacheName,
+        int partitions,
+        @Nullable IgnitePredicate<ClusterNode> filter
+    ) {
+        CacheConfiguration<?, ?> ccfg = super.testCacheConfiguration(cacheName, partitions, filter);
+
+        if (extraStorages)
+            ccfg.setStoragePaths(extStoragePaths);
+
+        return ccfg;
+    }
+
+    /** */
+    private void filterTests(int snpCnt, boolean deleteOnOneNode, boolean extraStorages) {
+        assert !deleteOnOneNode || snpCnt > 0;
+        assert !extraStorages || snpCnt > 0;
+
+        // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
+        // work directories are set.
+        assumeFalse(customPath && separatedWorkDir);
+
+        // Let's keep just one node doesn't see the snapshot.
+        assumeTrue(!deleteOnOneNode || separatedWorkDir);
+
+        // No need to create incremental snapshots if no snapshots are required at all.
+        assumeTrue(incCnt < 1 || snpCnt > 0);
+
+        // TODO: comment
+        assumeFalse(extraStorages && separatedWorkDir);
     }
 
     /** Counts occurrences of the node prefix in the output. */

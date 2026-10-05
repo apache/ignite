@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** Snapshot list command. */
 public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCommandArg, SnapshotListTaskResult> {
     /** */
-    public static final String HEADER = "Snapshots lists on the following nodes:";
+    public static final String HEADER = "Snapshots found on the following nodes:";
 
     /** */
     public static final String DESC = "Lists all snapshots on all online server nodes with their sizes";
@@ -64,13 +64,13 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     @Override public void printResult(SnapshotListCommandArg arg, SnapshotListTaskResult res, Consumer<String> printer) {
         printer.accept(HEADER);
 
-        for (int n = 0; n < res.nodesIds().length; n++) {
+        for (int nodeIdx = 0; nodeIdx < res.nodesIds().length; nodeIdx++) {
             // Skip line before node.
             printer.accept("");
 
-            printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[n], res.nodesIds()[n]));
+            printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
 
-            SnapshotListJobResult nodeSnps = res.snapshots()[n];
+            SnapshotListJobResult nodeSnps = res.snapshots()[nodeIdx];
 
             if (nodeSnps.snapshotNames().length == 0) {
                 printer.accept("\t\t" + NO_SNAPSHOTS);
@@ -92,7 +92,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 ));
 
                 // Also incremental snapshots exist.
-                if (nodeSnps.incrementalsCount()[snpIdx] == 0)
+                if (nodeSnps.incrementalsCount() == null)
                     continue;
 
                 // Also incremental snapshots exist.
