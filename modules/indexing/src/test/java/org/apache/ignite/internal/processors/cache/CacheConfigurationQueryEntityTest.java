@@ -364,6 +364,66 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
         );
     }
 
+    /** Verifies that empty or null indexed types cannot be configured after explicit query entities. */
+    @Test
+    public void testEmptySetIndexedTypesAfterSetQueryEntitiesFails() {
+        for (Class<?>[] indexedTypes : new Class<?>[][] {new Class<?>[0], null}) {
+            CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
+                .setQueryEntities(Collections.singleton(configuredEntity(Person.class)));
+
+            assertThrows(
+                log,
+                () -> ccfg.setIndexedTypes(indexedTypes),
+                CacheException.class,
+                String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
+            );
+        }
+    }
+
+    /** Verifies that configuring empty or null indexed types prevents switching to explicit query entities. */
+    @Test
+    public void testSetQueryEntitiesAfterEmptySetIndexedTypesFails() {
+        for (Class<?>[] indexedTypes : new Class<?>[][] {new Class<?>[0], null}) {
+            CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
+                .setIndexedTypes(indexedTypes);
+
+            assertThrows(
+                log,
+                () -> ccfg.setQueryEntities(Collections.singleton(configuredEntity(Person.class))),
+                CacheException.class,
+                String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
+            );
+        }
+    }
+
+    /** Verifies that an empty query entities collection cannot be configured after indexed types. */
+    @Test
+    public void testEmptySetQueryEntitiesAfterSetIndexedTypesFails() {
+        CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
+            .setIndexedTypes(Integer.class, Person.class);
+
+        assertThrows(
+            log,
+            () -> ccfg.setQueryEntities(Collections.emptyList()),
+            CacheException.class,
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
+        );
+    }
+
+    /** Verifies that configuring an empty query entities collection prevents switching to indexed types. */
+    @Test
+    public void testSetIndexedTypesAfterEmptySetQueryEntitiesFails() {
+        CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
+            .setQueryEntities(Collections.emptyList());
+
+        assertThrows(
+            log,
+            () -> ccfg.setIndexedTypes(Integer.class, Person.class),
+            CacheException.class,
+            String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, CACHE_NAME)
+        );
+    }
+
     /** Verifies that clearing query entities does not prevent configuring them again through the same API. */
     @Test
     public void testSetQueryEntitiesCanBeUsedAfterClearQueryEntities() {

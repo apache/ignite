@@ -258,6 +258,17 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         Class<K> clsK,
         Class<V> clsV
     ) {
+        return jcacheWithSpecifiedName(ig, cfg, clsK, clsV, clsK.getSimpleName() + "-" + clsV.getSimpleName());
+    }
+
+    /** */
+    private <K, V> IgniteCache<K, V> jcacheWithSpecifiedName(
+        Ignite ig,
+        CacheConfiguration cfg,
+        Class<K> clsK,
+        Class<V> clsV,
+        String cacheName
+    ) {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(cfg);
 
         List<QueryEntity> entities = new ArrayList<>(ccfg.getQueryEntities());
@@ -273,7 +284,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         ccfg.setQueryEntities(entities);
 
-        return jcache(ig, ccfg, clsK.getSimpleName() + "-" + clsV.getSimpleName());
+        ccfg.setName(cacheName);
+
+        return ig.getOrCreateCache(ccfg);
     }
 
     /**
@@ -1253,9 +1266,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     public void testPaginationIteratorDefaultCache() throws Exception {
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration();
-        ccfg.setName(DEFAULT_CACHE_NAME);
 
-        testPaginationIterator(jcache(ignite(), ccfg, Integer.class, Integer.class));
+        testPaginationIterator(jcacheWithSpecifiedName(ignite(), ccfg, Integer.class, Integer.class, DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -1298,9 +1310,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
     @Test
     public void testPaginationGetDefaultCache() throws Exception {
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration();
-        ccfg.setName(DEFAULT_CACHE_NAME);
 
-        testPaginationGet(jcache(ignite(), ccfg, Integer.class, Integer.class));
+        testPaginationGet(jcacheWithSpecifiedName(ignite(), ccfg, Integer.class, Integer.class, DEFAULT_CACHE_NAME));
     }
 
     /**
