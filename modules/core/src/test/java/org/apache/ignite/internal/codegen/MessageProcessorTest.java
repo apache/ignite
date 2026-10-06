@@ -768,8 +768,6 @@ public class MessageProcessorTest {
         checkDescription("TestMarshalledMapMessage");
         checkDescription("TestJdkMarshalledChildMessage", "TestJdkMarshalledMessage.java");
         checkDescription("TestRollingUpgradeAwareMessage", "TestFeatureRegistry.java");
-        checkDescription("TestEnumSetMessage");
-        checkDescription("CustomMapperEnumFieldsMessage", "TransactionIsolationEnumMapper.java");
 
         // Wildcards and a nested class in the types; the logical fields go in the order of their types, then names.
         checkDescription("TestWildcardFieldsMessage");
@@ -781,6 +779,23 @@ public class MessageProcessorTest {
         assertEquals(1, checkDescription("ChildMessage", "AbstractMessage.java").size());
     }
 
+    /** Verifies the descriptions of the enums, which message fields refer to: the constants are described as the fields. */
+    @Test
+    public void testEnumDescriptions() {
+        String path = "enums/" + TransactionIsolation.class.getName() + ".json";
+        String exp = content(javaFile("wire/TransactionIsolation.json"));
+
+        // An enum nested into an EnumSet and into a value of a Map.
+        assertEquals(exp, checkDescription("TestEnumSetMessage").get(path));
+
+        // An enum shared by messages is described once.
+        Map<String, String> files = checkDescription("CustomMapperEnumFieldsMessage", "CustomMapperEnumFieldsSecondMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertEquals(exp, files.get(path));
+        assertEquals(3, files.size());
+    }
+
     /** Verifies that compiling the same sources twice gives the same descriptions. */
     @Test
     public void testDescriptionsAreDeterministic() {
@@ -788,7 +803,7 @@ public class MessageProcessorTest {
 
         Map<String, String> files = wireFiles(compile(srcs));
 
-        assertEquals(3, files.size());
+        assertEquals(4, files.size());
         assertEquals(files, wireFiles(compile(srcs)));
     }
 

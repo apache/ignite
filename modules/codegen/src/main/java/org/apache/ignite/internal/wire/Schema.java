@@ -20,7 +20,7 @@ package org.apache.ignite.internal.wire;
 import java.util.List;
 
 /**
- * Class schema, independent of the output format.
+ * Class schema, independent of the output format: a message, or an enum with its constants as the fields.
  *
  * @param cls Binary name of the class.
  * @param annotations Class serialization annotations as they are written in the code.

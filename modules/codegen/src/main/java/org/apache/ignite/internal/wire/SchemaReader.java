@@ -20,16 +20,20 @@ package org.apache.ignite.internal.wire;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
@@ -84,6 +88,32 @@ public class SchemaReader {
     }
 
     /**
+     * @param fields Fields of a class.
+     * @return Schemas of the enums the types of the fields refer to: the constants of an enum are its fields.
+     */
+    public List<Schema> enums(List<VariableElement> fields) {
+        Set<TypeElement> enums = new LinkedHashSet<>();
+
+        for (VariableElement field : fields)
+            collectEnums(field.asType(), enums);
+
+        List<Schema> res = new ArrayList<>();
+
+        for (TypeElement enumEl : enums) {
+            List<FieldRepresentation> constants = new ArrayList<>();
+
+            for (Element el : enumEl.getEnclosedElements()) {
+                if (el.getKind() == ElementKind.ENUM_CONSTANT)
+                    constants.add(new FieldRepresentation(constants.size(), null, simpleName(el), List.of()));
+            }
+
+            res.add(new Schema(binaryName(enumEl), List.of(), constants));
+        }
+
+        return res;
+    }
+
+    /**
      * Takes the serialization annotations of an element as the compiler prints them, the way they are written in the code,
      * with no knowledge of what is inside. {@link Order} is skipped unless it sets more than the order, which is already
      * described by the position of a field.
@@ -104,6 +134,34 @@ public class SchemaReader {
         Collections.sort(res);
 
         return res;
+    }
+
+    /**
+     * Collects the enums {@code type} refers to: the type itself, an array component, a type argument or a bound of
+     * a wildcard or of a type variable of any depth.
+     */
+    private void collectEnums(TypeMirror type, Set<TypeElement> enums) {
+        if (type.getKind() == TypeKind.ARRAY)
+            collectEnums(((ArrayType)type).getComponentType(), enums);
+        else if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declared = (DeclaredType)type;
+
+            if (declared.asElement().getKind() == ElementKind.ENUM)
+                enums.add((TypeElement)declared.asElement());
+
+            declared.getTypeArguments().forEach(arg -> collectEnums(arg, enums));
+        }
+        else if (type.getKind() == TypeKind.WILDCARD) {
+            WildcardType wildcard = (WildcardType)type;
+
+            if (wildcard.getExtendsBound() != null)
+                collectEnums(wildcard.getExtendsBound(), enums);
+
+            if (wildcard.getSuperBound() != null)
+                collectEnums(wildcard.getSuperBound(), enums);
+        }
+        else if (type.getKind() == TypeKind.TYPEVAR)
+            collectEnums(env.getTypeUtils().erasure(type), enums);
     }
 
     /**

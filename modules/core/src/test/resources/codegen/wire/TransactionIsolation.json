@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.transactions.TransactionIsolation",
+  "fields": [
+    {"order": 0, "name": "READ_COMMITTED"},
+    {"order": 1, "name": "REPEATABLE_READ"},
+    {"order": 2, "name": "SERIALIZABLE"}
+  ]
+}

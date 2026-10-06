@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -30,8 +31,8 @@ import org.apache.ignite.internal.wire.SchemaReader;
 import org.apache.ignite.internal.wire.WireJsonWriter;
 
 /**
- * Generates JSON descriptions of the wire format of messages. The descriptions are written as resources next to the
- * compiled classes.
+ * Generates JSON descriptions of the wire format of messages and of the enums their fields refer to. The descriptions
+ * are written as resources next to the compiled classes.
  */
 public class MessageJsonGenerator implements MessageGenerator {
     /** Directory of the descriptions, relative to the class output. */
@@ -56,6 +57,15 @@ public class MessageJsonGenerator implements MessageGenerator {
     /** {@inheritDoc} */
     @Override public void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         write("messages/", reader.read(type, fields), type);
+
+        for (Schema enumSchema : reader.enums(fields)) {
+            try {
+                write("enums/", enumSchema, type);
+            }
+            catch (FilerException ignored) {
+                // An enum is shared by messages, while a resource is created only once per compilation.
+            }
+        }
     }
 
     /** {@inheritDoc} */
