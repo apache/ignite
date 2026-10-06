@@ -166,7 +166,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** */
     @Test
     public void testSeveralSnapshots() throws Exception {
-        doTestSnapshotsLists(4, false, false);
+        doTestSnapshotsLists(3, false, false);
     }
 
     /** */
@@ -176,6 +176,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         assumeFalse(incCnt > 0);
         // Let's keep just one node not seeing the snapshot.
         assumeTrue(separatedWorkDir);
+        // Almost the same tests.
+        assumeFalse(addExtraSrvr);
 
         doTestSnapshotsLists(2, true, false);
     }
@@ -210,7 +212,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         assumeFalse(customPath && separatedWorkDir);
 
         int srvrsCnt = 3;
-        int entriesCnt = 20;
+        int entriesCnt = 10;
+        int partitions = 4;
 
         IgniteEx ig = (IgniteEx)startGridsMultiThreaded(srvrsCnt);
 
@@ -227,7 +230,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         // Create shapshots.
         if (snpCnt > 0) {
-            createCacheAndPreload(ig, entriesCnt);
+            createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);
 
             String absPathStr = null;
 

@@ -30,7 +30,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -46,9 +48,9 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -158,37 +160,114 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             if (ignite.context().isStopping())
                 throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
 
-            Map<String, SnapshotListJobResult.SnapshotInfo> snpDescsRes;
+            // Read local snapshots.
+            List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
 
-            try {
-                List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
+            if (locSnps.isEmpty())
+                return new SnapshotListJobResult(Collections.emptyMap());
 
-                snpDescsRes = U.newHashMap(locSnps.size());
+            // Optional external storages descriptions (per snapshot name).
+            Map<String, SnapshotListJobResult.SnapshotInfo> extStors = new ConcurrentHashMap<>(locSnps.size(), 1.0f);
+            // Optional incremental parts descriptions (per snapshot name).
+            Map<String, SnapshotListJobResult.SnapshotInfo> incs = new ConcurrentHashMap<>(locSnps.size(), 1.0f);
 
-                for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
-                    SnapshotFileTree sft = locSnps.get(snpIdx).get1();
+            // Incremental parts and external storages futures.
+            List<Future<?>> futs = new ArrayList<>(locSnps.size() * 2);
+            // Names of snapshots of with read failures.
+            Set<String> failedSnps = ConcurrentHashMap.newKeySet(locSnps.size() / 2);
 
-                    SnapshotListJobResult.SnapshotInfo extStors = externalStorages(sft);
+            IgniteThreadPoolExecutor exec = ignite.context().pools().getSnapshotExecutorService();
 
-                    // Optiona incremental snapshots description.
-                    SnapshotListJobResult.SnapshotInfo incs = incrementals(sft);
+            // Optional descriptions of snapshot external storages and incremental parts.
+            for (T2<SnapshotFileTree, Long> snpPair : locSnps) {
+                SnapshotFileTree sft = snpPair.get1();
+                String snpName = sft.name();
 
-                    // Main snapshot description.
-                    SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
-                        calculateDirectorySize(sft.root()),
-                        locSnps.get(snpIdx).get2(),
-                        extStors,
-                        incs
-                    );
+                // Future for optional exernal storages.
+                Future<?> fut = exec.submit(() -> {
+                    try {
+                        SnapshotListJobResult.SnapshotInfo extDesc = externalStorages(sft);
 
-                    snpDescsRes.put(sft.name(), snpDesc);
+                        if (extDesc != null)
+                            extStors.put(snpName, extDesc);
+                    }
+                    catch (Throwable t) {
+                        // Skip snapshot in case on any failure.
+                        failedSnps.add(snpName);
+
+                        log.warning("Failed to read snapshot's extra storages, snapshot ignored [snpName=" + snpName + ']', t);
+                    }
+                });
+
+                futs.add(fut);
+
+                // Future for optional incremental parts.
+                fut = exec.submit(() -> {
+                    if (failedSnps.contains(snpName))
+                        return;
+
+                    try {
+                        SnapshotListJobResult.SnapshotInfo incDesc = incrementals(sft);
+
+                        if (incDesc != null)
+                            incs.put(snpName, incDesc);
+                    }
+                    catch (Throwable t) {
+                        // Skip snapshot in case on any failure.
+                        failedSnps.add(snpName);
+
+                        log.warning("Failed to read snapshot's incremental parts, snapshot ignored [snpName=" + snpName + ']', t);
+                    }
+                });
+
+                futs.add(fut);
+            }
+
+            // Wait for the snapshot optional description futures.
+            for (Future<?> fut : futs) {
+                try {
+                    fut.get();
+                }
+                catch (Throwable t) {
+                    // All the futures has internal exceptions being logged. No errors expected.
+                    throw new IgniteException("Failed to read local nodes snapshots.", t);
                 }
             }
-            catch (Exception e) {
-                throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
+
+            // Result snapshot descriptions.
+            Map<String, SnapshotListJobResult.SnapshotInfo> resMap = new ConcurrentHashMap<>(locSnps.size() - failedSnps.size(), 1.0f);
+
+            // Reduce results.
+            for (T2<SnapshotFileTree, Long> snpPair : locSnps) {
+                SnapshotFileTree sft = snpPair.get1();
+                String snpName = sft.name();
+
+                if (failedSnps.contains(snpName))
+                    continue;
+
+                long size;
+
+                try {
+                    size = calculateDirectorySize(sft.root());
+                }
+                catch (Exception e) {
+                    log.warning("Failed to calculate snapshot' size, snapshot ignored [snpName=" + snpName + ']', e);
+
+                    // Skip snapshot in case on any failure.
+                    continue;
+                }
+
+                SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
+                    size,
+                    snpPair.get2(),
+                    extStors.get(snpName),
+                    incs.get(snpName)
+                );
+
+                resMap.put(snpName, snpDesc);
             }
 
-            return new SnapshotListJobResult(snpDescsRes);
+            return new SnapshotListJobResult(resMap);
         }
 
         /** */
@@ -261,7 +340,8 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         res.add(snpDirRes);
                 }
                 catch (Exception e) {
-                    log.warning("Failed to calculate snapshot size, ignoring snapshot [path=" + snpPath + ']', e);
+                    // Skip snapshot in case on any failure.
+                    log.warning("Failed to read snapshot, snapshot ignored [path=" + snpPath + ']', e);
                 }
             });
 
@@ -269,49 +349,33 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Number, total size and last creation time of incremental snapshots. */
-        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws IOException {
+        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws Exception {
             File[] incs = sft.incrementsRoot().listFiles();
+
+            if (F.isEmpty(incs))
+                return null;
 
             int cnt = 0;
             long size = 0L;
             long createTime = 0L;
 
-            if (!F.isEmpty(incs)) {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-                int incIdx;
+            for (File incDir : incs) {
+                int incIdx = Integer.parseInt(incDir.getName());
 
-                for (File incDir : incs) {
-                    try {
-                        incIdx = Integer.parseInt(incDir.getName());
-                    }
-                    catch (NumberFormatException e) {
-                        log.warning("Failed to calculate incremental snapshot size, wrong folder name [name="
-                            + incDir.getName() + ']', e);
+                SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
 
-                        continue;
-                    }
+                IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
 
-                    SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
-                    IncrementalSnapshotMetadata incMeta;
+                size += calculateDirectorySize(incDir);
 
-                    try {
-                        incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
-                    }
-                    catch (Exception e) {
-                        log.warning("Failed to calculate incremental snapshot size, unable to read the metadata [name="
-                            + incDir.getName() + ']', e);
+                cnt++;
 
-                        continue;
-                    }
-
-                    cnt++;
-                    size += calculateDirectorySize(incDir);
-                    createTime = Math.max(createTime, incMeta.snapshotTime());
-                }
+                createTime = Math.max(createTime, incMeta.snapshotTime());
             }
 
-            return cnt == 0 ? null : new SnapshotListJobResult.SnapshotInfo(cnt, size, createTime);
+            return new SnapshotListJobResult.SnapshotInfo(cnt, size, createTime);
         }
     }
 }
