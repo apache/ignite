@@ -28,6 +28,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -150,7 +152,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         @Override protected SnapshotListJobResult run(SnapshotListCommandArg arg) {
             assert !ignite.localNode().isClient();
 
-            SnapshotListJobResult.SnapshotInfo[] snpInfos;
+            Map<String, SnapshotListJobResult.SnapshotInfo> snpDescsRes;
 
             try {
                 List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(
@@ -158,32 +160,33 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     ignite.context().cache().context().snapshotMgr().localSnapshotNames(arg.src())
                 );
 
-                snpInfos = new SnapshotListJobResult.SnapshotInfo[locSnps.size()];
+                snpDescsRes = U.newHashMap(locSnps.size());
 
                 for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
                     SnapshotFileTree sft = locSnps.get(snpIdx).get1();
 
-                    // Optional extra storages data.
+                    // Optional extra storages description.
                     SnapshotListJobResult.SnapshotInfo extStors = findExtraStorages(sft);
 
-                    // Optiona incremental snapshots data.
+                    // Optiona incremental snapshots description.
                     SnapshotListJobResult.SnapshotInfo incs = incrementalsData(sft);
 
-                    // Main snapshot data.
-                    snpInfos[snpIdx] = new SnapshotListJobResult.SnapshotInfo(
-                        sft.name(),
+                    // Main snapshot description.
+                    SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
                         calculateDirectorySize(sft.root()),
                         locSnps.get(snpIdx).get2(),
                         extStors,
                         incs
                     );
+
+                    snpDescsRes.put(sft.name(), snpDesc);
                 }
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
             }
 
-            return new SnapshotListJobResult(snpInfos);
+            return new SnapshotListJobResult(snpDescsRes);
         }
 
         /** */

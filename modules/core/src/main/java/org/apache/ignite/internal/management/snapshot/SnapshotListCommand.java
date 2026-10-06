@@ -70,43 +70,44 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
             printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
 
-            SnapshotListJobResult nodeSnps = res.snapshots()[nodeIdx];
+            SnapshotListJobResult nodeResult = res.snapshots()[nodeIdx];
 
-            if (nodeSnps.snapshots().length == 0) {
+            if (nodeResult.snapshots().isEmpty()) {
                 printer.accept("\t\t" + NO_SNAPSHOTS);
 
                 continue;
             }
 
-            for (int snpIdx = 0; snpIdx < nodeSnps.snapshots().length; snpIdx++) {
-                SnapshotListJobResult.SnapshotInfo snpInfo = nodeSnps.snapshots()[snpIdx];
-
+            nodeResult.snapshots().forEach((snpName, snpInfo) -> {
                 printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
-                    snpInfo.name(),
+                    snpName,
                     U.humanReadableByteCount(snpInfo.size()),
                     snpInfo.size(),
                     DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.date())),
                     snpInfo.date()
                 ));
 
-                if (snpInfo.externalStorages() != null) {
+                SnapshotListJobResult.SnapshotInfo extStors = snpInfo.externalStorages();
+                SnapshotListJobResult.SnapshotInfo incs = snpInfo.incrementals();
+
+                if (extStors != null) {
                     printer.accept("\t\t\texternal storages: cnt=%d, size=%s (%db)".formatted(
-                        snpInfo.externalStorages().number(),
-                        U.humanReadableByteCount(snpInfo.externalStorages().size()),
-                        snpInfo.externalStorages().size()
+                        extStors.number(),
+                        U.humanReadableByteCount(extStors.size()),
+                        extStors.size()
                     ));
                 }
 
-                if (snpInfo.incrementals() != null) {
+                if (incs != null) {
                     printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s (%db), modified='%s' (epoch=%d)".formatted(
-                        snpInfo.incrementals().number(),
-                        U.humanReadableByteCount(snpInfo.incrementals().size()),
-                        snpInfo.incrementals().size(),
-                        DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.incrementals().date())),
-                        snpInfo.incrementals().date()
+                        incs.number(),
+                        U.humanReadableByteCount(incs.size()),
+                        incs.size(),
+                        DATE_FORMATTER.format(Instant.ofEpochMilli(incs.date())),
+                        incs.date()
                     ));
                 }
-            }
+            });
         }
 
         // Drop a line.
