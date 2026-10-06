@@ -150,12 +150,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         @Override protected SnapshotListJobResult run(SnapshotListCommandArg arg) {
             assert !ignite.localNode().isClient();
 
-            // Main snapshot datas.
-            SnapshotListJobResult.SnapshotInfo[] snapshots;
-            // External storages' info.
-            SnapshotListJobResult.SnapshotInfo[] extraStorages = null;
-            // Incremental snapshots' info.
-            SnapshotListJobResult.SnapshotInfo[] incrementalSnps = null;
+            SnapshotListJobResult.SnapshotInfo[] snpInfos;
 
             try {
                 List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(
@@ -163,48 +158,32 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     ignite.context().cache().context().snapshotMgr().localSnapshotNames(arg.src())
                 );
 
-                snapshots = new SnapshotListJobResult.SnapshotInfo[locSnps.size()];
+                snpInfos = new SnapshotListJobResult.SnapshotInfo[locSnps.size()];
 
                 for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
                     SnapshotFileTree sft = locSnps.get(snpIdx).get1();
 
-                    long extSize = 0L;
-
                     // Optional extra storages data.
-                    SnapshotListJobResult.SnapshotInfo snpExtStors = findExtraStorages(sft);
-
-                    if (snpExtStors != null) {
-                        if (extraStorages == null)
-                            extraStorages = new SnapshotListJobResult.SnapshotInfo[locSnps.size()];
-
-                        extraStorages[snpIdx] = snpExtStors;
-
-                        extSize += snpExtStors.size();
-                    }
-
-                    // Main snapshot data.
-                    snapshots[snpIdx] = new SnapshotListJobResult.SnapshotInfo(
-                        sft.name(),
-                        calculateDirectorySize(sft.root()) + extSize,
-                        locSnps.get(snpIdx).get2()
-                    );
+                    SnapshotListJobResult.SnapshotInfo extStors = findExtraStorages(sft);
 
                     // Optiona incremental snapshots data.
-                    SnapshotListJobResult.SnapshotInfo incRes = incrementalsData(sft);
+                    SnapshotListJobResult.SnapshotInfo incs = incrementalsData(sft);
 
-                    if (incRes != null) {
-                        if (incrementalSnps == null)
-                            incrementalSnps = new SnapshotListJobResult.SnapshotInfo[locSnps.size()];
-
-                        incrementalSnps[snpIdx] = incRes;
-                    }
+                    // Main snapshot data.
+                    snpInfos[snpIdx] = new SnapshotListJobResult.SnapshotInfo(
+                        sft.name(),
+                        calculateDirectorySize(sft.root()),
+                        locSnps.get(snpIdx).get2(),
+                        extStors,
+                        incs
+                    );
                 }
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
             }
 
-            return new SnapshotListJobResult(snapshots, extraStorages, incrementalSnps);
+            return new SnapshotListJobResult(snpInfos);
         }
 
         /** */

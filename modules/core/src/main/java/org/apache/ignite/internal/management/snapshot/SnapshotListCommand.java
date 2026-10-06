@@ -78,52 +78,34 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 continue;
             }
 
-            // Optional info of all the snapshot external storages.
-            SnapshotListJobResult.SnapshotInfo[] allExtStors = nodeSnps.externalStorages();
-            // Optional info of all the incrementsl snapshots.
-            SnapshotListJobResult.SnapshotInfo[] allIncSnps = nodeSnps.incrementalSnapshots();
-
             for (int snpIdx = 0; snpIdx < nodeSnps.snapshots().length; snpIdx++) {
-                SnapshotListJobResult.SnapshotInfo snp = nodeSnps.snapshots()[snpIdx];
+                SnapshotListJobResult.SnapshotInfo snpInfo = nodeSnps.snapshots()[snpIdx];
 
                 printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
-                    snp.name(),
-                    U.humanReadableByteCount(snp.size()),
-                    snp.size(),
-                    DATE_FORMATTER.format(Instant.ofEpochMilli(snp.date())),
-                    snp.date()
+                    snpInfo.name(),
+                    U.humanReadableByteCount(snpInfo.size()),
+                    snpInfo.size(),
+                    DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.date())),
+                    snpInfo.date()
                 ));
 
-                // Optional certain snapshot external storages' info.
-                SnapshotListJobResult.SnapshotInfo snpExtStors = allExtStors == null || allExtStors[snpIdx] == null
-                    ? null
-                    : allExtStors[snpIdx];
-
-                if (snpExtStors != null) {
+                if (snpInfo.externalStorages() != null) {
                     printer.accept("\t\t\texternal storages: cnt=%d, size=%s (%db)".formatted(
-                        snpExtStors.number(),
-                        U.humanReadableByteCount(snpExtStors.size()),
-                        snpExtStors.size()
+                        snpInfo.externalStorages().number(),
+                        U.humanReadableByteCount(snpInfo.externalStorages().size()),
+                        snpInfo.externalStorages().size()
                     ));
                 }
 
-                // Optional certain snapshot incrementals parts' info.
-                SnapshotListJobResult.SnapshotInfo snpIncsParts = allIncSnps == null || allIncSnps[snpIdx] == null
-                    ? null
-                    : allIncSnps[snpIdx];
-
-                if (snpIncsParts == null)
-                    continue;
-
-                assert snpIncsParts.date() != null;
-
-                printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s (%db), modified='%s' (epoch=%d)".formatted(
-                    snpIncsParts.number(),
-                    U.humanReadableByteCount(snpIncsParts.size()),
-                    snpIncsParts.size(),
-                    DATE_FORMATTER.format(Instant.ofEpochMilli(snpIncsParts.date())),
-                    snpIncsParts.date()
-                ));
+                if (snpInfo.incrementals() != null) {
+                    printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s (%db), modified='%s' (epoch=%d)".formatted(
+                        snpInfo.incrementals().number(),
+                        U.humanReadableByteCount(snpInfo.incrementals().size()),
+                        snpInfo.incrementals().size(),
+                        DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.incrementals().date())),
+                        snpInfo.incrementals().date()
+                    ));
+                }
             }
         }
 

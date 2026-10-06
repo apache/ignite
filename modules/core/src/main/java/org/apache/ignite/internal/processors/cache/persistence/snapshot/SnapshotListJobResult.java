@@ -26,17 +26,9 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Snapshot main information (names, sizes, etc.). */
+    /** Local node's snapshot descriptions. */
     @Order(0)
     SnapshotInfo[] snapshots;
-
-    /** Optional information of external snapshots storages. */
-    @Order(1)
-    SnapshotInfo[] extStorages;
-
-    /** Optional information of incrementals snapshots. */
-    @Order(2)
-    SnapshotInfo[] incrementalSnps;
 
     /** Default constructor for serialization purposes. */
     public SnapshotListJobResult() {
@@ -44,29 +36,13 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public SnapshotListJobResult(
-        SnapshotInfo[] snapshots,
-        @Nullable SnapshotInfo[] extStorages,
-        @Nullable SnapshotInfo[] incrementalSnps
-    ) {
+    public SnapshotListJobResult(SnapshotInfo[] snapshots) {
         this.snapshots = snapshots;
-        this.extStorages = extStorages;
-        this.incrementalSnps = incrementalSnps;
     }
 
     /** @return The snapshots main information (names, sizes, etc.). */
-    public @Nullable SnapshotInfo[] snapshots() {
+    public SnapshotInfo[] snapshots() {
         return snapshots;
-    }
-
-    /** @return Optional information of external snapshots storages. */
-    public @Nullable SnapshotInfo[] externalStorages() {
-        return extStorages;
-    }
-
-    /** @return Optional information of incrementals snapshots. */
-    public @Nullable SnapshotInfo[] incrementalSnapshots() {
-        return incrementalSnps;
     }
 
     /** Hold combined snapshot data information: name, size, creation/modification time, incremental parts, external storages. */
@@ -82,16 +58,24 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         @Order(1)
         long size;
 
-        /** Number of snapshot external storages or incremental parts. Is {@code null} for the main snapshot data. */
-        @Order(2)
-        @Nullable Integer cnt;
-
         /**
          * Creation or modification date of snapshot or of its incremental parts.
          * Is {@code null} for snapshot external storages' data.
          */
-        @Order(3)
+        @Order(2)
         @Nullable Long date;
+
+        /** Snapshot external storages' information. Is {@code null} for not the main snapshot data. */
+        @Order(3)
+        @Nullable SnapshotInfo extStors;
+
+        /** Snapshot incremental parts information. Is {@code null} for not the main snapshot data. */
+        @Order(4)
+        @Nullable SnapshotInfo incs;
+
+        /** Number of snapshot external storages or incremental parts. Is {@code null} for the main snapshot data. */
+        @Order(5)
+        @Nullable Integer cnt;
 
         /** Empty constructor for serialization purposes. */
         public SnapshotInfo() {
@@ -99,10 +83,18 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         }
 
         /** Creates snapshot main information. */
-        public SnapshotInfo(String name, long size, long date) {
+        public SnapshotInfo(
+            String name,
+            long size,
+            long date,
+            @Nullable SnapshotInfo extStors,
+            @Nullable SnapshotInfo incs
+        ) {
             this.name = name;
-            this.size = size;
+            this.size = size + (extStors == null ? 0L : extStors.size());
             this.date = date;
+            this.extStors = extStors;
+            this.incs = incs;
         }
 
         /** Creates external storages' information. */
@@ -129,11 +121,21 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         }
 
         /**
-         * @return Creation or modification date of a snapshot or of its incremental parts. Or {@code null} for snapshot
+         * @return Creation date of a snapshot or of its incremental parts. Or {@code null} for snapshot
          * external storages' data.
          */
         public @Nullable Long date() {
             return date;
+        }
+
+        /** @return Snapshot external storages' information. Is {@code null} for not the main snapshot information. */
+        public @Nullable SnapshotInfo externalStorages() {
+            return extStors;
+        }
+
+        /** @return Snapshot incremental parts information. Is {@code null} for not the main snapshot information. */
+        public @Nullable SnapshotInfo incrementals() {
+            return incs;
         }
 
         /** @return Number of snapshot external storages or incremental parts. Or {@code null} for the main snapshot data.*/
