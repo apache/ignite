@@ -347,10 +347,10 @@ public class BinaryUtils {
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
                 GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
-        if (cls == BinaryArray.class)
+        if (cls == binariesFactory.binaryArrayClass())
             return GridBinaryMarshaller.OBJ_ARR;
 
-        if (cls == BinaryEnumArray.class)
+        if (cls == binariesFactory.binaryEnumArrayClass())
             return GridBinaryMarshaller.ENUM_ARR;
 
         if (isSpecialCollection(cls))
@@ -692,9 +692,9 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
-        else if (cls == BinaryArray.class)
+        else if (cls == binariesFactory.binaryArrayClass())
             return BinaryWriteMode.OBJECT_ARR;
-        else if (cls == BinaryEnumArray.class)
+        else if (cls == binariesFactory.binaryEnumArrayClass())
             return BinaryWriteMode.ENUM_ARR;
         else if (cls == binariesFactory.binaryObjectImplClass())
             return BinaryWriteMode.BINARY_OBJ;
@@ -1249,7 +1249,7 @@ public class BinaryUtils {
     }
 
     /**
-     * @param obj {@link BinaryArray} or {@code Object[]}.
+     * @param obj {@code BinaryArray} or {@code Object[]}.
      * @return Objects array.
      */
     public static Object[] rawArrayFromBinary(Object obj) {
@@ -1264,7 +1264,7 @@ public class BinaryUtils {
 
     /** */
     public static boolean isObjectArray(Class<?> cls) {
-        return Object[].class == cls || BinaryArray.class == cls || BinaryEnumArray.class == cls;
+        return Object[].class == cls || binariesFactory.binaryArrayClass() == cls || binariesFactory.binaryEnumArrayClass() == cls;
     }
 
     /** @return Type name of the specified object. If {@link BinaryObject} was specified its type will be returned. */
@@ -1312,8 +1312,8 @@ public class BinaryUtils {
      */
     public static Map<Class<?>, Function<Object, Object>> unwrapFuncForSizeCalc() {
         return Map.of(
-            BinaryArray.class, bo -> ((BinaryArray)bo).array(),
-            BinaryEnumArray.class, bo -> ((BinaryArray)bo).array()
+            binariesFactory.binaryArrayClass(), bo -> ((BinaryObjectEx)bo).array(),
+            binariesFactory.binaryEnumArrayClass(), bo -> ((BinaryObjectEx)bo).array()
         );
     }
 
@@ -1419,10 +1419,10 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@link BinaryArray}.
+     * @return {@code True} if {@code val} instance of {@code BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {
-        return val instanceof BinaryArray;
+        return val instanceof BinaryObjectEx && ((BinaryObjectEx)val).isArray();
     }
 
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */

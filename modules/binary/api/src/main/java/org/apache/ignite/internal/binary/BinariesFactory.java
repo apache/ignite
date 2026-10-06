@@ -143,6 +143,14 @@ public interface BinariesFactory {
     public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size);
 
     /**
+     * @param ctx Context
+     * @param compCls Component class.
+     * @param arr Data.
+     * @return Binary array instance.
+     */
+    public BinaryObjectEx binaryArray(BinaryContext ctx, Class<?> compCls, Object[] arr);
+
+    /**
      * @return Binary enum class.
      */
     public Class<?> binaryEnumClass();
@@ -151,6 +159,16 @@ public interface BinariesFactory {
      * @return Binary object impl class.
      */
     public Class<?> binaryObjectImplClass();
+
+    /**
+     * @return Binary array class.
+     */
+    public Class<?> binaryArrayClass();
+
+    /**
+     * @return Binary enum array class.
+     */
+    public Class<?> binaryEnumArrayClass();
 
     /**
      * @return Map of predefined types.
