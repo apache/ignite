@@ -165,11 +165,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
                     SnapshotFileTree sft = locSnps.get(snpIdx).get1();
 
-                    // Optional extra storages description.
-                    SnapshotListJobResult.SnapshotInfo extStors = findExtraStorages(sft);
+                    // Optional extra storages description. Uses another snapshot file tree which ignores the path and
+                    // can find snapshot extra storages.
+                    SnapshotListJobResult.SnapshotInfo extStors = externalStorages(sft);
 
                     // Optiona incremental snapshots description.
-                    SnapshotListJobResult.SnapshotInfo incs = incrementalsData(sft);
+                    SnapshotListJobResult.SnapshotInfo incs = incrementals(sft);
 
                     // Main snapshot description.
                     SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
@@ -190,7 +191,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** */
-        private static @Nullable SnapshotListJobResult.SnapshotInfo findExtraStorages(SnapshotFileTree sft) throws IOException {
+        private static @Nullable SnapshotListJobResult.SnapshotInfo externalStorages(SnapshotFileTree sft) throws IOException {
             int extStoragesCnt = 0;
             long extStoragesSize = 0;
 
@@ -239,7 +240,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Number, total size and last creation time of incremental snapshots. */
-        private @Nullable SnapshotListJobResult.SnapshotInfo incrementalsData(SnapshotFileTree sft) throws IOException {
+        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws IOException {
             File[] incs = sft.incrementsRoot().listFiles();
 
             int cnt = 0;

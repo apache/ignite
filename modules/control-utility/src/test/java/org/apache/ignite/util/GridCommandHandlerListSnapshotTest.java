@@ -180,7 +180,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** */
     private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode) throws Exception {
-        filterTests(snpCnt, deleteOnOneNode, extraStorages);
+        filterTests(snpCnt, deleteOnOneNode);
 
         int srvrsCnt = 3;
         int entriesCnt = 20;
@@ -281,27 +281,14 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
             for (int i = 0; i < incCnt; i++)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "incremental snapshots: cnt=" + incCnt));
+
+            if (extraStorages)
+                assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "external storages: cnt=1, size="));
         }
     }
 
-
-
-    /** */
-    @Override protected CacheConfiguration<?, ?> testCacheConfiguration(
-        String cacheName,
-        int partitions,
-        @Nullable IgnitePredicate<ClusterNode> filter
-    ) {
-        CacheConfiguration<?, ?> ccfg = super.testCacheConfiguration(cacheName, partitions, filter);
-
-        if (extraStorages)
-            ccfg.setStoragePaths(extStoragePaths);
-
-        return ccfg;
-    }
-
-    /** */
-    private void filterTests(int snpCnt, boolean deleteOnOneNode, boolean extraStorages) {
+    /** Excludes incompatible parameters values and fastens the tests. */
+    private void filterTests(int snpCnt, boolean deleteOnOneNode) {
         assert !deleteOnOneNode || snpCnt > 0;
         assert !extraStorages || snpCnt > 0;
 
@@ -315,8 +302,9 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // No need to create incremental snapshots if no snapshots are required at all.
         assumeTrue(incCnt < 1 || snpCnt > 0);
 
-        // TODO: comment
-        assumeFalse(extraStorages && separatedWorkDir);
+        // Extra storeages are required to be the same as configured in the node's PDS storages. Thus, we skip different work folders.
+        // Also, extra snapshot storages aren't used if snapshot is created with a custom path.
+        assumeFalse(extraStorages && (separatedWorkDir || customPath));
     }
 
     /** Counts occurrences of the node prefix in the output. */
@@ -339,5 +327,19 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         txt = txt.replaceAll(entry, "");
 
         return (prev.length() - txt.length()) / entry.length();
+    }
+
+    /** */
+    @Override protected CacheConfiguration<?, ?> testCacheConfiguration(
+        String cacheName,
+        int partitions,
+        @Nullable IgnitePredicate<ClusterNode> filter
+    ) {
+        CacheConfiguration<?, ?> ccfg = super.testCacheConfiguration(cacheName, partitions, filter);
+
+        if (extraStorages)
+            ccfg.setStoragePaths(extStoragePaths);
+
+        return ccfg;
     }
 }
