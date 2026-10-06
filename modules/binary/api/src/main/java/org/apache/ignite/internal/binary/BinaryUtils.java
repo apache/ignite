@@ -1234,6 +1234,9 @@ public class BinaryUtils {
         @Nullable ClassLoader ldr, boolean registerMeta) {
         Class cls;
 
+        if (ldr == null)
+            ldr = ctx.classLoader();
+
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {

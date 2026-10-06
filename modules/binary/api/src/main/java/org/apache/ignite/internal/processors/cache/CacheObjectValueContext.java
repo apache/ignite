@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Context to get value of cache object.
@@ -59,11 +58,6 @@ public interface CacheObjectValueContext {
      * @param typeId ID of binary type to wait for metadata write operation.
      */
     public void waitMetadataWriteIfNeeded(final int typeId);
-
-    /**
-     * @return User's class loader.
-     */
-    public @Nullable ClassLoader classLoader();
 
     /**
      * Gets distributed class loader.
