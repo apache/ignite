@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -156,13 +155,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             long[] sizes;
             long[] creationTimes;
 
-            // Incremental snapshots data.
-            int[] incCnts = null;
-            long[] incSizes = null;
-            long[] editTimes = null;
+            // External storages' info.
+            SnapshotListJobResult.SnapshotExtraInfo[] extraStorages = null;
 
-            // External storages data.
-            SnapshotListJobResult.ExtraRecordsData[] extraStorages = null;
+            // Incremental snapshots' info.
+            SnapshotListJobResult.SnapshotExtraInfo[] incrementalSnps = null;
 
             try {
                 List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(
@@ -184,11 +181,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     sizes[snpIdx] = calculateDirectorySize(sft.root());
 
                     // Optional extra storages data.
-                    SnapshotListJobResult.ExtraRecordsData snpExtStors = findExtraStorages(sft);
+                    SnapshotListJobResult.SnapshotExtraInfo snpExtStors = findExtraStorages(sft);
 
                     if (snpExtStors != null) {
                         if (extraStorages == null)
-                            extraStorages = new SnapshotListJobResult.ExtraRecordsData[locSnps.size()];
+                            extraStorages = new SnapshotListJobResult.SnapshotExtraInfo[locSnps.size()];
 
                         extraStorages[snpIdx] = snpExtStors;
 
@@ -196,18 +193,13 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     }
 
                     // Optiona incremental snapshots data.
-                    T3<Integer, Long, Long> incRes = incrementalsData(sft);
+                    SnapshotListJobResult.SnapshotExtraInfo incRes = incrementalsData(sft);
 
-                    if (incRes.get1() > 0) {
-                        if (incCnts == null) {
-                            incCnts = new int[locSnps.size()];
-                            incSizes = new long[locSnps.size()];
-                            editTimes = new long[locSnps.size()];
-                        }
+                    if (incRes != null) {
+                        if (incrementalSnps == null)
+                            incrementalSnps = new SnapshotListJobResult.SnapshotExtraInfo[locSnps.size()];
 
-                        incCnts[snpIdx] = incRes.get1();
-                        incSizes[snpIdx] = incRes.get2();
-                        editTimes[snpIdx] = incRes.get3();
+                        incrementalSnps[snpIdx] = incRes;
                     }
                 }
             }
@@ -215,11 +207,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
             }
 
-            return new SnapshotListJobResult(snpNames, sizes, creationTimes, incCnts, incSizes, editTimes, extraStorages);
+            return new SnapshotListJobResult(snpNames, sizes, creationTimes, extraStorages, incrementalSnps);
         }
 
         /** */
-        private static @Nullable SnapshotListJobResult.ExtraRecordsData findExtraStorages(SnapshotFileTree sft) throws IOException {
+        private static @Nullable SnapshotListJobResult.SnapshotExtraInfo findExtraStorages(SnapshotFileTree sft) throws IOException {
             int extStoragesCnt = 0;
             long extStoragesSize = 0;
 
@@ -231,7 +223,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 extStoragesSize += calculateDirectorySize(es);
             }
 
-            return extStoragesCnt == 0 ? null : new SnapshotListJobResult.ExtraRecordsData(extStoragesCnt, extStoragesSize);
+            return extStoragesCnt == 0 ? null : new SnapshotListJobResult.SnapshotExtraInfo(extStoragesCnt, extStoragesSize);
         }
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
@@ -268,12 +260,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Number, total size and last creation time of incremental snapshots. */
-        private T3<Integer, Long, Long> incrementalsData(SnapshotFileTree sft) throws IOException {
+        private @Nullable SnapshotListJobResult.SnapshotExtraInfo incrementalsData(SnapshotFileTree sft) throws IOException {
             File[] incs = sft.incrementsRoot().listFiles();
 
-            long size = 0L;
             int cnt = 0;
-            long intCreateTime = 0L;
+            long size = 0L;
+            long createTime = 0L;
 
             if (!F.isEmpty(incs)) {
                 IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
@@ -306,11 +298,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                     cnt++;
                     size += calculateDirectorySize(incDir);
-                    intCreateTime = Math.max(intCreateTime, incMeta.snapshotTime());
+                    createTime = Math.max(createTime, incMeta.snapshotTime());
                 }
             }
 
-            return new T3<>(cnt, size, intCreateTime);
+            return cnt == 0 ? null : new SnapshotListJobResult.SnapshotExtraInfo(cnt, size, createTime);
         }
     }
 }

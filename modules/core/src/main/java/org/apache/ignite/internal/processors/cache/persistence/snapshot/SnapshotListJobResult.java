@@ -19,10 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
 import org.jetbrains.annotations.Nullable;
 
-/** Accumulated result of {@link SnapshotListTask}. */
+/** Per-node result of the snapshot lists command. Contains information of the snapshots found on current node. */
 public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -39,21 +38,13 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     @Order(2)
     long[] creationTime;
 
-    /** Numbers of related incremental snapshots. */
+    /** Optional information of external snapshot storages. */
     @Order(3)
-    int[] incCnt;
+    SnapshotExtraInfo[] extStorages;
 
-    /** Total sizes of incremental snapshots. */
+    /** Optional information of incremental snapshots. */
     @Order(4)
-    long[] incSize;
-
-    /** Last modified times. Actual if {@link #incCnt}[n] > 0. */
-    @Order(5)
-    long[] editTime;
-
-    /** Total sizes of external-storage snapshots. */
-    @Order(6)
-    ExtraRecordsData[] extStorages;
+    SnapshotExtraInfo[] incrementalSnps;
 
     /** Default constructor for serialization purposes. */
     public SnapshotListJobResult() {
@@ -65,20 +56,16 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         String[] name,
         long[] size,
         long[] createTime,
-        @Nullable int[] incCnt,
-        @Nullable long[] incSize,
-        @Nullable long[] editTime,
-        @Nullable ExtraRecordsData[] extStorages
+        @Nullable SnapshotExtraInfo[] extStorages,
+        @Nullable SnapshotExtraInfo[] incrementalSnps
     ) {
         snpName = name;
         this.size = size;
         creationTime = createTime;
 
-        this.incCnt = incCnt;
-        this.incSize = incSize;
-        this.editTime = editTime;
-
         this.extStorages = extStorages;
+
+        this.incrementalSnps = incrementalSnps;
     }
 
     /** */
@@ -97,27 +84,17 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public @Nullable int[] incrementalsCount() {
-        return incCnt;
+    public @Nullable SnapshotExtraInfo[] incrementalSnapshots() {
+        return incrementalSnps;
     }
 
     /** */
-    public @Nullable long[] incrementalsSizes() {
-        return incSize;
-    }
-
-    /** */
-    public @Nullable long[] editTimes() {
-        return editTime;
-    }
-
-    /** */
-    public @Nullable ExtraRecordsData[] externalStorages() {
+    public @Nullable SnapshotExtraInfo[] externalStorages() {
         return extStorages;
     }
 
-    /** Additional, optional snapshot data like about incremental snapshots or external storages. */
-    public static class ExtraRecordsData extends IgniteDataTransferObject {
+    /** Additional, optional snapshot information like about incremental snapshots or external storages. */
+    public static class SnapshotExtraInfo extends IgniteDataTransferObject {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -134,20 +111,21 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         @Nullable Long date;
 
         /** Empty constructor for serialization purposes. */
-        public ExtraRecordsData() {
+        public SnapshotExtraInfo() {
             // No-op.
         }
 
         /** */
-        private ExtraRecordsData(int cnt, long size, @Nullable Long date) {
+        public SnapshotExtraInfo(int cnt, long size, long date) {
             this.cnt = cnt;
             this.size = size;
             this.date = date;
         }
 
         /** */
-        public ExtraRecordsData(int cnt, long size) {
-            this(cnt, size, null);
+        public SnapshotExtraInfo(int cnt, long size) {
+            this.cnt = cnt;
+            this.size = size;
         }
 
         /** @return Number of related records or storages. */
