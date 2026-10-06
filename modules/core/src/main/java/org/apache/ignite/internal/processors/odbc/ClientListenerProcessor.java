@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
@@ -496,10 +495,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to create client listener " +
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
-            Supplier<SSLContext> sslCtx = ctx.internalSubscriptionProcessor().sslContexts()
-                .provider(sslCtxFactory, CLIENT_CONNECTOR)::context;
-
-            GridNioSslFilter sslFilter = U.sslFilter(sslCtx,
+            GridNioSslFilter sslFilter = U.sslFilter(
+                ctx.internalSubscriptionProcessor().sslContexts().provider(sslCtxFactory, CLIENT_CONNECTOR)::context,
                 true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);

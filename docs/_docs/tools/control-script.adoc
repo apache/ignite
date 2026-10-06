@@ -1750,26 +1750,20 @@ control.sh|bat --event list --enabled
 
 == TLS Certificates
 
-The `--ssl` commands reload the TLS certificates of a running cluster and show which certificates every node serves.
-
 === Reloading Certificates
 
 [source, shell]
 ----
-control.sh|bat --ssl reload
+control.sh|bat --ssl reload [--yes]
 ----
 
-The command asks for confirmation; add `--yes` to run it from a script.
 Every node in the topology, server or client, reads its key and trust stores again for communication, discovery, the client connector, and binary and HTTP REST.
-New connections use the new certificates.
-Established connections are not touched, even with a peer that the new trust store no longer accepts.
+New connections use the new certificates; established ones keep theirs, even with a peer that the new trust store no longer accepts.
 
-The command does not reach a node that is out of the topology: such a node reads the stores when it starts.
-It does not reach applications either: JDBC and ODBC read their stores on every new connection, while a thin client, or JDBC with the default JVM stores (`javax.net.ssl.*`), reads them only when it starts.
+The command does not reach applications: JDBC and ODBC read their stores on every new connection, while a thin client, or JDBC with the default JVM stores (`javax.net.ssl.*`), reads them only when it starts.
 
 A node keeps its old certificate if a certificate in the new chain is not valid now.
-If the SSL context factory serves discovery or communication, the node also keeps the old certificate, for all transports of that factory, if its own trust store does not accept the new one.
-This check assumes that all nodes use the same key and trust store configuration.
+If the SSL context factory serves discovery or communication, the node also keeps the old certificate, for all transports of that factory, if its own trust store does not accept the new one; other nodes are not asked.
 HTTP REST is reloaded by Jetty, which skips these checks.
 A custom SSL context factory whose `create()` returns a cached context, and a Jetty configuration with a ready-made `sslContext` instead of a key store path, have nothing to read again, so the reload fails for them.
 

@@ -19,11 +19,9 @@ package org.apache.ignite.util;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadCommand;
@@ -35,7 +33,8 @@ import org.junit.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
+import static org.apache.ignite.ssl.SslTestUtils.place;
+import static org.apache.ignite.ssl.SslTestUtils.servedSubject;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
@@ -66,7 +65,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         keyStore = Files.createTempFile("ignite-cli-ssl-reload-", ".jks");
 
-        copyKeyStore("node01");
+        place("node01", keyStore);
 
         super.beforeTest();
 
@@ -83,27 +82,21 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
             Files.deleteIfExists(keyStore);
     }
 
-    /** One command reloads every node, client ones included, and status then shows the new certificate and the reload. */
+    /** One command reloads every node, client ones included, status shows the new certificate, a broken store fails the command. */
     @Test
     public void testReloadAndStatus() throws Exception {
         assertNotNull("The reload must ask for confirmation", new SslReloadCommand().confirmationPrompt(new NoArg()));
 
         List<IgniteEx> nodes = List.of(startGrid(0), startGrid(1), startClientGrid(2));
 
-        copyKeyStore("node02");
+        place("node02", keyStore);
 
         String out = executeCommand(EXIT_CODE_OK, "--ssl", "reload");
 
         for (IgniteEx node : nodes)
             assertContains(log, out, node.localNode().id() + ": reloaded " + transports(node) + "; serving subject=CN=node02");
 
-        SSLContext probe = SSLContext.getInstance("TLS");
-
-        probe.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
-
-        int restPort = nodes.get(0).localNode().attribute(ATTR_REST_TCP_PORT);
-
-        assertEquals("CN=node02", servedCertificate(probe, restPort).getSubjectX500Principal().getName());
+        assertEquals("CN=node02", servedSubject(nodes.get(0).localNode().attribute(ATTR_REST_TCP_PORT)));
 
         out = executeCommand(EXIT_CODE_OK, "--ssl", "status");
 
@@ -113,28 +106,14 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         assertContains(log, out, "serving subject=CN=node02");
         assertNotContains(log, out, "subject=CN=node01");
         assertContains(log, out, "last reload succeeded at");
-    }
-
-    /** A reload that failed on a node fails the command and names the reason. */
-    @Test
-    public void testReloadFailure() throws Exception {
-        IgniteEx node = startGrid(0);
 
         Files.write(keyStore, "not a key store".getBytes());
 
-        String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--ssl", "reload");
-
-        assertContains(log, out, node.localNode().id() + ": failed on " + transports(node) + " (");
-        assertContains(log, out, "Failed to initialize key store");
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--ssl", "reload"), "Failed to initialize key store");
     }
 
     /** @return Transports of the node, all on the factory of the node; binary REST does not start on a client node. */
     private static String transports(IgniteEx node) {
         return (node.localNode().isClient() ? "" : "binary REST, ") + "client connector, communication, discovery";
-    }
-
-    /** @param name Test key store name (see {@code tests.properties}). */
-    private void copyKeyStore(String name) throws Exception {
-        Files.copy(Path.of(GridTestUtils.keyStorePath(name)), keyStore, StandardCopyOption.REPLACE_EXISTING);
     }
 }

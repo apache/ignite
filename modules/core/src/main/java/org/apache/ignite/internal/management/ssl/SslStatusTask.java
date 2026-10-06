@@ -57,12 +57,10 @@ public class SslStatusTask extends SslTask {
         @Override protected String run(NoArg arg) throws IgniteException {
             String id = ignite.localNode().id().toString();
 
-            Collection<SslContextReloadable> comps = reloadables(ignite);
+            Collection<SslContextReloadable> comps = ignite.context().internalSubscriptionProcessor().sslContexts().reloadables();
 
             if (comps.isEmpty())
                 return id + ": SSL is not configured";
-
-            long now = System.currentTimeMillis();
 
             List<String> lines = new ArrayList<>();
 
@@ -81,7 +79,7 @@ public class SslStatusTask extends SslTask {
                     lines.add("    serving " + describe(chain[0]) +
                         (notAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(notAfter) : ""));
 
-                    if (invalidAt(chain, now) != null) {
+                    if (invalidAt(chain, System.currentTimeMillis()) != null) {
                         invalid = true;
 
                         lines.add("    PROBLEM: the certificate is not valid now, peers refuse it");

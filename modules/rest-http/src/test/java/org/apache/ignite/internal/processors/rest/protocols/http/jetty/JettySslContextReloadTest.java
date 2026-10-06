@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -33,10 +31,10 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 import static org.apache.ignite.internal.ssl.SslContextReloadable.HTTP_REST;
-import static org.apache.ignite.ssl.SslContextFactory.getDisabledTrustManager;
+import static org.apache.ignite.ssl.SslTestUtils.place;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
 import static org.apache.ignite.ssl.SslTestUtils.reloadFailure;
-import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
+import static org.apache.ignite.ssl.SslTestUtils.servedSubject;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /** Tests {@code --ssl reload} on the Jetty connector serving HTTP REST. */
@@ -59,7 +57,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         keyStore = Files.createTempFile("ignite-jetty-ssl-reload-", ".jks");
 
-        copyKeyStore("node01");
+        place("node01", keyStore);
 
         System.setProperty(KEY_STORE_PROP, keyStore.toString());
     }
@@ -79,16 +77,16 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     public void testReload() throws Exception {
         IgniteEx g = startGrid(0);
 
-        copyKeyStore("node02");
+        place("node02", keyStore);
 
         assertContains(log, reload(g), ": reloaded " + HTTP_REST);
-        assertEquals("CN=node02", servedSubject(g));
+        assertEquals("CN=node02", servedSubject(g.localNode().attribute(ATTR_REST_JETTY_PORT)));
         assertEquals("CN=node02", g.context().metric().registry("ssl.http.rest").findMetric("CertificateSubject").getAsString());
 
         Files.write(keyStore, "not a key store".getBytes());
 
-        assertContains(log, reloadFailure(log, g), "failed on " + HTTP_REST);
-        assertEquals("CN=node02", servedSubject(g));
+        assertContains(log, reloadFailure(g), "failed on " + HTTP_REST);
+        assertEquals("CN=node02", servedSubject(g.localNode().attribute(ATTR_REST_JETTY_PORT)));
     }
 
     /** A connector handed a ready-made context has nothing to read again, so its reload fails. */
@@ -98,26 +96,6 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
         factory.setSslContext(SSLContext.getDefault());
 
-        JettySslContextReloadable comp = new JettySslContextReloadable(factory);
-
-        GridTestUtils.assertThrows(log, () -> {
-            comp.reload();
-
-            return null;
-        }, IgniteCheckedException.class, "ready-made");
-    }
-
-    /** @return Subject of the certificate the HTTP REST connector presents on a new connection. */
-    private static String servedSubject(IgniteEx node) throws Exception {
-        SSLContext probe = SSLContext.getInstance("TLS");
-
-        probe.init(null, new TrustManager[] {getDisabledTrustManager()}, null);
-
-        return servedCertificate(probe, (Integer)node.localNode().attribute(ATTR_REST_JETTY_PORT)).getSubjectX500Principal().getName();
-    }
-
-    /** @param name Test key store name (see {@code tests.properties}). */
-    private void copyKeyStore(String name) throws Exception {
-        Files.copy(Path.of(GridTestUtils.keyStorePath(name)), keyStore, StandardCopyOption.REPLACE_EXISTING);
+        GridTestUtils.assertThrows(log, new JettySslContextReloadable(factory)::reload, IgniteException.class, "ready-made");
     }
 }

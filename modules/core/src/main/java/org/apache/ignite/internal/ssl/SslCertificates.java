@@ -20,9 +20,11 @@ package org.apache.ignite.internal.ssl;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -52,16 +54,7 @@ public class SslCertificates {
      * @throws SSLException If the handshake was refused.
      */
     public static void validateInterNode(SSLContext ctx) throws SSLException {
-        SSLEngine srv = ctx.createSSLEngine();
-
-        srv.setUseClientMode(false);
-        srv.setNeedClientAuth(true);
-
-        SSLEngine cli = ctx.createSSLEngine();
-
-        cli.setUseClientMode(true);
-
-        handshake(cli, srv);
+        handshake(ctx, ctx, true);
     }
 
     /**
@@ -74,25 +67,14 @@ public class SslCertificates {
 
             probe.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
 
-            SSLEngine srv = ctx.createSSLEngine();
+            SSLSession ses = handshake(probe, ctx, false);
 
-            srv.setUseClientMode(false);
-
-            SSLEngine cli = probe.createSSLEngine();
-
-            cli.setUseClientMode(true);
-
-            if (!handshake(cli, srv))
+            if (ses == null)
                 return null;
 
-            Certificate[] certs = cli.getSession().getPeerCertificates();
+            Certificate[] certs = ses.getPeerCertificates();
 
-            X509Certificate[] chain = new X509Certificate[certs.length];
-
-            for (int i = 0; i < certs.length; i++)
-                chain[i] = (X509Certificate)certs[i];
-
-            return chain;
+            return Arrays.copyOf(certs, certs.length, X509Certificate[].class);
         }
         catch (Exception cannotTell) {
             return null;
@@ -164,16 +146,24 @@ public class SslCertificates {
     }
 
     /**
-     * @param cli Client engine.
-     * @param srv Server engine.
-     * @return {@code True} if the handshake completed, {@code false} if it could not be driven to the end.
+     * @param cliCtx Context of the client end.
+     * @param srvCtx Context of the server end.
+     * @param needClientAuth Whether the server end demands a client certificate.
+     * @return Session of the client end if the handshake completed, {@code null} if it could not be driven to the end.
      * @throws SSLException If either side refused the handshake.
      */
-    private static boolean handshake(SSLEngine cli, SSLEngine srv) throws SSLException {
+    private static @Nullable SSLSession handshake(SSLContext cliCtx, SSLContext srvCtx, boolean needClientAuth) throws SSLException {
+        SSLEngine cli = cliCtx.createSSLEngine();
+        SSLEngine srv = srvCtx.createSSLEngine();
+
+        cli.setUseClientMode(true);
+        srv.setUseClientMode(false);
+        srv.setNeedClientAuth(needClientAuth);
+
         int bufSize = cli.getSession().getPacketBufferSize();
 
-        ByteBuffer cliNet = flipped(bufSize);
-        ByteBuffer srvNet = flipped(bufSize);
+        ByteBuffer cliNet = ByteBuffer.allocate(bufSize).limit(0);
+        ByteBuffer srvNet = ByteBuffer.allocate(bufSize).limit(0);
         ByteBuffer app = ByteBuffer.allocate(cli.getSession().getApplicationBufferSize());
 
         cli.beginHandshake();
@@ -183,13 +173,13 @@ public class SslCertificates {
             boolean progress = step(cli, cliNet, srvNet, app) | step(srv, srvNet, cliNet, app);
 
             if (done(cli) && done(srv))
-                return true;
+                return cli.getSession();
 
             if (!progress)
-                return false;
+                return null;
         }
 
-        return false;
+        return null;
     }
 
     /**
@@ -243,14 +233,5 @@ public class SslCertificates {
     /** */
     private static boolean done(SSLEngine engine) {
         return engine.getHandshakeStatus() == NOT_HANDSHAKING || engine.getHandshakeStatus() == FINISHED;
-    }
-
-    /** @return Empty buffer ready to be filled by {@link SSLEngine#wrap}. */
-    private static ByteBuffer flipped(int cap) {
-        ByteBuffer buf = ByteBuffer.allocate(cap);
-
-        buf.flip();
-
-        return buf;
     }
 }

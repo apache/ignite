@@ -51,8 +51,8 @@ public class SslContextProvider extends SslContextReloadable {
     /** Chain the context in use presents, {@code null} if it cannot be told. */
     private volatile X509Certificate[] chain;
 
-    /** Told about every new context once it is recorded, {@code null} if nobody listens. */
-    private volatile Runnable reloadLsnr;
+    /** Told about every new context once it is recorded. */
+    private volatile Runnable reloadLsnr = () -> {};
 
     /** @param factory Factory to build the context with. */
     public SslContextProvider(Factory<SSLContext> factory) {
@@ -103,10 +103,7 @@ public class SslContextProvider extends SslContextReloadable {
     @Override public String onReloaded(IgniteLogger log, String initiator) {
         String desc = super.onReloaded(log, initiator);
 
-        Runnable lsnr = reloadLsnr;
-
-        if (lsnr != null)
-            lsnr.run();
+        reloadLsnr.run();
 
         return desc;
     }
@@ -166,7 +163,7 @@ public class SslContextProvider extends SslContextReloadable {
                 Instant.ofEpochMilli(now) + ']');
         }
 
-        if (connectsNodes()) {
+        if (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY)) {
             try {
                 SslCertificates.validateInterNode(rebuilt);
             }
@@ -175,11 +172,6 @@ public class SslContextProvider extends SslContextReloadable {
                     "node's own trust store [" + describe(next == null ? null : next[0]) + ']', e);
             }
         }
-    }
-
-    /** @return Whether nodes connect on the context, so that both ends run the configuration a handshake with itself checks. */
-    private boolean connectsNodes() {
-        return transports.contains(COMMUNICATION) || transports.contains(DISCOVERY);
     }
 
     /** What a renewal did. */

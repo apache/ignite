@@ -1678,8 +1678,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param sock Socket accepted by the server.
-     * @return Server-side SSL socket over it on the SSL context in use, the socket itself if SSL is disabled, or {@code null} if the peer
-     *      hung up before TLS could be set up.
+     * @return Server-side SSL socket over it on the SSL context in use, the socket itself if SSL is disabled, or {@code null} if TLS
+     *      cannot be set up on it.
      */
     @Nullable Socket acceptedSocket(Socket sock) {
         if (!isSslEnabled())
@@ -1693,9 +1693,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             return sslSock;
         }
-        catch (IOException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to set TLS up on an accepted connection [rmtAddr=" + sock.getInetAddress() + ", err=" + e + ']');
+        catch (IOException | IllegalArgumentException e) {
+            U.warn(log, "Failed to set TLS up on an accepted connection [rmtAddr=" + sock.getInetAddress() + ", err=" + e + ']');
 
             U.closeQuiet(sock);
 

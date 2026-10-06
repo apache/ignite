@@ -505,7 +505,7 @@ NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registe
 
 == SSL
 
-Certificates of one transport and how their reloads went.
+Certificates of one SSL-enabled transport and how their reloads went.
 `{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
 Times are in milliseconds since the epoch, `0` meaning unknown or never.
 Automatic renewals count as reloads.
@@ -523,8 +523,6 @@ Register name: `ssl.{transport}`
 |NextRenewalTime | long | Time of the next automatic renewal.
 |ReloadFailures | integer | Failed reloads in a row since the last successful one.
 |===
-
-NOTE: A register exists only for a transport with SSL enabled.
 
 == Discovery IO
 

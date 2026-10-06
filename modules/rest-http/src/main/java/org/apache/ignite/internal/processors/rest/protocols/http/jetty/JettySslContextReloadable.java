@@ -56,14 +56,14 @@ public class JettySslContextReloadable extends SslContextReloadable {
         if (sslCtxFactory.getKeyStorePath() == null)
             throw new IgniteCheckedException("HTTP REST runs on a ready-made SSL context, there is nothing to read again");
 
-        SSLContext cur = sslCtxFactory.getSslContext();
+        SSLContext cur = jettyContext();
 
         try {
-            rebuild(null);
+            sslCtxFactory.reload(f -> f.setSslContext(null));
         }
         catch (Exception e) {
             try {
-                rebuild(cur);
+                sslCtxFactory.reload(f -> f.setSslContext(cur));
             }
             catch (Exception pinFailure) {
                 e.addSuppressed(pinFailure);
@@ -74,24 +74,19 @@ public class JettySslContextReloadable extends SslContextReloadable {
         }
     }
 
-    /**
-     * @param ctx Context for Jetty to use, {@code null} to read the stores.
-     * @throws Exception If failed.
-     */
-    private void rebuild(@Nullable SSLContext ctx) throws Exception {
-        sslCtxFactory.reload(factory -> factory.setSslContext(ctx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized @Nullable X509Certificate[] servedChain() {
-        SSLContext ctx;
-
+    /** @return Context Jetty serves, {@code null} if none or if its last rebuild failed. */
+    private @Nullable SSLContext jettyContext() {
         try {
-            ctx = sslCtxFactory.getSslContext();
+            return sslCtxFactory.getSslContext();
         }
         catch (IllegalStateException failedJettyReload) {
             return null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized @Nullable X509Certificate[] servedChain() {
+        SSLContext ctx = jettyContext();
 
         if (ctx != servedCtx) {
             servedChain = ctx == null ? null : SslCertificates.servedChain(ctx);

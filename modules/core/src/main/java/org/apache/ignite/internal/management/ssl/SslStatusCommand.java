@@ -17,36 +17,15 @@
 
 package org.apache.ignite.internal.management.ssl;
 
-import java.util.Collection;
-import java.util.function.Consumer;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
-
 /** */
-public class SslStatusCommand implements ComputeCommand<NoArg, String> {
+public class SslStatusCommand extends SslCommand.SslSubCommand {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Show the TLS certificates of all cluster nodes and how their reloads went";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<NoArg> argClass() {
-        return NoArg.class;
-    }
-
-    /** {@inheritDoc} */
     @Override public Class<SslStatusTask> taskClass() {
         return SslStatusTask.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
-        return nodes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, String res, Consumer<String> printer) {
-        printer.accept(res);
     }
 }

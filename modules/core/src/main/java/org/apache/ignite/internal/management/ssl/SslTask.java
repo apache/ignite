@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.ssl;
 
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
 /** Task of an {@code --ssl} command: every node answers on its own, and the command fails only once every node is in the report. */
@@ -58,13 +55,5 @@ public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, String> 
             throw new IgniteException(res.toString());
 
         return res.toString();
-    }
-
-    /**
-     * @param ignite Node.
-     * @return Components of the node whose certificates the commands reload and report, empty if the node uses no SSL.
-     */
-    static Collection<SslContextReloadable> reloadables(IgniteEx ignite) {
-        return ignite.context().internalSubscriptionProcessor().sslContexts().reloadables();
     }
 }

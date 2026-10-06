@@ -166,17 +166,15 @@ This step may not be necessary if your trusted stores contain the root certifica
 +
 --
 Import the new certificate to the trusted store of every node, server or client, then run `control.sh --ssl reload`.
-Do the same for applications that connect to the cluster with SSL, including `control.sh` itself (`--truststore`): the command does not reach them, and a running thin client reads its trusted store only when it starts.
+Also import it to the trusted stores of applications that connect to the cluster with SSL, including `control.sh` itself (`--truststore`): `--ssl reload` does not reach them, and a running thin client reads its trusted store only when it starts.
 
 Now all nodes trust the new certificates.
 --
 
 . Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Repeat this for all certificates you want to update, then run `control.sh --ssl reload`.
-A node whose own trusted store does not accept its new certificate keeps the old one and is reported as failed.
 Check with `control.sh --ssl status` that every node serves the new certificate.
 
-Connections that are already open keep the old certificates until they close, and nodes accept the old certificate on new connections while their trusted stores accept it.
-So if a private key has been compromised, make sure the trusted stores no longer accept its certificate, run `control.sh --ssl reload`, and restart the nodes.
+If a private key has been compromised, make sure the trusted stores no longer accept its certificate, run `control.sh --ssl reload`, and restart the nodes one at a time: open connections keep their certificates until they close.
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
 
@@ -190,8 +188,7 @@ The node then reads the key store and trust store files again in the renewal win
 Put the new files in place before the window, and only files you are ready to use: the node picks them up by itself.
 The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
 If the factory serves discovery or communication, the node's own trust store must also accept the new certificate.
-A changed trust store alone is not picked up: the node takes it only together with a newer certificate.
-So to trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
+A changed trust store alone is not picked up, so to trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
 
 Until the files hold a newer certificate, the node keeps the one in use and checks again with a growing pause, from 1 minute to 1 hour by default.
 It logs this as a warning once a day, and as an error once less than half of the window is left or the certificate would expire before the next check.

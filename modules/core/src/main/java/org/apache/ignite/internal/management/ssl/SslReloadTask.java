@@ -59,7 +59,7 @@ public class SslReloadTask extends SslTask {
         @Override protected String run(NoArg arg) throws IgniteException {
             String id = ignite.localNode().id().toString();
 
-            Collection<SslContextReloadable> comps = reloadables(ignite);
+            Collection<SslContextReloadable> comps = ignite.context().internalSubscriptionProcessor().sslContexts().reloadables();
 
             if (comps.isEmpty())
                 return id + ": SSL is not configured";

@@ -32,18 +32,16 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}; keeping
  * it, and deciding when to replace it, is up to the caller.
  * <p>
- * With {@link #setRenewalEnabled(boolean) renewal enabled}, a node renews the certificate by itself before it expires: it calls
- * {@link #create()} when the certificate in use enters the renewal window, as well as when a transport starts and on every
- * {@code --ssl reload}, so every call must build the context from the current key material, as {@link SslContextFactory} does by reading
- * its files. The node keeps the context in use, with its trusted authorities, while {@link #create()} hands back the same certificate. A
- * new certificate is rejected unless the node can tell it, every certificate of its chain is valid now, the chain expires later than the
- * one in use, and, if the factory serves discovery or communication, a handshake with the trusted authorities of the new context accepts
- * it; so take those authorities from a source local to the node, not from the service that issues the certificates.
+ * A node calls {@link #create()} when a transport starts, on every {@code --ssl reload} and, with {@link #setRenewalEnabled(boolean)
+ * renewal enabled}, when the certificate in use enters the renewal window, so every call must build the context from the current key
+ * material. While a renewal gets the same certificate back, the node keeps the context in use with its trusted authorities. A renewed
+ * certificate goes in use only if its chain is valid now and expires later than the one in use and, for discovery and communication, a
+ * handshake with the trusted authorities of the new context accepts it: take those authorities from a source local to the node, not from
+ * the service that issues the certificates.
  * <p>
  * All renewals of a node run in one thread: bound every wait for key material well below {@link #getRenewalRetryMinInterval()} and stop
- * waiting when the thread is interrupted, which is how a stopping node ends an attempt. A node calls {@link #create()} of an instance once
- * at a time, but nodes that share an instance in one JVM may call it concurrently. The node reads the renewal settings once, when a
- * transport starts, does not start if they are out of range, and does not release what the factory holds.
+ * waiting when the thread is interrupted. Nodes that share an instance in one JVM may call {@link #create()} concurrently. The node reads
+ * the renewal settings once, when a transport starts, and does not start if they are out of range.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -144,11 +142,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.protocols = protocols;
     }
 
-    /**
-     * Gets whether a node renews the certificate by itself before it expires.
-     *
-     * @return Whether renewal is enabled.
-     */
+    /** @return Whether a node renews the certificate by itself before it expires. */
     public boolean isRenewalEnabled() {
         return renewalEnabled;
     }
@@ -162,11 +156,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.renewalEnabled = renewalEnabled;
     }
 
-    /**
-     * Gets the share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it.
-     *
-     * @return Share of the lifetime.
-     */
+    /** @return Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it. */
     public double getRenewBeforeFraction() {
         return renewBeforeFraction;
     }
@@ -181,11 +171,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.renewBeforeFraction = renewBeforeFraction;
     }
 
-    /**
-     * Gets the maximum renewal window.
-     *
-     * @return Maximum renewal window, in milliseconds; {@code 0} means no maximum.
-     */
+    /** @return Maximum renewal window, in milliseconds; {@code 0} means no maximum. */
     public long getRenewBefore() {
         return renewBefore;
     }
@@ -200,11 +186,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.renewBefore = renewBefore;
     }
 
-    /**
-     * Gets the share of the window by which a node moves a renewal earlier at random.
-     *
-     * @return Share of the window.
-     */
+    /** @return Share of the window by which a node moves a renewal earlier at random. */
     public double getRenewalJitter() {
         return renewalJitter;
     }
@@ -220,11 +202,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.renewalJitter = renewalJitter;
     }
 
-    /**
-     * Gets the pause after the first renewal attempt that puts no new certificate in use.
-     *
-     * @return Pause, in milliseconds.
-     */
+    /** @return Pause after the first renewal attempt that puts no new certificate in use, in milliseconds. */
     public long getRenewalRetryMinInterval() {
         return renewalRetryMinInterval;
     }
@@ -240,11 +218,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.renewalRetryMinInterval = renewalRetryMinInterval;
     }
 
-    /**
-     * Gets the longest pause between renewal attempts that put no new certificate in use.
-     *
-     * @return Pause, in milliseconds.
-     */
+    /** @return Longest pause between renewal attempts that put no new certificate in use, in milliseconds. */
     public long getRenewalRetryMaxInterval() {
         return renewalRetryMaxInterval;
     }

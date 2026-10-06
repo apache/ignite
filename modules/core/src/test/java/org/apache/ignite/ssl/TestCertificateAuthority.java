@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -153,19 +152,13 @@ public class TestCertificateAuthority {
     }
 
     /**
-     * Writes a store to a file in one move, so that nothing reads it half-written.
-     *
      * @param store Store.
      * @param path File to write or replace.
      */
     public static void save(KeyStore store, Path path) throws Exception {
-        Path tmp = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
-
-        try (OutputStream out = Files.newOutputStream(tmp)) {
+        try (OutputStream out = Files.newOutputStream(path)) {
             store.store(out, PWD);
         }
-
-        Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
     /**

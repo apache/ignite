@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.ssl;
 
-import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -99,37 +99,22 @@ public class SslContextRegistry {
     }
 
     /**
-     * @param transport Transport, one of the names in {@link SslContextReloadable}.
-     * @return Name of its metric registry.
-     */
-    public static String metricRegistryName(String transport) {
-        return metricName("ssl", transport.replace(' ', '.').toLowerCase());
-    }
-
-    /**
      * @param transport Transport.
      * @param comp Component serving it.
      */
     private void registerMetrics(String transport, SslContextReloadable comp) {
-        MetricRegistryImpl reg = ctx.metric().registry(metricRegistryName(transport));
+        MetricRegistryImpl reg = ctx.metric().registry(metricName("ssl", transport.replace(' ', '.').toLowerCase()));
 
-        reg.register("CertificateSubject", () -> {
-            X509Certificate cert = comp.servedCertificate();
+        reg.register("CertificateSubject", () -> Optional.ofNullable(comp.servedCertificate())
+            .map(c -> c.getSubjectX500Principal().toString()).orElse(null), String.class,
+            "Subject DN of the certificate presented on new connections.");
 
-            return cert == null ? null : cert.getSubjectX500Principal().toString();
-        }, String.class, "Subject DN of the certificate presented on new connections.");
+        reg.register("CertificateIssuer", () -> Optional.ofNullable(comp.servedCertificate())
+            .map(c -> c.getIssuerX500Principal().toString()).orElse(null), String.class,
+            "Issuer DN of the certificate presented on new connections.");
 
-        reg.register("CertificateIssuer", () -> {
-            X509Certificate cert = comp.servedCertificate();
-
-            return cert == null ? null : cert.getIssuerX500Principal().toString();
-        }, String.class, "Issuer DN of the certificate presented on new connections.");
-
-        reg.register("CertificateNotAfter", () -> {
-            X509Certificate[] chain = comp.servedChain();
-
-            return chain == null ? 0 : SslCertificates.chainNotAfter(chain);
-        }, "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
+        reg.register("CertificateNotAfter", () -> Optional.ofNullable(comp.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
+            "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
 
         reg.register("LastReloadTime", () -> comp.lastSuccessTime(), "Time of the last successful reload, in milliseconds; 0 if none.");
         reg.register("LastReloadFailure", comp::lastFailure, String.class, "Reason of the last failed reload since the last success.");
