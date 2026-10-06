@@ -481,6 +481,7 @@ Register name: `client.connector`
 |receivedBytes | long | Total number of bytes received by current node.
 |sentBytes | long | Total number of bytes sent by current node.
 |thin.AcceptedSessions | integer | Number of successfully established sessions for the client type.
+|thin.ActiveComputeTasksOnBusiestConnection | integer | Maximum number of active compute tasks per connection among open thin client connections. System tasks are not counted.
 |thin.ActiveSessions | integer | Number of active sessions for the thin client.
 |===
 
