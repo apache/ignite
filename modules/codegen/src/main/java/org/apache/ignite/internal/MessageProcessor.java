@@ -187,19 +187,19 @@ public class MessageProcessor extends AbstractProcessor {
             msgFields.put(clazz, fields);
         }
 
-        List<Function<ProcessingEnvironment, MessageCompanionGenerator>> generators = List.of(
+        List<Function<ProcessingEnvironment, MessageGenerator>> generators = List.of(
             MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
-            for (Function<ProcessingEnvironment, MessageCompanionGenerator> factory : generators) {
-                MessageCompanionGenerator gen = factory.apply(processingEnv);
+            for (Function<ProcessingEnvironment, MessageGenerator> factory : generators) {
+                MessageGenerator gen = factory.apply(processingEnv);
 
                 try {
                     gen.generate(type.getKey(), type.getValue());
                 }
                 catch (Exception e) {
                     processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                        "Failed to generate a message " + gen.typeSuffix().toLowerCase() + ":" + e.getMessage(), type.getKey());
+                        "Failed to generate a message " + gen.name() + ":" + e.getMessage(), type.getKey());
                 }
             }
         }
