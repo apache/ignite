@@ -220,7 +220,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
                         .orElse(new SnapshotMetadata());
 
-                    // Real, meta-based snapshot file tree. Can belong to other cluster, other baseline.
+                    // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
                     sft = new SnapshotFileTree(
                         ignite.configuration(),
                         ignite.context().pdsFolderResolver().fileTree(),
