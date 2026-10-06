@@ -47,10 +47,10 @@ import javax.tools.StandardLocation;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 
 /**
- * Base class for message code generators ({@link MessageSerializerGenerator}, {@link MessageMarshallerGenerator},
- * {@link MessageDeploymentGenerator}).
+ * Base class for generators of Java companion classes of a message ({@link MessageSerializerGenerator},
+ * {@link MessageMarshallerGenerator}, {@link MessageDeploymentGenerator}).
  */
-public abstract class MessageCompanionGenerator {
+public abstract class MessageCompanionGenerator implements MessageGenerator {
     /** Blank separator line in generated code. */
     public static final String EMPTY = "";
 
@@ -101,7 +101,7 @@ public abstract class MessageCompanionGenerator {
     }
 
     /** Generates and writes the source file for {@code type}; skipped when {@link #shouldSkip} returns {@code true}. */
-    protected final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
+    @Override public final void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         assert this.type == null : "Message" + typeSuffix() + " generator isn't stateless and is supposed to be single-use.";
 
         if (shouldSkip(type, fields))
@@ -136,6 +136,11 @@ public abstract class MessageCompanionGenerator {
                 throw e;
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return typeSuffix().toLowerCase();
     }
 
     /** @return Class name suffix: {@code "Serializer"} or {@code "Marshaller"}. */
