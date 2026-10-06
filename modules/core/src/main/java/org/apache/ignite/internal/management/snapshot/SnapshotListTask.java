@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -165,23 +166,27 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                 snpDescsRes = U.newHashMap(locSnps.size());
 
-                for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
-                    SnapshotFileTree sft = locSnps.get(snpIdx).get1();
+                for (T2<SnapshotFileTree, Long> snpPair : locSnps) {
+                    SnapshotFileTree sft = snpPair.get1();
 
                     SnapshotListJobResult.SnapshotInfo extStors = externalStorages(sft);
 
-                    // Optiona incremental snapshots description.
-                    SnapshotListJobResult.SnapshotInfo incs = incrementals(sft);
+                    try {
+                        // Optiona incremental snapshots description.
+                        SnapshotListJobResult.SnapshotInfo incs = incrementals(sft);
 
-                    // Main snapshot description.
-                    SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
-                        calculateDirectorySize(sft.root()),
-                        locSnps.get(snpIdx).get2(),
-                        extStors,
-                        incs
-                    );
+                        // Main snapshot description.
+                        SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
+                            calculateDirectorySize(sft.root()),
+                            snpPair.get2(),
+                            extStors,
+                            incs
+                        );
 
-                    snpDescsRes.put(sft.name(), snpDesc);
+                        snpDescsRes.put(sft.name(), snpDesc);
+                    } catch (Exception e) {
+
+                    }
                 }
             }
             catch (Exception e) {
@@ -269,49 +274,52 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Number, total size and last creation time of incremental snapshots. */
-        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws IOException {
+        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws Exception {
             File[] incs = sft.incrementsRoot().listFiles();
 
-            int cnt = 0;
-            long size = 0L;
-            long createTime = 0L;
+            if (F.isEmpty(incs))
+                return null;
 
-            if (!F.isEmpty(incs)) {
-                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+            AtomicInteger cnt = new AtomicInteger();
+            AtomicLong size = new AtomicLong();
+            long[] createTime = new long[1];
 
-                int incIdx;
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-                for (File incDir : incs) {
+            List<Future<?>> futs = new ArrayList<>(incs.length);
+
+            for (File incDir : incs) {
+                Future<?> fut = ignite.context().pools().getSnapshotExecutorService().submit(() -> {
                     try {
-                        incIdx = Integer.parseInt(incDir.getName());
-                    }
-                    catch (NumberFormatException e) {
-                        log.warning("Failed to calculate incremental snapshot size, wrong folder name [name="
-                            + incDir.getName() + ']', e);
+                        int incIdx = Integer.parseInt(incDir.getName());
 
-                        continue;
-                    }
+                        SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
 
-                    SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
-                    IncrementalSnapshotMetadata incMeta;
+                        IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
 
-                    try {
-                        incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
+                        size.addAndGet(calculateDirectorySize(incDir));
+
+                        cnt.incrementAndGet();
+
+                        if(true) throw new IgniteException("test");
+
+                        synchronized (createTime) {
+                            createTime[0] = Math.max(createTime[0], incMeta.snapshotTime());
+                        }
                     }
                     catch (Exception e) {
-                        log.warning("Failed to calculate incremental snapshot size, unable to read the metadata [name="
-                            + incDir.getName() + ']', e);
-
-                        continue;
+                        throw new IgniteException("Failed to calculate size of an incremental snapshot [snp=" + sft.root() + ']', e);
                     }
+                });
 
-                    cnt++;
-                    size += calculateDirectorySize(incDir);
-                    createTime = Math.max(createTime, incMeta.snapshotTime());
-                }
+                futs.add(fut);
             }
 
-            return cnt == 0 ? null : new SnapshotListJobResult.SnapshotInfo(cnt, size, createTime);
+            for(Future<?> fut : futs) {
+                fut.get();
+            }
+
+            return new SnapshotListJobResult.SnapshotInfo(cnt.get(), size.get(), createTime[0]);
         }
     }
 }
