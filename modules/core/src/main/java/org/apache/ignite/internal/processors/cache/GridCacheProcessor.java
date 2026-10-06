@@ -2879,32 +2879,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param rmtNode Remote node to check.
-     * @return Data storage configuration
-     */
-    private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
-        return GridCacheUtils.extractDataStorage(
-            rmtNode,
-            ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())
-        );
-    }
-
-    /**
-     * @param dataStorageCfg User-defined data regions.
-     */
-    private Map<String, DataRegionConfiguration> dataRegionCfgs(DataStorageConfiguration dataStorageCfg) {
-        if (dataStorageCfg != null) {
-            return Optional.ofNullable(dataStorageCfg.getDataRegionConfigurations())
-                .map(Stream::of)
-                .orElseGet(Stream::empty)
-                .collect(Collectors.toMap(DataRegionConfiguration::getName, e -> e));
-        }
-
-        return Collections.emptyMap();
-    }
-
-    /**
      * Force checkpoint and remove offheap checkpoint listener after it was finished.
      *
      * @param grpToStop Cache group to stop.
@@ -3560,40 +3534,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
-    }
-
-    /**
-     * Checks that cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
-     *
-     * @param opName Operation name.
-     * @param cfgs Stored cache configurations.
-     * @throws CacheException If cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
-     */
-    private void checkReadOnlyState(String opName, Collection<StoredCacheData> cfgs) {
-        IgniteOutClosure<String> cacheNameClo = null;
-        IgniteOutClosure<String> cacheGrpNameClo = null;
-
-        if (!F.isEmpty(cfgs)) {
-            if (cfgs.size() == 1) {
-                CacheConfiguration cfg = cfgs.iterator().next().config();
-
-                cacheNameClo = cfg::getName;
-                cacheGrpNameClo = cfg::getGroupName;
-            }
-            else {
-                cacheNameClo = () -> cfgs.stream()
-                    .map(StoredCacheData::config)
-                    .map(CacheConfiguration::getName)
-                    .collect(toList()).toString();
-
-                cacheGrpNameClo = () -> cfgs.stream()
-                    .map(StoredCacheData::config)
-                    .map(CacheConfiguration::getGroupName)
-                    .collect(toList()).toString();
-            }
-        }
-
-        checkReadOnlyState(opName, cacheGrpNameClo, cacheNameClo);
     }
 
     /**

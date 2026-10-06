@@ -1226,34 +1226,6 @@ public class ClusterCachesInfo {
     }
 
     /**
-     * Validate correcteness of new cache start request.
-     *
-     * @param err Current error.
-     * @param persistedCfgs {@code True} if process start of persisted caches during cluster activation.
-     * @param res Accumulator for cache change process results.
-     * @param req Cache change request.
-     *
-     * @return {@code True} if there is no errors due initialization.
-     */
-    private boolean validateStartNewCache(
-        @Nullable IgniteCheckedException err,
-        boolean persistedCfgs,
-        CacheChangeProcessResult res,
-        DynamicCacheChangeRequest req
-    ) {
-        if (err != null) {
-            if (persistedCfgs)
-                res.errs.add(err);
-            else
-                ctx.cache().completeCacheStartFuture(req, false, err);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * @param dataBag Discovery data bag.
      */
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {

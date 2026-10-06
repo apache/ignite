@@ -28,10 +28,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.isolation;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
@@ -130,9 +127,6 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
-
-    /** Random. */
-    private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
@@ -743,22 +737,6 @@ public class JdbcThinTcpIo {
      */
     boolean isIsolationLevelSupported(TransactionIsolation isolation) {
         return isolationLevelsSupported.contains(isolation);
-    }
-
-    /**
-     * Get next server index.
-     *
-     * @param len Number of servers.
-     * @return Index of the next server to connect to.
-     */
-    private static int nextServerIndex(int len) {
-        if (len == 1)
-            return 0;
-        else {
-            long nextIdx = IDX_GEN.getAndIncrement();
-
-            return (int)(abs(nextIdx) % len);
-        }
     }
 
     /**

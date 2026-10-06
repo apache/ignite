@@ -28,8 +28,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.task.GatherPartitionStatistics;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 
@@ -304,31 +302,6 @@ public class StatisticsProcessor {
             else
                 log.warning("Unexpected error on statistic gathering", t);
         }
-    }
-
-    /**
-     * Check if specified object stistic fully meet specified statistics object configuration.
-     *
-     * @param stat Object statistics to test.
-     * @param cfg Statistics object configuration to compare with.
-     * @return {@code true} if specified statistics fully meet to specified configuration requiremenrs,
-     *         {@code false} - otherwise.
-     */
-    private boolean partStatSuitToConfiguration(ObjectStatisticsImpl stat, StatisticsObjectConfiguration cfg) {
-        if (stat == null)
-            return false;
-
-        if (stat.columnsStatistics().size() != cfg.columns().size())
-            return false;
-
-        for (StatisticsColumnConfiguration colCfg : cfg.columns().values()) {
-            ColumnStatistics colStat = stat.columnStatistics(colCfg.name());
-
-            if (colStat == null || colCfg.version() > colStat.version())
-                return false;
-        }
-
-        return true;
     }
 
     /**
