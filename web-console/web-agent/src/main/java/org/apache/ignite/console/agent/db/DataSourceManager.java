@@ -209,20 +209,10 @@ public class DataSourceManager {
 				}
 					
 			}
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
+		} catch (InterruptedException | ExecutionException | TimeoutException | IOException e1) {
 			e1.printStackTrace();
-		} catch (ExecutionException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (TimeoutException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}		
-		return dataSource;
+		}
+        return dataSource;
 	}
 	
 
@@ -249,17 +239,10 @@ public class DataSourceManager {
 			}
 			
 			
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ExecutionException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (TimeoutException e1) {
-			// TODO Auto-generated catch block
+		} catch (InterruptedException | ExecutionException | TimeoutException e1) {
 			e1.printStackTrace();
 		}
-		return null;
+        return null;
 	}
 	
 	public static JsonArray getTaskFlows(String clusterId,String cache) {
@@ -280,16 +263,9 @@ public class DataSourceManager {
 					break;
 				}					
 			}
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ExecutionException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (TimeoutException e1) {
-			// TODO Auto-generated catch block
+		} catch (InterruptedException | ExecutionException | TimeoutException e1) {
 			e1.printStackTrace();
 		}
-		return dataSource;
+        return dataSource;
 	}
 }

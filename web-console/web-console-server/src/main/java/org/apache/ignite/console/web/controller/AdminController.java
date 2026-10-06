@@ -68,7 +68,7 @@ public class AdminController {
 
     
     /**
-     * @param period Period filter.
+     * @param accId Account ID filter.
      * @return List of accounts.
      */
     @Operation(summary = "Get a user.")
@@ -78,7 +78,7 @@ public class AdminController {
     }
     
     /**
-     * @param period Period filter.
+     * @param email Email filter.
      * @return List of accounts.
      */
     @Operation(summary = "Get a user.")

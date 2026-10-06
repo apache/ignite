@@ -5,7 +5,9 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.ignite.console.dto.Account;
+import org.apache.ignite.console.dto.Activity;
 import org.apache.ignite.console.dto.Cluster;
+import org.apache.ignite.console.repositories.NodeRepository;
 import org.apache.ignite.console.services.AccountsService;
 import org.apache.ignite.console.services.ConfigurationsService;
 import org.apache.ignite.console.utils.Utils;
@@ -36,6 +38,8 @@ public class IgniteThinConnectionService {
 
     private AccountsService accountsService;
 
+    private NodeRepository activitiesSrv;
+
     @Autowired
     private Environment env;
 
@@ -44,27 +48,36 @@ public class IgniteThinConnectionService {
         this.accountsService = accountsService;
     }
 
-    private Connection getConnection(String catalog) throws SQLException {
-        String jdbcUrl = "jdbc:ignite:thin://127.0.0.1:10802/"+catalog;
-
-        Optional<String> jdbcUser = Optional.empty();
-        Optional<String> jdbcPassword = Optional.empty();
-
+    public String getJdbcUrl(String catalog) throws SQLException {
+        String jdbcUrl = "jdbc:ignite:thin://127.0.0.1:10801/"+catalog;
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if(auth!=null && auth instanceof TokenAuthentication) {
             TokenAuthentication tokenAuth = (TokenAuthentication) auth;
             Account account = tokenAuth.getPrincipal();
-            JsonObject theCluster = null;
-            JsonArray list = repo.loadClusters(new ConfigurationKey(account.getId(), isTestEnv()));
-            for (Object row : list) {
-                JsonObject cluster = (JsonObject) row;
-                String name = cluster.getString("name");
-                if (catalog.equals(name)) {
-                    theCluster = cluster;
-                    jdbcUrl = "jdbc:ignite:thin://127.0.0.1:10802/"+catalog;
+            JsonObject nodeInfo = null;
+            List<Activity> list = activitiesSrv.list(account.getId(), catalog,"node-joined");
+            for (Activity row : list) {
+                nodeInfo = new JsonObject(row.json()); ;
+                if (nodeInfo.containsKey("clientListenerPort")) {
+                    Integer jdbcPort = nodeInfo.getInteger("clientListenerPort");
+                    String host = "127.0.0.1";
+                    JsonArray hosts = nodeInfo.getJsonArray("org.apache.ignite.rest.tcp.addrs");
+                    if(host!=null && !hosts.isEmpty()){
+                        host = hosts.getString(0);
+                    }
+                    jdbcUrl = "jdbc:ignite:thin://"+host+":"+jdbcPort+"/"+catalog;
+                    break;
                 }
             }
         }
+        return jdbcUrl;
+    }
+
+    private Connection getConnection(String catalog) throws SQLException {
+        String jdbcUrl = getJdbcUrl(catalog);
+        Optional<String> jdbcUser = Optional.empty();
+        Optional<String> jdbcPassword = Optional.empty();
+
         return DriverManager.getConnection(jdbcUrl, jdbcUser.orElse(null), jdbcPassword.orElse(null));
     }
 

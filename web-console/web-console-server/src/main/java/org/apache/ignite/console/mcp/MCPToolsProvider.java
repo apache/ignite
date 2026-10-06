@@ -39,8 +39,8 @@ public class MCPToolsProvider {
         return tools;
     }
 
-    @McpTool(description = "Get database(catalog) list about current user.")
-    public List<McpSchema.ResourceContents> userDatabaseList() {
+    @McpTool(description = "Get catalog list about current user.")
+    public List<McpSchema.ResourceContents> userCatalogList() {
 
         List<McpSchema.ResourceContents> contents = new ArrayList<>();
         Map<String,Object> gMeta = new HashMap<>();
@@ -54,10 +54,9 @@ public class MCPToolsProvider {
                 JsonArray clusters = repo.loadClusters(new ConfigurationKey(account.getId(), isTestEnv()));
                 for(Object item: clusters){
                     JsonObject cluster = (JsonObject)item;
-                    String jdbc = "jdbc:ignite:thin://127.0.0.1:10802/"+cluster.getString("name");
-                    String uri = "database:"+cluster.getString("name");
+                    String uri = "catalogs:"+cluster.getString("name");
                     Map<String,Object> dbMeta = new HashMap<>();
-                    dbMeta.put("jdbc",jdbc);
+                    dbMeta.putAll(cluster.getMap());
                     var resource = new McpSchema.TextResourceContents(
                             uri, "application/json", cluster.toString(),dbMeta
                     );

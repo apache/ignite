@@ -61,9 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.util.StringUtil;
-import org.h2.message.DbException;
-import org.h2.value.DataType;
-
 import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
@@ -111,9 +108,8 @@ public class JdbcExecutor implements AutoCloseable {
     /**
      * Send request to cluster.
      *
-     * @param nodeURIs List of cluster nodes URIs.
+     * @param clusterId cluster id.
      * @param params Map with reques params.
-     * @param headers Map with reques headers.
      * @return Response from cluster.
      * @throws IOException If failed to send request to cluster.
      */
@@ -247,14 +243,9 @@ public class JdbcExecutor implements AutoCloseable {
                     	ObjectNode column = new ObjectNode(jsonNodeFactory);
                     	
                     	for(DbColumn col: table.getColumns()) {
-                    		String aClass = "java.lang.Object";
-                    		try {
-                    			aClass = DataType.getTypeClassName(DataType.convertSQLTypeToValueType(col.getType()));
-                    		}
-                    		catch(DbException e) {
-                    			log.warning(e.getMessage());
-                    		}
-                    		column.put(col.getName(), !StringUtil.isBlank(col.getComment())? aClass+" //"+col.getComment(): aClass);                    		
+                    		String colTypeName = col.getTypeName();
+
+                    		column.put(col.getName(), !StringUtil.isBlank(col.getComment())? colTypeName+" //"+col.getComment(): colTypeName);
                     	}                    	
                     	fields.set(typeName, column);
                     	

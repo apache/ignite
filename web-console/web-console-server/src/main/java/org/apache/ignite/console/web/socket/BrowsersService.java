@@ -199,8 +199,8 @@ public class BrowsersService extends AbstractSocketHandler {
 
                         		if(nodeIndex==agents.size()-1) {
                                     evt.setRequestId(reqId+"-"+nodeIndex+"-lastNode");
-                                    agentsSrvc.sendMessage(sess, evt);
-                        			//agentsSrvc.sendMessageWithResponse(sess, evt, this.transitionSrvc.localNodeId());
+                                    //-agentsSrvc.sendMessage(sess, evt);
+                        			agentsSrvc.sendMessageWithResponse(sess, evt, this.transitionSrvc.localNodeId());
                         		}
                         		else {
                                     evt.setRequestId(reqId+"-"+nodeIndex);

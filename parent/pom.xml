@@ -874,26 +874,6 @@
 
             <build>
                 <plugins>
-                    <plugin><!-- generates dependencies licenses -->
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-remote-resources-plugin</artifactId>
-                        <version>${maven.remote.resources.version}</version>
-                        <executions>
-                            <execution>
-                                <id>ignite-dependencies</id>
-                                <goals>
-                                    <goal>process</goal>
-                                </goals>
-                                <configuration>
-                                    <resourceBundles>
-                                        <resourceBundle>org.apache.ignite:ignite-apache-license-gen:1.4.0</resourceBundle>
-                                    </resourceBundles>
-                                    <excludeTransitive>true</excludeTransitive>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>

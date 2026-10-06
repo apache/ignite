@@ -22,7 +22,7 @@ public class DbColumn {
     /** Whether column unsigned. */
     private final boolean unsigned;
     
-    /** Whether column unsigned. */
+    /** column type name. */
     private final String typeName;
 
 

@@ -48,8 +48,8 @@ public class MCPResourceProvider implements SmartInitializingSingleton {
     public void afterSingletonsInstantiated() {
         // 注册一个带有动态参数 accountId 的资源模板
         McpSchema.Resource db = McpSchema.Resource.builder()
-                .uri("databases")  // URI模板
-                .name("User Databases")
+                .uri("catalogs")  // URI模板
+                .name("User Database Catalogs")
                 .description("获取当前用户可以访问的数据库列表")
                 .mimeType("application/json")
                 .build();
@@ -75,10 +75,9 @@ public class MCPResourceProvider implements SmartInitializingSingleton {
                 JsonArray clusters = repo.loadClusters(new ConfigurationKey(account.getId(), isTestEnv()));
                 for(Object item: clusters){
                     JsonObject cluster = (JsonObject)item;
-                    String jdbc = "jdbc:ignite:thin://127.0.0.1:10802/"+cluster.getString("name");
                     String uri = request.uri()+":"+cluster.getString("name");
                     Map<String,Object> dbMeta = new HashMap<>();
-                    dbMeta.put("jdbc",jdbc);
+                    dbMeta.putAll(cluster.getMap());
                     var resource = new TextResourceContents(
                             uri, "application/json", cluster.toString(),dbMeta
                     );

@@ -17,44 +17,29 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.utils.StringToUUID;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.IgniteSpiConfiguration;
-import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -85,19 +70,11 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     /** IPv6 colon substitute. */
     private static final String COLON_SUBST = "_";
 
-
-    public static String NODE_JOINED = "node-joined";
-
-    public static String NODE_LEFT = "node-left";
-
-    public static String NODE_FAILED = "node-failed";
-
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
 
-    /** File-system path. */
-    private String path = null;
+    private String instanceName = null;
     
     private String masterUrl = "http://127.0.0.1:3000"; // or "file://works/"
     
@@ -105,8 +82,9 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     
     private int responseWaitTime = 60000;
     
-    private HttpClient httpClient = null;
+    private DiscoveryInfoService discClient = null;
 
+    /** File-system path. */
     /** Folder to keep items in. */
     @GridToStringExclude
     private File folder;
@@ -124,15 +102,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
      */
     public TcpDiscoveryWebConsoleServerIpFinder() {
         setShared(true);
-    }
-
-    /**
-     * Gets path.
-     *
-     * @return Shared path.
-     */
-    public String getPath() {
-        return path;
     }
 
 
@@ -184,10 +153,11 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
     private void init() throws IgniteSpiException {
         if (initGuard.compareAndSet(false, true)) {
         	String root = getFolderRoot();
-        	String instanceName = this.ignite.name();
+        	instanceName = this.ignite.name();
         	if (instanceName == null || instanceName.isEmpty())
         		instanceName = DFLT_NAME;
-        	
+
+            String path = null;
         	if(masterUrl!=null) {
     			if(masterUrl.toLowerCase().startsWith("file://")) {
     				path = masterUrl.substring("file://".length());
@@ -204,11 +174,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             	}            	
             }
             
-            if(this.masterUrl!=null && !masterUrl.toLowerCase().startsWith("file://")) {            	
-            	httpClient = HttpClient.newBuilder()
-            			.connectTimeout(Duration.ofMillis(responseWaitTime))
-                        .version(HttpClient.Version.HTTP_1_1)
-            			.build();
+            if(this.masterUrl!=null && !masterUrl.toLowerCase().startsWith("file://")) {
+                discClient = new DiscoveryInfoService(this.masterUrl,this.accountToken,this.responseWaitTime);
                 initLatch.countDown();
                 return;
             }
@@ -250,7 +217,7 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 
-            if (folder == null && httpClient==null)
+            if (folder == null && discClient==null)
                 throw new IgniteSpiException("Failed to initialize shared file system folder (check logs for errors).");
         }
 
@@ -262,40 +229,25 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
         Collection<InetSocketAddress> addrs = new HashSet<>();
         
-        if(this.httpClient!=null) {
-        	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED;
-        	
-        	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
-        			         .uri(URI.create(url))
-        			         .header("Authorization", "token " + accountToken)
-        			         .GET()
-        			         .build();
+        if(this.discClient!=null) {
+
         	try {
-				HttpResponse<String> resp = httpClient.send(request,BodyHandlers.ofString());
-				for(String nodeInfo: resp.body().split("\n")) {
-		            try {
-                        if (nodeInfo.isBlank())
-                            continue;
-                        JsonObject st = new JsonObject(nodeInfo);
+				JsonArray resp = discClient.getClusterProperties(instanceName);
+				for(int i=0;i<resp.size();i++) {
+                    JsonObject st = resp.getJsonObject(i);
+                    if (st.isEmpty())
+                        continue;
 
-                        if (st.isEmpty())
-                            continue;
-
-                        JsonArray addrsList = st.getJsonArray("discoveryAddress");
-                        if(addrsList==null)
-                            continue;
-		                addrsList.forEach((addr->{
-                            String[] parts = addr.toString().split(DELIM);
-                            addrs.add(new InetSocketAddress(denormalizeAddress(parts[0]), Integer.parseInt(parts[1])));
-                        }));
-
-		            }
-		            catch (IllegalArgumentException e) {
-		                U.error(log, "Failed to parse node info entry: " + nodeInfo, e);
-		            }
+                    JsonArray addrsList = st.getJsonArray("discoveryAddress");
+                    if(addrsList==null)
+                        continue;
+                    addrsList.forEach((addr->{
+                        String[] parts = addr.toString().split(DELIM);
+                        addrs.add(new InetSocketAddress(denormalizeAddress(parts[0]), Integer.parseInt(parts[1])));
+                    }));
 				}
 			} catch (IOException | InterruptedException e) {
-				U.error(log, "Failed to get addresses entry: " + url, e);
+				U.error(log, "Failed to get addresses entry: " + instanceName, e);
 			}
         } 
         else {
@@ -332,46 +284,31 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
 
     public void clearAllAddresses() throws IgniteSpiException {
         init();
-        try {
-            if(this.httpClient!=null) {
-                // 清除历史注册数据
-                String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/clear";
-                HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
-                        .uri(URI.create(url))
-                        .header("Authorization", "token " + accountToken)
-                        .DELETE()
-                        .build();
-                httpClient.send(request,BodyHandlers.discarding());
-            }
-            else{
-                for (String fileName : folder.list()) {
-                    try {
-                        Path filePath = Path.of(folder.getCanonicalPath(),fileName);
-                        String content = Files.readString(filePath);
-                        JsonObject st = new JsonObject(content);
+        if(this.discClient!=null) {
+            // 清除历史注册数据
+            discClient.clearAllAddresses(instanceName);
+        }
+        else{
+            for (String fileName : folder.list()) {
+                try {
+                    Path filePath = Path.of(folder.getCanonicalPath(),fileName);
+                    String content = Files.readString(filePath);
+                    JsonObject st = new JsonObject(content);
 
-                        if (st.isEmpty())
-                            continue;
+                    if (st.isEmpty())
+                        continue;
 
-                        JsonArray addrsList = st.getJsonArray("discoveryAddress");
-                        addrsList.clear();
+                    JsonArray addrsList = st.getJsonArray("discoveryAddress");
+                    addrsList.clear();
 
-                        st.put("discoveryAddress",addrsList);
-                        Files.writeString(filePath, st.toString());
+                    st.put("discoveryAddress",addrsList);
+                    Files.writeString(filePath, st.toString());
 
-                    }
-                    catch (IllegalArgumentException | IOException e) {
-                        U.error(log, "Failed to parse file entry: " + fileName, e);
-                    }
+                }
+                catch (IllegalArgumentException | IOException e) {
+                    U.error(log, "Failed to parse file entry: " + fileName, e);
                 }
             }
-        }
-        catch (SecurityException e) {
-            throw new IgniteSpiException("Failed to delete file.", e);
-        } catch (IOException e) {
-            throw new IgniteSpiException("Failed to unregister address.", e);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 
@@ -390,10 +327,10 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         try {
             JsonObject st = new JsonObject();
             this.ignite.cluster().localNode().attributes().forEach((k,v)->{
-                if(k.toLowerCase().contains("port")){
+                if(k.toLowerCase().endsWith("port") || k.toLowerCase().endsWith("addrs")){
                     st.put(k,v);
                 }
-                else if(k.toLowerCase().contains("host")){
+                else if(k.toLowerCase().startsWith("node.")){
                     st.put(k,v);
                 }
             });
@@ -403,15 +340,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
             }
             st.put("discoveryAddress",hosts);
 
-            if(this.httpClient!=null) {
-                String url = this.masterUrl+ "/api/v1/"+path+"/"+nodeId+"/"+NODE_JOINED;
-
-                HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
-                        .uri(URI.create(url))
-                        .header("Authorization", "token " + accountToken)
-                        .PUT(BodyPublishers.ofString(st.toString()))
-                        .build();
-                httpClient.send(request,BodyHandlers.discarding());
+            if(this.discClient!=null) {
+                discClient.putClusterProperties(instanceName,nodeId,st);
             }
             else{
                 Files.writeString(
@@ -425,8 +355,6 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         }
         catch (IOException e) {
             throw new IgniteSpiException("Failed to create file.", e);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 
@@ -440,17 +368,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
                 String item = name(addr);
                 addresses.add(item);
             }
-
-        	if(this.httpClient!=null) {
-
-            	String url = this.masterUrl+ "/api/v1/"+path+"/"+NODE_JOINED+"/to/"+NODE_LEFT;
-            	
-            	HttpRequest request = HttpRequest.newBuilder().version(HttpClient.Version.HTTP_1_1)
-            			         .uri(URI.create(url))
-            			         .header("Authorization", "token " + accountToken)
-            			         .PUT(BodyPublishers.ofString(addresses.toString()))
-            			         .build();
-            	httpClient.send(request,BodyHandlers.discarding());
+            if(this.discClient!=null) {
+                discClient.unregisterAddresses(instanceName,addresses);
             }
             else{
                 for (String fileName : folder.list()) {
@@ -485,10 +404,8 @@ public class TcpDiscoveryWebConsoleServerIpFinder extends TcpDiscoveryIpFinderAd
         }
         catch (SecurityException e) {
             throw new IgniteSpiException("Failed to delete file.", e);
-        } catch (IOException e) {
+        } catch (Exception e) {
         	throw new IgniteSpiException("Failed to unregister address.", e);
-		} catch (InterruptedException e) {			
-			e.printStackTrace();
 		}
     }
 

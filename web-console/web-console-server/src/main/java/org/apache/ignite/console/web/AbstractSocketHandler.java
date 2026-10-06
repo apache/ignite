@@ -4,6 +4,7 @@ package org.apache.ignite.console.web;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ public abstract class AbstractSocketHandler extends TextWebSocketHandler {
      * @param mapper Mapper.
      */
     protected <T, R> Set<R> mapToSet(Collection<T> c, Function<? super T, ? extends R> mapper) {
-        return c.stream().map(mapper).collect(Collectors.toSet());
+        return c.stream().filter(Objects::nonNull).map(mapper).collect(Collectors.toSet());
     }
 
     /**
