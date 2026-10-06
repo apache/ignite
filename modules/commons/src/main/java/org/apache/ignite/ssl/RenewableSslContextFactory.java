@@ -74,7 +74,11 @@ public interface RenewableSslContextFactory extends Factory<SSLContext> {
         return DFLT_RENEWAL_RETRY_MIN_INTERVAL;
     }
 
-    /** @return Longest pause between failed renewals, in milliseconds, not less than {@link #getRenewalRetryMinInterval()}. */
+    /**
+     * @return Longest pause between failed renewals, in milliseconds, not less than {@link #getRenewalRetryMinInterval()}; the node cuts
+     *      the pause to a quarter of the renewal window, but not below {@link #getRenewalRetryMinInterval()}, and then adds a random delay
+     *      of up to half of it.
+     */
     public default long getRenewalRetryMaxInterval() {
         return DFLT_RENEWAL_RETRY_MAX_INTERVAL;
     }

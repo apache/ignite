@@ -182,51 +182,16 @@ So if a private key has been compromised, make sure the trusted stores no longer
 
 == Renewing Certificates Automatically
 
-A node can renew its certificate before it expires if the certificate comes from a certificate authority service rather than from a file.
-Set an SSL context factory that implements `RenewableSslContextFactory` as `IgniteConfiguration.sslContextFactory`, `ClientConnectorConfiguration.sslContextFactory` or `ConnectorConfiguration.sslFactory`.
-Every call of its `create()` must return a context with a newly issued certificate.
-Transports set with the same factory instance share the certificate and its renewals.
+A node renews its certificate by itself before it expires if its SSL context factory implements `RenewableSslContextFactory`, for example a factory that gets certificates from a certificate authority service.
 HTTP REST takes its certificate from the Jetty configuration and is not renewed.
 
-The node calls `create()` when the certificate enters the renewal window, by default the last 15% of its lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
+By default, the renewal window is the last 15% of the certificate lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
 The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
-If the factory serves discovery or communication, the node also checks the new certificate against the trusted authorities of the new context.
-Take these authorities from a source local to the node, such as a trust store file, and not from the response of the issuing service: otherwise the check accepts a certificate that other nodes do not trust yet.
+If the factory serves discovery or communication, the node's own trust store must also accept the new certificate.
 
-If a renewal fails, the node keeps its certificate and tries again, doubling the pause from 1 minute up to 1 hour by default and adding a random delay of up to half of it.
+If a renewal fails, the node keeps its certificate and tries again, with a pause that doubles from 1 minute up to 1 hour by default, plus a random delay of up to half of it.
 Failures are logged as warnings, and as errors once less than half of the window is left or the next attempt would come after expiry.
-`control.sh --ssl reload` also calls `create()`, and the node plans the next renewal from the new certificate.
 `control.sh --ssl status` and the `NextRenewalTime` metric show when the next renewal is due.
-
-All renewals of a node run in one thread, so a `create()` that waits holds up all of them and `control.sh --ssl reload`.
-Keep every wait for the issuing service well below the pause after the first failed renewal, and stop waiting when the thread is interrupted.
-
-The node calls the following methods of `RenewableSslContextFactory` once and does not start if a value is out of range:
-
-[width="100%", cols="30%, 60%, 10%"]
-|=================
-| Method | Description | Default
-
-|`getRenewBeforeFraction()`
-|Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when the node renews it. Greater than `0` and less than `1`.
-|`0.15`
-
-|`getRenewBefore()`
-|Maximum renewal window, in milliseconds, not negative. The node takes the smaller of it and the window from `getRenewBeforeFraction()`; `0` means no maximum.
-|`0`
-
-|`getRenewalJitter()`
-|Share of the window, from `0` to `1`, by which a renewal is moved earlier at random, so that nodes whose certificates expire together do not renew at the same moment. `renewBeforeFraction * (1 + renewalJitter)` must be less than `1`.
-|`0`
-
-|`getRenewalRetryMinInterval()`
-|Pause after the first failed renewal, in milliseconds, greater than `0`. The node never tries to renew more often than this.
-|`60000`
-
-|`getRenewalRetryMaxInterval()`
-|Longest pause between failed renewals, in milliseconds, before the random delay; not less than `getRenewalRetryMinInterval()`. The node also cuts the pause to a quarter of the window, but not below `getRenewalRetryMinInterval()`.
-|`3600000`
-|=================
 
 == SslContextFactory Properties
 
