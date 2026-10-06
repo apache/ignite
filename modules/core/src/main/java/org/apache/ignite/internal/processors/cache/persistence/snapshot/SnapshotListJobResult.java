@@ -53,7 +53,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
 
     /** Total sizes of external-storage snapshots. */
     @Order(6)
-    long[] extSize;
+    ExtraRecordsData[] extStorages;
 
     /** Default constructor for serialization purposes. */
     public SnapshotListJobResult() {
@@ -68,7 +68,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         @Nullable int[] incCnt,
         @Nullable long[] incSize,
         @Nullable long[] editTime,
-        @Nullable long[] extSize
+        @Nullable ExtraRecordsData[] extStorages
     ) {
         snpName = name;
         this.size = size;
@@ -78,7 +78,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         this.incSize = incSize;
         this.editTime = editTime;
 
-        this.extSize = extSize;
+        this.extStorages = extStorages;
     }
 
     /** */
@@ -112,7 +112,57 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public @Nullable long[] externalSizes() {
-        return extSize;
+    public @Nullable ExtraRecordsData[] externalStorages() {
+        return extStorages;
+    }
+
+    /** Additional, optional snapshot data like about incremental snapshots or external storages. */
+    public static class ExtraRecordsData extends IgniteDataTransferObject {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Number of related records or storages. */
+        @Order(0)
+        int cnt;
+
+        /** Total size of related records or storages. */
+        @Order(1)
+        long size;
+
+        /** Optional creation date of related records or storages. */
+        @Order(2)
+        @Nullable Long date;
+
+        /** Empty constructor for serialization purposes. */
+        public ExtraRecordsData() {
+            // No-op.
+        }
+
+        /** */
+        private ExtraRecordsData(int cnt, long size, @Nullable Long date) {
+            this.cnt = cnt;
+            this.size = size;
+            this.date = date;
+        }
+
+        /** */
+        public ExtraRecordsData(int cnt, long size) {
+            this(cnt, size, null);
+        }
+
+        /** @return Number of related records or storages. */
+        public int number() {
+            return cnt;
+        }
+
+        /** @return Total size of related records or storages. */
+        public long size() {
+            return size;
+        }
+
+        /** @return Optional creation date of related records or storages. */
+        public @Nullable Long date() {
+            return date;
+        }
     }
 }

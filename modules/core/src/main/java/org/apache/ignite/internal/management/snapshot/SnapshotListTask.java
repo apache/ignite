@@ -162,7 +162,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             long[] editTimes = null;
 
             // External storages data.
-            long[] extSizes = null;
+            SnapshotListJobResult.ExtraRecordsData[] extraStorages = null;
 
             try {
                 List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(
@@ -174,27 +174,30 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 sizes = new long[locSnps.size()];
                 creationTimes = new long[locSnps.size()];
 
-                for (int s = 0; s < locSnps.size(); s++) {
-                    SnapshotFileTree sft = locSnps.get(s).get1();
+                for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
+                    SnapshotFileTree sft = locSnps.get(snpIdx).get1();
 
-                    snpNames[s] = sft.name();
-                    creationTimes[s] = locSnps.get(s).get2();
+                    // Main snapshot data.
+                    snpNames[snpIdx] = sft.name();
+                    creationTimes[snpIdx] = locSnps.get(snpIdx).get2();
 
-                    sizes[s] = calculateDirectorySize(sft.root());
+                    sizes[snpIdx] = calculateDirectorySize(sft.root());
 
-                    for(File es : sft.extraStorages().values()) {
-                        if (sft.root().equals(es))
-                            continue;
+                    // Optional extra storages data.
+                    SnapshotListJobResult.ExtraRecordsData snpExtStors = findExtraStorages(sft);
 
-                        if (extSizes == null)
-                            extSizes = new long[locSnps.size()];
+                    if (snpExtStors != null) {
+                        if (extraStorages == null)
+                            extraStorages = new SnapshotListJobResult.ExtraRecordsData[locSnps.size()];
 
-                        sizes[s] += calculateDirectorySize(es);
+                        extraStorages[snpIdx] = snpExtStors;
+
+                        sizes[snpIdx] += snpExtStors.size();
                     }
 
+                    // Optiona incremental snapshots data.
                     T3<Integer, Long, Long> incRes = incrementalsData(sft);
 
-                    // Found incremental snapshots.
                     if (incRes.get1() > 0) {
                         if (incCnts == null) {
                             incCnts = new int[locSnps.size()];
@@ -202,9 +205,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                             editTimes = new long[locSnps.size()];
                         }
 
-                        incCnts[s] = incRes.get1();
-                        incSizes[s] = incRes.get2();
-                        editTimes[s] = incRes.get3();
+                        incCnts[snpIdx] = incRes.get1();
+                        incSizes[snpIdx] = incRes.get2();
+                        editTimes[snpIdx] = incRes.get3();
                     }
                 }
             }
@@ -212,7 +215,23 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
             }
 
-            return new SnapshotListJobResult(snpNames, sizes, creationTimes, incCnts, incSizes, editTimes, extSizes);
+            return new SnapshotListJobResult(snpNames, sizes, creationTimes, incCnts, incSizes, editTimes, extraStorages);
+        }
+
+        /** */
+        private static @Nullable SnapshotListJobResult.ExtraRecordsData findExtraStorages(SnapshotFileTree sft) throws IOException {
+            int extStoragesCnt = 0;
+            long extStoragesSize = 0;
+
+            for (File es : sft.allStorages().toList()) {
+                if (sft.nodeStorage().equals(es))
+                    continue;
+
+                extStoragesCnt++;
+                extStoragesSize += calculateDirectorySize(es);
+            }
+
+            return extStoragesCnt == 0 ? null : new SnapshotListJobResult.ExtraRecordsData(extStoragesCnt, extStoragesSize);
         }
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */

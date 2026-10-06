@@ -83,13 +83,26 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 long size = nodeSnps.sizes()[snpIdx];
                 long dateLong = nodeSnps.creationTimes()[snpIdx];
 
-                printer.accept("\t\tSnapshot '%s': size=%s (%db), created='%s' (epoch=%d)".formatted(
+                printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
                     name,
                     U.humanReadableByteCount(size),
                     size,
                     DATE_FORMATTER.format(Instant.ofEpochMilli(dateLong)),
                     dateLong
                 ));
+
+                // Optional external storages.
+                SnapshotListJobResult.ExtraRecordsData extStorages = nodeSnps.externalStorages() == null || nodeSnps.externalStorages()[snpIdx] == null
+                    ? null
+                    : nodeSnps.externalStorages()[snpIdx];
+
+                if (extStorages != null) {
+                    printer.accept("\t\t\texternal storages: cnt=%d, size=%s (%db)".formatted(
+                        extStorages.number(),
+                        U.humanReadableByteCount(extStorages.size()),
+                        extStorages.size()
+                    ));
+                }
 
                 if (nodeSnps.incrementalsCount() == null)
                     continue;
