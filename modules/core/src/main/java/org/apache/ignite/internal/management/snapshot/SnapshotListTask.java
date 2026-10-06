@@ -31,9 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -42,13 +40,15 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -136,7 +136,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
     /** */
     private static class SnapshotListJob extends SnapshotJob<SnapshotListCommandArg, SnapshotListJobResult> {
-        /** erial version uid. */
+        /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -144,7 +144,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         private IgniteLogger log;
 
         /**
-         * @param arg   Snapshot list task argument.
+         * @param arg Snapshot list task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
         protected SnapshotListJob(SnapshotListCommandArg arg, boolean debug) {
@@ -158,12 +158,41 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             if (ignite.context().isStopping())
                 throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
 
-            return new SnapshotListJobResult(findLocalSnapshots(arg.src()));
+            Map<String, SnapshotListJobResult.SnapshotInfo> snpDescsRes;
+
+            try {
+                List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
+
+                snpDescsRes = U.newHashMap(locSnps.size());
+
+                for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
+                    SnapshotFileTree sft = locSnps.get(snpIdx).get1();
+
+                    SnapshotListJobResult.SnapshotInfo extStors = externalStorages(sft);
+
+                    // Optiona incremental snapshots description.
+                    SnapshotListJobResult.SnapshotInfo incs = incrementals(sft);
+
+                    // Main snapshot description.
+                    SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
+                        calculateDirectorySize(sft.root()),
+                        locSnps.get(snpIdx).get2(),
+                        extStors,
+                        incs
+                    );
+
+                    snpDescsRes.put(sft.name(), snpDesc);
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to list local snapshots [src=" + arg.src() + ']', e);
+            }
+
+            return new SnapshotListJobResult(snpDescsRes);
         }
 
         /** */
-        private static @Nullable SnapshotListJobResult.SnapshotInfo externalStorages(
-            SnapshotFileTree sft) throws IOException {
+        private static @Nullable SnapshotListJobResult.SnapshotInfo externalStorages(SnapshotFileTree sft) throws IOException {
             int extStoragesCnt = 0;
             long extStoragesSize = 0;
 
@@ -179,35 +208,57 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
-        private Map<String, SnapshotListJobResult.SnapshotInfo> findLocalSnapshots(@Nullable String snpPath) {
+        private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
             // The tree is used only to extract the snapshots root directory. The snapshot name isn't used.
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
-                return Collections.emptyMap();
+                return Collections.emptyList();
 
-            // Per snapshot/directory futures.
-            List<Future<?>> futs = new ArrayList<>(dirsToParse.length);
-
-            Map<String, SnapshotListJobResult.SnapshotInfo> res = new ConcurrentHashMap<>(dirsToParse.length, 1.0f);
+            List<Future<T2<SnapshotFileTree, Long>>> futs = new ArrayList<>(dirsToParse.length);
 
             for (File snpDir : dirsToParse) {
-                // Single snapshot/directory future.
-                Future<?> snpDirFut = ignite.context().pools().getSnapshotExecutorService().submit(() -> {
-                    try {
-                        res.put(snpDir.getName(), readSingleSnapshot(snpDir, snpPath));
+                Future<T2<SnapshotFileTree, Long>> snpDirFut = ignite.context().pools().getSnapshotExecutorService().submit(() -> {
+                    String snpName = snpDir.getName();
+
+                    // Snapshot tree being used as a path, to read the metas only.
+                    SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), snpName, snpPath);
+
+                    List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
+
+                    if (!metas.isEmpty()) {
+                        // Get the last-created time snapshot metadata.
+                        SnapshotMetadata snpMeta = metas.stream()
+                            .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
+                            .orElse(new SnapshotMetadata());
+
+                        // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
+                        sft = new SnapshotFileTree(
+                            ignite.configuration(),
+                            ignite.context().pdsFolderResolver().fileTree(),
+                            snpName,
+                            snpPath,
+                            snpMeta.folderName(),
+                            snpMeta.consistentId()
+                        );
+
+                        return new T2<>(sft, snpMeta.snapshotTime());
                     }
-                    catch (Exception e) {
-                        throw new IgniteException("Failed to read snapshot [dir=" + snpDir + ']', e);
-                    }
+
+                    return null;
                 });
 
                 futs.add(snpDirFut);
             }
 
+            List<T2<SnapshotFileTree, Long>> res = new ArrayList<>(dirsToParse.length);
+
             futs.forEach(f -> {
                 try {
-                    f.get();
+                    T2<SnapshotFileTree, Long> snpDirRes = f.get();
+
+                    if (snpDirRes != null)
+                        res.add(snpDirRes);
                 }
                 catch (Exception e) {
                     log.warning("Failed to calculate snapshot size, ignoring snapshot [path=" + snpPath + ']', e);
@@ -217,106 +268,50 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             return res;
         }
 
-        /** */
-        private @Nullable SnapshotListJobResult.SnapshotInfo readSingleSnapshot(File snpDir, @Nullable String snpPath) throws Exception {
-            String snpName = snpDir.getName();
+        /** @return Number, total size and last creation time of incremental snapshots. */
+        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws IOException {
+            File[] incs = sft.incrementsRoot().listFiles();
 
-            // Snapshot tree being used as a path, to read the metas only.
-            SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), snpName, snpPath);
+            int cnt = 0;
+            long size = 0L;
+            long createTime = 0L;
 
-            List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
+            if (!F.isEmpty(incs)) {
+                IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
-            if (metas.isEmpty())
-                return null;
+                int incIdx;
 
-            // Get the last-created time snapshot metadata.
-            SnapshotMetadata snpMeta = metas.stream()
-                .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
-                .orElse(new SnapshotMetadata());
+                for (File incDir : incs) {
+                    try {
+                        incIdx = Integer.parseInt(incDir.getName());
+                    }
+                    catch (NumberFormatException e) {
+                        log.warning("Failed to calculate incremental snapshot size, wrong folder name [name="
+                            + incDir.getName() + ']', e);
 
-            // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
-            sft = new SnapshotFileTree(
-                ignite.configuration(),
-                ignite.context().pdsFolderResolver().fileTree(),
-                snpName,
-                snpPath,
-                snpMeta.folderName(),
-                snpMeta.consistentId()
-            );
+                        continue;
+                    }
 
-            SnapshotListJobResult.SnapshotInfo incs = readIncrementals(sft);
+                    SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
+                    IncrementalSnapshotMetadata incMeta;
 
-            SnapshotListJobResult.SnapshotInfo extStors = externalStorages(sft);
+                    try {
+                        incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
+                    }
+                    catch (Exception e) {
+                        log.warning("Failed to calculate incremental snapshot size, unable to read the metadata [name="
+                            + incDir.getName() + ']', e);
 
-            return new SnapshotListJobResult.SnapshotInfo(
-                calculateDirectorySize(sft.root()),
-                snpMeta.snapshotTime(),
-                extStors,
-                incs
-            );
-        }
+                        continue;
+                    }
 
-        /** */
-        private @Nullable SnapshotListJobResult.SnapshotInfo readIncrementals(SnapshotFileTree sft) throws Exception {
-            // Optional incremental parts.
-            File[] incsFiles = sft.incrementsRoot().listFiles();
-
-            if (F.isEmpty(incsFiles))
-                return null;
-
-            IgniteThreadPoolExecutor exeSrvc = ignite.context().pools().getSnapshotExecutorService();
-
-            AtomicInteger cnt = new AtomicInteger();
-            AtomicLong size = new AtomicLong();
-            AtomicLong createTime = new AtomicLong();
-
-            List<Future<?>> futs = Collections.emptyList();
-
-            for (File incDir : incsFiles) {
-                if (exeSrvc.getMaximumPoolSize() == 1)
-                    incrementalPartWorkUnit(sft, incDir, cnt, size, createTime);
-                else {
-                    Future<?> fut = exeSrvc.submit(() -> {
-                        try {
-                            incrementalPartWorkUnit(sft, incDir, cnt, size, createTime);
-                        }
-                        catch (Exception e) {
-                            throw new IgniteException("Failed to calculate incremental snapshot size [dir=" + incDir + ']', e);
-                        }
-                    });
-
-                    if (futs == Collections.EMPTY_LIST)
-                        futs = new ArrayList<>(incsFiles.length);
-
-                    futs.add(fut);
+                    cnt++;
+                    size += calculateDirectorySize(incDir);
+                    createTime = Math.max(createTime, incMeta.snapshotTime());
                 }
             }
 
-            for (Future<?> fut : futs)
-                fut.get();
-
-            return new SnapshotListJobResult.SnapshotInfo(cnt.get(), size.get(), createTime.get());
-        }
-
-        /** */
-        private void incrementalPartWorkUnit(
-            SnapshotFileTree sft,
-            File incDir,
-            AtomicInteger cnt,
-            AtomicLong size,
-            AtomicLong createTime
-        ) throws Exception {
-            int incIdx = Integer.parseInt(incDir.getName());
-
-            SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
-
-            IncrementalSnapshotMetadata incMeta = ignite.context().cache().context().snapshotMgr()
-                .readIncrementalSnapshotMetadata(incTree.meta());
-
-            cnt.incrementAndGet();
-            size.addAndGet(calculateDirectorySize(incDir));
-
-            createTime.accumulateAndGet(incMeta.snapshotTime(), (l, r)->Math.max(l, r));
+            return cnt == 0 ? null : new SnapshotListJobResult.SnapshotInfo(cnt, size, createTime);
         }
     }
 }
