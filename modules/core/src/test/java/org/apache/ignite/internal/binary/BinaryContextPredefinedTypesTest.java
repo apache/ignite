@@ -20,7 +20,6 @@ package org.apache.ignite.internal.binary;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,10 +46,7 @@ public class BinaryContextPredefinedTypesTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Tests that binarylizable system classes registered by {@link BinaryContext} itself are cached in the registered
-     * state, so a write does not rebuild the descriptor each time.
-     */
+    /** Tests that binarylizable system classes registered by {@link BinaryContext} itself are cached in the registered state. */
     @Test
     public void testBinarilizableSystemClassesRegistered() {
         BinaryContext ctx = U.binaryContext(null);
@@ -60,16 +56,11 @@ public class BinaryContextPredefinedTypesTest extends GridCommonAbstractTest {
         assertRegisteredSystemClass(ctx, BinaryTreeMap.class);
     }
 
-    /**
-     * Tests that binarylizable system classes registered by processors on node start are cached in the registered
-     * state, so a write does not rebuild the descriptor each time.
-     */
+    /** Tests that binarylizable system classes registered by processors on node start are cached in the registered state. */
     @Test
     public void testProcessorBinarilizableSystemClassesRegistered() throws Exception {
-        try {
-            IgniteEx ignite = startGrid(0);
-
-            BinaryContext ctx = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryContext();
+        try (IgniteEx ignite = startGrid(0)) {
+            BinaryContext ctx = ignite.context().cacheObjects().binaryContext();
 
             assertRegisteredSystemClass(ctx, TreeMap.class);
             assertRegisteredSystemClass(ctx, TreeSet.class);
@@ -82,22 +73,14 @@ public class BinaryContextPredefinedTypesTest extends GridCommonAbstractTest {
             assertRegisteredSystemClass(ctx, GridClosureProcessor.C4.class);
             assertRegisteredSystemClass(ctx, GridClosureProcessor.C4MLA.class);
         }
-        finally {
-            stopAllGrids();
-        }
     }
 
-    /**
-     * @param ctx Binary context.
-     * @param cls System class to check.
-     */
+    /** */
     private static void assertRegisteredSystemClass(BinaryContext ctx, Class<?> cls) {
         BinaryClassDescriptor desc = ctx.descriptorForClass(cls);
 
         assertFalse(cls.getName(), desc.userType());
         assertTrue("Cached descriptor must be registered: " + cls.getName(), desc.registered());
-
-        // The write path must reuse the cached descriptor instead of creating a registered copy on every call.
         assertTrue("Write path must reuse cached descriptor: " + cls.getName(), desc == ctx.registerClass(cls, true, false));
     }
 }

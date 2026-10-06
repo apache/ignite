@@ -610,11 +610,6 @@ public class BinaryContext {
 
     /**
      * Register system class that should be marshalled with BinaryMarshaller.
-     * <p>
-     * The descriptor is cached in the registered state. System types need no cluster-wide registration, and an
-     * unregistered cached descriptor would never be replaced by {@link #registerDescriptor}, which only uses
-     * {@code putIfAbsent}, so every write would rebuild the descriptor via {@link BinaryClassDescriptor#makeRegistered()}.
-     *
      * @param cls Class to register.
      */
     public void registerBinarilizableSystemClass(Class<?> cls) {
