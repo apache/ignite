@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message related to particular cache group.
@@ -35,6 +36,11 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
      */
     public int groupId() {
         return grpId;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheGroupDescriptor descriptor(GridCacheSharedContext<?, ?> ctx) {
+        return ctx.cache().cacheGroupDescriptors().get(grpId);
     }
 
     /** {@inheritDoc} */

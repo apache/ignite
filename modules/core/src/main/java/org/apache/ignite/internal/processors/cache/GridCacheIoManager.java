@@ -1561,12 +1561,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @return Cache or group descriptor.
      */
     private Object descriptorForMessage(GridCacheMessage msg) {
-        if (msg instanceof GridCacheIdMessage)
-            return cctx.cache().cacheDescriptor(((GridCacheIdMessage)msg).cacheId());
-        else if (msg instanceof GridCacheGroupIdMessage)
-            return cctx.cache().cacheGroupDescriptors().get(((GridCacheGroupIdMessage)msg).groupId());
-
-        return null;
+        return msg.descriptor(cctx);
     }
 
     /** {@inheritDoc} */
