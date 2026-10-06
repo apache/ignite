@@ -173,7 +173,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
             Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
-            Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ldr, false);
+            Class cls = BinaryImplUtils.resolveClass(ctx, typeId, clsName, ldr, false);
 
             return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
         }

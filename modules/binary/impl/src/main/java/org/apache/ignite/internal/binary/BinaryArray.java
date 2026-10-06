@@ -108,7 +108,7 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
             Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
-            Class<?> compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, ldr, false);
+            Class<?> compType = BinaryImplUtils.resolveClass(ctx, compTypeId, compClsName, ldr, false);
 
             // Skip deserialization if already deserialized.
             // Prepared result is in arr, already.
