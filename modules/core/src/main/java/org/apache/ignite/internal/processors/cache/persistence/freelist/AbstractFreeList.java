@@ -803,34 +803,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return PageIdUtils.changePartitionId(pageId, row.partition());
     }
 
-    /**
-     * @param row Row.
-     * @param reusedPageId Reused page id.
-     * @param statHolder Statistics holder to track IO operations.
-     * @return Prepared page id.
-     *
-     * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
-     */
-    private long initReusedPage(T row, long reusedPageId, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        long reusedPage = acquirePage(reusedPageId, statHolder);
-        try {
-            long reusedPageAddr = writeLock(reusedPageId, reusedPage);
-
-            assert reusedPageAddr != 0;
-
-            try {
-                return initReusedPage(reusedPageId, reusedPage, reusedPageAddr,
-                    row.partition(), PageIdAllocator.FLAG_DATA, row.ioVersions().latest());
-            }
-            finally {
-                writeUnlock(reusedPageId, reusedPage, reusedPageAddr, true);
-            }
-        }
-        finally {
-            releasePage(reusedPageId, reusedPage);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean updateDataRow(long link, T row,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
