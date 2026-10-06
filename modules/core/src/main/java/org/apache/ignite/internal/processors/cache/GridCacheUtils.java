@@ -127,16 +127,12 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
-import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 
 /**
  * Cache utility methods.
  */
 public class GridCacheUtils {
-    /** Cheat cache ID for debugging and benchmarking purposes. */
-    public static final int cheatCacheId;
-
     /** @see IgniteSystemProperties#IGNITE_TTL_EXPIRE_BATCH_SIZE */
     public static final int DFLT_TTL_EXPIRE_BATCH_SIZE = 5;
 
@@ -146,38 +142,6 @@ public class GridCacheUtils {
 
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;
-
-    /*
-     *
-     */
-    static {
-        String cheatCache = System.getProperty("CHEAT_CACHE");
-
-        if (cheatCache != null) {
-            cheatCacheId = cheatCache.hashCode();
-
-            if (cheatCacheId == 0)
-                throw new RuntimeException();
-
-            System.out.println(">>> Cheat cache ID [id=" + cheatCacheId + ", name=" + cheatCache + ']');
-        }
-        else
-            cheatCacheId = 0;
-    }
-
-    /**
-     * Quickly checks if passed in cache ID is a "cheat cache ID" set by -DCHEAT_CACHE=user_cache_name
-     * and resolved in static block above.
-     *
-     * FOR DEBUGGING AND TESTING PURPOSES!
-     *
-     * @param id Cache ID to check.
-     * @return {@code True} if this is cheat cache ID.
-     */
-    @Deprecated
-    public static boolean cheatCache(int id) {
-        return cheatCacheId != 0 && id == cheatCacheId;
-    }
 
     /**
      * Checks whether the separate lock wait timeout expires before the transaction timeout.
@@ -882,25 +846,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Get topic to which replication requests are sent.
-     *
-     * @return Topic to which replication requests are sent.
-     */
-    public static String replicationTopicSend() {
-        return TOPIC_REPLICATION.toString();
-    }
-
-    /**
-     * Get topic to which replication responses are sent.
-     *
-     * @param cacheName Cache name.
-     * @return Topic to which replication responses are sent.
-     */
-    public static String replicationTopicReceive(String cacheName) {
-        return TOPIC_REPLICATION + "-" + mask(cacheName);
-    }
-
-    /**
      * Checks that local and remove configurations have the same value of given attribute.
      *
      * @param log Logger used to log warning message (used only if fail flag is not set).
@@ -1245,27 +1190,6 @@ public class GridCacheUtils {
         }
 
         return null;
-    }
-
-    /**
-     * @param cfg Config.
-     * @param cls Class.
-     * @return Not <code>null</code> list.
-     */
-    public static <T extends CachePluginConfiguration> List<T> cachePluginConfigurations(IgniteConfiguration cfg,
-        Class<T> cls) {
-        List<T> res = new ArrayList<>();
-
-        if (cfg.getCacheConfiguration() != null) {
-            for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-                for (CachePluginConfiguration pluginCcfg : ccfg.getPluginConfigurations()) {
-                    if (cls == pluginCcfg.getClass())
-                        res.add((T)pluginCcfg);
-                }
-            }
-        }
-
-        return res;
     }
 
     /**
