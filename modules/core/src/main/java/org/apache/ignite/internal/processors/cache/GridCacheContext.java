@@ -123,7 +123,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCIN
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -506,13 +505,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean affinityNode() {
         return affNode;
-    }
-
-    /**
-     * @return {@code true} If this is a replicated cache and we are on a data node.
-     */
-    public boolean isReplicatedAffinityNode() {
-        return isReplicated() && affinityNode();
     }
 
     /**
@@ -1057,15 +1049,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} If store writes should be performed from dht transactions. This happens if both
-     *      {@code writeBehindEnabled} and {@code writeBehindPreferPrimary} cache configuration properties
-     *      are set to {@code true} or the store is local.
-     */
-    public boolean writeToStoreFromDht() {
-        return store().isLocal() || config().isWriteBehindEnabled();
-    }
-
-    /**
      * @return Cache transaction manager.
      */
     public IgniteTxManager tm() {
@@ -1466,20 +1449,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if synchronous rollback is enabled.
-     */
-    public boolean syncRollback() {
-        return config().getWriteSynchronizationMode() == FULL_SYNC;
-    }
-
-    /**
-     * @return {@code True} if only primary node should be updated synchronously.
-     */
-    public boolean syncPrimary() {
-        return config().getWriteSynchronizationMode() == PRIMARY_SYNC;
-    }
-
-    /**
      * @param nearNodeId Near node ID.
      * @param topVer Topology version.
      * @param entry Entry.
@@ -1690,14 +1659,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheOperationContext opCtx = operationContextPerCall();
 
         return opCtx != null && opCtx.isKeepBinary();
-    }
-
-    /**
-     * @return {@code True} if the value for the cache object has to be copied because
-     * of {@link CacheConfiguration#isCopyOnRead()}.
-     */
-    public boolean needValueCopy() {
-        return affNode && config().isCopyOnRead();
     }
 
     /**

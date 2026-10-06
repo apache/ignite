@@ -2759,13 +2759,6 @@ public class ClusterCachesInfo {
     }
 
     /**
-     * @param cacheName Cache name which restart were cancelled.
-     */
-    public void removeRestartingCache(String cacheName) {
-        restartingCaches.remove(cacheName);
-    }
-
-    /**
      * Clear up information about restarting caches.
      */
     public void removeRestartingCaches() {

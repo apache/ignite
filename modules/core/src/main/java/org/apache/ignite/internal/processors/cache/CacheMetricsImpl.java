@@ -1627,13 +1627,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
-     * @return Total number of evicted pages.
-     */
-    public long getTotalEvictedPages() {
-        return 0;
-    }
-
-    /**
      * Off-heap read callback.
      *
      * @param hit Hit or miss flag.
