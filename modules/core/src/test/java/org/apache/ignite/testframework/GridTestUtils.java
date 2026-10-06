@@ -2045,11 +2045,16 @@ public final class GridTestUtils {
         BooleanSupplier wait,
         long checkInterval
     ) throws IgniteInterruptedCheckedException {
+        // Start with short intervals so that conditions met quickly do not wait for the whole interval.
+        long sleep = Math.min(5, checkInterval);
+
         while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
-            U.sleep(checkInterval);
+            U.sleep(sleep);
+
+            sleep = Math.min(sleep * 3, checkInterval);
         }
 
         return false;

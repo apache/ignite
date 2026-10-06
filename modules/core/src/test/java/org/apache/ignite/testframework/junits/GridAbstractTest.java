@@ -994,28 +994,19 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If an error occurs.
      */
     protected void checkTopology(int cnt) throws Exception {
-        for (int j = 0; j < 10; j++) {
-            boolean topOk = true;
-
+        boolean topOk = GridTestUtils.waitForCondition(() -> {
             for (int i = 0; i < cnt; i++) {
-                if (cnt != grid(i).cluster().nodes().size()) {
-                    U.warn(log, "Grid size is incorrect (will re-run check in 1000 ms) " +
-                        "[name=" + grid(i).name() + ", size=" + grid(i).cluster().nodes().size() + ']');
-
-                    topOk = false;
-
-                    break;
-                }
+                if (cnt != grid(i).cluster().nodes().size())
+                    return false;
             }
 
-            if (topOk)
-                return;
-            else
-                Thread.sleep(1000);
-        }
+            return true;
+        }, 10_000);
 
-        throw new Exception("Failed to wait for proper topology [expCnt=" + cnt +
-            ", actualTopology=" + grid(0).cluster().nodes() + ']');
+        if (!topOk) {
+            throw new Exception("Failed to wait for proper topology [expCnt=" + cnt +
+                ", actualTopology=" + grid(0).cluster().nodes() + ']');
+        }
     }
 
     /** */
@@ -2698,14 +2689,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                     ", exchVer=" + exchVer +
                     ", topVer=" + topVer + ']');
 
-                GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                    @Override public boolean apply() {
-                        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
-                        AffinityTopologyVersion exchVer = ctx.cache().context().exchange().readyAffinityVersion();
-
-                        return exchVer.equals(topVer);
-                    }
-                }, DFLT_TOP_WAIT_TIMEOUT);
+                try {
+                    ctx.cache().context().exchange().affinityReadyFuture(topVer).get(DFLT_TOP_WAIT_TIMEOUT);
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Failed to wait for exchange [node=" + g.name() + ", topVer=" + topVer + ']', e);
+                }
             }
         }
     }
