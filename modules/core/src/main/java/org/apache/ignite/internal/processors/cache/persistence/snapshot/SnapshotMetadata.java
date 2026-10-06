@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
@@ -187,7 +186,7 @@ public class SnapshotMetadata implements Message, Serializable {
         this.comprParts = comprParts;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
-        this.snapshotTime = snapshotTime + new Random().nextLong(15000);
+        this.snapshotTime = snapshotTime;
         this.bltNodes = bltNodes;
         this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;

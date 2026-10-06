@@ -165,8 +165,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 for (int snpIdx = 0; snpIdx < locSnps.size(); snpIdx++) {
                     SnapshotFileTree sft = locSnps.get(snpIdx).get1();
 
-                    // Optional extra storages description. Uses another snapshot file tree which ignores the path and
-                    // can find snapshot extra storages.
                     SnapshotListJobResult.SnapshotInfo extStors = externalStorages(sft);
 
                     // Optiona incremental snapshots description.

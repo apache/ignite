@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommand;
@@ -45,34 +46,36 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
 public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstractTest {
     /** Extra storage path. */
     private static final String EXT_STORAGE_PATH = "extStorage";
 
-    /** */
+    /** Flag to use {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
+    private boolean extraStorages;
+
+    /** Resolved extra storages paths. {@code null} if {@code extraStorages} is {@code null}. */
+    private @Nullable String[] extStoragePaths;
+
+    /** Node consistent id postfix. */
+    private @Nullable String cstId_postfix = "";
+
+    /** Flag setting the usage of a custom snapshot path. */
     @Parameter(1)
     public boolean customPath;
 
-    /** */
+    /** Flag setting the usage of dedicated, own node working directories. */
     @Parameter(2)
     public boolean separatedWorkDir;
 
-    /** */
+    /** Flag to add extra server node after the snapshot creation. */
     @Parameter(3)
     public boolean addExtraSrvr;
 
-    /** */
+    /** Number of incremental snapshots to add to the main test snapshots. */
     @Parameter(4)
     public int incCnt;
-
-    /** */
-    private boolean extraStorages;
-
-    /** */
-    private @Nullable String[] extStoragePaths;
 
     /** */
     @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3},incCnt={4}")
@@ -140,47 +143,70 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return super.getTestIgniteInstanceName() + cstId_postfix;
+    }
+
     /** */
     @Test
     public void testNoSnapshots() throws Exception {
-        // Doesn't matter here.
-        assumeFalse(incCnt > 0 || addExtraSrvr);
+        assumeFalse(addExtraSrvr || incCnt > 0);
 
-        doTestSnapshotsLists(0, false);
+        doTestSnapshotsLists(0, false, false);
     }
 
     /** */
     @Test
     public void testSingleSnapshot() throws Exception {
-        doTestSnapshotsLists(1, false);
+        doTestSnapshotsLists(1, false, false);
     }
 
     /** */
     @Test
     public void testSeveralSnapshots() throws Exception {
-        doTestSnapshotsLists(4, false);
+        doTestSnapshotsLists(4, false, false);
     }
 
     /** */
     @Test
-    public void testSeveralSnapshotsOneNodeMisses() throws Exception {
+    public void testOneNodeMisses() throws Exception {
         // Doesn't matter here.
         assumeFalse(incCnt > 0);
+        // Let's keep just one node not seeing the snapshot.
+        assumeFalse(separatedWorkDir);
 
-        doTestSnapshotsLists(2, true);
+        doTestSnapshotsLists(2, true, false);
     }
 
     /** */
     @Test
     public void testExtraStorages() throws Exception {
+        // Extra storeages are required to be the same as configured in the node's PDS storages. Thus, we skip different work folders.
+        // Also, extra snapshot storages aren't used if snapshot is created with a custom path.
+        assumeFalse(separatedWorkDir || customPath);
+
         extraStorages = true;
 
-        doTestSnapshotsLists(2, false);
+        doTestSnapshotsLists(2, false, false);
     }
 
     /** */
-    private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode) throws Exception {
-        filterTests(snpCnt, deleteOnOneNode);
+    @Test
+    public void testChangedConsistentId() throws Exception {
+        // In new created working directories there will be obviously no snapshots.
+        assumeFalse(separatedWorkDir);
+        // Fastens the tests
+        assumeFalse(incCnt > 0);
+
+        doTestSnapshotsLists(1, false, true);
+    }
+
+    /** */
+    private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode, boolean restartWithChangedCstIds) throws Exception {
+        // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
+        // work directories are set.
+        assumeFalse(customPath && separatedWorkDir);
 
         int srvrsCnt = 3;
         int entriesCnt = 20;
@@ -192,7 +218,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         ig.cluster().state(ACTIVE);
 
         File snpsRootFile = customPath
-            ? new File(grid(0).context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
+            ? new File(ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
             : null;
 
         // Flag if 'testSnapshot0' deleted on node0.
@@ -210,7 +236,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
                 snp(ig).createSnapshot("testSnapshot" + snpIdx, absPathStr, false, false).get(getTestTimeout());
 
                 for (int incIdx = 0; incIdx < incCnt; incIdx++) {
-                    try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                    try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
                         for (int val = (snpIdx + incIdx + 1) * entriesCnt; val < (snpIdx + incIdx + 2) * entriesCnt; val++)
                             ds.addData(val, val);
                     }
@@ -220,7 +246,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             }
 
             if (deleteOnOneNode) {
-                SnapshotFileTree sft = new SnapshotFileTree(grid(0).context(), "testSnapshot0", absPathStr);
+                SnapshotFileTree sft = new SnapshotFileTree(ig.context(), "testSnapshot0", absPathStr);
 
                 assertTrue(sft.root().exists());
                 assertTrue(U.delete(sft.root()));
@@ -228,6 +254,16 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
                 grid0HasNoSnapshot0 = true;
             }
+        }
+
+        if (restartWithChangedCstIds) {
+            stopAllGrids();
+
+            cstId_postfix = "_changed";
+
+            startGridsMultiThreaded(srvrsCnt);
+
+            startGrid(CLIENT_NODE_NAME_PREFIX);
         }
 
         // Add a server.
@@ -285,26 +321,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             if (extraStorages)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "external storages: cnt=1, size="));
         }
-    }
-
-    /** Excludes incompatible parameters values and fastens the tests. */
-    private void filterTests(int snpCnt, boolean deleteOnOneNode) {
-        assert !deleteOnOneNode || snpCnt > 0;
-        assert !extraStorages || snpCnt > 0;
-
-        // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
-        // work directories are set.
-        assumeFalse(customPath && separatedWorkDir);
-
-        // Let's keep just one node doesn't see the snapshot.
-        assumeTrue(!deleteOnOneNode || separatedWorkDir);
-
-        // No need to create incremental snapshots if no snapshots are required at all.
-        assumeTrue(incCnt < 1 || snpCnt > 0);
-
-        // Extra storeages are required to be the same as configured in the node's PDS storages. Thus, we skip different work folders.
-        // Also, extra snapshot storages aren't used if snapshot is created with a custom path.
-        assumeFalse(extraStorages && (separatedWorkDir || customPath));
     }
 
     /** Counts occurrences of the node prefix in the output. */
