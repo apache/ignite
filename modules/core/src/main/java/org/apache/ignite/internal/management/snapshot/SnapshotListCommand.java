@@ -72,32 +72,30 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
             SnapshotListJobResult nodeSnps = res.snapshots()[nodeIdx];
 
-            if (nodeSnps.snapshotNames().length == 0) {
+            if (nodeSnps.snapshots().length == 0) {
                 printer.accept("\t\t" + NO_SNAPSHOTS);
 
                 continue;
             }
 
             // Optional info of all the snapshot external storages.
-            SnapshotListJobResult.SnapshotExtraInfo[] allExtStors = nodeSnps.externalStorages();
+            SnapshotListJobResult.SnapshotInfo[] allExtStors = nodeSnps.externalStorages();
             // Optional info of all the incrementsl snapshots.
-            SnapshotListJobResult.SnapshotExtraInfo[] allIncSnps = nodeSnps.incrementalSnapshots();
+            SnapshotListJobResult.SnapshotInfo[] allIncSnps = nodeSnps.incrementalSnapshots();
 
-            for (int snpIdx = 0; snpIdx < nodeSnps.snapshotNames().length; snpIdx++) {
-                String name = nodeSnps.snapshotNames()[snpIdx];
-                long size = nodeSnps.sizes()[snpIdx];
-                long dateLong = nodeSnps.creationTimes()[snpIdx];
+            for (int snpIdx = 0; snpIdx < nodeSnps.snapshots().length; snpIdx++) {
+                SnapshotListJobResult.SnapshotInfo snp = nodeSnps.snapshots()[snpIdx];
 
                 printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
-                    name,
-                    U.humanReadableByteCount(size),
-                    size,
-                    DATE_FORMATTER.format(Instant.ofEpochMilli(dateLong)),
-                    dateLong
+                    snp.name(),
+                    U.humanReadableByteCount(snp.size()),
+                    snp.size(),
+                    DATE_FORMATTER.format(Instant.ofEpochMilli(snp.date())),
+                    snp.date()
                 ));
 
                 // Optional certain snapshot external storages' info.
-                SnapshotListJobResult.SnapshotExtraInfo snpExtStors = allExtStors == null || allExtStors[snpIdx] == null
+                SnapshotListJobResult.SnapshotInfo snpExtStors = allExtStors == null || allExtStors[snpIdx] == null
                     ? null
                     : allExtStors[snpIdx];
 
@@ -110,9 +108,9 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 }
 
                 // Optional certain snapshot incrementals parts' info.
-                SnapshotListJobResult.SnapshotExtraInfo snpIncsParts = allIncSnps == null || allIncSnps[snpIdx] == null
+                SnapshotListJobResult.SnapshotInfo snpIncsParts = allIncSnps == null || allIncSnps[snpIdx] == null
                     ? null
-                    : allExtStors[snpIdx];
+                    : allIncSnps[snpIdx];
 
                 if (snpIncsParts == null)
                     continue;
