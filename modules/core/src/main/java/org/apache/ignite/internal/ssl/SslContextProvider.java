@@ -19,6 +19,7 @@ package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -90,7 +91,11 @@ public class SslContextProvider extends SslContextReloadable {
     @Override public synchronized void reload() throws IgniteCheckedException {
         SSLContext rebuilt = factory.create();
 
-        chain = check(rebuilt);
+        X509Certificate[] next = SslCertificates.servedChain(rebuilt);
+
+        check(rebuilt, next);
+
+        chain = next;
         ctx = rebuilt;
     }
 
@@ -108,22 +113,28 @@ public class SslContextProvider extends SslContextReloadable {
 
     /**
      * Puts in use a context built anew, provided its chain expires later than the one in use: a renewal that does not move the expiry gains
-     * nothing and would be due again at once.
+     * nothing and would be due again at once. A context that presents the chain in use leaves nothing to renew yet, whatever the checks.
      *
      * @param expected Context the renewal was planned for.
-     * @return {@code False} if another context was put in use since then, which leaves nothing to renew.
-     * @throws IgniteCheckedException If the new context fails the checks of {@link #reload()}, or does not expire later.
+     * @return What the renewal did.
+     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, or does not
+     *      expire later.
      */
-    public synchronized boolean renew(SSLContext expected) throws IgniteCheckedException {
+    public synchronized Renewed renew(SSLContext expected) throws IgniteCheckedException {
         if (ctx != expected)
-            return false;
+            return Renewed.SUPERSEDED;
 
         SSLContext rebuilt = factory.create();
 
-        X509Certificate[] next = check(rebuilt);
+        X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
         if (next == null)
             throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
+
+        if (Arrays.equals(next, chain))
+            return Renewed.UNCHANGED;
+
+        check(rebuilt, next);
 
         if (chain != null && chainNotAfter(next) <= chainNotAfter(chain)) {
             throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [" + describe(next[0]) +
@@ -134,19 +145,17 @@ public class SslContextProvider extends SslContextReloadable {
         chain = next;
         ctx = rebuilt;
 
-        return true;
+        return Renewed.RENEWED;
     }
 
     /**
      * @param rebuilt Context built anew.
-     * @return Chain it presents, {@code null} if it cannot be told.
+     * @param next Chain it presents, {@code null} if it cannot be told.
      * @throws IgniteCheckedException If it is the context in use, a certificate it presents is not valid now, or nodes refuse it.
      */
-    private @Nullable X509Certificate[] check(SSLContext rebuilt) throws IgniteCheckedException {
+    private void check(SSLContext rebuilt, @Nullable X509Certificate[] next) throws IgniteCheckedException {
         if (rebuilt == ctx)
             throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
-
-        X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
         long now = System.currentTimeMillis();
 
@@ -166,12 +175,22 @@ public class SslContextProvider extends SslContextReloadable {
                     "node's own trust store [" + describe(next == null ? null : next[0]) + ']', e);
             }
         }
-
-        return next;
     }
 
     /** @return Whether nodes connect on the context, so that both ends run the configuration a handshake with itself checks. */
     private boolean connectsNodes() {
         return transports.contains(COMMUNICATION) || transports.contains(DISCOVERY);
+    }
+
+    /** What a renewal did. */
+    public enum Renewed {
+        /** Put a new certificate in use. */
+        RENEWED,
+
+        /** Nothing: another context was put in use since the renewal was planned. */
+        SUPERSEDED,
+
+        /** Nothing: the factory hands back the certificates in use, there is no newer one yet. */
+        UNCHANGED
     }
 }

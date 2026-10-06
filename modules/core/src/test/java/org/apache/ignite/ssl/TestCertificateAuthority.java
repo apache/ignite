@@ -19,7 +19,11 @@ package org.apache.ignite.ssl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
@@ -32,8 +36,10 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 
@@ -43,7 +49,10 @@ import javax.security.auth.x500.X500Principal;
  */
 public class TestCertificateAuthority {
     /** Password of every store made here. */
-    private static final char[] PWD = "123456".toCharArray();
+    public static final String PASSWORD = "123456";
+
+    /** */
+    private static final char[] PWD = PASSWORD.toCharArray();
 
     /** DER of {@code ecdsa-with-SHA256}, the algorithm every certificate here is signed with. */
     private static final byte[] SIG_ALG = seq(new byte[] {0x06, 0x08, 0x2A, (byte)0x86, 0x48, (byte)0xCE, 0x3D, 0x04, 0x03, 0x02});
@@ -112,19 +121,51 @@ public class TestCertificateAuthority {
      * @return Context that presents and trusts them.
      */
     public static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws Exception {
+        SSLContext ctx = SSLContext.getInstance("TLS");
+
+        ctx.init(keyManagers(keyStore), trustManagers(trustStore), null);
+
+        return ctx;
+    }
+
+    /**
+     * @param keyStore Store with the certificate to present.
+     * @return Key managers that present it.
+     */
+    public static KeyManager[] keyManagers(KeyStore keyStore) throws Exception {
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
         kmf.init(keyStore, PWD);
 
+        return kmf.getKeyManagers();
+    }
+
+    /**
+     * @param trustStore Store with the authorities to trust.
+     * @return Trust managers that trust them.
+     */
+    public static TrustManager[] trustManagers(KeyStore trustStore) throws Exception {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
         tmf.init(trustStore);
 
-        SSLContext ctx = SSLContext.getInstance("TLS");
+        return tmf.getTrustManagers();
+    }
 
-        ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+    /**
+     * Writes a store to a file in one move, so that nothing reads it half-written.
+     *
+     * @param store Store.
+     * @param path File to write or replace.
+     */
+    public static void save(KeyStore store, Path path) throws Exception {
+        Path tmp = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
 
-        return ctx;
+        try (OutputStream out = Files.newOutputStream(tmp)) {
+            store.store(out, PWD);
+        }
+
+        Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
     /**

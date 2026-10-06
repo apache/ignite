@@ -182,16 +182,22 @@ So if a private key has been compromised, make sure the trusted stores no longer
 
 == Renewing Certificates Automatically
 
-A node renews its certificate by itself before it expires if its SSL context factory implements `RenewableSslContextFactory`, for example a factory that gets certificates from a certificate authority service.
-HTTP REST takes its certificate from the Jetty configuration and is not renewed.
+A node can renew its certificate by itself before it expires.
+This is off by default: to turn it on, set the `renewalEnabled` property of the SSL context factory and restart the nodes, one at a time.
+With renewal on, a node whose renewal settings are out of range does not start.
 
-By default, the renewal window is the last 15% of the certificate lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
+The node then reads the key store and trust store files again in the renewal window, by default the last 15% of the certificate lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
+Put the new files in place before the window, and only files you are ready to use: the node picks them up by itself.
 The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
 If the factory serves discovery or communication, the node's own trust store must also accept the new certificate.
+A changed trust store alone is not picked up: the node takes it only together with a newer certificate.
+So to trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
 
-If a renewal fails, the node keeps its certificate and tries again, with a pause that doubles from 1 minute up to 1 hour by default, plus a random delay of up to half of it.
-Failures are logged as warnings, and as errors once less than half of the window is left or the next attempt would come after expiry.
+Until the files hold a newer certificate, the node keeps the one in use and checks again with a growing pause, from 1 minute to 1 hour by default.
+It logs this as a warning once a day, and as an error once less than half of the window is left or the certificate would expire before the next check.
+If reading the files or a check fails, the node logs every failed attempt.
 `control.sh --ssl status` and the `NextRenewalTime` metric show when the next renewal is due.
+HTTP REST takes its certificate from the Jetty configuration and is not renewed.
 
 == SslContextFactory Properties
 
@@ -220,6 +226,30 @@ Failures are logged as warnings, and as errors once less than half of the window
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`renewalEnabled`
+|Whether a node renews the certificate by itself before it expires.
+|`false`
+
+|`renewBeforeFraction`
+|Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it. Greater than `0` and less than `1`.
+|`0.15`
+
+|`renewBefore`
+|Maximum renewal window, in milliseconds, not negative. A node takes the smaller of it and the window from `renewBeforeFraction`; `0` means no maximum.
+|`0`
+
+|`renewalJitter`
+|Share of the window, from `0` to `1`, by which a renewal is moved earlier at random, so that nodes whose certificates expire together do not renew at the same moment. `renewBeforeFraction * (1 + renewalJitter)` must be less than `1`.
+|`0`
+
+|`renewalRetryMinInterval`
+|Pause after the first renewal attempt that puts no new certificate in use, in milliseconds, greater than `0`. A node never renews more often than this.
+|`60000`
+
+|`renewalRetryMaxInterval`
+|Longest pause between such attempts, in milliseconds, not less than `renewalRetryMinInterval`. A node also cuts the pause to a quarter of the window, but not below `renewalRetryMinInterval`, and then adds a random delay of up to half of it.
+|`3600000`
 
 |`trustStoreFilePath`
 |The path to the trust store file.
