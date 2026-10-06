@@ -82,12 +82,11 @@ A joining server node waits until the cluster confirms its join.
 The confirmation comes only after the join request has reached the coordinator and the new node has been announced
 around the whole discovery ring, so it takes more than one pass of the ring.
 The wait is bounded by `TcpDiscoverySpi.networkTimeout`, which is 5000 milliseconds by default.
-In a ring that spans data centers, every cross-data-center hop adds its round trip, so the join can take longer than that.
+In a ring that spans data centers, every cross-data-center hop adds its round trip, so the join can take longer than the default.
 The node then stops waiting, logs `Node has not been connected to topology and will repeat join process`, and sends
 its join request again, while the rest of the cluster may already be waiting for it in partition map exchange.
 The node keeps repeating its join this way until it succeeds.
 
-This timeout is a property of `TcpDiscoverySpi` and is not affected by `IgniteConfiguration.networkTimeout`.
 Set it on the discovery SPI to a value that covers the join with your round trip between data centers, with a margin:
 
 [source,java]
@@ -103,6 +102,24 @@ cfg.setDiscoverySpi(discoverySpi);
 
 Keep the IP finder addresses precise as well: a repeated join tries the configured addresses one by one, so a long list
 of addresses where no node runs (for example, wide port ranges) makes each retry slower.
+
+[NOTE]
+====
+`TcpDiscoverySpi.networkTimeout` is a separate property from `IgniteConfiguration.networkTimeout`, which does not affect
+discovery. In a cluster that spans data centers, consider the following timeouts as well:
+
+* `IgniteConfiguration.networkTimeout` - bounds general network operations, including partition map exchange.
+* `IgniteConfiguration.failureDetectionTimeout` - the master knob for failure detection (10 seconds by default for
+server nodes). It also drives the discovery socket and acknowledgement timeouts unless they are set explicitly.
+Set it to cover the worst-case round trip between data centers, otherwise a latency spike may make a node declare
+a healthy node failed.
+* `TcpCommunicationSpi.connectTimeout` - the timeout for establishing data-plane TCP connections (5 seconds by default,
+growing up to `maxConnectTimeout` on retry).
+* `TcpDiscoverySpi.ackTimeout` - the delivery receipt timeout for discovery messages (5 seconds by default, doubled on
+each retry).
+
+See link:clustering/network-configuration[Network Configuration] for the full list of network timeouts.
+====
 
 == Cache Topology Validation
 
