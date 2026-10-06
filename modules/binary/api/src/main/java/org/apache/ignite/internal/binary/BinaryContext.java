@@ -724,9 +724,6 @@ public class BinaryContext {
         if (desc != null)
             return desc;
 
-        if (ldr == null)
-            ldr = sysLdr;
-
         Class cls;
 
         try {
