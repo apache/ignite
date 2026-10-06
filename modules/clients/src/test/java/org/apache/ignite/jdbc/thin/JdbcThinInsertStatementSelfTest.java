@@ -202,7 +202,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      * Checks whether it's impossible to insert duplicate in single key statement.
      */
     @Test
-    public void testDuplicateSingleKey() throws InterruptedException {
+    public void testDuplicateSingleKey() throws Exception {
         doTestDuplicate(
             () -> stmt.execute(SQL),
             "insert into Person(_key, id, firstName, lastName, age) values " +
@@ -214,7 +214,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
      * Checks whether it's impossible to insert duplicate in multiple keys statement.
      */
     @Test
-    public void testDuplicateMultipleKeys() throws InterruptedException {
+    public void testDuplicateMultipleKeys() throws Exception {
         doTestDuplicate(
             () -> jcache(0).put("p2", new Person(2, "Joe", "Black", 35)),
             SQL
@@ -224,7 +224,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
     /**
      *
      */
-    private void doTestDuplicate(RunnableX initClosure, String sql) throws InterruptedException {
+    private void doTestDuplicate(RunnableX initClosure, String sql) throws Exception {
         initClosure.run();
 
         LogListener lsnr = LogListener

@@ -308,6 +308,10 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         stopGrid(2);
 
+        // Partitions that no longer belong to the node are evicted asynchronously, wait for them not to block on the latch below.
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> mxBean0Grp1.<IntMetric>findMetric("LocalNodeRentingPartitionsCount").value() == 0, 10_000L));
+
         // Check moving partitions while rebalancing.
         assertFalse(arrayToAllocationMap(new int[10][]).equals(movingPartitionsAllocationMap.value()));
 

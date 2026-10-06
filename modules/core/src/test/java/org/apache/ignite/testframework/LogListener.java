@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -74,17 +75,8 @@ public abstract class LogListener implements Consumer<String> {
      *
      * @return {@code True} if all conditions are met.
      */
-    public boolean check(long millis) throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-
-        while (startTime + millis >= System.currentTimeMillis()) {
-            if (check())
-                return true;
-
-            Thread.sleep(1000);
-        }
-
-        return check();
+    public boolean check(long millis) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(this::check, millis);
     }
 
     /**
