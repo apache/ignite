@@ -205,11 +205,6 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remote() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
     }
