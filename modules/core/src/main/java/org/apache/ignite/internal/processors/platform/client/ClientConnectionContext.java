@@ -367,4 +367,12 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
 
         assert cnt >= 0 : "Unexpected active tasks count: " + cnt;
     }
+
+    /**
+     * @return Number of active compute tasks for this connection. Never exceeds the configured limit: the counter may
+     * temporarily exceed it while a rejected task is being rolled back in {@link #incrementActiveTasksCount()}.
+     */
+    public int activeTasksCount() {
+        return Math.min(activeTasksCnt.get(), maxActiveComputeTasks);
+    }
 }
