@@ -91,7 +91,6 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                     dateLong
                 ));
 
-                // Also incremental snapshots exist.
                 if (nodeSnps.incrementalsCount() == null)
                     continue;
 

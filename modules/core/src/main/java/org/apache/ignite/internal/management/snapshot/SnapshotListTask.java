@@ -151,39 +151,46 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         @Override protected SnapshotListJobResult run(SnapshotListCommandArg arg) {
             assert !ignite.localNode().isClient();
 
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
-
+            // Main snapshot data.
             String[] snpNames;
             long[] sizes;
             long[] creationTimes;
 
+            // Incremental snapshots data.
             int[] incCnts = null;
             long[] incSizes = null;
             long[] editTimes = null;
 
+            // External storages data.
             long[] extSizes = null;
 
             try {
-                File readMetasDir = new SnapshotFileTree(ignite.context(), "snpName", arg.src()).root().getParentFile()
-                    .getCanonicalFile();
-
-                List<T2<SnapshotFileTree, Long>> locSnps = readMetas(
+                List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(
                     arg.src(),
-                    snpMgr.localSnapshotNames(readMetasDir.getAbsolutePath())
+                    ignite.context().cache().context().snapshotMgr().localSnapshotNames(arg.src())
                 );
 
                 snpNames = new String[locSnps.size()];
                 sizes = new long[locSnps.size()];
                 creationTimes = new long[locSnps.size()];
 
-                extSizes = new long[locSnps.size()];
-
                 for (int s = 0; s < locSnps.size(); s++) {
                     SnapshotFileTree sft = locSnps.get(s).get1();
 
                     snpNames[s] = sft.name();
-                    sizes[s] = calculateDirectorySize(sft.root());
                     creationTimes[s] = locSnps.get(s).get2();
+
+                    sizes[s] = calculateDirectorySize(sft.root());
+
+                    for(File es : sft.extraStorages().values()) {
+                        if (sft.root().equals(es))
+                            continue;
+
+                        if (extSizes == null)
+                            extSizes = new long[locSnps.size()];
+
+                        sizes[s] += calculateDirectorySize(es);
+                    }
 
                     T3<Integer, Long, Long> incRes = incrementalsData(sft);
 
@@ -209,16 +216,14 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
-        private List<T2<SnapshotFileTree, Long>> readMetas(@Nullable String customSnpRoot, List<String> folderNames) {
+        private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String customSnpRoot, List<String> folderNames) {
             List<T2<SnapshotFileTree, Long>> res = new ArrayList<>(folderNames.size());
-
-            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             folderNames.forEach(fn -> {
                 // Snapshot tree being used as a path, to read the metas only.
                 SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), fn, customSnpRoot);
 
-                List<SnapshotMetadata> metas = snpMgr.readSnapshotMetadatas(sft, false);
+                List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
 
                 if (!metas.isEmpty()) {
                     // Get the last-created time snapshot metadata.
