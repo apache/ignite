@@ -27,15 +27,18 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
@@ -152,13 +155,13 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         @Override protected SnapshotListJobResult run(SnapshotListCommandArg arg) {
             assert !ignite.localNode().isClient();
 
+            if (ignite.context().isStopping())
+                throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+
             Map<String, SnapshotListJobResult.SnapshotInfo> snpDescsRes;
 
             try {
-                List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(
-                    arg.src(),
-                    ignite.context().cache().context().snapshotMgr().localSnapshotNames(arg.src())
-                );
+                List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
 
                 snpDescsRes = U.newHashMap(locSnps.size());
 
@@ -205,32 +208,60 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
-        private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String customSnpRoot, List<String> folderNames) {
-            List<T2<SnapshotFileTree, Long>> res = new ArrayList<>(folderNames.size());
+        private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
+            // The tree is used only to extract the snapshots root directory. The snapshot name isn't used.
+            File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
-            folderNames.forEach(fn -> {
-                // Snapshot tree being used as a path, to read the metas only.
-                SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), fn, customSnpRoot);
+            if (F.isEmpty(dirsToParse))
+                return Collections.emptyList();
 
-                List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
+            List<Future<T2<SnapshotFileTree, Long>>> futs = new ArrayList<>(dirsToParse.length);
 
-                if (!metas.isEmpty()) {
-                    // Get the last-created time snapshot metadata.
-                    SnapshotMetadata snpMeta = metas.stream()
-                        .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
-                        .orElse(new SnapshotMetadata());
+            for (File snpDir : dirsToParse) {
+                Future<T2<SnapshotFileTree, Long>> snpDirFut = ignite.context().pools().getSnapshotExecutorService().submit(() -> {
+                    String snpName = snpDir.getName();
 
-                    // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
-                    sft = new SnapshotFileTree(
-                        ignite.configuration(),
-                        ignite.context().pdsFolderResolver().fileTree(),
-                        fn,
-                        customSnpRoot,
-                        snpMeta.folderName(),
-                        snpMeta.consistentId()
-                    );
+                    // Snapshot tree being used as a path, to read the metas only.
+                    SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), snpName, snpPath);
 
-                    res.add(new T2<>(sft, snpMeta.snapshotTime()));
+                    List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
+
+                    if (!metas.isEmpty()) {
+                        // Get the last-created time snapshot metadata.
+                        SnapshotMetadata snpMeta = metas.stream()
+                            .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
+                            .orElse(new SnapshotMetadata());
+
+                        // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
+                        sft = new SnapshotFileTree(
+                            ignite.configuration(),
+                            ignite.context().pdsFolderResolver().fileTree(),
+                            snpName,
+                            snpPath,
+                            snpMeta.folderName(),
+                            snpMeta.consistentId()
+                        );
+
+                        return new T2<>(sft, snpMeta.snapshotTime());
+                    }
+
+                    return null;
+                });
+
+                futs.add(snpDirFut);
+            }
+
+            List<T2<SnapshotFileTree, Long>> res = new ArrayList<>(dirsToParse.length);
+
+            futs.forEach(f -> {
+                try {
+                    T2<SnapshotFileTree, Long> snpDirRes = f.get();
+
+                    if (snpDirRes != null)
+                        res.add(snpDirRes);
+                }
+                catch (Exception e) {
+                    log.warning("Failed to calculate snapshot size, ignoring snapshot [path=" + snpPath + ']', e);
                 }
             });
 

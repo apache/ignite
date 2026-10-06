@@ -46,6 +46,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
 public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstractTest {
@@ -174,7 +175,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // Doesn't matter here.
         assumeFalse(incCnt > 0);
         // Let's keep just one node not seeing the snapshot.
-        assumeFalse(separatedWorkDir);
+        assumeTrue(separatedWorkDir);
 
         doTestSnapshotsLists(2, true, false);
     }
