@@ -157,103 +157,51 @@ include::{javaFile}[tag=disable-validation,indent=0]
 --
 
 == Upgrading Certificates
-If your SSL certificates are about to expire or have been compromised, you can replace them without restarting the nodes, with the link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] command.
-If the new certificates are issued by an authority every trust store already holds, only step 2 below is needed.
+If your SSL certificates are about to expire or have been compromised, you can install new certificates without shutting down the whole cluster.
 
-Peers authenticate each other, so everything has to trust the new authority before anything presents a certificate from it, and the old authority has to stay trusted until nothing presents its certificates.
-If trust stores hold node certificates rather than an authority, steps 1 and 4 add and remove those certificates instead.
-The command reaches only the nodes in the topology: a node that is down during a step, or is restarted instead, reads the stores when it starts, so give it the current files before it rejoins.
-Applications are never reached, so each step says when they need their files.
+The following is a procedure for updating certificate.
 
-Edit a copy of each store and rename it over the one in use, as the examples do.
-Keep `-noprompt`: without it, keytool run without a terminal leaves the store unchanged and still exits with zero.
+. First of all, make sure the new certificates are trusted by all cluster nodes.
+This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
++
+--
+Import the new certificate to the trusted store of every node, server or client, then run `control.sh --ssl reload`.
+Do the same for applications that connect to the cluster with SSL, including `control.sh` itself (`--truststore`): the command does not reach them, and a running thin client reads its trusted store only when it starts.
 
-. *Trust the new authority.*
-Add its certificate to the trust store of every node and application, including the one `control.sh` connects with (`--truststore`), keeping the old one:
-+
-[source, shell]
-----
-cp trust.jks trust.jks.new
-keytool -importcert -keystore trust.jks.new -alias newca -file newca.crt -noprompt
-mv trust.jks.new trust.jks
-----
-+
-Then run `control.sh --ssl reload`.
-Before step 2, check on every node that its trust store holds the new authority, for example with `keytool -list -keystore trust.jks -alias newca`.
-A reload checks a node's new certificate against the node's own trust store only, so it does not tell whether the node will trust the new certificates of its peers.
-Applications have to trust the new authority before step 2: JDBC and ODBC read the store on the next connection, a running thin client has to be restarted.
+Now all nodes trust the new certificates.
+--
 
-. *Present the new certificate.*
-Install the new certificate into the key store of every node:
-+
-[source, shell]
-----
-cp node.jks node.jks.new
-keytool -importcert -keystore node.jks.new -alias node -file node.crt -noprompt
-mv node.jks.new node.jks
-----
-+
-Then run `control.sh --ssl reload`.
-If `node.crt` holds the node certificate without its chain, import the authority certificate into the store first.
-The store and the key in it have to open with the one password the node is configured with, and the store has to hold one key entry: with several, the JSSE key manager picks one of them on its own.
-A node whose own trust store does not accept its new certificate keeps the old one and is reported as failed.
-Applications that present a certificate of their own replace it after step 1 and before step 3; a running thin client has to be restarted.
-`node.crt` has to be issued for the key already in the entry `node`, from a request made with `keytool -certreq -alias node`.
-If that key is compromised, put a new key and certificate in the entry instead and restart the nodes: a reload does not close the connections opened with the old key.
+. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Repeat this for all certificates you want to update, then run `control.sh --ssl reload`.
+A node whose own trusted store does not accept its new certificate keeps the old one and is reported as failed.
+Check with `control.sh --ssl status` that every node serves the new certificate.
 
-. *Check that nothing presents the old certificate.*
-`control.sh --ssl status` shows the issuer of the certificate every node serves.
-For applications, and for whatever nodes and applications are provisioned from, such as images and configuration management, check the issuer of the certificate they hold:
-+
-[source, shell]
-----
-keytool -list -v -keystore node.jks -alias node | grep Issuer
-----
-+
-Do not start step 4 until every answer names the new authority: after it, a node that still presents the old certificate is thrown out of the cluster, and an application cannot connect.
+Connections that are already open keep the old certificates until they close, and nodes accept the old certificate on new connections while their trusted stores accept it.
+So if a private key has been compromised, make sure the trusted stores no longer accept its certificate, run `control.sh --ssl reload`, and restart the nodes.
 
-. *Stop trusting the old authority.*
-Remove its certificate from the trust store of every node and application:
-+
-[source, shell]
-----
-cp trust.jks trust.jks.new
-keytool -delete -keystore trust.jks.new -alias oldca
-mv trust.jks.new trust.jks
-----
-+
-Then run `control.sh --ssl reload`.
-A node that never got its new certificate is reported as failed, since its own trust store no longer accepts it.
-Applications may do this in any order with the nodes; a running thin client trusts the old authority until it is restarted.
+//Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
 
-== Renewing Certificates Automatically [[renewing-certificates]]
+== Renewing Certificates Automatically
 
-A node can renew its certificate by itself before it expires, when the certificate is issued by a certificate authority service rather than read from a file.
+A node can renew its certificate before it expires if the certificate comes from a certificate authority service rather than from a file.
 Set an SSL context factory that implements `RenewableSslContextFactory` as `IgniteConfiguration.sslContextFactory`, `ClientConnectorConfiguration.sslContextFactory` or `ConnectorConfiguration.sslFactory`.
-Transports set with the same factory instance share its certificate and renewals.
+Every call of its `create()` must return a context with a newly issued certificate.
+Transports set with the same factory instance share the certificate and its renewals.
 HTTP REST takes its certificate from the Jetty configuration and is not renewed.
 
-Each call of the factory's `create()` has to return a context with a newly issued certificate.
-The node calls it when the certificate in use enters the renewal window, by default the last 15% of its lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
-The new certificate goes through the same checks as with link:tools/control-script#reloading-certificates[`control.sh --ssl reload`], and is also rejected if its chain expires no later than the one in use.
-Take the trusted authorities of the returned context from a source local to the node, such as a trust store file, not from the response of the issuing service: otherwise the check between nodes accepts a certificate from an authority the other nodes do not trust yet.
+The node calls `create()` when the certificate enters the renewal window, by default the last 15% of its lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
+The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
+If the factory serves discovery or communication, the node also checks the new certificate against the trusted authorities of the new context.
+Take these authorities from a source local to the node, such as a trust store file, and not from the response of the issuing service: otherwise the check accepts a certificate that other nodes do not trust yet.
 
-If a renewal fails, the node keeps its certificate and retries until it succeeds.
-If the node cannot tell which certificate a context presents, it does not renew it: the status shows a failed reload with the reason and no next renewal.
-The pause doubles after each failure, from 1 minute to 1 hour by default, and a random delay of up to half of it is added.
-The pause is also kept within a quarter of the window, but never below the first pause.
+If a renewal fails, the node keeps its certificate and tries again, doubling the pause from 1 minute up to 1 hour by default and adding a random delay of up to half of it.
 Failures are logged as warnings, and as errors once less than half of the window is left or the next attempt would come after expiry.
-A successful renewal or `--ssl reload`, which also asks the factory for a new certificate, plans the next renewal by the new certificate.
+`control.sh --ssl reload` also calls `create()`, and the node plans the next renewal from the new certificate.
+`control.sh --ssl status` and the `NextRenewalTime` metric show when the next renewal is due.
 
-Each node renews on its own schedule, starting when a transport starts serving the certificate, before the node joins the cluster.
-The node log shows every certificate put in use and the next planned renewal, which `control.sh --ssl status` and the `NextRenewalTime` metric also show.
+All renewals of a node run in one thread, so a `create()` that waits holds up all of them and `control.sh --ssl reload`.
+Keep every wait for the issuing service well below the pause after the first failed renewal, and stop waiting when the thread is interrupted.
 
-All renewals of a node run in one thread, so a `create()` that blocks stops them all and holds up `--ssl reload`.
-Bound every wait well below the pause after the first failure, and stop waiting when the thread is interrupted: this is how a stopping node ends an attempt.
-The node does not release what the factory holds, such as a client of the issuing service: release it when the node stops, for example from a lifecycle bean.
-
-The node reads the following methods of `RenewableSslContextFactory` once, when a transport starts serving the certificate.
-A node with settings out of range does not start.
+The node calls the following methods of `RenewableSslContextFactory` once and does not start if a value is out of range:
 
 [width="100%", cols="30%, 60%, 10%"]
 |=================
@@ -264,19 +212,19 @@ A node with settings out of range does not start.
 |`0.15`
 
 |`getRenewBefore()`
-|Maximum renewal window, in milliseconds, not negative. The node takes the smaller of it and the window from the share above; `0` means no maximum.
+|Maximum renewal window, in milliseconds, not negative. The node takes the smaller of it and the window from `getRenewBeforeFraction()`; `0` means no maximum.
 |`0`
 
 |`getRenewalJitter()`
-|Share of the window, from `0` to `1`, by which the renewal is brought forward at random, so that nodes whose certificates expire together do not renew them at the same moment. `renewBeforeFraction * (1 + renewalJitter)` must be less than `1`.
+|Share of the window, from `0` to `1`, by which a renewal is moved earlier at random, so that nodes whose certificates expire together do not renew at the same moment. `renewBeforeFraction * (1 + renewalJitter)` must be less than `1`.
 |`0`
 
 |`getRenewalRetryMinInterval()`
-|Pause after the first failed renewal, in milliseconds, and the shortest time between two attempts. Positive.
+|Pause after the first failed renewal, in milliseconds, greater than `0`. The node never tries to renew more often than this.
 |`60000`
 
 |`getRenewalRetryMaxInterval()`
-|Longest pause between failed renewals, in milliseconds. Not less than the pause after the first failure.
+|Longest pause between failed renewals, in milliseconds, before the random delay; not less than `getRenewalRetryMinInterval()`. The node also cuts the pause to a quarter of the window, but not below `getRenewalRetryMinInterval()`.
 |`3600000`
 |=================
 
