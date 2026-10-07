@@ -36,7 +36,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
     from_ignite_services
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
@@ -205,8 +205,11 @@ class MdcCluster:
     :param jmx_metrics: Whether to export the node metrics over JMX. Required by everything
            that reads one - see :meth:`cache_mdc_metrics`.
     :param network_timeout: Network timeout in ms, for the nodes and for their discovery SPI
-           alike - the latter is how long a joining node waits for its join to complete.
-    :param tcp_connect_timeout: Communication SPI connect timeout in ms.
+           alike. The discovery SPI's is how long a joining node waits for its join to
+           complete: a node restarted across a 100ms cross-DC ring needs more than its 5s
+           default. The nodes' sets when a slow PME is reported (2 x timeout), and a PME after
+           a split can wait ~17s for a transaction of a client on the other side. Unset by
+           default: the nodes keep the framework's value, the SPI its own.
     """
     def __init__(self, test, ignite_version: str, dcs: Sequence[str] = DCS_2,
                  main_dc: Optional[str] = None,
@@ -215,8 +218,7 @@ class MdcCluster:
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
                  client_connector: bool = False,
                  jmx_metrics: bool = False,
-                 network_timeout: int = 5_000,
-                 tcp_connect_timeout: int = 5_000):
+                 network_timeout: Optional[int] = None):
         self.test_context = test.test_context
         self.logger = test.logger
 
@@ -237,9 +239,10 @@ class MdcCluster:
         cfg_kwargs = {
             "version": IgniteVersion(ignite_version),
             "discovery_spi": self._discovery_spi(TcpDiscoverySpi()),
-            "network_timeout": network_timeout,
-            "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout)
         }
+
+        if network_timeout is not None:
+            cfg_kwargs["network_timeout"] = network_timeout
 
         if client_connector:
             cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()

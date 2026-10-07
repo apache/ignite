@@ -21,9 +21,12 @@ configured for, how many backups spread one copy per DC, and which links a parti
 to cut. All of that is compiled without a cluster, so it is checked without one.
 """
 
+import logging
+
 import pytest
 
 from checks.support.discovery_template import discovery_spi, render_discovery_spi
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, mdc_topology_params, min_backups, all_pairs, \
     isolation_pairs, cross_dc_network, per_dc, CACHE_TOP_VALIDATOR_GLOBAL, DCS_2, DCS_3, DC_1, DC_2, DC_3
 
@@ -216,3 +219,49 @@ class CheckMdcDiscovery:
         assert "<value>ducker02:47500</value>" in xml
 
         assert ".." not in xml
+
+
+class FakeTest:
+    """
+    The two members the MdcCluster constructor reads off a ducktape test.
+    """
+    def __init__(self):
+        self.test_context = type("FakeTestContext", (), {"globals": {}})()
+        self.logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def no_services(monkeypatch):
+    """
+    Lets the real MdcCluster constructor run without a ducktape cluster: no service is built.
+    """
+    monkeypatch.setattr(MdcCluster, "_server_service", lambda self, dc, num_nodes: None)
+    monkeypatch.setattr(MdcCluster, "_app_service", lambda self, dc: None)
+
+
+class CheckMdcTimeouts:
+    """
+    Checks which timeouts an MDC cluster sets on its nodes: none Ignite's own defaults would
+    do, since an explicit SPI timeout also turns off failure detection for that SPI.
+    """
+    def check_a_default_cluster_sets_no_timeout(self, no_services):
+        """
+        By default nothing differs from a plain node: the configuration keeps the framework's
+        network timeout, the SPIs set none of their own.
+        """
+        mdc = MdcCluster(FakeTest(), "dev")
+
+        assert mdc.ignite_config.network_timeout == IgniteConfiguration().network_timeout
+        assert mdc.ignite_config.discovery_spi.network_timeout is None
+        assert mdc.ignite_config.communication_spi.connect_timeout is None
+
+    def check_a_network_timeout_reaches_the_nodes_and_their_discovery(self, no_services):
+        """
+        One value for both: the discovery SPI's bounds a rejoin, the configuration's sets when
+        a slow PME is reported.
+        """
+        mdc = MdcCluster(FakeTest(), "dev", network_timeout=20_000)
+
+        assert mdc.ignite_config.network_timeout == 20_000
+        assert mdc.ignite_config.discovery_spi.network_timeout == 20_000
+        assert mdc.ignite_config.communication_spi.connect_timeout is None

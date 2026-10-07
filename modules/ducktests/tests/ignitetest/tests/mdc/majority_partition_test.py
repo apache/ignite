@@ -73,7 +73,7 @@ class MdcMajorityPartitionTest(IgniteTest):
         just as survivable as losing any other.
         """
         mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1, jmx_metrics=True,
-                         network_timeout=20_000, tcp_connect_timeout=10_000)
+                         network_timeout=20_000)
 
         majority = tuple(dc for dc in mdc.dcs if dc != isolated_dc)
 
