@@ -17,43 +17,40 @@
 
 package org.apache.ignite.internal.management.ssl;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
-/** Task of an {@code --ssl} command: the command fails only after every node is in the report. */
+/** Task of an {@code --ssl} command: the command fails only after every node is in the report, which lists the failed nodes first. */
 public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, String> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected String reduce0(List<ComputeJobResult> results) throws IgniteException {
-        StringBuilder res = new StringBuilder();
-
-        boolean failed = false;
+        List<String> failed = new ArrayList<>();
+        List<String> succeeded = new ArrayList<>();
 
         for (ComputeJobResult jobRes : results) {
             IgniteException e = jobRes.getException();
 
             if (e == null)
-                res.append(jobRes.getData().toString());
+                succeeded.add(jobRes.getData().toString());
             else {
-                failed = true;
-
                 String id = jobRes.getNode().id().toString();
                 String msg = e.getMessage() != null ? e.getMessage() : e.toString();
 
-                res.append(msg.startsWith(id) ? msg : id + ": " + msg);
+                failed.add(msg.startsWith(id) ? msg : id + ": " + msg);
             }
-
-            res.append('\n');
         }
 
-        if (failed)
-            throw new IgniteException(res.toString());
+        if (failed.isEmpty())
+            return String.join("\n", succeeded) + '\n';
 
-        return res.toString();
+        throw new IgniteException("Failed on " + failed.size() + " node(s):\n" + String.join("\n", failed) + '\n' +
+            (succeeded.isEmpty() ? "" : "\nSucceeded on " + succeeded.size() + " node(s):\n" + String.join("\n", succeeded) + '\n'));
     }
 }

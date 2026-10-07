@@ -1775,12 +1775,16 @@ The HTTP REST reload fails the same way when the Jetty configuration sets a read
 
 Nodes reload independently.
 For each node, the command prints one line per SSL context factory, with all transports that use it.
-If some nodes fail, the others keep the new certificates, and the command ends with an error:
+If some nodes fail, the others keep the new certificates.
+The command then lists the failed nodes first, apart from the others, and ends with an error:
 
 [source,text]
 ----
-e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, discovery; serving subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
+Failed on 1 node(s):
 46db5416-d199-48d6-a807-88b7f1300000: failed on client connector, communication, discovery (A handshake between nodes on the new certificate was refused, checked against this node's own trust store [subject=CN=node02, issuer=CN=newca, serial=5f3a91c2e8, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z]: No trusted certificate found)
+
+Succeeded on 1 node(s):
+e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, discovery; serving subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
 ----
 
 Fix the cause on the failed nodes and run the command again.
@@ -1808,4 +1812,4 @@ If a certificate authority in the chain expires before the certificate, the `ser
 After a failed reload, the node still serves its old certificate.
 The status then shows `last reload failed N time(s) in a row` with the time and reason of the last failure.
 The command ends with an error only if a certificate in the chain a node serves is not valid now.
-Such a node is marked `PROBLEM: the certificate is not valid now, peers refuse it`.
+Such a node is marked `PROBLEM: the certificate is not valid now, peers refuse it` and listed first, apart from the others.

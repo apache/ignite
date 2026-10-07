@@ -147,6 +147,12 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertFailed(res, g1, ALL_TRANSPORTS);
         assertContains(log, res, "Failed to initialize key store");
 
+        String failed = "Failed on 1 node(s):\n" + g1.localNode().id() + ": failed on ";
+        String succeeded = "\n\nSucceeded on 1 node(s):\n" + g0.localNode().id() + ": reloaded ";
+
+        assertTrue("The failed node must be listed first, apart from the other one: " + res,
+            res.contains(failed) && res.indexOf(succeeded) > res.indexOf(failed));
+
         assertEquals("CN=node02", servedSubject(g0.context().clientListener().port()));
         assertEquals("CN=node01", servedSubject(g1.context().clientListener().port()));
 
