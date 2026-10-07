@@ -40,8 +40,7 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 
 /**
  * Renews the certificates of the contexts built by a factory with {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal
- * enabled}, before they expire. All the renewals of a node run in one thread of its own. A request to the issuer then holds up no other
- * thread of the node. An attempt also cannot race the planning that follows a reload by the command.
+ * enabled}, before they expire.
  */
 public class SslRenewal {
     /** How the node log names an automatic renewal among those who start a reload. */
@@ -59,7 +58,7 @@ public class SslRenewal {
     /** */
     private final IgniteLogger log;
 
-    /** Thread the renewals run in, created with the first renewal. */
+    /** The one thread all renewals of the node run in, so that a request to the issuer holds up no other thread; created when needed. */
     private volatile ScheduledExecutorService exec;
 
     /** */

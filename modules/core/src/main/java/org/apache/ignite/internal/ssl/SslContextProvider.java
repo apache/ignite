@@ -34,10 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
 import static org.apache.ignite.internal.ssl.SslCertificates.describe;
 
-/**
- * Owns the SSL context of one configured factory for every transport configured with it. Transports take the context on each new
- * connection, so replacing it here puts new certificates in use for new connections without touching established ones.
- */
+/** Owns the SSL context of one configured factory for every transport configured with it. */
 public class SslContextProvider extends SslContextReloadable {
     /** */
     private final Factory<SSLContext> factory;

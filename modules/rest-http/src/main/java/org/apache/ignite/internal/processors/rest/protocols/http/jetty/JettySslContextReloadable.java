@@ -27,10 +27,7 @@ import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Certificate reload of the Jetty connector serving HTTP REST. Jetty rebuilds the context in place and serves no TLS at all after a failed
- * rebuild, so on a failure {@link #reload()} puts the previous context back.
- */
+/** Certificate reload of the Jetty connector serving HTTP REST. */
 public class JettySslContextReloadable extends SslContextReloadable {
     /** SSL factory of the running connector. */
     private final SslContextFactory.Server sslCtxFactory;
@@ -51,7 +48,11 @@ public class JettySslContextReloadable extends SslContextReloadable {
         return Collections.singleton(HTTP_REST);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Jetty rebuilds the context in place and serves no TLS at all after a failed rebuild, so a failed reload puts the context in use back.
+     *
+     * @throws IgniteCheckedException {@inheritDoc}
+     */
     @Override public synchronized void reload() throws IgniteCheckedException {
         if (sslCtxFactory.getKeyStorePath() == null)
             throw new IgniteCheckedException("HTTP REST runs on a ready-made SSL context, there is nothing to read again");

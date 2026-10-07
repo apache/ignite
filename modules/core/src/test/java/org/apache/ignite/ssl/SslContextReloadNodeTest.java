@@ -50,8 +50,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  * Tests {@code --ssl reload} and {@code --ssl status} on running nodes. Every node runs on a key store and a trust store of its own, so
- * that nodes can be rotated and broken one by one; a node trusts both authorities unless a test places another trust store for it. node01
- * is issued by oneca; node02, node03 and the expired node02old by twoca.
+ * that nodes can be rotated and broken one by one. node01 is issued by oneca; node02, node03 and the expired node02old by twoca.
  */
 public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** Transports of a node whose client connector shares the factory of the node. */
