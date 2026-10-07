@@ -80,7 +80,6 @@ If no server node from the same data center is available, the client connects th
 The default timeouts of discovery, communication and partition map exchange are sized for nodes in one data center.
 In a cluster that spans data centers, review the timeouts described below.
 
-[[join-timeout-across-data-centers]]
 === Join Timeout
 
 A joining server node waits until the cluster confirms its join.
@@ -116,18 +115,20 @@ and every remaining part of the cluster runs a partition map exchange.
 The exchange waits for the transactions that hold locks on the remaining nodes.
 A transaction that a client node on the other side started just before the split may never finish, because the messages
 that would complete it are lost.
-Such a transaction is rolled back only when the client node is removed from the cluster, which can take up to
+Such a transaction is finished only when the client node is removed from the cluster, which can take up to
 `IgniteConfiguration.clientFailureDetectionTimeout` (30 seconds by default).
 Until then, the exchange and every operation that waits for it are blocked.
+To shorten the wait, lower `IgniteConfiguration.clientFailureDetectionTimeout`; clients then also get removed sooner
+when they lose connection to the cluster for other reasons.
 
-While the exchange waits, the nodes log `Failed to wait for partition map exchange` and
-`Failed to wait for partition release future` with the pending transactions.
-The first of these messages appears after twice `IgniteConfiguration.networkTimeout`.
-Raising `IgniteConfiguration.networkTimeout` postpones the messages but does not shorten the wait.
-
-To bound the wait, set `TransactionConfiguration.txTimeoutOnPartitionMapExchange`: when it expires, the exchange rolls
-back the incomplete transactions and proceeds.
+`TransactionConfiguration.txTimeoutOnPartitionMapExchange` does not help in this case: it rolls back only the
+transactions started on the nodes that run the exchange, not a transaction started by a client on the other side.
 See link:key-value-api/transactions#timeout-on-partition-map-exchange[Timeout on Partition Map Exchange].
+
+While the exchange waits, the nodes log `Failed to wait for partition map exchange` or
+`Failed to wait for partition release future` with the pending transactions.
+Each message first appears after twice `IgniteConfiguration.networkTimeout` and then repeats.
+Raising `IgniteConfiguration.networkTimeout` postpones the messages but does not shorten the wait.
 
 === Failure Detection
 
@@ -135,14 +136,15 @@ See link:key-value-api/transactions#timeout-on-partition-map-exchange[Timeout on
 communication wait for a node that stopped responding before the node is removed from the cluster.
 A message between data centers takes one round trip, so the default covers the latency itself.
 In a cluster that spans data centers, the timeout decides how long a network outage between data centers can last:
-a short outage, well below the timeout, does not split the cluster, while a longer one does.
+a short outage, well below the timeout, does not split the cluster, while a longer one can.
 Choose the value from the outages the cluster should survive without a split.
 
 The failure detection timeout applies to an SPI only while none of its own timeouts is set explicitly.
 Setting `socketTimeout`, `ackTimeout`, `maxAckTimeout` or `reconnectCount` on `TcpDiscoverySpi`, or `connectTimeout`,
 `maxConnectTimeout` or `reconnectCount` on `TcpCommunicationSpi`, turns it off for that SPI, which then uses those values.
-The node logs `Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)`.
-A cluster that spans data centers does not need these values: set `IgniteConfiguration.failureDetectionTimeout` instead.
+If `IgniteConfiguration.failureDetectionTimeout` is set as well, the node logs
+`Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)`.
+A cluster that spans data centers usually does not need these values: set `IgniteConfiguration.failureDetectionTimeout` instead.
 See link:clustering/network-configuration#connection-timeouts[Connection Timeouts].
 
 == Cache Topology Validation
