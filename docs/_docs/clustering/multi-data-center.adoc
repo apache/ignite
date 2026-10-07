@@ -75,8 +75,13 @@ Client nodes also use the data center ID during discovery.
 If a client has a data center ID, it tries to connect through a server node from the same data center.
 If no server node from the same data center is available, the client connects through any available server node.
 
+== Timeouts
+
+The default timeouts of discovery, communication and partition map exchange are sized for nodes in one data center.
+In a cluster that spans data centers, review the timeouts described below.
+
 [[join-timeout-across-data-centers]]
-=== Join Timeout Across Data Centers
+=== Join Timeout
 
 A joining server node waits until the cluster confirms its join.
 The confirmation comes only after the join request has reached the coordinator and the new node has been announced
@@ -87,6 +92,7 @@ The node then stops waiting, logs `Node has not been connected to topology and w
 its join request again, while the rest of the cluster may already be waiting for it in partition map exchange.
 The node keeps repeating its join this way until it succeeds.
 
+This timeout is a property of `TcpDiscoverySpi`. `IgniteConfiguration.networkTimeout` does not affect discovery.
 Set it on the discovery SPI to a value that covers the join with your round trip between data centers, with a margin:
 
 [source,java]
@@ -103,23 +109,41 @@ cfg.setDiscoverySpi(discoverySpi);
 Keep the IP finder addresses precise as well: a repeated join tries the configured addresses one by one, so a long list
 of addresses where no node runs (for example, wide port ranges) makes each retry slower.
 
-[NOTE]
-====
-`TcpDiscoverySpi.networkTimeout` is a separate property from `IgniteConfiguration.networkTimeout`, which does not affect
-discovery. In a cluster that spans data centers, consider the following timeouts as well:
+=== Partition Map Exchange After a Split
 
-* `IgniteConfiguration.networkTimeout` - bounds general network operations, including partition map exchange.
-* `IgniteConfiguration.failureDetectionTimeout` - the master knob for failure detection (10 seconds by default for
-server nodes). It also drives the discovery socket and acknowledgement timeouts unless they are set explicitly.
-Set it to cover the worst-case round trip between data centers, otherwise a latency spike may make a node declare
-a healthy node failed.
-* `TcpCommunicationSpi.connectTimeout` - the timeout for establishing data-plane TCP connections (5 seconds by default,
-growing up to `maxConnectTimeout` on retry).
-* `TcpDiscoverySpi.ackTimeout` - the delivery receipt timeout for discovery messages (5 seconds by default, doubled on
-each retry).
+When the network between data centers fails, the nodes on each side remove the nodes on the other side,
+and every remaining part of the cluster runs a partition map exchange.
+The exchange waits for the transactions that hold locks on the remaining nodes.
+A transaction that a client node on the other side started just before the split may never finish, because the messages
+that would complete it are lost.
+Such a transaction is rolled back only when the client node is removed from the cluster, which can take up to
+`IgniteConfiguration.clientFailureDetectionTimeout` (30 seconds by default).
+Until then, the exchange and every operation that waits for it are blocked.
 
-See link:clustering/network-configuration[Network Configuration] for the full list of network timeouts.
-====
+While the exchange waits, the nodes log `Failed to wait for partition map exchange` and
+`Failed to wait for partition release future` with the pending transactions.
+The first of these messages appears after twice `IgniteConfiguration.networkTimeout`.
+Raising `IgniteConfiguration.networkTimeout` postpones the messages but does not shorten the wait.
+
+To bound the wait, set `TransactionConfiguration.txTimeoutOnPartitionMapExchange`: when it expires, the exchange rolls
+back the incomplete transactions and proceeds.
+See link:key-value-api/transactions#timeout-on-partition-map-exchange[Timeout on Partition Map Exchange].
+
+=== Failure Detection
+
+`IgniteConfiguration.failureDetectionTimeout` (10 seconds by default for server nodes) bounds how long discovery and
+communication wait for a node that stopped responding before the node is removed from the cluster.
+A message between data centers takes one round trip, so the default covers the latency itself.
+In a cluster that spans data centers, the timeout decides how long a network outage between data centers can last:
+a short outage, well below the timeout, does not split the cluster, while a longer one does.
+Choose the value from the outages the cluster should survive without a split.
+
+The failure detection timeout applies to an SPI only while none of its own timeouts is set explicitly.
+Setting `socketTimeout`, `ackTimeout`, `maxAckTimeout` or `reconnectCount` on `TcpDiscoverySpi`, or `connectTimeout`,
+`maxConnectTimeout` or `reconnectCount` on `TcpCommunicationSpi`, turns it off for that SPI, which then uses those values.
+The node logs `Failure detection timeout will be ignored (one of SPI parameters has been set explicitly)`.
+A cluster that spans data centers does not need these values: set `IgniteConfiguration.failureDetectionTimeout` instead.
+See link:clustering/network-configuration#connection-timeouts[Connection Timeouts].
 
 == Cache Topology Validation
 
