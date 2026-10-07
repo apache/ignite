@@ -110,9 +110,6 @@ public class SslRenewal {
         private final long renewBefore;
 
         /** */
-        private final double jitter;
-
-        /** */
         private final long minRetry;
 
         /** */
@@ -134,7 +131,6 @@ public class SslRenewal {
         private Settings(AbstractSslContextFactory factory) {
             fraction = factory.getRenewBeforeFraction();
             renewBefore = factory.getRenewBefore();
-            jitter = factory.getRenewalJitter();
             minRetry = factory.getRenewalRetryMinInterval();
             maxRetry = factory.getRenewalRetryMaxInterval();
 
@@ -144,10 +140,6 @@ public class SslRenewal {
                 err = "renewBeforeFraction must be greater than 0 and less than 1";
             else if (renewBefore < 0)
                 err = "renewBefore must not be negative";
-            else if (!(jitter >= 0 && jitter <= 1))
-                err = "renewalJitter must be from 0 to 1";
-            else if (fraction * (1 + jitter) >= 1)
-                err = "renewBeforeFraction * (1 + renewalJitter) must be less than 1, or a renewal may fall before the certificate starts";
             else if (minRetry <= 0)
                 err = "renewalRetryMinInterval must be positive";
             else if (maxRetry < minRetry)
@@ -156,7 +148,7 @@ public class SslRenewal {
             if (err != null) {
                 throw new IgniteException("Invalid automatic renewal settings of the SSL context factory, " + err + " [factory=" +
                     factory.getClass().getName() + ", renewBeforeFraction=" + fraction + ", renewBefore=" + renewBefore +
-                    ", renewalJitter=" + jitter + ", renewalRetryMinInterval=" + minRetry + ", renewalRetryMaxInterval=" + maxRetry + ']');
+                    ", renewalRetryMinInterval=" + minRetry + ", renewalRetryMaxInterval=" + maxRetry + ']');
             }
         }
     }
@@ -225,8 +217,7 @@ public class SslRenewal {
 
             long expiry = SslCertificates.chainNotAfter(chain);
             long window = window(chain);
-            long due = expiry - window - (long)(ThreadLocalRandom.current().nextDouble() * settings.jitter * window);
-            long at = Math.max(due, Math.max(lastAttempt + settings.minRetry, U.currentTimeMillis()));
+            long at = Math.max(expiry - window, Math.max(lastAttempt + settings.minRetry, U.currentTimeMillis()));
 
             schedule(at);
 

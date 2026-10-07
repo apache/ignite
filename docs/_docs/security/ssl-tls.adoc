@@ -242,10 +242,6 @@ HTTP REST takes its certificate from the Jetty configuration and is not renewed.
 |Maximum renewal window, in milliseconds, not negative. A node takes the smaller of it and the window from `renewBeforeFraction`; `0` means no maximum.
 |`0`
 
-|`renewalJitter`
-|Largest share of the window, from `0` to `1`, by which a renewal is moved earlier. A node picks the shift at random, so that nodes whose certificates expire together do not renew at the same moment. `renewBeforeFraction * (1 + renewalJitter)` must be less than `1`.
-|`0`
-
 |`renewalRetryMinInterval`
 |Pause after the first renewal attempt that puts no new certificate in use, in milliseconds, greater than `0`. A node never renews more often than this.
 |`60000`

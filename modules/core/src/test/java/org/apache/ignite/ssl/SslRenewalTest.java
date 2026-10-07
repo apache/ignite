@@ -418,47 +418,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> nextRenewalTime(g1) == dueTime(g1), 10_000));
     }
 
-    /** The jitter must bring the renewal forward by a random share of the window, different on each node. */
-    @Test
-    public void testJitterBringsRenewalForward() throws Exception {
-        long now = System.currentTimeMillis();
-
-        for (int i = 0; i < 2; i++)
-            issuer(i).then(valid(now, now + HOUR)).setRenewalJitter(1);
-
-        startGrid(0);
-        startGrid(1);
-
-        long[] next = new long[2];
-
-        for (int i = 0; i < 2; i++) {
-            IgniteEx g = grid(i);
-
-            assertTrue(waitForCondition(() -> nextRenewalTime(g) > 0, 10_000));
-
-            long due = dueTime(g);
-            long window = certificateNotAfter(g) - due;
-
-            next[i] = nextRenewalTime(g);
-
-            assertTrue("The renewal must come within the window [next=" + next[i] + ", due=" + due + ']',
-                next[i] <= due && next[i] >= due - window);
-        }
-
-        assertTrue("Nodes with certificates issued at once must not renew at once", next[0] != next[1]);
-    }
-
     /** Settings out of range must keep the node from starting, before the issuer is asked for anything. */
     @Test
     public void testInvalidSettingsFailNodeStart() throws Exception {
         assertStartFails(i -> i.setRenewBeforeFraction(1), "renewBeforeFraction must be greater than 0 and less than 1");
         assertStartFails(i -> i.setRenewBeforeFraction(0), "renewBeforeFraction must be greater than 0 and less than 1");
         assertStartFails(i -> i.setRenewBefore(-1), "renewBefore must not be negative");
-        assertStartFails(i -> i.setRenewalJitter(1.5), "renewalJitter must be from 0 to 1");
-        assertStartFails(i -> {
-            i.setRenewBeforeFraction(0.6);
-            i.setRenewalJitter(1);
-        }, "renewBeforeFraction * (1 + renewalJitter) must be less than 1");
         assertStartFails(i -> i.setRenewalRetryMinInterval(0), "renewalRetryMinInterval must be positive");
         assertStartFails(i -> i.setRenewalRetryMaxInterval(i.getRenewalRetryMinInterval() - 1),
             "renewalRetryMaxInterval must not be less than renewalRetryMinInterval");
@@ -727,7 +692,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /**
      * @param g Node.
-     * @return Time the certificate the node serves is due for renewal by the default share, without jitter.
+     * @return Time the certificate the node serves is due for renewal by the default share.
      */
     private static long dueTime(IgniteEx g) {
         long notBefore = provider(g, COMMUNICATION).servedCertificate().getNotBefore().getTime();

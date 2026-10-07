@@ -63,9 +63,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Maximum renewal window, in milliseconds; {@code 0} means no maximum. */
     private long renewBefore;
 
-    /** Share of the window by which a node moves a renewal earlier at random. */
-    private double renewalJitter;
-
     /** Pause after the first renewal attempt that puts no new certificate in use, in milliseconds. */
     private long renewalRetryMinInterval = DFLT_RENEWAL_RETRY_MIN_INTERVAL;
 
@@ -170,22 +167,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     public void setRenewBefore(long renewBefore) {
         this.renewBefore = renewBefore;
-    }
-
-    /** @return Share of the window by which a node moves a renewal earlier at random. */
-    public double getRenewalJitter() {
-        return renewalJitter;
-    }
-
-    /**
-     * Sets the largest share of the window, from {@code 0} to {@code 1}, by which a node moves a renewal earlier. The node picks the shift
-     * at random, so that nodes whose certificates expire together do not renew them at the same moment.
-     * {@code renewBeforeFraction * (1 + renewalJitter)} must be less than {@code 1}. {@code 0} by default.
-     *
-     * @param renewalJitter Share of the window.
-     */
-    public void setRenewalJitter(double renewalJitter) {
-        this.renewalJitter = renewalJitter;
     }
 
     /** @return Pause after the first renewal attempt that puts no new certificate in use, in milliseconds. */
