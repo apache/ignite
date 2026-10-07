@@ -21,7 +21,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -38,9 +37,6 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     /** Current checkpoint progress. */
     private final CheckpointProgressImpl curr;
 
-    /** Partition map. */
-    private final PartitionAllocationMap map;
-
     /** Checkpoint runner thread pool. If null tasks are to be run in single thread */
     @Nullable private final IgniteThreadPoolExecutor asyncRunner;
 
@@ -55,18 +51,15 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
 
     /**
      * @param curr Current checkpoint progress.
-     * @param map Partition map.
      * @param asyncRunner Checkpoint runner thread pool.
      * @param heartbeat Heartbeat updater.
      */
     CheckpointContextImpl(
         CheckpointProgressImpl curr,
-        PartitionAllocationMap map,
         @Nullable IgniteThreadPoolExecutor asyncRunner,
         WorkProgressDispatcher heartbeat
     ) {
         this.curr = curr;
-        this.map = map;
         this.asyncRunner = asyncRunner;
         this.heartbeatUpdater = heartbeat;
         this.pendingTaskFuture = this.asyncRunner == null ? null : new GridCompoundFuture();
@@ -90,11 +83,6 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> finishedStateFut() {
         return curr.futureFor(FINISHED);
-    }
-
-    /** {@inheritDoc} */
-    @Override public PartitionAllocationMap partitionStatMap() {
-        return map;
     }
 
     /** {@inheritDoc} */
