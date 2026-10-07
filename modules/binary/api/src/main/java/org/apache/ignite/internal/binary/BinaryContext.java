@@ -156,6 +156,9 @@ public class BinaryContext {
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
+    /** Listener invoked when binary metadata for a type is missing during object reading. */
+    private final @Nullable Runnable missingMetadataListener;
+
     /**
      * @param metaHnd Meta data handler.
      * @param marsh Binary marshaller.
@@ -168,6 +171,8 @@ public class BinaryContext {
      * @param compactFooter Compact footer flag.
      * @param affFldNameProvider Affinity field name provider function.
      * @param log Logger.
+     * @param missingMetadataListener Listener invoked when binary metadata for a type is missing during
+     * object reading, or {@code null} if not needed.
      */
     public BinaryContext(
         BinaryMetadataHandler metaHnd,
@@ -181,7 +186,8 @@ public class BinaryContext {
         Map<String, String> affFlds,
         boolean compactFooter,
         Function<Class<?>, String> affFldNameProvider,
-        IgniteLogger log
+        IgniteLogger log,
+        @Nullable Runnable missingMetadataListener
     ) {
         assert metaHnd != null;
 
@@ -191,6 +197,7 @@ public class BinaryContext {
         this.igniteInstanceName = igniteInstanceName;
         this.clsLdr = clsLdr;
         this.dfltSerializer = dfltSerializer;
+        this.missingMetadataListener = missingMetadataListener;
 
         if (idMapper != null || nameMapper != null || !F.isEmpty(typeCfgs))
             mapperProvider = clsName -> resolveMapper(clsName, idMapper, nameMapper, typeCfgs);
@@ -1475,6 +1482,12 @@ public class BinaryContext {
      */
     OptimizedMarshaller optimizedMarsh() {
         return optmMarsh;
+    }
+
+    /** Notifies the listener (if any) that binary metadata for a type is missing during object reading. */
+    void onMissingMetadata() {
+        if (missingMetadataListener != null)
+            missingMetadataListener.run();
     }
 
     /**

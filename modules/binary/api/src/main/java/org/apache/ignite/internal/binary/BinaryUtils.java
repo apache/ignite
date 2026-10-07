@@ -2493,7 +2493,8 @@ public class BinaryUtils {
             new BinaryConfiguration(),
             Collections.emptyMap(),
             BinaryUtils::affinityFieldName,
-            NullLogger.INSTANCE
+            NullLogger.INSTANCE,
+            null
         );
     }
 
@@ -2508,6 +2509,8 @@ public class BinaryUtils {
      * @param affFlds Affinity fields by type name.
      * @param affFldNameProvider Affinity field name provider.
      * @param log Logger.
+     * @param missingMetadataListener Listener invoked when binary metadata for a type is missing during
+     *     object reading, or {@code null} if not needed.
      * @return Binary context instance.
      */
     public static BinaryContext binaryContext(
@@ -2518,7 +2521,8 @@ public class BinaryUtils {
         BinaryConfiguration binCfg,
         Map<String, String> affFlds,
         Function<Class<?>, String> affFldNameProvider,
-        IgniteLogger log
+        IgniteLogger log,
+        @Nullable Runnable missingMetadataListener
     ) {
         return useTestBinaryCtx
             ? new TestBinaryContext(
@@ -2533,7 +2537,8 @@ public class BinaryUtils {
                 affFlds,
                 binCfg.isCompactFooter(),
                 affFldNameProvider,
-                log
+                log,
+                missingMetadataListener
             )
             : new BinaryContext(
                 metaHnd,
@@ -2547,7 +2552,8 @@ public class BinaryUtils {
                 affFlds,
                 binCfg.isCompactFooter(),
                 affFldNameProvider,
-                log
+                log,
+                missingMetadataListener
             );
     }
 
@@ -2570,7 +2576,8 @@ public class BinaryUtils {
             Map<String, String> affFlds,
             boolean compactFooter,
             Function<Class<?>, String> affFldNameProvider,
-            IgniteLogger log
+            IgniteLogger log,
+            @Nullable Runnable missingMetadataListener
         ) {
             super(
                 metaHnd,
@@ -2584,7 +2591,8 @@ public class BinaryUtils {
                 affFlds,
                 compactFooter,
                 affFldNameProvider,
-                log
+                log,
+                missingMetadataListener
             );
         }
 

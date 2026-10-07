@@ -736,6 +736,18 @@ Register name: `cache`
 |LastDataVersion | long | The latest data version on the node.
 |===
 
+== Binary Errors
+
+Counters of errors occurred in the binary marshaller during binary object reading.
+
+Register name: `binary.errors`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|MissingMetadataCount | long | The number of "Cannot find metadata for object with compact footer" errors occurred during binary object reading.
+|===
+
 == SQL Parser Metrics
 
 Register name: `sql.parser.cache`
