@@ -132,22 +132,6 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param res Mapping Request Result.
-     */
-    void onResponse(UUID nodeId, MappingExchangeResult res) {
-        MappingExchangeResult res0 = null;
-
-        synchronized (this) {
-            if (pendingNode != null && pendingNode.id().equals(nodeId))
-                res0 = res;
-        }
-
-        if (res0 != null)
-            onDone(res0);
-    }
-
-    /**
      * If left node is actually the one latest mapping request was sent to,
      * request is sent again to the next node in topology.
      *
