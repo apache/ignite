@@ -1620,13 +1620,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
-     * @return Total number of allocated pages.
-     */
-    public long getTotalAllocatedPages() {
-        return 0;
-    }
-
-    /**
      * Off-heap read callback.
      *
      * @param hit Hit or miss flag.

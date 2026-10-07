@@ -110,7 +110,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
@@ -1173,23 +1172,6 @@ public class GridCacheUtils {
      */
     @Nullable public static <T> T value(@Nullable CacheObject cacheObj, GridCacheContext ctx, boolean cpy) {
         return cacheObj != null ? cacheObj.<T>value(ctx.cacheObjectContext(), cpy) : null;
-    }
-
-    /**
-     * @param cfg Cache configuration.
-     * @param cl Type of cache plugin configuration.
-     * @return Cache plugin configuration by type from cache configuration or <code>null</code>.
-     */
-    public static <C extends CachePluginConfiguration> C cachePluginConfiguration(
-        CacheConfiguration cfg, Class<C> cl) {
-        if (cfg.getPluginConfigurations() != null) {
-            for (CachePluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
-                if (pluginCfg.getClass() == cl)
-                    return (C)pluginCfg;
-            }
-        }
-
-        return null;
     }
 
     /**

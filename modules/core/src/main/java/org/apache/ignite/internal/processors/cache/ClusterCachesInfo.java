@@ -2758,13 +2758,6 @@ public class ClusterCachesInfo {
         return restartingCaches.containsKey(cacheName);
     }
 
-    /**
-     * Clear up information about restarting caches.
-     */
-    public void removeRestartingCaches() {
-        restartingCaches.clear();
-    }
-
     /** */
     @Nullable public ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
         return clusterCacheGrpRecoveryData;

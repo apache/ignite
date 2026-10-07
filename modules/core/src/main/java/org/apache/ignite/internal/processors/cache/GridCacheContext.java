@@ -1435,13 +1435,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if invalidation is enabled.
-     */
-    public boolean isInvalidate() {
-        return config().isInvalidate();
-    }
-
-    /**
      * @return {@code True} if synchronous commit is enabled.
      */
     public boolean syncCommit() {
