@@ -28,21 +28,7 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-/**
- * Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}; keeping
- * it, and deciding when to replace it, is up to the caller.
- * <p>
- * A node calls {@link #create()} when a transport starts, on every {@code control.sh --ssl reload} and, with
- * {@link #setRenewalEnabled(boolean) renewal enabled}, when the certificate in use enters the renewal window. So every call must build the
- * context from the current key material. If a renewal gets the same certificate back, the node keeps the context in use, even if trusted
- * authorities changed. A renewed certificate goes in use only if its chain is valid now and expires later than the one in use and, for
- * discovery and communication, a handshake with the trusted authorities of the new context accepts it. Take those authorities from a source
- * local to the node, not from the service that issues the certificates. Otherwise the handshake accepts whatever that service issues.
- * <p>
- * All renewals of a node run in one thread: bound every wait for key material well below {@link #getRenewalRetryMinInterval()} and stop
- * waiting when the thread is interrupted. Nodes that share an instance in one JVM may call {@link #create()} concurrently. The node reads
- * the renewal settings once, when a transport starts, and does not start if they are out of range.
- */
+/** Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}. */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -293,12 +279,20 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract void checkParameters() throws SSLException;
 
     /**
+     * Called on every {@link #create()}: when a transport starts, on every {@code control.sh --ssl reload} and, with renewal enabled, in
+     * the renewal window. Read the current key material each time: otherwise a reload or a renewal never sees a new certificate. Bound
+     * every wait well below {@link #getRenewalRetryMinInterval()} and stop waiting when the thread is interrupted: all renewals of a node
+     * run in one thread, and a call that hangs holds them up together with {@code --ssl reload}.
+     *
      * @return Created Key Managers.
      * @throws SSLException If Key Managers could not be created.
      */
     protected abstract KeyManager[] createKeyManagers() throws SSLException;
 
     /**
+     * Take the trusted authorities from a source local to the node, not from the service that issues the certificates: otherwise a reload
+     * or a renewal accepts a certificate that other nodes do not trust yet.
+     *
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
