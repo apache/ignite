@@ -758,7 +758,10 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("Raw Map not supported");
     }
 
-    /** Verifies the wire format descriptions of messages against the expected files from {@code codegen/wire}. */
+    /**
+     * Verifies the wire format descriptions of messages against the expected files from {@code codegen/wire}.
+     * An abstract message gets no description: its fields are described by the descendants.
+     */
     @Test
     public void testMessageDescriptions() {
         checkDescription("TestMessage");
@@ -768,27 +771,23 @@ public class MessageProcessorTest {
         checkDescription("TestMarshalledMapMessage");
         checkDescription("TestJdkMarshalledChildMessage", "TestJdkMarshalledMessage.java");
         checkDescription("TestRollingUpgradeAwareMessage", "TestFeatureRegistry.java");
-
-        // Wildcards and a nested class in the types; the logical fields go in the order of their types, then names.
         checkDescription("TestWildcardFieldsMessage");
-
-        // A type variable is described with its bound: the bound defines how a field is written.
         checkDescription("TestTypeVariableMessage");
 
-        // An abstract message gets no description: its fields are described by the descendants.
         assertEquals(1, checkDescription("ChildMessage", "AbstractMessage.java").size());
     }
 
-    /** Verifies the descriptions of the enums, which message fields refer to: the constants are described as the fields. */
+    /**
+     * Verifies the descriptions of the enums, which message fields refer to: the constants are described as the fields.
+     * An enum shared by messages is described once.
+     */
     @Test
     public void testEnumDescriptions() {
         String path = "enums/" + TransactionIsolation.class.getName() + ".json";
         String exp = content(javaFile("wire/TransactionIsolation.json"));
 
-        // An enum nested into an EnumSet and into a value of a Map.
         assertEquals(exp, checkDescription("TestEnumSetMessage").get(path));
 
-        // An enum shared by messages is described once.
         Map<String, String> files = checkDescription("CustomMapperEnumFieldsMessage", "CustomMapperEnumFieldsSecondMessage.java",
             "TransactionIsolationEnumMapper.java");
 

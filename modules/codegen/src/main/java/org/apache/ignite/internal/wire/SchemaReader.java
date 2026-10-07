@@ -56,13 +56,13 @@ public class SchemaReader {
 
     /**
      * @param type Class.
-     * @param fields Fields annotated with {@link Order} in the order they are written.
+     * @param fields Fields annotated with {@link Order} in the order they are written: the position of a field is
+     *      its order in the whole hierarchy.
      * @return Schema of the class.
      */
     public Schema read(TypeElement type, List<VariableElement> fields) {
         List<FieldRepresentation> res = new ArrayList<>();
 
-        // The fields come in the order they are written, so the position of a field is its order in the whole hierarchy.
         for (VariableElement field : fields)
             res.add(new FieldRepresentation(res.size(), typeName(field.asType()), simpleName(field), annotations(field)));
 
@@ -166,6 +166,8 @@ public class SchemaReader {
 
     /**
      * Prints a type by walking it: {@link TypeMirror#toString()} includes type annotations and differs between JDK versions.
+     * A type variable is printed with its bound, which defines how a field is written. The bound is erased, because
+     * it may refer to the variable itself.
      *
      * @return Binary names of the classes, type arguments in angle brackets separated with a comma, a type variable
      *      with its bound.
@@ -191,7 +193,6 @@ public class SchemaReader {
                 return wildcard.getSuperBound() == null ? "?" : "? super " + typeName(wildcard.getSuperBound());
 
             case TYPEVAR:
-                // The bound defines how a field is written. It is erased, because it may refer to the variable itself.
                 return ((TypeVariable)type).asElement().getSimpleName() + " extends " + typeName(env.getTypeUtils().erasure(type));
 
             default:
