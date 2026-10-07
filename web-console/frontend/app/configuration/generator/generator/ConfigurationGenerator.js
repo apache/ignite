@@ -2389,23 +2389,6 @@ export default class IgniteConfigurationGenerator {
         return ccfg;
     }
 
-    // Generate client near cache group.
-    static cacheNearClient(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
-        if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) {
-            const bean = new Bean('org.apache.ignite.configuration.NearCacheConfiguration',
-                javaTypes.toJavaName('nearConfiguration', ccfg.valueOf('name')),
-                cache.clientNearConfiguration, cacheDflts.clientNearConfiguration);
-
-            bean.intProperty('nearStartSize');
-
-            this._evictionPolicy(bean, available, true, bean.valueOf('nearEvictionPolicy'), cacheDflts.evictionPolicy);
-
-            return bean;
-        }
-
-        return ccfg;
-    }
-
     // Generate cache statistics group.
     static cacheStatistics(cache, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.boolProperty('statisticsEnabled')

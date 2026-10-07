@@ -72,9 +72,6 @@ const DFLT_CACHE = {
     nearConfiguration: {
         nearStartSize: 375000
     },
-    clientNearConfiguration: {
-        nearStartSize: 375000
-    },
     evictionPolicy: {
         batchSize: 1,
         maxSize: 100000

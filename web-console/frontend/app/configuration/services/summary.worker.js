@@ -60,9 +60,7 @@ onmessage = function(e) {
     zip.file('.dockerignore', docker.ignoreFile());
 
     const cfg = generator.igniteConfiguration(cluster, targetVer, false);
-    const clientCfg = generator.igniteConfiguration(cluster, targetVer, true);
-    const clientNearCaches = filter(cluster.caches, (cache) =>
-        cache.cacheMode === 'PARTITIONED' && get(cache, 'clientNearConfiguration.enabled'));
+    const clientCfg = generator.igniteConfiguration(cluster, targetVer, true);    
 
     const secProps = properties.generate(cfg);
 
@@ -81,12 +79,12 @@ onmessage = function(e) {
         zip.file(`${metaPath}/ignite-service.yaml`, kubernetesConfig(cluster));
 
     zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg, targetVer).asString());
-    zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, targetVer, clientNearCaches).asString());
+    zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, targetVer).asString());
 
     const cfgPath = `${srcPath}/config`;
 
     zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, targetVer, 'config', 'ServerConfigurationFactory').asString());
-    zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, targetVer, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
+    zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, targetVer, 'config', 'ClientConfigurationFactory').asString());
 
     if (java.isDemoConfigured(cluster, demo)) {
         zip.file(`${srcPath}/demo/DemoStartup.java`, java.nodeStartup(cluster, 'demo.DemoStartup',
@@ -108,7 +106,7 @@ onmessage = function(e) {
         'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
     
     zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
-        'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCaches));
+        'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory'));
 
     zip.file('pom.xml', maven.generate(cluster, targetVer));
 
@@ -116,7 +114,7 @@ onmessage = function(e) {
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());
 
     if (isEmpty(data.pojos))
-        data.pojos = java.pojos(cluster.caches, true);
+        data.pojos = java.pojos(cluster.caches, true, true);
 
     for (const pojo of data.pojos) {
         if (pojo.keyClass)

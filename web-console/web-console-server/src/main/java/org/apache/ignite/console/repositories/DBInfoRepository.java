@@ -9,11 +9,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.DBInfoDto;
-import org.apache.ignite.console.dto.Notebook;
 import org.apache.ignite.console.messages.WebConsoleMessageSource;
 import org.apache.ignite.console.messages.WebConsoleMessageSourceAccessor;
 import org.apache.ignite.console.tx.TransactionManager;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -67,7 +65,7 @@ public class DBInfoRepository {
      * @param accId Account ID.
      * @return List of notebooks for specified account.
      */
-    public DBInfoDto get(UUID accId,UUID datasourceID) {
+    public DBInfoDto get(UUID accId, UUID datasourceID) {
         return txMgr.doInTransaction(() -> {
             return datasourceTbl.get(datasourceID);
         });

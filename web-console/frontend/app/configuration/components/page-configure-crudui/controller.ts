@@ -7,7 +7,7 @@ export default class PageConfigureCrudUIController {
         { text: 'Caches', sref: 'base.configuration.edit.crudui.caches' },
     ];
 
-    menuItems: Array<{text: string, sref: string}>;
+    menuItems: Array<{text: string, sref: string}> = [];
 
     $onInit() {
         this.menuItems = PageConfigureCrudUIController.menuItems;

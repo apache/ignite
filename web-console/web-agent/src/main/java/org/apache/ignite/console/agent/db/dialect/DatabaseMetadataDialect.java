@@ -17,7 +17,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
-import org.apache.ignite.console.agent.db.VisorQueryIndex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.Cache.ValueWrapper;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -99,12 +98,8 @@ public abstract class DatabaseMetadataDialect {
      * @return New {@code DbTable} instance.
      */
     protected DbTable table(String schema, String tbl, String comment,Collection<DbColumn> cols, Collection<QueryIndex>idxs) {
-        Collection<VisorQueryIndex> res = new ArrayList<>(idxs.size());
 
-        for (QueryIndex idx : idxs)
-            res.add(new VisorQueryIndex(idx));
-
-        return new DbTable(schema, tbl, comment, cols, res);
+        return new DbTable(schema, tbl, comment, cols, idxs);
     }
 
     /**

@@ -173,13 +173,15 @@ export default class IgniteMavenGenerator {
         this.addDependency(deps, artifactGrp, 'ignite-spring', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-indexing', igniteVer);
         this.addDependency(deps, artifactGrp, 'ignite-vertx-rest', igniteVer);
-        this.addDependency(deps, artifactGrp, 'ignite-web-console-common', igniteVer);        
+        this.addDependency(deps, artifactGrp, 'ignite-web-console-common', igniteVer);
+        
+        this.pickDependency(deps, 'IgniteSpringData', artifactGrp, igniteVer);
 
         if (_.get(cluster, 'deploymentSpi.kind') === 'URI')
             this.addDependency(deps, artifactGrp, 'ignite-urideploy', igniteVer);
 
         if (_.get(cluster, 'crudui.kind') !== '')
-            this.pickDependency(deps, 'ignite-crudui', artifactGrp, igniteVer);
+            this.pickDependency(deps, 'IgniteSpringData', artifactGrp, null);
 
         this.pickDependency(deps, cluster.discovery.kind, artifactGrp, igniteVer);
 

@@ -211,7 +211,7 @@ public class BrowsersService extends AbstractSocketHandler {
                         	}
                         }                        	
                         else {
-                        	log.warn("Not found any cluster agent for : " + evt);
+                        	log.warn("Not found any cluster agent for : " + evt.getEventType());
                         	sendMessageQuiet(ses, evt.withError("Failed to send event to agent: Not found any cluster agent",null));
                         }
                     }
@@ -219,7 +219,7 @@ public class BrowsersService extends AbstractSocketHandler {
                         // No-op.
                     }
                     catch (Exception e) {
-                        log.warn("Failed to send response to browser: " + evt, e);
+                        log.warn("Failed to send response to browser: " + evt.getEventType(), e);
                     }
                     break;
                     
@@ -245,7 +245,7 @@ public class BrowsersService extends AbstractSocketHandler {
                             	 sendToAgent(key, evt);
                             }
                             else {
-                            	log.warn("Not found any cluster agent for : " + evt);
+                            	log.warn("Not found any cluster agent for : " + evt.getEventType());
                             	sendMessageQuiet(ses, evt.withError("Failed to send event to agent: Not found any cluster agent",null));
                             }
                         }

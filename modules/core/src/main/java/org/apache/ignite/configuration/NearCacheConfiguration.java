@@ -43,7 +43,7 @@ public class NearCacheConfiguration<K, V> implements Serializable {
     private EvictionPolicy<K, V> nearEvictPlc;
 
     /** Near cache eviction policy factory. */
-    private Factory nearEvictPlcFactory;
+    private Factory<? extends EvictionPolicy<? super K, ? super V>> nearEvictPlcFactory;
 
     /** Default near cache start size. */
     private int nearStartSize = DFLT_NEAR_START_SIZE;
@@ -101,7 +101,7 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
-    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
+    @Nullable public Factory<? extends EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
         return nearEvictPlcFactory;
     }
 

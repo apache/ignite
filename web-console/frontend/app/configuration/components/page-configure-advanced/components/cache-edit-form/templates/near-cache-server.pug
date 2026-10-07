@@ -11,9 +11,8 @@ panel-collapsible(
     on-open=`ui.loadPanel('${form}')`
     ng-show=`${model}.cacheMode === 'PARTITIONED'`
 )
-    panel-title Near cache on server node
-    panel-description
-        | Near cache settings.
+    panel-title Near cache settings.
+    panel-description        
         | Near cache is a small local cache that stores most recently or most frequently accessed data.
         | Should be used in case when it is impossible to send computations to remote nodes.
         a.link-success(href="https://apacheignite.readme.io/docs/near-caches" target="_blank") More info

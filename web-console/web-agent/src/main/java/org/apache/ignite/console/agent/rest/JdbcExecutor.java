@@ -18,22 +18,14 @@
 package org.apache.ignite.console.agent.rest;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.ConnectException;
 import java.security.GeneralSecurityException;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
-import javax.sql.DataSource;
 
 import com.beust.jcommander.internal.Lists;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -44,28 +36,20 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.console.agent.db.DBInfo;
-import org.apache.ignite.console.agent.db.DbColumn;
-import org.apache.ignite.console.agent.db.DbMetadataReader;
-import org.apache.ignite.console.agent.db.DbTable;
-import org.apache.ignite.console.agent.db.JdbcQueryExecutor;
-import org.apache.ignite.console.agent.db.VisorQueryIndex;
-import org.apache.ignite.console.agent.db.VisorQueryIndexField;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.console.agent.db.*;
+import org.apache.ignite.console.agent.db.DbInfo;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.service.LangflowApiClient;
 import org.apache.ignite.console.agent.service.ServiceResult;
-import org.apache.ignite.console.utils.Utils;
-import org.apache.ignite.internal.util.typedef.F;
+
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
  * API to translate REST requests to rds use jdbc connect.
@@ -115,7 +99,7 @@ public class JdbcExecutor implements AutoCloseable {
      */
     public RestResult sendRequest(String clusterId, JsonObject params) throws IOException {
     	 
-    	DBInfo dbInfo = dbListener.getDBClusterInfo(clusterId);
+    	DbInfo dbInfo = dbListener.getDBClusterInfo(clusterId);
     	if(dbInfo==null || dbInfo.jdbcUrl==null) {
     		return RestResult.fail(STATUS_FAILED, "Not configure any jdbc connection, Please click Import from Database on configuration/overview");
     	}
@@ -255,14 +239,17 @@ public class JdbcExecutor implements AutoCloseable {
                     	ObjectNode indexes = caches.withObject("/indexes");
                     	ArrayNode index = new ArrayNode(jsonNodeFactory);  
                     	
-                    	for(VisorQueryIndex idx: table.getIndexes()) {
+                    	for(QueryIndex idx: table.getIndexes()) {
                     		ObjectNode indexItem = new ObjectNode(jsonNodeFactory);
                     		index.add(indexItem);
                     		indexItem.put("name",idx.getName());
                     		indexItem.put("unique",false);
                     		indexItem.put("descendings","");
-                    		for(VisorQueryIndexField idxField: idx.getFields()) {                    			
-                    			indexItem.withArray("/fields").add(idxField.getName());                    			
+                    		for(Map.Entry<String,Boolean> idxField: idx.getFields().entrySet()) {
+                    			indexItem.withArray("/fields").add(idxField.getKey());
+								if(idxField.getValue()){
+									indexItem.put("descendings","false");
+								}
                     		}
                     		
                     	}

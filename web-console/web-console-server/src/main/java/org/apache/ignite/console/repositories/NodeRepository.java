@@ -190,4 +190,12 @@ public class NodeRepository {
             activitiesIdx.add(accId, activity.getId());
         });
     }
+
+    /**
+     *  Activity to clear.
+     */
+    public void clearAll() {
+        activitiesTbl.cache().clear();
+        activitiesIdx.cache().clear();
+    }
 }

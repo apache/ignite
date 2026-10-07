@@ -91,6 +91,8 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
     /** Websocket Client. */
     private WebSocketClient client;
 
+    private DataSourceManager dataSourceManager;
+
 	/** Schema import handler. */
     private final DatabaseHandler dbHnd;
 
@@ -385,8 +387,8 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 
                 closeLatch.countDown();
             }
-            else {
-            	DataSourceManager.init(getHttpClient(),cfg.serverUri(),validTokens);
+            else{
+                dataSourceManager = new DataSourceManager(this.cfg.serverUri(),validTokens);
             }
 
             logger.info("Successfully completes handshake with server");
@@ -512,7 +514,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
                     IgniteClusterLauncher.stopIgnite(clusterName, clusterId);
                 }
 			}
-			
+
 			Ignite ignite = null;
 			// 不是演示环境
 			if(!isDemo) {
@@ -573,7 +575,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 			}
 			else {
 				// 启动一个内存型的node，有多少个Agent就有多少个Demo Node
-                AgentMetadataDemo.bindTestDatasource();
+                AgentMetadataDemo.bindTestDatasource(evt.getToken());
 				String cfgFile = String.format("%s%s/src/main/resources/META-INF/%s-server.xml", configPath, clusterName,clusterName);
 				// 启动Demo节点，并且在最后一个节点部署服务
 	        	ignite = AgentClusterDemo.tryStart(clusterName,cfgFile,cfg.serverId(),isLastNode);
@@ -607,6 +609,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
         JsonObject json = fromJson(evt.getPayload());
         boolean isLastNode = evt.getRequestId().endsWith("-lastNode");
         String clusterName = Utils.escapeFileName(json.getString("name"));
+
         if(json.getBoolean("demo",false)) {
         	AgentClusterDemo.stop();
     	}
@@ -643,7 +646,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
         JsonObject json = fromJson(msg);
         String cluterId = json.getString("id");
         String serviceName = json.getString("serviceName","");
-        
+
         if(dbHnd.canHandle(serviceName)) {
         	JsonObject args = json.getJsonObject("args");
         	ServiceResult rv = dbHnd.handleCommand(cluterId,serviceName,args);
@@ -770,7 +773,7 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
         JsonObject msgRet;
         try {
             evt = fromJson(msg, WebSocketRequest.class);
-
+            dataSourceManager.setAccountToken(evt.getToken());
             switch (evt.getEventType()) {
                 case AGENT_HANDSHAKE:
                     AgentHandshakeResponse req0 = fromJson(evt.getPayload(), AgentHandshakeResponse.class);
@@ -809,17 +812,14 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
 
                 case SCHEMA_IMPORT_DRIVERS:
                     send(ses, evt.response(dbHnd.collectJdbcDrivers()));
-
                     break;
 
                 case SCHEMA_IMPORT_SCHEMAS:
                     send(ses, evt.response(dbHnd.collectDbSchemas(evt)));
-
                     break;
 
                 case SCHEMA_IMPORT_METADATA:
                     send(ses, evt.response(dbHnd.collectDbMetadata(evt)));
-
                     break;
 
                 case NODE_REST:
@@ -884,7 +884,6 @@ public class WebSocketRouter implements AutoCloseable,Session.Listener.AutoDeman
                     		if(queryResult.containsKey("rows")) {
                     			res = RestResult.success(queryResult.toString(), res.getSessionToken());
                     		}
-                    		
                     	}
                     }
                     catch (Throwable e) {

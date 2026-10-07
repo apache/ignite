@@ -6,9 +6,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.ConnectException;
 import java.net.URL;
-import java.nio.channels.AsynchronousCloseException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -20,41 +18,28 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-import javax.net.ssl.SSLException;
-
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.console.agent.AgentConfiguration;
-import org.apache.ignite.console.agent.db.DBInfo;
-import org.apache.ignite.console.agent.db.DataSourceManager;
-import org.apache.ignite.console.agent.db.DbMetadataReader;
-import org.apache.ignite.console.agent.db.DbSchema;
-import org.apache.ignite.console.agent.db.DbTable;
+import org.apache.ignite.console.agent.db.*;
+import org.apache.ignite.console.agent.db.DbInfo;
 
 import org.apache.ignite.console.agent.rest.JdbcExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.ServiceResult;
-import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 
 import org.slf4j.LoggerFactory;
 
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -198,7 +183,7 @@ public class DatabaseHandler  implements ClusterHandler {
 
         JsonObject args = fromJson(evt.getPayload());
 
-        try (Connection conn = connect(args)) {
+        try (Connection conn = connect(args,evt.getToken())) {
             String catalog = conn.getCatalog();
 
             if (catalog == null) {
@@ -239,7 +224,7 @@ public class DatabaseHandler  implements ClusterHandler {
 
         boolean tblsOnly = args.getBoolean("tablesOnly", false);
 
-        try (Connection conn = connect(args)) {
+        try (Connection conn = connect(args,evt.getToken())) {
             Collection<DbTable> metadata = dbMetaReader.metadata(conn, schemas, tblsOnly);
 
             log.info("Collected database metadata: " + metadata.size());
@@ -253,23 +238,23 @@ public class DatabaseHandler  implements ClusterHandler {
      * @return Connection to database.
      * @throws SQLException If failed to connect.
      */
-    public Connection connect(JsonObject args) throws SQLException {
+    public Connection connect(JsonObject args,String accountToken) throws SQLException {
         String jdbcUrl = args.getString("jdbcUrl", "");
         
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
         	Connection demoConn = AgentMetadataDemo.testDrive();
         	if(demoConn!=null) {
-        		this.databaseListener.addDB(args.getMap(),demoConn);
+        		this.databaseListener.addDB(args.getMap(),demoConn,accountToken);
         	}
             return demoConn;
         }
         
-        DBInfo dbInfo = new DBInfo();
+        DbInfo dbInfo = new DbInfo();
 		dbInfo.buildWith(args.getMap());
         
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
         	String jndiName="dsH2";     		
-        	DataSourceManager.bindDataSource(jndiName, dbInfo);
+        	DataSourceManager.bindDataSource(jndiName, dbInfo,accountToken);
             return AgentMetadataDemo.testDrive();
         }
         String jdbcDriverJarPath = dbInfo.getDriverJar();
@@ -281,13 +266,13 @@ public class DatabaseHandler  implements ClusterHandler {
 
         Connection conn = dbMetaReader.connect(jdbcDriverJarPath, dbInfo);
         
-        this.databaseListener.addDB(args.getMap(),conn);
+        this.databaseListener.addDB(args.getMap(),conn,accountToken);
         
         return conn;
     }
 
 
-	public Collection<GridClientCacheBean> schemas(DBInfo info) {
+	public Collection<GridClientCacheBean> schemas(DbInfo info) {
 		if(info==null)
 			return Collections.EMPTY_LIST; 
 		try (Connection conn = dbMetaReader.connect(null,info)) {
@@ -334,8 +319,8 @@ public class DatabaseHandler  implements ClusterHandler {
     public List<TopologySnapshot> topologySnapshot() {
         List<TopologySnapshot> tops = new LinkedList<>();        
        
-        for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
-        	DBInfo info = ent.getValue();
+        for (Entry<String, DbInfo> ent: databaseListener.clusters.entrySet()) {
+        	DbInfo info = ent.getValue();
         	try {
 	        	if(ent.getValue().top==null) {
 		        	List<GridClientNodeBean> nodes = new ArrayList<>(1);
@@ -388,8 +373,8 @@ public class DatabaseHandler  implements ClusterHandler {
     
     @Override
     public void close() {
-    	for (Entry<String, DBInfo> ent: databaseListener.clusters.entrySet()) {
-    		DBInfo info = ent.getValue();
+    	for (Entry<String, DbInfo> ent: databaseListener.clusters.entrySet()) {
+    		DbInfo info = ent.getValue();
     		databaseListener.deactivedCluster(info.getId().toString());
     	}
     }
@@ -398,7 +383,7 @@ public class DatabaseHandler  implements ClusterHandler {
     	
     	if(cmd.equals("datasourceTest")){
     		ServiceResult stat = new ServiceResult();        	
-        	try (Connection conn = connect(args)) {
+        	try (Connection conn = connect(args,DataSourceManager.getAccountToken())) {
                 String catalog = conn.getCatalog();
 
                 log.info("Collected database catalog:" + catalog);            

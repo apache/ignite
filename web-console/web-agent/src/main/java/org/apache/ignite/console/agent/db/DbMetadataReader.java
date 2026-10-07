@@ -123,7 +123,7 @@ public class DbMetadataReader {
      * @return Connection to database.
      * @throws SQLException if connection failed.
      */
-    public Connection connect(String jdbcDrvJarPath, DBInfo dbInfo)
+    public Connection connect(String jdbcDrvJarPath, DbInfo dbInfo)
         throws SQLException {
         Driver drv = DataSourceManager.drivers.get(dbInfo.getDriverCls());
 

@@ -1,5 +1,3 @@
-
-
 package org.apache.ignite.console.agent.db;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import java.sql.Types;

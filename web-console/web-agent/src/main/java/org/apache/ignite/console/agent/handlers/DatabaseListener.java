@@ -20,22 +20,14 @@ package org.apache.ignite.console.agent.handlers;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.naming.NamingException;
 import javax.sql.DataSource;
 
-import org.apache.ignite.console.agent.db.DBInfo;
+import org.apache.ignite.console.agent.db.DbInfo;
 import org.apache.ignite.console.agent.db.DataSourceManager;
-import org.apache.ignite.console.agent.db.DbSchema;
-import org.apache.ignite.console.websocket.TopologySnapshot;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.eclipse.jetty.util.StringUtil;
 
 
@@ -45,8 +37,8 @@ import org.eclipse.jetty.util.StringUtil;
 
 public class DatabaseListener {
 
-	/** Index of alive node URI. jndiName->DBInfo*/
-    public final Map<String, DBInfo> clusters = new ConcurrentHashMap<>();
+	/** Index of alive node URI. jndiName->DbInfo*/
+    public final Map<String, DbInfo> clusters = new ConcurrentHashMap<>();
 	public final Map<String, Integer> deactivedCluster = new ConcurrentHashMap<>();
 	
 	public boolean deactivedCluster(String id) {
@@ -64,13 +56,13 @@ public class DatabaseListener {
 	 * @return
 	 * @throws IllegalArgumentException
 	 */
-	public DBInfo addDB(Map<String, Object> args,Connection conn) throws IllegalArgumentException {
-		DBInfo dbInfo = new DBInfo();
+	public DbInfo addDB(Map<String, Object> args, Connection conn,String accountToken) throws IllegalArgumentException {
+		DbInfo dbInfo = new DbInfo();
 		dbInfo.buildWith(args);
 
 		String url = dbInfo.jdbcUrl;
 
-		for (DBInfo dbInfo0 : clusters.values()) {
+		for (DbInfo dbInfo0 : clusters.values()) {
 			if (dbInfo0.jdbcUrl.equalsIgnoreCase(url)) {
 				return dbInfo;
 			}
@@ -82,7 +74,7 @@ public class DatabaseListener {
 		
 		if(!StringUtil.isBlank(dbInfo.jndiName)) {
 			
-			DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
+			DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo,accountToken);
 			
 			clusters.put(dbInfo.getId().toString(), dbInfo);
 		}
@@ -117,7 +109,7 @@ public class DatabaseListener {
 				}
 				
 				dbInfo.jndiName= String.format("ds%s_%s",dbProductName,catalog.replaceAll("_", "").replace('-','_'));					
-				DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo);
+				DataSourceManager.bindDataSource(dbInfo.jndiName, dbInfo,accountToken);
 				
 				//- 保存datasource
 				//-DataSourceManager.createDataSource(dbInfo.getId().toString(), dbInfo);
@@ -133,11 +125,11 @@ public class DatabaseListener {
 		return dbInfo;
 	}
 
-	public DBInfo findDB(Map<String, Object> args) throws Exception {
-		DBInfo dbInfoTarget = new DBInfo();
+	public DbInfo findDB(Map<String, Object> args) throws Exception {
+		DbInfo dbInfoTarget = new DbInfo();
 		dbInfoTarget.buildWith(args);
 
-		for (DBInfo dbInfo : clusters.values()) {
+		for (DbInfo dbInfo : clusters.values()) {
 			if (dbInfoTarget.jdbcUrl!=null && dbInfo.jdbcUrl.equalsIgnoreCase(dbInfoTarget.jdbcUrl)) {
 				return dbInfo;
 			}
@@ -152,7 +144,7 @@ public class DatabaseListener {
 		return clusters.containsKey(clusterId);
 	}
 	
-	public DBInfo getDBClusterInfo(String clusterId) {
+	public DbInfo getDBClusterInfo(String clusterId) {
 		deactivedCluster.remove(clusterId);
 		return clusters.get(clusterId);
 	}
@@ -161,7 +153,7 @@ public class DatabaseListener {
 		clusters.clear();
 	}	
 	
-	public Connection getConnection(DBInfo dbInfo) {
+	public Connection getConnection(DbInfo dbInfo) {
 		try {
 			Connection conn = null;
 			DataSource ds = DataSourceManager.getDataSource(dbInfo.jndiName);

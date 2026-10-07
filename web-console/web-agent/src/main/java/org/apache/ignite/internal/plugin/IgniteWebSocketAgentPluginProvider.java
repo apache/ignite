@@ -56,8 +56,6 @@ public class IgniteWebSocketAgentPluginProvider implements PluginProvider<AgentC
 	private IgniteLogger log;     
 	
     private AgentConfiguration cfg;
-    
-
 
 	
     /** {@inheritDoc} */

@@ -1,9 +1,6 @@
 package org.apache.ignite.console.web.controller;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import io.swagger.v3.oas.annotations.Operation;
 import io.vertx.core.json.JsonArray;
@@ -19,7 +16,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.util.LinkedCaseInsensitiveMap;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,7 +39,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
  */
 @RestController
 @RequestMapping(path = "/api/v1/datasource")
-public class DBInfoController {
+public class DbInfoController {
     /** */
     private final DBInfoRepository datasourcesSrv;
     
@@ -53,7 +49,7 @@ public class DBInfoController {
      * @param datasourcesSrv Notebooks service.
      */
     @Autowired
-    public DBInfoController(DBInfoRepository datasourcesSrv,DataSourceInfoService dbInfoService) {
+    public DbInfoController(DBInfoRepository datasourcesSrv,DataSourceInfoService dbInfoService) {
         this.datasourcesSrv = datasourcesSrv;
 		this.dbInfoService = dbInfoService;
     }
@@ -107,7 +103,6 @@ public class DBInfoController {
             collections.forEach((row)->{
             	list.add(new JsonObject(row));
             });
-            mongoClient.close();
             
         } catch (Exception e) {
             e.printStackTrace();
@@ -182,7 +177,7 @@ public class DBInfoController {
     /**
      * @param acc Account.
      * @param datasourceId Notebook ID.
-     * @param collection meta collection, must have: "TABLE_SCHEMA","TABLE_NAME","TABLE_COMMENT","COLUMN_NAME","COLUMN_COMMENT","DATA_TYPE"
+     * @param collectionName meta collection, must have: "TABLE_SCHEMA","TABLE_NAME","TABLE_COMMENT","COLUMN_NAME","COLUMN_COMMENT","DATA_TYPE"
      */
     @Operation(summary = "get user's datasource collections from meta collection.")
     @GetMapping(path = "/{datasourceId}/meta_collection/{database}/{collection}")

@@ -850,10 +850,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * @param {Object} targetVer Version of Ignite for generated project.
      * @param pkg Package name.
      * @param {String} clsName Class name for generate factory class otherwise generate code snippet.
-     * @param {Array<Object>} clientNearCaches Is client node.
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, targetVer, pkg, clsName, clientNearCaches=[]) {
+    static igniteConfiguration(cfg, targetVer, pkg, clsName) {
         const available = versionService.since.bind(versionService, targetVer.ignite);
 
         const sb = new StringBuilder();
@@ -862,22 +861,6 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         sb.emptyLine();
 
         const imports = this.collectBeanImports(cfg);
-
-        const nearCacheBeans = [];
-
-        if (nonEmpty(clientNearCaches)) {
-            imports.push('org.apache.ignite.configuration.NearCacheConfiguration');
-
-            _.forEach(clientNearCaches, (cache) => {
-                const nearCacheBean = this.generator.cacheNearClient(cache, available);
-
-                nearCacheBean.cacheName = cache.name;
-
-                imports.push(...this.collectBeanImports(nearCacheBean));
-
-                nearCacheBeans.push(nearCacheBean);
-            });
-        }
 
         if (_.includes(imports, 'oracle.jdbc.pool.OracleDataSource'))
             imports.push('java.sql.SQLException');
@@ -960,25 +943,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             sb.endBlock('}');
 
             sb.emptyLine();
-        }
-
-        _.forEach(nearCacheBeans, (nearCacheBean) => {
-            this.commentBlock(sb, `Configuration of near cache for cache: ${nearCacheBean.cacheName}.`,
-                '',
-                '@return Near cache configuration.',
-                '@throws Exception If failed to construct near cache configuration instance.'
-            );
-
-            sb.startBlock(`public static NearCacheConfiguration ${nearCacheBean.id}() throws Exception {`);
-
-            this.constructBean(sb, nearCacheBean);
-            sb.emptyLine();
-
-            sb.append(`return ${nearCacheBean.id};`);
-            sb.endBlock('}');
-
-            sb.emptyLine();
-        });
+        }        
 
         this.commentBlock(sb, 'Configure grid.',
             '',
@@ -1009,12 +974,16 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
     }
 
     static cluster(cluster, targetVer, pkg, clsName, client) {
-        const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);
+        const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);        
+        return this.igniteConfiguration(cfg, targetVer, pkg, clsName);
+    }
 
-        const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
-            cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
-
-        return this.igniteConfiguration(cfg, targetVer, pkg, clsName, clientNearCaches);
+    static isIndexedField(fieldName, indexes) {
+        if (!Array.isArray(indexes)) return false;
+        return indexes.some(index =>
+            Array.isArray(index.fields) &&
+            index.fields.some(field => field.name === fieldName)
+        );
     }
 
     /**
@@ -1023,13 +992,16 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * @param fullClsName Full class name.
      * @param fields Fields.
      * @param addConstructor If 'true' then empty and full constructors should be generated.
+     * @param keyFields Key Fields.
      * @returns {String}
      */
-    static pojo(fullClsName, fields, addConstructor) {
+    static pojo(fullClsName, fields, addConstructor, keyFields, domain) {
         const dotIdx = fullClsName.lastIndexOf('.');
 
         const pkg = fullClsName.substring(0, dotIdx);
         const clsName = fullClsName.substring(dotIdx + 1);
+        // use @QuerySqlField
+        const annotations = domain && domain.queryMetadata === 'Annotations';
 
         const sb = new StringBuilder();
 
@@ -1039,6 +1011,14 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         const imports = ['java.io.Serializable'];
 
         _.forEach(fields, (field) => imports.push(this.javaTypes.fullClassName(field.javaFieldType)));
+
+        if(keyFields){
+            imports.push('org.springframework.data.annotation.Id');
+            _.forEach(keyFields, (field) => imports.push(this.javaTypes.fullClassName(field.javaFieldType)));
+        }
+        if(annotations){
+            imports.push('org.apache.ignite.cache.query.annotations.QuerySqlField');
+        }
 
         _.forEach(this._prepareImports(imports), (cls) => sb.append(`import ${cls};`));
 
@@ -1053,12 +1033,33 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         sb.append('private static final long serialVersionUID = 0L;');
         sb.emptyLine();
 
+        if(keyFields){
+            // Generate key fields declaration.
+            _.forEach(keyFields, (field) => {
+                const fldName = field.javaFieldName;
+                const fldType = this.javaTypes.shortClassName(field.javaFieldType);
+
+                sb.append(`/** Key field ${fldName}. */`);                
+                sb.append(`@Id private ${fldType} ${fldName};`);
+
+                sb.emptyLine();
+            });
+        }
+
         // Generate fields declaration.
         _.forEach(fields, (field) => {
             const fldName = field.javaFieldName;
             const fldType = this.javaTypes.shortClassName(field.javaFieldType);
 
             sb.append(`/** Value for ${fldName}. */`);
+            if(annotations){
+                if(IgniteJavaTransformer.isIndexedField(fldName,domain.indexes)){
+                    sb.append(`@QuerySqlField(index=true)`);
+                }
+                else{
+                    sb.append(`@QuerySqlField`);
+                }                
+            }
             sb.append(`private ${fldType} ${fldName};`);
 
             sb.emptyLine();
@@ -1073,25 +1074,67 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
             sb.emptyLine();
 
-            this.commentBlock(sb, 'Full constructor.');
-
             const arg = (field) => {
                 const fldType = this.javaTypes.shortClassName(field.javaFieldType);
 
                 return `${fldType} ${field.javaFieldName}`;
             };
 
-            sb.startBlock(`public ${clsName}(${arg(_.head(fields))}${fields.length === 1 ? ') {' : ','}`);
+            if(keyFields){
+                this.commentBlock(sb, 'Key Field constructor.');
 
-            _.forEach(_.tail(fields), (field, idx) => {
-                sb.append(`${arg(field)}${idx !== fields.length - 2 ? ',' : ') {'}`);
+                sb.startBlock(`public ${clsName}(${arg(_.head(keyFields))}${keyFields.length === 1 ? ') {' : ','}`);
+
+                _.forEach(_.tail(keyFields), (field, idx) => {
+                    sb.append(`${arg(field)}${idx !== keyFields.length - 2 ? ',' : ') {'}`);
+                });
+
+                _.forEach(keyFields, (field) => sb.append(`this.${field.javaFieldName} = ${field.javaFieldName};`));
+
+                sb.endBlock('}');
+
+                sb.emptyLine();
+            }
+            else{
+                this.commentBlock(sb, 'Full constructor.');            
+                const notnullFields = fields;
+                sb.startBlock(`public ${clsName}(${arg(_.head(notnullFields))}${notnullFields.length === 1 ? ') {' : ','}`);
+
+                _.forEach(_.tail(notnullFields), (field, idx) => {                    
+                    sb.append(`${arg(field)}${idx !== notnullFields.length - 2 ? ',' : ') {'}`);
+                });
+
+                _.forEach(notnullFields, (field) => {                    
+                    sb.append(`this.${field.javaFieldName} = ${field.javaFieldName};`)
+                });
+
+                sb.endBlock('}');
+
+                sb.emptyLine();
+
+            }
+            
+        }
+
+        if(keyFields){
+            // Generate getters methods for keys.
+            _.forEach(keyFields, (field) => {
+                const fldType = this.javaTypes.shortClassName(field.javaFieldType);
+                const fldName = field.javaFieldName;
+
+                this.commentBlock(sb,
+                    `Gets ${fldName}`,
+                    '',
+                    `@return Value for ${fldName}.`
+                );
+                sb.startBlock(`public ${fldType} ${this.javaTypes.toJavaName('get', fldName)}() {`);
+                sb.append('return ' + fldName + ';');
+                sb.endBlock('}');
+
+                sb.emptyLine();
+                
             });
 
-            _.forEach(fields, (field) => sb.append(`this.${field.javaFieldName} = ${field.javaFieldName};`));
-
-            sb.endBlock('}');
-
-            sb.emptyLine();
         }
 
         // Generate getters and setters methods.
@@ -1137,7 +1180,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
         sb.append(`${clsName} that = (${clsName})o;`);
 
-        _.forEach(fields, (field) => {
+        _.forEach(keyFields || fields, (field) => {
             sb.emptyLine();
 
             const javaName = field.javaFieldName;
@@ -1176,7 +1219,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         let first = true;
         let tempVar = false;
 
-        _.forEach(fields, (field) => {
+        _.forEach(keyFields || fields, (field) => {
             const javaName = field.javaFieldName;
             const javaType = field.javaFieldType;
 
@@ -1260,6 +1303,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 if (domain.generatePojo && !_.find(pojos, {valueType: domain.valueType}) &&
                     // Skip domain models without value fields.
                     nonEmpty(domain.valueFields)) {
+                    
                     const pojo = {
                         keyType: domain.keyType,
                         valueType: domain.valueType
@@ -1267,18 +1311,19 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     // Key class generation only if key is not build in java class.
                     if (this.javaTypes.nonBuiltInClass(domain.keyType) && nonEmpty(domain.keyFields))
-                        pojo.keyClass = this.pojo(domain.keyType, domain.keyFields, addConstructor);
-
-                    const valueFields = _.clone(domain.valueFields);
+                        pojo.keyClass = this.pojo(domain.keyType, domain.keyFields, addConstructor,null,null);
+                    
 
                     if (includeKeyFields) {
-                        _.forEach(domain.keyFields, (fld) => {
-                            if (!_.find(valueFields, {javaFieldName: fld.javaFieldName}))
-                                valueFields.push(fld);
-                        });
+                        let keyFields = domain.keyFields;
+                        if(domain.keyFields.length>1){
+                            keyFields = [{javaFieldName: "id", javaFieldType: domain.keyType}];
+                        }
+                        pojo.valueClass = this.pojo(domain.valueType, domain.valueFields, addConstructor, keyFields, domain);
                     }
-
-                    pojo.valueClass = this.pojo(domain.valueType, valueFields, addConstructor);
+                    else{
+                        pojo.valueClass = this.pojo(domain.valueType, domain.valueFields, addConstructor, null, domain);
+                    }                    
 
                     pojos.push(pojo);
                 }
@@ -1588,7 +1633,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             this.mainComment(sb,
                 'To start demo configure data sources in secret.properties file.',
                 'For H2 database it should be like following:',
-                'dsH2.jdbc.url=jdbc:h2:tcp://localhost/mem:DemoDB;DB_CLOSE_DELAY=-1',
+                'dsH2.jdbc.url=jdbc:h2:mem:DemoDB;DB_CLOSE_DELAY=-1',
                 'dsH2.jdbc.username=sa',
                 'dsH2.jdbc.password=',
                 ''
@@ -1609,18 +1654,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             '@throws Exception If failed.'
         );
         sb.startBlock('public static void main(String[] args) throws Exception {');
-
-        if (demo) {
-            sb.startBlock('try {');
-            sb.append('// Start H2 database server.');
-            sb.append('Server.createTcpServer("-tcpDaemon").start();');
-            sb.endBlock('}');
-            sb.startBlock('catch (SQLException ignore) {');
-            sb.append('// No-op.');
-            sb.endBlock('}');
-
-            sb.emptyLine();
-        }
+        
 
         if ((nonEmpty(clientNearCaches) || demo) && shortFactoryCls) {
             imports.push('org.apache.ignite.Ignite');

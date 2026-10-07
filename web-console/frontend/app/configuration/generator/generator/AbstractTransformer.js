@@ -265,11 +265,6 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.cacheNearServer(cache, available));
     }
 
-    // Generate client near cache group.
-    static cacheNearClient(cache, available) {
-        return this.toSection(this.generator.cacheNearClient(cache, available));
-    }
-
     // Generate cache statistics group.
     static cacheStatistics(cache) {
         return this.toSection(this.generator.cacheStatistics(cache));

@@ -263,10 +263,9 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
      *
      * @param {Bean} cfg Ignite configuration.
      * @param {Object} targetVer Version of Ignite for generated project.
-     * @param {Array<Object>} clientNearCaches
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, targetVer, clientNearCaches=[]) {
+    static igniteConfiguration(cfg, targetVer) {
         const available = versionService.since.bind(versionService, targetVer.ignite);
 
         const sb = new StringBuilder();
@@ -310,15 +309,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
 
                 sb.emptyLine();
             });
-        }
-
-        _.forEach(clientNearCaches, (cache) => {
-            this.commentBlock(sb, `Configuration of near cache for cache "${cache.name}"`);
-
-            this.appendBean(sb, this.generator.cacheNearClient(cache, available), true);
-
-            sb.emptyLine();
-        });
+        }       
 
         // 3. Add main content.
         this.appendBean(sb, cfg);
@@ -330,11 +321,7 @@ export default class IgniteSpringTransformer extends AbstractTransformer {
     }
 
     static cluster(cluster, targetVer, client) {
-        const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);
-
-        const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
-            cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
-
-        return this.igniteConfiguration(cfg, targetVer, clientNearCaches);
+        const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);        
+        return this.igniteConfiguration(cfg, targetVer);
     }
 }

@@ -10,11 +10,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.Driver;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.ignite.console.agent.db.DBInfo;
+import org.apache.ignite.console.agent.db.DbInfo;
 import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,18 +42,18 @@ public class AgentMetadataDemo {
         return "jdbc:h2:mem:demo-db".equals(jdbcUrl);
     }
 
-    public static DataSource bindTestDatasource() {
+    public static DataSource bindTestDatasource(String accountToken) {
         String jndi = "dsH2";
         try {
             testDrive();
-            return DataSourceManager.getDataSource(jndi);
+            return DataSourceManager.getDataSource(jndi,accountToken);
         } catch (SQLException e) {
-            DBInfo demoDB = new DBInfo();
+            DbInfo demoDB = new DbInfo();
             demoDB.setDb("demo-db");
             demoDB.setJdbcUrl("jdbc:h2:mem:demo-db");
             demoDB.setUserName("sa");
             demoDB.setPassword("");
-            return DataSourceManager.bindDataSource(jndi,demoDB);
+            return DataSourceManager.bindDataSource(jndi,demoDB,accountToken);
         }
     }
 

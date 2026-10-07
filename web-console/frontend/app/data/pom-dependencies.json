@@ -9,7 +9,8 @@
     "JCL": {"artifactId": "ignite-jcl"},
     "SLF4J": {"artifactId": "ignite-slf4j"},
 
-    "VAADIN": {"groupId": "org.apache.ignite", "artifactId": "ignite-crudui", "version": "2.16.999-SNAPSHOT"},
+    "IgniteCrudUI": {"groupId": "org.vaadin.crudui", "artifactId": "crudui", "version": "7.2.99"},
+    "IgniteSpringData": {"groupId": "org.apache.ignite", "artifactId": "ignite-spring-data-ext", "version": "3.2.0"},
 
     "Generic": [
         {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.4"},

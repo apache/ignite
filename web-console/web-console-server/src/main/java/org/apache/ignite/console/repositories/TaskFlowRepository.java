@@ -3,13 +3,10 @@
 package org.apache.ignite.console.repositories;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,7 +14,6 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.OneToManyIndex;
 import org.apache.ignite.console.db.Table;
-import org.apache.ignite.console.dto.DBInfoDto;
 import org.apache.ignite.console.dto.TaskFlow;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.internal.util.typedef.F;

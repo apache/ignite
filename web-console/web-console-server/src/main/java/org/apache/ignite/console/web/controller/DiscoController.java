@@ -54,7 +54,7 @@ public class DiscoController {
         this.accountsSrv = accountsSrv;
         this.activitiesSrv = activitiesSrv;
         this.ignite = ignite;
-
+        activitiesSrv.clearAll();
     }
 
     /**

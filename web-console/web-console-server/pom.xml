@@ -119,7 +119,7 @@
             <artifactId>commons-compress</artifactId>
             <version>${commons.compress.version}</version>
         </dependency>
-        
+
         <dependency>
 	        <groupId>org.apache.commons</groupId>
 	        <artifactId>commons-csv</artifactId>
@@ -150,13 +150,13 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${web-console.ignite.version}</version>
+            <version>${ignite.version}</version>
         </dependency>        
         
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j2</artifactId>
-            <version>${web-console.ignite.version}</version>
+            <version>${ignite.version}</version>
         </dependency>        
 
         <dependency>
@@ -210,7 +210,7 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${web-console.ignite.version}</version>
+            <version>${ignite.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>

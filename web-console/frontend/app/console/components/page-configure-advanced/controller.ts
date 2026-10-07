@@ -7,9 +7,9 @@ export default class PageConfigureAdvancedController {
         { text: 'Caches', sref: 'base.console.edit.advanced.caches' }       
     ];
 
-    menuItems: Array<{text: string, sref: string}>;
+    menuItems: Array<{text: string, sref: string}> = [];
 
     $onInit() {
-        this.menuItems = this.constructor.menuItems;
+        this.menuItems = PageConfigureAdvancedController.menuItems;
     }
 }

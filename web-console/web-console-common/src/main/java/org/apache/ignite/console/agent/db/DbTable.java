@@ -3,6 +3,8 @@
 package org.apache.ignite.console.agent.db;
 
 import java.util.Collection;
+
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -21,7 +23,7 @@ public class DbTable {
     private final Collection<DbColumn> cols;
 
     /** Indexes. */
-    private final Collection<VisorQueryIndex> idxs;
+    private final Collection<QueryIndex> idxs;
 
     /**
      * Default columns.
@@ -31,7 +33,7 @@ public class DbTable {
      * @param cols Columns.
      * @param idxs Indexes;
      */
-    public DbTable(String schema, String tbl, String comment, Collection<DbColumn> cols, Collection<VisorQueryIndex> idxs) {
+    public DbTable(String schema, String tbl, String comment, Collection<DbColumn> cols, Collection<QueryIndex> idxs) {
         this.schema = schema;
         this.tbl = tbl;
         this.comment = comment;
@@ -63,7 +65,7 @@ public class DbTable {
     /**
      * @return Indexes.
      */
-    public Collection<VisorQueryIndex> getIndexes() {
+    public Collection<QueryIndex> getIndexes() {
         return idxs;
     }
 

@@ -59,10 +59,7 @@ export interface Cache {
     managementEnabled: boolean;
     nearConfiguration: {
         nearStartSize: number;
-    };
-    clientNearConfiguration: {
-        nearStartSize: number;
-    };
+    };    
     evictionPolicy: {
         batchSize: number;
         maxSize: number;

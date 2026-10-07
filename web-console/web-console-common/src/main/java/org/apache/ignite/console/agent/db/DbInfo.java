@@ -11,7 +11,7 @@ import org.apache.ignite.console.websocket.TopologySnapshot;
  * add@byron 保存当前的关系数据库连接信息
  */
 
-public class DBInfo {
+public class DbInfo {
 	
 	private UUID id; // db唯一ID	
 	private UUID accId; // 用户ID	
@@ -28,22 +28,22 @@ public class DBInfo {
 	
 	public transient TopologySnapshot top;
 
-	public DBInfo() {
+	public DbInfo() {
 		
 	}
 	
-	public DBInfo(UUID id) {
+	public DbInfo(UUID id) {
 		this.id = id;
 	}
 
-	public DBInfo(String jndiName, String currentDriverCls, String currentJdbcUrl) {
+	public DbInfo(String jndiName, String currentDriverCls, String currentJdbcUrl) {
 		super();
 		this.jndiName = jndiName;
 		this.driverCls = currentDriverCls;
 		this.jdbcUrl = currentJdbcUrl;
 	}
 
-	public DBInfo(String jndiName, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
+	public DbInfo(String jndiName, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
 		super();
 		this.jndiName = jndiName;
 		this.driverCls = currentDriverCls;
@@ -149,7 +149,7 @@ public class DBInfo {
 	}
 	
 
-	public DBInfo buildWith(Map<String, Object> args) throws IllegalArgumentException {
+	public DbInfo buildWith(Map<String, Object> args) throws IllegalArgumentException {
 		if (args.containsKey("jdbcDriverJar"))
 			driverJar = args.get("jdbcDriverJar").toString();
 		

@@ -63,6 +63,7 @@ export default function service(ErrorPopover) {
         domainForQueryConfigured,
 
         domainForStoreConfigured,
+        
         download(type = 'application/octet-stream', name = 'file.txt', data = '') {
             const file = new Blob([data], { type: `${type};charset=utf-8`});
 

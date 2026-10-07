@@ -32,13 +32,13 @@ public class DBInfoDto extends AbstractDto {
 		this.jdbcUrl = currentJdbcUrl;
 	}
 	
-	public DBInfoDto(String jndiName,String currentDriverCls, String currentJdbcUrl) {		
+	public DBInfoDto(String jndiName, String currentDriverCls, String currentJdbcUrl) {
 		this.jndiName = jndiName;
 		this.driverCls = currentDriverCls;
 		this.jdbcUrl = currentJdbcUrl;
 	}
 
-	public DBInfoDto(String jndiName,String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {		
+	public DBInfoDto(String jndiName, String currentDriverCls, String currentJdbcUrl, Properties currentJdbcInfo) {
 		this.jndiName = jndiName;
 		this.driverCls = currentDriverCls;
 		this.jdbcUrl = currentJdbcUrl;
