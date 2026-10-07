@@ -29,6 +29,9 @@ import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
+import static org.apache.ignite.internal.ssl.SslCertificates.describe;
+import static org.apache.ignite.internal.ssl.SslCertificates.reason;
+
 /** Reloads TLS certificates on every mapped node. */
 @GridInternal
 public class SslReloadTask extends SslTask {
@@ -80,14 +83,19 @@ public class SslReloadTask extends SslTask {
                 try {
                     comp.reload();
 
-                    String desc = comp.onReloaded(ignite.log(), initiator);
+                    String desc = describe(comp.servedCertificate());
+
+                    if (ignite.log().isInfoEnabled()) {
+                        ignite.log().info("TLS certificates reloaded [transports=" + transports + (desc.isEmpty() ? "" : ", " + desc) +
+                            ", initiator=" + initiator + ']');
+                    }
 
                     lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; serving " + desc));
                 }
                 catch (Exception e) {
                     failed = true;
 
-                    String reason = comp.onFailure(e);
+                    String reason = reason(e);
 
                     lines.add(id + ": failed on " + transports + " (" + reason + ')');
 

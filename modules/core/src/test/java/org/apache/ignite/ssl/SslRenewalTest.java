@@ -263,7 +263,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             SslContextProvider p = provider(g);
 
             p.reload();
-            p.onReloaded(log, "operator");
         }
 
         assertTrue(waitForCondition(() -> automaticRenewals(NODE_TRANSPORTS) == 1, 30_000));

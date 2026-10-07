@@ -53,7 +53,7 @@ public class JettySslContextReloadable extends SslContextReloadable {
      *
      * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public synchronized void reload() throws IgniteCheckedException {
+    @Override protected synchronized void rebuild() throws IgniteCheckedException {
         if (sslCtxFactory.getKeyStorePath() == null)
             throw new IgniteCheckedException("HTTP REST runs on a ready-made SSL context, there is nothing to read again");
 

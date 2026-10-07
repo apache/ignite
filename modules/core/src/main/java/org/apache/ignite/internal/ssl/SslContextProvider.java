@@ -28,7 +28,6 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
@@ -85,7 +84,7 @@ public class SslContextProvider extends SslContextReloadable {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void reload() throws IgniteCheckedException {
+    @Override protected synchronized void rebuild() throws IgniteCheckedException {
         SSLContext rebuilt = factory.create();
 
         X509Certificate[] next = SslCertificates.servedChain(rebuilt);
@@ -97,12 +96,10 @@ public class SslContextProvider extends SslContextReloadable {
     }
 
     /** {@inheritDoc} */
-    @Override public String onReloaded(IgniteLogger log, String initiator) {
-        String desc = super.onReloaded(log, initiator);
+    @Override void onReloaded() {
+        super.onReloaded();
 
         reloadLsnr.run();
-
-        return desc;
     }
 
     /**
@@ -118,26 +115,35 @@ public class SslContextProvider extends SslContextReloadable {
         if (ctx != expected)
             return Renewed.SUPERSEDED;
 
-        SSLContext rebuilt = factory.create();
+        try {
+            SSLContext rebuilt = factory.create();
 
-        X509Certificate[] next = SslCertificates.servedChain(rebuilt);
+            X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
-        if (next == null)
-            throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
+            if (next == null)
+                throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
 
-        if (Arrays.equals(next, chain))
-            return Renewed.UNCHANGED;
+            if (Arrays.equals(next, chain))
+                return Renewed.UNCHANGED;
 
-        check(rebuilt, next);
+            check(rebuilt, next);
 
-        if (chain != null && chainNotAfter(next) <= chainNotAfter(chain)) {
-            throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [" + describe(next[0]) +
-                ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(next)) +
-                ", inUseChainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(chain)) + ']');
+            if (chain != null && chainNotAfter(next) <= chainNotAfter(chain)) {
+                throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [" + describe(next[0]) +
+                    ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(next)) +
+                    ", inUseChainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(chain)) + ']');
+            }
+
+            chain = next;
+            ctx = rebuilt;
+        }
+        catch (Throwable e) {
+            onFailure(e);
+
+            throw e;
         }
 
-        chain = next;
-        ctx = rebuilt;
+        onReloaded();
 
         return Renewed.RENEWED;
     }

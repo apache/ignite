@@ -192,8 +192,12 @@ public class SslRenewal {
             try {
                 SslContextProvider.Renewed res = provider.renew(planned);
 
-                if (res == RENEWED)
-                    provider.onReloaded(log, INITIATOR);
+                if (res == RENEWED) {
+                    if (log.isInfoEnabled()) {
+                        log.info("TLS certificates reloaded [transports=" + transports() + ", " +
+                            SslCertificates.describe(provider.servedCertificate()) + ", initiator=" + INITIATOR + ']');
+                    }
+                }
                 else if (res == UNCHANGED)
                     retry(null);
             }
@@ -213,7 +217,7 @@ public class SslRenewal {
             if (exec.isShutdown())
                 return;
 
-            String reason = e == null ? null : provider.onFailure(e);
+            String reason = e == null ? null : SslCertificates.reason(e);
 
             long now = U.currentTimeMillis();
 

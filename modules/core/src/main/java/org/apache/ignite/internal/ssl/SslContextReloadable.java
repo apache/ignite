@@ -20,7 +20,6 @@ package org.apache.ignite.internal.ssl;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
 /** Node component whose TLS certificates can be replaced at runtime, together with the outcome of its reloads. */
@@ -62,11 +61,29 @@ public abstract class SslContextReloadable {
     public abstract Collection<String> transports();
 
     /**
+     * Builds the certificates the configuration points at now, checks them, puts them in use for new connections and records the outcome.
+     *
+     * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
+     */
+    public void reload() throws IgniteCheckedException {
+        try {
+            rebuild();
+        }
+        catch (Throwable e) {
+            onFailure(e);
+
+            throw e;
+        }
+
+        onReloaded();
+    }
+
+    /**
      * Builds the certificates the configuration points at now, checks them and puts them in use for new connections.
      *
      * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
      */
-    public abstract void reload() throws IgniteCheckedException;
+    protected abstract void rebuild() throws IgniteCheckedException;
 
     /** @return Chain presented on new connections, own certificate first, or {@code null} if it is unknown. */
     public abstract @Nullable X509Certificate[] servedChain();
@@ -78,36 +95,18 @@ public abstract class SslContextReloadable {
         return chain == null ? null : chain[0];
     }
 
-    /**
-     * Records a successful reload and logs the certificate now in use.
-     *
-     * @param log Logger.
-     * @param initiator Who asked for the reload.
-     * @return The certificate now in use, described.
-     */
-    public String onReloaded(IgniteLogger log, String initiator) {
+    /** Records a successful reload. */
+    void onReloaded() {
         synchronized (mux) {
             lastSuccessTime = System.currentTimeMillis();
             lastFailureTime = 0;
             lastFailure = null;
             failures = 0;
         }
-
-        String desc = SslCertificates.describe(servedCertificate());
-
-        if (log.isInfoEnabled()) {
-            log.info("TLS certificates reloaded [transports=" + String.join(", ", transports()) + (desc.isEmpty() ? "" : ", " + desc) +
-                ", initiator=" + initiator + ']');
-        }
-
-        return desc;
     }
 
-    /**
-     * @param e Why the reload failed.
-     * @return The reason, as the commands and the node log show it.
-     */
-    public String onFailure(Throwable e) {
+    /** @param e Why the reload failed. */
+    void onFailure(Throwable e) {
         String reason = SslCertificates.reason(e);
 
         synchronized (mux) {
@@ -115,8 +114,6 @@ public abstract class SslContextReloadable {
             lastFailure = reason;
             failures++;
         }
-
-        return reason;
     }
 
     /** @return Time of the last successful reload, {@code 0} if there was none. */
