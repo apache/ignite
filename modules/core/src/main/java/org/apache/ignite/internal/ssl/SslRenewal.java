@@ -79,16 +79,16 @@ public class SslRenewal {
      * Renews the certificates of the provider from now on.
      *
      * @param provider Provider whose context the factory builds.
-     * @param factory Factory with renewal enabled.
+     * @param renewBeforeFraction Share of the certificate lifetime left when the renewal window opens.
      */
-    public synchronized void start(SslContextProvider provider, AbstractSslContextFactory factory) {
+    public synchronized void start(SslContextProvider provider, double renewBeforeFraction) {
         if (stopped)
             return;
 
         if (exec == null)
             exec = newSingleThreadScheduledExecutor("ssl-renewal", igniteInstanceName);
 
-        Renewal renewal = new Renewal(provider, factory);
+        Renewal renewal = new Renewal(provider, renewBeforeFraction);
 
         provider.onReload(renewal::replan);
 
@@ -108,8 +108,8 @@ public class SslRenewal {
         /** */
         private final SslContextProvider provider;
 
-        /** */
-        private final AbstractSslContextFactory factory;
+        /** Share of the certificate lifetime left when the renewal window opens. */
+        private final double renewBeforeFraction;
 
         /** Last planned attempt, {@code null} before the first one. */
         private ScheduledFuture<?> next;
@@ -137,11 +137,11 @@ public class SslRenewal {
 
         /**
          * @param provider Provider.
-         * @param factory Factory.
+         * @param renewBeforeFraction Share of the lifetime.
          */
-        private Renewal(SslContextProvider provider, AbstractSslContextFactory factory) {
+        private Renewal(SslContextProvider provider, double renewBeforeFraction) {
             this.provider = provider;
-            this.factory = factory;
+            this.renewBeforeFraction = renewBeforeFraction;
         }
 
         /** Plans the next renewal in the renewal thread. */
@@ -175,7 +175,7 @@ public class SslRenewal {
 
             long lifetime = Math.max(0, expiry - chain[0].getNotBefore().getTime());
 
-            window = (long)(lifetime * factory.getRenewBeforeFraction());
+            window = (long)(lifetime * renewBeforeFraction);
 
             long at = Math.max(expiry - window, Math.max(lastAttempt + minRetry, U.currentTimeMillis()));
 
@@ -266,7 +266,7 @@ public class SslRenewal {
          * @return Future of the task, {@code null} if the node is stopping.
          */
         private @Nullable ScheduledFuture<?> submit(Runnable task, long delay) {
-            try (Scope nodeCtx = OperationContext.restoreSnapshot(null)) {
+            try (Scope ignored = OperationContext.restoreSnapshot(null)) {
                 return exec.schedule(task, delay, TimeUnit.MILLISECONDS);
             }
             catch (RejectedExecutionException stopping) {

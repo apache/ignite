@@ -186,7 +186,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @param port Port on which server should be bound.
      * @param lsnr Server message listener.
      * @param parser Server message parser.
-     * @param sslCtx SSL context in case if SSL is enabled.
+     * @param sslCtx Source of the SSL context, asked once per new session; {@code null} if SSL is disabled.
      * @param cfg Configuration for other parameters.
      * @return {@code True} if server successfully started, {@code false} if port is used and
      *      server was unable to start.

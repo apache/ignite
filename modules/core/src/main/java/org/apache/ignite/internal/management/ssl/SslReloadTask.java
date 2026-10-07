@@ -20,15 +20,14 @@ package org.apache.ignite.internal.management.ssl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.apache.ignite.resources.TaskSessionResource;
 
 /** Reloads TLS certificates on every mapped node. */
 @GridInternal
@@ -38,7 +37,7 @@ public class SslReloadTask extends SslTask {
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, String> job(NoArg arg) {
-        return new SslReloadJob(arg, debug);
+        return new SslReloadJob(arg, debug, ignite.localNode().id());
     }
 
     /** */
@@ -46,13 +45,18 @@ public class SslReloadTask extends SslTask {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Session of the task, which names the node the command came through. */
-        @TaskSessionResource
-        private transient ComputeTaskSession ses;
+        /** Node the command came through. */
+        private final UUID originNodeId;
 
-        /** */
-        protected SslReloadJob(NoArg arg, boolean debug) {
+        /**
+         * @param arg Argument.
+         * @param debug Debug flag.
+         * @param originNodeId Node the command came through.
+         */
+        private SslReloadJob(NoArg arg, boolean debug, UUID originNodeId) {
             super(arg, debug);
+
+            this.originNodeId = originNodeId;
         }
 
         /** {@inheritDoc} */
@@ -104,7 +108,7 @@ public class SslReloadTask extends SslTask {
         private String initiator() {
             IgniteSecurity security = ignite.context().security();
 
-            String res = "management command, originNodeId=" + ses.getTaskNodeId();
+            String res = "management command, originNodeId=" + originNodeId;
 
             if (security.enabled()) {
                 SecuritySubject subj = security.securityContext().subject();

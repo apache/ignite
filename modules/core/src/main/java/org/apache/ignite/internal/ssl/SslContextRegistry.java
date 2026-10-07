@@ -69,7 +69,7 @@ public class SslContextRegistry {
             reloadables.add(provider);
 
             if (factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled())
-                renewal.start(provider, f);
+                renewal.start(provider, f.getRenewBeforeFraction());
         }
         else
             provider.addTransport(transport);
@@ -115,9 +115,9 @@ public class SslContextRegistry {
         reg.register("CertificateNotAfter", () -> Optional.ofNullable(comp.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
             "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
 
-        reg.register("LastReloadTime", () -> comp.lastSuccessTime(), "Time of the last successful reload, in milliseconds; 0 if none.");
+        reg.register("LastReloadTime", comp::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
         reg.register("LastReloadFailure", comp::lastFailure, String.class, "Reason of the last failed reload since the last success.");
-        reg.register("ReloadFailures", () -> comp.failures(), "Failed reloads in a row since the last successful one.");
+        reg.register("ReloadFailures", comp::failures, "Failed reloads in a row since the last successful one.");
         reg.register("NextRenewalTime", () -> comp.nextRenewalTime(), "Time of the next automatic renewal, in milliseconds; 0 if none.");
     }
 }
