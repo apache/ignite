@@ -505,10 +505,10 @@ NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registe
 
 == SSL
 
-Certificates of one SSL-enabled transport and how their reloads went.
+The certificate one SSL-enabled transport serves and the results of its reloads.
 `{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
 Times are in milliseconds since the epoch, `0` meaning unknown or never.
-Automatic renewals count as reloads.
+Automatic renewals that put a new certificate in use or fail count as reloads.
 
 Register name: `ssl.{transport}`
 

@@ -46,8 +46,8 @@ public class SslCertificates {
     }
 
     /**
-     * Checks the context the way an inter-node transport uses it: both ends run the same configuration, so a context that cannot handshake
-     * with itself cannot serve new connections between nodes. Only a refused handshake counts: an exchange that cannot be driven to the end
+     * Checks the context the way an inter-node transport uses it. Both ends run the same configuration, so a context that cannot handshake
+     * with itself cannot serve new connections between nodes. Only a refused handshake counts. An exchange that cannot be driven to the end
      * for another reason lets the context through, so that the check never blocks a rotation by itself.
      *
      * @param ctx SSL context to check.
@@ -59,7 +59,7 @@ public class SslCertificates {
 
     /**
      * @param ctx SSL context.
-     * @return Chain the context presents to a client that trusts anything, own certificate first, or {@code null} if it cannot be told.
+     * @return Chain the context presents to a client that trusts anything, own certificate first, or {@code null} if it is unknown.
      */
     public static @Nullable X509Certificate[] servedChain(SSLContext ctx) {
         try {

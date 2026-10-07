@@ -262,7 +262,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertFalse("The cancelled retry must not run", waitForCondition(() -> issuer.calls.size() > 3, untilPastRetry));
     }
 
-    /** Renewals must run in a context of their own, not in the one of whoever ran a reload before them. */
+    /** Renewals must run in an operation context of their own, not in the one of whoever ran a reload before them. */
     @Test
     public void testReloadContextNotCarriedIntoRenewals() throws Exception {
         long now = System.currentTimeMillis();
@@ -373,8 +373,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed, whatever the factory
-     * says after the start.
+     * A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed, even if the factory
+     * settings change after the start.
      */
     @Test
     public void testRenewalsNoMoreOftenThanMinRetry() throws Exception {

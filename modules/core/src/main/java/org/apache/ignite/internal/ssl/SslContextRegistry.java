@@ -53,7 +53,7 @@ public class SslContextRegistry {
     /**
      * @param factory Factory the transport is configured with.
      * @param transport Transport, one of the names in {@link SslContextReloadable}.
-     * @return Provider of the context the factory builds; transports configured with the same factory share it, so that a reload cannot
+     * @return Provider of the context the factory builds. Transports configured with the same factory share it, so that a reload cannot
      *      leave them on certificates read at different moments.
      */
     public synchronized SslContextProvider provider(Factory<SSLContext> factory, String transport) {

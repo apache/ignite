@@ -40,14 +40,14 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 
 /**
  * Renews the certificates of the contexts built by a factory with {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal
- * enabled}, before they expire. All the renewals of a node run in one thread of its own, so that a request to the issuer holds up no thread
- * of the node and no attempt races the planning that follows a reload by the command.
+ * enabled}, before they expire. All the renewals of a node run in one thread of its own. A request to the issuer then holds up no other
+ * thread of the node. An attempt also cannot race the planning that follows a reload by the command.
  */
 public class SslRenewal {
     /** How the node log names an automatic renewal among those who start a reload. */
     private static final String INITIATOR = "automatic renewal";
 
-    /** The longest pause between attempts that put nothing in use is cut to this share of the window, to leave room for several. */
+    /** The longest pause between attempts that put nothing in use is cut to the window divided by this, to leave room for several. */
     private static final int ATTEMPTS_IN_WINDOW = 4;
 
     /** How often the node logs that the factory still has no newer certificates, unless they come to expire soon in between. */
@@ -254,7 +254,7 @@ public class SslRenewal {
 
         /**
          * Plans another attempt after a pause that doubles with every attempt that puts nothing in use, and logs why. A failure is logged
-         * every time; the factory handing back the certificates in use, as when their files are not replaced yet, is no failure and is
+         * every time. The factory handing back the certificates in use, as when their files are not replaced yet, is no failure. It is
          * logged once a day, and at once when the certificates in use come to expire soon.
          *
          * @param e Why the attempt failed, {@code null} if the factory handed back the certificates in use.

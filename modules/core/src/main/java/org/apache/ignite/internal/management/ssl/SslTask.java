@@ -23,7 +23,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 
-/** Task of an {@code --ssl} command: every node answers on its own, and the command fails only once every node is in the report. */
+/** Task of an {@code --ssl} command: the command fails only after every node is in the report. */
 public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, String> {
     /** */
     private static final long serialVersionUID = 0L;

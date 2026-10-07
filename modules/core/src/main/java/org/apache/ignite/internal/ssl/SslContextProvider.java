@@ -48,7 +48,7 @@ public class SslContextProvider extends SslContextReloadable {
     /** Context in use. */
     private volatile SSLContext ctx;
 
-    /** Chain the context in use presents, {@code null} if it cannot be told. */
+    /** Chain the context in use presents, {@code null} if it is unknown. */
     private volatile X509Certificate[] chain;
 
     /** Told about every new context once it is recorded. */
@@ -109,8 +109,8 @@ public class SslContextProvider extends SslContextReloadable {
     }
 
     /**
-     * Puts in use a context built anew, provided its chain expires later than the one in use: a renewal that does not move the expiry gains
-     * nothing and would be due again at once. A context that presents the chain in use leaves nothing to renew yet, whatever the checks.
+     * Puts in use a context built anew, provided its chain expires later than the one in use. A renewal that does not move the expiry gains
+     * nothing and would be due again at once. A context that presents the chain in use leaves nothing to renew yet and is not checked.
      *
      * @param expected Context the renewal was planned for.
      * @return What the renewal did.
@@ -147,7 +147,7 @@ public class SslContextProvider extends SslContextReloadable {
 
     /**
      * @param rebuilt Context built anew.
-     * @param next Chain it presents, {@code null} if it cannot be told.
+     * @param next Chain it presents, {@code null} if it is unknown.
      * @throws IgniteCheckedException If it is the context in use, a certificate it presents is not valid now, or nodes refuse it.
      */
     private void check(SSLContext rebuilt, @Nullable X509Certificate[] next) throws IgniteCheckedException {

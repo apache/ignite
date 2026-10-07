@@ -68,10 +68,10 @@ public abstract class SslContextReloadable {
      */
     public abstract void reload() throws IgniteCheckedException;
 
-    /** @return Chain presented on new connections, own certificate first, or {@code null} if it cannot be told. */
+    /** @return Chain presented on new connections, own certificate first, or {@code null} if it is unknown. */
     public abstract @Nullable X509Certificate[] servedChain();
 
-    /** @return Certificate presented on new connections, or {@code null} if it cannot be told. */
+    /** @return Certificate presented on new connections, or {@code null} if it is unknown. */
     public @Nullable X509Certificate servedCertificate() {
         X509Certificate[] chain = servedChain();
 

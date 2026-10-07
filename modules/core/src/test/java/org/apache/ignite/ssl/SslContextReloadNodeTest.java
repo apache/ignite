@@ -100,7 +100,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         U.delete(dir);
     }
 
-    /** A rotation on a running cluster reaches new connections of every transport, the report, the node log, status and metrics. */
+    /** A rotation on a running cluster reaches new connections, the report, the node log, status and metrics. */
     @Test
     public void testReloadOnRunningCluster() throws Exception {
         IgniteEx g0 = startGrid(0);
@@ -220,7 +220,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(discoveryPort(g)));
     }
 
-    /** A client connector on a factory of its own reloads apart, without the handshake between nodes its trust store has no say in. */
+    /** A client connector on a factory of its own reloads apart, with no handshake check between nodes: they do not use its trust store. */
     @Test
     public void testOwnClientConnectorFactoryReloadedApart() throws Exception {
         trustStore = "trustone";

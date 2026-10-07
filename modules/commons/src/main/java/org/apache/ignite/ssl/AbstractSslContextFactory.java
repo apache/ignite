@@ -32,12 +32,12 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}; keeping
  * it, and deciding when to replace it, is up to the caller.
  * <p>
- * A node calls {@link #create()} when a transport starts, on every {@code --ssl reload} and, with {@link #setRenewalEnabled(boolean)
- * renewal enabled}, when the certificate in use enters the renewal window, so every call must build the context from the current key
- * material. While a renewal gets the same certificate back, the node keeps the context in use with its trusted authorities. A renewed
- * certificate goes in use only if its chain is valid now and expires later than the one in use and, for discovery and communication, a
- * handshake with the trusted authorities of the new context accepts it: take those authorities from a source local to the node, not from
- * the service that issues the certificates.
+ * A node calls {@link #create()} when a transport starts, on every {@code control.sh --ssl reload} and, with
+ * {@link #setRenewalEnabled(boolean) renewal enabled}, when the certificate in use enters the renewal window. So every call must build the
+ * context from the current key material. If a renewal gets the same certificate back, the node keeps the context in use, even if trusted
+ * authorities changed. A renewed certificate goes in use only if its chain is valid now and expires later than the one in use and, for
+ * discovery and communication, a handshake with the trusted authorities of the new context accepts it. Take those authorities from a source
+ * local to the node, not from the service that issues the certificates. Otherwise the handshake accepts whatever that service issues.
  * <p>
  * All renewals of a node run in one thread: bound every wait for key material well below {@link #getRenewalRetryMinInterval()} and stop
  * waiting when the thread is interrupted. Nodes that share an instance in one JVM may call {@link #create()} concurrently. The node reads
@@ -192,9 +192,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets the share of the window, from {@code 0} to {@code 1}, by which a node moves a renewal earlier at random, so that nodes whose
-     * certificates expire together do not renew them at the same moment; {@code renewBeforeFraction * (1 + renewalJitter)} must be less
-     * than {@code 1}. {@code 0} by default.
+     * Sets the largest share of the window, from {@code 0} to {@code 1}, by which a node moves a renewal earlier. The node picks the shift
+     * at random, so that nodes whose certificates expire together do not renew them at the same moment.
+     * {@code renewBeforeFraction * (1 + renewalJitter)} must be less than {@code 1}. {@code 0} by default.
      *
      * @param renewalJitter Share of the window.
      */
@@ -208,8 +208,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets the pause after the first renewal attempt that puts no new certificate in use, because the factory hands back the same one
-     * or fails, in milliseconds, positive; a node never renews more often than this. If not specified,
+     * Sets the pause, in milliseconds, after the first renewal attempt that puts no new certificate in use, because the factory hands back
+     * the same one or fails. Must be positive. A node never renews more often than this. If not specified,
      * {@link #DFLT_RENEWAL_RETRY_MIN_INTERVAL} is used.
      *
      * @param renewalRetryMinInterval Pause, in milliseconds.
@@ -225,8 +225,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Sets the longest pause between renewal attempts that put no new certificate in use, in milliseconds, not less than
-     * {@link #getRenewalRetryMinInterval()}; a node cuts the pause to a quarter of the renewal window, but not below
-     * {@link #getRenewalRetryMinInterval()}, and then adds a random delay of up to half of it. If not specified,
+     * {@link #getRenewalRetryMinInterval()}. If a quarter of the renewal window is shorter, a node takes it as the longest pause, but not
+     * less than {@link #getRenewalRetryMinInterval()}. A node adds a random delay of up to half of every pause. If not specified,
      * {@link #DFLT_RENEWAL_RETRY_MAX_INTERVAL} is used.
      *
      * @param renewalRetryMaxInterval Pause, in milliseconds.

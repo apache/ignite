@@ -1757,17 +1757,24 @@ control.sh|bat --event list --enabled
 control.sh|bat --ssl reload [--yes]
 ----
 
-Every node in the topology, server or client, reads its key and trust stores again for communication, discovery, the client connector, and binary and HTTP REST.
-New connections use the new certificates; established ones keep theirs, even with a peer that the new trust store no longer accepts.
+Every server and client node in the topology reads its key and trust stores again.
+This covers communication, discovery, the client connector, binary REST and HTTP REST.
+New connections use the new certificates.
+Established connections keep the old ones, even with a peer that the new trust store no longer accepts.
 
-The command does not reach applications: JDBC and ODBC read their stores on every new connection, while a thin client, or JDBC with the default JVM stores (`javax.net.ssl.*`), reads them only when it starts.
+The command does not reach thin clients or JDBC and ODBC drivers.
+ODBC, and JDBC with its own store settings, read their stores on every new connection.
+A Java or C++ thin client, and JDBC with the default JVM stores (`javax.net.ssl.*`), read them only when they start.
 
 A node keeps its old certificate if a certificate in the new chain is not valid now.
-If the SSL context factory serves discovery or communication, the node also keeps the old certificate, for all transports of that factory, if its own trust store does not accept the new one; other nodes are not asked.
+If the SSL context factory serves discovery or communication, the node also keeps the old certificate if its own trust store does not accept the new one.
+This applies to all transports of that factory, and other nodes are not asked.
 HTTP REST is reloaded by Jetty, which skips these checks.
-A custom SSL context factory whose `create()` returns a cached context, and a Jetty configuration with a ready-made `sslContext` instead of a key store path, have nothing to read again, so the reload fails for them.
+A custom SSL context factory whose `create()` returns a cached context has nothing to read again, so its reload fails.
+The HTTP REST reload fails the same way when the Jetty configuration sets a ready-made `sslContext` instead of a `keyStorePath`.
 
-Nodes reload independently, and each node reports one line per SSL context factory, with all transports that use it.
+Nodes reload independently.
+For each node, the command prints one line per SSL context factory, with all transports that use it.
 If some nodes fail, the others keep the new certificates, and the command ends with an error:
 
 [source,text]
@@ -1786,7 +1793,8 @@ Every node logs the certificate it put in use and who ran the command, or why th
 control.sh|bat --ssl status
 ----
 
-For every node, the command shows the transports that share an SSL context factory, the certificate they serve, the result of the last reload and, if the node renews the certificate by itself, the time of the next renewal:
+For every node, the command shows the transports that share an SSL context factory, the certificate they serve and the result of the last reload.
+If the node renews the certificate by itself, the command also shows the time of the next renewal:
 
 [source,text]
 ----
@@ -1796,6 +1804,8 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: client connector, communication, discovery
     next automatic renewal at 2027-08-11T15:00:00Z
 ----
 
-If a certificate authority in the chain expires before the certificate, the line also shows `chainNotAfter`: peers refuse the chain from that time.
-After a failed reload, the node still serves its old certificate, and the status shows `last reload failed N time(s) in a row` with the time and reason of the last failure.
-The command ends with an error only if a node serves a certificate that is not valid now; such a node is marked `PROBLEM: the certificate is not valid now, peers refuse it`.
+If a certificate authority in the chain expires before the certificate, the `serving` line also shows `chainNotAfter`: peers refuse the chain from that time.
+After a failed reload, the node still serves its old certificate.
+The status then shows `last reload failed N time(s) in a row` with the time and reason of the last failure.
+The command ends with an error only if a certificate in the chain a node serves is not valid now.
+Such a node is marked `PROBLEM: the certificate is not valid now, peers refuse it`.

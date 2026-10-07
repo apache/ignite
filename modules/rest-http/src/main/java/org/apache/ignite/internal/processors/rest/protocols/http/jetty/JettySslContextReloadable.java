@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Certificate reload of the Jetty connector serving HTTP REST. Jetty rebuilds the context in place and serves no TLS at all after a failed
- * rebuild, so the context in use is pinned back then.
+ * rebuild, so on a failure {@link #reload()} puts the previous context back.
  */
 public class JettySslContextReloadable extends SslContextReloadable {
     /** SSL factory of the running connector. */
