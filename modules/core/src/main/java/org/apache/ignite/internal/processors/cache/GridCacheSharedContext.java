@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
@@ -511,21 +510,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public Collection<GridCacheContext> cacheContexts() {
         return (Collection)ctxMap.values();
-    }
-
-    /**
-     * @param c Cache context closure.
-     */
-    void forAllCaches(final IgniteInClosure<GridCacheContext> c) {
-        for (Integer cacheId : ctxMap.keySet()) {
-            ctxMap.computeIfPresent(cacheId,
-                (cacheId1, ctx) -> {
-                    c.apply(ctx);
-
-                    return ctx;
-                }
-            );
-        }
     }
 
     /**

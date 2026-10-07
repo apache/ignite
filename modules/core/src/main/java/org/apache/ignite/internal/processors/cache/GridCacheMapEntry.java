@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1733,20 +1732,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @param val Value.
-     * @param cacheObj Cache object.
-     * @param keepBinary Keep binary flag.
-     * @param cpy Copy flag.
-     * @return Cache object value.
-     */
-    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
-        if (val != null)
-            return val;
-
-        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy, null);
-    }
-
-    /**
      * @param expiry Expiration policy.
      * @return Tuple holding initial TTL and expire time with the given expiry.
      */
@@ -2175,18 +2160,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Update TTL if it is changed.
-     *
-     * @param expiryPlc Expiry policy.
-     */
-    private void updateTtlUnlocked(ExpiryPolicy expiryPlc) throws IgniteCheckedException {
-        long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
-
-        if (ttl != CU.TTL_NOT_CHANGED)
-            updateTtlUnlocked(ttl);
-    }
-
-    /**
      * Update TTL is it is changed.
      *
      * @param ver Version.
@@ -2292,15 +2265,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         finally {
             unlockEntry();
         }
-    }
-
-    /**
-     * Gets hash value for the entry key.
-     *
-     * @return Hash value.
-     */
-    int hash() {
-        return hash;
     }
 
     /** {@inheritDoc} */
