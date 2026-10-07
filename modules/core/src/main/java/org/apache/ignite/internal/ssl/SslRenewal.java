@@ -45,9 +45,6 @@ public class SslRenewal {
     /** How the node log names an automatic renewal among those who start a reload. */
     private static final String INITIATOR = "automatic renewal";
 
-    /** The longest pause between attempts that put nothing in use is cut to the window divided by this, to leave room for several. */
-    private static final int ATTEMPTS_IN_WINDOW = 4;
-
     /** How often the node logs that the factory still has no newer certificates, unless they come to expire soon in between. */
     private static final long WAIT_LOG_INTERVAL = TimeUnit.DAYS.toMillis(1);
 
@@ -222,9 +219,8 @@ public class SslRenewal {
             String reason = e == null ? null : provider.onFailure(e);
 
             long now = U.currentTimeMillis();
-            long max = Math.max(minRetry, Math.min(maxRetry, window / ATTEMPTS_IN_WINDOW));
 
-            pause = pause == 0 ? minRetry : pause > max / 2 ? max : pause * 2;
+            pause = pause == 0 ? minRetry : pause > maxRetry / 2 ? maxRetry : pause * 2;
 
             long at = now + pause + ThreadLocalRandom.current().nextLong(pause / 2 + 1);
 

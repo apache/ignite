@@ -348,28 +348,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> logged(Level.ERROR, "initiator=automatic renewal, reason=" + ISSUER_DOWN) == 1, 30_000));
     }
 
-    /** The longest pause must be cut down to a quarter of the window, so that a short window holds several attempts. */
-    @Test
-    public void testRetryPauseCutToWindow() throws Exception {
-        long now = System.currentTimeMillis();
-
-        Issuer issuer = issuer(0).then(valid(now - HOUR, now + 5_000)).then(failure());
-
-        issuer.setRenewBefore(6_000);
-        retries(1_000, HOUR);
-
-        startGrid(0);
-
-        assertTrue(waitForCondition(() -> issuer.calls.size() >= 5, 30_000));
-
-        for (int i = 2; i < 5; i++) {
-            long pause = issuer.calls.get(i).time - issuer.calls.get(i - 1).time;
-
-            assertTrue("Pause " + (i - 1) + " must stay within a quarter of the window, a doubling third one would be 4 s: " + pause,
-                pause >= 1_000 - CLOCK_SLACK && pause < 3_000);
-        }
-    }
-
     /** A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed. */
     @Test
     public void testRenewalsNoMoreOftenThanMinRetry() throws Exception {
