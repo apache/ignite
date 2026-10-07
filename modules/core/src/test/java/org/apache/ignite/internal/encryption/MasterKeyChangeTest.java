@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -35,9 +36,11 @@ import org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyRespo
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
@@ -420,6 +423,29 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
         fut.get();
 
         assertEquals(MASTER_KEY_NAME_2, aliveNode.encryption().getMasterKeyName());
+    }
+
+    /** Coordinator fails after the prepare phase is finished and before it starts the perform phase. */
+    @Test
+    public void testCoordinatorFailsBetweenPrepareAndPerform() throws Exception {
+        T2<IgniteEx, IgniteEx> grids = startTestGrids(true);
+
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        ((IgniteDiscoverySpiInternalListenerSupport)grids.get1().configuration().getDiscoverySpi())
+            .setInternalListener(lsnr);
+
+        lsnr.blockCustomEvent(InitMessage.class);
+
+        IgniteFuture<Void> fut = grids.get2().encryption().changeMasterKey(MASTER_KEY_NAME_2);
+
+        lsnr.waitCustomEvent();
+
+        stopGrid(GRID_0, true);
+
+        fut.get();
+
+        assertEquals(MASTER_KEY_NAME_2, grids.get2().encryption().getMasterKeyName());
     }
 
     /** @throws Exception If failed. */

@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -275,8 +274,8 @@ class GroupKeyChangeProcess {
 
             completeFuture(id, err, fut);
         }
-        else if (U.isLocalNodeCoordinator(ctx.discovery()))
-            performGKChangeProc.start(id, req);
+        else
+            performGKChangeProc.startByCoordinator(id, req);
     }
 
     /**
