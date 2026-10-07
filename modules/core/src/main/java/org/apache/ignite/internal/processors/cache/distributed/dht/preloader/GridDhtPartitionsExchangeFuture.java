@@ -3550,8 +3550,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         // Detecting lost partitions changed local partition states: a lost partition was owned under the IGNORE policy
         // or marked LOST. Send the maps again, otherwise the coordinator can keep a state this node reported before.
-        // The coordinator itself doesn't need to: it keeps its own states in its map, and every node sets the same
-        // states for the other nodes when it detects the lost partitions.
+        // The coordinator doesn't resend: its own states are already in its map, and every node sets the same states
+        // for the other nodes when it detects the lost partitions. A full map the coordinator sends before that can
+        // still reach a node that has finished the exchange, but only if the coordinator stalls between sending the
+        // full message and detecting lost partitions.
         boolean crdNode = crd != null && crd.isLocal();
 
         if (!crdNode && !changedGrps.isEmpty()) {
