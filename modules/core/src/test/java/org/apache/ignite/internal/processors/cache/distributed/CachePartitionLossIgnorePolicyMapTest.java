@@ -56,11 +56,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * If the new primary sends its partition map between these two steps, the map carries MOVING and overwrites what the
  * coordinator already knows, so the node must send its map again once it owns the partition.
  * <p>
- * The window is short, and in a real cluster a map gets into it by chance: a resend scheduled by
- * {@code scheduleResendPartitions()} (after an eviction, a partition moving to RENTING or a partition map change) fires
- * there. In {@code IgniteTopologyValidatorGridSplitCacheTest} (32 nodes, 50 caches without backups) this happened in
- * about half of the runs. The test makes the same send happen in the window every time: the new primary refreshes its
- * partition map right before it owns a lost partition.
+ * The window spans most of the exchange on the new primary: it opens when the node applies the coordinator's full
+ * message and creates the partition, and closes when the node detects lost partitions at the end of the exchange. In a
+ * real cluster a map gets into it when a resend scheduled by {@code scheduleResendPartitions()} (after an eviction, a
+ * partition moving to RENTING or a partition map change) fires there.
  */
 public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTest {
     /** */
