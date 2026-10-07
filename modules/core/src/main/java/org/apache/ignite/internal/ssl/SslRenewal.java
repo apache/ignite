@@ -144,7 +144,7 @@ public class SslRenewal {
             this.factory = factory;
         }
 
-        /** Plans the next renewal in the renewal thread; called for every new certificate. */
+        /** Plans the next renewal in the renewal thread. */
         private void replan() {
             submit(this::plan, 0);
         }

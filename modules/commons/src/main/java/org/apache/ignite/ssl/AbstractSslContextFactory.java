@@ -199,20 +199,12 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract void checkParameters() throws SSLException;
 
     /**
-     * Called on every {@link #create()}: when a transport starts, on every {@code control.sh --ssl reload} and, with renewal enabled, in
-     * the renewal window. Read the current key material each time: otherwise a reload or a renewal never sees a new certificate. Bound
-     * every wait well below a minute and stop waiting when the thread is interrupted: all renewals of a node run in one thread, and a
-     * call that hangs holds them up together with {@code --ssl reload}.
-     *
      * @return Created Key Managers.
      * @throws SSLException If Key Managers could not be created.
      */
     protected abstract KeyManager[] createKeyManagers() throws SSLException;
 
     /**
-     * Take the trusted authorities from a source local to the node, not from the service that issues the certificates: otherwise a reload
-     * or a renewal accepts a certificate that other nodes do not trust yet.
-     *
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
