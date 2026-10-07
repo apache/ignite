@@ -126,7 +126,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertContains(log, metric(g0, "CertificateIssuer"), "CN=twoca");
         assertTrue(Long.parseLong(metric(g0, "LastReloadTime")) > 0);
 
-        long chainNotAfter = Long.parseLong(metric(g0, "CertificateNotAfter"));
+        long chainNotAfter = Long.parseLong(metric(g0, "ChainNotAfter"));
 
         assertContains(log, status(g0), "chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter));
     }

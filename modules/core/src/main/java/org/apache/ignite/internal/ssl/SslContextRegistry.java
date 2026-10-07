@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.ssl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
@@ -54,10 +56,10 @@ public class SslContextRegistry {
     /**
      * @param factory Factory the transport is configured with.
      * @param transport Transport, one of the names in {@link SslContextReloadable}.
-     * @return Provider of the context the factory builds. Transports configured with the same factory share it, so that a reload cannot
-     *      leave them on certificates read at different moments.
+     * @return Source of the context the factory builds, asked on every new connection. Transports configured with the same factory share
+     *      it, so that a reload cannot leave them on certificates read at different moments.
      */
-    public synchronized SslContextProvider provider(Factory<SSLContext> factory, String transport) {
+    public synchronized Supplier<SSLContext> register(Factory<SSLContext> factory, String transport) {
         SslContextProvider provider = providers.get(factory);
 
         if (provider == null) {
@@ -76,7 +78,7 @@ public class SslContextRegistry {
 
         registerMetrics(transport, provider);
 
-        return provider;
+        return provider::context;
     }
 
     /** @param comp Component that reloads a context it does not take from a provider. */
@@ -89,7 +91,7 @@ public class SslContextRegistry {
 
     /** @return Everything whose certificates the commands reload and report. */
     public Collection<SslContextReloadable> reloadables() {
-        return reloadables;
+        return Collections.unmodifiableCollection(reloadables);
     }
 
     /** Stops the automatic renewals. */
@@ -112,7 +114,7 @@ public class SslContextRegistry {
             .map(c -> c.getIssuerX500Principal().toString()).orElse(null), String.class,
             "Issuer DN of the certificate presented on new connections.");
 
-        reg.register("CertificateNotAfter", () -> Optional.ofNullable(comp.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
+        reg.register("ChainNotAfter", () -> Optional.ofNullable(comp.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
             "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
 
         reg.register("LastReloadTime", comp::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");

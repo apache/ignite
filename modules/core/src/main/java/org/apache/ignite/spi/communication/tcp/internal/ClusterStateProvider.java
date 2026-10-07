@@ -19,13 +19,13 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -61,8 +61,8 @@ public class ClusterStateProvider {
     /** Ignite ex supplier. */
     private final Supplier<Ignite> igniteExSupplier;
 
-    /** SSL context of the connections, {@code null} if SSL is disabled. */
-    private final @Nullable SslContextProvider sslCtxProvider;
+    /** Source of the SSL context of the connections, {@code null} if SSL is disabled. */
+    private final @Nullable Supplier<SSLContext> sslCtx;
 
     /**
      * @param ignite Ignite.
@@ -90,8 +90,8 @@ public class ClusterStateProvider {
         this.log = log;
         this.igniteExSupplier = igniteExSupplier;
 
-        sslCtxProvider = isSslEnabled() ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContexts()
-            .provider(ignite.configuration().getSslContextFactory(), COMMUNICATION) : null;
+        sslCtx = isSslEnabled() ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContexts()
+            .register(ignite.configuration().getSslContextFactory(), COMMUNICATION) : null;
     }
 
     /**
@@ -122,12 +122,12 @@ public class ClusterStateProvider {
      * @return {@link SSLEngine} for ssl connections.
      */
     public SSLEngine createSSLEngine() {
-        return sslCtxProvider.context().createSSLEngine();
+        return sslCtx.get().createSSLEngine();
     }
 
-    /** @return SSL context of the connections, {@code null} if SSL is disabled. */
-    public @Nullable SslContextProvider sslContextProvider() {
-        return sslCtxProvider;
+    /** @return Source of the SSL context of the connections, {@code null} if SSL is disabled. */
+    public @Nullable Supplier<SSLContext> sslContext() {
+        return sslCtx;
     }
 
     /**

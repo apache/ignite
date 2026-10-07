@@ -39,9 +39,6 @@ public abstract class SslContextReloadable {
     /** */
     public static final String HTTP_REST = "HTTP REST";
 
-    /** Guards the outcome fields, which are written together. */
-    private final Object mux = new Object();
-
     /** Time of the last successful reload, {@code 0} if there was none. */
     private volatile long lastSuccessTime;
 
@@ -61,11 +58,11 @@ public abstract class SslContextReloadable {
     public abstract Collection<String> transports();
 
     /**
-     * Builds the certificates the configuration points at now, checks them, puts them in use for new connections and records the outcome.
+     * Builds the certificates the configuration points at now, puts them in use for new connections and records the outcome.
      *
      * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
      */
-    public void reload() throws IgniteCheckedException {
+    public synchronized void reload() throws IgniteCheckedException {
         try {
             rebuild();
         }
@@ -79,7 +76,8 @@ public abstract class SslContextReloadable {
     }
 
     /**
-     * Builds the certificates the configuration points at now, checks them and puts them in use for new connections.
+     * Builds the certificates the configuration points at now and puts them in use for new connections. Runs under the monitor of this
+     * object.
      *
      * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
      */
@@ -96,24 +94,18 @@ public abstract class SslContextReloadable {
     }
 
     /** Records a successful reload. */
-    void onReloaded() {
-        synchronized (mux) {
-            lastSuccessTime = System.currentTimeMillis();
-            lastFailureTime = 0;
-            lastFailure = null;
-            failures = 0;
-        }
+    synchronized void onReloaded() {
+        lastSuccessTime = System.currentTimeMillis();
+        lastFailureTime = 0;
+        lastFailure = null;
+        failures = 0;
     }
 
     /** @param e Why the reload failed. */
-    void onFailure(Throwable e) {
-        String reason = SslCertificates.reason(e);
-
-        synchronized (mux) {
-            lastFailureTime = System.currentTimeMillis();
-            lastFailure = reason;
-            failures++;
-        }
+    synchronized void onFailure(Throwable e) {
+        lastFailureTime = System.currentTimeMillis();
+        lastFailure = SslCertificates.reason(e);
+        failures++;
     }
 
     /** @return Time of the last successful reload, {@code 0} if there was none. */

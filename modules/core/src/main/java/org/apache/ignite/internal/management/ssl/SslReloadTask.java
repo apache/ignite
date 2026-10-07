@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 import static org.apache.ignite.internal.ssl.SslCertificates.describe;
@@ -39,12 +40,12 @@ public class SslReloadTask extends SslTask {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
+    @Override protected VisorJob<NoArg, IgniteBiTuple<Boolean, String>> job(NoArg arg) {
         return new SslReloadJob(arg, debug, ignite.localNode().id());
     }
 
     /** */
-    private static class SslReloadJob extends VisorJob<NoArg, String> {
+    private static class SslReloadJob extends VisorJob<NoArg, IgniteBiTuple<Boolean, String>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -63,13 +64,13 @@ public class SslReloadTask extends SslTask {
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(NoArg arg) throws IgniteException {
+        @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
             String id = ignite.localNode().id().toString();
 
             Collection<SslContextReloadable> comps = ignite.context().internalSubscriptionProcessor().sslContexts().reloadables();
 
             if (comps.isEmpty())
-                return id + ": SSL is not configured";
+                return new IgniteBiTuple<>(true, id + ": SSL is not configured");
 
             String initiator = initiator();
 
@@ -104,12 +105,7 @@ public class SslReloadTask extends SslTask {
                 }
             }
 
-            String res = String.join("\n", lines);
-
-            if (failed)
-                throw new IgniteException(res);
-
-            return res;
+            return new IgniteBiTuple<>(!failed, String.join("\n", lines));
         }
 
         /** @return Who asked for the reload, as the node log names it. */

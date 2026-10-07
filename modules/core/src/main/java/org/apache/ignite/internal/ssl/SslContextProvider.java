@@ -79,13 +79,21 @@ public class SslContextProvider extends SslContextReloadable {
     }
 
     /** @param lsnr Told about every new context once it is recorded; must not block. */
-    public void onReload(Runnable lsnr) {
+    void onReload(Runnable lsnr) {
         reloadLsnr = lsnr;
     }
 
-    /** {@inheritDoc} */
-    @Override protected synchronized void rebuild() throws IgniteCheckedException {
+    /**
+     * {@inheritDoc} The new context goes in use only if every certificate of its chain is valid now and, if nodes connect on it, this
+     * node's own trust store accepts it.
+     *
+     * @throws IgniteCheckedException {@inheritDoc}
+     */
+    @Override protected void rebuild() throws IgniteCheckedException {
         SSLContext rebuilt = factory.create();
+
+        if (rebuilt == ctx)
+            throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
 
         X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
@@ -108,7 +116,7 @@ public class SslContextProvider extends SslContextReloadable {
      *
      * @param expected Context the renewal was planned for.
      * @return What the renewal did.
-     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, or does not
+     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #rebuild()}, or does not
      *      expire later.
      */
     public synchronized Renewed renew(SSLContext expected) throws IgniteCheckedException {
@@ -151,12 +159,9 @@ public class SslContextProvider extends SslContextReloadable {
     /**
      * @param rebuilt Context built anew.
      * @param next Chain it presents, {@code null} if it is unknown.
-     * @throws IgniteCheckedException If it is the context in use, a certificate it presents is not valid now, or nodes refuse it.
+     * @throws IgniteCheckedException If a certificate it presents is not valid now, or nodes refuse it.
      */
     private void check(SSLContext rebuilt, @Nullable X509Certificate[] next) throws IgniteCheckedException {
-        if (rebuilt == ctx)
-            throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
-
         long now = System.currentTimeMillis();
 
         X509Certificate invalid = next == null ? null : SslCertificates.invalidAt(next, now);

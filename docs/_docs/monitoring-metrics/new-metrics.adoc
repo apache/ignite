@@ -516,8 +516,8 @@ Register name: `ssl.{transport}`
 |===
 |Name | Type | Description
 |CertificateIssuer | string | Issuer DN of the certificate presented on new connections.
-|CertificateNotAfter | long | Earliest expiry time in the chain presented on new connections.
 |CertificateSubject | string | Subject DN of the certificate presented on new connections.
+|ChainNotAfter | long | Earliest expiry time in the chain presented on new connections.
 |LastReloadFailure | string | Reason of the last failed reload since the last successful one.
 |LastReloadTime | long | Time of the last successful reload.
 |NextRenewalTime | long | Time of the next automatic renewal.

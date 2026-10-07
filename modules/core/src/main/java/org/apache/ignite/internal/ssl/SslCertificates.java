@@ -53,7 +53,7 @@ public class SslCertificates {
      * @param ctx SSL context to check.
      * @throws SSLException If the handshake was refused.
      */
-    public static void validateInterNode(SSLContext ctx) throws SSLException {
+    static void validateInterNode(SSLContext ctx) throws SSLException {
         handshake(ctx, ctx, true);
     }
 

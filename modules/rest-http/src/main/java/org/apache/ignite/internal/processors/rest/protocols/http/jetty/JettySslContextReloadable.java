@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** Certificate reload of the Jetty connector serving HTTP REST. */
-public class JettySslContextReloadable extends SslContextReloadable {
+class JettySslContextReloadable extends SslContextReloadable {
     /** SSL factory of the running connector. */
     private final SslContextFactory.Server sslCtxFactory;
 
@@ -39,7 +39,7 @@ public class JettySslContextReloadable extends SslContextReloadable {
     private X509Certificate[] servedChain;
 
     /** @param sslCtxFactory SSL factory of the running connector. */
-    public JettySslContextReloadable(SslContextFactory.Server sslCtxFactory) {
+    JettySslContextReloadable(SslContextFactory.Server sslCtxFactory) {
         this.sslCtxFactory = sslCtxFactory;
     }
 
@@ -49,11 +49,12 @@ public class JettySslContextReloadable extends SslContextReloadable {
     }
 
     /**
-     * Jetty rebuilds the context in place and serves no TLS at all after a failed rebuild, so a failed reload puts the context in use back.
+     * Jetty builds the context and puts it in use in one step, so nothing is checked first. Jetty also serves no TLS at all
+     * after a failed rebuild, so a failed reload puts the context in use back and leaves Jetty free to read the key store again.
      *
      * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override protected synchronized void rebuild() throws IgniteCheckedException {
+    @Override protected void rebuild() throws IgniteCheckedException {
         if (sslCtxFactory.getKeyStorePath() == null)
             throw new IgniteCheckedException("HTTP REST runs on a ready-made SSL context, there is nothing to read again");
 
@@ -65,6 +66,7 @@ public class JettySslContextReloadable extends SslContextReloadable {
         catch (Exception e) {
             try {
                 sslCtxFactory.reload(f -> f.setSslContext(cur));
+                sslCtxFactory.setSslContext(null);
             }
             catch (Exception pinFailure) {
                 e.addSuppressed(pinFailure);

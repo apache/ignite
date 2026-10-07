@@ -6340,10 +6340,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    sock = spi.acceptedSocket(sock);
+                    try {
+                        sock = spi.acceptedSocket(sock);
+                    }
+                    catch (IOException | IllegalArgumentException e) {
+                        U.warn(log, "Failed to set TLS up on an accepted connection [rmtAddr=" + sock.getInetAddress() +
+                            ", err=" + e + ']');
 
-                    if (sock == null)
+                        U.closeQuiet(sock);
+
                         continue;
+                    }
 
                     if (log.isInfoEnabled()) {
                         log.info("TCP discovery accepted incoming connection " +

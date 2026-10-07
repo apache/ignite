@@ -374,7 +374,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         MetricRegistryImpl reg = metrics(g, "ssl.client.connector");
 
-        long notAfter = reg.<LongMetric>findMetric("CertificateNotAfter").value();
+        long notAfter = reg.<LongMetric>findMetric("ChainNotAfter").value();
 
         assertTrue(notAfter > now + 30 * MIN);
         assertTrue(reg.<LongMetric>findMetric("NextRenewalTime").value() > now + 30 * MIN);
@@ -629,7 +629,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /** */
     private static long certificateNotAfter(IgniteEx g) {
-        return metrics(g, "ssl.communication").<LongMetric>findMetric("CertificateNotAfter").value();
+        return metrics(g, "ssl.communication").<LongMetric>findMetric("ChainNotAfter").value();
     }
 
     /**

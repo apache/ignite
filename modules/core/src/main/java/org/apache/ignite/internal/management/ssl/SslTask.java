@@ -23,9 +23,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.lang.IgniteBiTuple;
 
-/** Task of an {@code --ssl} command: the command fails only after every node is in the report, which lists the failed nodes first. */
-public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, String> {
+import static org.apache.ignite.internal.ssl.SslCertificates.reason;
+
+/**
+ * Task of an {@code --ssl} command: the command fails only after every node is in the report, which lists the failed nodes first.
+ * A job returns whether its node passed and the node's report; a job failure is a failure of compute on that node.
+ */
+public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, IgniteBiTuple<Boolean, String>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -37,13 +43,12 @@ public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, String> 
         for (ComputeJobResult jobRes : results) {
             IgniteException e = jobRes.getException();
 
-            if (e == null)
-                succeeded.add(jobRes.getData().toString());
+            if (e != null)
+                failed.add(jobRes.getNode().id() + ": " + reason(e));
             else {
-                String id = jobRes.getNode().id().toString();
-                String msg = e.getMessage() != null ? e.getMessage() : e.toString();
+                IgniteBiTuple<Boolean, String> rep = jobRes.getData();
 
-                failed.add(msg.startsWith(id) ? msg : id + ": " + msg);
+                (rep.get1() ? succeeded : failed).add(rep.get2());
             }
         }
 

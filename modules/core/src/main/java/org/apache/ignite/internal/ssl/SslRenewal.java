@@ -70,7 +70,7 @@ public class SslRenewal {
      * @param igniteInstanceName Name of the node, for the thread name.
      * @param log Logger.
      */
-    public SslRenewal(@Nullable String igniteInstanceName, IgniteLogger log) {
+    SslRenewal(@Nullable String igniteInstanceName, IgniteLogger log) {
         this.igniteInstanceName = igniteInstanceName;
         this.log = log;
     }
@@ -81,7 +81,7 @@ public class SslRenewal {
      * @param provider Provider whose context the factory builds.
      * @param renewBeforeFraction Share of the certificate lifetime left when the renewal window opens.
      */
-    public synchronized void start(SslContextProvider provider, double renewBeforeFraction) {
+    synchronized void start(SslContextProvider provider, double renewBeforeFraction) {
         if (stopped)
             return;
 
@@ -96,7 +96,7 @@ public class SslRenewal {
     }
 
     /** Stops the renewals, interrupting an attempt in progress. */
-    public synchronized void stop() {
+    synchronized void stop() {
         stopped = true;
 
         if (exec != null)
