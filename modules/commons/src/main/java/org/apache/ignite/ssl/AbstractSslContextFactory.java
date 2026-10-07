@@ -54,9 +54,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Share of the certificate lifetime left when a node renews it. */
     private double renewBeforeFraction = DFLT_RENEW_BEFORE_FRACTION;
 
-    /** Maximum renewal window, in milliseconds; {@code 0} means no maximum. */
-    private long renewBefore;
-
     /**
      * Gets protocol for secure transport.
      *
@@ -142,23 +139,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         A.ensure(renewBeforeFraction > 0 && renewBeforeFraction < 1, "renewBeforeFraction must be greater than 0 and less than 1");
 
         this.renewBeforeFraction = renewBeforeFraction;
-    }
-
-    /** @return Maximum renewal window, in milliseconds; {@code 0} means no maximum. */
-    public long getRenewBefore() {
-        return renewBefore;
-    }
-
-    /**
-     * Sets the maximum renewal window, in milliseconds, not negative: a node takes the smaller of it and the window from
-     * {@link #getRenewBeforeFraction()}. {@code 0}, the default, means no maximum.
-     *
-     * @param renewBefore Maximum renewal window, in milliseconds.
-     */
-    public void setRenewBefore(long renewBefore) {
-        A.ensure(renewBefore >= 0, "renewBefore must not be negative");
-
-        this.renewBefore = renewBefore;
     }
 
     /**

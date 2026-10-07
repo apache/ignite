@@ -340,7 +340,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         Issuer issuer = issuer(0).then(valid(now - HOUR, now + 2 * MIN)).then(failure());
 
-        issuer.setRenewBefore(3 * MIN);
+        issuer.setRenewBeforeFraction(0.05);
         retries(5 * MIN, 5 * MIN);
 
         startGrid(0);
@@ -372,21 +372,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
     }
 
-    /** An absolute window must apply when it is smaller than the share of the lifetime, and only then. */
-    @Test
-    public void testRenewBeforeTakesSmallerWindow() throws Exception {
-        long now = System.currentTimeMillis();
-
-        issuer(0).then(valid(now, now + HOUR)).setRenewBefore(2 * MIN);
-        issuer(1).then(valid(now, now + HOUR)).setRenewBefore(30 * MIN);
-
-        IgniteEx g0 = startGrid(0);
-        IgniteEx g1 = startGrid(1);
-
-        assertTrue(waitForCondition(() -> nextRenewalTime(g0) == certificateNotAfter(g0) - 2 * MIN, 10_000));
-        assertTrue(waitForCondition(() -> nextRenewalTime(g1) == dueTime(g1), 10_000));
-    }
-
     /** Renewal settings out of range must be refused at once. */
     @Test
     public void testInvalidSettingsRefused() {
@@ -394,7 +379,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertRefused(() -> factory.setRenewBeforeFraction(1), "renewBeforeFraction must be greater than 0 and less than 1");
         assertRefused(() -> factory.setRenewBeforeFraction(0), "renewBeforeFraction must be greater than 0 and less than 1");
-        assertRefused(() -> factory.setRenewBefore(-1), "renewBefore must not be negative");
     }
 
     /** The client connector with a factory of its own must be renewed on its own. */
@@ -493,11 +477,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testWaitTurningLateLoggedAsErrorAtOnce() throws Exception {
         long now = System.currentTimeMillis();
 
-        KeyStore inUse = ca.issue("node", now - HOUR, now + 20_000);
+        KeyStore inUse = ca.issue("node", now - 80_000, now + 20_000);
 
         Issuer issuer = issuer(0).then(() -> inUse);
 
-        issuer.setRenewBefore(22_000);
+        issuer.setRenewBeforeFraction(0.22);
 
         startGrid(0);
 

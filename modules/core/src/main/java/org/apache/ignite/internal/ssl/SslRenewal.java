@@ -177,9 +177,6 @@ public class SslRenewal {
 
             window = (long)(lifetime * factory.getRenewBeforeFraction());
 
-            if (factory.getRenewBefore() > 0)
-                window = Math.min(window, factory.getRenewBefore());
-
             long at = Math.max(expiry - window, Math.max(lastAttempt + minRetry, U.currentTimeMillis()));
 
             schedule(at);

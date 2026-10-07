@@ -238,10 +238,6 @@ HTTP REST takes its certificate from the Jetty configuration and is not renewed.
 |Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it. Greater than `0` and less than `1`.
 |`0.15`
 
-|`renewBefore`
-|Maximum renewal window, in milliseconds, not negative. A node takes the smaller of it and the window from `renewBeforeFraction`; `0` means no maximum.
-|`0`
-
 |`trustStoreFilePath`
 |The path to the trust store file.
 |`N/A`
