@@ -812,12 +812,24 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /**
-     * @param res Resuilt.
+     * @param res Result.
      * @param ex Exception
      * @param sndReply If {@code true}, reply will be sent.
      * @param retry If {@code true}, retry response will be sent.
      */
     void finishJob(
+        @Nullable Object res,
+        @Nullable IgniteException ex,
+        boolean sndReply,
+        boolean retry
+    ) {
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            finishJob0(res, ex, sndReply, retry);
+        }
+    }
+
+    /** */
+    private void finishJob0(
         @Nullable Object res,
         @Nullable IgniteException ex,
         boolean sndReply,
