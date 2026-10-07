@@ -88,6 +88,16 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
+    public void testParallelDeletion() throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, true, false);
+
+        SnapshotFileTree sftNode1 = new SnapshotFileTree(grid(1).context(), SNAPSHOT_NAME, null);
+
+
+    }
+
+    /** */
+    @Test
     public void testMissingMeta() throws Exception {
         doTestWithWrongMeta(false);
     }
