@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
@@ -23,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -53,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_JOB_REJECTED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
 
@@ -73,6 +74,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
         cfg.setPluginProviders(new TestIgniteComponent());
+        cfg.setIncludeEventTypes(EVT_JOB_REJECTED);
 
         if (getTestIgniteInstanceIndex(igniteInstanceName) == 1)
             cfg.setCollisionSpi(new TestCollisionSpi());
@@ -103,7 +105,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
         IgniteFuture<TaskExecution> fut = executeWithContext(new RegularJob(), FIRST_USR_VAL);
 
-        spi(grid(1)).waitForBlocked(1, getTestTimeout());
+        assertTrue(spi(grid(1)).waitForBlocked(1, getTestTimeout()));
 
         stopGrid(1);
 
@@ -115,7 +117,18 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     public void testRejectionTriggeredByAnotherTaskIsProcessedUnderTheTaskContext() throws Exception {
         startGrids(2);
 
-        TestCollisionSpi.holdFirstJob(FirstJobAction.REJECT_QUEUED);
+        TestCollisionSpi.initialize(FirstJobAction.REJECT_QUEUED);
+
+        AtomicReference<User> attrSeenByRejectionLsnr = new AtomicReference<>();
+        CountDownLatch jobRejectedLatch = new CountDownLatch(1);
+
+        grid(1).events().localListen(evt -> {
+            attrSeenByRejectionLsnr.set(OperationContext.get(USR_ATTR));
+
+            jobRejectedLatch.countDown();
+
+            return true;
+        }, EVT_JOB_REJECTED);
 
         IgniteFuture<TaskExecution> firstTaskFut = executeWithContext(new RegularJob(), FIRST_USR_VAL);
 
@@ -126,6 +139,9 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
         assertEquals(new TaskExecution(FIRST_USR_VAL, FIRST_USR_VAL, null), firstExecRes);
         assertExecutedWith(SECOND_USR_VAL, secondExecRes);
+
+        assertTrue(jobRejectedLatch.await(getTestTimeout(), MILLISECONDS));
+        assertEquals(FIRST_USR_VAL, attrSeenByRejectionLsnr.get());
     }
 
     /** */
@@ -133,7 +149,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     public void testJobActivatedByAnotherTaskRunsUnderTheJobContext() throws Exception {
         startGrids(2);
 
-        TestCollisionSpi.holdFirstJob(FirstJobAction.ACTIVATE_QUEUED);
+        TestCollisionSpi.initialize(FirstJobAction.ACTIVATE_QUEUED);
 
         IgniteFuture<TaskExecution> firstFut = executeWithContext(new RegularJob(), FIRST_USR_VAL);
 
@@ -151,7 +167,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     public void testJobCancelledByAnotherTaskIsCancelledUnderTheJobContext() throws Exception {
         startGrids(2);
 
-        TestCollisionSpi.holdFirstJob(FirstJobAction.CANCEL_RUNNING);
+        TestCollisionSpi.initialize(FirstJobAction.CANCEL_RUNNING);
 
         IgniteFuture<TaskExecution> firstFut = executeWithContext(new CancellableJob(), FIRST_USR_VAL);
 
@@ -191,7 +207,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         MasterLeaveAwareJob.jobStartedLatch = new CountDownLatch(1);
         MasterLeaveAwareJob.jobUnblockedLatch = new CountDownLatch(1);
         MasterLeaveAwareJob.masterNodeLeftProcessedLatch = new CountDownLatch(1);
-        MasterLeaveAwareJob.masterNodeLeftAttr = null;
+        MasterLeaveAwareJob.attrSeenByMasterLeft = null;
 
         executeWithContext(new MasterLeaveAwareJob(), FIRST_USR_VAL);
 
@@ -202,7 +218,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
             assertTrue(MasterLeaveAwareJob.masterNodeLeftProcessedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            assertEquals(FIRST_USR_VAL, MasterLeaveAwareJob.masterNodeLeftAttr);
+            assertEquals(FIRST_USR_VAL, MasterLeaveAwareJob.attrSeenByMasterLeft);
         }
         finally {
             MasterLeaveAwareJob.jobUnblockedLatch.countDown();
@@ -269,7 +285,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         private final CountDownLatch jobCancelledLatch = new CountDownLatch(1);
 
         /** */
-        private @Nullable User cancelAttr;
+        private @Nullable User attrSeenByCancel;
 
         /** {@inheritDoc} */
         @Override public Object execute() {
@@ -280,12 +296,12 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
                 Thread.currentThread().interrupt();
             }
 
-            return cancelAttr;
+            return attrSeenByCancel;
         }
 
         /** {@inheritDoc} */
         @Override public void cancel() {
-            cancelAttr = OperationContext.get(USR_ATTR);
+            attrSeenByCancel = OperationContext.get(USR_ATTR);
 
             jobCancelledLatch.countDown();
         }
@@ -335,7 +351,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         static volatile CountDownLatch masterNodeLeftProcessedLatch;
 
         /** */
-        static volatile User masterNodeLeftAttr;
+        static volatile User attrSeenByMasterLeft;
 
         /** {@inheritDoc} */
         @Override public Object execute() {
@@ -353,7 +369,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
-            masterNodeLeftAttr = OperationContext.get(USR_ATTR);
+            attrSeenByMasterLeft = OperationContext.get(USR_ATTR);
 
             masterNodeLeftProcessedLatch.countDown();
         }
@@ -369,7 +385,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         static volatile CountDownLatch firstJobArrivedLatch;
 
         /** */
-        static void holdFirstJob(FirstJobAction action) {
+        static void initialize(FirstJobAction action) {
             firstJobArrivedLatch = new CountDownLatch(1);
             firstJobAction = action;
         }
