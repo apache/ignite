@@ -26,6 +26,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -60,8 +61,6 @@ public class SslContextRegistry {
         SslContextProvider provider = providers.get(factory);
 
         if (provider == null) {
-            SslRenewal.Settings settings = SslRenewal.Settings.of(factory);
-
             provider = new SslContextProvider(factory);
 
             provider.addTransport(transport);
@@ -69,8 +68,8 @@ public class SslContextRegistry {
             providers.put(factory, provider);
             reloadables.add(provider);
 
-            if (settings != null)
-                renewal.start(provider, settings);
+            if (factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled())
+                renewal.start(provider, f);
         }
         else
             provider.addTransport(transport);

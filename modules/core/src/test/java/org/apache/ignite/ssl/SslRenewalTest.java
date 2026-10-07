@@ -27,7 +27,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.ssl.SslRenewal;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -114,6 +112,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         ca = new TestCertificateAuthority("renewalca");
 
         appender.installSelfOn(SslRenewal.class);
+
+        retries(100, 1_000);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +121,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         appender.removeSelfFrom(SslRenewal.class);
 
         stopAllGrids();
+
+        retries(MIN, HOUR);
     }
 
     /** A node must renew in the window and not before, serve and plan by the new certificate, and stop renewing on stop. */
@@ -237,8 +239,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         Issuer issuer = issuer(0).then(valid(now - HOUR, now + 9 * MIN)).then(failure()).then(fresh(2 * HOUR)).then(fresh(HOUR));
 
-        issuer.setRenewalRetryMinInterval(2_000);
-        issuer.setRenewalRetryMaxInterval(2_000);
+        retries(2_000, 2_000);
 
         IgniteEx g = startGrid(0);
 
@@ -247,7 +248,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         long retry = nextRenewalTime(g);
 
         assertTrue("A retry must be planned after the pause",
-            retry >= provider(g, COMMUNICATION).lastFailureTime() + issuer.getRenewalRetryMinInterval() - CLOCK_SLACK);
+            retry >= provider(g, COMMUNICATION).lastFailureTime() + 2_000 - CLOCK_SLACK);
 
         reload(g);
 
@@ -303,8 +304,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         issuer.then(fresh(HOUR));
 
-        issuer.setRenewalRetryMinInterval(100);
-        issuer.setRenewalRetryMaxInterval(400);
+        retries(100, 400);
 
         LogListener renewed = automaticRenewals(NODE_TRANSPORTS).times(1).build();
 
@@ -341,8 +341,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         Issuer issuer = issuer(0).then(valid(now - HOUR, now + 2 * MIN)).then(failure());
 
         issuer.setRenewBefore(3 * MIN);
-        issuer.setRenewalRetryMinInterval(5 * MIN);
-        issuer.setRenewalRetryMaxInterval(5 * MIN);
+        retries(5 * MIN, 5 * MIN);
 
         startGrid(0);
 
@@ -357,8 +356,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         Issuer issuer = issuer(0).then(valid(now - HOUR, now + 5_000)).then(failure());
 
         issuer.setRenewBefore(6_000);
-        issuer.setRenewalRetryMinInterval(1_000);
-        issuer.setRenewalRetryMaxInterval(HOUR);
+        retries(1_000, HOUR);
 
         startGrid(0);
 
@@ -372,10 +370,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed, even if the factory
-     * settings change after the start.
-     */
+    /** A certificate due for renewal as soon as it is issued must not make the node renew more often than allowed. */
     @Test
     public void testRenewalsNoMoreOftenThanMinRetry() throws Exception {
         Callable<KeyStore> dueOnIssue = () -> {
@@ -386,13 +381,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         Issuer issuer = issuer(0).then(dueOnIssue);
 
-        issuer.setRenewalRetryMinInterval(300);
-        issuer.setRenewalRetryMaxInterval(300);
+        retries(300, 300);
 
         startGrid(0);
-
-        issuer.setRenewalRetryMinInterval(1);
-        issuer.setRenewalRetryMaxInterval(1);
 
         assertTrue(waitForCondition(() -> issuer.calls.size() >= 5, 30_000));
 
@@ -418,15 +409,14 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> nextRenewalTime(g1) == dueTime(g1), 10_000));
     }
 
-    /** Settings out of range must keep the node from starting, before the issuer is asked for anything. */
+    /** Renewal settings out of range must be refused at once. */
     @Test
-    public void testInvalidSettingsFailNodeStart() throws Exception {
-        assertStartFails(i -> i.setRenewBeforeFraction(1), "renewBeforeFraction must be greater than 0 and less than 1");
-        assertStartFails(i -> i.setRenewBeforeFraction(0), "renewBeforeFraction must be greater than 0 and less than 1");
-        assertStartFails(i -> i.setRenewBefore(-1), "renewBefore must not be negative");
-        assertStartFails(i -> i.setRenewalRetryMinInterval(0), "renewalRetryMinInterval must be positive");
-        assertStartFails(i -> i.setRenewalRetryMaxInterval(i.getRenewalRetryMinInterval() - 1),
-            "renewalRetryMaxInterval must not be less than renewalRetryMinInterval");
+    public void testInvalidSettingsRefused() {
+        SslContextFactory factory = new SslContextFactory();
+
+        assertRefused(() -> factory.setRenewBeforeFraction(1), "renewBeforeFraction must be greater than 0 and less than 1");
+        assertRefused(() -> factory.setRenewBeforeFraction(0), "renewBeforeFraction must be greater than 0 and less than 1");
+        assertRefused(() -> factory.setRenewBefore(-1), "renewBefore must not be negative");
     }
 
     /** The client connector with a factory of its own must be renewed on its own. */
@@ -578,8 +568,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             factory.setKeyStoreType("PKCS12");
             factory.setTrustManagers(TestCertificateAuthority.trustManagers(ca.trustStore()));
             factory.setRenewalEnabled(true);
-            factory.setRenewalRetryMinInterval(100);
-            factory.setRenewalRetryMaxInterval(500);
 
             LogListener renewed = automaticRenewals(NODE_TRANSPORTS).times(1).build();
 
@@ -647,17 +635,24 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param setup Puts a setting of the issuer out of range.
-     * @param reason Reason the node must give for not starting.
+     * @param set Sets a value out of range.
+     * @param reason Reason the setter must give.
      */
-    private void assertStartFails(Consumer<Issuer> setup, String reason) {
-        Issuer issuer = issuer(0).then(fresh(HOUR));
+    private static void assertRefused(Runnable set, String reason) {
+        GridTestUtils.assertThrows(log, () -> {
+            set.run();
 
-        setup.accept(issuer);
+            return null;
+        }, IllegalArgumentException.class, reason);
+    }
 
-        assertContains(log, X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> startGrid(0), Exception.class, null)), reason);
-
-        assertTrue("The issuer must not be asked: " + reason, issuer.calls.isEmpty());
+    /**
+     * @param min Pause after the first renewal attempt that puts nothing in use, in milliseconds.
+     * @param max Longest pause, in milliseconds.
+     */
+    private static void retries(long min, long max) {
+        GridTestUtils.setFieldValue(SslRenewal.class, "minRetry", min);
+        GridTestUtils.setFieldValue(SslRenewal.class, "maxRetry", max);
     }
 
     /**
@@ -770,11 +765,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         /** Step taken last. */
         private volatile Callable<KeyStore> last;
 
-        /** Renews, with short pauses, so that retries do not hold the test up. */
+        /** */
         private Issuer() {
             setRenewalEnabled(true);
-            setRenewalRetryMinInterval(100);
-            setRenewalRetryMaxInterval(1_000);
         }
 
         /**

@@ -185,7 +185,7 @@ Then run `control.sh --ssl reload` and restart the nodes one at a time: a reload
 A node can pick up a new certificate from its key store file by itself before the current one expires.
 Renewal is off by default.
 To turn it on, set the `renewalEnabled` property of the SSL context factory and restart the nodes one at a time.
-With renewal on, a node whose renewal settings are out of range does not start.
+A node with renewal settings out of range does not start.
 
 The node then reads the key store and trust store files again in the renewal window.
 By default, the window is the last 15% of the certificate lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
@@ -195,7 +195,7 @@ If the factory serves discovery or communication, the node's own trust store mus
 A changed trust store alone is not picked up.
 To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
 
-Until the files hold a newer certificate, the node keeps the one in use and reads the files again with a growing pause, from 1 minute to 1 hour by default.
+Until the files hold a newer certificate, the node keeps the one in use and reads the files again with a growing pause, from 1 minute to 1 hour.
 While the node waits, it logs a warning once a day.
 Once less than half of the window is left, or the certificate would expire before the next attempt, it logs an error instead.
 If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
@@ -241,14 +241,6 @@ HTTP REST takes its certificate from the Jetty configuration and is not renewed.
 |`renewBefore`
 |Maximum renewal window, in milliseconds, not negative. A node takes the smaller of it and the window from `renewBeforeFraction`; `0` means no maximum.
 |`0`
-
-|`renewalRetryMinInterval`
-|Pause after the first renewal attempt that puts no new certificate in use, in milliseconds, greater than `0`. A node never renews more often than this.
-|`60000`
-
-|`renewalRetryMaxInterval`
-|Longest pause between such attempts, in milliseconds, not less than `renewalRetryMinInterval`. If a quarter of the window is shorter, a node takes it as the longest pause, but not less than `renewalRetryMinInterval`. A node adds a random delay of up to half of every pause.
-|`3600000`
 
 |`trustStoreFilePath`
 |The path to the trust store file.

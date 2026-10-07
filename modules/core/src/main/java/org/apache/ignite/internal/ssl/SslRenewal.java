@@ -24,7 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -52,6 +51,12 @@ public class SslRenewal {
     /** How often the node logs that the factory still has no newer certificates, unless they come to expire soon in between. */
     private static final long WAIT_LOG_INTERVAL = TimeUnit.DAYS.toMillis(1);
 
+    /** Pause after the first attempt that puts nothing in use, in milliseconds, and the shortest time between two attempts. */
+    private static long minRetry = 60_000L;
+
+    /** Longest pause between attempts that put nothing in use, in milliseconds. */
+    private static long maxRetry = 3_600_000L;
+
     /** */
     private final @Nullable String igniteInstanceName;
 
@@ -76,17 +81,17 @@ public class SslRenewal {
     /**
      * Renews the certificates of the provider from now on.
      *
-     * @param provider Provider whose context the factory of the settings builds.
-     * @param settings Renewal settings of the factory.
+     * @param provider Provider whose context the factory builds.
+     * @param factory Factory with renewal enabled.
      */
-    public synchronized void start(SslContextProvider provider, Settings settings) {
+    public synchronized void start(SslContextProvider provider, AbstractSslContextFactory factory) {
         if (stopped)
             return;
 
         if (exec == null)
             exec = newSingleThreadScheduledExecutor("ssl-renewal", igniteInstanceName);
 
-        Renewal renewal = new Renewal(provider, settings);
+        Renewal renewal = new Renewal(provider, factory);
 
         provider.onReload(renewal::replan);
 
@@ -101,71 +106,25 @@ public class SslRenewal {
             exec.shutdownNow();
     }
 
-    /** Renewal settings of a factory, read once and checked, so that the factory cannot take the schedule out of range later. */
-    public static class Settings {
-        /** */
-        private final double fraction;
-
-        /** */
-        private final long renewBefore;
-
-        /** */
-        private final long minRetry;
-
-        /** */
-        private final long maxRetry;
-
-        /**
-         * @param factory Factory.
-         * @return Its renewal settings, {@code null} if it does not renew.
-         * @throws IgniteException If a setting is out of range.
-         */
-        public static @Nullable Settings of(Factory<SSLContext> factory) {
-            return factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled() ? new Settings(f) : null;
-        }
-
-        /**
-         * @param factory Factory.
-         * @throws IgniteException If a setting is out of range.
-         */
-        private Settings(AbstractSslContextFactory factory) {
-            fraction = factory.getRenewBeforeFraction();
-            renewBefore = factory.getRenewBefore();
-            minRetry = factory.getRenewalRetryMinInterval();
-            maxRetry = factory.getRenewalRetryMaxInterval();
-
-            String err = null;
-
-            if (!(fraction > 0 && fraction < 1))
-                err = "renewBeforeFraction must be greater than 0 and less than 1";
-            else if (renewBefore < 0)
-                err = "renewBefore must not be negative";
-            else if (minRetry <= 0)
-                err = "renewalRetryMinInterval must be positive";
-            else if (maxRetry < minRetry)
-                err = "renewalRetryMaxInterval must not be less than renewalRetryMinInterval";
-
-            if (err != null) {
-                throw new IgniteException("Invalid automatic renewal settings of the SSL context factory, " + err + " [factory=" +
-                    factory.getClass().getName() + ", renewBeforeFraction=" + fraction + ", renewBefore=" + renewBefore +
-                    ", renewalRetryMinInterval=" + minRetry + ", renewalRetryMaxInterval=" + maxRetry + ']');
-            }
-        }
-    }
-
     /** Renewal of one context. Everything but {@link #replan()} runs in the renewal thread. */
     private class Renewal {
         /** */
         private final SslContextProvider provider;
 
         /** */
-        private final Settings settings;
+        private final AbstractSslContextFactory factory;
 
         /** Last planned attempt, {@code null} before the first one. */
         private ScheduledFuture<?> next;
 
         /** Context in use when the next attempt was planned. */
         private SSLContext planned;
+
+        /** Earliest expiry in the chain in use when the renewal was planned. */
+        private long expiry;
+
+        /** How long before {@link #expiry} the renewal window opens. */
+        private long window;
 
         /** Time of the last attempt, {@code 0} if there was none. */
         private long lastAttempt;
@@ -181,11 +140,11 @@ public class SslRenewal {
 
         /**
          * @param provider Provider.
-         * @param settings Settings.
+         * @param factory Factory.
          */
-        private Renewal(SslContextProvider provider, Settings settings) {
+        private Renewal(SslContextProvider provider, AbstractSslContextFactory factory) {
             this.provider = provider;
-            this.settings = settings;
+            this.factory = factory;
         }
 
         /** Plans the next renewal in the renewal thread; called for every new certificate. */
@@ -215,9 +174,16 @@ public class SslRenewal {
                 return;
             }
 
-            long expiry = SslCertificates.chainNotAfter(chain);
-            long window = window(chain);
-            long at = Math.max(expiry - window, Math.max(lastAttempt + settings.minRetry, U.currentTimeMillis()));
+            expiry = SslCertificates.chainNotAfter(chain);
+
+            long lifetime = Math.max(0, expiry - chain[0].getNotBefore().getTime());
+
+            window = (long)(lifetime * factory.getRenewBeforeFraction());
+
+            if (factory.getRenewBefore() > 0)
+                window = Math.min(window, factory.getRenewBefore());
+
+            long at = Math.max(expiry - window, Math.max(lastAttempt + minRetry, U.currentTimeMillis()));
 
             schedule(at);
 
@@ -256,15 +222,9 @@ public class SslRenewal {
             String reason = e == null ? null : provider.onFailure(e);
 
             long now = U.currentTimeMillis();
+            long max = Math.max(minRetry, Math.min(maxRetry, window / ATTEMPTS_IN_WINDOW));
 
-            X509Certificate[] chain = provider.servedChain();
-
-            long expiry = chain == null ? Long.MAX_VALUE : SslCertificates.chainNotAfter(chain);
-            long window = chain == null ? 0 : window(chain);
-            long max = chain == null ? settings.maxRetry :
-                Math.max(settings.minRetry, Math.min(settings.maxRetry, window / ATTEMPTS_IN_WINDOW));
-
-            pause = pause == 0 ? settings.minRetry : pause > max / 2 ? max : pause * 2;
+            pause = pause == 0 ? minRetry : pause > max / 2 ? max : pause * 2;
 
             long at = now + pause + ThreadLocalRandom.current().nextLong(pause / 2 + 1);
 
@@ -284,22 +244,12 @@ public class SslRenewal {
                 "Failed to reload TLS certificates, the ones in use stay") +
                 (now >= expiry ? ", though they have expired" : soon ? " and expire soon" : "") +
                 " [transports=" + transports() + (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + reason) +
-                (chain == null ? "" : ", expiry=" + Instant.ofEpochMilli(expiry)) + ", nextAttempt=" + Instant.ofEpochMilli(at) + ']';
+                ", expiry=" + Instant.ofEpochMilli(expiry) + ", nextAttempt=" + Instant.ofEpochMilli(at) + ']';
 
             if (soon)
                 U.error(log, msg, e);
             else
                 U.warn(log, msg, e);
-        }
-
-        /**
-         * @param chain Chain in use.
-         * @return How long before expiry the certificate is renewed.
-         */
-        private long window(X509Certificate[] chain) {
-            long window = (long)(Math.max(0, SslCertificates.chainNotAfter(chain) - chain[0].getNotBefore().getTime()) * settings.fraction);
-
-            return settings.renewBefore > 0 ? Math.min(window, settings.renewBefore) : window;
         }
 
         /** @param at Time of the next attempt. */

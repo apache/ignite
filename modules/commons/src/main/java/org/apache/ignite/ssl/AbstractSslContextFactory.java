@@ -39,12 +39,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default share of the certificate lifetime left when a node renews it. */
     public static final double DFLT_RENEW_BEFORE_FRACTION = 0.15;
 
-    /** Default pause after the first renewal attempt that puts no new certificate in use, in milliseconds. */
-    public static final long DFLT_RENEWAL_RETRY_MIN_INTERVAL = 60_000L;
-
-    /** Default longest pause between renewal attempts that put no new certificate in use, in milliseconds. */
-    public static final long DFLT_RENEWAL_RETRY_MAX_INTERVAL = 3_600_000L;
-
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
 
@@ -62,12 +56,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Maximum renewal window, in milliseconds; {@code 0} means no maximum. */
     private long renewBefore;
-
-    /** Pause after the first renewal attempt that puts no new certificate in use, in milliseconds. */
-    private long renewalRetryMinInterval = DFLT_RENEWAL_RETRY_MIN_INTERVAL;
-
-    /** Longest pause between renewal attempts that put no new certificate in use, in milliseconds. */
-    private long renewalRetryMaxInterval = DFLT_RENEWAL_RETRY_MAX_INTERVAL;
 
     /**
      * Gets protocol for secure transport.
@@ -151,6 +139,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @param renewBeforeFraction Share of the lifetime.
      */
     public void setRenewBeforeFraction(double renewBeforeFraction) {
+        A.ensure(renewBeforeFraction > 0 && renewBeforeFraction < 1, "renewBeforeFraction must be greater than 0 and less than 1");
+
         this.renewBeforeFraction = renewBeforeFraction;
     }
 
@@ -166,40 +156,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @param renewBefore Maximum renewal window, in milliseconds.
      */
     public void setRenewBefore(long renewBefore) {
+        A.ensure(renewBefore >= 0, "renewBefore must not be negative");
+
         this.renewBefore = renewBefore;
-    }
-
-    /** @return Pause after the first renewal attempt that puts no new certificate in use, in milliseconds. */
-    public long getRenewalRetryMinInterval() {
-        return renewalRetryMinInterval;
-    }
-
-    /**
-     * Sets the pause, in milliseconds, after the first renewal attempt that puts no new certificate in use, because the factory hands back
-     * the same one or fails. Must be positive. A node never renews more often than this. If not specified,
-     * {@link #DFLT_RENEWAL_RETRY_MIN_INTERVAL} is used.
-     *
-     * @param renewalRetryMinInterval Pause, in milliseconds.
-     */
-    public void setRenewalRetryMinInterval(long renewalRetryMinInterval) {
-        this.renewalRetryMinInterval = renewalRetryMinInterval;
-    }
-
-    /** @return Longest pause between renewal attempts that put no new certificate in use, in milliseconds. */
-    public long getRenewalRetryMaxInterval() {
-        return renewalRetryMaxInterval;
-    }
-
-    /**
-     * Sets the longest pause between renewal attempts that put no new certificate in use, in milliseconds, not less than
-     * {@link #getRenewalRetryMinInterval()}. If a quarter of the renewal window is shorter, a node takes it as the longest pause, but not
-     * less than {@link #getRenewalRetryMinInterval()}. A node adds a random delay of up to half of every pause. If not specified,
-     * {@link #DFLT_RENEWAL_RETRY_MAX_INTERVAL} is used.
-     *
-     * @param renewalRetryMaxInterval Pause, in milliseconds.
-     */
-    public void setRenewalRetryMaxInterval(long renewalRetryMaxInterval) {
-        this.renewalRetryMaxInterval = renewalRetryMaxInterval;
     }
 
     /**
@@ -262,8 +221,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /**
      * Called on every {@link #create()}: when a transport starts, on every {@code control.sh --ssl reload} and, with renewal enabled, in
      * the renewal window. Read the current key material each time: otherwise a reload or a renewal never sees a new certificate. Bound
-     * every wait well below {@link #getRenewalRetryMinInterval()} and stop waiting when the thread is interrupted: all renewals of a node
-     * run in one thread, and a call that hangs holds them up together with {@code --ssl reload}.
+     * every wait well below a minute and stop waiting when the thread is interrupted: all renewals of a node run in one thread, and a
+     * call that hangs holds them up together with {@code --ssl reload}.
      *
      * @return Created Key Managers.
      * @throws SSLException If Key Managers could not be created.
