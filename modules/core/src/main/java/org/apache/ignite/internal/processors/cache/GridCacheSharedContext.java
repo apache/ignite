@@ -561,19 +561,10 @@ public class GridCacheSharedContext<K, V> {
         if (mgr.configured() && mgr.isLocal())
             locStoreCnt.incrementAndGet();
 
-        ctxMap.put(cacheCtx.cacheId(), cacheCtx);
-
-        updateContextsSnapshot();
-    }
-
-    /** Rebuilds {@link #ctxById} from {@link #ctxMap}. */
-    private void updateContextsSnapshot() {
         synchronized (ctxMap) {
-            IntMap<GridCacheContext<K, V>> ctxById0 = new IntHashMap<>(ctxMap.size());
+            ctxMap.put(cacheCtx.cacheId(), cacheCtx);
 
-            ctxMap.forEach(ctxById0::put);
-
-            ctxById = ctxById0;
+            ctxById = new IntHashMap<>(ctxMap);
         }
     }
 
@@ -583,9 +574,11 @@ public class GridCacheSharedContext<K, V> {
     void removeCacheContext(GridCacheContext cacheCtx) {
         int cacheId = cacheCtx.cacheId();
 
-        ctxMap.remove(cacheId, cacheCtx);
+        synchronized (ctxMap) {
+            ctxMap.remove(cacheId, cacheCtx);
 
-        updateContextsSnapshot();
+            ctxById = new IntHashMap<>(ctxMap);
+        }
 
         CacheStoreManager mgr = cacheCtx.store();
 

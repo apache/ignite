@@ -117,7 +117,7 @@ public class TcpCommunicationMetricsListener {
     private final Object msgTypeMapMux = new Object();
 
     /** Message type map. */
-    private volatile IntMap<String> msgTypeMap;
+    private volatile IntMap<String> msgTypeMap = new IntHashMap<>();
 
     /**
      * @param ignite Ignite instance.
@@ -341,14 +341,10 @@ public class TcpCommunicationMetricsListener {
             if (metric.name().startsWith(prefix)) {
                 short directType = Short.parseShort(metric.name().substring(prefix.length()));
 
-                IntMap<String> msgTypeMap0 = msgTypeMap;
+                String typeName = msgTypeMap.get(directType);
 
-                if (msgTypeMap0 != null) {
-                    String typeName = msgTypeMap0.get(directType);
-
-                    if (typeName != null)
-                        res.put(typeName, ((LongMetric)metric).value());
-                }
+                if (typeName != null)
+                    res.put(typeName, ((LongMetric)metric).value());
             }
         }
 
@@ -430,15 +426,11 @@ public class TcpCommunicationMetricsListener {
     private void updateMessageTypeMap(Message msg) {
         short typeId = msg.directType();
 
-        IntMap<String> msgTypeMap0 = msgTypeMap;
-
-        if (msgTypeMap0 == null || !msgTypeMap0.containsKey(typeId)) {
+        if (!msgTypeMap.containsKey(typeId)) {
             synchronized (msgTypeMapMux) {
-                msgTypeMap0 = msgTypeMap;
-
-                if (msgTypeMap0 == null || !msgTypeMap0.containsKey(typeId)) {
+                if (!msgTypeMap.containsKey(typeId)) {
                     // Copy-on-write: published map is never modified, so it is safe to read it without boxing and locks.
-                    msgTypeMap0 = msgTypeMap0 == null ? new IntHashMap<>() : new IntHashMap<>(msgTypeMap0);
+                    IntMap<String> msgTypeMap0 = new IntHashMap<>(msgTypeMap);
 
                     msgTypeMap0.put(typeId, msg.getClass().getName());
 

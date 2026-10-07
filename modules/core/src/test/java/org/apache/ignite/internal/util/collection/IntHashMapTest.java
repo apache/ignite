@@ -100,6 +100,24 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
         assertEquals(256, realCapacityForInitialSize(155));
     }
 
+    /** */
+    @Test
+    public void shouldCopyWithoutResize() {
+        Map<Integer, String> src = new HashMap<>();
+
+        for (int i = 0; i < 8; i++)
+            src.put(i, String.valueOf(i));
+
+        IntHashMap<String> copy = new IntHashMap<>(src);
+
+        assertEquals(8, copy.size());
+        assertEquals("7", copy.get(7));
+
+        // 8 entries do not fit into the initial table below the load factor, so the copy is created larger.
+        assertEquals(16, ((Object[])U.field(copy, "entries")).length);
+        assertEquals(16, ((Object[])U.field(new IntHashMap<>(copy), "entries")).length);
+    }
+
     /**
      *
      */
