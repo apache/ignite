@@ -241,8 +241,8 @@ def no_services(monkeypatch):
 
 class CheckMdcTimeouts:
     """
-    Checks which timeouts an MDC cluster sets on its nodes: none Ignite's own defaults would
-    do, since an explicit SPI timeout also turns off failure detection for that SPI.
+    Checks which timeouts an MDC cluster sets on its nodes: none the tests don't need. An
+    explicit communication connect timeout, for one, turns off failure detection for that SPI.
     """
     def check_a_default_cluster_sets_no_timeout(self, no_services):
         """

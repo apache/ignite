@@ -207,7 +207,7 @@ class MdcCluster:
     :param network_timeout: Network timeout in ms, for the nodes and for their discovery SPI
            alike. The discovery SPI's is how long a joining node waits for its join to
            complete: a node restarted across a 100ms cross-DC ring needs more than its 5s
-           default. The nodes' sets when a slow PME is reported (2 x timeout), and a PME after
+           default. The nodes' timeout sets when a slow PME is reported (2 x timeout), and a PME after
            a split can wait ~17s for a transaction of a client on the other side. Unset by
            default: the nodes keep the framework's value, the SPI its own.
     """
@@ -340,7 +340,7 @@ class MdcCluster:
         is not the cluster's. It then retries the join address by address, ~200ms per refused
         one, and a port range per host makes that hundreds of addresses, i.e. tens of seconds
         while the rest of the cluster already waits for it in PME. So: the cluster's timeout,
-        and every node on the default port of its own host.
+        if one is given, and every node on the default port of its own host.
 
         :param spi: SPI to fit, modified in place.
         :return: The same SPI.
