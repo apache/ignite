@@ -770,7 +770,7 @@ public class SnapshotCheckProcess {
          */
         @Nullable private volatile List<SnapshotMetadata> metas;
 
-        /** Map of snapshot pathes per consistent id for {@link #metas}. */
+        /** Map of snapshot paths per consistent id for {@link #metas}. */
         @GridToStringInclude
         @Nullable private Map<String, SnapshotFileTree> locFileTree;
 
