@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommandArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotDeleteTask;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
@@ -72,7 +74,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, String ver) throws Exception {
-        var cfg = super.getConfiguration(igniteInstanceName, ver);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, ver);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -111,7 +113,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         spi(grid(testNodeIx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
             snm.type() == RU_PREPARE_VERSION_FINALIZATION.ordinal());
 
-        var finalizeFut = GridTestUtils.runAsync(() -> ru(testNodeIx).finalizeClusterVersion());
+        IgniteInternalFuture<?> finalizeFut = GridTestUtils.runAsync(() -> ru(testNodeIx).finalizeClusterVersion());
 
         assertTrue(spi(grid(testNodeIx)).waitForBlocked(1, getTestTimeout()));
 
@@ -189,20 +191,20 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         else
             delRes = snp(1).deleteSnapshot(SNP_NAME, null).get(getTestTimeout());
 
-        assertEquals(3, delRes.completedNodes().size());
+        assertEquals(ALL_GRIDS - CLIENTS, delRes.completedNodes().size());
     }
 
     /** */
     private void createCacheAndSnapshot(int gridIdx) {
-        int partsCnt = 5;
-        int keysCnt = partsCnt * 10;
+        int partsCnt = 4;
+        int keysCnt = partsCnt * 5;
 
         grid(gridIdx).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setCacheMode(CacheMode.REPLICATED)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(partsCnt))
             .setAtomicityMode(CacheAtomicityMode.ATOMIC));
 
-        try (var ds = grid(gridIdx).dataStreamer(DEFAULT_CACHE_NAME)) {
+        try (IgniteDataStreamer<Integer, Integer> ds = grid(gridIdx).dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int i = 0; i < keysCnt; i++)
                 ds.addData(i, i);
         }
