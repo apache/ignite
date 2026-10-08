@@ -133,17 +133,24 @@ public class SchemaReader {
 
     /** Collects the enums {@code type} refers to. */
     private void collectEnums(TypeMirror type, Set<TypeElement> enums) {
-        if (type.getKind() == TypeKind.ARRAY)
+        if (type.getKind() == TypeKind.ARRAY) {
             collectEnums(((ArrayType)type).getComponentType(), enums);
-        else if (type.getKind() == TypeKind.DECLARED) {
+
+            return;
+        }
+
+        if (type.getKind() == TypeKind.DECLARED) {
             DeclaredType declared = (DeclaredType)type;
 
             if (declared.asElement().getKind() == ElementKind.ENUM)
                 enums.add((TypeElement)declared.asElement());
 
             declared.getTypeArguments().forEach(arg -> collectEnums(arg, enums));
+
+            return;
         }
-        else if (type.getKind() == TypeKind.WILDCARD) {
+
+        if (type.getKind() == TypeKind.WILDCARD) {
             WildcardType wildcard = (WildcardType)type;
 
             if (wildcard.getExtendsBound() != null)
@@ -151,8 +158,11 @@ public class SchemaReader {
 
             if (wildcard.getSuperBound() != null)
                 collectEnums(wildcard.getSuperBound(), enums);
+
+            return;
         }
-        else if (type.getKind() == TypeKind.TYPEVAR)
+
+        if (type.getKind() == TypeKind.TYPEVAR)
             collectEnums(env.getTypeUtils().erasure(type), enums);
     }
 
