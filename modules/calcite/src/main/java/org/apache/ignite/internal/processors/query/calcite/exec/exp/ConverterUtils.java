@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.calcite.adapter.enumerable.RexImpTable;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.ConstantUntypedNull;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -101,11 +102,6 @@ public class ConverterUtils {
     /** Converts from internal representation to JDBC representation used by
      * arguments of user-defined functions. For example, converts date values from
      * {@code int} to {@link java.sql.Date}. */
-    private static Expression fromInternal(Expression operand, Type targetType) {
-        return fromInternal(operand, operand.getType(), targetType);
-    }
-
-    /** */
     private static Expression fromInternal(Expression operand,
         Type fromType, Type targetType) {
         if (operand == ConstantUntypedNull.INSTANCE)
@@ -132,6 +128,9 @@ public class ConverterUtils {
             if (isA(fromType, Primitive.LONG))
                 return Expressions.call(BuiltInMethod.INTERNAL_TO_TIMESTAMP.method, operand);
         }
+        else if (targetType == byte[].class && fromType == ByteString.class)
+            return Expressions.call(BuiltInMethod.BYTE_STRING_TO_BYTE_ARRAY.method, operand);
+
         if (Primitive.is(operand.type)
             && Primitive.isBox(targetType)) {
             // E.g. operand is "int", target is "Long", generate "(long) operand".
@@ -180,7 +179,7 @@ public class ConverterUtils {
             return operand;
 
         // Preserve Calcite's calendar conversion for JDBC dates and timestamps.
-        Expression converted = fromInternal(operand, targetType);
+        Expression converted = fromInternal(operand, operand.getType(), targetType);
 
         if (root == null || converted != operand || !TypeUtils.isConvertableType(targetType))
             return converted;
@@ -278,6 +277,12 @@ public class ConverterUtils {
 
         if (toType == BigDecimal.class)
             throw new AssertionError("For conversion to decimal, ConverterUtils#convertToDecimal method should be used instead.");
+
+        if (fromType == byte[].class && toType == ByteString.class)
+            return Expressions.call(BuiltInMethod.BYTE_ARRAY_TO_BYTE_STRING.method, operand);
+
+        if (fromType == ByteString.class && toType == byte[].class)
+            return Expressions.call(BuiltInMethod.BYTE_STRING_TO_BYTE_ARRAY.method, operand);
 
         // E.g. from "Short" to "int".
         // Generate "x.intValue()".
