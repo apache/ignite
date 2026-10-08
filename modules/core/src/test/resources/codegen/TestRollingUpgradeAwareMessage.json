@@ -1,8 +1,6 @@
 {
   "class": "org.apache.ignite.internal.TestRollingUpgradeAwareMessage",
-  "annotations": [
-    "@org.apache.ignite.internal.FeatureGated(registry=org.apache.ignite.internal.TestFeatureRegistry.class)"
-  ],
+  "annotations": ["@org.apache.ignite.internal.FeatureGated(registry=org.apache.ignite.internal.TestFeatureRegistry.class)"],
   "fields": [
     {"order": 0, "type": "int", "name": "plain"},
     {"order": 1, "type": "java.lang.String", "name": "oldFld", "annotations": ["@org.apache.ignite.internal.Order(value=1, deprecatedBy=\"FIRST_FEATURE\")"]},

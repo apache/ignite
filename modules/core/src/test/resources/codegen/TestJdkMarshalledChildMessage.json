@@ -1,8 +1,6 @@
 {
   "class": "org.apache.ignite.internal.TestJdkMarshalledChildMessage",
-  "annotations": [
-    "@org.apache.ignite.internal.JdkMarshalled"
-  ],
+  "annotations": ["@org.apache.ignite.internal.JdkMarshalled"],
   "fields": [
     {"order": 0, "type": "byte[]", "name": "dataBytes"},
     {"order": 1, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "nested"},
