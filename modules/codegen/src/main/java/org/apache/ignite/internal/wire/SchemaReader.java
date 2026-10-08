@@ -63,7 +63,7 @@ public class SchemaReader {
         List<FieldRepresentation> res = new ArrayList<>();
 
         for (VariableElement field : fields)
-            res.add(new FieldRepresentation(res.size(), typeName(field.asType()), simpleName(field), annotations(field)));
+            res.add(new FieldRepresentation(res.size(), typeName(field.asType()), field.getSimpleName().toString(), annotations(field)));
 
         List<String> clsAnnotations = new ArrayList<>();
         List<FieldRepresentation> unorderedFields = new ArrayList<>();
@@ -74,8 +74,10 @@ public class SchemaReader {
             for (VariableElement field : ElementFilter.fieldsIn(cls.getEnclosedElements())) {
                 List<String> annotations = annotations(field);
 
-                if (field.getAnnotation(Order.class) == null && !annotations.isEmpty())
-                    unorderedFields.add(new FieldRepresentation(null, typeName(field.asType()), simpleName(field), annotations));
+                if (field.getAnnotation(Order.class) == null && !annotations.isEmpty()) {
+                    unorderedFields.add(
+                        new FieldRepresentation(null, typeName(field.asType()), field.getSimpleName().toString(), annotations));
+                }
             }
         }
 
@@ -83,7 +85,7 @@ public class SchemaReader {
 
         res.addAll(unorderedFields);
 
-        return new Schema(binaryName(type), clsAnnotations.stream().distinct().sorted().toList(), res);
+        return new Schema(env.getElementUtils().getBinaryName(type).toString(), clsAnnotations.stream().distinct().sorted().toList(), res);
     }
 
     /**
@@ -99,14 +101,16 @@ public class SchemaReader {
         List<Schema> res = new ArrayList<>();
 
         for (TypeElement enumEl : enums) {
+            String enumName = env.getElementUtils().getBinaryName(enumEl).toString();
+
             List<FieldRepresentation> constants = new ArrayList<>();
 
             for (Element el : enumEl.getEnclosedElements()) {
                 if (el.getKind() == ElementKind.ENUM_CONSTANT)
-                    constants.add(new FieldRepresentation(constants.size(), binaryName(enumEl), simpleName(el), List.of()));
+                    constants.add(new FieldRepresentation(constants.size(), enumName, el.getSimpleName().toString(), List.of()));
             }
 
-            res.add(new Schema(binaryName(enumEl), List.of(), constants));
+            res.add(new Schema(enumName, List.of(), constants));
         }
 
         return res;
@@ -177,7 +181,7 @@ public class SchemaReader {
 
                 String args = declared.getTypeArguments().stream().map(this::typeName).collect(Collectors.joining(","));
 
-                return binaryName((TypeElement)declared.asElement()) + (args.isEmpty() ? "" : '<' + args + '>');
+                return env.getElementUtils().getBinaryName((TypeElement)declared.asElement()) + (args.isEmpty() ? "" : '<' + args + '>');
 
             case WILDCARD:
                 WildcardType wildcard = (WildcardType)type;
@@ -193,15 +197,5 @@ public class SchemaReader {
             default:
                 return type.getKind().isPrimitive() ? type.getKind().name().toLowerCase(Locale.ROOT) : type.toString();
         }
-    }
-
-    /** */
-    private String binaryName(TypeElement type) {
-        return env.getElementUtils().getBinaryName(type).toString();
-    }
-
-    /** */
-    private String simpleName(Element el) {
-        return el.getSimpleName().toString();
     }
 }
