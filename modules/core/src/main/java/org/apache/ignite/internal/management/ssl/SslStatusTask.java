@@ -58,7 +58,7 @@ public class SslStatusTask extends AbstractSslTask {
         @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
             String id = ignite.localNode().id().toString();
 
-            Collection<SslContextProvider> providers = ignite.context().internalSubscriptionProcessor().sslContexts().providers();
+            Collection<SslContextProvider> providers = ignite.context().sslContexts().providers();
 
             if (providers.isEmpty())
                 return new IgniteBiTuple<>(true, id + ": no SSL context factory is configured");

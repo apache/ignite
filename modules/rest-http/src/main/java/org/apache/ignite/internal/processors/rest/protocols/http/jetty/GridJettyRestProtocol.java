@@ -219,7 +219,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
 
         jettySsl.setSslContext(new CurrentSslContext(
-            ctx.internalSubscriptionProcessor().sslContexts().register(config().getHttpSslFactory(), HTTP_REST)));
+            ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST)));
     }
 
     /**

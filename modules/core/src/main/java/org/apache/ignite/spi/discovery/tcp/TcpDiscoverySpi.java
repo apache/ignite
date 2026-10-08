@@ -2165,7 +2165,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                sslCtx = ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContexts()
+                sslCtx = ((IgniteEx)ignite).context().sslContexts()
                     .register(ignite.configuration().getSslContextFactory(), DISCOVERY);
             }
             catch (IgniteException e) {

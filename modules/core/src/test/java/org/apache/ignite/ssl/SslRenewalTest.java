@@ -669,7 +669,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      * @return Provider of the context communication takes.
      */
     private static SslContextProvider provider(IgniteEx g) {
-        for (SslContextProvider p : g.context().internalSubscriptionProcessor().sslContexts().providers()) {
+        for (SslContextProvider p : g.context().sslContexts().providers()) {
             if (p.transports().contains(COMMUNICATION))
                 return p;
         }

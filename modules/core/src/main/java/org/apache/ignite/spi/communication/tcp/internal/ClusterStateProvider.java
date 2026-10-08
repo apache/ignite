@@ -90,7 +90,7 @@ public class ClusterStateProvider {
         this.log = log;
         this.igniteExSupplier = igniteExSupplier;
 
-        sslCtx = isSslEnabled() ? ((IgniteEx)ignite).context().internalSubscriptionProcessor().sslContexts()
+        sslCtx = isSslEnabled() ? ((IgniteEx)ignite).context().sslContexts()
             .register(ignite.configuration().getSslContextFactory(), COMMUNICATION) : null;
     }
 

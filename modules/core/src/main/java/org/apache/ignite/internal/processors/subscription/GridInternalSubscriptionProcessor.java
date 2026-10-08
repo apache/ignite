@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
-import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
@@ -60,19 +59,11 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
 
-    /** SSL contexts of the transports, registered as the transports start. */
-    private final SslContextRegistry sslCtxs = new SslContextRegistry(ctx);
-
     /**
      * @param ctx Kernal context.
      */
     public GridInternalSubscriptionProcessor(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        sslCtxs.stop();
     }
 
     /** */
@@ -144,10 +135,5 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     /** */
     public List<IgniteChangeGlobalStateSupport> getGlobalStateListeners() {
         return globalStateListeners;
-    }
-
-    /** */
-    public SslContextRegistry sslContexts() {
-        return sslCtxs;
     }
 }

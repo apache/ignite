@@ -25,13 +25,14 @@ import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** SSL contexts of a node: one provider per configured factory, with the metrics of every transport and the automatic renewals. */
-public class SslContextRegistry {
+public class SslContextRegistry extends GridProcessorAdapter {
     /** */
     public static final String COMMUNICATION = "communication";
 
@@ -47,9 +48,6 @@ public class SslContextRegistry {
     /** */
     public static final String HTTP_REST = "HTTP REST";
 
-    /** */
-    private final GridKernalContext ctx;
-
     /** Read from the management pool. */
     private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
 
@@ -58,7 +56,7 @@ public class SslContextRegistry {
 
     /** @param ctx Kernal context. */
     public SslContextRegistry(GridKernalContext ctx) {
-        this.ctx = ctx;
+        super(ctx);
 
         renewal = new SslRenewal(ctx.igniteInstanceName(), ctx.log(SslRenewal.class));
     }
@@ -95,8 +93,8 @@ public class SslContextRegistry {
         return Collections.unmodifiableCollection(providers);
     }
 
-    /** Stops the automatic renewals. */
-    public void stop() {
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
         renewal.stop();
     }
 

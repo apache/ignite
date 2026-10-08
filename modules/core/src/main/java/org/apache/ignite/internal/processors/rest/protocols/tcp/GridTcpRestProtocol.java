@@ -103,7 +103,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
-                sslCtx = ctx.internalSubscriptionProcessor().sslContexts()
+                sslCtx = ctx.sslContexts()
                     .register(factory != null ? factory : igniteFactory, BINARY_REST);
             }
             int startPort = cfg.getPort();
