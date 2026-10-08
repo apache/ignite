@@ -53,7 +53,7 @@ class CacheLockImpl<K, V> implements Lock {
     private volatile Thread lockedThread;
 
     /** Lock start time in nanoseconds. */
-    private volatile long startTimeNanos;
+    private long startTimeNanos;
 
     /**
      * @param gate Gate.
@@ -94,7 +94,7 @@ class CacheLockImpl<K, V> implements Lock {
     private void incrementLockCounter() {
         assert (lockedThread == null && cntr == 0) || (lockedThread == Thread.currentThread() && cntr > 0);
 
-        if (cntr == 0 && delegate.context().kernalContext().performanceStatistics().enabled())
+        if (cntr == 0)
             startTimeNanos = System.nanoTime();
 
         cntr++;
@@ -197,15 +197,19 @@ class CacheLockImpl<K, V> implements Lock {
             if (cntr == 0) {
                 lockedThread = null;
 
-                if (startTimeNanos > 0) {
-                    delegate.context().kernalContext().performanceStatistics().cacheOperation(
-                        OperationType.CACHE_LOCK,
-                        delegate.context().cacheId(),
-                        U.currentTimeMillis(),
-                        System.nanoTime() - startTimeNanos);
+                long holdTimeNanos = System.nanoTime() - startTimeNanos;
 
-                    startTimeNanos = 0;
+                GridCacheContext<K, V> cctx = delegate.context();
+
+                if (cctx.kernalContext().performanceStatistics().enabled()) {
+                    cctx.kernalContext().performanceStatistics().cacheOperation(
+                        OperationType.CACHE_LOCK,
+                        cctx.cacheId(),
+                        U.currentTimeMillis(),
+                        holdTimeNanos);
                 }
+
+                cctx.shared().txMetrics().onExplicitLockRelease(U.nanosToMillis(holdTimeNanos));
             }
 
             delegate.unlockAll(keys);

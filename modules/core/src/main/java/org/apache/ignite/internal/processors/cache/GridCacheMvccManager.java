@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.systemview.CacheExplicitLockViewWalker;
 import org.apache.ignite.internal.systemview.CacheLockViewWalker;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
-import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -116,7 +115,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
 
     /** Pending near local locks and topology version per thread. */
-    private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
+    private final ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit = newMap();
 
     /** Set of removed lock versions. */
     private GridBoundedConcurrentLinkedHashSet<GridCacheVersion> rmvLocks =
@@ -226,6 +225,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Received owner changed callback [" + entry.key() + ", owner=" + owner + ']');
 
+        // Colocated explicit locks are marked acquired by the lock future, near ones become owners here.
+        if (owner != null && owner.nearLocal() && !owner.tx()) {
+            GridCacheExplicitLockSpan span = pendingExplicit.get(owner.threadId());
+
+            if (span != null)
+                span.markAcquired(entry.txKey());
+        }
+
         if (owner != null && (owner.local() || owner.nearLocal())) {
             Collection<GridCacheVersionedFuture<?>> futCol = verFuts.get(owner.version());
 
@@ -296,8 +303,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
-
-        pendingExplicit = GridConcurrentFactory.newMap();
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
