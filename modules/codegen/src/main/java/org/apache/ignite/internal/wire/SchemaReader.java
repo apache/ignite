@@ -140,20 +140,7 @@ public class SchemaReader {
         if (type.getKind() == TypeKind.ARRAY)
             return enumTypes(((ArrayType)type).getComponentType());
 
-        if (type.getKind() == TypeKind.TYPEVAR)
-            return enumTypes(env.getTypeUtils().erasure(type));
-
         Set<TypeElement> res = new HashSet<>();
-
-        if (type.getKind() == TypeKind.WILDCARD) {
-            WildcardType wildcard = (WildcardType)type;
-
-            if (wildcard.getExtendsBound() != null)
-                res.addAll(enumTypes(wildcard.getExtendsBound()));
-
-            if (wildcard.getSuperBound() != null)
-                res.addAll(enumTypes(wildcard.getSuperBound()));
-        }
 
         if (type.getKind() == TypeKind.DECLARED) {
             DeclaredType declared = (DeclaredType)type;
