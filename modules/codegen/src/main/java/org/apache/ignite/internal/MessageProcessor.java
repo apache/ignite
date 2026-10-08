@@ -188,7 +188,7 @@ public class MessageProcessor extends AbstractProcessor {
                     clazz);
             }
 
-            if (!checkConstructors(clazz) || !checkFeatureGatedFields(clazz, fields))
+            if (!checkConstructors(clazz) || !checkFeatureGatedFields(processingEnv, clazz, fields))
                 continue;
 
             msgFields.put(clazz, fields);
@@ -215,8 +215,12 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    private boolean checkFeatureGatedFields(TypeElement clazz, List<VariableElement> fields) {
-        boolean isSchemaImmutable = isSchemaImmutable(processingEnv, clazz);
+    public static boolean checkFeatureGatedFields(
+        ProcessingEnvironment env,
+        TypeElement clazz,
+        Collection<VariableElement> fields
+    ) {
+        boolean isSchemaImmutable = isSchemaImmutable(env, clazz);
         String reg = null;
         Map<String, VariableElement> gatedFields = new HashMap<>();
 
@@ -228,9 +232,9 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (isSchemaImmutable) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
-                    "A message with an immutable schema must not have fields gated by features [cls=" + clazz + ']');
+                    "A class with an immutable schema must not have fields gated by features [cls=" + clazz + ']');
 
                 return false;
             }
@@ -241,9 +245,9 @@ public class MessageProcessor extends AbstractProcessor {
                 reg = fieldReg;
             else if (!reg.equals(fieldReg)) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
-                    "All fields gated by features in one message hierarchy must resolve to the same feature registry" +
+                    "All fields gated by features in one class hierarchy must resolve to the same feature registry" +
                         " [expected=" + reg + ", actual=" + fieldReg + ']');
 
                 return false;
@@ -251,7 +255,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (!order.introducedBy().isEmpty() && !order.deprecatedBy().isEmpty()) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
                     "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it" +
                         " is retired" +
@@ -269,9 +273,9 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (otherField != null) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
-                    "A feature can gate only one field of a message class hierarchy" +
+                    "A feature can gate only one field of a class hierarchy" +
                         " [cls=" + clazz +
                         ", feature=" + feature +
                         ", field=" + field +
@@ -280,9 +284,9 @@ public class MessageProcessor extends AbstractProcessor {
                 return false;
             }
 
-            if (hasInitializer(field)) {
+            if (hasInitializer(env, field)) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
                     "A field gated by a feature must not have an initializer [cls=" + clazz + ", field=" + field + ']');
 
@@ -294,8 +298,8 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    private boolean hasInitializer(VariableElement field) {
-        Tree tree = Trees.instance(processingEnv).getTree(field);
+    private static boolean hasInitializer(ProcessingEnvironment env, VariableElement field) {
+        Tree tree = Trees.instance(env).getTree(field);
 
         return tree instanceof VariableTree && ((VariableTree)tree).getInitializer() != null;
     }

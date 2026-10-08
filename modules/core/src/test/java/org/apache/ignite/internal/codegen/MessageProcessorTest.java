@@ -133,7 +133,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("TestFeatureRegistry.java", "TestImmutableSchemaIntroducedFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("A message with an immutable schema must not have fields gated by features");
+        assertThat(compilation).hadErrorContaining("A class with an immutable schema must not have fields gated by features");
     }
 
     /** */
@@ -142,7 +142,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("TestImmutableSchemaMessage.java", "TestImmutableSchemaDeprecatedFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("A message with an immutable schema must not have fields gated by features");
+        assertThat(compilation).hadErrorContaining("A class with an immutable schema must not have fields gated by features");
     }
 
     /** */
@@ -164,7 +164,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("TestFeatureRegistry.java", "TestTwoIntroducedFieldsMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a class hierarchy [cls=");
         assertThat(compilation).hadErrorContaining(", feature=FIRST_FEATURE, field=otherNewFld, otherField=newFld]");
     }
 
@@ -177,7 +177,7 @@ public class MessageProcessorTest {
             "TestTwoDeprecatedFieldsMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a class hierarchy [cls=");
         assertThat(compilation).hadErrorContaining(", feature=SECOND_FEATURE, field=otherOldFld, otherField=oldFld]");
     }
 
@@ -187,7 +187,7 @@ public class MessageProcessorTest {
         Compilation compilation = compile("TestFeatureRegistry.java", "TestIntroducedAndDeprecatedFieldsMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a class hierarchy [cls=");
         assertThat(compilation).hadErrorContaining(", feature=FIRST_FEATURE, field=newFld, otherField=oldFld]");
     }
 

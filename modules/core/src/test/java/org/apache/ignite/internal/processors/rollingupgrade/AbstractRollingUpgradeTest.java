@@ -50,6 +50,8 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFe
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_18_0;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginFeature;
@@ -380,6 +382,25 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         return new IgniteCoreFeatureSet(
             IgniteProductVersion.fromString(ver),
             IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(ver)));
+    }
+
+    /** */
+    public static IgnitePluginFeatureSet createPluginFeatureSet(String ver) throws Exception {
+        return new IgnitePluginFeatureSet(
+            TestPluginFeature.COMPONENT_NAME,
+            IgniteProductVersion.fromString(ver),
+            IgniteFeatureSet.buildFrom(readDeclaredPluginFeatures(ver)));
+    }
+
+    /** */
+    public static IgniteNodeFeatureSet createNodeFeatureSet(String ver) throws Exception {
+        TestVersions versions = TestVersions.parse(ver);
+
+        IgniteCoreFeatureSet coreFeatures = createCoreFeatureSet(versions.coreVersion());
+
+        return versions.containsPlugin()
+            ? new IgniteNodeFeatureSet(coreFeatures, createPluginFeatureSet(versions.pluginVersion()))
+            : new IgniteNodeFeatureSet(coreFeatures);
     }
 
     /** */

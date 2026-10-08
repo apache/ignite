@@ -52,7 +52,7 @@ public @interface Order {
      * during a Rolling Upgrade.</p>
      *
      * <p>A field is gated by one feature at a time, so a field introduced by a feature can be deprecated only after that
-     * feature is retired. A feature can gate only one field of a message class hierarchy.</p>
+     * feature is retired. A feature can gate only one field of a class hierarchy.</p>
      *
      * @return Name of the Ignite feature that introduced this field, or an empty string if the field is not gated.
      */
@@ -67,7 +67,7 @@ public @interface Order {
      * during a Rolling Upgrade.</p>
      *
      * <p>A field is gated by one feature at a time, so a field introduced by a feature can be deprecated only after that
-     * feature is retired. A feature can gate only one field of a message class hierarchy.</p>
+     * feature is retired. A feature can gate only one field of a class hierarchy.</p>
      *
      * @return Name of the Ignite feature that deprecated this field, or an empty string if the field is not gated.
      */

@@ -89,7 +89,7 @@ public interface MessageSerializationContext {
         /** {@inheritDoc} */
         @Override public boolean includeRawFields() {
             throw new IllegalStateException(
-                "A message without an immutable schema was serialized before the peer's features were negotiated");
+                "Raw fields cannot be serialized under the immutable-schema serialization context");
         }
 
         /** {@inheritDoc} */
@@ -100,7 +100,7 @@ public interface MessageSerializationContext {
         /** */
         private IllegalStateException buildError(IgniteFeature feature) {
             return new IllegalStateException(
-                "A feature-gated field was serialized before the peer's features were negotiated [feature=" + feature + ']'
+                "A feature-gated field cannot be serialized under the immutable-schema serialization context [feature=" + feature + ']'
             );
         }
     };
