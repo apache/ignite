@@ -80,7 +80,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
-import static org.apache.ignite.internal.ssl.SslContextReloadable.CLIENT_CONNECTOR;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 
 /**
  * Client connector processor.

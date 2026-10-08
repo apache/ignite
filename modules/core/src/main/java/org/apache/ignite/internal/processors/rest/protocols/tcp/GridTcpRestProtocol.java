@@ -52,7 +52,7 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.ssl.SslContextReloadable.BINARY_REST;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
 
 /**
  * TCP binary protocol implementation.

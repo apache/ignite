@@ -1758,7 +1758,8 @@ control.sh|bat --ssl reload [--yes]
 ----
 
 Every server and client node in the topology reads its key and trust stores again.
-This covers communication, discovery, the client connector, binary REST and HTTP REST.
+This covers communication, discovery, the client connector, binary REST, and HTTP REST when its certificates come from `ConnectorConfiguration.httpSslFactory`.
+A key store set in the Jetty configuration is not reloaded.
 New connections use the new certificates.
 Established connections keep the old ones, even with a peer that the new trust store no longer accepts.
 
@@ -1769,9 +1770,7 @@ A Java or C++ thin client, and JDBC with the default JVM stores (`javax.net.ssl.
 A node keeps its old certificate if a certificate in the new chain is not valid now.
 If the SSL context factory serves discovery or communication, the node also keeps the old certificate if its own trust store does not accept the new one.
 This applies to all transports of that factory, and other nodes are not asked.
-HTTP REST is reloaded by Jetty, which skips these checks.
 A custom SSL context factory whose `create()` returns a cached context has nothing to read again, so its reload fails.
-The HTTP REST reload fails the same way when the Jetty configuration sets a ready-made `sslContext` instead of a `keyStorePath`.
 
 Nodes reload independently.
 For each node, the command prints one line per SSL context factory, with all transports that use it.

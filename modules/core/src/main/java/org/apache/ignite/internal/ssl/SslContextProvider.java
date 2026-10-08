@@ -32,9 +32,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
 import static org.apache.ignite.internal.ssl.SslCertificates.describe;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 
-/** Owns the SSL context of one configured factory for every transport configured with it. */
-public class SslContextProvider extends SslContextReloadable {
+/** Owns the SSL context of one configured factory for every transport configured with it, together with the outcome of its reloads. */
+public class SslContextProvider {
     /** */
     private final Factory<SSLContext> factory;
 
@@ -50,12 +52,32 @@ public class SslContextProvider extends SslContextReloadable {
     /** Told about every new context once it is recorded. */
     private volatile Runnable reloadLsnr = () -> {};
 
+    /** Time of the last successful reload, {@code 0} if there was none. */
+    private volatile long lastSuccessTime;
+
+    /** Time of the last failed reload since the last successful one, {@code 0} if there was none. */
+    private volatile long lastFailureTime;
+
+    /** Reason of the last failed reload since the last successful one. */
+    private volatile String lastFailure;
+
+    /** Failed reloads in a row since the last successful one. */
+    private volatile int failures;
+
+    /** Time of the next automatic renewal, {@code 0} if none is planned. */
+    private volatile long nextRenewalTime;
+
     /** @param factory Factory to build the context with. */
     public SslContextProvider(Factory<SSLContext> factory) {
         this.factory = factory;
 
         ctx = factory.create();
         chain = SslCertificates.servedChain(ctx);
+    }
+
+    /** @return Factory the context is built with. */
+    Factory<SSLContext> factory() {
+        return factory;
     }
 
     /** @return Context to open the next connection with. */
@@ -68,14 +90,21 @@ public class SslContextProvider extends SslContextReloadable {
         transports.add(transport);
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<String> transports() {
+    /** @return Transports served, as the commands and the node log name them. */
+    public Collection<String> transports() {
         return Collections.unmodifiableCollection(transports);
     }
 
-    /** {@inheritDoc} */
-    @Override public @Nullable X509Certificate[] servedChain() {
+    /** @return Chain presented on new connections, own certificate first, or {@code null} if it is unknown. */
+    public @Nullable X509Certificate[] servedChain() {
         return chain;
+    }
+
+    /** @return Certificate presented on new connections, or {@code null} if it is unknown. */
+    public @Nullable X509Certificate servedCertificate() {
+        X509Certificate[] chain = servedChain();
+
+        return chain == null ? null : chain[0];
     }
 
     /** @param lsnr Told about every new context once it is recorded; must not block. */
@@ -84,30 +113,33 @@ public class SslContextProvider extends SslContextReloadable {
     }
 
     /**
-     * {@inheritDoc} The new context goes in use only if every certificate of its chain is valid now and, if nodes connect on it, this
-     * node's own trust store accepts it.
+     * Builds the certificates the configuration points at now, puts them in use for new connections and records the outcome. The new
+     * context goes in use only if every certificate of its chain is valid now and, if nodes connect on it, this node's own trust store
+     * accepts it.
      *
-     * @throws IgniteCheckedException {@inheritDoc}
+     * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
      */
-    @Override protected void rebuild() throws IgniteCheckedException {
-        SSLContext rebuilt = factory.create();
+    public synchronized void reload() throws IgniteCheckedException {
+        try {
+            SSLContext rebuilt = factory.create();
 
-        if (rebuilt == ctx)
-            throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
+            if (rebuilt == ctx)
+                throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
 
-        X509Certificate[] next = SslCertificates.servedChain(rebuilt);
+            X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
-        check(rebuilt, next);
+            check(rebuilt, next);
 
-        chain = next;
-        ctx = rebuilt;
-    }
+            chain = next;
+            ctx = rebuilt;
+        }
+        catch (Throwable e) {
+            onFailure(e);
 
-    /** {@inheritDoc} */
-    @Override void onReloaded() {
-        super.onReloaded();
+            throw e;
+        }
 
-        reloadLsnr.run();
+        onReloaded();
     }
 
     /**
@@ -116,7 +148,7 @@ public class SslContextProvider extends SslContextReloadable {
      *
      * @param expected Context the renewal was planned for.
      * @return What the renewal did.
-     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #rebuild()}, or does not
+     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, or does not
      *      expire later.
      */
     public synchronized Renewed renew(SSLContext expected) throws IgniteCheckedException {
@@ -180,6 +212,53 @@ public class SslContextProvider extends SslContextReloadable {
                     "node's own trust store [" + describe(next == null ? null : next[0]) + ']', e);
             }
         }
+    }
+
+    /** Records a successful reload. */
+    private synchronized void onReloaded() {
+        lastSuccessTime = System.currentTimeMillis();
+        lastFailureTime = 0;
+        lastFailure = null;
+        failures = 0;
+
+        reloadLsnr.run();
+    }
+
+    /** @param e Why the reload failed. */
+    synchronized void onFailure(Throwable e) {
+        lastFailureTime = System.currentTimeMillis();
+        lastFailure = SslCertificates.reason(e);
+        failures++;
+    }
+
+    /** @return Time of the last successful reload, {@code 0} if there was none. */
+    public long lastSuccessTime() {
+        return lastSuccessTime;
+    }
+
+    /** @return Time of the last failed reload since the last successful one, {@code 0} if there was none. */
+    public long lastFailureTime() {
+        return lastFailureTime;
+    }
+
+    /** @return Reason of the last failed reload since the last successful one, {@code null} if there was none. */
+    public @Nullable String lastFailure() {
+        return lastFailure;
+    }
+
+    /** @return Failed reloads in a row since the last successful one. */
+    public int failures() {
+        return failures;
+    }
+
+    /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
+    public long nextRenewalTime() {
+        return nextRenewalTime;
+    }
+
+    /** @param nextRenewalTime Time of the next automatic renewal, {@code 0} if none is planned. */
+    void nextRenewalTime(long nextRenewalTime) {
+        this.nextRenewalTime = nextRenewalTime;
     }
 
     /** What a renewal did. */

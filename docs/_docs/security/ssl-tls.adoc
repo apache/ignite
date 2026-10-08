@@ -200,7 +200,8 @@ While the node waits, it logs a warning once a day.
 Once less than half of the window is left, or the certificate would expire before the next attempt, it logs an error instead.
 If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
 `control.sh --ssl status` and the `NextRenewalTime` metric show when the next renewal is due.
-HTTP REST takes its certificate from the Jetty configuration and is not renewed.
+HTTP REST is renewed only when its certificates come from `ConnectorConfiguration.httpSslFactory`.
+A key store set in the Jetty configuration is not renewed.
 
 == SslContextFactory Properties
 

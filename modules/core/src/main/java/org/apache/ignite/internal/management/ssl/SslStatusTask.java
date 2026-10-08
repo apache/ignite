@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -58,19 +58,19 @@ public class SslStatusTask extends SslTask {
         @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
             String id = ignite.localNode().id().toString();
 
-            Collection<SslContextReloadable> comps = ignite.context().internalSubscriptionProcessor().sslContexts().reloadables();
+            Collection<SslContextProvider> providers = ignite.context().internalSubscriptionProcessor().sslContexts().providers();
 
-            if (comps.isEmpty())
+            if (providers.isEmpty())
                 return new IgniteBiTuple<>(true, id + ": SSL is not configured");
 
             List<String> lines = new ArrayList<>();
 
             boolean invalid = false;
 
-            for (SslContextReloadable comp : comps) {
-                lines.add(id + ": " + String.join(", ", comp.transports()));
+            for (SslContextProvider provider : providers) {
+                lines.add(id + ": " + String.join(", ", provider.transports()));
 
-                X509Certificate[] chain = comp.servedChain();
+                X509Certificate[] chain = provider.servedChain();
 
                 if (chain == null)
                     lines.add("    serving unknown");
@@ -87,17 +87,17 @@ public class SslStatusTask extends SslTask {
                     }
                 }
 
-                int failures = comp.failures();
+                int failures = provider.failures();
 
                 if (failures > 0) {
                     lines.add("    last reload failed " + failures + " time(s) in a row, the last at " +
-                        Instant.ofEpochMilli(comp.lastFailureTime()) + ": " + comp.lastFailure());
+                        Instant.ofEpochMilli(provider.lastFailureTime()) + ": " + provider.lastFailure());
                 }
-                else if (comp.lastSuccessTime() > 0)
-                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(comp.lastSuccessTime()));
+                else if (provider.lastSuccessTime() > 0)
+                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(provider.lastSuccessTime()));
 
-                if (comp.nextRenewalTime() > 0)
-                    lines.add("    next automatic renewal at " + Instant.ofEpochMilli(comp.nextRenewalTime()));
+                if (provider.nextRenewalTime() > 0)
+                    lines.add("    next automatic renewal at " + Instant.ofEpochMilli(provider.nextRenewalTime()));
             }
 
             return new IgniteBiTuple<>(!invalid, String.join("\n", lines));

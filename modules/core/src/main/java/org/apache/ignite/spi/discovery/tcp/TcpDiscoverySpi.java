@@ -113,7 +113,7 @@ import org.jetbrains.annotations.TestOnly;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
-import static org.apache.ignite.internal.ssl.SslContextReloadable.DISCOVERY;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.

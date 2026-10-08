@@ -19,8 +19,6 @@ package org.apache.ignite.internal.ssl;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -35,13 +33,25 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 /** SSL contexts of a node: one provider per configured factory, with the metrics of every transport and the automatic renewals. */
 public class SslContextRegistry {
     /** */
-    private final GridKernalContext ctx;
+    public static final String COMMUNICATION = "communication";
 
     /** */
-    private final Map<Factory<SSLContext>, SslContextProvider> providers = new IdentityHashMap<>();
+    public static final String DISCOVERY = "discovery";
 
-    /** Everything whose certificates the commands reload and report, read from the management pool. */
-    private final Collection<SslContextReloadable> reloadables = new CopyOnWriteArrayList<>();
+    /** */
+    public static final String CLIENT_CONNECTOR = "client connector";
+
+    /** */
+    public static final String BINARY_REST = "binary REST";
+
+    /** */
+    public static final String HTTP_REST = "HTTP REST";
+
+    /** */
+    private final GridKernalContext ctx;
+
+    /** Read from the management pool. */
+    private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
 
     /** */
     private final SslRenewal renewal;
@@ -55,20 +65,19 @@ public class SslContextRegistry {
 
     /**
      * @param factory Factory the transport is configured with.
-     * @param transport Transport, one of the names in {@link SslContextReloadable}.
+     * @param transport Transport, one of the names above.
      * @return Source of the context the factory builds, asked on every new connection. Transports configured with the same factory share
      *      it, so that a reload cannot leave them on certificates read at different moments.
      */
     public synchronized Supplier<SSLContext> register(Factory<SSLContext> factory, String transport) {
-        SslContextProvider provider = providers.get(factory);
+        SslContextProvider provider = providers.stream().filter(p -> p.factory() == factory).findFirst().orElse(null);
 
         if (provider == null) {
             provider = new SslContextProvider(factory);
 
             provider.addTransport(transport);
 
-            providers.put(factory, provider);
-            reloadables.add(provider);
+            providers.add(provider);
 
             if (factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled())
                 renewal.start(provider, f.getRenewBeforeFraction());
@@ -81,17 +90,9 @@ public class SslContextRegistry {
         return provider::context;
     }
 
-    /** @param comp Component that reloads a context it does not take from a provider. */
-    public void register(SslContextReloadable comp) {
-        reloadables.add(comp);
-
-        for (String transport : comp.transports())
-            registerMetrics(transport, comp);
-    }
-
-    /** @return Everything whose certificates the commands reload and report. */
-    public Collection<SslContextReloadable> reloadables() {
-        return Collections.unmodifiableCollection(reloadables);
+    /** @return Providers in the order they were registered. */
+    public Collection<SslContextProvider> providers() {
+        return Collections.unmodifiableCollection(providers);
     }
 
     /** Stops the automatic renewals. */
@@ -101,25 +102,26 @@ public class SslContextRegistry {
 
     /**
      * @param transport Transport.
-     * @param comp Component serving it.
+     * @param provider Provider serving it.
      */
-    private void registerMetrics(String transport, SslContextReloadable comp) {
+    private void registerMetrics(String transport, SslContextProvider provider) {
         MetricRegistryImpl reg = ctx.metric().registry(metricName("ssl", transport.replace(' ', '.').toLowerCase()));
 
-        reg.register("CertificateSubject", () -> Optional.ofNullable(comp.servedCertificate())
+        reg.register("CertificateSubject", () -> Optional.ofNullable(provider.servedCertificate())
             .map(c -> c.getSubjectX500Principal().toString()).orElse(null), String.class,
             "Subject DN of the certificate presented on new connections.");
 
-        reg.register("CertificateIssuer", () -> Optional.ofNullable(comp.servedCertificate())
+        reg.register("CertificateIssuer", () -> Optional.ofNullable(provider.servedCertificate())
             .map(c -> c.getIssuerX500Principal().toString()).orElse(null), String.class,
             "Issuer DN of the certificate presented on new connections.");
 
-        reg.register("ChainNotAfter", () -> Optional.ofNullable(comp.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
+        reg.register("ChainNotAfter", () -> Optional.ofNullable(provider.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
             "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
 
-        reg.register("LastReloadTime", comp::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
-        reg.register("LastReloadFailure", comp::lastFailure, String.class, "Reason of the last failed reload since the last success.");
-        reg.register("ReloadFailures", comp::failures, "Failed reloads in a row since the last successful one.");
-        reg.register("NextRenewalTime", () -> comp.nextRenewalTime(), "Time of the next automatic renewal, in milliseconds; 0 if none.");
+        reg.register("LastReloadTime", provider::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
+        reg.register("LastReloadFailure", provider::lastFailure, String.class, "Reason of the last failed reload since the last success.");
+        reg.register("ReloadFailures", provider::failures, "Failed reloads in a row since the last successful one.");
+        reg.register("NextRenewalTime", () -> provider.nextRenewalTime(),
+            "Time of the next automatic renewal, in milliseconds; 0 if none.");
     }
 }

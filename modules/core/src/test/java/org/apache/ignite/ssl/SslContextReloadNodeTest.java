@@ -37,9 +37,9 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.ssl.SslContextReloadable.CLIENT_CONNECTOR;
-import static org.apache.ignite.internal.ssl.SslContextReloadable.COMMUNICATION;
-import static org.apache.ignite.internal.ssl.SslContextReloadable.DISCOVERY;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
 import static org.apache.ignite.ssl.SslTestUtils.place;
 import static org.apache.ignite.ssl.SslTestUtils.reload;

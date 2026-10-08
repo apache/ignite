@@ -85,6 +85,17 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Yes
 |`null`
 
+|`setHttpSslFactory(Factory<SSLContext>)`
+|Factory of the SSL context for HTTPS.
+When it is set, HTTP REST serves HTTPS.
+`control.sh --ssl reload` and `--ssl status`, the `ssl.http.rest` metrics and automatic renewal then cover HTTP REST like the other transports of the node.
+Without a Jetty configuration file, Ignite starts an HTTPS connector instead of the HTTP one.
+A Jetty configuration file must then have an SSL connection factory without a key store, a trust store or an SSL context of its own, otherwise the node does not start.
+Settings such as `needClientAuth` stay in the Jetty configuration file, and clients are checked against the trust store of the factory.
+Jetty answers `400 Invalid SNI` to a request for a host name that the certificate does not name.
+|Yes
+|`null`
+
 |`setMessageInterceptor(...)`
 |The interceptor transforms all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
 |Yes

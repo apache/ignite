@@ -32,7 +32,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.ssl.SslContextReloadable.COMMUNICATION;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 
 /**
  * The role of this is aggregate logic of cluster states.

@@ -36,7 +36,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.ssl.SslContextProvider;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
 import org.apache.ignite.internal.ssl.SslRenewal;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
@@ -51,8 +50,8 @@ import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.ssl.SslContextReloadable.CLIENT_CONNECTOR;
-import static org.apache.ignite.internal.ssl.SslContextReloadable.COMMUNICATION;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_RENEW_BEFORE_FRACTION;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
@@ -646,9 +645,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      * @return Provider of the context communication takes.
      */
     private static SslContextProvider provider(IgniteEx g) {
-        for (SslContextReloadable comp : g.context().internalSubscriptionProcessor().sslContexts().reloadables()) {
-            if (comp.transports().contains(COMMUNICATION))
-                return (SslContextProvider)comp;
+        for (SslContextProvider p : g.context().internalSubscriptionProcessor().sslContexts().providers()) {
+            if (p.transports().contains(COMMUNICATION))
+                return p;
         }
 
         throw new AssertionError("Nothing serves " + COMMUNICATION);

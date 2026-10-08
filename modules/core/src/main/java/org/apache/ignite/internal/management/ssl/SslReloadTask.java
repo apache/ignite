@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.ssl.SslContextReloadable;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -67,9 +67,9 @@ public class SslReloadTask extends SslTask {
         @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
             String id = ignite.localNode().id().toString();
 
-            Collection<SslContextReloadable> comps = ignite.context().internalSubscriptionProcessor().sslContexts().reloadables();
+            Collection<SslContextProvider> providers = ignite.context().internalSubscriptionProcessor().sslContexts().providers();
 
-            if (comps.isEmpty())
+            if (providers.isEmpty())
                 return new IgniteBiTuple<>(true, id + ": SSL is not configured");
 
             String initiator = initiator();
@@ -78,13 +78,13 @@ public class SslReloadTask extends SslTask {
 
             boolean failed = false;
 
-            for (SslContextReloadable comp : comps) {
-                String transports = String.join(", ", comp.transports());
+            for (SslContextProvider provider : providers) {
+                String transports = String.join(", ", provider.transports());
 
                 try {
-                    comp.reload();
+                    provider.reload();
 
-                    String desc = describe(comp.servedCertificate());
+                    String desc = describe(provider.servedCertificate());
 
                     if (ignite.log().isInfoEnabled()) {
                         ignite.log().info("TLS certificates reloaded [transports=" + transports + (desc.isEmpty() ? "" : ", " + desc) +

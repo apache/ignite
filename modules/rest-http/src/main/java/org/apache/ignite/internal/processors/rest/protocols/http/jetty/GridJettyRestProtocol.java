@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -68,6 +69,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestHandler.IGNITE_CMD_PATH;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.HTTP_REST;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
 /**
@@ -158,6 +160,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         AbstractNetworkConnector connector = getJettyConnector();
 
+        if (config().getHttpSslFactory() != null)
+            useHttpSslFactory(connector);
+
         try {
             host = InetAddress.getByName(connector.getHost());
         }
@@ -173,15 +178,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             connector.setPort(port);
 
             if (startJetty()) {
-                SslConnectionFactory ssl = connector.getConnectionFactory(SslConnectionFactory.class);
-
-                if (ssl != null)
-                    ctx.internalSubscriptionProcessor().sslContexts().register(new JettySslContextReloadable(ssl.getSslContextFactory()));
-
                 if (log.isInfoEnabled()) {
                     log.info(startInfo());
 
-                    String proto = ssl != null ? "https" : "http";
+                    boolean isSsl = connector.getConnectionFactory(SslConnectionFactory.class) != null;
+                    String proto = isSsl ? "https" : "http";
 
                     log.info("HTTP REST protocol address: " + proto + "://" + host + ":" + port + "/");
                 }
@@ -192,6 +193,32 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         U.warn(log, "Failed to start Jetty REST server (possibly all ports in range are in use) " +
             "[firstPort=" + initPort + ", lastPort=" + lastPort + ']');
+    }
+
+    /**
+     * Makes the connector serve the certificates of {@code ConnectorConfiguration.httpSslFactory}, current on every new connection.
+     *
+     * @param connector Jetty connector.
+     * @throws IgniteCheckedException If the connector serves no TLS or takes certificates from the Jetty configuration.
+     */
+    private void useHttpSslFactory(AbstractNetworkConnector connector) throws IgniteCheckedException {
+        SslConnectionFactory ssl = connector.getConnectionFactory(SslConnectionFactory.class);
+
+        if (ssl == null) {
+            throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory is set, but the Jetty connector serves no TLS " +
+                "[jettyPath=" + config().getJettyPath() + ']');
+        }
+
+        SslContextFactory.Server jettySsl = ssl.getSslContextFactory();
+
+        if (jettySsl.getKeyStorePath() != null || jettySsl.getKeyStore() != null || jettySsl.getTrustStorePath() != null ||
+            jettySsl.getTrustStore() != null || jettySsl.getSslContext() != null) {
+            throw new IgniteCheckedException("HTTP REST takes certificates either from the Jetty configuration or from " +
+                "ConnectorConfiguration.httpSslFactory, not from both [jettyPath=" + config().getJettyPath() + ']');
+        }
+
+        jettySsl.setSslContext(new CurrentSslContext(
+            ctx.internalSubscriptionProcessor().sslContexts().register(config().getHttpSslFactory(), HTTP_REST)));
     }
 
     /**
@@ -287,7 +314,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             httpSrv = new Server(new QueuedThreadPool(200, 20));
 
-            ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
+            SslContextFactory.Server sslCtxFactory = config().getHttpSslFactory() == null ? null : new SslContextFactory.Server();
+
+            ServerConnector srvConn = new ServerConnector(httpSrv, sslCtxFactory, new HttpConnectionFactory(httpCfg));
 
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);
