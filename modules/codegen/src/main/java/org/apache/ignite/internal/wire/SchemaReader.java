@@ -96,7 +96,7 @@ public class SchemaReader {
         Set<TypeElement> enums = new HashSet<>();
 
         for (VariableElement field : fields)
-            collectEnums(field.asType(), enums);
+            enums.addAll(enumTypes(field.asType()));
 
         List<Schema> res = new ArrayList<>();
 
@@ -135,39 +135,37 @@ public class SchemaReader {
         return res;
     }
 
-    /** Collects the enums {@code type} refers to. */
-    private void collectEnums(TypeMirror type, Set<TypeElement> enums) {
-        if (type.getKind() == TypeKind.ARRAY) {
-            collectEnums(((ArrayType)type).getComponentType(), enums);
+    /** @return Enums {@code type} refers to. */
+    private Set<TypeElement> enumTypes(TypeMirror type) {
+        if (type.getKind() == TypeKind.ARRAY)
+            return enumTypes(((ArrayType)type).getComponentType());
 
-            return;
+        if (type.getKind() == TypeKind.TYPEVAR)
+            return enumTypes(env.getTypeUtils().erasure(type));
+
+        Set<TypeElement> res = new HashSet<>();
+
+        if (type.getKind() == TypeKind.WILDCARD) {
+            WildcardType wildcard = (WildcardType)type;
+
+            if (wildcard.getExtendsBound() != null)
+                res.addAll(enumTypes(wildcard.getExtendsBound()));
+
+            if (wildcard.getSuperBound() != null)
+                res.addAll(enumTypes(wildcard.getSuperBound()));
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
             DeclaredType declared = (DeclaredType)type;
 
             if (declared.asElement().getKind() == ElementKind.ENUM)
-                enums.add((TypeElement)declared.asElement());
+                res.add((TypeElement)declared.asElement());
 
-            declared.getTypeArguments().forEach(arg -> collectEnums(arg, enums));
-
-            return;
+            for (TypeMirror arg : declared.getTypeArguments())
+                res.addAll(enumTypes(arg));
         }
 
-        if (type.getKind() == TypeKind.WILDCARD) {
-            WildcardType wildcard = (WildcardType)type;
-
-            if (wildcard.getExtendsBound() != null)
-                collectEnums(wildcard.getExtendsBound(), enums);
-
-            if (wildcard.getSuperBound() != null)
-                collectEnums(wildcard.getSuperBound(), enums);
-
-            return;
-        }
-
-        if (type.getKind() == TypeKind.TYPEVAR)
-            collectEnums(env.getTypeUtils().erasure(type), enums);
+        return res;
     }
 
     /** @return Type name built by walking the type: {@link TypeMirror#toString()} differs between JDK versions. */
