@@ -67,19 +67,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Checks that partition maps agree with the local partition states of the nodes after a node leaves with the only copy
- * of its partitions.
+ * Checks that partition maps match the local partition states of the nodes after a node leaves with the only copy of
+ * some partitions.
  * <p>
- * Each lost partition is recreated empty on its new primary as MOVING. When the node detects the loss, it owns the
- * partition under the {@link PartitionLossPolicy#IGNORE IGNORE} policy or marks it LOST under the safe policies. If the
- * new primary sends its partition map between these two steps, the map carries MOVING and overwrites what the
- * coordinator already knows, so the node must send its map again after the change.
+ * The new primary recreates each lost partition empty as MOVING when it applies the coordinator's full message. At
+ * the end of the exchange it owns the partition under the {@link PartitionLossPolicy#IGNORE IGNORE} policy or marks
+ * it LOST under the safe policies. If the node sends its partition map between these two steps, the map shows the
+ * partition MOVING. The coordinator accepts this map and replaces the state it has already set with MOVING. So the
+ * node must send its map again after the change.
  * <p>
- * The window is the end of the exchange on the new primary: it opens when the node applies the coordinator's full
- * message and creates the partition, and closes when the node detects lost partitions. In a real cluster a map gets
- * into it when a resend scheduled by {@code scheduleResendPartitions()} (after an eviction, a partition moving to
- * RENTING or a partition map change) fires there. The coordinator as the new primary is checked by
- * {@link #testStaleCoordinatorMapAfterEviction()}.
+ * In a real cluster such a map is a resend scheduled by {@code scheduleResendPartitions()}, for example after an
+ * eviction, that fires between the two steps. {@link #testStaleCoordinatorMapAfterEviction()} checks the case where
+ * the coordinator is the new primary.
  */
 public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** */
@@ -125,8 +124,8 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     private PartitionLossPolicy plc = IGNORE;
 
     /**
-     * Whether the coordinator becomes the new primary of all lost partitions: the cache uses
-     * {@link JoinOrderAffinityFunction}, and the coordinator can stall after it sends a full message.
+     * Whether the coordinator is the new primary of all lost partitions. Sets {@link JoinOrderAffinityFunction}, a
+     * {@link StallingCommunicationSpi} and a rebalance pool of 4 threads.
      */
     private boolean crdNewPrimary;
 
@@ -144,8 +143,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         if (crdNewPrimary) {
             cfg.setCommunicationSpi(new StallingCommunicationSpi());
 
-            // By default the pool has one thread on machines with fewer than 8 cores, and the other evictions would
-            // wait behind the held one.
+            // Evictions use the rebalance pool, one thread by default below 8 cores: the held one would block the rest.
             cfg.setRebalanceThreadPoolSize(4);
         }
         else
@@ -185,8 +183,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A node joins and takes partitions over, the old owners evict their copies, and the node leaves. Its partitions
-     * are lost, and the new primary sends a stale map, with a lost partition still MOVING, before it changes them.
+     * Checks that the coordinator's partition map matches the local states of the nodes after node 1 sends a stale
+     * map. Node 2 joins, takes over partitions from nodes 0 and 1, and leaves with the only copies. Right before node 1
+     * owns a lost partition or marks it LOST, it sends its map, which still shows the partition MOVING.
      *
      * @param plc Partition loss policy.
      * @throws Exception If failed.
@@ -232,22 +231,23 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         if (!waitForCondition(() -> mismatches(crd).isEmpty(), 10_000))
             fail("The coordinator's partition map differs from the nodes: " + mismatches(crd));
-
-        if (plc != IGNORE)
-            crd.resetLostPartitions(Collections.singleton(CACHE));
-
-        awaitPartitionMapExchange();
     }
 
     /**
-     * The coordinator itself is the new primary of all lost partitions. It creates them before it sends the full
-     * message, so a plain resend carries the same map version and the other node ignores it. Here the coordinator
-     * stalls after it sends the full message, as when sending to the next node is slow, and an eviction finishes on the
-     * coordinator meanwhile. The resend scheduled after the eviction carries a newer map with the lost partitions still
-     * MOVING, and the other node takes it. The coordinator must send its map again once it owns the partitions.
+     * Checks that the coordinator sends its partition map again after it owns the lost partitions assigned to it.
      * <p>
-     * The other node gets no lost partitions: otherwise its own resend after detecting them makes the coordinator
-     * resend its map later, which hides the problem.
+     * The coordinator creates these partitions as MOVING, sends the full message, and only then owns them. When an
+     * eviction finishes, the map changes and the coordinator schedules a resend. If the resend fires before the
+     * coordinator owns the partitions, it carries them as MOVING. Its version is newer than the full message's, so
+     * node 1 takes it.
+     * <p>
+     * The test:
+     * <ol>
+     *     <li>holds the eviction of one partition that the coordinator gave to node 1;</li>
+     *     <li>stops node 2 and stalls the coordinator right after it sends the full message;</li>
+     *     <li>lets the eviction finish once node 1 has finished the exchange;</li>
+     *     <li>checks that node 1 took the stale map, then lets the coordinator go on.</li>
+     * </ol>
      *
      * @throws Exception If failed.
      */
@@ -262,7 +262,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         for (int i = 0; i < PARTS * 4; i++)
             cache.put(i, i);
 
-        // The next eviction on the coordinator waits until the exchange, as the eviction of a large partition would.
+        // Hold the eviction of one partition that node 1 takes over, as if the partition were large.
         holdEviction.set(true);
 
         IgniteEx other = startGrid(1);
@@ -277,7 +277,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         GridDhtPartitionTopology crdTop = crd.cachex(CACHE).context().topology();
 
-        // Only the held eviction is left, so the resend is scheduled when it finishes.
+        // No copy of node 2's partitions may stay on the coordinator: wait until only the held eviction is left.
         assertTrue(waitForCondition(() -> crdTop.localPartitions().stream()
             .filter(p -> p.state() == RENTING).count() == 1, WAIT));
 
@@ -309,14 +309,14 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         if (!waitForCondition(() -> mismatches(other).isEmpty(), 10_000))
             fail("The other node's partition map differs from the nodes: " + mismatches(other));
-
-        awaitPartitionMapExchange();
     }
 
     /**
-     * @return Resolver whose partitions send the partition map right before a MOVING partition of the cache is owned or
-     * marked LOST, once {@link #sendBeforeChange} is set, and hold the next eviction of a partition of the cache, once
-     * {@link #holdEviction} is set.
+     * Creates a resolver that adds two hooks to the partitions of the cache. Once {@link #sendBeforeChange} is set, a
+     * MOVING partition sends the partition map right before it is owned or marked LOST. Once {@link #holdEviction} is
+     * set, the next eviction waits for {@link #evictionResume}.
+     *
+     * @return Dependency resolver with the partition hooks.
      */
     private TestDependencyResolver partitionHooksResolver() {
         return new TestDependencyResolver(new DependencyResolver() {
@@ -410,7 +410,10 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         return res;
     }
 
-    /** Holds the coordinator right after it sends the full message of an exchange, once armed. */
+    /**
+     * When armed, stops the coordinator's thread after it sends an exchange full message, before it owns its lost
+     * partitions.
+     */
     private class StallingCommunicationSpi extends TestRecordingCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
@@ -430,8 +433,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
     /**
      * Assigns partition {@code p} to the server node with index {@code p % 3} in join order, or to the oldest node if
-     * there is no such node. The third node takes the partitions with {@code p % 3 == 2} from the oldest node and gives
-     * them back when it leaves.
+     * there is no such node.
      */
     private static class JoinOrderAffinityFunction implements AffinityFunction {
         /** */
