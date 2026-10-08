@@ -518,6 +518,30 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
     }
 
+    /** A factory whose certificate cannot be told, here one without a key, is not renewed and gets no failed reload counted. */
+    @Test
+    public void testUnknownCertificateNotRenewed() throws Exception {
+        Issuer issuer = issuer().then(() -> {
+            KeyStore noKey = KeyStore.getInstance(KeyStore.getDefaultType());
+
+            noKey.load(null, null);
+
+            return noKey;
+        });
+
+        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(null)
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
+                .setUseIgniteSslContextFactory(false).setSslContextFactory(issuer)));
+
+        assertTrue(waitForCondition(() -> logged(Level.WARN, "Cannot tell when the TLS certificate expires") == 1, 30_000));
+
+        MetricRegistryImpl reg = metrics(g, "ssl.client.connector");
+
+        assertEquals(0, reg.<IntMetric>findMetric("ConsecutiveReloadFailures").value());
+        assertEquals(0, reg.<LongMetric>findMetric("NextRenewalTime").value());
+        assertEquals("Nothing must be renewed", 1, issuer.calls.size());
+    }
+
     /** @return Issuer of the node under test, created empty. */
     private Issuer issuer() {
         nodeIssuer = new Issuer();

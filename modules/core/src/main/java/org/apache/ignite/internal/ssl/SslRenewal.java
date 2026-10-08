@@ -25,7 +25,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -157,16 +156,8 @@ public class SslRenewal {
             X509Certificate[] chain = provider.servedChain();
 
             if (chain == null) {
-                if (next != null)
-                    next.cancel(false);
-
-                provider.nextRenewalTime(0);
-
-                String msg = "Cannot tell when the TLS certificate expires, so it is not renewed automatically";
-
-                provider.onFailure(new IgniteException(msg));
-
-                U.warn(log, msg + " [transports=" + transports() + ']');
+                U.warn(log, "Cannot tell when the TLS certificate expires, so it is not renewed automatically [transports=" +
+                    transports() + ']');
 
                 return;
             }

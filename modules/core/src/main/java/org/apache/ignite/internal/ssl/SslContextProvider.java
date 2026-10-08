@@ -231,7 +231,7 @@ public class SslContextProvider {
     }
 
     /** @param e Why the reload failed. */
-    synchronized void onFailure(Throwable e) {
+    private synchronized void onFailure(Throwable e) {
         lastFailureTime = System.currentTimeMillis();
         lastFailureReason = SslCertificates.reason(e);
         failures++;
