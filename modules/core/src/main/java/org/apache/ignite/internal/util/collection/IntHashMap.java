@@ -20,7 +20,9 @@ package org.apache.ignite.internal.util.collection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -93,18 +95,33 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** Default constructor. */
     public IntHashMap() {
-        entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
+        this(INITIAL_CAPACITY);
     }
 
     /** Create map with preallocated array. */
     public IntHashMap(int cap) {
-        int entriesSize = tableSize(cap);
+        this((Entry<V>[])new Entry[tableSize(cap)], 0);
+    }
 
-        compactThreshold = (int)(COMPACT_LOAD_FACTOR * (entriesSize >> 1));
+    /**
+     * @param entries Table, owned by the map.
+     * @param size Number of entries in the table.
+     */
+    private IntHashMap(Entry<V>[] entries, int size) {
+        init(entries, size);
+    }
 
-        scaleThreshold = (int)(entriesSize * SCALE_LOAD_FACTOR);
+    /**
+     * @param entries Table, owned by the map.
+     * @param size Number of entries in the table.
+     */
+    private void init(Entry<V>[] entries, int size) {
+        this.entries = entries;
+        this.size = size;
 
-        entries = (Entry<V>[])new Entry[entriesSize];
+        compactThreshold = (int)(COMPACT_LOAD_FACTOR * (entries.length >> 1));
+
+        scaleThreshold = (int)(entries.length * SCALE_LOAD_FACTOR);
     }
 
     /**
@@ -114,6 +131,44 @@ public class IntHashMap<V> implements IntMap<V> {
         this(other.size());
 
         other.forEach(this::put);
+    }
+
+    /** @return Iterator over the values without copying them. The map must not be modified while iterating. */
+    Iterator<V> valuesIterator() {
+        Entry<V>[] entries = this.entries;
+
+        return new Iterator<V>() {
+            /** Index of the next non-empty slot. */
+            private int idx = nextIdx(0);
+
+            @Override public boolean hasNext() {
+                return idx < entries.length;
+            }
+
+            @Override public V next() {
+                if (idx >= entries.length)
+                    throw new NoSuchElementException();
+
+                V val = entries[idx].val;
+
+                idx = nextIdx(idx + 1);
+
+                return val;
+            }
+
+            /** @return Index of the first non-empty slot starting from the given one. */
+            private int nextIdx(int from) {
+                while (from < entries.length && entries[from] == null)
+                    from++;
+
+                return from;
+            }
+        };
+    }
+
+    /** @return Shallow copy of the same table size: the entries are immutable and shared with this map. */
+    IntHashMap<V> copy() {
+        return new IntHashMap<>(Arrays.copyOf(entries, entries.length), size);
     }
 
     /** {@inheritDoc} */
@@ -230,11 +285,7 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
-
-        compactThreshold = 0;
-        scaleThreshold = 0;
-        size = 0;
+        init((Entry<V>[])new Entry[INITIAL_CAPACITY], 0);
     }
 
     /** {@inheritDoc} */
