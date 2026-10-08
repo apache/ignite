@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.ssl.SslCertificates.reason;
  * Task of an {@code --ssl} command: the command fails only after every node is in the report, which lists the failed nodes first.
  * A job returns whether its node passed and the node's report; a job failure is a failure of compute on that node.
  */
-public abstract class SslTask extends VisorMultiNodeTask<NoArg, String, IgniteBiTuple<Boolean, String>> {
+public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, IgniteBiTuple<Boolean, String>> {
     /** */
     private static final long serialVersionUID = 0L;
 

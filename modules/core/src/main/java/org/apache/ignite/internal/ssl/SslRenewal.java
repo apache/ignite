@@ -33,8 +33,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.ssl.SslContextProvider.Renewed.RENEWED;
-import static org.apache.ignite.internal.ssl.SslContextProvider.Renewed.UNCHANGED;
+import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.RENEWED;
+import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.UNCHANGED;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /**
@@ -49,10 +49,10 @@ public class SslRenewal {
     private static final long WAIT_LOG_INTERVAL = TimeUnit.DAYS.toMillis(1);
 
     /** Pause after the first attempt that puts nothing in use, in milliseconds, and the shortest time between two attempts. */
-    private static long minRetry = 60_000L;
+    private static long minPause = 60_000L;
 
     /** Longest pause between attempts that put nothing in use, in milliseconds. */
-    private static long maxRetry = 3_600_000L;
+    private static long maxPause = 3_600_000L;
 
     /** */
     private final @Nullable String igniteInstanceName;
@@ -118,13 +118,13 @@ public class SslRenewal {
         private SSLContext planned;
 
         /** Earliest expiry in the chain in use when the renewal was planned. */
-        private long expiry;
+        private long chainNotAfter;
 
-        /** How long before {@link #expiry} the renewal window opens. */
+        /** How long before {@link #chainNotAfter} the renewal window opens. */
         private long window;
 
         /** Time of the last attempt, {@code 0} if there was none. */
-        private long lastAttempt;
+        private long lastAttemptTime;
 
         /** Pause before the last attempt that put nothing in use, without the random spread, {@code 0} since the planning. */
         private long pause;
@@ -171,26 +171,26 @@ public class SslRenewal {
                 return;
             }
 
-            expiry = SslCertificates.chainNotAfter(chain);
+            chainNotAfter = SslCertificates.chainNotAfter(chain);
 
-            long lifetime = Math.max(0, expiry - chain[0].getNotBefore().getTime());
+            long lifetime = Math.max(0, chainNotAfter - chain[0].getNotBefore().getTime());
 
             window = (long)(lifetime * renewBeforeFraction);
 
-            long at = Math.max(expiry - window, Math.max(lastAttempt + minRetry, U.currentTimeMillis()));
+            long at = Math.max(chainNotAfter - window, Math.max(lastAttemptTime + minPause, U.currentTimeMillis()));
 
             schedule(at);
 
-            U.log(log, "TLS certificates will be renewed automatically [transports=" + transports() + ", at=" + Instant.ofEpochMilli(at) +
-                ", expiry=" + Instant.ofEpochMilli(expiry) + ']');
+            U.log(log, "TLS certificates will be renewed automatically [transports=" + transports() +
+                ", nextRenewal=" + Instant.ofEpochMilli(at) + ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ']');
         }
 
         /** Puts a renewed certificate in use; a failure, or the certificates in use handed back, plans another attempt. */
         private void attempt() {
-            lastAttempt = U.currentTimeMillis();
+            lastAttemptTime = U.currentTimeMillis();
 
             try {
-                SslContextProvider.Renewed res = provider.renew(planned);
+                SslContextProvider.RenewalResult res = provider.renew(planned);
 
                 if (res == RENEWED) {
                     if (log.isInfoEnabled()) {
@@ -221,13 +221,13 @@ public class SslRenewal {
 
             long now = U.currentTimeMillis();
 
-            pause = pause == 0 ? minRetry : pause > maxRetry / 2 ? maxRetry : pause * 2;
+            pause = pause == 0 ? minPause : pause > maxPause / 2 ? maxPause : pause * 2;
 
             long at = now + pause + ThreadLocalRandom.current().nextLong(pause / 2 + 1);
 
             schedule(at);
 
-            boolean soon = now >= expiry - window / 2 || at >= expiry;
+            boolean soon = now >= chainNotAfter - window / 2 || at >= chainNotAfter;
 
             if (e == null) {
                 if (now - waitLogTime < WAIT_LOG_INTERVAL && (waitLoggedSoon || !soon))
@@ -239,9 +239,9 @@ public class SslRenewal {
 
             String msg = (e == null ? "The SSL context factory has no newer TLS certificates yet, the ones in use stay" :
                 "Failed to reload TLS certificates, the ones in use stay") +
-                (now >= expiry ? ", though they have expired" : soon ? " and expire soon" : "") +
+                (now >= chainNotAfter ? ", though they have expired" : soon ? " and expire soon" : "") +
                 " [transports=" + transports() + (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + reason) +
-                ", expiry=" + Instant.ofEpochMilli(expiry) + ", nextAttempt=" + Instant.ofEpochMilli(at) + ']';
+                ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ", nextRenewal=" + Instant.ofEpochMilli(at) + ']';
 
             if (soon)
                 U.error(log, msg, e);

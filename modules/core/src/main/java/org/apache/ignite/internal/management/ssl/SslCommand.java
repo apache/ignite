@@ -17,35 +17,12 @@
 
 package org.apache.ignite.internal.management.ssl;
 
-import java.util.Collection;
-import java.util.function.Consumer;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.NoArg;
 
 /** SSL features command. */
 public class SslCommand extends CommandRegistryImpl {
     /** */
     public SslCommand() {
         super(new SslReloadCommand(), new SslStatusCommand());
-    }
-
-    /** Subcommand of --ssl: runs on every node and prints the report of every node. */
-    abstract static class SslSubCommand implements ComputeCommand<NoArg, String> {
-        /** {@inheritDoc} */
-        @Override public Class<NoArg> argClass() {
-            return NoArg.class;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
-            return nodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void printResult(NoArg arg, String res, Consumer<String> printer) {
-            printer.accept(res);
-        }
     }
 }

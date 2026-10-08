@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.ssl.SslCertificates.invalidAt;
 
 /** Reports the TLS certificates of every mapped node; a node serving a certificate that is not valid now fails the command. */
 @GridInternal
-public class SslStatusTask extends SslTask {
+public class SslStatusTask extends AbstractSslTask {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -75,10 +75,10 @@ public class SslStatusTask extends SslTask {
                 if (chain == null)
                     lines.add("    serving unknown");
                 else {
-                    long notAfter = chainNotAfter(chain);
+                    long chainNotAfter = chainNotAfter(chain);
 
                     lines.add("    serving " + describe(chain[0]) +
-                        (notAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(notAfter) : ""));
+                        (chainNotAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) : ""));
 
                     if (invalidAt(chain, System.currentTimeMillis()) != null) {
                         invalid = true;
@@ -91,7 +91,7 @@ public class SslStatusTask extends SslTask {
 
                 if (failures > 0) {
                     lines.add("    last reload failed " + failures + " time(s) in a row, the last at " +
-                        Instant.ofEpochMilli(provider.lastFailureTime()) + ": " + provider.lastFailure());
+                        Instant.ofEpochMilli(provider.lastFailureTime()) + ": " + provider.lastFailureReason());
                 }
                 else if (provider.lastSuccessTime() > 0)
                     lines.add("    last reload succeeded at " + Instant.ofEpochMilli(provider.lastSuccessTime()));

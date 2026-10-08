@@ -32,9 +32,9 @@ import javax.net.ssl.SSLSocket;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.management.ssl.AbstractSslTask;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
 import org.apache.ignite.internal.management.ssl.SslStatusTask;
-import org.apache.ignite.internal.management.ssl.SslTask;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -110,7 +110,7 @@ public class SslTestUtils {
      * @param nodes Nodes to run on.
      * @return Report of the command.
      */
-    private static String execute(Class<? extends SslTask> task, IgniteEx... nodes) throws Exception {
+    private static String execute(Class<? extends AbstractSslTask> task, IgniteEx... nodes) throws Exception {
         List<UUID> ids = Arrays.stream(nodes).map(n -> n.localNode().id()).collect(Collectors.toList());
 
         ClusterGroup serversAndClients = nodes[0].cluster();

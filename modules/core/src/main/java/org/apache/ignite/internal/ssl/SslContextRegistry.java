@@ -118,9 +118,13 @@ public class SslContextRegistry {
         reg.register("ChainNotAfter", () -> Optional.ofNullable(provider.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
             "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
 
-        reg.register("LastReloadTime", provider::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
-        reg.register("LastReloadFailure", provider::lastFailure, String.class, "Reason of the last failed reload since the last success.");
-        reg.register("ReloadFailures", provider::failures, "Failed reloads in a row since the last successful one.");
+        reg.register("LastReloadSuccessTime", provider::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
+
+        reg.register("LastReloadFailureReason", provider::lastFailureReason, String.class,
+            "Reason of the last failed reload since the last success.");
+
+        reg.register("ConsecutiveReloadFailures", provider::failures, "Failed reloads in a row since the last successful one.");
+
         reg.register("NextRenewalTime", () -> provider.nextRenewalTime(),
             "Time of the next automatic renewal, in milliseconds; 0 if none.");
     }

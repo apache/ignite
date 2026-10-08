@@ -519,10 +519,10 @@ Register name: `ssl.{transport}`
 |CertificateIssuer | string | Issuer DN of the certificate presented on new connections.
 |CertificateSubject | string | Subject DN of the certificate presented on new connections.
 |ChainNotAfter | long | Earliest expiry time in the chain presented on new connections.
-|LastReloadFailure | string | Reason of the last failed reload since the last successful one.
-|LastReloadTime | long | Time of the last successful reload.
+|ConsecutiveReloadFailures | integer | Failed reloads in a row since the last successful one.
+|LastReloadFailureReason | string | Reason of the last failed reload since the last successful one.
+|LastReloadSuccessTime | long | Time of the last successful reload.
 |NextRenewalTime | long | Time of the next automatic renewal.
-|ReloadFailures | integer | Failed reloads in a row since the last successful one.
 |===
 
 == Discovery IO

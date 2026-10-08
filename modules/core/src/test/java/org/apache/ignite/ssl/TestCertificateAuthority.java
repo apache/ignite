@@ -48,10 +48,7 @@ import javax.security.auth.x500.X500Principal;
  */
 public class TestCertificateAuthority {
     /** Password of every store made here. */
-    public static final String PASSWORD = "123456";
-
-    /** */
-    private static final char[] PWD = PASSWORD.toCharArray();
+    public static final char[] PWD = "123456".toCharArray();
 
     /** DER of {@code ecdsa-with-SHA256}, the algorithm every certificate here is signed with. */
     private static final byte[] SIG_ALG = seq(new byte[] {0x06, 0x08, 0x2A, (byte)0x86, 0x48, (byte)0xCE, 0x3D, 0x04, 0x03, 0x02});

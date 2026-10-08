@@ -61,7 +61,7 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
     private final List<IgniteChangeGlobalStateSupport> globalStateListeners = new ArrayList<>();
 
     /** SSL contexts of the transports, registered as the transports start. */
-    private final SslContextRegistry sslContexts = new SslContextRegistry(ctx);
+    private final SslContextRegistry sslCtxs = new SslContextRegistry(ctx);
 
     /**
      * @param ctx Kernal context.
@@ -72,7 +72,7 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        sslContexts.stop();
+        sslCtxs.stop();
     }
 
     /** */
@@ -148,6 +148,6 @@ public class GridInternalSubscriptionProcessor extends GridProcessorAdapter {
 
     /** */
     public SslContextRegistry sslContexts() {
-        return sslContexts;
+        return sslCtxs;
     }
 }

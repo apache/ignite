@@ -14,18 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.management.ssl;
 
-/** */
-public class SslStatusCommand extends AbstractSslCommand {
+import java.util.Collection;
+import java.util.function.Consumer;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.NoArg;
+
+/** Subcommand of --ssl: runs on every node and prints the report of every node. */
+public abstract class AbstractSslCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
-    @Override public String description() {
-        return "Show the TLS certificates of all cluster nodes and how their reloads went";
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<SslStatusTask> taskClass() {
-        return SslStatusTask.class;
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
+        return nodes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(NoArg arg, String res, Consumer<String> printer) {
+        printer.accept(res);
     }
 }

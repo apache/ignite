@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.ssl.SslCertificates.reason;
 
 /** Reloads TLS certificates on every mapped node. */
 @GridInternal
-public class SslReloadTask extends SslTask {
+public class SslReloadTask extends AbstractSslTask {
     /** */
     private static final long serialVersionUID = 0L;
 

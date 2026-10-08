@@ -52,7 +52,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
  * Tests {@code --ssl reload} and {@code --ssl status} on running nodes. Every node runs on a key store and a trust store of its own, so
  * that nodes can be rotated and broken one by one. node01 is issued by oneca; node02, node03 and the expired node02old by twoca.
  */
-public class SslContextReloadNodeTest extends GridCommonAbstractTest {
+public class SslContextReloadTest extends GridCommonAbstractTest {
     /** Transports of a node whose client connector shares the factory of the node. */
     private static final String ALL_TRANSPORTS = CLIENT_CONNECTOR + ", " + COMMUNICATION + ", " + DISCOVERY;
 
@@ -63,7 +63,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     private boolean ownClientConnectorFactory;
 
     /** Test trust store every node starts on, unless one is placed for it. */
-    private String trustStore = "trustboth";
+    private String initTrustStore = "trustboth";
 
     /** */
     private final ListeningTestLogger nodeLog = new ListeningTestLogger(log);
@@ -76,7 +76,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
             place("node01", keyStore(igniteInstanceName));
 
         if (!Files.exists(trustStore(igniteInstanceName)))
-            place(trustStore, trustStore(igniteInstanceName));
+            place(initTrustStore, trustStore(igniteInstanceName));
 
         ClientConnectorConfiguration cliCfg = new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
             .setUseIgniteSslContextFactory(!ownClientConnectorFactory);
@@ -89,7 +89,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        dir = Files.createTempDirectory("ignite-ssl-reload-node-");
+        dir = Files.createTempDirectory("ignite-ssl-reload-");
     }
 
     /** {@inheritDoc} */
@@ -124,7 +124,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
 
         assertEquals("CN=node02", metric(g0, "CertificateSubject"));
         assertContains(log, metric(g0, "CertificateIssuer"), "CN=twoca");
-        assertTrue(Long.parseLong(metric(g0, "LastReloadTime")) > 0);
+        assertTrue(Long.parseLong(metric(g0, "LastReloadSuccessTime")) > 0);
 
         long chainNotAfter = Long.parseLong(metric(g0, "ChainNotAfter"));
 
@@ -155,8 +155,8 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
         assertEquals("CN=node02", servedSubject(g0.context().clientListener().port()));
         assertEquals("CN=node01", servedSubject(g1.context().clientListener().port()));
 
-        assertEquals("1", metric(g1, "ReloadFailures"));
-        assertContains(log, metric(g1, "LastReloadFailure"), "Failed to initialize key store");
+        assertEquals("1", metric(g1, "ConsecutiveReloadFailures"));
+        assertContains(log, metric(g1, "LastReloadFailureReason"), "Failed to initialize key store");
         assertEquals("CN=node01", metric(g1, "CertificateSubject"));
     }
 
@@ -182,7 +182,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** Neither a certificate the node's own trust store rejects nor an expired one is put in use; the report, log and status say why. */
     @Test
     public void testRejectedCertificateNotApplied() throws Exception {
-        trustStore = "trustone";
+        initTrustStore = "trustone";
 
         LogListener untrusted = LogListener.matches(Pattern.compile("Failed to reload TLS certificates, the ones in use stay " +
             "\\[transports=" + ALL_TRANSPORTS + ", initiator=management command, .*reason=A handshake between nodes on the new " +
@@ -228,7 +228,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** A client connector on a factory of its own reloads apart, with no handshake check between nodes: they do not use its trust store. */
     @Test
     public void testOwnClientConnectorFactoryReloadedApart() throws Exception {
-        trustStore = "trustone";
+        initTrustStore = "trustone";
         ownClientConnectorFactory = true;
 
         IgniteEx g = startGrid(0);
@@ -247,7 +247,7 @@ public class SslContextReloadNodeTest extends GridCommonAbstractTest {
     /** The authority is replaced by steps: trust the new one, present its certificates, drop the old one; a node of the new one joins. */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
-        trustStore = "trustone";
+        initTrustStore = "trustone";
 
         IgniteEx g0 = startGrid(0);
         IgniteEx g1 = startGrid(1);

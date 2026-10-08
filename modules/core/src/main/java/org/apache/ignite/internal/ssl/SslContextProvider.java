@@ -59,7 +59,7 @@ public class SslContextProvider {
     private volatile long lastFailureTime;
 
     /** Reason of the last failed reload since the last successful one. */
-    private volatile String lastFailure;
+    private volatile String lastFailureReason;
 
     /** Failed reloads in a row since the last successful one. */
     private volatile int failures;
@@ -139,7 +139,7 @@ public class SslContextProvider {
             throw e;
         }
 
-        onReloaded();
+        onSuccess();
     }
 
     /**
@@ -151,9 +151,9 @@ public class SslContextProvider {
      * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, or does not
      *      expire later.
      */
-    public synchronized Renewed renew(SSLContext expected) throws IgniteCheckedException {
+    public synchronized RenewalResult renew(SSLContext expected) throws IgniteCheckedException {
         if (ctx != expected)
-            return Renewed.SUPERSEDED;
+            return RenewalResult.SUPERSEDED;
 
         try {
             SSLContext rebuilt = factory.create();
@@ -164,7 +164,7 @@ public class SslContextProvider {
                 throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
 
             if (Arrays.equals(next, chain))
-                return Renewed.UNCHANGED;
+                return RenewalResult.UNCHANGED;
 
             check(rebuilt, next);
 
@@ -183,9 +183,9 @@ public class SslContextProvider {
             throw e;
         }
 
-        onReloaded();
+        onSuccess();
 
-        return Renewed.RENEWED;
+        return RenewalResult.RENEWED;
     }
 
     /**
@@ -205,7 +205,7 @@ public class SslContextProvider {
 
         if (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY)) {
             try {
-                SslCertificates.validateInterNode(rebuilt);
+                SslCertificates.checkInterNodeHandshake(rebuilt);
             }
             catch (SSLException e) {
                 throw new IgniteCheckedException("A handshake between nodes on the new certificate was refused, checked against this " +
@@ -215,10 +215,10 @@ public class SslContextProvider {
     }
 
     /** Records a successful reload. */
-    private synchronized void onReloaded() {
+    private synchronized void onSuccess() {
         lastSuccessTime = System.currentTimeMillis();
         lastFailureTime = 0;
-        lastFailure = null;
+        lastFailureReason = null;
         failures = 0;
 
         reloadLsnr.run();
@@ -227,7 +227,7 @@ public class SslContextProvider {
     /** @param e Why the reload failed. */
     synchronized void onFailure(Throwable e) {
         lastFailureTime = System.currentTimeMillis();
-        lastFailure = SslCertificates.reason(e);
+        lastFailureReason = SslCertificates.reason(e);
         failures++;
     }
 
@@ -242,8 +242,8 @@ public class SslContextProvider {
     }
 
     /** @return Reason of the last failed reload since the last successful one, {@code null} if there was none. */
-    public @Nullable String lastFailure() {
-        return lastFailure;
+    public @Nullable String lastFailureReason() {
+        return lastFailureReason;
     }
 
     /** @return Failed reloads in a row since the last successful one. */
@@ -262,7 +262,7 @@ public class SslContextProvider {
     }
 
     /** What a renewal did. */
-    public enum Renewed {
+    public enum RenewalResult {
         /** Put a new certificate in use. */
         RENEWED,
 
