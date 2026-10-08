@@ -57,7 +57,7 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MessageProcessorTest {
-    /** Directory of the descriptions in the class output. */
+    /** Directory of the representations in the class output. */
     private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
     /** Custom mapper error. */
@@ -760,29 +760,29 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testMessageDescriptions() {
-        checkDescription("TestMessage");
-        checkDescription("CorrectEmptyMessage");
-        checkDescription("TestCompressFieldsMessage");
-        checkDescription("TestMarshalledObjectsMessage");
-        checkDescription("TestMarshalledMapMessage");
-        checkDescription("TestJdkMarshalledChildMessage", "TestJdkMarshalledMessage.java");
-        checkDescription("TestRollingUpgradeAwareMessage", "TestFeatureRegistry.java");
-        checkDescription("TestWildcardFieldsMessage");
-        checkDescription("TestTypeVariableMessage");
+    public void testMessageRepresentations() {
+        checkRepresentation("TestMessage");
+        checkRepresentation("CorrectEmptyMessage");
+        checkRepresentation("TestCompressFieldsMessage");
+        checkRepresentation("TestMarshalledObjectsMessage");
+        checkRepresentation("TestMarshalledMapMessage");
+        checkRepresentation("TestJdkMarshalledChildMessage", "TestJdkMarshalledMessage.java");
+        checkRepresentation("TestRollingUpgradeAwareMessage", "TestFeatureRegistry.java");
+        checkRepresentation("TestWildcardFieldsMessage");
+        checkRepresentation("TestTypeVariableMessage");
 
-        assertEquals(1, checkDescription("ChildMessage", "AbstractMessage.java").size());
+        assertEquals(1, checkRepresentation("ChildMessage", "AbstractMessage.java").size());
     }
 
     /** */
     @Test
-    public void testEnumDescriptions() {
+    public void testEnumRepresentations() {
         String path = "enums/" + TransactionIsolation.class.getName() + ".json";
         String exp = content(javaFile("wire/TransactionIsolation.json"));
 
-        assertEquals(exp, checkDescription("TestEnumSetMessage").get(path));
+        assertEquals(exp, checkRepresentation("TestEnumSetMessage").get(path));
 
-        Map<String, String> files = checkDescription("CustomMapperEnumFieldsMessage", "CustomMapperEnumFieldsSecondMessage.java",
+        Map<String, String> files = checkRepresentation("CustomMapperEnumFieldsMessage", "CustomMapperEnumFieldsSecondMessage.java",
             "TransactionIsolationEnumMapper.java");
 
         assertEquals(exp, files.get(path));
@@ -791,7 +791,7 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testDescriptionsAreDeterministic() {
+    public void testRepresentationsAreDeterministic() {
         String[] srcs = {"TestMessage.java", "AbstractMessage.java", "ChildMessage.java", "TestEnumSetMessage.java"};
 
         Map<String, String> files = wireFiles(compile(srcs));
@@ -800,8 +800,8 @@ public class MessageProcessorTest {
         assertEquals(files, wireFiles(compile(srcs)));
     }
 
-    /** @return Generated descriptions by their paths. */
-    private Map<String, String> checkDescription(String msg, String... deps) {
+    /** @return Generated representations by their paths. */
+    private Map<String, String> checkRepresentation(String msg, String... deps) {
         List<String> srcs = new ArrayList<>(List.of(deps));
 
         srcs.add(msg + ".java");
@@ -817,7 +817,7 @@ public class MessageProcessorTest {
         return files;
     }
 
-    /** @return Generated descriptions by their paths. */
+    /** @return Generated representations by their paths. */
     private static Map<String, String> wireFiles(Compilation compilation) {
         Map<String, String> res = new TreeMap<>();
 

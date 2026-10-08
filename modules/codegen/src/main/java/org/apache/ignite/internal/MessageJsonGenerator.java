@@ -30,9 +30,9 @@ import org.apache.ignite.internal.wire.Schema;
 import org.apache.ignite.internal.wire.SchemaReader;
 import org.apache.ignite.internal.wire.WireJsonWriter;
 
-/** Generates JSON descriptions of the wire format of messages and of the enums their fields refer to. */
+/** Generates JSON representations of messages and of the enums their fields refer to. */
 public class MessageJsonGenerator implements MessageGenerator {
-    /** Directory of the descriptions in the class output. */
+    /** Directory of the representations in the class output. */
     private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
     /** */
@@ -70,7 +70,7 @@ public class MessageJsonGenerator implements MessageGenerator {
         return "representation";
     }
 
-    /** Writes a description to the class output. */
+    /** Writes a representation to the class output. */
     private void write(String dir, Schema schema, TypeElement src) throws IOException {
         try (OutputStream out = env.getFiler()
             .createResource(StandardLocation.CLASS_OUTPUT, "", WIRE_DIR + dir + schema.cls() + ".json", src).openOutputStream()) {

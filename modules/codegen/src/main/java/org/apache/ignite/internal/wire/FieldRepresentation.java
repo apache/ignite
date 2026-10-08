@@ -21,7 +21,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Field description.
+ * Field representation.
  *
  * @param order Field order, or {@code null} for a logical field.
  * @param type Field type, or {@code null} for an enum constant.
