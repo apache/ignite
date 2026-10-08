@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class CacheMetricsSnapshotSerializer implements IgniteDataTransferObjectSerializer<CacheMetricsSnapshot> {
     /** {@inheritDoc} */
-    @Override public void writeExternal(CacheMetricsSnapshot obj, ObjectOutput out) throws IOException {
+    @Override public void writeExternal(CacheMetricsSnapshot obj, ObjectOutput out, MessageSerializationContext ctx) throws IOException {
         out.writeLong(obj.m.cacheGets());
         out.writeLong(obj.m.cachePuts());
         out.writeLong(obj.m.cacheHits());
@@ -114,7 +115,11 @@ public class CacheMetricsSnapshotSerializer implements IgniteDataTransferObjectS
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(CacheMetricsSnapshot obj, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(
+        CacheMetricsSnapshot obj,
+        ObjectInput in,
+        MessageSerializationContext ctx
+    ) throws IOException, ClassNotFoundException {
         CacheMetricsMessage m = new CacheMetricsMessage();
 
         m.cacheGets(in.readLong());

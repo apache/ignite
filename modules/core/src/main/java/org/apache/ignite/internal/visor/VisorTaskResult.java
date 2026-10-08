@@ -17,9 +17,18 @@
 
 package org.apache.ignite.internal.visor;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 
 /**
  * Management task result.
@@ -27,6 +36,9 @@ import org.jetbrains.annotations.Nullable;
 public class VisorTaskResult<R> extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private transient IgniteNodeFeatureSet cmdInitiatorFeatures;
 
     /** Task result. */
     @Order(0)
@@ -44,10 +56,28 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
     /**
      * @param res Task result.
      * @param err Error.
+     * @param cmdInitiatorFeatures Feature set of the command initiator.
      */
-    public VisorTaskResult(@Nullable R res, @Nullable Exception err) {
+    public VisorTaskResult(@Nullable R res, @Nullable Exception err, IgniteNodeFeatureSet cmdInitiatorFeatures) {
+        assert cmdInitiatorFeatures != null;
+
         this.res = res;
         this.err = err;
+        this.cmdInitiatorFeatures = cmdInitiatorFeatures;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeIgniteDataTransferObject(ObjectOutput out) throws IOException {
+        try (Scope ignored = OperationContext.set(OP_FEATURES_ATTR, cmdInitiatorFeatures)) {
+            super.writeIgniteDataTransferObject(out);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readIgniteDataTransferObject(ObjectInput in) throws IOException, ClassNotFoundException {
+        try (Scope ignored = OperationContext.set(OP_FEATURES_ATTR, new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local()))) {
+            super.readIgniteDataTransferObject(in);
+        }
     }
 
     /**
