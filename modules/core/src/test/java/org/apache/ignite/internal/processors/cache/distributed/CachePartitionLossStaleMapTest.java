@@ -67,8 +67,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Checks that the coordinator's partition map agrees with the nodes after a node leaves with the only copy of its
- * partitions.
+ * Checks that partition maps agree with the local partition states of the nodes after a node leaves with the only copy
+ * of its partitions.
  * <p>
  * Each lost partition is recreated empty on its new primary as MOVING. When the node detects the loss, it owns the
  * partition under the {@link PartitionLossPolicy#IGNORE IGNORE} policy or marks it LOST under the safe policies. If the
@@ -93,6 +93,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
     /** Index of the node that leaves. */
     private static final int LEAVING = 2;
+
+    /** Time to wait for a step of a test, in milliseconds. */
+    private static final long WAIT = 30_000;
 
     /**
      * When set, the new primary sends its partition map right before it owns a MOVING partition of the cache or marks
@@ -121,21 +124,34 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** Partition loss policy of the cache. */
     private PartitionLossPolicy plc = IGNORE;
 
-    /** Whether the cache uses {@link JoinOrderAffinityFunction}. */
-    private boolean joinOrderAff;
+    /**
+     * Whether the coordinator becomes the new primary of all lost partitions: the cache uses
+     * {@link JoinOrderAffinityFunction}, and the coordinator can stall after it sends a full message.
+     */
+    private boolean crdNewPrimary;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new StallingCommunicationSpi())
-            // Other evictions don't queue behind a held one.
-            .setRebalanceThreadPoolSize(4)
-            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
-                .setBackups(0)
-                .setPartitionLossPolicy(plc)
-                .setAffinity(joinOrderAff
-                    ? new JoinOrderAffinityFunction()
-                    : new RendezvousAffinityFunction(false, PARTS)));
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
+            .setBackups(0)
+            .setPartitionLossPolicy(plc)
+            .setAffinity(crdNewPrimary
+                ? new JoinOrderAffinityFunction()
+                : new RendezvousAffinityFunction(false, PARTS)));
+
+        if (crdNewPrimary) {
+            cfg.setCommunicationSpi(new StallingCommunicationSpi());
+
+            // By default the pool has one thread on machines with fewer than 8 cores, and the other evictions would
+            // wait behind the held one.
+            cfg.setRebalanceThreadPoolSize(4);
+        }
+        else
+            cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -206,11 +222,11 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         stopGrid(LEAVING);
 
-        newPrimarySpi.waitForBlocked();
+        assertTrue("The new primary didn't change a lost partition", newPrimarySpi.waitForBlocked(1, WAIT));
 
         assertFalse("The new primary didn't change a lost partition", sendBeforeChange.get());
 
-        assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), getTestTimeout()));
+        assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
 
         newPrimarySpi.stopBlock();
 
@@ -226,10 +242,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /**
      * The coordinator itself is the new primary of all lost partitions. It creates them before it sends the full
      * message, so a plain resend carries the same map version and the other node ignores it. Here the coordinator
-     * stalls after it sends the full message, as when sending to the next node is slow, and an eviction finishes there
-     * meanwhile. The resend scheduled after the eviction carries a newer map with the lost partitions still MOVING,
-     * and the other node, which has already finished the exchange, takes it. The coordinator must send its map again
-     * once it owns the partitions.
+     * stalls after it sends the full message, as when sending to the next node is slow, and an eviction finishes on the
+     * coordinator meanwhile. The resend scheduled after the eviction carries a newer map with the lost partitions still
+     * MOVING, and the other node takes it. The coordinator must send its map again once it owns the partitions.
      * <p>
      * The other node gets no lost partitions: otherwise its own resend after detecting them makes the coordinator
      * resend its map later, which hides the problem.
@@ -238,7 +253,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStaleCoordinatorMapAfterEviction() throws Exception {
-        joinOrderAff = true;
+        crdNewPrimary = true;
 
         IgniteEx crd = startGrid(0, partitionHooksResolver());
 
@@ -254,7 +269,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue("The coordinator didn't start an eviction", evictionHeld.await(getTestTimeout(), MILLISECONDS));
+        assertTrue("The coordinator didn't start an eviction", evictionHeld.await(WAIT, MILLISECONDS));
 
         startGrid(LEAVING);
 
@@ -264,7 +279,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         // Only the held eviction is left, so the resend is scheduled when it finishes.
         assertTrue(waitForCondition(() -> crdTop.localPartitions().stream()
-            .filter(p -> p.state() == RENTING).count() == 1, getTestTimeout()));
+            .filter(p -> p.state() == RENTING).count() == 1, WAIT));
 
         UUID crdId = crd.localNode().id();
 
@@ -274,9 +289,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         stopGrid(LEAVING);
 
-        assertTrue("The coordinator didn't send the full message", crdStalled.await(getTestTimeout(), MILLISECONDS));
+        assertTrue("The coordinator didn't send the full message", crdStalled.await(WAIT, MILLISECONDS));
 
-        assertTrue(waitForCondition(() -> exchangeFinished(other, leaveVer), getTestTimeout()));
+        assertTrue(waitForCondition(() -> exchangeFinished(other, leaveVer), WAIT));
 
         evictionResume.countDown();
 
@@ -290,7 +305,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         crdResume.countDown();
 
-        assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), getTestTimeout()));
+        assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
 
         if (!waitForCondition(() -> mismatches(other).isEmpty(), 10_000))
             fail("The other node's partition map differs from the nodes: " + mismatches(other));
@@ -310,12 +325,14 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
                     GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)instance;
 
                     top.partitionFactory((ctx, grp, id, recovery) -> new GridDhtLocalPartition(ctx, grp, id, recovery) {
+                        /** {@inheritDoc} */
                         @Override public boolean own() {
                             sendIfArmed();
 
                             return super.own();
                         }
 
+                        /** {@inheritDoc} */
                         @Override public boolean markLost() {
                             sendIfArmed();
 
@@ -417,6 +434,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
      * them back when it leaves.
      */
     private static class JoinOrderAffinityFunction implements AffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public void reset() {
             // No-op.

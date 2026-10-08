@@ -3520,7 +3520,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Detect lost partitions in case of node left or failed. For topology coordinator is called when all {@link
      * GridDhtPartitionsSingleMessage} were received. For other nodes is called when exchange future is completed by
-     * {@link GridDhtPartitionsFullMessage}.
+     * {@link GridDhtPartitionsFullMessage}. If a local partition changes, sends the partition maps of its group again.
      *
      * @param resTopVer Result topology version.
      */
