@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @param cls Binary name of the class.
  * @param annotations Class serialization annotations.
- * @param fields Ordered wire fields followed by logical fields.
+ * @param fields Fields with {@code @Order} followed by the annotated fields without it.
  */
 public record Schema(String cls, List<String> annotations, List<FieldRepresentation> fields) {
     // No-op.

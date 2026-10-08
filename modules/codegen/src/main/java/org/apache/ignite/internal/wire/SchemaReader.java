@@ -66,7 +66,7 @@ public class SchemaReader {
             res.add(new FieldRepresentation(res.size(), typeName(field.asType()), simpleName(field), annotations(field)));
 
         List<String> clsAnnotations = new ArrayList<>();
-        List<FieldRepresentation> logicalFields = new ArrayList<>();
+        List<FieldRepresentation> unorderedFields = new ArrayList<>();
 
         for (TypeElement cls : SystemViewRowAttributeWalkerProcessor.superclasses(env, type).collect(Collectors.toList())) {
             clsAnnotations.addAll(annotations(cls));
@@ -75,13 +75,13 @@ public class SchemaReader {
                 List<String> annotations = annotations(field);
 
                 if (field.getAnnotation(Order.class) == null && !annotations.isEmpty())
-                    logicalFields.add(new FieldRepresentation(null, typeName(field.asType()), simpleName(field), annotations));
+                    unorderedFields.add(new FieldRepresentation(null, typeName(field.asType()), simpleName(field), annotations));
             }
         }
 
-        logicalFields.sort(Comparator.comparing(FieldRepresentation::type).thenComparing(FieldRepresentation::name));
+        unorderedFields.sort(Comparator.comparing(FieldRepresentation::type).thenComparing(FieldRepresentation::name));
 
-        res.addAll(logicalFields);
+        res.addAll(unorderedFields);
 
         return new Schema(binaryName(type), clsAnnotations.stream().distinct().sorted().collect(Collectors.toList()), res);
     }

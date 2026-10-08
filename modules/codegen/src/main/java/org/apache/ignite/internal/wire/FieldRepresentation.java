@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Field representation.
  *
- * @param order Field order, or {@code null} for a logical field.
+ * @param order Field order, or {@code null} for a field without {@code @Order}.
  * @param type Field type.
  * @param name Field name.
  * @param annotations Serialization annotations.
