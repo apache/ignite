@@ -23,11 +23,11 @@ import org.apache.ignite.transactions.TransactionIsolation;
 /** */
 public class TestInheritedIgniteDataTransferObject extends TestIgniteDataTransferObject {
     /** */
-    @Order(1)
+    @Order(3)
     int intVal;
 
     /** */
-    @Order(2)
+    @Order(4)
     TransactionIsolation isolation;
 
     /** */

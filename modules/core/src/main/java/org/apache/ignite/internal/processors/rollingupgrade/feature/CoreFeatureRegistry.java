@@ -122,4 +122,7 @@ public class CoreFeatureRegistry {
      * </ul>
      */
     public static final IgniteFeature RU_AWARE_DISTRIBUTED_OP_CTX_FEATURE = new IgniteCoreFeature(5);
+
+    /** */
+    public static final IgniteFeature OP_FEATURES_PROPAGATION_FEATURE = new IgniteCoreFeature(6);
 }
