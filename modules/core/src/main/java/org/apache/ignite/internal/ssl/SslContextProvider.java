@@ -191,9 +191,15 @@ public class SslContextProvider {
     /**
      * @param rebuilt Context built anew.
      * @param next Chain it presents, {@code null} if it is unknown.
-     * @throws IgniteCheckedException If a certificate it presents is not valid now, or nodes refuse it.
+     * @throws IgniteCheckedException If it presents no certificate while the context in use does, a certificate it presents is not valid
+     *      now, or nodes refuse it.
      */
     private void check(SSLContext rebuilt, @Nullable X509Certificate[] next) throws IgniteCheckedException {
+        if (next == null && chain != null) {
+            throw new IgniteCheckedException("The new SSL context presents no certificate to a client, while the one in use does; " +
+                "for example, its key store has no private key");
+        }
+
         long now = System.currentTimeMillis();
 
         X509Certificate invalid = next == null ? null : SslCertificates.invalidAt(next, now);

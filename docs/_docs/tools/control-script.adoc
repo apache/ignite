@@ -1768,6 +1768,7 @@ ODBC, and JDBC with its own store settings, read their stores on every new conne
 A Java or C++ thin client, and JDBC with the default JVM stores (`javax.net.ssl.*`), read them only when they start.
 
 A node keeps its old certificate if a certificate in the new chain is not valid now.
+It also keeps the old one if clients get no certificate from the new key store, for example because the key store has no private key.
 If the SSL context factory serves discovery or communication, the node also keeps the old certificate if its own trust store does not accept the new one.
 This applies to all transports of that factory, and other nodes are not asked.
 A custom SSL context factory whose `create()` returns a cached context has nothing to read again, so its reload fails.

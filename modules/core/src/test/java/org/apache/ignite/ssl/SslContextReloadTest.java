@@ -244,6 +244,21 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(discoveryPort(g)));
     }
 
+    /** A key store that gives clients no certificate, such as one without a private key, is not put in use on a client connector. */
+    @Test
+    public void testKeyStoreWithoutKeyNotApplied() throws Exception {
+        ownClientConnectorFactory = true;
+
+        IgniteEx g = startGrid(0);
+
+        placeKeys("trustboth");
+
+        assertContains(log, reloadFailure(g), g.localNode().id() + ": failed on " + CLIENT_CONNECTOR +
+            " (The new SSL context presents no certificate to a client");
+
+        assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
+    }
+
     /** The authority is replaced by steps: trust the new one, present its certificates, drop the old one; a node of the new one joins. */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
