@@ -17,12 +17,14 @@
 
  package org.apache.ignite.internal;
 
+ import org.apache.ignite.internal.MessageSerializationContext;
  import java.io.ObjectOutput;
  import org.apache.ignite.internal.util.typedef.internal.U;
  import org.apache.ignite.internal.TestIgniteDataTransferObject;
  import java.io.ObjectInput;
  import java.io.IOException;
  import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
+ import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 
  /**
   * This class is generated automatically.
@@ -31,12 +33,24 @@
   */
  public class TestIgniteDataTransferObjectSerializer implements IgniteDataTransferObjectSerializer<TestIgniteDataTransferObject> {
      /** {@inheritDoc} */
-     @Override public void writeExternal(TestIgniteDataTransferObject obj, ObjectOutput out) throws IOException {
+     @Override public void writeExternal(TestIgniteDataTransferObject obj, ObjectOutput out, MessageSerializationContext ctx) throws IOException {
          U.writeCharArray(out, obj.charArray);
+          if (ctx.includeFieldDeprecatedBy(CoreFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+             U.writeString(out, obj.deprecatedFld);
+         }
+         if (ctx.includeFieldIntroducedBy(CoreFeatureRegistry.RAW_FIELDS_FEATURE)) {
+             U.writeString(out, obj.introducedFld);
+         }
      }
 
      /** {@inheritDoc} */
-     @Override public void readExternal(TestIgniteDataTransferObject obj, ObjectInput in) throws IOException, ClassNotFoundException {
+     @Override public void readExternal(TestIgniteDataTransferObject obj, ObjectInput in, MessageSerializationContext ctx) throws IOException, ClassNotFoundException {
          obj.charArray = U.readCharArray(in);
+          if (ctx.includeFieldDeprecatedBy(CoreFeatureRegistry.ROLLING_UPGRADE_FEATURE)) {
+             obj.deprecatedFld = U.readString(in);
+         }
+         if (ctx.includeFieldIntroducedBy(CoreFeatureRegistry.RAW_FIELDS_FEATURE)) {
+             obj.introducedFld = U.readString(in);
+         }
      }
  }
