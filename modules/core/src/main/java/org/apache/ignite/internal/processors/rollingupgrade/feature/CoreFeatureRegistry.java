@@ -125,4 +125,7 @@ public class CoreFeatureRegistry {
      * </ul>
      */
     public static final IgniteFeature RU_AWARE_DISTRIBUTED_OP_CTX_FEATURE = new IgniteCoreFeature(6);
+
+    /** Feature that introduces a dedicated distributed attribute carrying the operation initiator's features. */
+    public static final IgniteFeature OP_FEATURES_PROPAGATION_FEATURE = new IgniteCoreFeature(7);
 }

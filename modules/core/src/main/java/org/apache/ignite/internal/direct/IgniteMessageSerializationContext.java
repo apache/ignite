@@ -121,6 +121,22 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
     }
 
     /** */
+    public static MessageSerializationContext buildForInitiator(@Nullable IgniteNodeFeatureSet initiatorFeatures) {
+        if (initiatorFeatures == null)
+            return IMMUTABLE_SCHEMA;
+
+        Map<String, ComponentMessageSerializationContext> ctxByComponent = new HashMap<>();
+
+        for (IgniteComponentFeatureSet cmpFeatures : initiatorFeatures.values()) {
+            ctxByComponent.put(
+                cmpFeatures.componentName(),
+                new ComponentMessageSerializationContext(cmpFeatures.features(), cmpFeatures.features()));
+        }
+
+        return new IgniteMessageSerializationContext(ctxByComponent);
+    }
+
+    /** */
     private static ComponentMessageSerializationContext resolveComponentSerializationContext(
         String cmpName,
         @Nullable IgniteComponentFeatureSet locCmpFeatures,
