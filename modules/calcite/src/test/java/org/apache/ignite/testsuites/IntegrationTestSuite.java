@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoo
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassChangeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
@@ -68,7 +67,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngi
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RecursiveCteIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.ResultSetSizeMetricsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SelectByKeyFieldTest;
@@ -90,7 +88,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIn
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedTxAwareFunctionsIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.WindowIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale001Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale010Test;
@@ -167,7 +164,6 @@ import org.junit.platform.suite.api.Suite;
     IndexWithSameNameCalciteTest.class,
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
-    ViewsIntegrationTest.class,
     OperatorsExtensionIntegrationTest.class,
     SessionContextSqlFunctionTest.class,
     SqlPlanHistoryIntegrationTest.class,
@@ -179,7 +175,6 @@ import org.junit.platform.suite.api.Suite;
     UnnestIntegrationTest.class,
     CalciteOnlyNodeIntegrationTest.class,
     CalcitePlanningDumpTest.class,
-    KeyClassChangeIntegrationTest.class,
     QueryEntityValueColumnAliasTest.class,
     MultiDcQueryMappingTest.class,
     UserDefinedTxAwareFunctionsIntegrationTest.class,
@@ -192,7 +187,6 @@ import org.junit.platform.suite.api.Suite;
     SystemColumnsScanTest.class,
     BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
-    ResultSetSizeMetricsTest.class,
 })
 public class IntegrationTestSuite {
 }
