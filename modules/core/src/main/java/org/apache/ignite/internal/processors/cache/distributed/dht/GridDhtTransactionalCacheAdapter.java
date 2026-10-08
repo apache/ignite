@@ -1065,7 +1065,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.keepBinaryInInterceptor(),
                     req.keepBinary(),
                     req.waitTimeout(),
-                    req.nearCache());
+                    req.nearCache(),
+                    req.expectedVersions());
 
                 final GridDhtTxLocal t = tx;
 
@@ -1081,13 +1082,31 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             boolean lockAcquired = e == null && o != null && o.success() && !t.empty();
 
                             // Create response while holding locks.
-                            final GridNearLockResponse resp = createLockReply(nearNode,
+                            GridNearLockResponse resp = createLockReply(nearNode,
                                 entries,
                                 req,
                                 t,
                                 t.xidVersion(),
                                 e,
                                 lockAcquired);
+
+                            if (e == null && req.expectedVersions() != null) {
+                                for (GridCacheEntryEx entry : entries) {
+                                    IgniteTxEntry txEntry = t.entry(entry.txKey());
+
+                                    if (txEntry != null && Boolean.FALSE.equals(txEntry.versionedLockResult()))
+                                        t.clearEntry(entry.txKey());
+                                }
+
+                                try {
+                                    // The initiating side will keep mappings only for successful keys.
+                                    if (t.empty())
+                                        t.rollbackDhtLocal();
+                                }
+                                catch (IgniteCheckedException ex) {
+                                    resp = createLockReply(nearNode, entries, req, t, t.xidVersion(), ex, false);
+                                }
+                            }
 
                             assert !t.implicit() : t;
                             assert !t.onePhaseCommit() : t;
@@ -1243,6 +1262,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             res.lockAcquired(lockAcquired);
 
+            if (err == null && req.expectedVersions() != null && lockAcquired) {
+                boolean[] results = new boolean[entries.size()];
+
+                for (int i = 0; i < entries.size(); i++) {
+                    IgniteTxEntry txEntry = tx.entry(entries.get(i).txKey());
+
+                    results[i] = txEntry != null && Boolean.TRUE.equals(txEntry.versionedLockResult());
+                }
+
+                res.lockResults(results);
+            }
+
             if (err == null) {
                 res.pending(localDhtPendingVersions(entries, mappedVer));
 
@@ -1261,6 +1292,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     GridCacheEntryEx e = it.next();
 
                     assert e != null;
+
+                    if (!res.lockResult(i)) {
+                        res.addValueBytes(null, false, null, null);
+                        i++;
+
+                        continue;
+                    }
 
                     while (true) {
                         try {

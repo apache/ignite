@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,7 +31,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -139,6 +148,7 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setConsistentId(igniteInstanceName);
     }
 
@@ -356,6 +366,296 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
         assertEquals(1, cache.get(key).intValue());
     }
 
+    /** A batch retains successful locks and reports changed, deleted and contended entries individually. */
+    @Test
+    public void testPerEntryResults() throws Exception {
+        transactionalCache(ignite0);
+
+        Ignite initiator = batch ? client : ignite0;
+        IgniteCache<Integer, Integer> cache = initiator.cache(DEFAULT_CACHE_NAME);
+        List<Integer> keys = primaryKeys(ignite0.cache(DEFAULT_CACHE_NAME), 5);
+
+        for (int key : keys)
+            cache.put(key, 0);
+
+        List<CacheEntry<Integer, Integer>> entries = List.of(
+            cache.getEntry(keys.get(0)), cache.getEntry(keys.get(1)), cache.getEntry(keys.get(2)),
+            cache.getEntry(keys.get(3)), cache.getEntry(keys.get(4)));
+
+        cache.put(keys.get(1), 1);
+        cache.remove(keys.get(2));
+
+        IgniteCache<Integer, Integer> holderCache = ignite1.cache(DEFAULT_CACHE_NAME);
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(initiator);
+
+        try (Transaction holder = ignite1.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            holderCache.put(keys.get(3), 1);
+            spi.record(GridNearUnlockRequest.class);
+
+            try (Transaction tx = initiator.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                Map<CacheEntry<Integer, Integer>, Boolean> res = batch
+                    ? internalCache(cache).lockTxEntriesAsync(entries, -1).get()
+                    : internalCache(cache).lockTxEntries(entries, -1);
+
+                assertEquals(5, res.size());
+                assertEquals(Boolean.TRUE, res.get(entries.get(0)));
+                assertEquals(Boolean.FALSE, res.get(entries.get(1)));
+                assertEquals(Boolean.FALSE, res.get(entries.get(2)));
+                assertEquals(Boolean.FALSE, res.get(entries.get(3)));
+                assertEquals(Boolean.TRUE, res.get(entries.get(4)));
+                assertTrue("Rejected primary locks must not require an initiating-side unlock",
+                    spi.recordedMessages(false).isEmpty());
+
+                IgniteCache<Integer, Integer> other = grid(2).cache(DEFAULT_CACHE_NAME);
+
+                try (Transaction competitor = grid(2).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                    assertFalse(acquireLockForEntry(other, entries.get(0), -1));
+                    assertFalse(acquireLockForEntry(other, entries.get(4), -1));
+                    assertTrue(acquireLockForEntry(other, other.getEntry(keys.get(1)), -1));
+                }
+
+                CacheEntry<Integer, Integer> current = cache.getEntry(keys.get(1));
+                Map<CacheEntry<Integer, Integer>, Boolean> repeated = internalCache(cache)
+                    .lockTxEntries(List.of(current, entries.get(1)), -1);
+
+                assertEquals(Boolean.TRUE, repeated.get(current));
+                assertEquals(Boolean.FALSE, repeated.get(entries.get(1)));
+
+                // Failed entries must not invalidate the transaction or release successful locks.
+                cache.put(keys.get(0), 2);
+                cache.put(keys.get(4), 2);
+                tx.commit();
+            }
+            finally {
+                spi.recordedMessages(true);
+            }
+        }
+
+        assertEquals(Integer.valueOf(2), cache.get(keys.get(0)));
+        assertEquals(Integer.valueOf(2), cache.get(keys.get(4)));
+    }
+
+    /** Each primary receives one batch with individual outcomes, including partial failure and wait expiry. */
+    @Test
+    public void testRequestsAreBatchedByPrimary() throws Exception {
+        transactionalCache(ignite0);
+
+        IgniteCache<Integer, Integer> cache = client.cache(DEFAULT_CACHE_NAME);
+        List<CacheEntry<Integer, Integer>> entries = new ArrayList<>();
+        List<Integer> contended = new ArrayList<>();
+
+        for (int node = 0; node < 3; node++) {
+            List<Integer> keys = primaryKeys(grid(node).cache(DEFAULT_CACHE_NAME), 3);
+
+            for (Integer key : keys) {
+                cache.put(key, 0);
+                entries.add(cache.getEntry(key));
+            }
+
+            cache.put(keys.get(1), 1);
+
+            // The first primary rejects its entire batch; the remaining primaries must still be contacted.
+            if (node == 0)
+                cache.put(keys.get(0), 1);
+
+            contended.add(keys.get(2));
+        }
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(client);
+
+        try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            IgniteCache<Integer, Integer> holderCache = ignite0.cache(DEFAULT_CACHE_NAME);
+
+            for (Integer key : contended)
+                holderCache.put(key, 1);
+
+            spi.record(GridNearLockRequest.class);
+
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                Map<CacheEntry<Integer, Integer>, Boolean> results = internalCache(cache)
+                    .lockTxEntries(entries, batch ? 200 : -1);
+
+                assertEquals(entries.size(), results.size());
+
+                for (int i = 0; i < entries.size(); i++)
+                    assertEquals(i >= 3 && i % 3 == 0, results.get(entries.get(i)).booleanValue());
+
+                List<Object> requests = spi.recordedMessages(true);
+
+                assertEquals("One batch per primary, rather than one request per key", 3, requests.size());
+
+                for (Object msg : requests) {
+                    GridNearLockRequest req = (GridNearLockRequest)msg;
+
+                    assertEquals(3, req.keys().size());
+                    assertEquals(3, req.expectedVersions().length);
+                }
+
+                for (Map.Entry<CacheEntry<Integer, Integer>, Boolean> result : results.entrySet()) {
+                    if (result.getValue())
+                        cache.put(result.getKey().getKey(), 2);
+                }
+
+                tx.commit();
+            }
+            finally {
+                spi.recordedMessages(true);
+            }
+        }
+    }
+
+    /** A version changed by the preceding owner must be rejected after waiting, with the transaction still usable. */
+    @Test
+    public void testVersionChangedWhileWaiting() throws Exception {
+        checkVersionAfterWaiting(true);
+    }
+
+    /** Waiting for a rollback succeeds because the protected data version has not changed. */
+    @Test
+    public void testVersionUnchangedAfterWaiting() throws Exception {
+        checkVersionAfterWaiting(false);
+    }
+
+    /** A transaction timeout must remain an error, rather than a normal per-entry rejection. */
+    @Test
+    public void testTransactionTimeoutIsNotRejection() throws Exception {
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite0);
+        int key = primaryKey(cache);
+
+        cache.put(key, 0);
+
+        IgniteCache<Integer, Integer> remote = client.cache(DEFAULT_CACHE_NAME);
+        CacheEntry<Integer, Integer> entry = remote.getEntry(key);
+
+        try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            cache.put(key, 1);
+
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 200, 0)) {
+                GridTestUtils.assertThrows(log, () -> internalCache(remote).lockTxEntries(List.of(entry), 0),
+                    IgniteTxTimeoutCheckedException.class, null);
+            }
+        }
+    }
+
+    /**
+     * @param commit Whether the preceding owner commits its update.
+     * @throws Exception If failed.
+     */
+    private void checkVersionAfterWaiting(boolean commit) throws Exception {
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite0);
+        int key = primaryKey(cache);
+
+        cache.put(key, 0);
+
+        CacheEntry<Integer, Integer> entry = client.<Integer, Integer>cache(DEFAULT_CACHE_NAME).getEntry(key);
+        IgniteInternalFuture<?> waiter;
+
+        try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+            cache.put(key, 1);
+
+            waiter = GridTestUtils.runAsync(() -> {
+                IgniteCache<Integer, Integer> remote = client.cache(DEFAULT_CACHE_NAME);
+
+                try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 0)) {
+                    // Exercise both an explicit wait limit and the transaction's remaining timeout.
+                    long wait = batch ? 5_000 : 0;
+
+                    assertEquals(!commit, acquireLockForEntry(remote, entry, wait));
+
+                    if (commit)
+                        assertTrue(acquireLockForEntry(remote, remote.getEntry(key), -1));
+
+                    remote.put(key, 2);
+                    tx.commit();
+                }
+
+                return null;
+            });
+
+            awaitBlockedLock(cache, key);
+
+            if (commit)
+                holder.commit();
+            else
+                holder.rollback();
+        }
+
+        waiter.get(10_000);
+
+        assertEquals(Integer.valueOf(2), cache.get(key));
+    }
+
+    /** A successful primary check protects the version even while its reply has not reached the initiator. */
+    @Test
+    public void testVersionProtectedBeforeReply() throws Exception {
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite0);
+        int key = primaryKey(cache);
+
+        cache.put(key, 0);
+
+        CacheEntry<Integer, Integer> entry = client.<Integer, Integer>cache(DEFAULT_CACHE_NAME).getEntry(key);
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite0);
+
+        spi.blockMessages((node, msg) -> node.id().equals(client.cluster().localNode().id())
+            && msg instanceof GridNearLockResponse && ((GridNearLockResponse)msg).lockAcquired());
+
+        IgniteInternalFuture<?> locker = GridTestUtils.runAsync(() -> {
+            IgniteCache<Integer, Integer> remote = client.cache(DEFAULT_CACHE_NAME);
+
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 0)) {
+                assertTrue(acquireLockForEntry(remote, entry, -1));
+                tx.commit();
+            }
+
+            return null;
+        });
+
+        IgniteInternalFuture<?> writer = null;
+
+        try {
+            assertTrue(spi.waitForBlocked(1, 5_000));
+
+            IgniteCache<Integer, Integer> competitorCache = ignite1.cache(DEFAULT_CACHE_NAME);
+
+            writer = GridTestUtils.runAsync(() -> competitorCache.put(key, 1));
+
+            awaitBlockedLock(cache, key);
+
+            assertFalse(writer.isDone());
+            assertEquals(entry.version(), cache.getEntry(key).version());
+        }
+        finally {
+            spi.stopBlock();
+        }
+
+        locker.get(10_000);
+        assertNotNull(writer);
+        writer.get(10_000);
+
+        assertEquals(Integer.valueOf(1), cache.get(key));
+        assertFalse(entry.version().equals(cache.getEntry(key).version()));
+    }
+
+    /** Waits for a second transaction to enqueue on the primary, without relying on a sleep. */
+    private void awaitBlockedLock(IgniteCache<Integer, Integer> cache, int key) throws Exception {
+        GridCacheContext<?, ?> ctx = internalCache(cache).context();
+
+        if (ctx.isNear())
+            ctx = ctx.near().dht().context();
+
+        GridCacheEntryEx primaryEntry = ctx.dht().entryEx(ctx.toCacheKeyObject(key));
+
+        assertTrue("The competing request must actually wait on the primary",
+            GridTestUtils.waitForCondition(() -> {
+                try {
+                    return primaryEntry.localCandidates().size() >= 2;
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    return false;
+                }
+            }, 5_000));
+    }
+
     /**
      * Checks that the lock entry method returns {@code false} when can not wait for lock.
      *
@@ -509,6 +809,6 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
         List<CacheEntry<Integer, Integer>> entries,
         long timeout
     ) throws IgniteCheckedException {
-        return cache.unwrap(IgniteCacheProxy.class).internalProxy().lockTxEntries(entries, timeout);
+        return !cache.unwrap(IgniteCacheProxy.class).internalProxy().lockTxEntries(entries, timeout).containsValue(false);
     }
 }

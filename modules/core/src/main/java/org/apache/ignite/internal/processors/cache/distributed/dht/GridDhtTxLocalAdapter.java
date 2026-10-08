@@ -565,6 +565,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param nearCache {@code True} if near cache enabled on originating node.
+     * @param expectedVers Expected data versions for conditional locks, or {@code null}.
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -581,7 +582,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
         long waitTimeout,
-        boolean nearCache
+        boolean nearCache,
+        @Nullable GridCacheVersion[] expectedVers
     ) {
         try {
             checkValid();
@@ -661,6 +663,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                             txEntry.ttl(accessTtl);
 
                         txEntry.cached(cached);
+
+                        if (expectedVers != null)
+                            txEntry.expectedLockVersion(expectedVers[i]);
 
                         addReader(msgId, cached, txEntry, topVer);
                     }
@@ -754,6 +759,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (isRollbackOnly())
             return new GridFinishedFuture<>(rollbackException());
 
+        boolean versionedLock = passedKeys.stream()
+            .anyMatch(key -> entry(cacheCtx.txKey(key)).versionedLockPending());
+
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,
             waitTimeout,
@@ -771,11 +779,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret, true, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+            new PLC1<GridCacheReturn>(ret, true, !versionedLock && !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
                     boolean success = Boolean.TRUE.equals(fut.get());
+
+                    if (!success)
+                        checkValid();
 
                     ret.success(success);
 
@@ -788,7 +799,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                     if (ret.success()) {
                         postLockWrite(cacheCtx,
-                            passedKeys,
+                            versionedLock ? F.view(passedKeys, key ->
+                                !Boolean.FALSE.equals(entry(cacheCtx.txKey(key)).versionedLockResult())) : passedKeys,
                             ret,
                             /*remove*/false,
                             /*retval*/false,

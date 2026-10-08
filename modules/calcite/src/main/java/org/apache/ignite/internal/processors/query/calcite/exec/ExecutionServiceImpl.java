@@ -946,7 +946,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                                 batchWaitMs = -1L;
                         }
 
-                        if (!batch.getKey().lockTxEntries(batch.getValue().values(), batchWaitMs)) {
+                        if (batch.getKey().lockTxEntries(batch.getValue().values(), batchWaitMs).containsValue(false)) {
                             locked = false;
                             break;
                         }

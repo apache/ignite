@@ -83,6 +83,30 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @Order(8)
     long waitTimeout;
 
+    /** Expected data versions for conditional locks, indexed in the same order as keys. */
+    @Order(value = 9, introducedBy = "VERSIONED_TX_LOCK_FEATURE")
+    GridCacheVersion[] expectedVers;
+
+    /** @param ver Expected data version for the last added key. */
+    public void expectedVersion(@Nullable GridCacheVersion ver) {
+        if (ver != null) {
+            if (expectedVers == null)
+                expectedVers = new GridCacheVersion[dhtVers.length];
+
+            expectedVers[idx - 1] = ver;
+        }
+    }
+
+    /** @param timeout Remaining wait budget when this primary batch is sent. */
+    public void waitTimeout(long timeout) {
+        waitTimeout = timeout;
+    }
+
+    /** @return Expected data versions, or {@code null} for unconditional locks. */
+    @Nullable public GridCacheVersion[] expectedVersions() {
+        return expectedVers;
+    }
+
     /**
      * Empty constructor.
      */
