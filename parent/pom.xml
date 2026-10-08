@@ -837,11 +837,10 @@
                     <plugin>
                         <groupId>org.apache.rat</groupId>
                         <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.17</version>
+                        <version>0.18</version>
                         <configuration>
                             <config>${maven.multiModuleProjectDirectory}/parent/rat-config.xml</config>
-                            <!-- Disable SCM ignore file parsing to avoid RAT 0.17 race condition
-                                 with temporary NameSet files in parallel builds -->
+                            <!-- RAT misreads .gitignore files and skips tracked sources under modules/platforms/cpp. -->
                             <parseSCMIgnoresAsExcludes>false</parseSCMIgnoresAsExcludes>
                         </configuration>
                         <executions>
@@ -885,8 +884,6 @@
                                         <inputExclude>**/META-INF/services/**</inputExclude> <!-- Interface mappings: cannot be changed -->
                                         <inputExclude>**/id_rsa**</inputExclude>  <!--SSH-->
                                         <!--special excludes-->
-                                        <!-- RAT 0.17 bug: creates temp dir NameSet* in basedir for case-sensitivity check -->
-                                        <inputExclude>NameSet*</inputExclude>
                                         <inputExclude>**/.gitignore</inputExclude>
                                         <inputExclude>**/.git</inputExclude>
                                         <inputExclude>**/.asf.yaml</inputExclude>
