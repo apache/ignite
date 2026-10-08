@@ -28,7 +28,7 @@ public class WireJsonWriter {
         StringBuilder res = new StringBuilder("{\n  \"class\": ").append(quote(schema.cls()));
 
         if (!schema.annotations().isEmpty())
-            res.append(",\n  \"annotations\": ").append(annotations(schema.annotations(), ",\n    ", "[\n    ", "\n  ]"));
+            res.append(",\n  \"annotations\": ").append(array(schema.annotations(), ",\n    ", "[\n    ", "\n  ]"));
 
         List<String> fields = new ArrayList<>();
 
@@ -44,7 +44,7 @@ public class WireJsonWriter {
             members.add("\"name\": " + quote(f.name()));
 
             if (!f.annotations().isEmpty())
-                members.add("\"annotations\": " + annotations(f.annotations(), ", ", "[", "]"));
+                members.add("\"annotations\": " + array(f.annotations(), ", ", "[", "]"));
 
             fields.add('{' + String.join(", ", members) + '}');
         }
@@ -54,9 +54,9 @@ public class WireJsonWriter {
         return res.append("\n}\n").toString();
     }
 
-    /** @return JSON array of annotations. */
-    private String annotations(List<String> annotations, String sep, String prefix, String suffix) {
-        return annotations.stream().map(this::quote).collect(Collectors.joining(sep, prefix, suffix));
+    /** @return JSON array of strings. */
+    private String array(List<String> vals, String sep, String prefix, String suffix) {
+        return vals.stream().map(this::quote).collect(Collectors.joining(sep, prefix, suffix));
     }
 
     /** @return JSON string. */
