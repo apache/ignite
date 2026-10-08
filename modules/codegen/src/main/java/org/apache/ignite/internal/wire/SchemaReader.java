@@ -20,7 +20,7 @@ package org.apache.ignite.internal.wire;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -91,7 +91,7 @@ public class SchemaReader {
      * @return Schemas of the enums the fields refer to.
      */
     public List<Schema> enums(List<VariableElement> fields) {
-        Set<TypeElement> enums = new LinkedHashSet<>();
+        Set<TypeElement> enums = new HashSet<>();
 
         for (VariableElement field : fields)
             collectEnums(field.asType(), enums);
