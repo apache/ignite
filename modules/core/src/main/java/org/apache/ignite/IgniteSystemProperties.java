@@ -1212,6 +1212,7 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      *
      * @deprecated Use {@link DataStorageConfiguration#setMinWalArchiveSize}.
      */
+    @Deprecated
     @SystemProperty(value = "Property for setup percentage of WAL archive size to calculate threshold since which " +
         "removing of old archive should be started", type = Double.class)
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =

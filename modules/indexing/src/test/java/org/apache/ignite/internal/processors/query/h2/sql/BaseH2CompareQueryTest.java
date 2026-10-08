@@ -453,7 +453,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      */
     @Test
     public void testNullParamSubstitution() throws Exception {
-        List<List<?>> rs1 = compareQueryRes0(cachePers, "select ? from \"pers\".Person", null);
+        List<List<?>> rs1 = compareQueryRes0(cachePers, "select ? from \"pers\".Person", (Object)null);
 
         // Ensure we find something.
         assertFalse(rs1.isEmpty());

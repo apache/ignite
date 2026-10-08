@@ -31,14 +31,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.InjectableValues;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.InjectableValues;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -121,10 +121,10 @@ public class GridJettyRestHandler extends HttpServlet {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /** @deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    /** Should be replaced with AUTHENTICATION + token in IGNITE 3.0. */
     private static final String IGNITE_LOGIN = "ignite.login";
 
-    /** @deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    /** Should be replaced with AUTHENTICATION + token in IGNITE 3.0. */
     private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */

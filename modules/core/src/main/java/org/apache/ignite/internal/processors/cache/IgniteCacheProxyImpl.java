@@ -1984,7 +1984,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in binary format), you should acquire following projection to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
+     * IgniteInternalCache&lt;Integer, GridBinaryObject&gt; prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * GridBinaryObject po = prj.get(1);

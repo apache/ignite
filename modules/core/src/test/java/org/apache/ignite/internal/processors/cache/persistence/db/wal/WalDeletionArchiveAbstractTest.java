@@ -178,9 +178,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
     }
 
     /**
-     * Test for check deprecated removing checkpoint by deprecated walHistorySize parameter
-     *
-     * @deprecated Test old removing process depends on WalHistorySize.
+     * Tests the old checkpoint history removal controlled by the deprecated {@code walHistorySize} parameter.
      */
     @Test
     public void testCheckpointHistoryRemovingByTruncate() throws Exception {
