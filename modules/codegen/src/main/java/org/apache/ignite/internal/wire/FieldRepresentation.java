@@ -23,10 +23,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Field description.
  *
- * @param order Position of the field on the wire, or {@code null} for a logical field without a wire order.
+ * @param order Field order, or {@code null} for a logical field.
  * @param type Field type, or {@code null} for an enum constant.
  * @param name Field name.
- * @param annotations Serialization annotations as they are written in the code.
+ * @param annotations Serialization annotations.
  */
 public record FieldRepresentation(@Nullable Integer order, @Nullable String type, String name, List<String> annotations) {
     // No-op.

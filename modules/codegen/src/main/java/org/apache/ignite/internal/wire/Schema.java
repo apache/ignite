@@ -20,11 +20,11 @@ package org.apache.ignite.internal.wire;
 import java.util.List;
 
 /**
- * Class schema, independent of the output format: a message, or an enum with its constants as the fields.
+ * Class schema.
  *
  * @param cls Binary name of the class.
- * @param annotations Class serialization annotations as they are written in the code.
- * @param fields Ordered wire fields followed by the logical fields the generated marshaller converts to the wire ones.
+ * @param annotations Class serialization annotations.
+ * @param fields Ordered wire fields followed by logical fields.
  */
 public record Schema(String cls, List<String> annotations, List<FieldRepresentation> fields) {
     // No-op.

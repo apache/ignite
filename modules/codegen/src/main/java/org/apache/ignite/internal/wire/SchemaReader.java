@@ -43,7 +43,7 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcess
 
 /** Reads class schemas from the classes being compiled. */
 public class SchemaReader {
-    /** Package of the serialization annotations. An annotation of another package does not affect the wire format. */
+    /** Package of the serialization annotations. */
     private static final String ANNOTATIONS_PKG = Order.class.getPackageName();
 
     /** */
@@ -56,8 +56,7 @@ public class SchemaReader {
 
     /**
      * @param type Class.
-     * @param fields Fields annotated with {@link Order} in the order they are written: the position of a field is
-     *      its order in the whole hierarchy.
+     * @param fields Fields annotated with {@link Order} in the order they are written.
      * @return Schema of the class.
      */
     public Schema read(TypeElement type, List<VariableElement> fields) {
@@ -89,7 +88,7 @@ public class SchemaReader {
 
     /**
      * @param fields Fields of a class.
-     * @return Schemas of the enums the types of the fields refer to: the constants of an enum are its fields.
+     * @return Schemas of the enums the fields refer to.
      */
     public List<Schema> enums(List<VariableElement> fields) {
         Set<TypeElement> enums = new LinkedHashSet<>();
@@ -113,11 +112,7 @@ public class SchemaReader {
         return res;
     }
 
-    /**
-     * Takes the serialization annotations of an element as the compiler prints them, the way they are written in the code,
-     * with no knowledge of what is inside. {@link Order} is skipped unless it sets more than the order, which is already
-     * described by the position of a field.
-     */
+    /** @return Serialization annotations of an element as the compiler prints them. */
     private List<String> annotations(Element el) {
         List<String> res = new ArrayList<>();
 
@@ -136,10 +131,7 @@ public class SchemaReader {
         return res;
     }
 
-    /**
-     * Collects the enums {@code type} refers to: the type itself, an array component, a type argument or a bound of
-     * a wildcard or of a type variable of any depth.
-     */
+    /** Collects the enums {@code type} refers to. */
     private void collectEnums(TypeMirror type, Set<TypeElement> enums) {
         if (type.getKind() == TypeKind.ARRAY)
             collectEnums(((ArrayType)type).getComponentType(), enums);
@@ -164,14 +156,7 @@ public class SchemaReader {
             collectEnums(env.getTypeUtils().erasure(type), enums);
     }
 
-    /**
-     * Prints a type by walking it: {@link TypeMirror#toString()} includes type annotations and differs between JDK versions.
-     * A type variable is printed with its bound, which defines how a field is written. The bound is erased, because
-     * it may refer to the variable itself.
-     *
-     * @return Binary names of the classes, type arguments in angle brackets separated with a comma, a type variable
-     *      with its bound.
-     */
+    /** @return Type name built by walking the type: {@link TypeMirror#toString()} differs between JDK versions. */
     private String typeName(TypeMirror type) {
         switch (type.getKind()) {
             case ARRAY:

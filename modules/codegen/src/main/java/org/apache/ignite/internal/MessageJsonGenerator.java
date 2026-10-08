@@ -30,14 +30,10 @@ import org.apache.ignite.internal.wire.Schema;
 import org.apache.ignite.internal.wire.SchemaReader;
 import org.apache.ignite.internal.wire.WireJsonWriter;
 
-/**
- * Generates JSON descriptions of the wire format of messages and of the enums their fields refer to. The descriptions
- * are written as resources next to the compiled classes. An enum shared by several messages is described once:
- * the compiler refuses to create the same resource again within a compilation, and this refusal is ignored.
- */
+/** Generates JSON descriptions of the wire format of messages and of the enums their fields refer to. */
 public class MessageJsonGenerator implements MessageGenerator {
-    /** Directory of the descriptions, relative to the class output. */
-    static final String WIRE_DIR = "META-INF/ignite-wire/";
+    /** Directory of the descriptions in the class output. */
+    private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
     /** */
     private final ProcessingEnvironment env;
@@ -74,7 +70,7 @@ public class MessageJsonGenerator implements MessageGenerator {
         return "wire description";
     }
 
-    /** Writes a description in UTF-8 to the class output. */
+    /** Writes a description to the class output. */
     private void write(String dir, Schema schema, TypeElement src) throws IOException {
         try (OutputStream out = env.getFiler()
             .createResource(StandardLocation.CLASS_OUTPUT, "", WIRE_DIR + dir + schema.cls() + ".json", src).openOutputStream()) {

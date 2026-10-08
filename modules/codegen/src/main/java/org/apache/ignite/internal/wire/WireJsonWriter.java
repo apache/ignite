@@ -21,12 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Writes a class schema as JSON. The output is compared byte by byte, so it is stable: the order of the keys is fixed,
- * a key without a value is omitted, lines are separated with {@code \n} on every platform.
- */
+/** Writes a class schema as JSON. */
 public class WireJsonWriter {
-    /** @return Content of the JSON file of a schema: a field per line. */
+    /** @return JSON of a schema. */
     public String write(Schema schema) {
         StringBuilder res = new StringBuilder("{\n  \"class\": ").append(quote(schema.cls()));
 
@@ -62,7 +59,7 @@ public class WireJsonWriter {
         return annotations.stream().map(this::quote).collect(Collectors.joining(sep, prefix, suffix));
     }
 
-    /** @return JSON string. The values are names and annotations from the code, so only a quote and a backslash are escaped. */
+    /** @return JSON string. */
     private String quote(String s) {
         return '"' + s.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
     }

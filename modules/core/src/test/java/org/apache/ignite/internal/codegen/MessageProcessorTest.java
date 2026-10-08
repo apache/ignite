@@ -57,7 +57,7 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MessageProcessorTest {
-    /** Directory of the wire format descriptions in the class output. */
+    /** Directory of the descriptions in the class output. */
     private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
     /** Custom mapper error. */
@@ -758,10 +758,7 @@ public class MessageProcessorTest {
         assertThat(compilation).hadErrorContaining("Raw Map not supported");
     }
 
-    /**
-     * Verifies the wire format descriptions of messages against the expected files from {@code codegen/wire}.
-     * An abstract message gets no description: its fields are described by the descendants.
-     */
+    /** */
     @Test
     public void testMessageDescriptions() {
         checkDescription("TestMessage");
@@ -777,10 +774,7 @@ public class MessageProcessorTest {
         assertEquals(1, checkDescription("ChildMessage", "AbstractMessage.java").size());
     }
 
-    /**
-     * Verifies the descriptions of the enums, which message fields refer to: the constants are described as the fields.
-     * An enum shared by messages is described once.
-     */
+    /** */
     @Test
     public void testEnumDescriptions() {
         String path = "enums/" + TransactionIsolation.class.getName() + ".json";
@@ -795,7 +789,7 @@ public class MessageProcessorTest {
         assertEquals(3, files.size());
     }
 
-    /** Verifies that compiling the same sources twice gives the same descriptions. */
+    /** */
     @Test
     public void testDescriptionsAreDeterministic() {
         String[] srcs = {"TestMessage.java", "AbstractMessage.java", "ChildMessage.java", "TestEnumSetMessage.java"};
@@ -806,11 +800,7 @@ public class MessageProcessorTest {
         assertEquals(files, wireFiles(compile(srcs)));
     }
 
-    /**
-     * Compiles a message along with the sources it depends on and checks its description against the expected file.
-     *
-     * @return Generated descriptions: a path relative to their directory mapped to the content.
-     */
+    /** @return Generated descriptions by their paths. */
     private Map<String, String> checkDescription(String msg, String... deps) {
         List<String> srcs = new ArrayList<>(List.of(deps));
 
@@ -827,7 +817,7 @@ public class MessageProcessorTest {
         return files;
     }
 
-    /** @return Generated descriptions: a path relative to their directory mapped to the content. */
+    /** @return Generated descriptions by their paths. */
     private static Map<String, String> wireFiles(Compilation compilation) {
         Map<String, String> res = new TreeMap<>();
 
@@ -843,7 +833,7 @@ public class MessageProcessorTest {
         return res;
     }
 
-    /** @return Content of a file decoded as UTF-8. */
+    /** @return Content of a file. */
     private static String content(JavaFileObject file) {
         try (InputStream in = file.openInputStream()) {
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
