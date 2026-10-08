@@ -138,6 +138,7 @@
                 <exclude>${project.groupId}:ignite-dev-utils</exclude>
                 <exclude>${project.groupId}:ignite-extdata-platform</exclude>
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
+                <exclude>${project.groupId}:ignite-calcite-testing</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
                 <exclude>${project.groupId}:ignite-direct-io</exclude>

@@ -74,6 +74,7 @@
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
         <module>modules/calcite</module>
+        <module>modules/calcite-testing</module>
         <module>modules/compatibility</module>
     </modules>
 
