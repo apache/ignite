@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimi
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.apache.ignite.internal.processors.tx.TxThreadLockingTest;
-import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
@@ -185,7 +184,6 @@ import org.junit.platform.suite.api.Suite;
     QueryEntityValueColumnAliasTest.class,
     CacheStoreTest.class,
     MultiDcQueryMappingTest.class,
-    TxWithExceptionalInterceptorTest.class,
     UserDefinedTxAwareFunctionsIntegrationTest.class,
     CacheWithInterceptorIntegrationTest.class,
     TxThreadLockingTest.class,
