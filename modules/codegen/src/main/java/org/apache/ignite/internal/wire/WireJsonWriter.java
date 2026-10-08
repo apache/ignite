@@ -38,9 +38,7 @@ public class WireJsonWriter {
             if (f.order() != null)
                 members.add("\"order\": " + f.order());
 
-            if (f.type() != null)
-                members.add("\"type\": " + quote(f.type()));
-
+            members.add("\"type\": " + quote(f.type()));
             members.add("\"name\": " + quote(f.name()));
 
             if (!f.annotations().isEmpty())

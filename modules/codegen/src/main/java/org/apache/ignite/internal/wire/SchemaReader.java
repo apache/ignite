@@ -103,7 +103,7 @@ public class SchemaReader {
 
             for (Element el : enumEl.getEnclosedElements()) {
                 if (el.getKind() == ElementKind.ENUM_CONSTANT)
-                    constants.add(new FieldRepresentation(constants.size(), null, simpleName(el), List.of()));
+                    constants.add(new FieldRepresentation(constants.size(), binaryName(enumEl), simpleName(el), List.of()));
             }
 
             res.add(new Schema(binaryName(enumEl), List.of(), constants));
