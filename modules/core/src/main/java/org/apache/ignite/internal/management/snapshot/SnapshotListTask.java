@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -55,6 +54,7 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -80,6 +80,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         UUID[] nodesIds = new UUID[nodesJobsResults.size()];
         SnapshotListJobResult[] nodesResults = new SnapshotListJobResult[nodesJobsResults.size()];
 
+        // Sorting the results by consistend by for better reading.
+        nodesJobsResults = nodesJobsResults.stream()
+            .sorted((jr0, jr1) -> nodeConsistentId(jr0.getNode()).compareTo(nodeConsistentId(jr1.getNode())))
+            .toList();
+
         for (int i = 0; i < nodesJobsResults.size(); i++) {
             ComputeJobResult nodeJobRes = nodesJobsResults.get(i);
 
@@ -90,7 +95,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             assert nodeJobRes.getData() != null;
 
-            cstIds[i] = nodeConsistentId(nodeJobRes.getNode().id());
+            cstIds[i] = nodeConsistentId(nodeJobRes.getNode());
             nodesIds[i] = nodeJobRes.getNode().id();
             nodesResults[i] = nodeJobRes.getData();
         }
@@ -99,41 +104,43 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
     }
 
     /** */
-    private String nodeConsistentId(UUID id) {
-        ClusterNode n = ignite.context().discovery().node(id);
+    private String nodeConsistentId(ClusterNode n) {
+        UUID nodeId = n.id();
+
+        n = ignite.context().discovery().node(nodeId);
 
         if (n == null)
-            n = ignite.context().discovery().historicalNode(id);
+            n = ignite.context().discovery().historicalNode(nodeId);
 
         return n == null ? "" : n.consistentId().toString();
     }
 
     /**
      * Walk though a directory. Doesn't lock it or its content. Tries to find files and summarize their size.
-     * Tolerates and skips concurrent deletion errors.
+     * Tolerates and skips concurrent modification errors.
      */
     public static long calculateDirectorySize(File path) throws IOException {
-        AtomicLong totalSize = new AtomicLong(0);
+        AtomicLong size = new AtomicLong(0);
 
         Files.walkFileTree(path.toPath(), new SimpleFileVisitor<>() {
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 // Use attrs instead of Files.size() for efficiency.
                 if (attrs.isRegularFile())
-                    totalSize.addAndGet(attrs.size());
+                    size.addAndGet(attrs.size());
 
                 return FileVisitResult.CONTINUE;
             }
 
-            /** File/directory became inaccessible (permission denied, deleted, etc.) */
             @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                if (exc instanceof FileNotFoundException)
-                    return FileVisitResult.CONTINUE;
+                return FileVisitResult.CONTINUE;
+            }
 
-                throw new IgniteException("Failed to calculate snapshot size [name=" + path.getName() + ']', exc);
+            @Override public FileVisitResult postVisitDirectory(@NotNull Path dir, @Nullable IOException exc) {
+                return FileVisitResult.CONTINUE;
             }
         });
 
-        return totalSize.get();
+        return size.get();
     }
 
     /** */
@@ -305,26 +312,25 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                     List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
 
-                    if (!metas.isEmpty()) {
-                        // Get the last-created time snapshot metadata.
-                        SnapshotMetadata snpMeta = metas.stream()
-                            .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
-                            .orElse(new SnapshotMetadata());
+                    if (metas.isEmpty())
+                        return null;
 
-                        // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
-                        sft = new SnapshotFileTree(
-                            ignite.configuration(),
-                            ignite.context().pdsFolderResolver().fileTree(),
-                            snpName,
-                            snpPath,
-                            snpMeta.folderName(),
-                            snpMeta.consistentId()
-                        );
+                    // Get the last-created time snapshot metadata.
+                    SnapshotMetadata snpMeta = metas.stream()
+                        .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
+                        .orElse(new SnapshotMetadata());
 
-                        return new T2<>(sft, snpMeta.snapshotTime());
-                    }
+                    // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
+                    sft = new SnapshotFileTree(
+                        ignite.configuration(),
+                        ignite.context().pdsFolderResolver().fileTree(),
+                        snpName,
+                        snpPath,
+                        snpMeta.folderName(),
+                        snpMeta.consistentId()
+                    );
 
-                    return null;
+                    return new T2<>(sft, snpMeta.snapshotTime());
                 });
 
                 futs.add(snpDirFut);
