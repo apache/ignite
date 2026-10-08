@@ -23,6 +23,13 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>40</version>
+        <relativePath/>
+    </parent>
+
     <!--
         NOTE:
         The ignite-parent module is used as a shared pom between the Ignite internal submodules and the Ignite Extensions.
@@ -38,29 +45,11 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <distributionManagement>
-        <repository>
-            <id>${distMgmtReleasesId}</id>
-            <name>${distMgmtReleasesName}</name>
-            <url>${distMgmtReleasesUrl}</url>
-        </repository>
-        <snapshotRepository>
-            <id>${distMgmtSnapshotsId}</id>
-            <name>${distMgmtSnapshotsName}</name>
-            <url>${distMgmtSnapshotsUrl}</url>
-        </snapshotRepository>
-    </distributionManagement>
-
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-
-        <distMgmtReleasesId>apache.releases.https</distMgmtReleasesId>
-        <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
-        <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
-        <distMgmtSnapshotsId>apache.snapshots.https</distMgmtSnapshotsId>
-        <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
-        <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
+        <!-- IDE and jar manifest read it; javac is driven by source/target, see maven-compiler-plugin below. -->
+        <maven.compiler.release>17</maven.compiler.release>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -135,8 +124,6 @@
         <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
         <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
         <maven.compiler.plugin.version>3.16.0</maven.compiler.plugin.version>
-        <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
-        <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
@@ -295,6 +282,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven.jar.plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -302,6 +290,8 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <!-- Same reason as for maven-compiler-plugin: "add-exports" below is incompatible with "release". -->
+                        <release combine.self="override"/>
                         <taglets>
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
@@ -315,7 +305,6 @@
                         <doctitle>Ignite ${ignite.version}</doctitle>
                         <windowtitle>Ignite ${ignite.version}</windowtitle>
                         <breakiterator>true</breakiterator>
-                        <verbose>true</verbose>
                         <show>protected</show>
                         <use>true</use>
                         <author>false</author>
@@ -564,6 +553,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
+                    <!-- Parent POM sets maven.compiler.release, but javac rejects "add-exports" with "release". -->
+                    <release combine.self="override"/>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
