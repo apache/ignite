@@ -475,18 +475,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcsCfgs User-defined data region configurations.
-     */
-    private boolean hasCustomDefaultDataRegion(DataRegionConfiguration[] memPlcsCfgs) {
-        for (DataRegionConfiguration memPlcsCfg : memPlcsCfgs) {
-            if (DFLT_DATA_REG_DEFAULT_NAME.equals(memPlcsCfg.getName()))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @param sysCacheInitSize Initial size of PageMemory to be created for system cache.
      * @param sysCacheMaxSize Maximum size of PageMemory to be created for system cache.
      * @param persistenceEnabled Persistence enabled flag.

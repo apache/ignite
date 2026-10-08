@@ -28,13 +28,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.jetbrains.annotations.NotNull;
 
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * An object that measures elapsed time in nanoseconds. It is useful to measure elapsed time using
@@ -253,18 +247,5 @@ public final class IgniteStopwatch {
      */
     public Duration elapsed() {
         return Duration.ofNanos(elapsedNanos());
-    }
-
-    /**
-     * @param nanos Nanos.
-     */
-    private static TimeUnit chooseUnit(long nanos) {
-        if (DAYS.convert(nanos, NANOSECONDS) > 0) return DAYS;
-        if (HOURS.convert(nanos, NANOSECONDS) > 0) return HOURS;
-        if (MINUTES.convert(nanos, NANOSECONDS) > 0) return MINUTES;
-        if (SECONDS.convert(nanos, NANOSECONDS) > 0) return SECONDS;
-        if (MILLISECONDS.convert(nanos, NANOSECONDS) > 0) return MILLISECONDS;
-        if (MICROSECONDS.convert(nanos, NANOSECONDS) > 0) return MICROSECONDS;
-        return NANOSECONDS;
     }
 }
