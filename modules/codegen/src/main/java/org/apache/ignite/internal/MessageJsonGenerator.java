@@ -18,17 +18,18 @@
 package org.apache.ignite.internal;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.Writer;
 import java.util.List;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.tools.StandardLocation;
+import javax.tools.FileObject;
 import org.apache.ignite.internal.wire.Schema;
 import org.apache.ignite.internal.wire.SchemaReader;
 import org.apache.ignite.internal.wire.WireJsonWriter;
+
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
 
 /** Generates JSON representations of messages and of the enums their fields refer to. */
 public class MessageJsonGenerator implements MessageGenerator {
@@ -72,9 +73,10 @@ public class MessageJsonGenerator implements MessageGenerator {
 
     /** Writes a representation to the class output. */
     private void write(String dir, Schema schema, TypeElement src) throws IOException {
-        try (OutputStream out = env.getFiler()
-            .createResource(StandardLocation.CLASS_OUTPUT, "", WIRE_DIR + dir + schema.cls() + ".json", src).openOutputStream()) {
-            out.write(writer.write(schema).getBytes(StandardCharsets.UTF_8));
+        FileObject file = env.getFiler().createResource(CLASS_OUTPUT, "", WIRE_DIR + dir + schema.cls() + ".json", src);
+
+        try (Writer out = file.openWriter()) {
+            out.write(writer.write(schema));
         }
     }
 }
