@@ -75,10 +75,11 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * new primary sends its partition map between these two steps, the map carries MOVING and overwrites what the
  * coordinator already knows, so the node must send its map again after the change.
  * <p>
- * The window spans most of the exchange on the new primary: it opens when the node applies the coordinator's full
- * message and creates the partition, and closes when the node detects lost partitions at the end of the exchange. In a
- * real cluster a map gets into it when a resend scheduled by {@code scheduleResendPartitions()} (after an eviction, a
- * partition moving to RENTING or a partition map change) fires there.
+ * The window is the end of the exchange on the new primary: it opens when the node applies the coordinator's full
+ * message and creates the partition, and closes when the node detects lost partitions. In a real cluster a map gets
+ * into it when a resend scheduled by {@code scheduleResendPartitions()} (after an eviction, a partition moving to
+ * RENTING or a partition map change) fires there. The coordinator as the new primary is checked by
+ * {@link #testStaleCoordinatorMapAfterEviction()}.
  */
 public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** */
