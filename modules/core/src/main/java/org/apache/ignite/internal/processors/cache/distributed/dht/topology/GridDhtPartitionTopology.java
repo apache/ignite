@@ -347,7 +347,7 @@ public interface GridDhtPartitionTopology {
      * @param resTopVer Exchange result version.
      * @param fut Exchange futute for topology events to detect.
      *
-     * @return {@code True} if partitions state got updated.
+     * @return {@code True} if the state of at least one local partition changed.
      */
     public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, GridDhtPartitionsExchangeFuture fut);
 
