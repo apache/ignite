@@ -199,7 +199,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * Makes the connector serve the certificates of {@code ConnectorConfiguration.httpSslFactory}, current on every new connection.
      *
      * @param connector Jetty connector.
-     * @throws IgniteCheckedException If the connector serves no TLS or takes certificates from the Jetty configuration.
+     * @throws IgniteCheckedException If the connector serves no TLS or builds an SSL context from the Jetty configuration.
      */
     private void useHttpSslFactory(AbstractNetworkConnector connector) throws IgniteCheckedException {
         SslConnectionFactory ssl = connector.getConnectionFactory(SslConnectionFactory.class);
@@ -212,8 +212,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         SslContextFactory.Server jettySsl = ssl.getSslContextFactory();
 
         if (jettySsl.getKeyStorePath() != null || jettySsl.getKeyStore() != null || jettySsl.getTrustStorePath() != null ||
-            jettySsl.getTrustStore() != null || jettySsl.getSslContext() != null) {
-            throw new IgniteCheckedException("HTTP REST takes certificates either from the Jetty configuration or from " +
+            jettySsl.getTrustStore() != null || jettySsl.getSslContext() != null || jettySsl.getSslSessionCacheSize() > -1 ||
+            jettySsl.getSslSessionTimeout() > -1) {
+            throw new IgniteCheckedException("HTTP REST takes its SSL context either from the Jetty configuration or from " +
                 "ConnectorConfiguration.httpSslFactory, not from both [jettyPath=" + config().getJettyPath() + ']');
         }
 

@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -151,11 +150,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             sock.startHandshake();
         }
 
-        SSLContext anonymous = SSLContext.getInstance("TLS");
-
-        anonymous.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
-
-        try (SSLSocket sock = tls12Socket(anonymous, port)) {
+        try (SSLSocket sock = tls12Socket(GridTestUtils.sslTrustedFactory("connectorClient", "trustboth").create(), port)) {
             GridTestUtils.assertThrows(log, () -> {
                 sock.startHandshake();
 

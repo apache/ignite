@@ -70,7 +70,7 @@ public class SslReloadTask extends AbstractSslTask {
             Collection<SslContextProvider> providers = ignite.context().internalSubscriptionProcessor().sslContexts().providers();
 
             if (providers.isEmpty())
-                return new IgniteBiTuple<>(true, id + ": SSL is not configured");
+                return new IgniteBiTuple<>(true, id + ": no SSL context factory is configured");
 
             String initiator = initiator();
 

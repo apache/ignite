@@ -297,8 +297,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(null)
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()));
 
-        assertContains(log, reload(g), g.localNode().id() + ": SSL is not configured");
-        assertContains(log, status(g), g.localNode().id() + ": SSL is not configured");
+        assertContains(log, reload(g), g.localNode().id() + ": no SSL context factory is configured");
+        assertContains(log, status(g), g.localNode().id() + ": no SSL context factory is configured");
     }
 
     /** @return Factory reading the stores of the node. */
