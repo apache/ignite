@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
+import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
@@ -27,6 +28,7 @@ import org.junit.platform.suite.api.Suite;
 @Suite
 @SelectClasses({
     JdbcCrossEngineTest.class,
+    MultiLineQueryTest.class,
 })
 public class CalciteAndH2TestSuite {
 }

@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRule
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
-import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.apache.ignite.internal.processors.tx.TxThreadLockingTest;
 import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
 import org.junit.platform.suite.api.SelectClasses;
@@ -172,7 +171,6 @@ import org.junit.platform.suite.api.Suite;
     IndexWithSameNameCalciteTest.class,
     AuthorizationIntegrationTest.class,
     DdlTransactionCalciteSelfTest.class,
-    MultiLineQueryTest.class,
     ViewsIntegrationTest.class,
     OperatorsExtensionIntegrationTest.class,
     SessionContextSqlFunctionTest.class,
