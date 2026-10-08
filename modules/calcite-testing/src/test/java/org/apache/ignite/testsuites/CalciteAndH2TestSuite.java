@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.integration.CacheStoreTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassChangeIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ResultSetSizeMetricsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
@@ -41,6 +42,7 @@ import org.junit.platform.suite.api.Suite;
     KeyClassChangeIntegrationTest.class,
     ViewsIntegrationTest.class,
     ResultSetSizeMetricsTest.class,
+    QueryEngineConfigurationIntegrationTest.class,
 })
 public class CalciteAndH2TestSuite {
 }
