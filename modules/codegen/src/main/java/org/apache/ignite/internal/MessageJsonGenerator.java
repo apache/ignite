@@ -67,7 +67,7 @@ public class MessageJsonGenerator implements MessageGenerator {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "representation";
+        return "JSON representation";
     }
 
     /** Writes a representation to the class output. */
