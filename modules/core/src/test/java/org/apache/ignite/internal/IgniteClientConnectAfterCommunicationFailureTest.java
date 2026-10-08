@@ -17,16 +17,23 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Arrays;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests client to be able restore connection to cluster on subsequent attempts after communication problems.
@@ -66,45 +73,44 @@ public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommon
         Ignite srv2 = startGrid("server2");
         Ignite client = startClientGrid("client");
 
-        boolean blockedAnything = false;
+        UUID clientId = client.cluster().localNode().id();
 
-        for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            if (thread.getName().contains("%client%")) {
-                //--thread.suspend();
-                blockedAnything = true;
-            }
-        }
+        CountDownLatch disconnected = new CountDownLatch(1);
+        CountDownLatch reconnected = new CountDownLatch(1);
 
-        Thread.sleep(10000);
-
-        for (Thread thread : Thread.getAllStackTraces().keySet()) {
-            //if (thread.getName().contains("%client%"))
-                //--thread.resume();
-        }
-
-        for (int j = 0; j < 10; j++) {
-            boolean topOk = true;
-
-            for (Ignite node : Arrays.asList(srv1, srv2, client)) {
-                if (node.cluster().nodes().size() != 3) {
-                    U.warn(log, "Grid size is incorrect (will re-run check in 1000 ms) " +
-                        "[name=" + node.name() + ", size=" + node.cluster().nodes().size() + ']');
-
-                    topOk = false;
-
-                    break;
-                }
-            }
-
-            if (topOk)
-                return;
+        client.events().localListen(evt -> {
+            if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED)
+                disconnected.countDown();
             else
-                Thread.sleep(1000);
+                reconnected.countDown();
+
+            return true;
+        }, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+
+        long timeout = 3 * srv1.configuration().getClientFailureDetectionTimeout();
+
+        TestTcpDiscoverySpi clientSpi = (TestTcpDiscoverySpi)client.configuration().getDiscoverySpi();
+
+        clientSpi.freeze();
+
+        try {
+            assertTrue(waitForCondition(() -> srv1.cluster().forClients().nodes().isEmpty() &&
+                srv2.cluster().forClients().nodes().isEmpty(), timeout));
+        }
+        finally {
+            clientSpi.unfreeze();
         }
 
-        assertTrue(blockedAnything);
-        assertEquals(1, srv2.cluster().forClients().nodes().size());
+        assertTrue(disconnected.await(timeout, TimeUnit.MILLISECONDS));
+        assertTrue(reconnected.await(timeout, TimeUnit.MILLISECONDS));
+
+        assertFalse(clientId.equals(client.cluster().localNode().id()));
+
+        assertTrue(waitForCondition(() -> Stream.of(srv1, srv2, client).allMatch(n -> n.cluster().nodes().size() == 3),
+            timeout));
+
         assertEquals(1, srv1.cluster().forClients().nodes().size());
+        assertEquals(1, srv2.cluster().forClients().nodes().size());
     }
 
     /**

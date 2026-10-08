@@ -28,10 +28,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +41,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.isolation;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
@@ -129,9 +127,6 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
-
-    /** Random. */
-    private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
@@ -347,7 +342,7 @@ public class JdbcThinTcpIo {
             writer.writeString(connProps.getPassword());
         }
 
-        send(writer.array());
+        send(writer);
 
         BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, false);
 
@@ -452,7 +447,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
-        send(writer.array());
+        send(writer);
 
         BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), null, false);
 
@@ -593,23 +588,25 @@ public class JdbcThinTcpIo {
         req.writeBinary(writer, protoCtx);
 
         synchronized (connMux) {
-            send(writer.array());
+            send(writer);
         }
     }
 
     /**
-     * @param req JDBC request bytes.
+     * @param writer Writer with request bytes.
      * @throws IOException On error.
      */
-    private void send(byte[] req) throws IOException {
-        int size = req.length;
+    private void send(BinaryWriterEx writer) throws IOException {
+        BinaryOutputStream stream = writer.out();
+
+        int size = stream.position();
 
         out.write(size & 0xFF);
         out.write((size >> 8) & 0xFF);
         out.write((size >> 16) & 0xFF);
         out.write((size >> 24) & 0xFF);
 
-        out.write(req);
+        out.write(stream.array(), 0, size);
 
         out.flush();
     }
@@ -740,22 +737,6 @@ public class JdbcThinTcpIo {
      */
     boolean isIsolationLevelSupported(TransactionIsolation isolation) {
         return isolationLevelsSupported.contains(isolation);
-    }
-
-    /**
-     * Get next server index.
-     *
-     * @param len Number of servers.
-     * @return Index of the next server to connect to.
-     */
-    private static int nextServerIndex(int len) {
-        if (len == 1)
-            return 0;
-        else {
-            long nextIdx = IDX_GEN.getAndIncrement();
-
-            return (int)(abs(nextIdx) % len);
-        }
     }
 
     /**

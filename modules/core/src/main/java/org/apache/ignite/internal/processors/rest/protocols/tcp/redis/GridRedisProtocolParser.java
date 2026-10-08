@@ -66,9 +66,6 @@ public class GridRedisProtocolParser {
     /** Prefix for errors on operations with the wrong type. */
     private static final byte[] ERR_TYPE = "WRONGTYPE ".getBytes();
 
-    /** Prefix for errors on authentication. */
-    private static final byte[] ERR_AUTH = "NOAUTH ".getBytes();
-
     /** Null bulk string for nil response. */
     private static final byte[] NIL = "$-1\r\n".getBytes();
 

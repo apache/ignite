@@ -331,18 +331,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return Group IDs.
-     */
-    public Set<Integer> waitGroups() {
-        synchronized (mux) {
-            if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer))
-                return Collections.emptySet();
-
-            return new HashSet<>(waitInfo.waitGrps.keySet());
-        }
-    }
-
-    /**
      * @param grpId Group id.
      * @param partId Partition id.
      *
@@ -1626,24 +1614,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Selects current alive owners for some partition as affinity distribution.
-     *
-     * @param aliveNodes Alive cluster nodes.
-     * @param curOwners  Current affinity owners for some partition.
-     *
-     * @return List of current alive affinity owners.
-     *         {@code null} if affinity owners should be inherited from ideal assignment as is.
-     */
-    private @Nullable List<ClusterNode> selectCurrentAliveOwners(
-        Set<ClusterNode> aliveNodes,
-        List<ClusterNode> curOwners
-    ) {
-        List<ClusterNode> aliveCurOwners = curOwners.stream().filter(aliveNodes::contains).collect(Collectors.toList());
-
-        return !aliveCurOwners.isEmpty() ? aliveCurOwners : null;
-    }
-
-    /**
      * Calculates affinity on coordinator for custom event types that require centralized assignment.
      *
      * @param fut Current exchange future.
@@ -2609,19 +2579,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                 U.warn(log, ">>> " + fut);
         }
-    }
-
-    /**
-     * @param nodes Nodes.
-     * @return IDs.
-     */
-    private static List<UUID> toIds0(List<ClusterNode> nodes) {
-        List<UUID> partIds = new ArrayList<>(nodes.size());
-
-        for (int i = 0; i < nodes.size(); i++)
-            partIds.add(nodes.get(i).id());
-
-        return partIds;
     }
 
     /**

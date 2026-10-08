@@ -24,12 +24,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 
 /**
  * Abstract JDBC test.
  */
-public abstract class AbstractJdbcTest extends GridCommonAbstractTest {
+public abstract class AbstractJdbcTest extends GridCommonAbstractWrapperTest {
     /** URL. */
     protected static final String URL = "jdbc:ignite:thin://127.0.0.1";
 

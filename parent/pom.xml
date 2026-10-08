@@ -23,6 +23,13 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>40</version>
+        <relativePath/>
+    </parent>
+
     <!--
         NOTE:
         The ignite-parent module is used as a shared pom between the Ignite internal submodules and the Ignite Extensions.
@@ -35,32 +42,14 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>ignite-parent</artifactId>
-    <version>2.16.999-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
-
-    <distributionManagement>
-        <repository>
-            <id>${distMgmtReleasesId}</id>
-            <name>${distMgmtReleasesName}</name>
-            <url>${distMgmtReleasesUrl}</url>
-        </repository>
-        <snapshotRepository>
-            <id>${distMgmtSnapshotsId}</id>
-            <name>${distMgmtSnapshotsName}</name>
-            <url>${distMgmtSnapshotsUrl}</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-
-        <distMgmtReleasesId>apache.releases.https</distMgmtReleasesId>
-        <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
-        <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
-        <distMgmtSnapshotsId>apache.snapshots.https</distMgmtSnapshotsId>
-        <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
-        <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
+        <!-- IDE and jar manifest read it; javac is driven by source/target, see maven-compiler-plugin below. -->
+        <maven.compiler.release>17</maven.compiler.release>
 
         <revision>2.16.999-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -106,18 +95,18 @@
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
+        <jts.version>1.20.0</jts.version>
+        <junit4.version>4.13.1</junit4.version>
         <log4j2.version>2.25.3</log4j2.version>
         <lucene.version>9.12.3</lucene.version>
         <lz4.version>1.10.1</lz4.version>
-        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
-        <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.9.16</maven.model.version>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
         <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
+        <prometheus.version>0.3.0</prometheus.version>
         <slf4j.version>2.0.17</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.6</spring.version>
@@ -136,8 +125,6 @@
         <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
         <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-        <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
-        <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
@@ -151,6 +138,10 @@
         <maven.jarsigner.plugin.version>3.1.0</maven.jarsigner.plugin.version>
         <build.helper.maven.plugin.version>3.6.1</build.helper.maven.plugin.version>
         <cmake.maven.plugin.version>3.31.5-b1</cmake.maven.plugin.version>
+        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
+        <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
+        <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
 
         <sonar.organization>apache</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -293,6 +284,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven.jar.plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -300,12 +292,14 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <!-- Same reason as for maven-compiler-plugin: "add-exports" below is incompatible with "release". -->
+                        <release combine.self="override"/>
                         <skip>true</skip>
                         <taglets>
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                 <tagletArtifact>
-                                    <groupId>org.apache.ignite</groupId>
+                                    <groupId>${project.groupId}</groupId>
                                     <artifactId>ignite-tools</artifactId>
                                     <version>${ignite.version}</version>
                                 </tagletArtifact>
@@ -314,7 +308,6 @@
                         <doctitle>Ignite ${ignite.version}</doctitle>
                         <windowtitle>Ignite ${ignite.version}</windowtitle>
                         <breakiterator>true</breakiterator>
-                        <verbose>true</verbose>
                         <show>protected</show>
                         <use>true</use>
                         <author>false</author>
@@ -491,7 +484,7 @@
                     <version>${surefire.version}</version>
                     <dependencies>
                         <dependency>
-                            <groupId>org.apache.ignite</groupId>
+                            <groupId>${project.groupId}</groupId>
                             <artifactId>ignite-tools</artifactId>
                             <version>${ignite.version}</version>
                         </dependency>
@@ -563,6 +556,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
+                    <!-- Parent POM sets maven.compiler.release, but javac rejects "add-exports" with "release". -->
+                    <release combine.self="override"/>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
@@ -672,10 +667,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <configuration>
-                    <embedBuildProfileDependencies>true</embedBuildProfileDependencies>
-                    <!-- 其他配置 -->
-                </configuration>
+
                 <executions>
                     <!-- disable flattering for parent pom. -->
                     <execution>
@@ -860,6 +852,42 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>tools.jar-default</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/../lib/tools.jar</exists>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <scope>system</scope>
+                    <version>${java.version}</version>
+                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>tools.jar-mac</id>
+            <activation>
+                <file>
+                    <exists>${java.home}/../Classes/classes.jar</exists>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.sun</groupId>
+                    <artifactId>tools</artifactId>
+                    <scope>system</scope>
+                    <version>${java.version}</version>
+                    <systemPath>${java.home}/../Classes/classes.jar</systemPath>
+                </dependency>
+            </dependencies>
         </profile>
 
         <profile>

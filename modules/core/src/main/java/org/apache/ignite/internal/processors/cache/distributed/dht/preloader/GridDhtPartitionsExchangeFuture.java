@@ -369,10 +369,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private GridDhtPartitionsFullMessage delayedLatestMsg;
 
-    /** Future for wait all exchange listeners comepleted. */
-    @GridToStringExclude
-    private final GridFutureAdapter<?> afterLsnrCompleteFut = new GridFutureAdapter<>();
-
     /** Time bag to measure and store exchange stages times. */
     @GridToStringExclude
     private final TimeBag timeBag;
@@ -727,21 +723,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param cacheOrGroupName Group or cache name for reset lost partitions.
-     * @return {@code True} if reset lost partition exchange.
-     */
-    public boolean resetLostPartitionFor(String cacheOrGroupName) {
-        return exchActions != null && exchActions.cachesToResetLostPartitions().contains(cacheOrGroupName);
-    }
-
-    /**
-     * @return {@code True} if update counters finalization exchange.
-     */
-    public boolean finalizeCounters() {
-        return exchActions != null && exchActions.finalizePartitionCounters();
-    }
-
-    /**
      * @return {@code True} if activate cluster exchange.
      */
     public boolean activateCluster() {
@@ -1011,8 +992,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         onServerNodeEvent(crdNode);
                 }
             }
-
-            cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
 
             exchangeType = exchange;
 
@@ -2458,8 +2437,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         });
 
         if (super.onDone(res, err)) {
-            afterLsnrCompleteFut.onDone();
-
             if (err == null) {
                 updateDurationHistogram(System.currentTimeMillis() - initTime);
 

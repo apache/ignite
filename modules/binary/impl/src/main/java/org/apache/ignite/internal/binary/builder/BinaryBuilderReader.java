@@ -24,14 +24,13 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryImplUtils;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryPositionReadable;
 import org.apache.ignite.internal.binary.BinaryPrimitives;
-import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -51,7 +50,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     private final byte[] arr;
 
     /** */
-    private final BinaryReaderEx reader;
+    private final BinaryReaderExImpl reader;
 
     /** */
     private final Map<Integer, Object> objMap;
@@ -69,7 +68,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         arr = objImpl.bytes();
         pos = objImpl.start();
 
-        reader = BinaryUtils.reader(ctx,
+        reader = new BinaryReaderExImpl(ctx,
             BinaryStreams.inputStream(arr, pos),
             ctx.classLoader(),
             false);
@@ -88,10 +87,10 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         this.arr = other.arr;
         this.pos = start;
 
-        reader = BinaryImplUtils.reader(ctx,
+        reader = new BinaryReaderExImpl(ctx,
             BinaryStreams.inputStream(arr, start),
             null,
-            other.reader,
+            other.reader.handles(),
             false);
 
         this.objMap = other.objMap;
@@ -904,7 +903,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
     /**
      * @return Reader.
      */
-    BinaryReaderEx reader() {
+    BinaryReaderExImpl reader() {
         return reader;
     }
 
@@ -939,7 +938,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
         }
 
         /** {@inheritDoc} */
-        @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
+        @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
             ctx.writeValue(writer, wrappedCollection());
         }
 

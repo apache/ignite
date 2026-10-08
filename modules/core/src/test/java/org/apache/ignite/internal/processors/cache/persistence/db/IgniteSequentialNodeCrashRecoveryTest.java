@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -302,11 +301,6 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> finishedStateFut() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public PartitionAllocationMap partitionStatMap() {
             return null;
         }
 

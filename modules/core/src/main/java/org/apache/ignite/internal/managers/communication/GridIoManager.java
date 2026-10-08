@@ -1759,11 +1759,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             throw err;
     }
 
-    /** */
-    private long getInverseConnectionWaitTimeout() {
-        return ctx.config().getFailureDetectionTimeout();
-    }
-
     /** @return A {@link GridIoMessage} wrapper for {@code msg}. */
     public GridIoMessage createGridIoMessage(
         Object topic,

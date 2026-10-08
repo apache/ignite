@@ -27,17 +27,21 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -52,15 +56,19 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Integration test for user defined functions.
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = IGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR, value = "true")
 public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** Log listener. */
@@ -506,14 +514,216 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
+    public void testBinaryFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("binary-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BinaryFunctionsLibrary.class));
+
+        byte[] bytes = {1, 2, 3};
+        Consumer<List<List<?>>> binaryResultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
+        };
+
+        // Scalar function arguments.
+        assertQuery("SELECT binaryLength(x'010203')").returns(3).check();
+        assertQuery("SELECT binaryLength(?)").withParams(bytes).returns(3).check();
+
+        // Scalar function results.
+        assertQuery("SELECT binaryValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(x'010203')").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT binaryEcho(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(binaryValue())").returns(3).check();
+
+        // Table function results.
+        assertQuery("SELECT * FROM binaryTableValue()").withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT * FROM binaryTable(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
+        assertQuery("SELECT OCTET_LENGTH(bytes) FROM binaryTableValue()").returns(3).check();
+        assertQuery("SELECT binaryLength(bytes) FROM binaryTableValue()").returns(3).check();
+
+        // Table function arguments.
+        assertQuery("SELECT * FROM binaryTableLength(x'010203')").returns(3).check();
+        assertQuery("SELECT * FROM binaryTableLength(?)").withParams(bytes).returns(3).check();
+        assertQuery("SELECT * FROM TABLE(binaryTableLength(binaryValue()))").returns(3).check();
+        assertQuery("SELECT * FROM binaryTable(x'010203')").withResultChecker(binaryResultChecker).check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryObjectFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("binary-object-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BinaryObjectFunctionsLibrary.class));
+
+        BinaryObject obj = client.binary().builder("TestBinaryObject")
+            .setField("value", 42, Integer.class)
+            .build();
+
+        Consumer<List<List<?>>> resultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertTrue(rows.get(0).get(0) instanceof BinaryObject);
+            assertEquals(Integer.valueOf(42), ((BinaryObject)rows.get(0).get(0)).field("value"));
+        };
+
+        assertQuery("SELECT binaryObjectEcho(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+
+        assertQuery("SELECT * FROM binaryObjectTable(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testPrimitiveFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("primitive-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(PrimitiveFunctionsLibrary.class));
+
+        Object[] values = {true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d};
+
+        assertQuery("SELECT checkPrimitiveTypes(?, ?, ?, ?, ?, ?, ?)")
+            .withParams(values)
+            .returns(true)
+            .check();
+
+        assertQuery("SELECT primitiveBoolean(), primitiveByte(), primitiveShort(), primitiveInt(), "
+            + "primitiveLong(), primitiveFloat(), primitiveDouble()")
+            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d)
+            .check();
+
+        assertQuery("SELECT * FROM primitiveTable(?, ?, ?, ?, ?, ?, ?)")
+            .withParams(values)
+            .returns(true, (byte)1, (short)2, 3, 4L, 5.0f, 6.0d)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBoxedFunctionArguments() {
+        client.getOrCreateCache(new CacheConfiguration<>("boxed-argument-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(BoxedArgumentsFunctionsLibrary.class));
+
+        String[] literals = {"-1", "CAST(-1 AS BIGINT)", "CAST(-1 AS REAL)", "CAST(-1 AS DOUBLE)"};
+        Object[] values = {-1, -1L, -1.0f, -1.0d};
+
+        for (int i = 0; i < literals.length; i++) {
+            String args = String.join(", ", Collections.nCopies(3, literals[i]));
+            Object val = values[i];
+
+            assertQuery("SELECT checkBoxedArguments(" + args + ")").returns(true).check();
+            assertQuery("SELECT checkBoxedArguments(?, ?, ?)").withParams(val, val, val).returns(true).check();
+
+            assertQuery("SELECT * FROM boxedArgumentsTable(" + args + ")").returns(val, val, val).check();
+            assertQuery("SELECT * FROM boxedArgumentsTable(?, ?, ?)")
+                .withParams(val, val, val)
+                .returns(val, val, val)
+                .check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testCustomTypeFunctions() {
+        client.getOrCreateCache(new CacheConfiguration<>("custom-type-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        Employer obj = new Employer("Igor", 42.0d);
+        Consumer<List<List<?>>> resultChecker = rows -> {
+            assertEquals(1, rows.size());
+            assertEquals(1, rows.get(0).size());
+            assertTrue(rows.get(0).get(0) instanceof Employer);
+            assertEquals(obj, rows.get(0).get(0));
+        };
+
+        assertQuery("SELECT customTypeEcho(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+
+        assertQuery("SELECT * FROM customTypeTable(?)")
+            .withParams(obj)
+            .withResultChecker(resultChecker)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCustomTypeTableFunctionCoalesce() {
+        client.getOrCreateCache(new CacheConfiguration<>("custom-type-coalesce-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
+
+        Employer obj = new Employer("Igor", 42.0d);
+        Employer fallback = new Employer("Oleg", 43.0d);
+
+        for (Employer val : new Employer[] {obj, null}) {
+            assertQuery("SELECT COALESCE(obj, obj) FROM customTypeTable(?)")
+                .withParams(val)
+                .returns(val)
+                .check();
+
+            assertQuery("SELECT COALESCE(t1.obj, t2.obj) "
+                + "FROM customTypeTable(?) t1 CROSS JOIN customTypeTable(?) t2")
+                .withParams(val, fallback)
+                .returns(val == null ? fallback : val)
+                .check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testArrayListTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("array-list-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CollectionFunctionsLibrary.class));
+
+        assertQuery("SELECT val FROM arrayListTable()")
+            .returns(Arrays.asList(1, 2))
+            .check();
+
+        assertQuery("SELECT CARDINALITY(val), val[1], val[2] FROM arrayListTable()")
+            .returns(2, 1, 2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testHashMapTableFunctionResult() {
+        client.getOrCreateCache(new CacheConfiguration<>("hash-map-table-functions")
+            .setSqlSchema("PUBLIC")
+            .setSqlFunctionClasses(CollectionFunctionsLibrary.class));
+
+        assertQuery("SELECT val FROM hashMapTable()")
+            .returns(F.asMap("first", 10, "second", 20))
+            .check();
+
+        assertQuery("SELECT CARDINALITY(val), val['first'], val['second'], val['missing'] FROM hashMapTable()")
+            .returns(2, 10, 20, null)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testObjectTableFunctionResult() {
         client.getOrCreateCache(new CacheConfiguration<>("object-table-functions")
             .setSqlSchema("PUBLIC")
             .setSqlFunctionClasses(CustomTypeFunctionsLibrary.class));
 
-        Object[] exp = temporalValues();
+        BinaryObject binaryObj = client.binary().builder("TestObjectTableBinaryObject")
+            .setField("value", 42, Integer.class)
+            .build();
+        Object[] exp = objectValues(binaryObj);
 
-        assertQuery("SELECT * FROM objectTableValues()")
+        assertQuery("SELECT * FROM objectTableValues(?)")
+            .withParams(binaryObj)
             .withResultChecker(rows -> {
                 assertEquals(1, rows.size());
                 assertEquals(exp.length, rows.get(0).size());
@@ -521,8 +731,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 for (int i = 0; i < exp.length; i++) {
                     Object actual = rows.get(0).get(i);
 
-                    assertEquals("Unexpected value type at index " + i, exp[i].getClass(), actual.getClass());
-                    assertEquals("Unexpected value at index " + i, exp[i], actual);
+                    assertEqualsArraysAware("Unexpected value at index " + i, exp[i], actual);
                 }
             })
             .check();
@@ -538,9 +747,10 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * FROM serializableTableValues()")
             .withResultChecker(rows -> {
                 assertEquals(1, rows.size());
-                assertEquals(1, rows.get(0).size());
+                assertEquals(2, rows.get(0).size());
                 assertEquals(Date.class, rows.get(0).get(0).getClass());
                 assertEquals(Date.valueOf("2020-01-01"), rows.get(0).get(0));
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(1));
             })
             .check();
     }
@@ -878,6 +1088,33 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
             LocalDateTime.of(2023, 3, 17, 4, 5, 6),
             Duration.ofDays(1).plusHours(2).plusMinutes(3),
             Period.of(1, 2, 0)
+        };
+    }
+
+    /** */
+    private static Object[] objectValues(BinaryObject binaryObj) {
+        Object[] temporalValues = temporalValues();
+
+        return new Object[] {
+            new byte[] {1, 2, 3},
+            true,
+            (byte)1,
+            (short)2,
+            3,
+            4L,
+            5.0f,
+            6.0d,
+            temporalValues[0],
+            temporalValues[1],
+            temporalValues[2],
+            temporalValues[3],
+            temporalValues[4],
+            temporalValues[5],
+            temporalValues[6],
+            temporalValues[7],
+            temporalValues[8],
+            new Employer("Igor", 42.0d),
+            binaryObj
         };
     }
 
@@ -1306,16 +1543,207 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
     }
 
     /** */
+    public static class BinaryFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static int binaryLength(byte[] bytes) {
+            return bytes.length;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryValue() {
+            return new byte[] {1, 2, 3};
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte[] binaryEcho(byte[] bytes) {
+            return bytes;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {int.class}, columnNames = {"LENGTH"})
+        public static Iterable<Object[]> binaryTableLength(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes.length});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTableValue() {
+            return Collections.singletonList(new Object[] {new byte[] {1, 2, 3}});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {byte[].class}, columnNames = {"BYTES"})
+        public static Iterable<Object[]> binaryTable(byte[] bytes) {
+            return Collections.singletonList(new Object[] {bytes});
+        }
+    }
+
+    /** */
+    public static class BinaryObjectFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static BinaryObject binaryObjectEcho(BinaryObject obj) {
+            return obj;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {BinaryObject.class}, columnNames = {"OBJ"})
+        public static Iterable<Object[]> binaryObjectTable(BinaryObject obj) {
+            return Collections.singletonList(new Object[] {obj});
+        }
+    }
+
+    /** */
+    public static class PrimitiveFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static boolean checkPrimitiveTypes(
+            boolean booleanVal,
+            byte byteVal,
+            short shortVal,
+            int intVal,
+            long longVal,
+            float floatVal,
+            double doubleVal
+        ) {
+            return booleanVal && byteVal == 1 && shortVal == 2 && intVal == 3 && longVal == 4
+                && floatVal == 5.0f && doubleVal == 6.0d;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static boolean primitiveBoolean() {
+            return true;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static byte primitiveByte() {
+            return 1;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static short primitiveShort() {
+            return 2;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static int primitiveInt() {
+            return 3;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static long primitiveLong() {
+            return 4;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static float primitiveFloat() {
+            return 5.0f;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static double primitiveDouble() {
+            return 6.0d;
+        }
+
+        /** */
+        @QuerySqlTableFunction(
+            columnTypes = {
+                boolean.class,
+                byte.class,
+                short.class,
+                int.class,
+                long.class,
+                float.class,
+                double.class
+            },
+            columnNames = {
+                "BOOLEAN_VALUE",
+                "BYTE_VALUE",
+                "SHORT_VALUE",
+                "INT_VALUE",
+                "LONG_VALUE",
+                "FLOAT_VALUE",
+                "DOUBLE_VALUE"
+            }
+        )
+        public static Iterable<Object[]> primitiveTable(
+            boolean booleanVal,
+            byte byteVal,
+            short shortVal,
+            int intVal,
+            long longVal,
+            float floatVal,
+            double doubleVal
+        ) {
+            return Collections.singletonList(new Object[] {
+                booleanVal, byteVal, shortVal, intVal, longVal, floatVal, doubleVal
+            });
+        }
+    }
+
+    /** */
+    public static class BoxedArgumentsFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static boolean checkBoxedArguments(Object obj, Number num, Serializable serializable) {
+            return obj.equals(num) && obj.equals(serializable);
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {Object.class, Object.class, Object.class}, columnNames = {"O", "N", "S"})
+        public static Iterable<Object[]> boxedArgumentsTable(Object obj, Number num, Serializable serializable) {
+            return Collections.singletonList(new Object[] {obj, num, serializable});
+        }
+    }
+
+    /** */
     public static class SerializableFunctionsLibrary {
         /** */
-        @QuerySqlTableFunction(columnTypes = {Serializable.class}, columnNames = {"D"})
+        @QuerySqlTableFunction(columnTypes = {Serializable.class, Serializable.class}, columnNames = {"D", "B"})
         public static Iterable<Object[]> serializableTableValues() {
-            return Collections.singletonList(new Object[] {Date.valueOf("2020-01-01")});
+            return Collections.singletonList(new Object[] {Date.valueOf("2020-01-01"), new byte[] {1, 2, 3}});
+        }
+    }
+
+    /** */
+    public static class CollectionFunctionsLibrary {
+        /** */
+        @QuerySqlTableFunction(columnTypes = {ArrayList.class}, columnNames = {"VAL"})
+        public static Iterable<Object[]> arrayListTable() {
+            return Collections.singletonList(new Object[] {new ArrayList<>(Arrays.asList(1, 2))});
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {HashMap.class}, columnNames = {"VAL"})
+        public static Iterable<Object[]> hashMapTable() {
+            return Collections.singletonList(new Object[] {new HashMap<>(F.asMap("first", 10, "second", 20))});
         }
     }
 
     /** */
     public static class CustomTypeFunctionsLibrary {
+        /** */
+        @QuerySqlFunction
+        public static Employer customTypeEcho(Employer obj) {
+            return obj;
+        }
+
+        /** */
+        @QuerySqlTableFunction(columnTypes = {Employer.class}, columnNames = {"OBJ"})
+        public static Iterable<Object[]> customTypeTable(Employer obj) {
+            return Collections.singletonList(new Object[] {obj});
+        }
+
         /** */
         @QuerySqlTableFunction(
             columnTypes = {
@@ -1327,9 +1755,27 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 Object.class,
                 Object.class,
                 Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
+                Object.class,
                 Object.class
             },
             columnNames = {
+                "BYTES",
+                "BOOLEAN_VALUE",
+                "BYTE_VALUE",
+                "SHORT_VALUE",
+                "INT_VALUE",
+                "LONG_VALUE",
+                "FLOAT_VALUE",
+                "DOUBLE_VALUE",
                 "UTIL_DATE",
                 "SQL_DATE",
                 "SQL_TIME",
@@ -1338,11 +1784,13 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
                 "LOCAL_TIME",
                 "LOCAL_TIMESTAMP",
                 "DURATION_VALUE",
-                "PERIOD_VALUE"
+                "PERIOD_VALUE",
+                "CUSTOM_VALUE",
+                "BINARY_OBJECT_VALUE"
             }
         )
-        public static Iterable<Object[]> objectTableValues() {
-            return Collections.singletonList(temporalValues());
+        public static Iterable<Object[]> objectTableValues(BinaryObject binaryObj) {
+            return Collections.singletonList(objectValues(binaryObj));
         }
     }
 
