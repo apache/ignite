@@ -107,7 +107,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -130,7 +129,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static java.lang.String.format;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -160,8 +158,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.getCompressionLevel;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
-import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 
 /**
  * File WAL manager.
@@ -385,11 +381,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@code True} if CDC enabled in {@link IgniteConfiguration}. */
     private final boolean cdcConfigured;
 
-    /** CDC disabled flag. */
-    private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED,
-        "CDC disabled flag. Disables CDC in the cluster to avoid disk overflow. " +
-            "Note that cache changes will be lost when CDC is disabled. Useful if the CDC application " +
-            "is down for a long time.");
+    /** {@code Null} if CDC is not configured. */
+    @Nullable private CdcLinkManager cdcLinkMgr;
 
     /**
      * Constructor.
@@ -458,30 +451,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             U.ensureDirectory(ft.wal(), "write ahead log work directory", log);
             U.ensureDirectory(ft.walArchive(), "write ahead log work directory", log);
 
-            if (CU.isCdcEnabled(igCfg)) {
-                U.ensureDirectory(ft.walCdc(), "change data capture directory", log);
-
-                ensureHardLinkAvailable(ft.walArchive().toPath(), ft.walCdc().toPath());
-
-                cctx.kernalContext().internalSubscriptionProcessor()
-                    .registerDistributedConfigurationListener(dispatcher -> {
-                        cdcDisabled.addListener((name, oldVal, newVal) -> {
-                            if (log.isInfoEnabled()) {
-                                log.info(format("Distributed property '%s' was changed from '%s' to '%s'.",
-                                    name, oldVal, newVal));
-                            }
-
-                            if (newVal != null && newVal) {
-                                log.warning("CDC was disabled.");
-
-                                if (cctx.cdc() != null)
-                                    cctx.cdc().stop(true);
-                            }
-                        });
-
-                        dispatcher.registerProperty(cdcDisabled);
-                    });
-            }
+            if (cdcConfigured)
+                cdcLinkMgr = new CdcLinkManager(cctx);
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
@@ -742,6 +713,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
+    @Override public boolean cdcForceDisabled() {
+        return cdcLinkMgr != null && cdcLinkMgr.forceDisabled();
+    }
+
+    /** {@inheritDoc} */
     @Override public void resumeLogging(WALPointer filePtr) throws IgniteCheckedException {
         if (log.isDebugEnabled()) {
             log.debug("File write ahead log manager resuming logging [nodeId=" + cctx.localNodeId() +
@@ -884,6 +860,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Logging was not resumed yet.
         if (currWrHandle == null || (isDisable != null && isDisable.check()))
             return null;
+
+        if (cdcLinkMgr != null && cdcLinkMgr.shouldRollover(currWrHandle.getSegmentId())) {
+            currWrHandle.closeBuffer();
+
+            currWrHandle = rollOver(currWrHandle, null);
+        }
 
         // Do page snapshots compression if configured.
         if (pageCompression != DiskPageCompression.DISABLED && rec instanceof PageSnapshot) {
@@ -2102,20 +2084,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (cdcConfigured) {
-                    if (!cdcDisabled.getOrDefault(false)) {
-                        if (checkCdcWalDirectorySize(dstFile.length()))
-                            Files.createLink(ft.walCdc().toPath().resolve(dstFile.getName()), dstFile.toPath());
-                        else {
-                            log.error("Creation of segment CDC link skipped. Configured CDC directory " +
-                                "maximum size exceeded.");
-                        }
-                    }
-                    else {
-                        log.warning("Creation of segment CDC link skipped. " +
-                            "'" + CDC_DISABLED + "' distributed property is 'true'.");
-                    }
-                }
+                if (cdcLinkMgr != null)
+                    cdcLinkMgr.linkSegment(absIdx, dstFile);
 
                 if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
@@ -2180,27 +2150,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             isCancelled.set(false);
 
             U.newThread(archiver).start();
-        }
-
-        /**
-         * @param len Length of file to check size.
-         * @return {@code True} if the CDC directory size check successful, otherwise {@code false}.
-         */
-        private boolean checkCdcWalDirectorySize(long len) {
-            long maxDirSize = igCfg.getDataStorageConfiguration().getCdcWalDirectoryMaxSize();
-
-            if (maxDirSize <= 0)
-                return true;
-
-            long dirSize = Arrays.stream(ft.walCdcSegments()).mapToLong(File::length).sum();
-
-            if (dirSize + len <= maxDirSize)
-                return true;
-
-            log.warning("Configured CDC WAL directory maximum size exceeded [curDirSize=" + dirSize +
-                ", fileLength=" + len + ", cdcWalDirectoryMaxSize=" + maxDirSize + ']');
-
-            return false;
         }
     }
 

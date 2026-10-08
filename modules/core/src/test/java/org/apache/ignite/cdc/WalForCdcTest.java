@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -43,9 +45,12 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -88,6 +93,9 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     /** */
     private boolean cdcEnabled;
 
+    /** If {@code true}, the node has a persistent data region in addition to the default one. */
+    private boolean persistentRegion;
+
     /** */
     private long archiveSz = UNLIMITED_WAL_ARCHIVE;
 
@@ -118,6 +126,12 @@ public class WalForCdcTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(persistenceEnabled)
                 .setCdcEnabled(cdcEnabled)));
 
+        if (persistentRegion) {
+            cfg.getDataStorageConfiguration().setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName("persistent")
+                .setPersistenceEnabled(true));
+        }
+
         cfg.setConsistentId(igniteInstanceName);
 
         return cfg;
@@ -131,6 +145,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         cdcEnabled = true;
         persistenceEnabled = false;
+        persistentRegion = false;
     }
 
     /** */
@@ -196,6 +211,46 @@ public class WalForCdcTest extends GridCommonAbstractTest {
             for (int i = RECORD_COUNT / 2; i < RECORD_COUNT; i++)
                 cache.put(i, i);
         }, RECORD_COUNT);
+    }
+
+    /** Checks that an in-memory cache doesn't write data records while CDC is disabled on a node with persistence. */
+    @Test
+    public void testCdcDisabledWithPersistentRegion() throws Exception {
+        persistentRegion = true;
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(
+            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setCacheMode(mode)
+                .setAtomicityMode(atomicityMode));
+
+        DistributedChangeableProperty<Serializable> cdcDisabled = ignite.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
+
+        long sgmnt = ignite.context().cache().context().wal(true).currentSegment();
+
+        cdcDisabled.propagate(true);
+
+        for (int i = 0; i < RECORD_COUNT; i++)
+            cache.put(i, i);
+
+        cdcDisabled.propagate(false);
+
+        for (int i = 0; i < RECORD_COUNT; i++)
+            cache.put(i, i);
+
+        // The segment that was current at the disabling is never linked, the changes go to the next one.
+        NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
+
+        assertTrue(waitForCondition(() -> ft.walCdcSegments().length == 1, getTestTimeout()));
+
+        assertEquals(F.asList(sgmnt + 1), Arrays.stream(ft.walCdcSegments()).map(File::toPath).map(ft::walSegmentIndex)
+            .collect(Collectors.toList()));
+
+        assertEquals(RECORD_COUNT, checkDataRecords(ignite));
     }
 
     /** */
@@ -357,7 +412,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
             if (rec.get2().type().purpose() == WALRecord.RecordPurpose.CUSTOM)
                 continue;
 
-            if (persistenceEnabled && (!(rec.get2() instanceof DataRecord)))
+            if ((persistenceEnabled || persistentRegion) && (!(rec.get2() instanceof DataRecord)))
                 continue;
 
             assertTrue(rec.get2() instanceof DataRecord);

@@ -158,6 +158,10 @@ The CDC can be disabled manually or by configured directory maximum size. In thi
 
 WARNING: All changes in skipped segments will be lost!
 
+Caches of the data regions without persistence do not write changes to the WAL while the CDC is disabled manually.
+On the nodes with such regions the segment that is current at the disabling is skipped as well, so the gap appears
+even if no segment is archived while the CDC is disabled.
+
 So when enabled there will be gap between segments: `0000000000000002.wal`, `0000000000000010.wal`, `0000000000000011.wal`, for example.
 In this case `ignite-cdc.sh` will fail with the something like "Found missed segments. Some events are missed. Exiting! [lastSegment=2, nextSegment=10]".
 
@@ -190,6 +194,8 @@ For example, this is important if you need to ensure consistency of cache data b
 NOTE: The command requires an active cluster and will be canceled if the cluster is inactive.
 
 NOTE: The command will be canceled if cluster was not rebalanced or topology changed (node left/joined, baseline changed).
+
+NOTE: The command fails if the CDC is disabled by the `cdc.disabled` distributed property.
 
 To forcefully resend all cache data to CDC you can run the following link:tools/control-script[Control Script] command:
 

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
@@ -63,7 +65,6 @@ import org.junit.Test;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
-import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -115,8 +116,6 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
                 .setCdcEnabled(false))
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setCdcEnabled(true)));
-
-        cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_ARCHIVED);
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -217,24 +216,28 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testDeleteLostSegmentLinks() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), true);
+        checkDeleteLostSegmentLinks(1, true);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksOneNode() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 2L), F.asList(2L), false);
+        checkDeleteLostSegmentLinks(1, false);
     }
 
     /** */
     @Test
     public void testDeleteLostSegmentLinksMultipleGaps() throws Exception {
-        checkDeleteLostSegmentLinks(F.asList(0L, 3L, 5L), F.asList(5L), true);
+        checkDeleteLostSegmentLinks(2, true);
     }
 
     /** */
-    private void checkDeleteLostSegmentLinks(List<Long> expBefore, List<Long> expAfter, boolean allNodes) throws Exception {
-        archiveSegmentLinks(expBefore);
+    private void checkDeleteLostSegmentLinks(int disableCnt, boolean allNodes) throws Exception {
+        archiveSegmentLinks(disableCnt);
+
+        // The segment that is current at a disabling is never linked: the even segments are linked.
+        List<Long> expBefore = LongStream.rangeClosed(0, disableCnt).map(i -> 2 * i).boxed().collect(Collectors.toList());
+        List<Long> expAfter = F.asList(2L * disableCnt);
 
         checkLinks(srv0, expBefore);
         checkLinks(srv1, expBefore);
@@ -255,34 +258,32 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         File[] links = ft.walCdcSegments();
 
         assertEquals(expLinks.size(), links.length);
-        Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)
-            .allMatch(expLinks::contains);
+        assertTrue(Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)
+            .allMatch(expLinks::contains));
     }
 
-    /** Archive given segments links with possible gaps. */
-    private void archiveSegmentLinks(List<Long> idxs) throws Exception {
-        for (long idx = 0; idx <= idxs.stream().mapToLong(v -> v).max().getAsLong(); idx++) {
-            cdcDisabled.propagate(!idxs.contains(idx));
+    /** Archives segments, disabling and enabling CDC the given number of times. */
+    private void archiveSegmentLinks(int disableCnt) throws Exception {
+        archiveSegment(0);
 
-            archiveSegment();
+        for (int i = 1; i <= disableCnt; i++) {
+            cdcDisabled.propagate(true);
+            cdcDisabled.propagate(false);
+
+            // The first record closes the segment that was current at the disabling, the data goes to the next one.
+            archiveSegment(2 * i);
         }
     }
 
-    /** */
-    private void archiveSegment() throws Exception {
-        CountDownLatch latch = new CountDownLatch(G.allGrids().size());
+    /** Writes data and waits for the given segment to be archived on all nodes. */
+    private void archiveSegment(long idx) throws Exception {
+        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, 1);
 
         for (Ignite srv : G.allGrids()) {
-            srv.events().localListen(evt -> {
-                latch.countDown();
+            IgniteWriteAheadLogManager wal = ((IgniteEx)srv).context().cache().context().wal(true);
 
-                return false;
-            }, EVT_WAL_SEGMENT_ARCHIVED);
+            assertTrue(waitForCondition(() -> wal.lastArchivedSegment() >= idx, getTestTimeout()));
         }
-
-        addData(srv1.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
-
-        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
     }
 
     /** */
@@ -301,6 +302,56 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
                 CDC, RESEND, CACHES),
             "Please specify a value for argument: --caches");
+    }
+
+    /** */
+    @Test
+    public void testResendCdcDisabled() throws Exception {
+        injectTestSystemOut();
+
+        cdcDisabled.propagate(true);
+
+        String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
+
+        if (cliCommandHandler())
+            assertContains(log, out, "CDC is disabled");
+    }
+
+    /** */
+    @Test
+    public void testResendCancelOnCdcDisabled() throws Exception {
+        injectTestSystemOut();
+
+        addData(srv0.cache(DEFAULT_CACHE_NAME), 0, KEYS_CNT);
+
+        CountDownLatch preload = new CountDownLatch(1);
+        CountDownLatch disabled = new CountDownLatch(1);
+
+        AtomicInteger cnt = new AtomicInteger();
+
+        onLogLsnr = rec -> {
+            if (cnt.incrementAndGet() < KEYS_CNT / 2)
+                return;
+
+            preload.countDown();
+
+            U.await(disabled);
+        };
+
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+            String out = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, RESEND, CACHES, DEFAULT_CACHE_NAME);
+
+            if (cliCommandHandler())
+                assertContains(log, out, "CDC is disabled");
+        });
+
+        preload.await();
+
+        cdcDisabled.propagate(true);
+
+        disabled.countDown();
+
+        fut.get();
     }
 
     /** */

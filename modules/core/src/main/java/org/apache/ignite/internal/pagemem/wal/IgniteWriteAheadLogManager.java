@@ -45,6 +45,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public boolean isFullSync();
 
     /**
+     * @return {@code True} if CDC is disabled by the {@code cdc.disabled} distributed property.
+     */
+    public boolean cdcForceDisabled();
+
+    /**
      * @return Current serializer version.
      */
     public int serializerVersion();

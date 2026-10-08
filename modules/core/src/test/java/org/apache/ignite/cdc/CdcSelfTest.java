@@ -55,7 +55,9 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -825,28 +827,62 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
+        UserCdcConsumer cnsmr = new UserCdcConsumer();
+
+        IgniteInternalFuture<?> fut = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+
         addData(cache, 0, 1);
 
-        File walCdcDir = ign.context().pdsFolderResolver().fileTree().walCdc();
-
-        assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
 
         DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
             .property(FileWriteAheadLogManager.CDC_DISABLED);
 
         disabled.propagate(true);
 
+        IgniteWriteAheadLogManager wal = ign.context().cache().context().wal(true);
+
+        WALPointer ptr = wal.lastWritePointer();
+
         addData(cache, 0, 1);
 
-        Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
+        // Persistent nodes keep writing to the WAL: the segment is archived by the force timeout, but not linked.
+        // In-memory CDC does not write data records while CDC is disabled.
+        if (persistenceEnabled) {
+            long idx = wal.lastWritePointer().index();
 
-        assertEquals(1, walCdcDir.list().length);
+            assertTrue(waitForCondition(() -> wal.lastArchivedSegment() >= idx, 2 * WAL_ARCHIVE_TIMEOUT));
+        }
+        else
+            assertEquals(ptr, wal.lastWritePointer());
+
+        NodeFileTree ft = ign.context().pdsFolderResolver().fileTree();
+
+        assertEquals(1, ft.walCdcSegments().length);
 
         disabled.propagate(false);
 
         addData(cache, 0, 1);
 
-        assertTrue(waitForCondition(() -> 2 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
+        // The segment that was current at the disabling is never linked: the application fails on the gap.
+        assertTrue(waitForCondition(() -> 2 == ft.walCdcSegments().length, 2 * WAL_ARCHIVE_TIMEOUT));
+
+        assertEquals(F.asList(0L, 2L), linkedSegments(ft));
+
+        assertThrows(log, () -> fut.get(getTestTimeout()), IgniteCheckedException.class, "Found missed segments");
+
+        // The links before the gap are deleted, the application continues from the following changes.
+        ign.compute().execute(CdcDeleteLostSegmentsTask.class, new VisorTaskArgument<>(ign.localNode().id(), false));
+
+        assertEquals(F.asList(2L), linkedSegments(ft));
+
+        cnsmr.clear();
+
+        IgniteInternalFuture<?> fut0 = runAsync(createCdc(cnsmr, getConfiguration(ign.name())));
+
+        waitForSize(1, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+
+        fut0.cancel();
     }
 
     /** */
@@ -913,6 +949,12 @@ public class CdcSelfTest extends AbstractCdcTest {
         assertFalse(f.isDone());
 
         f.cancel();
+    }
+
+    /** */
+    private static List<Long> linkedSegments(NodeFileTree ft) {
+        return Arrays.stream(ft.walCdcSegments()).map(File::toPath).map(ft::walSegmentIndex).sorted()
+            .collect(Collectors.toList());
     }
 
     /** */
