@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.junit.platform.suite.api.SelectClasses;
@@ -29,6 +30,7 @@ import org.junit.platform.suite.api.Suite;
 @SelectClasses({
     JdbcCrossEngineTest.class,
     MultiLineQueryTest.class,
+    TimeoutIntegrationTest.class,
 })
 public class CalciteAndH2TestSuite {
 }

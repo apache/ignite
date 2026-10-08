@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.SystemCol
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UnnestIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UnstableTopologyIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
@@ -165,7 +164,6 @@ import org.junit.platform.suite.api.Suite;
     LocalDateTimeSupportTest.class,
     DynamicParametersIntegrationTest.class,
     ExpiredEntriesIntegrationTest.class,
-    TimeoutIntegrationTest.class,
     PartitionPruneTest.class,
     DistributedJoinIntegrationTest.class,
     IndexWithSameNameCalciteTest.class,
