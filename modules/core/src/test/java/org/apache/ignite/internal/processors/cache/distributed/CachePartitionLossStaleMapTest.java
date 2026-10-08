@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,24 +45,26 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Checks that the coordinator's partition map agrees with the nodes after a node leaves with the only copy of its
- * partitions under the {@link org.apache.ignite.cache.PartitionLossPolicy#IGNORE IGNORE} loss policy.
+ * partitions.
  * <p>
- * Each lost partition is recreated empty on its new primary as MOVING and owned there when the node detects the loss.
- * If the new primary sends its partition map between these two steps, the map carries MOVING and overwrites what the
- * coordinator already knows, so the node must send its map again once it owns the partition.
+ * Each lost partition is recreated empty on its new primary as MOVING. When the node detects the loss, it owns the
+ * partition under the {@link PartitionLossPolicy#IGNORE IGNORE} policy or marks it LOST under the safe policies. If the
+ * new primary sends its partition map between these two steps, the map carries MOVING and overwrites what the
+ * coordinator already knows, so the node must send its map again after the change.
  * <p>
  * The window spans most of the exchange on the new primary: it opens when the node applies the coordinator's full
  * message and creates the partition, and closes when the node detects lost partitions at the end of the exchange. In a
  * real cluster a map gets into it when a resend scheduled by {@code scheduleResendPartitions()} (after an eviction, a
  * partition moving to RENTING or a partition map change) fires there.
  */
-public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTest {
+public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "cache";
 
@@ -74,8 +77,14 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
     /** Index of the node that leaves. */
     private static final int LEAVING = 2;
 
-    /** When set, the new primary sends its partition map right before it owns a MOVING partition of the cache. */
-    private final AtomicBoolean sendBeforeOwn = new AtomicBoolean();
+    /**
+     * When set, the new primary sends its partition map right before it owns a MOVING partition of the cache or marks
+     * it LOST.
+     */
+    private final AtomicBoolean sendBeforeChange = new AtomicBoolean();
+
+    /** Partition loss policy of the cache. */
+    private PartitionLossPolicy plc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -83,7 +92,7 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
                 .setBackups(0)
-                .setPartitionLossPolicy(IGNORE)
+                .setPartitionLossPolicy(plc)
                 .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
     }
 
@@ -95,16 +104,38 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
     }
 
     /**
-     * A node joins and takes partitions over, the old owners evict their copies, and the node leaves. Its partitions
-     * are lost, and the new primary sends a stale map, with the lost partition still MOVING, before it owns them.
+     * The new primary sends a stale map before it owns a lost partition under the IGNORE policy.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testStaleMapBeforeLostPartitionOwned() throws Exception {
+        checkStaleMapBeforeLostPartitionChanged(IGNORE);
+    }
+
+    /**
+     * The new primary sends a stale map before it marks a lost partition LOST under the READ_WRITE_SAFE policy.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStaleMapBeforeLostPartitionMarkedLost() throws Exception {
+        checkStaleMapBeforeLostPartitionChanged(READ_WRITE_SAFE);
+    }
+
+    /**
+     * A node joins and takes partitions over, the old owners evict their copies, and the node leaves. Its partitions
+     * are lost, and the new primary sends a stale map, with a lost partition still MOVING, before it changes them.
+     *
+     * @param plc Partition loss policy.
+     * @throws Exception If failed.
+     */
+    private void checkStaleMapBeforeLostPartitionChanged(PartitionLossPolicy plc) throws Exception {
+        this.plc = plc;
+
         IgniteEx crd = startGrid(0);
 
-        startGrid(NEW_PRIMARY, sendBeforeOwnResolver());
+        startGrid(NEW_PRIMARY, sendBeforeChangeResolver());
 
         IgniteCache<Integer, Integer> cache = crd.cache(CACHE);
 
@@ -124,7 +155,7 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
             && msg instanceof GridDhtPartitionsSingleMessage
             && ((GridDhtPartitionsSingleMessage)msg).exchangeId() == null);
 
-        sendBeforeOwn.set(true);
+        sendBeforeChange.set(true);
 
         long leaveVer = crd.cluster().topologyVersion() + 1;
 
@@ -132,7 +163,7 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
 
         newPrimarySpi.waitForBlocked();
 
-        assertFalse("The new primary didn't own a lost partition", sendBeforeOwn.get());
+        assertFalse("The new primary didn't change a lost partition", sendBeforeChange.get());
 
         assertTrue(waitForCondition(() -> {
             GridDhtPartitionsExchangeFuture fut = crd.context().cache().context().exchange().lastFinishedFuture();
@@ -145,14 +176,17 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
         if (!waitForCondition(() -> mismatches(crd).isEmpty(), 10_000))
             fail("The coordinator's partition map differs from the nodes: " + mismatches(crd));
 
+        if (plc != IGNORE)
+            crd.resetLostPartitions(Collections.singleton(CACHE));
+
         awaitPartitionMapExchange();
     }
 
     /**
      * @return Resolver that makes the new primary send its partition map right before it owns a MOVING partition of
-     * the cache, once {@link #sendBeforeOwn} is set.
+     * the cache or marks it LOST, once {@link #sendBeforeChange} is set.
      */
-    private TestDependencyResolver sendBeforeOwnResolver() {
+    private TestDependencyResolver sendBeforeChangeResolver() {
         return new TestDependencyResolver(new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof GridDhtPartitionTopologyImpl) {
@@ -160,11 +194,22 @@ public class CachePartitionLossIgnorePolicyMapTest extends GridCommonAbstractTes
 
                     top.partitionFactory((ctx, grp, id, recovery) -> new GridDhtLocalPartition(ctx, grp, id, recovery) {
                         @Override public boolean own() {
-                            if (CACHE.equals(grp.cacheOrGroupName()) && state() == MOVING
-                                && sendBeforeOwn.compareAndSet(true, false))
-                                ctx.exchange().refreshPartitions(Collections.singleton(grp));
+                            sendIfArmed();
 
                             return super.own();
+                        }
+
+                        @Override public boolean markLost() {
+                            sendIfArmed();
+
+                            return super.markLost();
+                        }
+
+                        /** Sends the partition map once, if this is a MOVING partition of the cache. */
+                        private void sendIfArmed() {
+                            if (CACHE.equals(grp.cacheOrGroupName()) && state() == MOVING
+                                && sendBeforeChange.compareAndSet(true, false))
+                                ctx.exchange().refreshPartitions(Collections.singleton(grp));
                         }
                     });
                 }
