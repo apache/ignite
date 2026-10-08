@@ -165,7 +165,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${maven.surefire.plugin.version}</version>
+                    <version>${surefire.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
