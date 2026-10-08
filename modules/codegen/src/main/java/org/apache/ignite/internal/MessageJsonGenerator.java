@@ -67,7 +67,7 @@ public class MessageJsonGenerator implements MessageGenerator {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "wire description";
+        return "representation";
     }
 
     /** Writes a description to the class output. */
