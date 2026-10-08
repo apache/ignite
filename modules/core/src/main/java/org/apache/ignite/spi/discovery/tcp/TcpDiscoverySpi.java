@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -417,9 +416,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** Source of the SSL context of the connections opened and accepted, {@code null} if SSL is disabled. */
+    /** SSL context of the connections opened and accepted, {@code null} if SSL is disabled. */
     @GridToStringExclude
-    private Supplier<SSLContext> sslCtx;
+    private SSLContext sslCtx;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1659,7 +1658,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslCtx.get().getSocketFactory().createSocket();
+                sock = sslCtx.getSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1686,7 +1685,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (!isSslEnabled())
             return sock;
 
-        SSLSocket sslSock = (SSLSocket)sslCtx.get().getSocketFactory().createSocket(sock, null, sock.getPort(), true);
+        SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory().createSocket(sock, null, sock.getPort(), true);
 
         sslSock.setUseClientMode(false);
         sslSock.setNeedClientAuth(true);
@@ -2165,8 +2164,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                sslCtx = ((IgniteEx)ignite).context().sslContexts()
-                    .register(ignite.configuration().getSslContextFactory(), DISCOVERY);
+                sslCtx = ((IgniteEx)ignite).context().sslContexts().register(ignite.configuration().getSslContextFactory(), DISCOVERY);
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "

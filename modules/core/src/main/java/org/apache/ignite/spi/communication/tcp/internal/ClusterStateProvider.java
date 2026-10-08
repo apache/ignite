@@ -61,8 +61,8 @@ public class ClusterStateProvider {
     /** Ignite ex supplier. */
     private final Supplier<Ignite> igniteExSupplier;
 
-    /** Source of the SSL context of the connections, {@code null} if SSL is disabled. */
-    private final @Nullable Supplier<SSLContext> sslCtx;
+    /** SSL context of the connections, {@code null} if SSL is disabled. */
+    private final @Nullable SSLContext sslCtx;
 
     /**
      * @param ignite Ignite.
@@ -122,11 +122,11 @@ public class ClusterStateProvider {
      * @return {@link SSLEngine} for ssl connections.
      */
     public SSLEngine createSSLEngine() {
-        return sslCtx.get().createSSLEngine();
+        return sslCtx.createSSLEngine();
     }
 
-    /** @return Source of the SSL context of the connections, {@code null} if SSL is disabled. */
-    public @Nullable Supplier<SSLContext> sslContext() {
+    /** @return SSL context of the connections, {@code null} if SSL is disabled. */
+    public @Nullable SSLContext sslContext() {
         return sslCtx;
     }
 

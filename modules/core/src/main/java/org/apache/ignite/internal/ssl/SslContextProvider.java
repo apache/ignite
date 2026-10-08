@@ -20,8 +20,6 @@ package org.apache.ignite.internal.ssl;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
@@ -68,7 +66,7 @@ public class SslContextProvider {
     private volatile long nextRenewalTime;
 
     /** @param factory Factory to build the context with. */
-    public SslContextProvider(Factory<SSLContext> factory) {
+    SslContextProvider(Factory<SSLContext> factory) {
         this.factory = factory;
 
         ctx = factory.create();
@@ -81,18 +79,18 @@ public class SslContextProvider {
     }
 
     /** @return Context to open the next connection with. */
-    public SSLContext context() {
+    SSLContext context() {
         return ctx;
     }
 
     /** @param transport Transport the context is handed to. */
-    public void addTransport(String transport) {
+    void addTransport(String transport) {
         transports.add(transport);
     }
 
-    /** @return Transports served, as the commands and the node log name them. */
-    public Collection<String> transports() {
-        return Collections.unmodifiableCollection(transports);
+    /** @return Transports served, comma-separated, as the commands and the node log name them. */
+    public String transports() {
+        return String.join(", ", transports);
     }
 
     /** @return Chain presented on new connections, own certificate first, or {@code null} if it is unknown. */
@@ -114,8 +112,8 @@ public class SslContextProvider {
 
     /**
      * Builds the certificates the configuration points at now, puts them in use for new connections and records the outcome. The new
-     * context goes in use only if every certificate of its chain is valid now and, if nodes connect on it, this node's own trust store
-     * accepts it.
+     * context goes in use only if it presents a certificate when the one in use does, every certificate of its chain is valid now and,
+     * if nodes connect on it, this node's own trust store accepts it.
      *
      * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
      */
@@ -151,7 +149,7 @@ public class SslContextProvider {
      * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, or does not
      *      expire later.
      */
-    public synchronized RenewalResult renew(SSLContext expected) throws IgniteCheckedException {
+    synchronized RenewalResult renew(SSLContext expected) throws IgniteCheckedException {
         if (ctx != expected)
             return RenewalResult.SUPERSEDED;
 
@@ -159,9 +157,6 @@ public class SslContextProvider {
             SSLContext rebuilt = factory.create();
 
             X509Certificate[] next = SslCertificates.servedChain(rebuilt);
-
-            if (next == null)
-                throw new IgniteCheckedException("Cannot tell which certificate the new SSL context presents");
 
             if (Arrays.equals(next, chain))
                 return RenewalResult.UNCHANGED;
@@ -221,7 +216,7 @@ public class SslContextProvider {
     }
 
     /** Records a successful reload. */
-    private synchronized void onSuccess() {
+    private void onSuccess() {
         lastSuccessTime = System.currentTimeMillis();
         lastFailureTime = 0;
         lastFailureReason = null;
@@ -231,7 +226,7 @@ public class SslContextProvider {
     }
 
     /** @param e Why the reload failed. */
-    private synchronized void onFailure(Throwable e) {
+    private void onFailure(Throwable e) {
         lastFailureTime = System.currentTimeMillis();
         lastFailureReason = SslCertificates.reason(e);
         failures++;
@@ -268,7 +263,7 @@ public class SslContextProvider {
     }
 
     /** What a renewal did. */
-    public enum RenewalResult {
+    enum RenewalResult {
         /** Put a new certificate in use. */
         RENEWED,
 

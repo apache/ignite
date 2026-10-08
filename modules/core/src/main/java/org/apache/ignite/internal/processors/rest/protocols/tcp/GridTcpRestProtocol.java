@@ -23,7 +23,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -92,7 +91,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         try {
             host = resolveRestTcpHost(ctx.config());
 
-            Supplier<SSLContext> sslCtx = null;
+            SSLContext sslCtx = null;
 
             if (cfg.isSslEnabled()) {
                 Factory<SSLContext> igniteFactory = ctx.config().getSslContextFactory();
@@ -103,8 +102,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                     // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
-                sslCtx = ctx.sslContexts()
-                    .register(factory != null ? factory : igniteFactory, BINARY_REST);
+                if (factory != null)
+                    sslCtx = ctx.sslContexts().register(factory, BINARY_REST);
+                else
+                    sslCtx = ctx.sslContexts().register(igniteFactory, BINARY_REST);
             }
             int startPort = cfg.getPort();
             int portRange = cfg.getPortRange();
@@ -186,13 +187,13 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @param port Port on which server should be bound.
      * @param lsnr Server message listener.
      * @param parser Server message parser.
-     * @param sslCtx Source of the SSL context, asked once per new session; {@code null} if SSL is disabled.
+     * @param sslCtx SSL context in case if SSL is enabled.
      * @param cfg Configuration for other parameters.
      * @return {@code True} if server successfully started, {@code false} if port is used and
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable Supplier<SSLContext> sslCtx, ConnectorConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, ConnectorConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 

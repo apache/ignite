@@ -114,7 +114,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -7755,7 +7754,7 @@ public abstract class IgniteUtils extends CommonUtils {
     /**
      * Creates an SSL NIO filter, wiring its metrics from the given registry.
      *
-     * @param sslCtx Source of the SSL context, asked once per new session.
+     * @param sslCtx SSL context.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -7763,7 +7762,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return SSL NIO filter.
      */
     public static GridNioSslFilter sslFilter(
-        Supplier<SSLContext> sslCtx,
+        SSLContext sslCtx,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,

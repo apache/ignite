@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
  * Renews the certificates of the contexts built by a factory with {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal
  * enabled}, before they expire.
  */
-public class SslRenewal {
+class SslRenewal {
     /** How the node log names an automatic renewal among those who start a reload. */
     private static final String INITIATOR = "automatic renewal";
 
@@ -157,7 +157,7 @@ public class SslRenewal {
 
             if (chain == null) {
                 U.warn(log, "Cannot tell when the TLS certificate expires, so it is not renewed automatically [transports=" +
-                    transports() + ']');
+                    provider.transports() + ']');
 
                 return;
             }
@@ -172,7 +172,7 @@ public class SslRenewal {
 
             schedule(at);
 
-            U.log(log, "TLS certificates will be renewed automatically [transports=" + transports() +
+            U.log(log, "TLS certificates will be renewed automatically [transports=" + provider.transports() +
                 ", nextRenewal=" + Instant.ofEpochMilli(at) + ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ']');
         }
 
@@ -184,10 +184,8 @@ public class SslRenewal {
                 SslContextProvider.RenewalResult res = provider.renew(planned);
 
                 if (res == RENEWED) {
-                    if (log.isInfoEnabled()) {
-                        log.info("TLS certificates reloaded [transports=" + transports() + ", " +
-                            SslCertificates.describe(provider.servedCertificate()) + ", initiator=" + INITIATOR + ']');
-                    }
+                    U.log(log, "TLS certificates reloaded [transports=" + provider.transports() + ", " +
+                        SslCertificates.describe(provider.servedCertificate()) + ", initiator=" + INITIATOR + ']');
                 }
                 else if (res == UNCHANGED)
                     retry(null);
@@ -207,8 +205,6 @@ public class SslRenewal {
         private void retry(@Nullable Throwable e) {
             if (exec.isShutdown())
                 return;
-
-            String reason = e == null ? null : SslCertificates.reason(e);
 
             long now = U.currentTimeMillis();
 
@@ -231,7 +227,8 @@ public class SslRenewal {
             String msg = (e == null ? "The SSL context factory has no newer TLS certificates yet, the ones in use stay" :
                 "Failed to reload TLS certificates, the ones in use stay") +
                 (now >= chainNotAfter ? ", though they have expired" : soon ? " and expire soon" : "") +
-                " [transports=" + transports() + (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + reason) +
+                " [transports=" + provider.transports() +
+                (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + SslCertificates.reason(e)) +
                 ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ", nextRenewal=" + Instant.ofEpochMilli(at) + ']';
 
             if (soon)
@@ -267,11 +264,6 @@ public class SslRenewal {
             catch (RejectedExecutionException stopping) {
                 return null;
             }
-        }
-
-        /** */
-        private String transports() {
-            return String.join(", ", provider.transports());
         }
     }
 }

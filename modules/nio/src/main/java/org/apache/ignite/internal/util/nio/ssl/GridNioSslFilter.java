@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -69,8 +68,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Array of enabled protocols. */
     private String[] enabledProtos;
 
-    /** Source of the SSL context, asked once per new session. */
-    private final Supplier<SSLContext> sslCtx;
+    /** SSL context to use. */
+    private SSLContext sslCtx;
 
     /** Order. */
     private ByteOrder order;
@@ -93,7 +92,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /**
      * Creates SSL filter.
      *
-     * @param sslCtx Source of the SSL context, asked once per new session.
+     * @param sslCtx SSL context.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -101,7 +100,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @param rejectedSesCnt Increments the rejected-sessions counter, or {@code null} if metrics disabled.
      */
     public GridNioSslFilter(
-        Supplier<SSLContext> sslCtx,
+        SSLContext sslCtx,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
@@ -181,7 +180,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         if (sslMeta == null) {
             try {
-                engine = sslCtx.get().createSSLEngine();
+                engine = sslCtx.createSSLEngine();
             }
             catch (IllegalArgumentException e) {
                 IgniteCheckedException ex = new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);

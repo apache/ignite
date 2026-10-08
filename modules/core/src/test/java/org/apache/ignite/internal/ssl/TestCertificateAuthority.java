@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ssl;
+package org.apache.ignite.internal.ssl;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,9 +46,9 @@ import javax.security.auth.x500.X500Principal;
  * Certificate authority for tests that need certificates valid for a chosen time, which the stores checked into the repository cannot give.
  * Certificates are put together in memory, with the platform's own security providers only.
  */
-public class TestCertificateAuthority {
+class TestCertificateAuthority {
     /** Password of every store made here. */
-    public static final char[] PWD = "123456".toCharArray();
+    static final char[] PWD = "123456".toCharArray();
 
     /** DER of {@code ecdsa-with-SHA256}, the algorithm every certificate here is signed with. */
     private static final byte[] SIG_ALG = seq(new byte[] {0x06, 0x08, 0x2A, (byte)0x86, 0x48, (byte)0xCE, 0x3D, 0x04, 0x03, 0x02});
@@ -75,7 +75,7 @@ public class TestCertificateAuthority {
     private final X509Certificate cert;
 
     /** @param cn Common name of the authority. */
-    public TestCertificateAuthority(String cn) throws Exception {
+    TestCertificateAuthority(String cn) throws Exception {
         name = new X500Principal("CN=" + cn);
         keys = keyPair();
 
@@ -90,7 +90,7 @@ public class TestCertificateAuthority {
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the certificate, its key and the authority behind it.
      */
-    public KeyStore issue(String cn, long notBefore, long notAfter) throws Exception {
+    KeyStore issue(String cn, long notBefore, long notAfter) throws Exception {
         KeyPair pair = keyPair();
 
         X509Certificate leaf = sign(new X500Principal("CN=" + cn), pair, notBefore, notAfter, false);
@@ -103,7 +103,7 @@ public class TestCertificateAuthority {
     }
 
     /** @return Trust store with this authority alone. */
-    public KeyStore trustStore() throws Exception {
+    KeyStore trustStore() throws Exception {
         KeyStore store = emptyStore();
 
         store.setCertificateEntry(name.getName(), cert);
@@ -116,7 +116,7 @@ public class TestCertificateAuthority {
      * @param trustStore Store with the authorities to trust.
      * @return Context that presents and trusts them.
      */
-    public static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws Exception {
+    static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws Exception {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
         ctx.init(keyManagers(keyStore), trustManagers(trustStore), null);
@@ -128,7 +128,7 @@ public class TestCertificateAuthority {
      * @param keyStore Store with the certificate to present.
      * @return Key managers that present it.
      */
-    public static KeyManager[] keyManagers(KeyStore keyStore) throws Exception {
+    static KeyManager[] keyManagers(KeyStore keyStore) throws Exception {
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 
         kmf.init(keyStore, PWD);
@@ -140,7 +140,7 @@ public class TestCertificateAuthority {
      * @param trustStore Store with the authorities to trust.
      * @return Trust managers that trust them.
      */
-    public static TrustManager[] trustManagers(KeyStore trustStore) throws Exception {
+    static TrustManager[] trustManagers(KeyStore trustStore) throws Exception {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
         tmf.init(trustStore);
@@ -152,7 +152,7 @@ public class TestCertificateAuthority {
      * @param store Store.
      * @param path File to write or replace.
      */
-    public static void save(KeyStore store, Path path) throws Exception {
+    static void save(KeyStore store, Path path) throws Exception {
         try (OutputStream out = Files.newOutputStream(path)) {
             store.store(out, PWD);
         }

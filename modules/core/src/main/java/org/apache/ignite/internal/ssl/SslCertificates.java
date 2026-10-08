@@ -61,7 +61,7 @@ public class SslCertificates {
      * @param ctx SSL context.
      * @return Chain the context presents to a client that trusts anything, own certificate first, or {@code null} if it is unknown.
      */
-    public static @Nullable X509Certificate[] servedChain(SSLContext ctx) {
+    static @Nullable X509Certificate[] servedChain(SSLContext ctx) {
         try {
             SSLContext probe = SSLContext.getInstance("TLS");
 
@@ -110,7 +110,7 @@ public class SslCertificates {
 
     /**
      * @param cert Certificate, {@code null} if unknown.
-     * @return The certificate as the node log, the commands and the errors name it; an empty string if it is unknown.
+     * @return Subject, issuer, serial and validity of the certificate; an empty string if it is unknown.
      */
     public static String describe(@Nullable X509Certificate cert) {
         return cert == null ? "" : "subject=" + cert.getSubjectX500Principal() + ", issuer=" + cert.getIssuerX500Principal() +

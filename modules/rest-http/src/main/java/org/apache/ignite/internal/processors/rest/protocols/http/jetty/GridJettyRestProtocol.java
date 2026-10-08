@@ -218,8 +218,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 "ConnectorConfiguration.httpSslFactory, not from both [jettyPath=" + config().getJettyPath() + ']');
         }
 
-        jettySsl.setSslContext(new CurrentSslContext(
-            ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST)));
+        jettySsl.setSslContext(ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST));
     }
 
     /**
@@ -315,9 +314,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             httpSrv = new Server(new QueuedThreadPool(200, 20));
 
-            SslContextFactory.Server sslCtxFactory = config().getHttpSslFactory() == null ? null : new SslContextFactory.Server();
-
-            ServerConnector srvConn = new ServerConnector(httpSrv, sslCtxFactory, new HttpConnectionFactory(httpCfg));
+            ServerConnector srvConn = new ServerConnector(httpSrv,
+                config().getHttpSslFactory() == null ? null : new SslContextFactory.Server(), new HttpConnectionFactory(httpCfg));
 
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);

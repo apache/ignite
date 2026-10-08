@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
@@ -48,7 +47,7 @@ public class SslContextRegistry extends GridProcessorAdapter {
     /** */
     public static final String HTTP_REST = "HTTP REST";
 
-    /** Read from the management pool. */
+    /** */
     private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
 
     /** */
@@ -64,10 +63,10 @@ public class SslContextRegistry extends GridProcessorAdapter {
     /**
      * @param factory Factory the transport is configured with.
      * @param transport Transport, one of the names above.
-     * @return Source of the context the factory builds, asked on every new connection. Transports configured with the same factory share
-     *      it, so that a reload cannot leave them on certificates read at different moments.
+     * @return Context that passes every call to the one in use at that moment. Transports configured with the same factory share it,
+     *      so that a reload cannot leave them on certificates read at different moments.
      */
-    public synchronized Supplier<SSLContext> register(Factory<SSLContext> factory, String transport) {
+    public synchronized SSLContext register(Factory<SSLContext> factory, String transport) {
         SslContextProvider provider = providers.stream().filter(p -> p.factory() == factory).findFirst().orElse(null);
 
         if (provider == null) {
@@ -85,7 +84,7 @@ public class SslContextRegistry extends GridProcessorAdapter {
 
         registerMetrics(transport, provider);
 
-        return provider::context;
+        return new CurrentSslContext(provider::context);
     }
 
     /** @return Providers in the order they were registered. */

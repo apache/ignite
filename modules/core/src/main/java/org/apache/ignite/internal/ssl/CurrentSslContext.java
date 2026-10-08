@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
+package org.apache.ignite.internal.ssl;
 
 import java.security.SecureRandom;
 import java.util.function.Supplier;
@@ -28,7 +28,7 @@ import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-/** SSL context that passes every call to the context in use at that moment, so that Jetty serves reloaded certificates. */
+/** SSL context that passes every call to the context in use at that moment, so that new connections get reloaded certificates. */
 class CurrentSslContext extends SSLContext {
     /** @param ctx Context in use at the moment it is asked. */
     CurrentSslContext(Supplier<SSLContext> ctx) {

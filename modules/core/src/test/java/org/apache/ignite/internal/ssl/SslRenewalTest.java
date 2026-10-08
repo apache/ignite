@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ssl;
+package org.apache.ignite.internal.ssl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,14 +35,14 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.ssl.SslContextProvider;
-import org.apache.ignite.internal.ssl.SslRenewal;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MemorizingAppender;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -58,6 +58,7 @@ import static org.apache.ignite.ssl.SslTestUtils.reload;
 import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
 import static org.apache.ignite.ssl.SslTestUtils.status;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests that a node renews the certificates of a factory with renewal enabled before they expire. */
@@ -259,9 +260,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         IgniteEx g = startGrid(0);
 
         try (Scope ignored = OperationContext.set(OPERATOR, "operator")) {
-            SslContextProvider p = provider(g);
-
-            p.reload();
+            provider(g).reload();
         }
 
         assertTrue(waitForCondition(() -> automaticRenewals(NODE_TRANSPORTS) == 1, 30_000));
@@ -354,8 +353,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testInvalidSettingsRefused() {
         SslContextFactory factory = new SslContextFactory();
 
-        assertRefused(() -> factory.setRenewBeforeFraction(1), "renewBeforeFraction must be greater than 0 and less than 1");
-        assertRefused(() -> factory.setRenewBeforeFraction(0), "renewBeforeFraction must be greater than 0 and less than 1");
+        assertThrowsWithCause(() -> factory.setRenewBeforeFraction(1), IllegalArgumentException.class);
+        assertThrowsWithCause(() -> factory.setRenewBeforeFraction(0), IllegalArgumentException.class);
     }
 
     /** The client connector with a factory of its own must be renewed on its own. */
@@ -582,18 +581,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         long now = System.currentTimeMillis();
 
         return TestCertificateAuthority.context(ca.issue("probe", now - MINUTE, now + HOUR), ca.trustStore());
-    }
-
-    /**
-     * @param set Sets a value out of range.
-     * @param reason Reason the setter must give.
-     */
-    private static void assertRefused(Runnable set, String reason) {
-        GridTestUtils.assertThrows(log, () -> {
-            set.run();
-
-            return null;
-        }, IllegalArgumentException.class, reason);
     }
 
     /**

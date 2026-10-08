@@ -26,6 +26,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecuritySubject;
@@ -79,17 +80,15 @@ public class SslReloadTask extends AbstractSslTask {
             boolean failed = false;
 
             for (SslContextProvider provider : providers) {
-                String transports = String.join(", ", provider.transports());
+                String transports = provider.transports();
 
                 try {
                     provider.reload();
 
                     String desc = describe(provider.servedCertificate());
 
-                    if (ignite.log().isInfoEnabled()) {
-                        ignite.log().info("TLS certificates reloaded [transports=" + transports + (desc.isEmpty() ? "" : ", " + desc) +
-                            ", initiator=" + initiator + ']');
-                    }
+                    U.log(ignite.log(), "TLS certificates reloaded [transports=" + transports + (desc.isEmpty() ? "" : ", " + desc) +
+                        ", initiator=" + initiator + ']');
 
                     lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; serving " + desc));
                 }

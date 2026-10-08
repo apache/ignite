@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -90,7 +89,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         add(new GridMetricManager(this));
         add(new GridResourceProcessor(this));
         add(new GridInternalSubscriptionProcessor(this));
-        add(new SslContextRegistry(this));
     }
 
     /**

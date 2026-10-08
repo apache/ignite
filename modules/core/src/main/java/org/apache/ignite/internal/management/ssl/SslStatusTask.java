@@ -50,7 +50,7 @@ public class SslStatusTask extends AbstractSslTask {
         private static final long serialVersionUID = 0L;
 
         /** */
-        protected SslStatusJob(NoArg arg, boolean debug) {
+        private SslStatusJob(NoArg arg, boolean debug) {
             super(arg, debug);
         }
 
@@ -68,7 +68,7 @@ public class SslStatusTask extends AbstractSslTask {
             boolean invalid = false;
 
             for (SslContextProvider provider : providers) {
-                lines.add(id + ": " + String.join(", ", provider.transports()));
+                lines.add(id + ": " + provider.transports());
 
                 X509Certificate[] chain = provider.servedChain();
 
