@@ -32,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -55,7 +54,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
@@ -65,6 +63,9 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
  * Checks behaviour of a node that has the Calcite engine on the classpath but <b>not</b> the H2 engine
@@ -165,7 +166,8 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     public void testSqlFieldsQuery() throws Exception {
         assertEquals(CalciteQueryEngineConfiguration.ENGINE_NAME, nodeOp(OP_QUERY_ENGINE));
 
-        try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement()) {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL);
+             Statement stmt = conn.createStatement()) {
             stmt.executeUpdate("CREATE TABLE t(id INT PRIMARY KEY, val VARCHAR) WITH \"template=replicated\"");
             stmt.executeUpdate("INSERT INTO t VALUES (1, 'a')");
 
@@ -178,15 +180,12 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
         }
     }
 
-    /**
-     * Deprecated {@link SqlQuery} is implemented by the H2 engine only and is not supported by the Calcite engine:
-     * the error must name the missing module.
-     */
+    /** */
     @Test
-    public void testSqlQuery() throws Exception {
-        String res = nodeOp(OP_SQL_QUERY);
+    public void testSqlQueryNotSupported() throws Exception {
+        String msg = nodeOp(OP_SQL_QUERY);
 
-        assertTrue(res, res.startsWith(ERR_PREFIX) && res.contains(H2_ONLY_FEATURE_MSG));
+        assertTrue(msg, msg.startsWith(ERR_PREFIX) && msg.contains(H2_ONLY_FEATURE_MSG));
     }
 
     /** Deprecated {@link SqlQuery} sent by the Java thin client fails on the server node with the same error. */
@@ -194,11 +193,12 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     @SuppressWarnings("ThrowableNotThrown")
     public void testThinClientSqlQuery() {
         try (IgniteClient cli = client()) {
-            ClientCache<Integer, String> cache = cli.cache(DEFAULT_CACHE_NAME);
-
-            GridTestUtils.assertThrows(log,
-                () -> cache.query(new SqlQuery<Integer, String>(String.class, "_val = ?").setArgs("v2")).getAll(),
-                ClientException.class, H2_ONLY_FEATURE_MSG);
+            assertThrows(
+                log,
+                () -> cli.cache(DEFAULT_CACHE_NAME).query(new SqlQuery<Integer, String>(String.class, "_val = ?").setArgs("v2")).getAll(),
+                ClientException.class,
+                H2_ONLY_FEATURE_MSG
+            );
         }
     }
 
@@ -219,14 +219,16 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
         Connection conn = DriverManager.getConnection(JDBC_URL);
 
         try (Statement stmt = conn.createStatement()) {
-            GridTestUtils.assertThrowsAnyCause(log, () -> stmt.executeUpdate("SET STREAMING ON"),
-                SQLException.class, PARSE_ERR_MSG);
+            assertThrowsAnyCause(
+                log,
+                () -> stmt.executeUpdate("SET STREAMING ON"),
+                SQLException.class,
+                PARSE_ERR_MSG
+            );
         }
         finally {
-            IgniteInternalFuture<?> closeFut = GridTestUtils.runAsync(conn::close);
-
             try {
-                closeFut.get(10_000);
+                GridTestUtils.runAsync(conn::close).get(10_000);
             }
             catch (IgniteFutureTimeoutCheckedException e) {
                 fail("Connection close hangs after a rejected SET STREAMING ON");
@@ -238,17 +240,19 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     @Test
     public void testCopy() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement()) {
-            GridTestUtils.assertThrowsAnyCause(log,
+            assertThrowsAnyCause(
+                log,
                 () -> stmt.executeUpdate("COPY FROM '/nonexistent.csv' INTO \"test\".String(_key, _val) FORMAT CSV"),
-                SQLException.class, PARSE_ERR_MSG);
+                SQLException.class,
+                PARSE_ERR_MSG
+            );
         }
     }
 
     /** The only available engine can be selected by name via the JDBC property without an explicit configuration. */
     @Test
     public void testJdbcQueryEngineProperty() throws Exception {
-        try (Connection conn = DriverManager.getConnection(
-            JDBC_URL + "?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME);
+        try (Connection conn = DriverManager.getConnection(JDBC_URL + "?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME);
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery("SELECT QUERY_ENGINE()")) {
             assertTrue(rs.next());
@@ -259,10 +263,11 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     /** The only available engine can be selected by the query hint without an explicit configuration. */
     @Test
     public void testQueryEngineHint() throws Exception {
+        String qry = "SELECT /*+ QUERY_ENGINE('" + CalciteQueryEngineConfiguration.ENGINE_NAME + "') */ QUERY_ENGINE()";
+
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(
-                "SELECT /*+ QUERY_ENGINE('" + CalciteQueryEngineConfiguration.ENGINE_NAME + "') */ QUERY_ENGINE()")) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(qry)) {
             assertTrue(rs.next());
             assertEquals(CalciteQueryEngineConfiguration.ENGINE_NAME, rs.getString(1));
         }
@@ -327,22 +332,22 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
             try {
                 IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-                switch (op) {
-                    case OP_H2_IN_CLASSPATH:
-                        return String.valueOf(IgniteComponentType.INDEXING.inClassPath());
+                return switch (op) {
+                    case OP_H2_IN_CLASSPATH ->
+                        String.valueOf(IgniteComponentType.INDEXING.inClassPath());
 
-                    case OP_QUERY_ENGINE:
-                        return String.valueOf(cache.query(new SqlFieldsQuery("SELECT QUERY_ENGINE()")).getAll().get(0).get(0));
+                    case OP_QUERY_ENGINE ->
+                        String.valueOf(cache.query(new SqlFieldsQuery("SELECT QUERY_ENGINE()")).getAll().get(0).get(0));
 
-                    case OP_SQL_QUERY:
-                        return keys(cache.query(new SqlQuery<Integer, String>(String.class, "_val = ?").setArgs("v1")).getAll());
+                    case OP_SQL_QUERY ->
+                        cache.query(new SqlQuery<Integer, String>(String.class, "_val = ?").setArgs("v1")).getAll();
 
-                    case OP_TEXT_QUERY:
-                        return keys(cache.query(new TextQuery<Integer, String>(String.class, "v1")).getAll());
+                    case OP_TEXT_QUERY ->
+                        cache.query(new TextQuery<Integer, String>(String.class, "v1")).getAll();
 
-                    default:
+                    default ->
                         throw new IllegalArgumentException("Unknown operation: " + op);
-                }
+                };
             }
             catch (Throwable e) {
                 StringBuilder sb = new StringBuilder(ERR_PREFIX);
@@ -352,12 +357,6 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
 
                 return sb.toString();
             }
-        }
-
-        /** @return Sorted, comma separated keys of the entries. */
-        private static String keys(List<Cache.Entry<Integer, String>> entries) {
-            return entries.stream().map(Cache.Entry::getKey).sorted().map(String::valueOf)
-                .collect(Collectors.joining(","));
         }
     }
 }
