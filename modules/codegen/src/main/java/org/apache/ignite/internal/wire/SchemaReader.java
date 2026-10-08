@@ -68,7 +68,7 @@ public class SchemaReader {
         List<String> clsAnnotations = new ArrayList<>();
         List<FieldRepresentation> unorderedFields = new ArrayList<>();
 
-        for (TypeElement cls : SystemViewRowAttributeWalkerProcessor.superclasses(env, type).collect(Collectors.toList())) {
+        for (TypeElement cls : SystemViewRowAttributeWalkerProcessor.superclasses(env, type).toList()) {
             clsAnnotations.addAll(annotations(cls));
 
             for (VariableElement field : ElementFilter.fieldsIn(cls.getEnclosedElements())) {
@@ -83,7 +83,7 @@ public class SchemaReader {
 
         res.addAll(unorderedFields);
 
-        return new Schema(binaryName(type), clsAnnotations.stream().distinct().sorted().collect(Collectors.toList()), res);
+        return new Schema(binaryName(type), clsAnnotations.stream().distinct().sorted().toList(), res);
     }
 
     /**
