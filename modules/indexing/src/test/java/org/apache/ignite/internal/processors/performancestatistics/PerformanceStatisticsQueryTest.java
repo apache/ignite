@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -50,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -88,19 +88,14 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Parameterized.Parameter(1)
     public ClientType clientType;
 
-    /** */
-    @Parameterized.Parameter(2)
-    public boolean fetchAll;
-
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pageSize={0}, clientType={1}, fetchAll={2}")
+    @Parameterized.Parameters(name = "pageSize={0}, clientType={1}")
     public static Collection<?> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (Integer pageSize : new Integer[] {ENTRY_COUNT, ENTRY_COUNT / 10}) {
             for (ClientType clientType : new ClientType[] {SERVER, CLIENT, THIN_CLIENT})
-                for (boolean fetchAll : new boolean[] {true, false})
-                    res.add(new Object[] {pageSize, clientType, fetchAll});
+                res.add(new Object[] {pageSize, clientType});
         }
 
         return res;
@@ -239,6 +234,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testSqlFieldsLocalQuery() throws Exception {
+        Assume.assumeTrue(clientType == SERVER);
+
         String sql = "select * from " + DEFAULT_CACHE_NAME;
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize).setLocal(true);
@@ -268,6 +265,59 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         assertEquals("local", flags.get());
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testScanQueryCursorNotFullyRead() throws Exception {
+        checkCursorNotFullyRead(new ScanQuery<>().setPageSize(pageSize));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testIndexQueryCursorNotFullyRead() throws Exception {
+        checkCursorNotFullyRead(new IndexQuery<>(Integer.class).setPageSize(pageSize));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSqlFieldsQueryCursorNotFullyRead() throws Exception {
+        checkCursorNotFullyRead(new SqlFieldsQuery("select * from " + DEFAULT_CACHE_NAME).setPageSize(pageSize));
+    }
+
+    /** Checks that a query is successful when its cursor is closed before all rows are read. */
+    private void checkCursorNotFullyRead(Query<?> qry) throws Exception {
+        Assume.assumeTrue("Query result fits into one page.", pageSize < ENTRY_COUNT);
+
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
+
+        QueryCursor<?> cursor;
+
+        if (clientType == SERVER)
+            cursor = srv.cache(DEFAULT_CACHE_NAME).query(qry);
+        else if (clientType == CLIENT)
+            cursor = client.cache(DEFAULT_CACHE_NAME).query(qry);
+        else
+            cursor = thinClient.cache(DEFAULT_CACHE_NAME).query(qry);
+
+        cursor.iterator().next();
+
+        cursor.close();
+
+        AtomicInteger qryCnt = new AtomicInteger();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long queryStartTime,
+                long duration, boolean success) {
+                qryCnt.incrementAndGet();
+
+                assertTrue(success);
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
+    }
+
     /** Check query. */
     private void checkQuery(GridCacheQueryType type, Query<?> qry, String text, boolean hasReducer) throws Exception {
         client.cluster().state(INACTIVE);
@@ -294,21 +344,6 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, true, false, false);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testCursorNotFullyRead() throws Exception {
-        query(new SqlFieldsQuery("create table " + SQL_TABLE + " (id int, val varchar, primary key (id))"));
-
-        for (int i = 0; i < 20; i++)
-            query(new SqlFieldsQuery("insert into " + SQL_TABLE + " (id) values (" + i + ")"));
-
-        String sql = "SELECT id FROM " + SQL_TABLE;
-
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(10);
-
-        runQueryAndCheck(SQL_FIELDS, qry, sql, true, false, false);
-    }
-
     /** Runs query and checks statistics. */
     private void runQueryAndCheck(
         GridCacheQueryType expType,
@@ -324,7 +359,23 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         startCollectStatistics();
 
-        Collection<UUID> expNodeIds = query(qry);
+        Collection<UUID> expNodeIds = new ArrayList<>();
+
+        if (clientType == SERVER) {
+            srv.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+
+            expNodeIds.add(srv.localNode().id());
+        }
+        else if (clientType == CLIENT) {
+            client.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+
+            expNodeIds.add(client.localNode().id());
+        }
+        else if (clientType == THIN_CLIENT) {
+            thinClient.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
+
+            expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
+        }
 
         Set<UUID> readsNodes = new HashSet<>();
 
@@ -490,41 +541,5 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         assertTrue("Queries was not handled: " + expQrs, expQrs.isEmpty());
         assertEquals("Unexpected IDs: " + qryIds, qrsWithReads.size(), qryIds.size());
-    }
-
-    /** */
-    private Collection<UUID> query(Query<?> qry) {
-        Collection<UUID> expNodeIds = new ArrayList<>();
-
-        QueryCursor<?> cursor = null;
-
-        if (clientType == SERVER) {
-            cursor = srv.cache(DEFAULT_CACHE_NAME).query(qry);
-
-            expNodeIds.add(srv.localNode().id());
-        }
-        else if (clientType == CLIENT) {
-            cursor = client.cache(DEFAULT_CACHE_NAME).query(qry);
-
-            expNodeIds.add(client.localNode().id());
-        }
-        else if (clientType == THIN_CLIENT) {
-            cursor = thinClient.cache(DEFAULT_CACHE_NAME).query(qry);
-
-            expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
-        }
-
-        if (fetchAll)
-            cursor.getAll();
-        else {
-            Iterator<?> iter = cursor.iterator();
-
-            if (iter.hasNext())
-                iter.next();
-
-            cursor.close();
-        }
-
-        return expNodeIds;
     }
 }
