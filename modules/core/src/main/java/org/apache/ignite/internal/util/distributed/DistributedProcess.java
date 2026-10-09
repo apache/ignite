@@ -223,25 +223,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
         ctx.event().addDiscoveryEventListener((evt, discoCache) -> {
             UUID leftNodeId = evt.eventNode().id();
 
-            for (Map.Entry<UUID, PendingStart> e : pendingStarts.entrySet()) {
-                PendingStart pending = e.getValue();
-
-                if (!Objects.equals(leftNodeId, pending.crdId))
-                    continue;
-
-                ClusterNode crd = coordinator();
-
-                if (crd == null) {
-                    onAllServersLeft();
-
-                    return;
-                }
-
-                pending.crdId = crd.id();
-
-                if (crd.isLocal())
-                    start(e.getKey(), pending.req);
-            }
+            reassignPendingStarts(leftNodeId);
 
             for (Process p : processes.values()) {
                 p.initFut.listen(() -> {
@@ -317,6 +299,29 @@ public class DistributedProcess<I extends Message, R extends Message> {
 
         if (crd.isLocal())
             start(id, req);
+    }
+
+    /** Reassigns the pending starts of the left coordinator to the new one and starts them if it is the local node. */
+    private void reassignPendingStarts(UUID leftNodeId) {
+        for (Map.Entry<UUID, PendingStart> e : pendingStarts.entrySet()) {
+            PendingStart pending = e.getValue();
+
+            if (!Objects.equals(leftNodeId, pending.crdId))
+                continue;
+
+            ClusterNode crd = coordinator();
+
+            if (crd == null) {
+                onAllServersLeft();
+
+                return;
+            }
+
+            pending.crdId = crd.id();
+
+            if (crd.isLocal())
+                start(e.getKey(), pending.req);
+        }
     }
 
     /**
