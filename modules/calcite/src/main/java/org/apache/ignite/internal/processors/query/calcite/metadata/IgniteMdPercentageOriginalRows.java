@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.MetadataDef;
 import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 
 /**
  * See {@link org.apache.calcite.rel.metadata.RelMdPercentageOriginalRows}
@@ -103,6 +106,31 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
             return null;
         }
         return left * right;
+    }
+
+    /**
+     * Percentage for a subset.
+     *
+     * <p>Resolved through the original (logical) expression of the set rather than through the current best plan,
+     * consistently with row count, selectivity and column origins: the best expression changes during optimization
+     * and metadata depending on it makes estimates unstable. Without this handler a subset is treated as a leaf and
+     * filters pushed down to the join inputs are never accounted.
+     */
+    public Double getPercentageOriginalRows(RelSubset rel, RelMetadataQuery mq) {
+        RelNode original = rel.getOriginal();
+
+        try {
+            return mq.getPercentageOriginalRows(original != null ? original : rel.stripped());
+        }
+        catch (CyclicMetadataException ignore) {
+            // Cyclic set (see CALCITE-1048): no information.
+            return null;
+        }
+    }
+
+    /** A scan with a pushed down condition filters rows by the selectivity of this condition. */
+    public Double getPercentageOriginalRows(ProjectableFilterableTableScan rel, RelMetadataQuery mq) {
+        return rel.condition() == null ? 1.0 : mq.getSelectivity(rel, null);
     }
 
     /** */
