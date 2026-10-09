@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
@@ -153,9 +152,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** Internal metadata cache. */
     private volatile IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache;
 
-    /** */
-    private final CountDownLatch startLatch = new CountDownLatch(1);
-
     /**
      * {@code true} if local node has persistent region in configuration and is not a client.
      */
@@ -211,16 +207,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (!active)
-            return;
-
-        tasksMetaCache = ctx.security().enabled() ? ctx.cache().utilityCache() : null;
-
-        startLatch.countDown();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
 
@@ -270,8 +256,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (interrupted)
                 Thread.currentThread().interrupt();
         }
-
-        startLatch.countDown();
 
         int size = tasks.size();
 
@@ -342,8 +326,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private IgniteInternalCache<GridTaskNameHashKey, String> taskMetaCache() {
         assert ctx.security().enabled();
 
-        if (tasksMetaCache == null)
-            U.awaitQuiet(startLatch);
+        if (tasksMetaCache == null && ctx.state().publicApiActiveState(false))
+            tasksMetaCache = ctx.cache().utilityCache();
 
         return tasksMetaCache;
     }
@@ -865,6 +849,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache = taskMetaCache();
 
+        if (tasksMetaCache == null)
+            return;
+
         String existingName = tasksMetaCache.get(key);
 
         if (existingName == null)
@@ -1178,7 +1165,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        onKernalStart(true);
+        // No-op.
     }
 
     /** {@inheritDoc} */
