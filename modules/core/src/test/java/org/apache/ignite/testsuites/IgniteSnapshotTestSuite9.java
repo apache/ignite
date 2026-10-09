@@ -26,10 +26,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
-/**
- * Split off from {@link IgniteSnapshotTestSuite8} to reduce the single-suite runtime in CI;
- * contains an independent subset of the same test classes.
- */
+/** Split off from {@link IgniteSnapshotTestSuite8} to reduce the single-suite runtime in CI. */
 @RunWith(DynamicSuite.class)
 public class IgniteSnapshotTestSuite9 {
     /**

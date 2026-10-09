@@ -59,8 +59,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** Resolved extra storages paths. {@code null} if {@code extraStorages} is {@code null}. */
     private @Nullable String[] extStoragePaths;
 
-    /** Node consistent id postfix. */
-    private @Nullable String cstId_postfix = "";
+    /** Consistent id postfix. */
+    private @Nullable String cstIdPostfix = "";
 
     /** Flag setting the usage of a custom snapshot path. */
     @Parameter(1)
@@ -146,7 +146,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** {@inheritDoc} */
     @Override public String getTestIgniteInstanceName() {
-        return super.getTestIgniteInstanceName() + cstId_postfix;
+        return super.getTestIgniteInstanceName() + cstIdPostfix;
     }
 
     /** */
@@ -263,7 +263,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         if (restartWithChangedCstIds) {
             stopAllGrids();
 
-            cstId_postfix = "_changed";
+            cstIdPostfix = "_changed";
 
             startGridsMultiThreaded(srvrsCnt);
 

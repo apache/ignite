@@ -37,9 +37,6 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     public static final String NO_SNAPSHOTS = "No snapshots found.";
 
     /** */
-    public static final String NODE_PREF = "Node ";
-
-    /** */
     private static final String PATTERN_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
 
     /** */

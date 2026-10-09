@@ -624,6 +624,8 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * TODO: support the extra storages for incremental snapshots https://issues.apache.org/jira/browse/IGNITE-29128
+     *
      * Sets a paths to the root directories where the snapshot files stored.
      * By default, {@link IgniteConfiguration#getSnapshotPath()} used.
      * Length of {@code extraSnapshotPaths} must be equal to the length of {@link #getExtraStoragePaths()}.

@@ -129,16 +129,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         AtomicBoolean entered = new AtomicBoolean();
 
         Files.walkFileTree(path.toPath(), new SimpleFileVisitor<>() {
-            @Override public FileVisitResult postVisitDirectory(Path dir, IOException err) {
-                return FileVisitResult.CONTINUE;
-            }
-
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                entered.compareAndSet(false, true);
+
                 // Use attrs instead of Files.size() for efficiency.
                 if (attrs.isRegularFile())
                     size.addAndGet(attrs.size());
-                else if (!entered.get() && file.toFile().equals(path))
-                    entered.set(true);
 
                 return FileVisitResult.CONTINUE;
             }
@@ -181,6 +177,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
 
             // Read local snapshots.
+            // TODO: use the default snapshots directory for relative {@code arg.src()} https://issues.apache.org/jira/browse/IGNITE-29126
             List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
 
             if (locSnps.isEmpty())
@@ -208,17 +205,20 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     if (ignite.context().isStopping())
                         throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
 
+                    if (failedSnps.contains(snpName))
+                        return;
+
                     try {
                         SnapshotListJobResult.SnapshotInfo extDesc = externalStorages(sft);
 
                         if (extDesc != null)
                             extStors.put(snpName, extDesc);
                     }
-                    catch (Throwable t) {
+                    catch (Exception e) {
                         // Skip snapshot in case on any failure.
                         failedSnps.add(snpName);
 
-                        log.warning("Failed to read snapshot's extra storages, snapshot ignored [snpName=" + snpName + ']', t);
+                        log.warning("Failed to read snapshot's extra storages, snapshot ignored [snpName=" + snpName + ']', e);
                     }
                 });
 
@@ -226,11 +226,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                 // Future for optional incremental parts.
                 fut = exec.submit(() -> {
-                    if (failedSnps.contains(snpName))
-                        return;
-
                     if (ignite.context().isStopping())
                         throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+
+                    if (failedSnps.contains(snpName))
+                        return;
 
                     try {
                         SnapshotListJobResult.SnapshotInfo incDesc = incrementals(sft);
@@ -238,11 +238,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         if (incDesc != null)
                             incs.put(snpName, incDesc);
                     }
-                    catch (Throwable t) {
+                    catch (Exception e) {
                         // Skip snapshot in case on any failure.
                         failedSnps.add(snpName);
 
-                        log.warning("Failed to read snapshot's incremental parts, snapshot ignored [snpName=" + snpName + ']', t);
+                        log.warning("Failed to read snapshot's incremental parts, snapshot ignored [snpName=" + snpName + ']', e);
                     }
                 });
 
@@ -378,7 +378,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** @return Number, total size and last creation time of incremental snapshots. */
-        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) throws Exception {
+        private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) {
             File[] incs = sft.incrementsRoot().listFiles();
 
             if (F.isEmpty(incs))
@@ -390,21 +390,28 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
+            int incIdx;
+
             for (File incDir : incs) {
-                int incIdx = Integer.parseInt(incDir.getName());
+                try {
+                    incIdx = Integer.parseInt(incDir.getName());
 
-                SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
+                    SnapshotFileTree.IncrementalSnapshotFileTree incTree = sft.incrementalSnapshotFileTree(incIdx);
 
-                IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
+                    IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
 
-                size += calculateDirectorySize(incDir);
+                    size += calculateDirectorySize(incDir);
 
-                cnt++;
+                    createTime = Math.max(createTime, incMeta.snapshotTime());
 
-                createTime = Math.max(createTime, incMeta.snapshotTime());
+                    cnt++;
+                }
+                catch (Exception e) {
+                    log.warning("Failed to read incremental snapshot, skipped [dir=" + incDir + ']', e);
+                }
             }
 
-            return new SnapshotListJobResult.SnapshotInfo(cnt, size, createTime);
+            return cnt == 0 ? null : new SnapshotListJobResult.SnapshotInfo(cnt, size, createTime);
         }
     }
 }

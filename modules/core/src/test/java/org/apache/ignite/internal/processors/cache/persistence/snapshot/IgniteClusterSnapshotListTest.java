@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,12 +31,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommandArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -55,11 +57,13 @@ import org.junit.runners.Parameterized;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
-/** Cluster-wide snapshot list procedure tests.*/
+/** Cluster-wide snapshot list procedure tests. */
 public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** Number of cache keys to pre-create at node start. */
     private static final int CACHE_KEYS_RANGE = 10;
@@ -117,12 +121,15 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testConcurrentCreation() throws Exception {
-        CountDownLatch proceedSnpCreation = new CountDownLatch(1);
-        CountDownLatch beginSnpCreation = new CountDownLatch(1);
+        // The test uses the thread blocking and conditional waitings. Won't proceed with 1 thread.
+        assumeTrue(snpThrdPoolSz > 1);
 
         int grids = 3;
         int testNodeIdx = 1;
         int testNodeOrder = testNodeIdx + 1;
+
+        CountDownLatch beginSnpCreation = new CountDownLatch(grids);
+        CountDownLatch proceedSnpCreation = new CountDownLatch(1);
 
         // Delays snapshot creation after its metadata is written.
         pluginProvider = new AbstractTestPluginProvider() {
@@ -134,9 +141,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
                         @Override public <M extends Serializable> void storeSnapshotMeta(M meta, File smf) {
-                            beginSnpCreation.countDown();
+                            super.storeSnapshotMeta(meta, smf);;
 
-                            super.storeSnapshotMeta(meta, smf);
+                            beginSnpCreation.countDown();
 
                             if (((IgniteEx)ctx.grid()).localNode().order() == testNodeOrder) {
                                 try {
@@ -156,7 +163,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         startGridsWithCache(grids, txCacheConfig(defaultCacheConfiguration()), CACHE_KEYS_RANGE);
 
-        IgniteFuture<Void> createSnpFut = snp(grid(0)).createSnapshot(SNAPSHOT_NAME);
+        IgniteFuture<Void> createSnpFut = snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary);
 
         assertTrue(beginSnpCreation.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
@@ -189,11 +196,11 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     private void doTestDeletionAfterMetaRead(boolean completeDeletion) throws Exception {
-        CountDownLatch metaReadProceedLatch = new CountDownLatch(1);
-        CountDownLatch metaReadBeginLatch = new CountDownLatch(1);
-
         int grids = 3;
         int testGridIdx = 1;
+
+        CountDownLatch metaReadBeginLatch = new CountDownLatch(grids);
+        CountDownLatch metaReadProceedLatch = new CountDownLatch(1);
 
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -203,23 +210,19 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft,
-                            boolean failIfCantRead) {
-                            List<SnapshotMetadata> metas = super.readSnapshotMetadatas(sft, failIfCantRead);
-
-                            if (cctx.localNode().order() != 2)
-                                return metas;
-
+                        @Override public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft, boolean failIfCantRead) {
                             metaReadBeginLatch.countDown();
 
-                            try {
-                                assertTrue(metaReadProceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                            }
-                            catch (InterruptedException e) {
-                                throw new IllegalStateException(e);
+                            if (cctx.localNode().order() == testGridIdx + 1) {
+                                try {
+                                    assertTrue(metaReadProceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException e) {
+                                    throw new IllegalStateException(e);
+                                }
                             }
 
-                            return metas;
+                            return super.readSnapshotMetadatas(sft, failIfCantRead);
                         }
                     };
                 }
@@ -341,10 +344,29 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testWongSnapshotPath() throws Exception {
+    public void testMissingSnapshotPath() throws Exception {
+        doTestWrongSnapshotPath(true);
+    }
+
+    /** */
+    @Test
+    public void testEmptySnapshotPath() throws Exception {
+        doTestWrongSnapshotPath(false);
+    }
+
+    /** */
+    private void doTestWrongSnapshotPath(boolean missing) throws Exception {
+        // Doesn't matter here, fastens the tests.
+        assumeFalse(encryption || onlyPrimary || snpThrdPoolSz < 2);
+
         doTestSnapshotPath(null);
 
-        SnapshotListJobResult[] lstOpRes = listSnapshots(grid(0), "wrong_path").nodesSnapshots();
+        File path = new File(U.defaultWorkDirectory(), "not_snapshots");
+
+        if (!missing)
+            assertTrue(new File(path, SNAPSHOT_NAME).mkdirs());
+
+        SnapshotListJobResult[] lstOpRes = listSnapshots(grid(0), path.getAbsolutePath()).nodesSnapshots();
 
         int cnt = Stream.of(lstOpRes).mapToInt(nodeRes -> nodeRes.snapshots().size()).sum();
 
@@ -403,6 +425,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
      * @param corruptFile If {@code true}, corrupts metadata. Otherwise, deletes metadata.
      */
     private void doTestWithWrongMeta(boolean corruptFile) throws Exception {
+        // Fastens the tests.
+        assumeFalse(encryption);
+
         int grids = 3;
         int testGridIdx = 1;
 
@@ -439,6 +464,200 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         assertTrue(victimNodeFound);
         assertEquals(grids - 1, foundSnpsCnt);
+    }
+
+    /** */
+    @Test
+    public void testMissingIncrementalMeta() throws Exception {
+        doTestWithWrongIncrementalMeta(false);
+    }
+
+    /** */
+    @Test
+    public void testCorruptedIncrementalMeta() throws Exception {
+        doTestWithWrongIncrementalMeta(true);
+    }
+
+    /**
+     * Tests snapshot list when incremental snapshot metadata cannot be read.
+     * The main snapshot should still be listed, but without incremental info on the affected node.
+     *
+     * @param corruptFile If {@code true}, corrupts metadata. Otherwise, deletes metadata.
+     */
+    private void doTestWithWrongIncrementalMeta(boolean corruptFile) throws Exception {
+        // Incremental snapshots do not support the only-primary mode or encryption.
+        assumeFalse(onlyPrimary || encryption);
+
+        int grids = 3;
+        int testGridIdx = 1;
+        int incsCnt = 3;
+
+        IgniteEx ig = startGridsWithCache(grids, txCacheConfig(defaultCacheConfiguration()), CACHE_KEYS_RANGE);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        for (int i = 0; i < incsCnt; ++i) {
+            try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int kv = (i + 1) * CACHE_KEYS_RANGE; kv < (i + 1) * CACHE_KEYS_RANGE * 2; ++kv)
+                    ds.addData(kv, kv);
+            }
+
+            snp(ig).createSnapshot(SNAPSHOT_NAME, null, true, onlyPrimary).get(getTestTimeout());
+        }
+
+        SnapshotFileTree testSnpFt = new SnapshotFileTree(grid(testGridIdx).context(), SNAPSHOT_NAME, null);
+        SnapshotFileTree.IncrementalSnapshotFileTree incFt = testSnpFt.incrementalSnapshotFileTree(1);
+        File incMeta = incFt.meta();
+
+        assertTrue(incMeta.exists());
+
+        if (corruptFile) {
+            try (RandomAccessFile raf = new RandomAccessFile(incMeta, "rw")) {
+                raf.write(UUID.randomUUID().toString().getBytes());
+            }
+        }
+        else
+            assertTrue(incMeta.delete() && !incMeta.exists());
+
+        SnapshotListTaskResult res = listSnapshots(grid(0));
+
+        for (int i = 0; i < res.nodesIds().length; i++) {
+            UUID nid = res.nodesIds()[i];
+
+            Map<String, SnapshotListJobResult.SnapshotInfo> snps = res.nodesSnapshots()[i].snapshots();
+
+            assertEquals(1, snps.size());
+
+            SnapshotListJobResult.SnapshotInfo info = snps.get(SNAPSHOT_NAME);
+
+            assertNotNull(info);
+            assertNotNull(info.incrementals());
+
+            if (nid.equals(grid(testGridIdx).localNode().id()))
+                assertEquals(incsCnt - 1, info.incrementals().number().intValue());
+            else
+                assertEquals(incsCnt, info.incrementals().number().intValue());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSnapshotListsDates() throws Exception {
+        // Incremental snapshots do not support the only-primary mode or encryption.
+        assumeFalse(onlyPrimary || encryption);
+
+        int grids = 3;
+
+        IgniteEx ig = startGridsWithCache(grids, txCacheConfig(defaultCacheConfiguration()), CACHE_KEYS_RANGE);
+
+        long time0 = U.currentTimeMillis();
+
+        // Wait for a while, spend some time.
+        U.sleep(300L);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        SnapshotListTaskResult res = listSnapshots(grid(0));
+
+        for (int i = 0; i < res.nodesIds().length; i++) {
+            Map<String, SnapshotListJobResult.SnapshotInfo> snps = res.nodesSnapshots()[i].snapshots();
+
+            assertEquals(1, snps.size());
+
+            SnapshotListJobResult.SnapshotInfo info = snps.get(SNAPSHOT_NAME);
+
+            assertTrue(info.date() > time0);
+        }
+
+        // Wait for a while, spend some time.
+        U.sleep(300L);
+
+        long time1 = U.currentTimeMillis();
+
+        try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int kv = CACHE_KEYS_RANGE; kv < CACHE_KEYS_RANGE * 2; kv++)
+                ds.addData(kv, kv);
+        }
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME, null, true, onlyPrimary).get(getTestTimeout());
+
+        SnapshotListTaskResult res2 = listSnapshots(grid(0));
+
+        for (int i = 0; i < res2.nodesIds().length; i++) {
+            Map<String, SnapshotListJobResult.SnapshotInfo> snps = res2.nodesSnapshots()[i].snapshots();
+
+            assertEquals(1, snps.size());
+
+            SnapshotListJobResult.SnapshotInfo info = snps.get(SNAPSHOT_NAME);
+
+            assertNotNull(info.incrementals());
+
+            assertTrue(info.date() < time1);
+            assertTrue(info.date() < info.incrementals().date());
+            assertTrue(info.incrementals().date() > time1);
+        }
+    }
+
+    /** */
+    @Test
+    public void testNodeStopDuringSnapshotList() throws Exception {
+        // Doesn't matter here, fastens the tests.
+        assumeFalse(encryption || onlyPrimary);
+
+        int grids = 3;
+        int testGridIdx = 1;
+
+        CountDownLatch snpLstBeginLatch = new CountDownLatch(grids);
+        CountDownLatch snpLstProceedLatch = new CountDownLatch(1);
+
+        // Delays snapshot creation after its metadata is written.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft, boolean failIfCantRead) {
+                            snpLstBeginLatch.countDown();
+
+                            if (((IgniteEx)ctx.grid()).localNode().order() == testGridIdx + 1) {
+                                try {
+                                    assertTrue(snpLstProceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+                                }
+                                catch (InterruptedException e) {
+                                    throw new IllegalStateException(e);
+                                }
+                            }
+
+                            return super.readSnapshotMetadatas(sft, failIfCantRead);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithSnapshot(grids, CACHE_KEYS_RANGE, true);
+
+        IgniteInternalFuture<SnapshotListTaskResult> lstOpFut = runAsync(() -> listSnapshots(grid(0)));
+
+        assertTrue(snpLstBeginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(testGridIdx, true));
+
+        snpLstProceedLatch.countDown();
+
+        assertThrowsAnyCause(
+            null,
+            () -> lstOpFut.get(getTestTimeout()),
+            NodeStoppingException.class,
+            "Node is stopping"
+        );
+
+        stopFut.get(getTestTimeout());
     }
 
     /** */
