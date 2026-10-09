@@ -23,19 +23,18 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.lang.RunnableX;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
-import static org.apache.ignite.internal.util.typedef.X.hasCause;
 
 /**
  * Tests that an explicit lock request cancelled on a stopping node does not cause a critical failure
@@ -116,11 +115,7 @@ public class ExplicitLockCancelOnNodeStopTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        assertTrue("Lock on stopping node must fail: " + lockErr.get(),
-            hasCause(lockErr.get(), NodeStoppingException.class));
-
-        FailureContext failureCtx = failureHnd.failureContext();
-
-        assertNull("Unexpected critical failure: " + failureCtx, failureCtx);
+        assertTrue("Lock on stopping node must fail", X.hasCause(lockErr.get(), NodeStoppingException.class));
+        assertNull("No failures", failureHnd.failureContext());
     }
 }
