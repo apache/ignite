@@ -15,41 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
+package org.apache.ignite.internal.processors.odbc;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 /**
- * Thin client payload input channel.
+ * Marker interface for requests that can be executed by control.sh, only
+ * @see ClientConnectionContext#managementClient()
  */
-class PayloadInputChannel {
-    /** Client channel. */
-    private final ClientChannel ch;
-
-    /** Input stream. */
-    private final BinaryInputStream in;
-
-    /**
-     * Constructor.
-     */
-    PayloadInputChannel(ClientChannel ch, ByteBuffer payload) {
-        this.ch = ch;
-        in = BinaryStreams.inputStream(payload);
-    }
-
-    /**
-     * Gets client channel.
-     */
-    public ClientChannel clientChannel() {
-        return ch;
-    }
-
-    /**
-     * Gets input stream.
-     */
-    public BinaryInputStream in() {
-        return in;
+public interface ClientListenerInternalRequest extends ClientListenerRequest {
+    /** {@inheritDoc} */
+    @Override default boolean internal() {
+        return true;
     }
 }
