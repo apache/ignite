@@ -287,6 +287,40 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --groups cache-group1,cach
 control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 ----
 
+== Listing Snapshots
+
+To list snapshots created on cluster, use the following command.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+# List all snapshots in the default snapshot directory.
+control.sh --snapshot list
+
+# List all snapshots in the "/tmp/ignite/snapshots" folder.
+control.sh --snapshot list --src /tmp/ignite/snapshots
+----
+
+tab:Windows[]
+[source,shell]
+----
+# List all snapshots in the default snapshot directory.
+control.bat --snapshot list
+
+# List all snapshots in the "C:\\tmp\\ignite\\snapshots" folder.
+control.bat --snapshot list --src C:\\tmp\\ignite\\snapshots
+----
+--
+
+=== List operation notes
+
+* The list operation is read-only and does not modify any snapshot data.
+* If a snapshot is being modified (created or deleted), its size might not be reported.
+* Snapshot is being detected by its metadata. If metadata is missing or cannot be read, snapshot is ignored.
+* When snapshot listing and size calculating, no additional snapshot validation, checksums calculation are done.
+
 == Getting Snapshot Operation Status
 
 The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script or JMX interface:

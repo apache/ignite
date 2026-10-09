@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.snapshot;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.util.GridCommandHandlerListSnapshotTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-/** Snapshot commands. */
-public class SnapshotCommand extends CommandRegistryImpl {
-    /** */
-    public SnapshotCommand() {
-        super(
-            new SnapshotCreateCommand(),
-            new SnapshotCancelCommand(),
-            new SnapshotCheckCommand(),
-            new SnapshotRestoreCommand(),
-            new SnapshotStatusCommand(),
-            new SnapshotListCommand()
-        );
-    }
+/**
+ * Test suite for control utility.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCommandHandlerListSnapshotTest.class
+})
+public class IgniteControlUtilityTestSuite6 {
 }

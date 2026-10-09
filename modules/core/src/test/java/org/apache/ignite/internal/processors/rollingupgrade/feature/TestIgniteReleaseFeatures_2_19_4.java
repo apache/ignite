@@ -15,21 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.management.snapshot;
+package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-
-/** Snapshot commands. */
-public class SnapshotCommand extends CommandRegistryImpl {
+/** */
+public class TestIgniteReleaseFeatures_2_19_4 {
     /** */
-    public SnapshotCommand() {
-        super(
-            new SnapshotCreateCommand(),
-            new SnapshotCancelCommand(),
-            new SnapshotCheckCommand(),
-            new SnapshotRestoreCommand(),
-            new SnapshotStatusCommand(),
-            new SnapshotListCommand()
-        );
-    }
+    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 }
