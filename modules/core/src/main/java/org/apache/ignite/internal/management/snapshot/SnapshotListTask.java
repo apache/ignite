@@ -27,6 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,7 +85,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         UUID[] nodesIds = new UUID[nodesJobsResults.size()];
         SnapshotListJobResult[] nodesResults = new SnapshotListJobResult[nodesJobsResults.size()];
 
-        // Sorting the results by consistend by for better reading.
+        // Sorting the results by consistent id for better reading.
         nodesJobsResults = nodesJobsResults.stream()
             .sorted((jr0, jr1) -> nodeConsistentId(jr0.getNode()).compareTo(nodeConsistentId(jr1.getNode())))
             .toList();
@@ -144,7 +145,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             @Override public FileVisitResult visitFileFailed(Path file, IOException err) throws IOException {
                 if (!entered.get() && file.toFile().equals(path)) {
-                    // Cant even start shapshot size calculation - can't enter snapshot directory.
+                    // Cannot even start snapshot size calculation - can't enter snapshot directory.
                     throw err;
                 }
 
@@ -202,7 +203,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 SnapshotFileTree sft = snpPair.get1();
                 String snpName = sft.name();
 
-                // Future for optional exernal storages.
+                // Future for optional external storages.
                 Future<?> fut = exec.submit(() -> {
                     if (ignite.context().isStopping())
                         throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
@@ -276,7 +277,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     size = calculateDirectorySize(sft.root());
                 }
                 catch (Exception e) {
-                    log.warning("Failed to calculate snapshot' size, snapshot ignored [snpName=" + snpName + ']', e);
+                    log.warning("Failed to calculate snapshot's size, snapshot ignored [snpName=" + snpName + ']', e);
 
                     // Skip snapshot in case on any failure.
                     continue;
@@ -339,8 +340,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         return null;
 
                     // Get the last-created time snapshot metadata.
-                    SnapshotMetadata snpMeta = metas.stream()
-                        .max((m0, m1) -> Math.toIntExact(m0.snapshotTime() - m1.snapshotTime()))
+                    SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime))
                         .orElse(new SnapshotMetadata());
 
                     // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.

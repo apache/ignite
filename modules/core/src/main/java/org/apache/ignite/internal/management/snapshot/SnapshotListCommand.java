@@ -70,7 +70,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
             printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
 
-            SnapshotListJobResult nodeResult = res.snapshots()[nodeIdx];
+            SnapshotListJobResult nodeResult = res.nodesSnapshots()[nodeIdx];
 
             if (nodeResult.snapshots().isEmpty()) {
                 printer.accept("\t\t" + NO_SNAPSHOTS);

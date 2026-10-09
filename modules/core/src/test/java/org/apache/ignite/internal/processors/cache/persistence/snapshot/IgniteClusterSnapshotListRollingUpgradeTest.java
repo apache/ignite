@@ -176,7 +176,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
         for (int g = 0; g < ALL_GRIDS; g++) {
             SnapshotListTaskResult listOpRes = listSnapshots(grid(g));
 
-            assertEquals(3, listOpRes.snapshots().length);
+            assertEquals(3, listOpRes.nodesSnapshots().length);
 
             // Tests client exclusion.
             if (CLIENTS > 0) {
@@ -185,7 +185,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
                 assertFalse(new HashSet<>(Arrays.asList(listOpRes.nodesIds())).contains(cliId));
             }
 
-            for (SnapshotListJobResult nodeRes : listOpRes.snapshots())
+            for (SnapshotListJobResult nodeRes : listOpRes.nodesSnapshots())
                 assertEquals(1, nodeRes.snapshots().size());
         }
     }

@@ -37,7 +37,7 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
 
     /** Results. */
     @Order(2)
-    SnapshotListJobResult[] snapshots;
+    SnapshotListJobResult[] nodesSnapshots;
 
     /** Default constructor for serialization purposes. */
     public SnapshotListTaskResult() {
@@ -45,10 +45,10 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
     }
 
     /**  */
-    public SnapshotListTaskResult(String[] cstIds, UUID[] nodesIds, SnapshotListJobResult[] snapshots) {
-        this.cstIds = cstIds;
+    public SnapshotListTaskResult(String[] consistentIds, UUID[] nodesIds, SnapshotListJobResult[] nodesSnapshots) {
+        this.cstIds = consistentIds;
         this.nodesIds = nodesIds;
-        this.snapshots = snapshots;
+        this.nodesSnapshots = nodesSnapshots;
     }
 
     /** @return Nodes consistent ids. */
@@ -62,7 +62,7 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
     }
 
     /** @return The results. */
-    public SnapshotListJobResult[] snapshots() {
-        return snapshots;
+    public SnapshotListJobResult[] nodesSnapshots() {
+        return nodesSnapshots;
     }
 }

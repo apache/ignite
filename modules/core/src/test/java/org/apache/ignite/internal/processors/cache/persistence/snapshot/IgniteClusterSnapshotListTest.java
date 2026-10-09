@@ -48,6 +48,8 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -160,7 +162,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         SnapshotListTaskResult lstOpRes = listSnapshots(grid(2));
 
-        int snpsCnt = Stream.of(lstOpRes.snapshots()).mapToInt(jr -> jr.snapshots().size()).sum();
+        int snpsCnt = Stream.of(lstOpRes.nodesSnapshots()).mapToInt(jr -> jr.snapshots().size()).sum();
 
         assertEquals(grids, snpsCnt);
 
@@ -248,7 +250,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         SnapshotListTaskResult lstOpRes = lstOpFut.get();
 
         if (completeDeletion) {
-            int snpsCnt = Stream.of(lstOpRes.snapshots()).mapToInt(jr -> jr.snapshots().size()).sum();
+            int snpsCnt = Stream.of(lstOpRes.nodesSnapshots()).mapToInt(jr -> jr.snapshots().size()).sum();
 
             assertEquals(grids - 1, snpsCnt);
         }
@@ -259,7 +261,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             for (int i = 0; i < lstOpRes.nodesIds().length; i++) {
                 UUID nid = lstOpRes.nodesIds()[i];
 
-                Map<String, SnapshotListJobResult.SnapshotInfo> nodeSnps = lstOpRes.snapshots()[i].snapshots();
+                Map<String, SnapshotListJobResult.SnapshotInfo> nodeSnps = lstOpRes.nodesSnapshots()[i].snapshots();
 
                 snpsCnt += nodeSnps.size();
 
@@ -280,8 +282,8 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Ensures that a file can be read without locking or other issues while bieng cuncurently written on curren OS and
-     * file system. This behavior is important for the case when snapshots is being read while creation.
+     * Ensures that a file can be read without locking or other issues while being concurrently written on current OS and
+     * file system. This behavior is important for the case when snapshots are being read while creation.
      */
     @Test
     public void testReadWhileCreating() throws Exception {
@@ -339,6 +341,52 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
+    public void testWongSnapshotPath() throws Exception {
+        doTestSnapshotPath(null);
+
+        SnapshotListJobResult[] lstOpRes = listSnapshots(grid(0), "wrong_path").nodesSnapshots();
+
+        int cnt = Stream.of(lstOpRes).mapToInt(nodeRes -> nodeRes.snapshots().size()).sum();
+
+        assertEquals(0, cnt);
+    }
+
+    /** */
+    @Test
+    public void testDefaultSnapshotPath() throws Exception {
+        doTestSnapshotPath(null);
+    }
+
+    /** */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-29126")
+    public void testRelativeSnapshotPath() throws Exception {
+        doTestSnapshotPath("ex_snapshots");
+    }
+
+    /** */
+    @Test
+    public void testAbsoluteSnapshotPath() throws Exception {
+        doTestSnapshotPath(new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath());
+    }
+
+    /** */
+    private void doTestSnapshotPath(@Nullable String path) throws Exception {
+        int grids = 3;
+
+        startGridsWithCache(grids, txCacheConfig(defaultCacheConfiguration()), CACHE_KEYS_RANGE);
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, path, false, onlyPrimary).get(getTestTimeout());
+
+        SnapshotListJobResult[] lstOpRes = listSnapshots(grid(0), path).nodesSnapshots();
+
+        int cnt = Stream.of(lstOpRes).mapToInt(nodeRes -> nodeRes.snapshots().size()).sum();
+
+        assertEquals(grids, cnt);
+    }
+
+    /** */
+    @Test
     public void testMissingMeta() throws Exception {
         doTestWithWrongMeta(false);
     }
@@ -380,12 +428,12 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         for (int i = 0; i < res.nodesIds().length; i++) {
             UUID nid = res.nodesIds()[i];
 
-            foundSnpsCnt += res.snapshots()[i].snapshots().size();
+            foundSnpsCnt += res.nodesSnapshots()[i].snapshots().size();
 
             if (nid.equals(grid(testGridIdx).localNode().id())) {
                 victimNodeFound = true;
 
-                assertTrue(res.snapshots()[i].snapshots().isEmpty());
+                assertTrue(res.nodesSnapshots()[i].snapshots().isEmpty());
             }
         }
 
@@ -394,11 +442,18 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private static SnapshotListTaskResult listSnapshots(IgniteEx grid) throws Exception {
+    private static SnapshotListTaskResult listSnapshots(IgniteEx grid, @Nullable String src) throws Exception {
         SnapshotListCommandArg arg = new SnapshotListCommandArg();
+
+        arg.src(src);
 
         Collection<UUID> nodes = grid.cluster().forServers().nodes().stream().map(ClusterNode::id).toList();
 
         return grid.compute().execute(SnapshotListTask.class, new VisorTaskArgument<>(nodes, arg, false)).result();
+    }
+
+    /** */
+    private static SnapshotListTaskResult listSnapshots(IgniteEx grid) throws Exception {
+        return listSnapshots(grid, null);
     }
 }

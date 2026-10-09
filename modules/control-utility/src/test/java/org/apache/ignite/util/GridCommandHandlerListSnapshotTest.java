@@ -228,7 +228,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // Flag if 'testSnapshot0' deleted on node0.
         boolean grid0HasNoSnapshot0 = false;
 
-        // Create shapshots.
+        // Create snapshots.
         if (snpCnt > 0) {
             createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);
 
@@ -325,19 +325,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             if (extraStorages)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "external storages: cnt=1, size="));
         }
-    }
-
-    /** Counts occurrences of the node prefix in the output. */
-    private int countNodeOccurrences(String output) {
-        int cnt = 0;
-        int idx = 0;
-
-        while ((idx = output.indexOf(SnapshotListCommand.NODE_PREF, idx)) != -1) {
-            cnt++;
-            idx += SnapshotListCommand.NODE_PREF.length();
-        }
-
-        return cnt;
     }
 
     /** */

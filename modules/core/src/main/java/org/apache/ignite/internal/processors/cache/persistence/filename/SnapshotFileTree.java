@@ -332,6 +332,7 @@ public class SnapshotFileTree extends NodeFileTree {
     public static File root(SharedFileTree ft, String name, @Nullable String path) {
         assert name != null : "Snapshot name cannot be empty or null.";
 
+        // TODO: use the default snapshots directory for relative {@code path} https://issues.apache.org/jira/browse/IGNITE-29126
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);
     }
 

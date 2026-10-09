@@ -115,12 +115,12 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             return date;
         }
 
-        /** @return Snapshot external storages description if exists. Is always {@code Null} for not the main snapshot description. */
+        /** @return Snapshot external storages description if exists. Is always {@code null} for not the main snapshot description. */
         public @Nullable SnapshotInfo externalStorages() {
             return extStors;
         }
 
-        /** @return Snapshot incremental parts description if exists. Is always {@code Nul} for not the main snapshot description. */
+        /** @return Snapshot incremental parts description if exists. Is always {@code null} for not the main snapshot description. */
         public @Nullable SnapshotInfo incrementals() {
             return incs;
         }
