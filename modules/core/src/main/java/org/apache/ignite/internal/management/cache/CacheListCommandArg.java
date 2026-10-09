@@ -33,7 +33,8 @@ public class CacheListCommandArg extends IgniteDataTransferObject {
     /** */
     @Order(0)
     @Positional
-    @Argument(example = "regexPattern")
+    @Argument(description = "Java regular expression for filtering cache, group, or sequence names. " +
+        "Examples: '.' matches all names, '^account-.*' matches names starting with 'account-'", example = "regexPattern")
     String regex;
 
     /** */
