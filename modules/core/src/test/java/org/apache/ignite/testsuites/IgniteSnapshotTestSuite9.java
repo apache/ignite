@@ -20,18 +20,18 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotHandlerTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListRollingUpgradeTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
 /**
- * Split off from {@link IgniteSnapshotTestSuite2} to reduce the single-suite runtime in CI;
+ * Split off from {@link IgniteSnapshotTestSuite8} to reduce the single-suite runtime in CI;
  * contains an independent subset of the same test classes.
  */
 @RunWith(DynamicSuite.class)
-public class IgniteSnapshotTestSuite8 {
+public class IgniteSnapshotTestSuite9 {
     /**
      * @return Test suite.
      */
@@ -46,8 +46,8 @@ public class IgniteSnapshotTestSuite8 {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotCheckTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotHandlerTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotListTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotListRollingUpgradeTest.class, ignoredTests);
 
         return suite;
     }

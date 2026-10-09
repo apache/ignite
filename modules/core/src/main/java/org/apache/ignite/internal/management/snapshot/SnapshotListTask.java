@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Incremen
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,7 +56,6 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -70,6 +71,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<SnapshotListCommandArg> arg) {
+        if (!ignite.context().rollingUpgrade().features().isActive(CoreFeatureRegistry.SNAPSHOT_LIST_FEATURE))
+            throw new IgniteException("Won't search for local snapshots. The snapshot list feature isn't activated yet.");
+
         /** Allows {@link #map0(List, VisorTaskArgument)} to use the entire subgrid. */
         return ignite.cluster().forServers().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
     }
@@ -121,21 +125,29 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
      */
     public static long calculateDirectorySize(File path) throws IOException {
         AtomicLong size = new AtomicLong(0);
+        AtomicBoolean entered = new AtomicBoolean();
 
         Files.walkFileTree(path.toPath(), new SimpleFileVisitor<>() {
+            @Override public FileVisitResult postVisitDirectory(Path dir, IOException err) {
+                return FileVisitResult.CONTINUE;
+            }
+
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 // Use attrs instead of Files.size() for efficiency.
                 if (attrs.isRegularFile())
                     size.addAndGet(attrs.size());
+                else if (!entered.get() && file.toFile().equals(path))
+                    entered.set(true);
 
                 return FileVisitResult.CONTINUE;
             }
 
-            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                return FileVisitResult.CONTINUE;
-            }
+            @Override public FileVisitResult visitFileFailed(Path file, IOException err) throws IOException {
+                if (!entered.get() && file.toFile().equals(path)) {
+                    // Cant even start shapshot size calculation - can't enter snapshot directory.
+                    throw err;
+                }
 
-            @Override public FileVisitResult postVisitDirectory(@NotNull Path dir, @Nullable IOException exc) {
                 return FileVisitResult.CONTINUE;
             }
         });
@@ -192,6 +204,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                 // Future for optional exernal storages.
                 Future<?> fut = exec.submit(() -> {
+                    if (ignite.context().isStopping())
+                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+
                     try {
                         SnapshotListJobResult.SnapshotInfo extDesc = externalStorages(sft);
 
@@ -212,6 +227,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 fut = exec.submit(() -> {
                     if (failedSnps.contains(snpName))
                         return;
+
+                    if (ignite.context().isStopping())
+                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
 
                     try {
                         SnapshotListJobResult.SnapshotInfo incDesc = incrementals(sft);
@@ -303,8 +321,13 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             List<Future<T2<SnapshotFileTree, Long>>> futs = new ArrayList<>(dirsToParse.length);
 
+            IgniteThreadPoolExecutor exec = ignite.context().pools().getSnapshotExecutorService();
+
             for (File snpDir : dirsToParse) {
-                Future<T2<SnapshotFileTree, Long>> snpDirFut = ignite.context().pools().getSnapshotExecutorService().submit(() -> {
+                Future<T2<SnapshotFileTree, Long>> snpDirFut = exec.submit(() -> {
+                    if (ignite.context().isStopping())
+                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+
                     String snpName = snpDir.getName();
 
                     // Snapshot tree being used as a path, to read the metas only.

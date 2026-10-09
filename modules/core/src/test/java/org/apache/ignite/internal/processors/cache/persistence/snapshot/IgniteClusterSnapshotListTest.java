@@ -65,7 +65,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** Number of partitions within a snapshot cache group. */
     private static final int CACHE_PARTITIONS_COUNT = 4;
 
-    /** */
+    /** Size of the snapshot utility thread pool. */
     @Parameterized.Parameter(2)
     public int snpThrdPoolSz;
 
@@ -76,9 +76,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, snpThrdPoolSz={2}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
-            encryptionParameters(),
-            F.asList(false, true),
-            F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1)
+            encryptionParameters(), // Encryption
+            F.asList(false, true), // Only primary
+            F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1) // Snapshots thread pool size
         );
     }
 
@@ -89,6 +89,8 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         if (pluginProvider != null)
             cfg.setPluginProviders(pluginProvider);
+
+        cfg.setSnapshotThreadPoolSize(snpThrdPoolSz);
 
         return cfg;
     }
@@ -188,6 +190,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         CountDownLatch metaReadProceedLatch = new CountDownLatch(1);
         CountDownLatch metaReadBeginLatch = new CountDownLatch(1);
 
+        int grids = 3;
+        int testGridIdx = 1;
+
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
                 return "TestSnpMgrProvider";
@@ -221,11 +226,11 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             }
         };
 
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, true, false);
+        startGridsWithSnapshot(grids, CACHE_KEYS_RANGE, true, false);
 
-        SnapshotFileTree grid1SnpSft = new SnapshotFileTree(grid(1).context(), SNAPSHOT_NAME, null);
+        SnapshotFileTree testSnpFt = new SnapshotFileTree(grid(testGridIdx).context(), SNAPSHOT_NAME, null);
 
-        long testSnpSz = SnapshotListTask.calculateDirectorySize(grid1SnpSft.root());
+        long testSnpSz = SnapshotListTask.calculateDirectorySize(testSnpFt.root());
 
         assertTrue(testSnpSz > 0);
 
@@ -234,9 +239,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         assertTrue(metaReadBeginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         if (completeDeletion)
-            assertTrue(grid1SnpSft.root().exists() && U.delete(grid1SnpSft.root()) && !grid1SnpSft.root().exists());
+            assertTrue(testSnpFt.root().exists() && U.delete(testSnpFt.root()) && !testSnpFt.root().exists());
         else
-            assertTrue(grid1SnpSft.nodeStorage().exists() && U.delete(grid1SnpSft.nodeStorage()) && !grid1SnpSft.nodeStorage().exists());
+            assertTrue(testSnpFt.nodeStorage().exists() && U.delete(testSnpFt.nodeStorage()) && !testSnpFt.nodeStorage().exists());
 
         metaReadProceedLatch.countDown();
 
@@ -245,7 +250,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         if (completeDeletion) {
             int snpsCnt = Stream.of(lstOpRes.snapshots()).mapToInt(jr -> jr.snapshots().size()).sum();
 
-            assertEquals(2, snpsCnt);
+            assertEquals(grids - 1, snpsCnt);
         }
         else {
             int snpsCnt = 0;
@@ -258,19 +263,19 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
                 snpsCnt += nodeSnps.size();
 
-                if (nid.equals(grid(1).localNode().id())) {
+                if (nid.equals(grid(testGridIdx).localNode().id())) {
                     victimNodeFound = true;
 
                     assertEquals(1, nodeSnps.size());
 
-                    long curSnpSz = SnapshotListTask.calculateDirectorySize(grid1SnpSft.root());
+                    long curSnpSz = SnapshotListTask.calculateDirectorySize(testSnpFt.root());
 
                     assertTrue(curSnpSz < testSnpSz);
                 }
             }
 
             assertTrue(victimNodeFound);
-            assertEquals(3, snpsCnt);
+            assertEquals(grids, snpsCnt);
         }
     }
 
@@ -281,7 +286,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     @Test
     public void testReadWhileCreating() throws Exception {
         // Doesn't matter here. Fastens the tests.
-        assumeFalse(encryption || onlyPrimary || snpThrdPoolSz > 1);
+        assumeFalse(encryption || onlyPrimary);
 
         assertTrue(new File(U.defaultWorkDirectory()).exists());
 
@@ -350,21 +355,24 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
      * @param corruptFile If {@code true}, corrupts metadata. Otherwise, deletes metadata.
      */
     private void doTestWithWrongMeta(boolean corruptFile) throws Exception {
-        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, true, false);
+        int grids = 3;
+        int testGridIdx = 1;
 
-        SnapshotFileTree sftNode1 = new SnapshotFileTree(grid(1).context(), SNAPSHOT_NAME, null);
+        startGridsWithSnapshot(grids, CACHE_KEYS_RANGE, true, false);
 
-        assertTrue(sftNode1.meta().exists());
+        SnapshotFileTree testSnpFt = new SnapshotFileTree(grid(testGridIdx).context(), SNAPSHOT_NAME, null);
+
+        assertTrue(testSnpFt.meta().exists());
 
         if (corruptFile) {
-            try (RandomAccessFile raf = new RandomAccessFile(sftNode1.meta(), "rw")) {
+            try (RandomAccessFile raf = new RandomAccessFile(testSnpFt.meta(), "rw")) {
                 raf.write(UUID.randomUUID().toString().getBytes());
             }
         }
         else
-            assertTrue(sftNode1.meta().delete() && !sftNode1.meta().exists());
+            assertTrue(testSnpFt.meta().delete() && !testSnpFt.meta().exists());
 
-        SnapshotListTaskResult res = listSnapshots(grid(2));
+        SnapshotListTaskResult res = listSnapshots(grid(0));
 
         int foundSnpsCnt = 0;
         boolean victimNodeFound = false;
@@ -374,7 +382,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
             foundSnpsCnt += res.snapshots()[i].snapshots().size();
 
-            if (nid.equals(grid(1).localNode().id())) {
+            if (nid.equals(grid(testGridIdx).localNode().id())) {
                 victimNodeFound = true;
 
                 assertTrue(res.snapshots()[i].snapshots().isEmpty());
@@ -382,7 +390,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         }
 
         assertTrue(victimNodeFound);
-        assertEquals(2, foundSnpsCnt);
+        assertEquals(grids - 1, foundSnpsCnt);
     }
 
     /** */
