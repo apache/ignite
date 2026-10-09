@@ -331,18 +331,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return Group IDs.
-     */
-    public Set<Integer> waitGroups() {
-        synchronized (mux) {
-            if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer))
-                return Collections.emptySet();
-
-            return new HashSet<>(waitInfo.waitGrps.keySet());
-        }
-    }
-
-    /**
      * @param grpId Group id.
      * @param partId Partition id.
      *

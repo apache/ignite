@@ -512,24 +512,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @return Value bytes and flag indicating whether value is byte array.
-     */
-    protected IgniteBiTuple<byte[], Byte> valueBytes0() {
-        assert lock.isHeldByCurrentThread();
-
-        assert val != null;
-
-        try {
-            byte[] bytes = val.valueBytes(cctx.cacheObjectContext());
-
-            return new IgniteBiTuple<>(bytes, val.cacheObjectType());
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
      * @param tx Transaction.
      * @param key Key.
      * @param reload flag.
@@ -2443,22 +2425,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject rawPut(CacheObject val, long ttl) {
-        lockEntry();
-
-        try {
-            CacheObject old = this.val;
-
-            update(val, CU.toExpireTime(ttl), ttl, nextVersion(), true);
-
-            return old;
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean initialValue(
         CacheObject val,
         GridCacheVersion ver,
@@ -2933,20 +2899,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockedByThreadUnsafe(long threadId) {
-        lockEntry();
-
-        try {
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, true);
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean lockedByUnsafe(GridCacheVersion ver) {
         lockEntry();
 
@@ -2954,20 +2906,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheMvcc mvcc = mvccExtras();
 
             return mvcc != null && mvcc.isOwnedBy(ver);
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean lockedLocallyUnsafe(GridCacheVersion lockVer) {
-        lockEntry();
-
-        try {
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc != null && mvcc.isLocallyOwned(lockVer);
         }
         finally {
             unlockEntry();

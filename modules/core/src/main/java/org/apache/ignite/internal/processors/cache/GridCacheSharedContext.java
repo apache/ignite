@@ -25,7 +25,6 @@ import java.util.ListIterator;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -67,7 +65,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
@@ -174,9 +171,6 @@ public class GridCacheSharedContext<K, V> {
     /** */
     private final IgniteLogger txRecoveryMsgLog;
 
-    /** Concurrent DHT atomic updates counters. */
-    private AtomicIntegerArray dhtAtomicUpdCnt;
-
     /** Rebalance enabled flag. */
     private boolean rebalanceEnabled = true;
 
@@ -263,9 +257,6 @@ public class GridCacheSharedContext<K, V> {
         kernalCtx.systemView().registerView(new ScanQuerySystemView<>(ctxMap.values()));
 
         locStoreCnt = new AtomicInteger();
-
-        if (dbMgr != null && CU.isPersistenceEnabled(kernalCtx.config()))
-            dhtAtomicUpdCnt = new AtomicIntegerArray(kernalCtx.config().getSystemThreadPoolSize());
 
         msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
         atomicMsgLog = kernalCtx.log(CU.ATOMIC_MSG_LOG_CATEGORY);
@@ -1149,33 +1140,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public void txContextReset() {
         mvccMgr.contextReset();
-    }
-
-    /**
-     * @param ver DHT atomic update future version.
-     * @return Amount of active DHT atomic updates.
-     */
-    public int startDhtAtomicUpdate(GridCacheVersion ver) {
-        assert dhtAtomicUpdCnt != null;
-
-        return dhtAtomicUpdCnt.incrementAndGet(dhtAtomicUpdateIndex(ver));
-    }
-
-    /**
-     * @param ver DHT atomic update future version.
-     */
-    public void finishDhtAtomicUpdate(GridCacheVersion ver) {
-        assert dhtAtomicUpdCnt != null;
-
-        dhtAtomicUpdCnt.decrementAndGet(dhtAtomicUpdateIndex(ver));
-    }
-
-    /**
-     * @param ver Version.
-     * @return Index.
-     */
-    private int dhtAtomicUpdateIndex(GridCacheVersion ver) {
-        return U.safeAbs(ver.hashCode()) % dhtAtomicUpdCnt.length();
     }
 
     /**
