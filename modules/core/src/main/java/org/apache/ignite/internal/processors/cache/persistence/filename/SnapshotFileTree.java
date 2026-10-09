@@ -374,6 +374,8 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * TODO: support the extra storages for incremental snapshots https://issues.apache.org/jira/browse/IGNITE-29128
+     *
      * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
      * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
      * then all snapshot files must be stored inside one folder.

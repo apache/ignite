@@ -121,7 +121,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
     }
 
     /**
-     * Walk though a directory. Doesn't lock it or its content. Tries to find files and summarize their size.
+     * Walk through a directory. Doesn't lock it or its content. Tries to find files and summarize their size.
      * Tolerates and skips concurrent modification errors.
      */
     public static long calculateDirectorySize(File path) throws IOException {
@@ -177,7 +177,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
 
             // Read local snapshots.
-            // TODO: use the default snapshots directory for relative {@code arg.src()} https://issues.apache.org/jira/browse/IGNITE-29126
             List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
 
             if (locSnps.isEmpty())
@@ -190,7 +189,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             // Incremental parts and external storages futures.
             List<Future<?>> futs = new ArrayList<>(locSnps.size() * 2);
-            // Names of snapshots of with read failures.
+            // Names of snapshots with read failures.
             Set<String> failedSnps = ConcurrentHashMap.newKeySet(locSnps.size() / 2);
 
             IgniteThreadPoolExecutor exec = ignite.context().pools().getSnapshotExecutorService();
@@ -215,7 +214,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                             extStors.put(snpName, extDesc);
                     }
                     catch (Exception e) {
-                        // Skip snapshot in case on any failure.
                         failedSnps.add(snpName);
 
                         log.warning("Failed to read snapshot's extra storages, snapshot ignored [snpName=" + snpName + ']', e);
@@ -239,7 +237,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                             incs.put(snpName, incDesc);
                     }
                     catch (Exception e) {
-                        // Skip snapshot in case on any failure.
                         failedSnps.add(snpName);
 
                         log.warning("Failed to read snapshot's incremental parts, snapshot ignored [snpName=" + snpName + ']', e);
@@ -255,7 +252,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     fut.get();
                 }
                 catch (Throwable t) {
-                    // All the futures has internal exceptions being logged. No errors expected.
+                    // All the futures have internal exceptions being logged. No errors expected.
                     throw new IgniteException("Failed to read local nodes snapshots.", t);
                 }
             }
@@ -276,10 +273,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 try {
                     size = calculateDirectorySize(sft.root());
                 }
-                catch (Exception e) {
+                catch (IOException e) {
                     log.warning("Failed to calculate snapshot's size, snapshot ignored [snpName=" + snpName + ']', e);
 
-                    // Skip snapshot in case on any failure.
                     continue;
                 }
 
@@ -297,16 +293,25 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** */
-        private static @Nullable SnapshotListJobResult.SnapshotInfo externalStorages(SnapshotFileTree sft) throws IOException {
+        private @Nullable SnapshotListJobResult.SnapshotInfo externalStorages(SnapshotFileTree sft) {
             int extStoragesCnt = 0;
             long extStoragesSize = 0;
 
-            for (File es : sft.allStorages().toList()) {
-                if (sft.nodeStorage().equals(es))
+            for (File extraStorage : sft.allStorages().toList()) {
+                if (sft.nodeStorage().equals(extraStorage))
                     continue;
 
+                try {
+                    extStoragesSize += calculateDirectorySize(extraStorage);
+                }
+                catch (IOException e) {
+                    log.warning("Failed to calculate snapshot's extra storage size, storage ignored [extraStorage=" +
+                        extraStorage + ']', e);
+
+                    continue;
+                }
+
                 extStoragesCnt++;
-                extStoragesSize += calculateDirectorySize(es);
             }
 
             return extStoragesCnt == 0 ? null : new SnapshotListJobResult.SnapshotInfo(extStoragesCnt, extStoragesSize);
@@ -369,7 +374,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         res.add(snpDirRes);
                 }
                 catch (Exception e) {
-                    // Skip snapshot in case on any failure.
                     log.warning("Failed to read snapshot, snapshot ignored [path=" + snpPath + ']', e);
                 }
             });

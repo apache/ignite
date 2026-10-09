@@ -18,20 +18,27 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -71,6 +78,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** Number of partitions within a snapshot cache group. */
     private static final int CACHE_PARTITIONS_COUNT = 4;
 
+    /** */
+    private static boolean posixPermissions;
+
     /** Size of the snapshot utility thread pool. */
     @Parameterized.Parameter(2)
     public int snpThrdPoolSz;
@@ -102,12 +112,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
-        // Fastent the tests.
-        return super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
-    }
-
-    /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
@@ -116,6 +120,30 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             for (Path path : files)
                 U.delete(path);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        File workDir = new File(U.defaultWorkDirectory());
+
+        assertTrue(workDir.exists());
+
+        try {
+            Files.getPosixFilePermissions(workDir.toPath());
+
+            posixPermissions = true;
+        }
+        catch (UnsupportedOperationException ignored) {
+            // No-op.
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
+        // Speeds up the tests.
+        return super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
     }
 
     /** */
@@ -141,7 +169,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
                 if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
                     return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
                         @Override public <M extends Serializable> void storeSnapshotMeta(M meta, File smf) {
-                            super.storeSnapshotMeta(meta, smf);;
+                            super.storeSnapshotMeta(meta, smf);
 
                             beginSnpCreation.countDown();
 
@@ -425,7 +453,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
      * @param corruptFile If {@code true}, corrupts metadata. Otherwise, deletes metadata.
      */
     private void doTestWithWrongMeta(boolean corruptFile) throws Exception {
-        // Fastens the tests.
+        // Speeds up the tests.
         assumeFalse(encryption);
 
         int grids = 3;
@@ -538,6 +566,144 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             else
                 assertEquals(incsCnt, info.incrementals().number().intValue());
         }
+    }
+
+    /**
+     * Test snapshot list operation when a node can't read some snapshot part due to insufficient permissions.
+     * I.e. a test node is able to read snapshot meta but can't read some the snapshot's data.
+     */
+    @Test
+    public void testDeniedPermissions() throws Exception {
+        assumeTrue(posixPermissions);
+        // We rely on sizes here. Better to avoid empty data nodes not to become flaky.
+        assumeFalse(onlyPrimary);
+
+        int grids = 3;
+        int testGridIdx = 1;
+
+        // Permissions to restore.
+        Map<Path, Set<PosixFilePermission>> oldPerms = new ConcurrentHashMap<>();
+        // The 'change permissions' flag.
+        AtomicBoolean changePermissions = new AtomicBoolean(true);
+
+        // Deny reading on a couple of incremental snapshot metadata files on one node.
+        pluginProvider = new AbstractTestPluginProvider() {
+            @Override public String name() {
+                return "TestSnpMgrProvider";
+            }
+
+            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
+                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
+                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
+                        @Override public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft,
+                            boolean failIfCantRead) {
+                            if (changePermissions.get() && ctx.localNode().order() == testGridIdx + 1) {
+                                File victimDir = sft.nodeStorage();
+
+                                assertTrue(victimDir.exists());
+                                assertTrue(victimDir.isDirectory());
+
+                                // Ensure that blocked snapshot part has some size. We use sizes to compare later.
+                                try {
+                                    assertTrue(SnapshotListTask.calculateDirectorySize(victimDir) > 0L);
+                                }
+                                catch (IOException e) {
+                                    throw new IllegalStateException(e);
+                                }
+
+                                Path victimDirPath = victimDir.toPath();
+
+                                try {
+                                    Set<PosixFilePermission> perms = Files.getPosixFilePermissions(victimDirPath);
+
+                                    assertFalse(perms.isEmpty());
+
+                                    // Deny reading.
+                                    Files.setPosixFilePermissions(victimDirPath, PosixFilePermissions.fromString("---------"));
+
+                                    // Save actual permissions to restore.
+                                    oldPerms.put(victimDirPath, perms);
+                                }
+                                catch (Exception e) {
+                                    throw new IgniteException("Unable to set the test posix permissions.", e);
+                                }
+                            }
+
+                            return super.readSnapshotMetadatas(sft, failIfCantRead);
+                        }
+                    };
+                }
+
+                return super.createComponent(ctx, cls);
+            }
+        };
+
+        startGridsWithSnapshot(grids, CACHE_KEYS_RANGE, true, true);
+
+        UUID testNodeId = grid(testGridIdx).localNode().id();
+
+        // Snapshot size with restricted permissions.
+        long testSize0 = 0L;
+        // Snapshot size with normal permissions.
+        long testSize1 = 0L;
+
+        SnapshotListTaskResult snpLstOpRes;
+
+        try {
+            // First run.
+            snpLstOpRes = listSnapshots(grid(0));
+
+            assertFalse(oldPerms.isEmpty());
+
+            for (int i = 0; i < snpLstOpRes.nodesIds().length; i++) {
+                UUID nodeId = snpLstOpRes.nodesIds()[i];
+
+                // Store size of the partly read snapshot.
+                if (nodeId.equals(testNodeId)) {
+                    Map<String, SnapshotListJobResult.SnapshotInfo> snps = snpLstOpRes.nodesSnapshots()[i].snapshots();
+
+                    assertEquals(1, snps.size());
+
+                    testSize0 = snps.get(SNAPSHOT_NAME).size();
+                }
+            }
+
+            // Ensure that we've found and read snapshot on the test node.
+            assertTrue(testSize0 > 0L);
+        }
+        finally {
+            // Restore the permissions in any case.
+            oldPerms.forEach((path, perms) -> {
+                try {
+                    Files.setPosixFilePermissions(path, perms);
+                }
+                catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+        }
+
+        // Relaunch the operation.
+        changePermissions.set(false);
+
+        snpLstOpRes = listSnapshots(grid(0));
+
+        for (int i = 0; i < snpLstOpRes.nodesIds().length; i++) {
+            UUID nodeId = snpLstOpRes.nodesIds()[i];
+
+            // Store size of the partly read snapshot.
+            if (nodeId.equals(testNodeId)) {
+                Map<String, SnapshotListJobResult.SnapshotInfo> snps = snpLstOpRes.nodesSnapshots()[i].snapshots();
+
+                assertEquals(1, snps.size());
+
+                testSize1 = snps.get(SNAPSHOT_NAME).size();
+            }
+        }
+
+        // Ensure that the calculated anew size is bigger than in the previous run.
+        assertTrue(testSize1 > 0L);
+        assertTrue(testSize1 > testSize0);
     }
 
     /** */
