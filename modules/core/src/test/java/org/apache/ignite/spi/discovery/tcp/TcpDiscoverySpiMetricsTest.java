@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -42,23 +41,13 @@ import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager
 /** Tests {@link TcpDiscoverySpi} metrics registered in the {@code io.discovery} metric registry. */
 public class TcpDiscoverySpiMetricsTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Latch that blocks {@link BlockingIoSession#writeMessage} to force a real socket write timeout. */
-    private volatile CountDownLatch writeBlockLatch;
-
-    /** When {@code true}, the next node to start uses {@link BlockingWriteDiscoverySpi}; otherwise a plain {@link TcpDiscoverySpi}. */
-    private boolean needBlockingSpi;
+    private volatile CountDownLatch latch;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi spi = needBlockingSpi ? new BlockingWriteDiscoverySpi() : new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
+        cfg.setFailureDetectionTimeout(1_000);
 
         return cfg;
     }
@@ -72,35 +61,59 @@ public class TcpDiscoverySpiMetricsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testSocketReadTimeoutsMetric() throws Exception {
+        checkMetric(true);
+    }
+
+    /** */
+    @Test
     public void testSocketWriteTimeoutsMetric() throws Exception {
-        needBlockingSpi = true;
+        checkMetric(false);
+    }
 
-        IgniteEx node0 = startGrid(0);
+    /** */
+    private void checkMetric(boolean read) throws Exception {
+        IgniteEx node0;
 
-        needBlockingSpi = false;
+        if (read)
+            node0 = startGrid(0);
+        else {
+            node0 = startGrid(0, cfg -> {
+                BlockingWriteDiscoverySpi spi = new BlockingWriteDiscoverySpi();
+
+                spi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+
+                cfg.setDiscoverySpi(spi);
+            });
+        }
 
         IgniteEx node1 = startGrid(1);
 
-        IntMetric metric = node0.context().metric().registry(DISCO_METRICS).findMetric("SocketWriteTimeoutsCount");
+        TestTcpDiscoverySpi spi1 = (TestTcpDiscoverySpi)node1.configuration().getDiscoverySpi();
+
+        if (read)
+            spi1.freeze();
+        else
+            latch = new CountDownLatch(1);
+
+        IntMetric metric = node0.context().metric().registry(DISCO_METRICS)
+            .findMetric(read ? "SocketReadTimeoutsCount" : "SocketWriteTimeoutsCount");
 
         assertEquals(0, metric.value());
 
-        writeBlockLatch = new CountDownLatch(1);
-
         IgniteInternalFuture<?> pingFut = GridTestUtils.runAsync(() -> node0.cluster().pingNode(node1.cluster().localNode().id()));
 
-        assertTrue(GridTestUtils.waitForCondition(() -> metric.value() == 1, 15_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> metric.value() >= 1, 15_000));
 
-        writeBlockLatch.countDown();
+        if (read)
+            spi1.unfreeze();
+        else
+            latch.countDown();
 
         pingFut.get(5_000);
     }
 
-    /**
-     * A {@link TcpDiscoverySpi} whose {@link #openSession} returns a {@link BlockingIoSession} that blocks
-     * inside {@code writeMessage} for {@link TcpDiscoveryPingRequest}s when {@link #writeBlockLatch} is set,
-     * forcing a real socket write timeout. Other message types are written normally.
-     */
+    /** */
     private class BlockingWriteDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected TcpDiscoveryIoSession openSession(
@@ -108,13 +121,9 @@ public class TcpDiscoverySpiMetricsTest extends GridCommonAbstractTest {
             InetSocketAddress remAddr,
             IgniteSpiOperationTimeoutHelper timeoutHelper
         ) throws IgniteSpiOperationTimeoutException, IgniteCheckedException, IOException {
-            sock.connect(remAddr, (int)timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
+            super.openSession(sock, remAddr, timeoutHelper);
 
-            TcpDiscoveryIoSession ses = new BlockingIoSession(ignite.context(), sock);
-
-            write(ses, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(getSocketTimeout()));
-
-            return ses;
+            return new BlockingIoSession(ignite.context(), sock);
         }
     }
 
@@ -127,8 +136,8 @@ public class TcpDiscoverySpiMetricsTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override synchronized void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-            if (msg instanceof TcpDiscoveryPingRequest && writeBlockLatch != null)
-                U.awaitQuiet(writeBlockLatch);
+            if (msg instanceof TcpDiscoveryPingRequest && latch != null)
+                U.awaitQuiet(latch);
 
             super.writeMessage(msg);
         }

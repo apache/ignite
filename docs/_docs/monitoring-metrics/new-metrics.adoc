@@ -524,6 +524,7 @@ Register name: `io.discovery`
 |PendingMessagesRegistered | integer | Pending messages registered count.
 |RejectedSslConnectionsCount | integer | TCP discovery connections count that were rejected due to SSL errors.
 |SocketWriteTimeoutsCount | integer | TCP discovery socket write operations count that timed out.
+|SocketReadTimeoutsCount | integer | TCP discovery socket read operations count that timed out.
 |SslEnabled | boolean | Whether SSL is enabled.
 |TotalProcessedMessages | integer | Total processed messages count.
 |TotalReceivedMessages | integer | Total received messages count.
