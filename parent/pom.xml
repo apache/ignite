@@ -139,7 +139,7 @@
         <cmake.maven.plugin.version>3.31.5-b1</cmake.maven.plugin.version>
         <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
-        <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
+        <maven.flatten.plugin.version>1.8.0</maven.flatten.plugin.version>
         <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
 
         <sonar.organization>apache</sonar.organization>
