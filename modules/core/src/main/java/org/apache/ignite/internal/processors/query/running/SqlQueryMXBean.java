@@ -63,7 +63,7 @@ public interface SqlQueryMXBean {
      *      - timeout * multiplier;
      *      - timeout * multiplier * multiplier;
      *      - etc.
-     * If the multiplier <= 1, the warning message is printed once.
+     * If the multiplier {@code <= 1}, the warning message is printed once.
      *
      * @param longQueryTimeoutMultiplier Long query timeout multiplier.
      */
@@ -102,7 +102,7 @@ public interface SqlQueryMXBean {
      *  - size of result set > threshold * multiplier;
      *  - size of result set > threshold * multiplier * multiplier;
      *  - etc.
-     * If the multiplier <= 1, the warning message is printed once during query execution and the next one on the query end.
+     * If the multiplier {@code <= 1}, the warning message is printed once during query execution and the next one on the query end.
      *
      * @return Result set size threshold multiplier.
      */

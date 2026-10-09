@@ -84,7 +84,7 @@ public class StatisticsProcessor {
      * 2) If byObsolescence and no table awailable - clean obsolescence and partition statistics for the given key.
      * 3) Submit tasks for each specified partition.
      * 4) after last task finish gathering - it starts aggregation.
-     * 5) read all partitions & obsolescence from repo and
+     * 5) read all partitions and obsolescence from repo and
      * if byObsolescence = {@code true} - remove unnecessary one and aggregate by specified list
      * if byObsolescence = {@code false} - aggregate all presented in store (because it should contains only actual ones)
      * 5) save aggregated local statistics

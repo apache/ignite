@@ -2444,6 +2444,7 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
      * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public TracingSpi getTracingSpi() {
         return NoopTracingSpi.INSTANCE;
     }
