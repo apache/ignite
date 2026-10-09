@@ -17,14 +17,22 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeTaskContinuousMapper;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readMap;
 
@@ -36,34 +44,108 @@ public class PlatformComputeTaskSession extends PlatformAbstractTarget {
     /** "set attributes" operation code. */
     private static final int OP_SET_ATTRIBUTES = 2;
 
+    /** "send job to specific node" operation code. */
+    private static final int OP_SEND_JOB = 3;
+
+    /** "send job to random node" operation code. */
+    private static final int OP_SEND_JOB_RANDOM = 4;
+
     /** Underlying compute task session. */
     private final ComputeTaskSession ses;
 
+    /** This session's task. */
+    private final PlatformAbstractTask task;
+
+    /** This session's task name. */
+    private final String taskName;
+
+    /** Underlying compute task mapper. */
+    private final ComputeTaskContinuousMapper mapper;
+
     /**
-     * Constructor.
+     * Constructor for compute task session.
+     *
+     * @param platformCtx Context.
+     * @param ses         Underlying compute task session
+     * @param task        This session's task
+     * @param taskName    This session's task name
+     * @param mapper      Underlying compute task mapper
+     */
+    public PlatformComputeTaskSession(
+        final PlatformContext platformCtx,
+        final ComputeTaskSession ses,
+        final PlatformAbstractTask task,
+        final String taskName,
+        final ComputeTaskContinuousMapper mapper) {
+        super(platformCtx);
+
+        this.ses = ses;
+        this.task = task;
+        this.taskName = taskName;
+        this.mapper = mapper;
+    }
+
+    /**
+     * Constructor for compute job session.
      *
      * @param platformCtx Context.
      * @param ses         Underlying compute task session
      */
     public PlatformComputeTaskSession(final PlatformContext platformCtx, final ComputeTaskSession ses) {
-        super(platformCtx);
-
-        this.ses = ses;
+        this(platformCtx, ses, null, null, null);
     }
 
     /** {@inheritDoc} */
     @Override public long processInStreamOutLong(
         final int type, final BinaryReaderEx reader, final PlatformMemory mem) throws IgniteCheckedException {
 
-        if (type == OP_SET_ATTRIBUTES) {
-            final Map<?, ?> attrs = readMap(reader);
+        switch (type) {
+            case OP_SET_ATTRIBUTES:
+                final Map<?, ?> attrs = readMap(reader);
 
-            ses.setAttributes(attrs);
+                ses.setAttributes(attrs);
 
-            return TRUE;
+                return TRUE;
+
+            case OP_SEND_JOB: {
+                final int size = reader.readInt();
+                final Map<ComputeJob, ClusterNode> jobs = U.newHashMap(size);
+
+                for (var i = 0; i < size; i++) {
+                    final long ptr = reader.readLong();
+                    final Object nativeJob = reader.readBoolean() ? reader.readObjectDetached() : null;
+                    final PlatformJob job = platformCtx.createJob(task, ptr, nativeJob, taskName);
+                    final UUID nodeId = reader.readUuid();
+                    final ClusterNode node = platformCtx.kernalContext().discovery().node(nodeId);
+
+                    jobs.put(job, node);
+                }
+
+                mapper.send(jobs);
+
+                return TRUE;
+            }
+
+            case OP_SEND_JOB_RANDOM: {
+                final int size = reader.readInt();
+                final Collection<ComputeJob> jobs = new ArrayList<>(size);
+
+                for (var i = 0; i < size; i++) {
+                    final long ptr = reader.readLong();
+                    final Object nativeJob = reader.readObjectDetached();
+                    final PlatformJob job = platformCtx.createJob(task, ptr, nativeJob, taskName);
+
+                    jobs.add(job);
+                }
+
+                mapper.send(jobs);
+
+                return TRUE;
+            }
+
+            default:
+                return super.processInStreamOutLong(type, reader, mem);
         }
-
-        return super.processInStreamOutLong(type, reader, mem);
     }
 
     /** {@inheritDoc} */
