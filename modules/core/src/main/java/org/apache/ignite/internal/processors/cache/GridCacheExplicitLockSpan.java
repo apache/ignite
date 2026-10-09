@@ -234,10 +234,6 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
     /**
      * Marks all candidates added for given key as owned.
-     * <p>
-     * Candidates may have been already removed from the span if the lock future was cancelled
-     * (e.g. on node stop or client disconnect) while the lock acquisition was still in progress.
-     * In this case there is nothing to mark and the call is a no-op.
      *
      * @param key Key.
      */
@@ -247,6 +243,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         try {
             Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
+            // Candidates may have been already removed from the span if the lock future was cancelled on node stop or client disconnect.
             if (deque == null)
                 return;
 
