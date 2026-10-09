@@ -246,8 +246,10 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
-            .setSqlEscapeAll(escapeSql)
-            .setIndexedTypes(idxTypes);
+            .setSqlEscapeAll(escapeSql);
+
+        if (idxTypes.length > 0)
+            res.setIndexedTypes(idxTypes);
 
         for (int i = 0; i < idxTypes.length / 2; i++) {
             Class<?> keyType = idxTypes[i];

@@ -26,6 +26,7 @@ import org.apache.ignite.cdc.CdcConfigurationTest;
 import org.apache.ignite.cluster.ClusterStateXmlPropertiesTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartTest;
+import org.apache.ignite.internal.CacheConfigurationQueryEntityXmlTest;
 import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteClientSpringBeanTest;
@@ -91,6 +92,8 @@ import org.junit.runners.Suite;
     CdcCommandLineStartupTest.class,
 
     SqlPlanHistoryConfigTest.class,
+
+    CacheConfigurationQueryEntityXmlTest.class,
 })
 public class IgniteSpringTestSuite {
 }

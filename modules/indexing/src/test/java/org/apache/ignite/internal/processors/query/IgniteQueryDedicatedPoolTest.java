@@ -81,8 +81,7 @@ public class IgniteQueryDedicatedPoolTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        ccfg.setIndexedTypes(Integer.class, Integer.class);
-        ccfg.setIndexedTypes(Byte.class, Byte.class);
+        ccfg.setIndexedTypes(Integer.class, Integer.class, Byte.class, Byte.class);
         ccfg.setSqlFunctionClasses(IgniteQueryDedicatedPoolTest.class);
         ccfg.setName(CACHE_NAME);
 
