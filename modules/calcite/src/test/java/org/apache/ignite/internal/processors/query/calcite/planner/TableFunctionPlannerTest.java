@@ -71,6 +71,16 @@ public class TableFunctionPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testXmlTableFunctionScan() throws Exception {
+        String sql = "SELECT * FROM TABLE(xml_table('<root><item id=\"1\"/></root>', '/root/item', '@id', 'INTEGER'))";
+
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteTableFunctionScan.class));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testBroadcastTableAndTableFunctionJoin() throws Exception {
         String sql = "SELECT * FROM broadcast_tbl t JOIN TABLE(system_range(1, 1)) r ON (t.id = r.x)";
 
