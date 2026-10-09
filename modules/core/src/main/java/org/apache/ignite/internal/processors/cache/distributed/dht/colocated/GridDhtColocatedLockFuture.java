@@ -1295,8 +1295,14 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         ", mappedKeys=" + keys + ", fut=" + this + ']');
 
                 try {
-                    if (timeoutObj == null)
+                    if (timeoutObj == null) {
+                        // Future may be already completed (e.g. cancelled on node stop) while
+                        // local DHT lock acquisition was still in progress.
+                        if (isDone())
+                            return false;
+
                         markLocalDhtLocksAcquired(keys);
+                    }
                     else {
                         synchronized (timeoutObj) {
                             if (isDone())
