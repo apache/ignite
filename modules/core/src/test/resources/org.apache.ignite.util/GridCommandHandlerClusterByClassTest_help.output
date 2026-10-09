@@ -269,6 +269,12 @@ This utility can do the following commands:
   Get the status of the current snapshot operation:
     control.(sh|bat) --snapshot status
 
+  Lists all snapshots on all online server nodes with their sizes:
+    control.(sh|bat) --snapshot list [--src path/to/snapshots]
+
+    Parameters:
+      --src path/to/snapshots  - Path to snapshot location directory. If not specified, the default configured snapshot directory will be used.
+
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 
