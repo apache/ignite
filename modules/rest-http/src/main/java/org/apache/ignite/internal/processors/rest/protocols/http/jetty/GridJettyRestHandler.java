@@ -121,10 +121,10 @@ public class GridJettyRestHandler extends HttpServlet {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /** Should be replaced with AUTHENTICATION + token in IGNITE 3.0. */
+    /** */
     private static final String IGNITE_LOGIN = "ignite.login";
 
-    /** Should be replaced with AUTHENTICATION + token in IGNITE 3.0. */
+    /** */
     private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
