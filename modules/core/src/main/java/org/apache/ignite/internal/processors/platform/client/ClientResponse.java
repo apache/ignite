@@ -71,8 +71,28 @@ public class ClientResponse extends ClientListenerResponse implements ClientOutg
      * @param writer Writer.
      * @param affinityVer Affinity version.
      */
-    public void encode(ClientConnectionContext ctx, BinaryWriterEx writer,
-        ClientAffinityTopologyVersion affinityVer) {
+    public void encode(ClientConnectionContext ctx, BinaryWriterEx writer, ClientAffinityTopologyVersion affinityVer) {
+        encodeHeader(ctx, writer, reqId, status(), error(), affinityVer);
+    }
+
+    /**
+     * Encodes the response data.
+     * @param ctx Connection context.
+     * @param writer Writer.
+     */
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
+        encode(ctx, writer, ctx.checkAffinityTopologyVersion());
+    }
+
+    /** */
+    public static void encodeHeader(
+        ClientConnectionContext ctx,
+        BinaryWriterEx writer,
+        long reqId,
+        int status,
+        String err,
+        ClientAffinityTopologyVersion affinityVer
+    ) {
         writer.writeLong(reqId);
 
         ClientProtocolContext protocolCtx = ctx.currentProtocolContext();
@@ -80,7 +100,7 @@ public class ClientResponse extends ClientListenerResponse implements ClientOutg
         assert protocolCtx != null;
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
-            boolean error = status() != ClientStatus.SUCCESS;
+            boolean error = status != ClientStatus.SUCCESS;
 
             short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());
 
@@ -94,20 +114,11 @@ public class ClientResponse extends ClientListenerResponse implements ClientOutg
                 return;
         }
 
-        writer.writeInt(status());
+        writer.writeInt(status);
 
-        if (status() != ClientStatus.SUCCESS) {
-            writer.writeString(error());
+        if (status != ClientStatus.SUCCESS) {
+            writer.writeString(err);
         }
-    }
-
-    /**
-     * Encodes the response data.
-     * @param ctx Connection context.
-     * @param writer Writer.
-     */
-    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
-        encode(ctx, writer, ctx.checkAffinityTopologyVersion());
     }
 
     /**
