@@ -30,6 +30,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
 import org.apache.ignite.internal.util.collection.IntHashMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -113,11 +114,8 @@ public class TcpCommunicationMetricsListener {
     /** Counters of sent and received messages by direct type. */
     private final IntMap<IgniteBiTuple<LongAdderMetric, LongAdderMetric>> msgCntrsByType;
 
-    /** Method to synchronize access to message type map. */
-    private final Object msgTypeMapMux = new Object();
-
-    /** Message type map. */
-    private volatile Map<Short, String> msgTypeMap;
+    /** Message class names by direct type, filled on the first message of each type. */
+    private final IntMap<String> msgTypeMap = new CopyOnWriteIntMap<>();
 
     /**
      * @param ignite Ignite instance.
@@ -341,14 +339,10 @@ public class TcpCommunicationMetricsListener {
             if (metric.name().startsWith(prefix)) {
                 short directType = Short.parseShort(metric.name().substring(prefix.length()));
 
-                Map<Short, String> msgTypeMap0 = msgTypeMap;
+                String typeName = msgTypeMap.get(directType);
 
-                if (msgTypeMap0 != null) {
-                    String typeName = msgTypeMap0.get(directType);
-
-                    if (typeName != null)
-                        res.put(typeName, ((LongMetric)metric).value());
-                }
+                if (typeName != null)
+                    res.put(typeName, ((LongMetric)metric).value());
             }
         }
 
@@ -430,28 +424,8 @@ public class TcpCommunicationMetricsListener {
     private void updateMessageTypeMap(Message msg) {
         short typeId = msg.directType();
 
-        Map<Short, String> msgTypeMap0 = msgTypeMap;
-
-        if (msgTypeMap0 == null || !msgTypeMap0.containsKey(typeId)) {
-            synchronized (msgTypeMapMux) {
-                if (msgTypeMap == null) {
-                    msgTypeMap0 = new HashMap<>();
-
-                    msgTypeMap0.put(typeId, msg.getClass().getName());
-
-                    msgTypeMap = msgTypeMap0;
-                }
-                else {
-                    if (!msgTypeMap.containsKey(typeId)) {
-                        msgTypeMap0 = new HashMap<>(msgTypeMap);
-
-                        msgTypeMap0.put(typeId, msg.getClass().getName());
-
-                        msgTypeMap = msgTypeMap0;
-                    }
-                }
-            }
-        }
+        if (!msgTypeMap.containsKey(typeId))
+            msgTypeMap.putIfAbsent(typeId, msg.getClass().getName());
     }
 
     /**

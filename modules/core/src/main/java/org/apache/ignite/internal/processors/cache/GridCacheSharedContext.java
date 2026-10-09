@@ -23,7 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -59,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -136,7 +136,7 @@ public class GridCacheSharedContext<K, V> {
     private PartitionsEvictManager evictMgr;
 
     /** Cache contexts map. */
-    private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
+    private final CopyOnWriteIntMap<GridCacheContext<K, V>> ctxMap = new CopyOnWriteIntMap<>();
 
     /** Tx metrics. */
     private final TransactionMetricsAdapter txMetrics;
@@ -251,8 +251,6 @@ public class GridCacheSharedContext<K, V> {
         this.storeSesLsnrs = storeSesLsnrs;
 
         txMetrics = new TransactionMetricsAdapter(kernalCtx);
-
-        ctxMap = new ConcurrentHashMap<>();
 
         kernalCtx.systemView().registerView(new ScanQuerySystemView<>(ctxMap.values()));
 
