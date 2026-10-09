@@ -1333,11 +1333,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
     }
 
-    /**
-     * Marks explicit lock candidate for the given key as owned.
-     *
-     * @param key Locked key.
-     */
+    /** */
     private void markExplicitOwner(KeyCacheObject key) {
         boolean marked = cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
 
