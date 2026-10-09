@@ -2007,11 +2007,14 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
                 BinaryMetadata meta = type != null ? type.metadata() : null;
 
-                if (type == null || meta == null)
+                if (type == null || meta == null) {
+                    ctx.onMissingMetadata();
+
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer " +
                         "(Ignite work directory might have been cleared after restart. Make sure that IGNITE_HOME " +
                         "does not point to a temp folder or any other folder that is destroyed/cleared on restarts) [" +
                         "typeId=" + typeId + ", IGNITE_HOME='" + CommonUtils.getIgniteHome() + "']");
+                }
 
                 Collection<BinarySchema> existingSchemas = meta.schemas();
 

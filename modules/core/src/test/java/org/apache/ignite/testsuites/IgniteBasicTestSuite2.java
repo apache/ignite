@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestor
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheSeparateDirectoryTest;
 import org.apache.ignite.internal.processors.cache.MdcCacheReadRequestsRoutingTest;
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMissingMetadataMetricSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMapTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.ClockPageReplacementFlagsTest;
@@ -167,6 +168,7 @@ import org.junit.runners.Suite;
     FailureProcessorLoggingTest.class,
     FailureProcessorMetricsTest.class,
     FailureProcessorThreadDumpThrottlingTest.class,
+    BinaryMissingMetadataMetricSelfTest.class,
     ExchangeTaskHandlerWaitingForTasksTest.class,
 
     AtomicOperationsInTxTest.class,
