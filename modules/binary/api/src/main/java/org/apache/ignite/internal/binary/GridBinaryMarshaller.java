@@ -321,7 +321,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes), ctx, clsLdr);
+            return (T)BinaryUtils.binariesFactory.unmarshal(BinaryStreams.inputStream(bytes), ctx, clsLdr);
         }
         finally {
             popContext(oldCtx);
@@ -337,7 +337,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.unmarshal(in, ctx, null);
+            return (T)BinaryUtils.binariesFactory.unmarshal(in, ctx, null);
         }
         finally {
             popContext(oldCtx);
@@ -486,18 +486,6 @@ public class GridBinaryMarshaller {
     }
 
     /**
-     * Creates a reader.
-     *
-     * @param stream Stream.
-     * @return Reader.
-     */
-    public BinaryReaderEx reader(BinaryInputStream stream) {
-        assert stream != null;
-
-        return BinaryUtils.reader(ctx, stream, null, true);
-    }
-
-    /**
      * Whether object must be deserialized anyway. I.e. it cannot be converted to BinaryObject.
      *
      * @param obj Object.
@@ -505,16 +493,6 @@ public class GridBinaryMarshaller {
      */
     public boolean mustDeserialize(Object obj) {
         return obj != null && ctx.mustDeserialize(obj.getClass());
-    }
-
-    /**
-     * Gets writer for the given output stream.
-     *
-     * @param out Output stream.
-     * @return Writer.
-     */
-    public BinaryWriterEx writer(BinaryOutputStream out) {
-        return BinaryUtils.writer(ctx, out);
     }
 
     /**

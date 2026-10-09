@@ -26,6 +26,6 @@ public class BinarySerializers {
     /** Adds binary serializers to module. */
     public static void init(SimpleModule module) {
         module.addSerializer((Class<BinaryObjectEx>)BinaryUtils.binariesFactory.binaryObjectImplClass(), new BinaryObjectImplSerializer());
-        module.addSerializer(BinaryArray.class, new BinaryArraySerializer());
+        module.addSerializer((Class<BinaryObjectEx>)BinaryUtils.binariesFactory.binaryArrayClass(), new BinaryArraySerializer());
     }
 }
