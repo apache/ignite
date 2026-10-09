@@ -40,6 +40,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -71,6 +73,7 @@ import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.ThinClientConfiguration.DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -99,6 +102,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** */
     public static final String METRIC_ACTIVE = "ActiveSessions";
+
+    /** Active compute tasks on the busiest thin client connection metric name. */
+    public static final String METRIC_ACTIVE_COMPUTE_TASKS = "ActiveComputeTasksOnBusiestConnection";
+
+    /** Max active compute tasks per connection (configured limit) metric name. */
+    public static final String METRIC_MAX_COMPUTE_TASKS = "MaxComputeTasksPerConnection";
 
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
@@ -350,6 +359,36 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 "Number of active sessions for the " + cliTypeName + " client."
             );
         }
+
+        mreg.register(
+            METRIC_ACTIVE_COMPUTE_TASKS,
+            () -> {
+                int res = 0;
+
+                for (GridNioSession ses : srv.sessions()) {
+                    ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+                    if (connCtx instanceof ClientConnectionContext)
+                        res = Math.max(res, ((ClientConnectionContext)connCtx).activeTasksCount());
+                }
+
+                return res;
+            },
+            "Number of currently running compute tasks on the busiest thin client connection."
+        );
+
+        ThinClientConfiguration thinCfg = cliConnCfg.getThinClientConfiguration();
+
+        int maxComputeTasks = thinCfg == null
+            ? DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION
+            : thinCfg.getMaxActiveComputeTasksPerConnection();
+
+        mreg.register(
+            METRIC_MAX_COMPUTE_TASKS,
+            () -> maxComputeTasks,
+            "Maximum number of concurrently running compute tasks allowed per thin client connection " +
+                "(0 if compute is disabled for thin clients)."
+        );
     }
 
     /**

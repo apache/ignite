@@ -459,11 +459,13 @@ Register name: `client.connector`
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
+|ActiveComputeTasksOnBusiestConnection | integer | Number of currently running compute tasks on the busiest thin client connection.
 |ActiveSessionsCount | integer | Active TCP sessions count.
 |AffinityKeyRequestsHits | long | The number of affinity-aware cache key requests that were sent to the primary node.
 |AffinityKeyRequestsMisses | long | The number of affinity-aware cache key requests that were sent not to the primary node.
 |AffinityQueryRequestsHits | long | The number of affinity-aware query requests that were sent to the primary node.
 |AffinityQueryRequestsMisses | long | The number of affinity-aware query requests that were sent not to the primary node.
+|MaxComputeTasksPerConnection | integer | Maximum number of concurrently running compute tasks allowed per thin client connection (0 if compute is disabled for thin clients).
 |RejectedSessionsAuthenticationFailed | integer | TCP sessions count that were rejected due to failed authentication.
 |RejectedSessionsTimeout | integer | TCP sessions count that were rejected due to handshake timeout.
 |RejectedSessionsTotal | integer | Total number of rejected TCP connections.
