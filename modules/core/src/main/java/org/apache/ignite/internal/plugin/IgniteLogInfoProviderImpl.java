@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -674,6 +675,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         GridKernalContext ctx = ignite.context();
         IgniteConfiguration cfg = ignite.configuration();
+        MaintenanceRegistry mntcProc = ctx.maintenanceRegistry();
 
         ExecutorService execSvc = ctx.pools().getExecutorService();
         ExecutorService sysExecSvc = ctx.pools().getSystemExecutorService();
@@ -732,6 +734,16 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
             netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
+
+        if (mntcProc.isMaintenanceMode()) {
+            SB maintModeInfo = new SB();
+
+            maintModeInfo.nl().a("!!! ATTENTION! Node is in Maintenance Mode !!!");
+
+            maintModeInfo.nl().a(mntcProc.tasksStatuses());
+
+            log.info(maintModeInfo.toString());
+        }
 
         SB msg = new SB();
 

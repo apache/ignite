@@ -29,13 +29,21 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
+import org.apache.ignite.maintenance.MaintenanceTaskState;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.ACTIVE;
+import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.CALLED;
+import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.COMPLETE;
+import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.FAILED;
+import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.REGISTERED;
 
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
@@ -46,6 +54,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      * Active {@link MaintenanceTask}s are the ones that were read from disk when node entered Maintenance Mode.
      */
     private final Map<String, MaintenanceTask> activeTasks = new ConcurrentHashMap<>();
+
+    /**
+     * {@link MaintenanceTaskState}s that are logged in acknowledge Node Basic Metrics when the node is in Maintenance Mode.
+     */
+    private final Map<String, MaintenanceTaskState> tasksStates = new ConcurrentHashMap<>();
 
     /**
      * Requested {@link MaintenanceTask}s are collection of tasks requested by user
@@ -184,6 +197,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             activeTasks.putAll(fileStorage.getAllTasks());
 
             maintenanceMode = !activeTasks.isEmpty();
+
+            if (maintenanceMode) {
+                activeTasks.values()
+                    .forEach(task -> tasksStates.put(task.name(), new MaintenanceTaskState(task, REGISTERED)));
+            }
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
@@ -243,11 +261,21 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             if (mntcAct != null) {
                 try {
+                    tasksStates.get(cbE.getKey())
+                            .setCurrentAction(mntcAct.name())
+                            .setStatus(ACTIVE);
+
                     mntcAct.execute();
+
+                    tasksStates.get(cbE.getKey())
+                            .setStatus(COMPLETE);
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance task: " +
                         activeTasks.get(cbE.getKey()), t);
+
+                    tasksStates.get(cbE.getKey())
+                            .setStatus(FAILED);
 
                     throw t;
                 }
@@ -332,11 +360,41 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             throw new IgniteException("Maintenance workflow callback for given task name not found, " +
                 "cannot retrieve maintenance actions for it: " + maintenanceTaskName);
 
+        tasksStates.get(maintenanceTaskName)
+                .setStatus(CALLED);
+
         return workflowCallbacks.get(maintenanceTaskName).allActions();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MaintenanceTask requestedTask(String maintenanceTaskName) {
         return requestedTasks.get(maintenanceTaskName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tasksStatuses() {
+        if (tasksStates.isEmpty()) {
+            return "    No maintenance tasks registered";
+        }
+
+        SB sb = new SB();
+
+        sb.a(tasksStates.size() == 1 ? "    MaintenanceTask " : "    MaintenanceTasks");
+
+        tasksStates.values().forEach(state -> {
+            MaintenanceTask task = state.getTask();
+
+            sb.nl().a("    ^-- (").a(state.getStatus().val());
+
+            sb.a(") ");
+
+            sb.a("name=").a(task.name()).a(", description=").a(task.description()).a(", params=").a(task.parameters());
+
+            if (state.getStatus() == ACTIVE) {
+                sb.a(", currentAction=").a(state.getCurrentAction());
+            }
+        });
+
+        return sb.toString();
     }
 }
