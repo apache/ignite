@@ -242,8 +242,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         ignoreInterrupts();
 
-        versionedLock = tx != null && keys.stream().anyMatch(key ->
-            tx.entry(cctx.txKey(key)) != null && tx.entry(cctx.txKey(key)).versionedLockPending());
+        IgniteTxEntry firstEntry = tx == null || keys.isEmpty() ? null : tx.entry(cctx.txKey(F.first(keys)));
+
+        versionedLock = firstEntry != null && firstEntry.versionedLockPending();
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -1133,7 +1134,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                             retval && dhtVer == null,
                                             dhtVer); // Include DHT version to match remote DHT entry.
 
-                                        if (tx != null && tx.entry(txKey).versionedLockPending())
+                                        if (versionedLock)
                                             req.expectedVersion(tx.entry(txKey).expectedLockVersion());
 
                                     }

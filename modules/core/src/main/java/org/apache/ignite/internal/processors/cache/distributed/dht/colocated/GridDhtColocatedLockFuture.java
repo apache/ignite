@@ -241,8 +241,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.recovery = recovery;
         this.keepBinaryInInterceptor = keepBinaryInInterceptor;
 
-        versionedLock = tx != null && keys.stream().anyMatch(key ->
-            tx.entry(cctx.txKey(key)) != null && tx.entry(cctx.txKey(key)).versionedLockPending());
+        IgniteTxEntry firstEntry = tx == null || keys.isEmpty() ? null : tx.entry(cctx.txKey(F.first(keys)));
+
+        versionedLock = firstEntry != null && firstEntry.versionedLockPending();
 
         ignoreInterrupts();
 
@@ -1128,7 +1129,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                     retval,
                                     dhtVer); // Include DHT version to match remote DHT entry.
 
-                                if (tx != null && tx.entry(txKey).versionedLockPending())
+                                if (versionedLock)
                                     req.expectedVersion(tx.entry(txKey).expectedLockVersion());
                             }
 
