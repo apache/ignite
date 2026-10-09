@@ -24,8 +24,13 @@
                 {% for cache in caches %}
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+                    <property name="dataRegionName" value="default"/>
                     {% if cache.cache_mode == 'PARTITIONED' %}
                         <property name="backups" value="{{ cache.backups or 0 }}"/>
+                    {% endif %}
+                    {% if cache.cache_mode == 'REPLICATED' %}
+                        <property name="cacheMode" value="REPLICATED"/>
                     {% endif %}
                     <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
                     <property name="statisticsEnabled" value="{{ cache.statistics_enabled }}"/>
@@ -39,6 +44,47 @@
                         {{ misc_utils.bean(cache.affinity_mapper) }}
                     </property>
                     {% endif %}
+
+                    {% if cache.keep_binary %}
+                        <property name="storeKeepBinary" value="true"/>
+                    {% endif %}
+
+                    <property name="expiryPolicyFactory">
+                        <bean class="javax.cache.expiry.EternalExpiryPolicy" factory-method="factoryOf"/>
+                    </property>
+
+                    {% if cache.external_storage %}
+                        <property name="cacheStoreFactory">
+                            <!--bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/-->
+                            <bean class="org.apache.ignite.internal.ducktest.utils.TestCacheStore.IgniteCacheStoreFactory"/>
+                        </property>
+                        <property name="readThrough" value="true"/>
+                        <property name="writeThrough" value="true"/>
+                        <property name="cacheStoreSessionListenerFactories">
+                            <array>
+                                <bean class="org.apache.ignite.internal.ducktest.utils.TestCacheStore.TestCacheStoreListenerFactory"/>
+                            </array>
+                        </property>
+                    {% endif %}
+
+
+
+{#                    <property name="writeBehindBatchSize" value="1"/>#}
+{#                    <property name="writeBehindCoalescing" value="false"/>#}
+{#                    <property name="writeBehindFlushFrequency" value="1"/>#}
+{#                    <property name="writeBehindFlushSize" value="1"/>#}
+{#                    <property name="writeBehindFlushThreadCount" value="1"/>#}
+{#                    <property name="writeBehindBatchSize" value="10000"/>#}
+{#                    <property name="writeBehindCoalescing" value="true"/>#}
+{#                    <property name="writeBehindFlushFrequency" value="10000"/>#}
+{#                    <property name="writeBehindFlushSize" value="100000"/>#}
+{#                    <property name="writeBehindFlushThreadCount" value="8"/>#}
+
+                    <!-- property name="evictionPolicyFactory">
+                        <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory">
+                            <property name="maxSize" value="100000"/>
+                        </bean>
+                    </property -->
                 </bean>
                 {% endfor %}
             </list>
