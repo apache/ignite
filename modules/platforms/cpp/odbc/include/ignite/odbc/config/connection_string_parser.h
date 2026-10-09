@@ -74,9 +74,6 @@ namespace ignite
                     /** Connection attribute keyword for collocated attribute. */
                     static const std::string collocated;
 
-                    /** Connection attribute keyword for lazy attribute. */
-                    static const std::string lazy;
-
                     /** Connection attribute keyword for skipReducerOnUpdate attribute. */
                     static const std::string skipReducerOnUpdate;
 

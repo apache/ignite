@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Marshalled;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -35,44 +37,50 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message represent request for change cluster global state.
  */
-public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
-
+public class ChangeGlobalStateMessage extends DiscoveryCustomMessage {
     /** Request ID */
-    private UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Initiator node ID. */
-    private UUID initiatingNodeId;
+    @Order(1)
+    UUID initiatingNodeId;
 
     /** Cluster state */
-    private ClusterState state;
+    @Order(2)
+    ClusterState state;
 
     /** Configurations read from persistent store. */
-    private List<StoredCacheData> storedCfgs;
+    @Order(3)
+    List<StoredCacheData> storedCfgs;
 
     /** */
-    @Nullable private BaselineTopology baselineTopology;
+    @Nullable @Marshalled("baselineTopologyBytes")
+    BaselineTopology baselineTopology;
+
+    /** JDK Serialized version of baselineTopology. */
+    @Order(4)
+    byte[] baselineTopologyBytes;
 
     /** */
-    private boolean forceChangeBaselineTopology;
-
-    /** */
-    private long timestamp;
+    @Order(5)
+    boolean forceChangeBaselineTopology;
 
     /** */
     @GridToStringExclude
-    private transient ExchangeActions exchangeActions;
+    private ExchangeActions exchangeActions;
 
     /** Services deployment actions to be processed on services deployment process. */
     @GridToStringExclude
-    @Nullable private transient ServiceDeploymentActions serviceDeploymentActions;
+    @Nullable private ServiceDeploymentActions serviceDeploymentActions;
 
     /** If {@code true}, cluster deactivation will be forced. */
-    private boolean forceDeactivation;
+    @Order(6)
+    boolean forceDeactivation;
+
+    /** No-arg constructor for deserialization. */
+    public ChangeGlobalStateMessage() {
+    }
 
     /**
      * @param reqId State change request ID.
@@ -94,6 +102,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         boolean forceChangeBaselineTopology,
         long timestamp
     ) {
+        super(IgniteUuid.randomUuid());
+
         assert reqId != null;
         assert initiatingNodeId != null;
 
@@ -104,11 +114,10 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         this.forceDeactivation = forceDeactivation;
         this.baselineTopology = baselineTopology;
         this.forceChangeBaselineTopology = forceChangeBaselineTopology;
-        this.timestamp = timestamp;
     }
 
     /**
-     * @return Configurations read from persistent store..
+     * @return Configurations read from persistent store.
      */
     @Nullable public List<StoredCacheData> storedCacheConfigurations() {
         return storedCfgs;
@@ -145,18 +154,8 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -211,13 +210,6 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
      */
     public boolean forceDeactivation() {
         return forceDeactivation;
-    }
-
-    /**
-     * @return Timestamp.
-     */
-    public long timestamp() {
-        return timestamp;
     }
 
     /**

@@ -75,7 +75,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 ConsistentId = igniteName,
                 IgniteInstanceName = igniteName,
                 DiscoverySpi = GetStaticDiscovery(),
-                JvmOptions = TestJavaOptions()
+                JvmOptions = TestJavaOptions(),
+                Localhost = "127.0.0.1"
             };
 
         /// <summary>

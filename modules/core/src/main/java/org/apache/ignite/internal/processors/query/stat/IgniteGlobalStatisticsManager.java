@@ -41,16 +41,12 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnGlobalDataViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnLocalDataViewWalker;
-import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnPartitionDataViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
@@ -58,9 +54,12 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
+import org.apache.ignite.internal.systemview.StatisticsColumnGlobalDataViewWalker;
+import org.apache.ignite.internal.systemview.StatisticsColumnLocalDataViewWalker;
+import org.apache.ignite.internal.systemview.StatisticsColumnPartitionDataViewWalker;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
  * Global statistics manager. Cache global statistics and collect it.
@@ -492,26 +491,6 @@ public class IgniteGlobalStatisticsManager implements GridMessageListener {
                     sendResponse(nodeId, req.reqId(), key, StatisticsType.LOCAL, objStatistics);
             }
         }
-    }
-
-    /**
-     * Test if statistics configuration is fit to all required versions.
-     * @param cfg Statistics configuration to check.
-     * @param versions Map of column name to required version.
-     * @return {@code true} if it is, {@code false} otherwise.
-     */
-    private boolean checkStatisticsCfg(StatisticsObjectConfiguration cfg, Map<String, Long> versions) {
-        if (cfg == null)
-            return false;
-
-        for (Map.Entry<String, Long> ver : versions.entrySet()) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(ver.getKey());
-
-            if (colCfg == null || colCfg.version() < ver.getValue())
-                return false;
-        }
-
-        return true;
     }
 
     /**

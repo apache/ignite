@@ -17,32 +17,24 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
-
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.managers.communication.TestMessage1.TEST_MSG_1_TYPE;
+import static org.apache.ignite.internal.managers.communication.TestMessage2.TEST_MSG_2_TYPE;
+import static org.apache.ignite.internal.managers.communication.TestMessage42.TEST_MSG_42_TYPE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for default implementation of {@link MessageFactory} interface.
+ * Tests for default implementation of {@link CoreMessagesProvider} interface.
  */
 public class IgniteMessageFactoryImplTest {
-    /** Test message 1 type. */
-    private static final short TEST_MSG_1_TYPE = 1;
-
-    /** Test message 2 type. */
-    private static final short TEST_MSG_2_TYPE = 2;
-
-    /** Test message 42 type. */
-    private static final short TEST_MSG_42_TYPE = 42;
-
     /** Unknown message type. */
     private static final short UNKNOWN_MSG_TYPE = 0;
 
@@ -55,7 +47,7 @@ public class IgniteMessageFactoryImplTest {
 
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
-        msgFactory.register((short)0, () -> null);
+        msgFactory.register((short)0, (MessageSerializer)null);
     }
 
     /**
@@ -80,7 +72,7 @@ public class IgniteMessageFactoryImplTest {
 
         short[] directTypes = msgFactory.registeredDirectTypes();
 
-        assertArrayEquals(directTypes, new short[] {TEST_MSG_1_TYPE, TEST_MSG_2_TYPE, TEST_MSG_42_TYPE});
+        assertArrayEquals(new short[] {TEST_MSG_1_TYPE, TEST_MSG_2_TYPE, TEST_MSG_42_TYPE}, directTypes);
     }
 
     /**
@@ -115,9 +107,9 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactoryPovider implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
-            factory.register(TEST_MSG_1_TYPE, TestMessage1::new);
-            factory.register(TEST_MSG_42_TYPE, TestMessage42::new);
+        @Override public void registerAll(IgniteMessageFactory factory) {
+            factory.register(TEST_MSG_1_TYPE, new TestMessage1Serializer());
+            factory.register(TEST_MSG_42_TYPE, new TestMessage42Serializer());
         }
     }
 
@@ -126,8 +118,8 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactoryPoviderWithTheSameDirectType implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
-            factory.register(TEST_MSG_1_TYPE, TestMessage1::new);
+        @Override public void registerAll(IgniteMessageFactory factory) {
+            factory.register(TEST_MSG_1_TYPE, new TestMessage1Serializer());
         }
     }
 
@@ -136,65 +128,8 @@ public class IgniteMessageFactoryImplTest {
      */
     private static class TestMessageFactory implements MessageFactoryProvider {
         /** {@inheritDoc} */
-        @Override public void registerAll(MessageFactory factory) {
-            factory.register(TEST_MSG_2_TYPE, TestMessage2::new);
+        @Override public void registerAll(IgniteMessageFactory factory) {
+            factory.register(TEST_MSG_2_TYPE, new TestMessage2Serializer());
         }
-    }
-
-    /** Test message. */
-    private static class TestMessage1 implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return TEST_MSG_1_TYPE;
-        }
-
-    }
-
-    /** Test message. */
-    private static class TestMessage2 implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return TEST_MSG_2_TYPE;
-        }
-
-    }
-
-    /** Test message. */
-    private static class TestMessage42 implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return TEST_MSG_42_TYPE;
-        }
-
     }
 }

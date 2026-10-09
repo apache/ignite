@@ -65,8 +65,10 @@ public class PageIOFreeSizeTest extends GridCommonAbstractTest {
 
     /** */
     private final PageMetrics mock = new PageMetrics() {
+        /** */
         final LongAdderMetric totalPages = new LongAdderMetric("a", null);
 
+        /** */
         final LongAdderMetric idxPages = new LongAdderMetric("b", null);
 
         @Override public LongAdderMetric totalPages() {

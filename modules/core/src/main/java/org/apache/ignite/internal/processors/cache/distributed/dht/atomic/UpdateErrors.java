@@ -22,10 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,11 +36,11 @@ public class UpdateErrors implements Message {
     /** Failed keys. */
     @GridToStringInclude
     @Order(0)
-    private List<KeyCacheObject> failedKeys;
+    List<KeyCacheObject> failedKeys;
 
     /** Error message. */
-    @Order(value = 1, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(1)
+    ErrorMessage errMsg;
 
     /**
      *
@@ -75,31 +73,10 @@ public class UpdateErrors implements Message {
     }
 
     /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
      * @return Failed keys.
      */
     public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
-    }
-
-    /**
-     * @param failedKeys New failed keys.
-     */
-    public void failedKeys(List<KeyCacheObject> failedKeys) {
-        this.failedKeys = failedKeys;
     }
 
     /**
@@ -134,21 +111,6 @@ public class UpdateErrors implements Message {
             errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys on primary node."));
 
         errMsg.error().addSuppressed(e);
-    }
-
-    /** */
-    void prepareMarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
-        msg.prepareMarshalCacheObjects(failedKeys, cctx);
-    }
-
-    /** */
-    void finishUnmarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx, ClassLoader ldr) throws IgniteCheckedException {
-        msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -49;
     }
 
     /** {@inheritDoc} */

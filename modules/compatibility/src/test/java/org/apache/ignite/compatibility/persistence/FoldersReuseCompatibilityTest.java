@@ -25,10 +25,9 @@ import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
@@ -174,16 +173,10 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
      * @param cfg ignite config to setup.
      */
     private static void configPersistence(IgniteConfiguration cfg) {
-        final PersistentStoreConfiguration psCfg = new PersistentStoreConfiguration();
-
-        cfg.setPersistentStoreConfiguration(psCfg);
-
-        final MemoryConfiguration memCfg = new MemoryConfiguration();
-        final MemoryPolicyConfiguration memPolCfg = new MemoryPolicyConfiguration();
-
-        memPolCfg.setMaxSize(32L * 1024 * 1024); // we don't need much memory for this test
-        memCfg.setMemoryPolicies(memPolCfg);
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(new DataRegionConfiguration()
+            // we don't need much memory for this test
+            .setMaxSize(32L * 1024 * 1024)
+            .setPersistenceEnabled(true)));
     }
 
     /**

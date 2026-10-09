@@ -36,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
-import static java.lang.Thread.yield;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -173,7 +172,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
                     final int nodeId = r.nextInt(TOTAL_CNT);
 
                     if (!reservedIdx.compareAndSet(nodeId, 0, 1)) {
-                        yield();
+                        Thread.yield();
 
                         continue;
                     }

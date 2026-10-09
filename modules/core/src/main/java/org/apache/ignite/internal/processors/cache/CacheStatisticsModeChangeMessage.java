@@ -20,38 +20,41 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache statistics mode change discovery message.
  */
-public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class CacheStatisticsModeChangeMessage extends DiscoveryCustomMessage {
     /** Initial message flag mask. */
     private static final byte INITIAL_MSG_MASK = 0x01;
 
     /** Statistics enabled flag mask. */
     private static final byte ENABLED_MASK = 0x02;
 
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
     /** Request id. */
-    private final UUID reqId;
+    @Order(0)
+    UUID reqId;
 
     /** Cache names. */
-    private final Collection<String> caches;
+    @Order(1)
+    Collection<String> caches;
 
     /** Flags. */
-    private final byte flags;
+    @Order(2)
+    byte flags;
+
+    /**
+     * Constructor for {@link MessageFactory}.
+     */
+    public CacheStatisticsModeChangeMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor for response.
@@ -59,13 +62,12 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      * @param req Request message.
      */
     private CacheStatisticsModeChangeMessage(CacheStatisticsModeChangeMessage req) {
+        super(IgniteUuid.randomUuid());
+
         reqId = req.reqId;
         caches = null;
 
-        if (req.enabled())
-            flags = ENABLED_MASK;
-        else
-            flags = 0;
+        flags = req.enabled() ? ENABLED_MASK : 0;
     }
 
     /**
@@ -73,8 +75,10 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
      *
      * @param caches Collection of cache names.
      */
-    public CacheStatisticsModeChangeMessage(UUID reqId, Collection<String> caches, boolean enabled) {
-        this.reqId = reqId;
+    public CacheStatisticsModeChangeMessage(Collection<String> caches, boolean enabled) {
+        super(IgniteUuid.randomUuid());
+
+        reqId = UUID.randomUUID();
         this.caches = Collections.unmodifiableCollection(caches);
 
         byte flags = INITIAL_MSG_MASK;
@@ -86,24 +90,8 @@ public class CacheStatisticsModeChangeMessage implements DiscoveryCustomMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return initial() ? new CacheStatisticsModeChangeMessage(this) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /**

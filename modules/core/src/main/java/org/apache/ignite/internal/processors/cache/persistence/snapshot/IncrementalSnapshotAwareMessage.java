@@ -18,34 +18,29 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message that holds a transaction message and incremental snapshot ID.
  */
 public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
-    /** */
-    public static final short TYPE_CODE = 400;
-
     /** Original transaction message. */
-    @Order(3)
-    private GridCacheMessage payload;
+    @Order(0)
+    GridCacheMessage payload;
 
     /** Incremental snapshot ID. */
-    @Order(4)
-    private UUID id;
+    @Order(1)
+    UUID id;
 
     /** ID of the latest incremental snapshot after which this transaction committed. */
-    @Order(value = 5, method = "txIncrementalSnapshotId")
-    private @Nullable UUID txSnpId;
+    @Order(2)
+    @Nullable UUID txSnpId;
 
     /** Incremental snapshot topology version. */
-    @Order(value = 6, method = "snapshotTopologyVersion")
-    private long topVer;
+    @Order(3)
+    long topVer;
 
     /** */
     public IncrementalSnapshotAwareMessage() {
@@ -69,23 +64,9 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return id;
     }
 
-    /**
-     * @param id Incremental snapshot ID.
-     */
-    public void id(UUID id) {
-        this.id = id;
-    }
-
     /** ID of the latest incremental snapshot after which this transaction committed. */
     public UUID txIncrementalSnapshotId() {
         return txSnpId;
-    }
-
-    /**
-     * @param txSnpId ID of the latest incremental snapshot after which this transaction committed.
-     */
-    public void txIncrementalSnapshotId(UUID txSnpId) {
-        this.txSnpId = txSnpId;
     }
 
     /** */
@@ -93,38 +74,9 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
         return payload;
     }
 
-    /**
-     * @param payload Original transaction message.
-     */
-    public void payload(GridCacheMessage payload) {
-        this.payload = payload;
-    }
-
     /** @return Incremental snapshot topology version. */
     public long snapshotTopologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Incremental snapshot topology version.
-     */
-    public void snapshotTopologyVersion(long topVer) {
-        this.topVer = topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        payload.prepareMarshal(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        payload.finishUnmarshal(ctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */

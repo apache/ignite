@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipC
 import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -116,9 +115,6 @@ public class CacheGroupContext {
     private final byte ioPlc;
 
     /** */
-    private final boolean depEnabled;
-
-    /** */
     private final boolean storeCacheId;
 
     /** We modify content under lock, by making defensive copy, field always contains unmodifiable list. */
@@ -163,9 +159,6 @@ public class CacheGroupContext {
 
     /** */
     private volatile boolean drEnabled;
-
-    /** */
-    private volatile boolean qryEnabled;
 
     /** */
     private volatile boolean locWalEnabled;
@@ -257,8 +250,6 @@ public class CacheGroupContext {
 
         ioPlc = cacheType.ioPolicy();
 
-        depEnabled = false;
-
         storeCacheId = affNode && dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
         
         log = ctx.kernalContext().log(getClass());
@@ -300,13 +291,6 @@ public class CacheGroupContext {
      */
     public boolean storeCacheIdInDataPage() {
         return storeCacheId;
-    }
-
-    /**
-     * @return {@code True} if deployment is enabled.
-     */
-    public boolean deploymentEnabled() {
-        return depEnabled;
     }
 
     /**
@@ -368,9 +352,6 @@ public class CacheGroupContext {
 
         assert add : cctx.name();
 
-        if (!qryEnabled && QueryUtils.isEnabled(cctx.config()))
-            qryEnabled = true;
-
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
 
@@ -400,24 +381,11 @@ public class CacheGroupContext {
             caches = Collections.unmodifiableList(copy);
         }
 
-        if (QueryUtils.isEnabled(cctx.config())) {
-            boolean qryEnabled = false;
-
-            for (GridCacheContext<?, ?> cacheCtx : copy)
-                if (QueryUtils.isEnabled(cacheCtx.config())) {
-                    qryEnabled = true;
-
-                    break;
-                }
-
-            this.qryEnabled = qryEnabled;
-        }
-
         if (cctx.isDrEnabled()) {
             boolean drEnabled = false;
 
             for (GridCacheContext<?, ?> cacheCtx : copy)
-                if (QueryUtils.isEnabled(cacheCtx.config())) {
+                if (cacheCtx.isDrEnabled()) {
                     drEnabled = true;
 
                     break;
@@ -441,16 +409,6 @@ public class CacheGroupContext {
                 ", caches=" + caches;
 
         return caches.get(0);
-    }
-
-    /**
-     *
-     */
-    public void unwindUndeploys() {
-        List<GridCacheContext<?, ?>> caches = this.caches;
-
-        for (GridCacheContext<?, ?> cctx : caches)
-            cctx.deploy().unwind(cctx);
     }
 
     /**
@@ -571,55 +529,6 @@ public class CacheGroupContext {
                     null,
                     0,
                     0));
-    }
-
-    /**
-     * @param part Partition.
-     * @param key Key.
-     * @param evtNodeId Event node ID.
-     * @param type Event type.
-     * @param newVal New value.
-     * @param hasNewVal Has new value flag.
-     * @param oldVal Old values.
-     * @param hasOldVal Has old value flag.
-     * @param keepBinary Keep binary flag.
-     */
-    public void addCacheEvent(
-        int part,
-        KeyCacheObject key,
-        UUID evtNodeId,
-        int type,
-        @Nullable CacheObject newVal,
-        boolean hasNewVal,
-        @Nullable CacheObject oldVal,
-        boolean hasOldVal,
-        boolean keepBinary
-    ) {
-        List<GridCacheContext<?, ?>> caches = this.caches;
-
-        for (GridCacheContext<?, ?> cctx : caches)
-            if (!cctx.config().isEventsDisabled())
-                cctx.events().addEvent(part,
-                    key,
-                    evtNodeId,
-                    null,
-                    null,
-                    null,
-                    type,
-                    newVal,
-                    hasNewVal,
-                    oldVal,
-                    hasOldVal,
-                    null,
-                    null,
-                    keepBinary);
-    }
-
-    /**
-     * @return {@code True} if contains cache with query indexing enabled.
-     */
-    public boolean queriesEnabled() {
-        return qryEnabled;
     }
 
     /**

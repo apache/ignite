@@ -17,29 +17,47 @@
 
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import java.io.Serializable;
+import org.apache.ignite.internal.JdkMarshalled;
+import org.apache.ignite.internal.Marshalled;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Represents committed transactions hash for a pair of nodes. */
-public class TransactionsHashRecord extends IgniteDataTransferObject {
+/**
+ * Represents committed transactions hash for a pair of nodes.
+ * <p>
+ * Travels both transports, Communication and Discovery, inside the result of a snapshot check, and carries a user
+ * consistent id.
+ */
+@JdkMarshalled
+public class TransactionsHashRecord implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
     @GridToStringInclude
-    private Object locConsistentId;
+    @Marshalled("locConsistentIdBytes")
+    Object locConsistentId;
+
+    /** Bytes of {@link #locConsistentId}. */
+    @Order(0)
+    transient byte[] locConsistentIdBytes;
 
     /** Consistent ID of remote node that participated in the transactions. */
     @GridToStringInclude
-    private Object rmtConsistentId;
+    @Marshalled("rmtConsistentIdBytes")
+    Object rmtConsistentId;
+
+    /** Bytes of {@link #rmtConsistentId}. */
+    @Order(1)
+    transient byte[] rmtConsistentIdBytes;
 
     /** Committed transactions IDs hash. */
+    @Order(2)
     @GridToStringInclude
-    private int txHash;
+    int txHash;
 
     /** */
     public TransactionsHashRecord() {
@@ -66,20 +84,6 @@ public class TransactionsHashRecord extends IgniteDataTransferObject {
     /** @return Consistent ID of local node. */
     public Object localConsistentId() {
         return locConsistentId;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(locConsistentId);
-        out.writeObject(rmtConsistentId);
-        out.writeInt(txHash);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        locConsistentId = in.readObject();
-        rmtConsistentId = in.readObject();
-        txHash = in.readInt();
     }
 
     /** {@inheritDoc} */

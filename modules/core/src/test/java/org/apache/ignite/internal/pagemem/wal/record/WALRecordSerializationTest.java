@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -35,7 +36,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.junit.Test;
-import org.mockito.internal.matchers.apachecommons.ReflectionEquals;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 
@@ -96,7 +96,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
         WALRecord.RecordType[] recordTypes = WALRecord.RecordType.values();
 
-        List<ReflectionEquals> serializedRecords = new ArrayList<>();
+        List<WALRecord> serializedRecords = new ArrayList<>();
 
         IgniteWriteAheadLogManager wal = ignite.context().cache().context().wal();
 
@@ -106,9 +106,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
                 WALRecord record = RecordUtils.buildWalRecord(recordType);
 
                 if (RecordUtils.isIncludeIntoLog(record)) {
-                    serializedRecords.add(new ReflectionEquals(record, "prev", "pos",
-                        "updateCounter" //updateCounter for PartitionMetaStateRecord isn't serialized.
-                    ));
+                    serializedRecords.add(record);
 
                     wal.log(record);
                 }
@@ -123,14 +121,20 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        Iterator<ReflectionEquals> serializedIter = serializedRecords.iterator();
-        ReflectionEquals curExpRecord = serializedIter.hasNext() ? serializedIter.next() : null;
+        Iterator<WALRecord> serializedIter = serializedRecords.iterator();
+        WALRecord curExpRecord = serializedIter.hasNext() ? serializedIter.next() : null;
 
         try (WALIterator iter = wal.replay(null)) {
             while (iter.hasNext()) {
                 WALRecord record = iter.nextX().get2();
 
-                if (curExpRecord != null && curExpRecord.matches(record))
+                if (curExpRecord != null && EqualsBuilder.reflectionEquals(
+                        curExpRecord,
+                        record,
+                        "prev",
+                        "pos",
+                        "updateCounter"
+                ))
                     curExpRecord = serializedIter.hasNext() ? serializedIter.next() : null;
             }
         }
@@ -151,7 +155,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
         WALRecord.RecordType[] recordTypes = WALRecord.RecordType.values();
 
-        List<ReflectionEquals> serializedRecords = new ArrayList<>();
+        List<WALRecord> serializedRecords = new ArrayList<>();
 
         IgniteWriteAheadLogManager wal = ignite.context().cache().context().wal();
 
@@ -164,9 +168,7 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
                 if (RecordUtils.isIncludeIntoLog(record) && (recordType.purpose() == WALRecord.RecordPurpose.LOGICAL ||
                     recordType == WALRecord.RecordType.CHECKPOINT_RECORD)) {
-                    serializedRecords.add(new ReflectionEquals(record, "prev", "pos",
-                        "updateCounter" //updateCounter for PartitionMetaStateRecord isn't serialized.
-                    ));
+                    serializedRecords.add(record);
 
                     lastPointer = wal.log(record);
                 }
@@ -204,14 +206,20 @@ public class WALRecordSerializationTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        Iterator<ReflectionEquals> serializedIter = serializedRecords.iterator();
-        ReflectionEquals curExpRecord = serializedIter.hasNext() ? serializedIter.next() : null;
+        Iterator<WALRecord> serializedIter = serializedRecords.iterator();
+        WALRecord curExpRecord = serializedIter.hasNext() ? serializedIter.next() : null;
 
         try (WALIterator iter = wal.replay(null)) {
             while (iter.hasNext()) {
                 WALRecord record = iter.nextX().get2();
 
-                if (curExpRecord != null && curExpRecord.matches(record))
+                if (curExpRecord != null && EqualsBuilder.reflectionEquals(
+                        curExpRecord,
+                        record,
+                        "prev",
+                        "pos",
+                        "updateCounter"
+                ))
                     curExpRecord = serializedIter.hasNext() ? serializedIter.next() : null;
             }
         }

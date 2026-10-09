@@ -53,9 +53,6 @@ public class GridQueryFinishedInfo {
     /** Enforce join order query flag. */
     private boolean enforceJoinOrder;
 
-    /** Lazy query flag. */
-    private boolean lazy;
-
     /** Distributed joins query flag. */
     private boolean distributedJoins;
 
@@ -81,7 +78,6 @@ public class GridQueryFinishedInfo {
      * @param finishTime Query finish time.
      * @param loc Local query flag.
      * @param enforceJoinOrder Local query flag.
-     * @param lazy Local query flag.
      * @param distributedJoins Local query flag.
      * @param failed Whether query is failed or not.
      * @param failReason Exception that caused query execution fail.
@@ -97,7 +93,6 @@ public class GridQueryFinishedInfo {
         long finishTime,
         boolean loc,
         boolean enforceJoinOrder,
-        boolean lazy,
         boolean distributedJoins,
         boolean failed,
         @Nullable Throwable failReason,
@@ -112,7 +107,6 @@ public class GridQueryFinishedInfo {
         this.finishTime = finishTime;
         this.loc = loc;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.lazy = lazy;
         this.distributedJoins = distributedJoins;
         this.failed = failed;
         this.failReason = failReason;
@@ -180,13 +174,6 @@ public class GridQueryFinishedInfo {
      */
     public boolean enforceJoinOrder() {
         return enforceJoinOrder;
-    }
-
-    /**
-     * @return Lazy flag.
-     */
-    public boolean lazy() {
-        return lazy;
     }
 
     /**

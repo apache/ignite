@@ -22,7 +22,6 @@ import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,7 +70,6 @@ import org.jetbrains.annotations.Nullable;
  *     </ul>
  * </p>
  */
-@IgniteExperimental
 public interface MaintenanceRegistry {
     /**
      * @return {@code True} if any maintenance task was found.

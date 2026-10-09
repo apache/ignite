@@ -23,9 +23,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +51,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.PlatformCacheObjectImpl;
@@ -882,7 +881,7 @@ public class PlatformUtils {
     public static GridBinaryMarshaller marshaller() {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null, null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
         return new GridBinaryMarshaller(U.binaryContext(BinaryUtils.noopMetadataHandler(), marsh));
     }
@@ -943,26 +942,6 @@ public class PlatformUtils {
     }
 
     /**
-     * @param o Object to test.
-     * @return True if collection should be recursively unwrapped.
-     */
-    private static boolean knownCollection(Object o) {
-        Class<?> cls = o == null ? null : o.getClass();
-
-        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
-    }
-
-    /**
-     * @param o Object to test.
-     * @return True if map should be recursively unwrapped.
-     */
-    private static boolean knownMap(Object o) {
-        Class<?> cls = o == null ? null : o.getClass();
-
-        return cls == HashMap.class || cls == LinkedHashMap.class;
-    }
-
-    /**
      * @param col Collection to unwrap.
      * @return Unwrapped collection.
      */
@@ -1019,7 +998,7 @@ public class PlatformUtils {
         if (clsName == null)
             throw new IgniteException("Java object/factory class name is not set.");
 
-        Class cls = U.classForName(clsName, null);
+        Class cls = ClassLoaderUtils.classForName(clsName);
 
         if (cls == null)
             throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +

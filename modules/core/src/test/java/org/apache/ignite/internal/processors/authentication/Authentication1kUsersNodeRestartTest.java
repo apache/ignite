@@ -18,19 +18,16 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.asRoot;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -90,33 +87,11 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
-        IgniteSecurity sec = grid(0).context().security();
+        IntStream.range(0, USERS_COUNT).parallel().forEach(i ->
+            asRoot(grid(0), s -> s.createUser("test" + i, "init".toCharArray())));
 
-        SecurityContext secCtxDflt = authenticate(grid(0), User.DFAULT_USER_NAME, "ignite");
-
-        withSecurityContextOnAllNodes(secCtxDflt);
-
-        IntStream.range(0, USERS_COUNT).parallel().forEach(
-            i -> {
-                try (AutoCloseable ignored = withSecurityContextOnAllNodes(secCtxDflt)) {
-                    sec.createUser("test" + i, "init".toCharArray());
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            }
-        );
-
-        IntStream.range(0, USERS_COUNT).parallel().forEach(
-            i -> {
-                try (AutoCloseable ignored = withSecurityContextOnAllNodes(secCtxDflt)) {
-                    sec.alterUser("test" + i, ("passwd_" + i).toCharArray());
-                }
-                catch (Exception e) {
-                    throw new IgniteException(e);
-                }
-            }
-        );
+        IntStream.range(0, USERS_COUNT).parallel().forEach(i ->
+            asRoot(grid(0), s -> s.alterUser("test" + i, ("passwd_" + i).toCharArray())));
 
         stopGrid(0);
 

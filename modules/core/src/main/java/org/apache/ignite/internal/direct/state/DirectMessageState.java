@@ -19,6 +19,7 @@ package org.apache.ignite.internal.direct.state;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -96,6 +97,19 @@ public class DirectMessageState<T extends DirectMessageStateItem> {
         assert pos == 0;
 
         stack[0].reset();
+    }
+
+    /**
+     * @param c Closure to apply to every created item.
+     */
+    public void forEachItem(Consumer<T> c) {
+        // Items are created contiguously by forward().
+        for (T item : stack) {
+            if (item == null)
+                break;
+
+            c.accept(item);
+        }
     }
 
     /** {@inheritDoc} */

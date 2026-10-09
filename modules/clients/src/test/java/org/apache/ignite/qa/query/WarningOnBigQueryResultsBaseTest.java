@@ -65,7 +65,7 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
     /** Log message pattern. */
     private static final Pattern logPtrn = Pattern.compile(
         "fetched=([0-9]+), duration=([0-9]+)ms, type=(MAP|LOCAL|REDUCE), distributedJoin=(true|false), " +
-            "enforceJoinOrder=(true|false), lazy=(true|false), schema=(\\S+), initiatorId=(\\S+), sql");
+            "enforceJoinOrder=(true|false), schema=(\\S+), initiatorId=(\\S+), sql");
 
     /** Test log. */
     private static Map<String, BigResultsLogListener> logListeners = new HashMap<>();
@@ -227,9 +227,6 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
         /** Duration. */
         ArrayList<Long> duration = new ArrayList<>();
 
-        /** Lazy flag. */
-        boolean lazy;
-
         /** Enforce join order flag. */
         boolean enforceJoinOrder;
 
@@ -271,8 +268,7 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
                 type = m.group(3);
                 distributedJoin = Boolean.parseBoolean(m.group(4));
                 enforceJoinOrder = Boolean.parseBoolean(m.group(5));
-                lazy = Boolean.parseBoolean(m.group(6));
-                schema = m.group(7);
+                schema = m.group(6);
 
                 sql = s.substring(s.indexOf(", sql='") + 7, s.indexOf("', plan="));
                 plan = s.substring(s.indexOf("', plan=") + 8, s.indexOf(", reqId="));

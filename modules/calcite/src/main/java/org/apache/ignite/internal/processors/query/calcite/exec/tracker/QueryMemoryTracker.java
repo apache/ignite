@@ -50,16 +50,10 @@ public class QueryMemoryTracker implements MemoryTracker {
     /** {@inheritDoc} */
     @Override public void onMemoryAllocated(long size) {
         try {
-            if (allocated.addAndGet(size) > quota && quota > 0)
-                throw new IgniteException("Query quota exceeded [quota=" + quota + ']');
-
             parent.onMemoryAllocated(size);
         }
-        catch (Exception e) {
-            // Undo changes in case of quota exceeded.
-            release(size);
-
-            throw e;
+        finally {
+            allocate(size);
         }
     }
 
@@ -71,7 +65,13 @@ public class QueryMemoryTracker implements MemoryTracker {
             parent.onMemoryReleased(released);
     }
 
-    /** Release size, but no more than currently allocated. */
+    /** Allocate size for current query. */
+    private void allocate(long size) {
+        if (allocated.addAndGet(size) > quota && quota > 0)
+            throw new IgniteException("Query quota exceeded [quota=" + quota + ']');
+    }
+
+    /** Release size for current query, but no more than currently allocated. */
     private long release(long size) {
         long wasAllocated;
         long released;

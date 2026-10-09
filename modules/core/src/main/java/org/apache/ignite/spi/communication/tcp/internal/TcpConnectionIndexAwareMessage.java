@@ -22,7 +22,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** */
 public interface TcpConnectionIndexAwareMessage extends Message {
     /** */
-    public static final int UNDEFINED_CONNECTION_INDEX = -1;
+    public int UNDEFINED_CONNECTION_INDEX = -1;
 
     /**
      * @return {@link #UNDEFINED_CONNECTION_INDEX} if standard index has to be used. Desired connection index otherwise.

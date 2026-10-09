@@ -54,7 +54,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
             GridCachePartitionExchangeManager<Object, Object> exchangeMgr = ignite.context().cache().context().exchange();
 
             GridWorker exchangeWorker =
-                GridTestUtils.getFieldValue(exchangeMgr, GridCachePartitionExchangeManager.class, "exchWorker");
+                GridTestUtils.getFieldValue(exchangeMgr, GridCachePartitionExchangeManager.class, "exchTaskHandler");
 
             assertNotNull(exchangeWorker);
 
@@ -116,7 +116,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
          * Default constructor.
          */
         ExchangeWorkerFailureTask() {
-            super(null, new SchemaAbstractDiscoveryMessage(null) {
+            super(new SchemaAbstractDiscoveryMessage(null) {
                 @Override public boolean exchange() {
                     return false;
                 }
@@ -125,8 +125,8 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
                     return null;
                 }
 
-                @Override public boolean isMutable() {
-                    return false;
+                @Override public short directType() {
+                    return 0;
                 }
             });
         }

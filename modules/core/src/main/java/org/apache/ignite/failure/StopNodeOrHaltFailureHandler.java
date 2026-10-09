@@ -25,6 +25,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Handler will try to stop node if {@code tryStop} value is {@code true}.
@@ -61,36 +62,26 @@ public class StopNodeOrHaltFailureHandler extends AbstractFailureHandler {
         if (tryStop) {
             final CountDownLatch latch = new CountDownLatch(1);
 
-            new Thread(
-                new Runnable() {
-                    @Override public void run() {
-                        U.error(log, "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
+            new IgniteThread(ignite.name(), "node-stopper", () -> {
+                U.error(log, "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
-                        IgnitionEx.stop(ignite.name(), true, null, true);
+                IgnitionEx.stop(ignite.name(), true, null, true);
 
-                        latch.countDown();
+                latch.countDown();
+            }).start();
+
+            new IgniteThread(ignite.name(), "jvm-halt-on-stop-timeout", () -> {
+                try {
+                    if (!latch.await(timeout, TimeUnit.MILLISECONDS)) {
+                        U.error(log, "Stopping local node timeout, JVM will be halted.");
+
+                        Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
                     }
-                },
-                "node-stopper"
-            ).start();
-
-            new Thread(
-                new Runnable() {
-                    @Override public void run() {
-                        try {
-                            if (!latch.await(timeout, TimeUnit.MILLISECONDS)) {
-                                U.error(log, "Stopping local node timeout, JVM will be halted.");
-
-                                Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
-                            }
-                        }
-                        catch (InterruptedException e) {
-                            // No-op.
-                        }
-                    }
-                },
-                "jvm-halt-on-stop-timeout"
-            ).start();
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
+            }).start();
         }
         else {
             U.error(log, "JVM will be halted immediately due to the failure: [failureCtx=" + failureCtx + ']');

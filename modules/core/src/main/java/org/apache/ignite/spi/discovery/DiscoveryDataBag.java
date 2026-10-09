@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.spi.discovery;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -24,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,8 +44,11 @@ public class DiscoveryDataBag {
         /** @return Whether joining node provided discovery data. */
         boolean hasJoiningNodeData();
 
-        /** @return Joining node data. */
-        Serializable joiningNodeData();
+        /**
+         * @param <T> Message type.
+         * @return Joining node data.
+         */
+        <T extends Message> T joiningNodeData();
     }
 
     /**
@@ -55,11 +58,17 @@ public class DiscoveryDataBag {
         /** @return ID fo the joining node. */
         UUID joiningNodeId();
 
-        /** @return Common for all cluster nodes discovery data that is sent to the joining node. */
-        Serializable commonData();
+        /**
+         * @param <T> Message type.
+         * @return Common for all cluster nodes discovery data that is sent to the joining node.
+         */
+        <T extends Message> T commonData();
 
-        /** @return Discovery data that is mapped to the particular cluster node and sent to the joining node. */
-        Map<UUID, Serializable> nodeSpecificData();
+        /**
+         * @param <T> Message type.
+         * @return Discovery data that is mapped to the particular cluster node and sent to the joining node.
+         */
+        <T extends Message> Map<UUID, T> nodeSpecificData();
     }
 
     /**
@@ -80,8 +89,8 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable joiningNodeData() {
-            return joiningNodeData.get(cmpId);
+        @Override @Nullable public <T extends Message> T joiningNodeData() {
+            return (T)joiningNodeData.get(cmpId);
         }
 
         /**
@@ -100,7 +109,7 @@ public class DiscoveryDataBag {
         private int cmpId;
 
         /** */
-        private Map<UUID, Serializable> nodeSpecificData
+        private Map<UUID, Message> nodeSpecificData
                 = new LinkedHashMap<>(DiscoveryDataBag.this.nodeSpecificData.size());
 
         /** {@inheritDoc} */
@@ -109,16 +118,16 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public Serializable commonData() {
+        @Override @Nullable public <T extends Message> T commonData() {
             if (commonData != null)
-                return commonData.get(cmpId);
+                return (T)commonData.get(cmpId);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Map<UUID, Serializable> nodeSpecificData() {
-            return nodeSpecificData;
+        @Override public <T extends Message> Map<UUID, T> nodeSpecificData() {
+            return (Map<UUID, T>)nodeSpecificData;
         }
 
         /**
@@ -136,7 +145,7 @@ public class DiscoveryDataBag {
         private void reinitNodeSpecData(int cmpId) {
             nodeSpecificData.clear();
 
-            for (Map.Entry<UUID, Map<Integer, Serializable>> e : DiscoveryDataBag.this.nodeSpecificData.entrySet()) {
+            for (Map.Entry<UUID, Map<Integer, Message>> e : DiscoveryDataBag.this.nodeSpecificData.entrySet()) {
                 if (e.getValue() != null && e.getValue().containsKey(cmpId))
                     nodeSpecificData.put(e.getKey(), e.getValue().get(cmpId));
             }
@@ -150,7 +159,7 @@ public class DiscoveryDataBag {
     private static final UUID DEFAULT_KEY = null;
 
     /** */
-    private UUID joiningNodeId;
+    private final UUID joiningNodeId;
 
     /**
      * Component IDs with already initialized common discovery data.
@@ -158,13 +167,13 @@ public class DiscoveryDataBag {
     private Set<Integer> cmnDataInitializedCmps;
 
     /** */
-    private Map<Integer, Serializable> joiningNodeData = new HashMap<>();
+    private final Map<Integer, Message> joiningNodeData = new HashMap<>();
 
     /** */
-    private Map<Integer, Serializable> commonData = new HashMap<>();
+    private final Map<Integer, Message> commonData = new HashMap<>();
 
     /** */
-    private Map<UUID, Map<Integer, Serializable>> nodeSpecificData = new LinkedHashMap<>();
+    private final Map<UUID, Map<Integer, Message>> nodeSpecificData = new LinkedHashMap<>();
 
     /** */
     private JoiningNodeDiscoveryDataImpl newJoinerData;
@@ -237,27 +246,27 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Data.
+     * @param data Message data.
      */
-    public void addJoiningNodeData(Integer cmpId, Serializable data) {
+    public void addJoiningNodeData(Integer cmpId, Message data) {
         joiningNodeData.put(cmpId, data);
     }
 
     /**
      * @param cmpId Component ID.
-     * @param data Data.
+     * @param data Message data.
      */
-    public void addGridCommonData(Integer cmpId, Serializable data) {
+    public void addGridCommonData(Integer cmpId, Message data) {
         commonData.put(cmpId, data);
     }
 
     /**
      * @param cmpId Component ID.
-     * @param data Data.
+     * @param data Message data.
      */
-    public void addNodeSpecificData(Integer cmpId, Serializable data) {
+    public void addNodeSpecificData(Integer cmpId, Message data) {
         if (!nodeSpecificData.containsKey(DEFAULT_KEY))
-            nodeSpecificData.put(DEFAULT_KEY, new HashMap<Integer, Serializable>());
+            nodeSpecificData.put(DEFAULT_KEY, new HashMap<>());
 
         nodeSpecificData.get(DEFAULT_KEY).put(cmpId, data);
     }
@@ -275,26 +284,26 @@ public class DiscoveryDataBag {
     /**
      * @param joinNodeData Joining node data.
      */
-    public void joiningNodeData(Map<Integer, Serializable> joinNodeData) {
+    public void joiningNodeData(Map<Integer, Message> joinNodeData) {
         joiningNodeData.putAll(joinNodeData);
     }
 
     /**
-     * @param cmnData Cmn data.
+     * @param cmnData Common data.
      */
-    public void commonData(Map<Integer, Serializable> cmnData) {
+    public void commonData(Map<Integer, Message> cmnData) {
         commonData.putAll(cmnData);
     }
 
     /**
      * @param nodeSpecData Node specific data.
      */
-    public void nodeSpecificData(Map<UUID, Map<Integer, Serializable>> nodeSpecData) {
+    public void nodeSpecificData(Map<UUID, Map<Integer, Message>> nodeSpecData) {
         nodeSpecificData.putAll(nodeSpecData);
     }
 
     /** @return Discovery data for each Ignite component that is sent to the cluster nodes by joining node. */
-    public Map<Integer, Serializable> joiningNodeData() {
+    public Map<Integer, Message> joiningNodeData() {
         return joiningNodeData;
     }
 
@@ -302,12 +311,12 @@ public class DiscoveryDataBag {
      * @return Discovery data for each Ignite component that is aggregated from the cluster nodes and sent to the
      * joining node.
      */
-    public Map<Integer, Serializable> commonData() {
+    public Map<Integer, Message> commonData() {
         return commonData;
     }
 
     /** @return Discovery data that belongs to the current cluster node and is sent to the joining node. */
-    @Nullable public Map<Integer, Serializable> localNodeSpecificData() {
+    @Nullable public Map<Integer, Message> localNodeSpecificData() {
         return nodeSpecificData.get(DEFAULT_KEY);
     }
 

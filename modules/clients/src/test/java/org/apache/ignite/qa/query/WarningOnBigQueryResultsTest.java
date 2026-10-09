@@ -123,7 +123,6 @@ public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTe
 
         assertFalse(listener(grid("cli")).enforceJoinOrder);
         assertFalse(listener(grid("cli")).distributedJoin);
-        assertFalse(listener(grid("cli")).lazy);
 
         checkStateAfterQuery0("TEST0");
     }
@@ -154,7 +153,6 @@ public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTe
         assertEquals(KEYS_PER_NODE * 2,
             grid("cli").context().query().querySqlFields(new SqlFieldsQueryEx("SELECT * FROM TEST1", true)
                     .setSchema("TEST1")
-                    .setLazy(true)
                     .setEnforceJoinOrder(true),
                 false).getAll().size());
 
@@ -180,9 +178,6 @@ public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTe
 
         assertFalse(listener(grid(2)).distributedJoin);
         assertFalse(listener(grid(3)).distributedJoin);
-
-        assertTrue(listener(grid(2)).lazy);
-        assertTrue(listener(grid(3)).lazy);
     }
 
     /**
@@ -310,8 +305,5 @@ public class WarningOnBigQueryResultsTest extends WarningOnBigQueryResultsBaseTe
 
         assertFalse(listener(grid(0)).distributedJoin);
         assertFalse(listener(grid(1)).distributedJoin);
-
-        assertTrue(listener(grid(0)).lazy);
-        assertTrue(listener(grid(1)).lazy);
     }
 }

@@ -27,14 +27,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.io.Serializable;
-import java.util.Arrays;
-import org.apache.commons.io.IOUtils;
+import java.nio.charset.StandardCharsets;
 import org.apache.ignite.marshaller.Marshaller;
-import org.jetbrains.annotations.Nullable;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * IO test utilities.
@@ -138,49 +132,6 @@ public final class GridTestIoUtils {
         Thread.sleep(10);
 
         return (T)marshaller.unmarshal(buf, obj.getClass().getClassLoader());
-    }
-
-    /**
-     * Validate streams generate the same output.
-     *
-     * @param expIn Expected input stream.
-     * @param actIn Actual input stream.
-     * @param expSize Expected size of the streams.
-     * @throws IOException In case of any IO exception.
-     */
-    public static void assertEqualStreams(InputStream expIn, InputStream actIn,
-        @Nullable Long expSize) throws IOException {
-        int bufSize = 2345;
-        byte buf1[] = new byte[bufSize];
-        byte buf2[] = new byte[bufSize];
-        long pos = 0;
-
-        while (true) {
-            int i1 = actIn.read(buf1, 0, bufSize);
-
-            int i2;
-
-            if (i1 == -1) // Expects EOF?
-                i2 = expIn.read(buf2, 0, 1); // Try to read at least 1 byte guaranted by stream's API.
-            else
-                IOUtils.readFully(expIn, buf2, 0, i2 = i1); // Read the same bytes count as from actual stream.
-
-            if (i1 != i2)
-                fail("Expects the same data [pos=" + pos + ", i1=" + i1 + ", i2=" + i2 + ']');
-
-            if (i1 == -1)
-                break; // EOF
-
-            // i1 == bufSize => compare buffers.
-            // i1 <  bufSize => Compare part of buffers, rest of buffers are equal from previous iteration.
-            assertTrue("Expects the same data [pos=" + pos + ", i1=" + i1 + ", i2=" + i2 + ']',
-                Arrays.equals(buf1, buf2));
-
-            pos += i1;
-        }
-
-        if (expSize != null)
-            assertEquals(expSize.longValue(), pos);
     }
 
     /**
@@ -316,5 +267,25 @@ public final class GridTestIoUtils {
      */
     private GridTestIoUtils() {
         // No-op.
+    }
+
+    /**
+     * Reads whole stream content and returns it as a string.
+     * Uses JDK-only implementation to avoid external dependencies.
+     *
+     * @param inputStream Stream to read.
+     * @return Stream content as a string.
+     * @throws IOException If something goes wrong.
+     */
+    public static String readStream(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        byte[] buf = new byte[4096];
+        int len;
+
+        while ((len = inputStream.read(buf)) != -1)
+            baos.write(buf, 0, len);
+
+        return new String(baos.toByteArray(), StandardCharsets.UTF_8);
     }
 }

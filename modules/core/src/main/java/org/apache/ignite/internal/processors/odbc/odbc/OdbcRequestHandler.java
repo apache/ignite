@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,7 +34,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -62,6 +60,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSetMetaData.columnNoNulls;
 import static java.sql.ResultSetMetaData.columnNullable;
+import static org.apache.ignite.internal.binary.BinaryUtils.sqlTypeToBinary;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_RESULTSET;
@@ -91,9 +90,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
-
-    /** Worker. */
-    private final OdbcRequestHandlerWorker worker;
 
     /** Maximum allowed cursors. */
     private final int maxCursors;
@@ -126,7 +122,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param enforceJoinOrder Enforce join order flag.
      * @param replicatedOnly Replicated only flag.
      * @param collocated Collocated flag.
-     * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
      * @param ver Client protocol version.
@@ -140,7 +135,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean enforceJoinOrder,
         boolean replicatedOnly,
         boolean collocated,
-        boolean lazy,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
         ClientListenerProtocolVersion ver,
@@ -161,7 +155,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             enforceJoinOrder,
             collocated,
             replicatedOnly,
-            lazy,
             false,
             skipReducerOnUpdate,
             null,
@@ -179,9 +172,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.ver = ver;
 
         log = ctx.log(getClass());
-
-        // TODO IGNITE-9484 Do not create worker if there is a possibility to unbind TX from threads.
-        worker = new OdbcRequestHandlerWorker(ctx.igniteInstanceName(), log, this, ctx);
     }
 
     /** {@inheritDoc} */
@@ -191,14 +181,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         assert req instanceof OdbcRequest;
 
         return doHandle((OdbcRequest)req);
-    }
-
-    /**
-     * Start worker, if it's present.
-     */
-    void start() {
-        if (worker != null)
-            worker.start();
     }
 
     /**
@@ -267,17 +249,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      */
     public void onDisconnect() {
         if (busyLock.enterBusy()) {
-            if (worker != null) {
-                worker.cancel();
-
-                try {
-                    worker.join();
-                }
-                catch (InterruptedException e) {
-                    // No-op.
-                }
-            }
-
             try {
                 for (OdbcQueryResults res : qryResults.values())
                     res.closeAll();
@@ -348,7 +319,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setCollocated(cliCtx.isCollocated());
-        qry.setLazy(cliCtx.isLazy());
         qry.setSchema(OdbcUtils.prepareSchema(schema));
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setQueryInitiatorId(connCtx.clientDescriptor());
@@ -845,65 +815,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         results.closeAll();
 
         qryResults.remove(queryId);
-    }
-
-    /**
-     * Convert {@link java.sql.Types} to binary type constant (See {@link GridBinaryMarshaller} constants).
-     *
-     * @param sqlType SQL type.
-     * @return Binary type.
-     */
-    private static byte sqlTypeToBinary(int sqlType) {
-        switch (sqlType) {
-            case Types.BIGINT:
-                return GridBinaryMarshaller.LONG;
-
-            case Types.BOOLEAN:
-                return GridBinaryMarshaller.BOOLEAN;
-
-            case Types.DATE:
-                return GridBinaryMarshaller.DATE;
-
-            case Types.DOUBLE:
-                return GridBinaryMarshaller.DOUBLE;
-
-            case Types.FLOAT:
-            case Types.REAL:
-                return GridBinaryMarshaller.FLOAT;
-
-            case Types.NUMERIC:
-            case Types.DECIMAL:
-                return GridBinaryMarshaller.DECIMAL;
-
-            case Types.INTEGER:
-                return GridBinaryMarshaller.INT;
-
-            case Types.SMALLINT:
-                return GridBinaryMarshaller.SHORT;
-
-            case Types.TIME:
-                return GridBinaryMarshaller.TIME;
-
-            case Types.TIMESTAMP:
-                return GridBinaryMarshaller.TIMESTAMP;
-
-            case Types.TINYINT:
-                return GridBinaryMarshaller.BYTE;
-
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.LONGNVARCHAR:
-                return GridBinaryMarshaller.STRING;
-
-            case Types.NULL:
-                return GridBinaryMarshaller.NULL;
-
-            case Types.BINARY:
-            case Types.VARBINARY:
-            case Types.LONGVARBINARY:
-            default:
-                return GridBinaryMarshaller.BYTE_ARR;
-        }
     }
 
     /**

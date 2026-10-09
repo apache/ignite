@@ -271,35 +271,16 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * @throws Exception On error.
      */
     @Test
-    public void testHeavyGroupByPkLazy() throws Exception {
-        checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true, true);
-    }
-
-    /**
-     * @throws Exception On error.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
-    @Test
-    public void testHeavyGroupByPkNotLazy() throws Exception {
-        checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);
+    public void testHeavyGroupByPk() throws Exception {
+        checkQuery("SELECT id, sum(val) from test GROUP BY id", KEY_CNT, true);
     }
 
     /**
      * @param sql Query.
-     * @param lazy Lazy mode.
-     * @throws Exception On error.
-     */
-    private void checkQueryExpectOOM(String sql, boolean lazy) throws Exception {
-        checkQueryExpectOOM(sql, lazy, false);
-    }
-
-    /**
-     * @param sql Query.
-     * @param lazy Lazy mode.
      * @param collocated Collocated GROUP BY mode.
      * @throws Exception On error.
      */
-    private void checkQueryExpectOOM(String sql, boolean lazy, boolean collocated) throws Exception {
+    private void checkQueryExpectOOM(String sql, boolean collocated) throws Exception {
         final AtomicBoolean hangTimeout = new AtomicBoolean();
         final AtomicBoolean hangCheckerEnd = new AtomicBoolean();
 
@@ -327,7 +308,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
         });
 
         try {
-            checkQuery(sql, 0, lazy, collocated);
+            checkQuery(sql, 0, collocated);
 
             fail("Query is not produce OOM");
         }
@@ -355,25 +336,22 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @param sql Query.
      * @param expectedRowCnt Expected row count.
-     * @param lazy Lazy mode.
      * @throws Exception On failure.
      */
-    public void checkQuery(String sql, long expectedRowCnt, boolean lazy) throws Exception {
-        checkQuery(sql, expectedRowCnt, lazy, false);
+    public void checkQuery(String sql, long expectedRowCnt) throws Exception {
+        checkQuery(sql, expectedRowCnt, false);
     }
 
     /**
      * @param sql Query.
      * @param expectedRowCnt Expected row count.
-     * @param lazy Lazy mode.
      * @param collocated Collocated group by flag.
      * @throws Exception On failure.
      */
-    public void checkQuery(String sql, long expectedRowCnt, boolean lazy, boolean collocated) throws Exception {
+    public void checkQuery(String sql, long expectedRowCnt, boolean collocated) throws Exception {
         try (Connection c = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10850/\"test_cache\"" +
-                "?collocated=" + collocated +
-                "&lazy=" + lazy)) {
+                "?collocated=" + collocated)) {
             try (Statement stmt = c.createStatement()) {
                 log.info("Run heavy query: " + sql);
 

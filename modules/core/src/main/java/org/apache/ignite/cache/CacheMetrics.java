@@ -317,25 +317,23 @@ public interface CacheMetrics {
     public long getOffHeapAllocatedSize();
 
     /**
-     * Gets number of non-{@code null} values in the cache.
-     * Note this method will always return {@code 0}
+     * Gets number of entries in the cache, the same as {@link #getCacheSize()}.
      *
-     * @return Number of non-{@code null} values in the cache.
+     * @return Number of entries in the cache.
      * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
     @Deprecated
     public int getSize();
 
     /**
-     * Cache size.
+     * Cache size. Only primary copies of the cache entries are counted, backup copies are not.
      *
      * @return Cache size.
      */
     public long getCacheSize();
 
     /**
-     * Gets number of keys in the cache, possibly with {@code null} values.
-     * Note this method will always return {@code 0}
+     * Gets number of keys in the cache, the same as {@link #getCacheSize()}.
      *
      * @return Number of keys in the cache.
      * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.

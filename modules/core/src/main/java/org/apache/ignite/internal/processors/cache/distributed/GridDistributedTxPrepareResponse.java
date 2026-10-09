@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
@@ -34,15 +34,15 @@ import org.jetbrains.annotations.Nullable;
 public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** Error message. */
     @GridToStringExclude
-    @Order(value = 7, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(0)
+    @Nullable public ErrorMessage errMsg;
 
     /** TX state. */
     private IgniteTxState txState;
 
     /** Partition ID this message is targeted to. */
-    @Order(value = 8, method = "partition")
-    private int part;
+    @Order(1)
+    public int part;
 
     /**
      * Empty constructor.
@@ -78,15 +78,8 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return part;
-    }
-
-    /**
-     * @param part New Partition ID this message is targeted to.
-     */
-    public void partition(int part) {
-        this.part = part;
     }
 
     /** {@inheritDoc} */
@@ -115,25 +108,6 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txPrepareMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 26;
-    }
-
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg New error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */

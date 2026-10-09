@@ -29,15 +29,15 @@ import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.management.encryption.EncryptionCommand;
+import org.apache.ignite.internal.management.event.EventCommand;
+import org.apache.ignite.internal.management.io.IoTestCommand;
 import org.apache.ignite.internal.management.kill.KillCommand;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
-import org.apache.ignite.internal.management.tracing.TracingConfigurationCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.wal.WalCommand;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -67,17 +67,17 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new ChangeTagCommand(),
             new MetaCommand(),
             new ShutdownPolicyCommand(),
-            new TracingConfigurationCommand(),
             new WarmUpCommand(),
             new PropertyCommand(),
-            new RollingUpgradeCommand(),
             new SystemViewCommand(),
             new MetricCommand(),
             new PersistenceCommand(),
             new DefragmentationCommand(),
             new PerformanceStatisticsCommand(),
             new CdcCommand(),
-            new ConsistencyCommand()
+            new ConsistencyCommand(),
+            new EventCommand(),
+            new IoTestCommand()
         );
 
         U.loadService(CommandsProvider.class).forEach(p -> p.commands().forEach(this::register));

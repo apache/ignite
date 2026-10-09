@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -178,6 +179,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     @Nullable
     private final PeriodicHistogramMetricImpl pageTsHistogram;
 
+    /** Metric indicating whether page eviction has started. */
+    private final AtomicBoolean evictionsStarted = new AtomicBoolean();
+
     /**
      * Same as {@link #DataRegionMetricsImpl(DataRegionConfiguration, GridKernalContext, DataRegionMetricsProvider)}
      * but uses a no-op implementation for the {@link DataRegionMetricsProvider}.
@@ -240,7 +244,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             5);
 
         largeEntriesPages = mreg.longAdderMetric("LargeEntriesPagesCount",
-            "Count of pages that fully ocupied by large entries that go beyond page size");
+            "Number of pages fully occupied by large entries that go beyond the page size.");
 
         dirtyPages = mreg.longAdderMetric("DirtyPages",
             "Number of pages in memory not yet synchronized with persistent storage.");
@@ -280,6 +284,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
             .value(dataRegionCfg.getMaxSize());
+
+        mreg.register("EvictionsStarted", evictionsStarted::get,
+            "True if page eviction was triggered due to data region memory pressure.");
 
         if (persistenceEnabled) {
             // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
@@ -720,13 +727,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("PagesFillFactor",
             this::getPagesFillFactor,
-            "Returns the ratio of space occupied by user and system data to the size of all pages that contain " +
-                "this data");
+            "The ratio of space occupied by user and system data to the size of all pages that contain this data.");
 
         mreg.register("SizeUsedByData",
             this::getSizeUsedByData,
-            "Returns the number of bytes, occupied by data. Similar to TotalUsedSize, but it also takes into " +
-                "account the empty space in non-empty pages");
+            "Estimated number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account " +
+                "the empty space in non-empty pages.");
 
         mreg.register("PhysicalMemoryPages",
             this::getPhysicalMemoryPages,
@@ -740,23 +746,23 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
-            "Gets a total size of memory allocated in the data region, in bytes");
+            "Total size of memory allocated in the data region, in bytes.");
 
         mreg.register("TotalUsedPages",
             this::getTotalUsedPages,
-            "Gets an amount of non-empty pages allocated in the data region");
+            "The number of non-empty pages allocated in the data region.");
 
         mreg.register("TotalUsedSize",
             this::getTotalUsedSize,
-            "Gets an amount of bytes, occupied by non-empty pages allocated in the data region");
+            "The number of bytes occupied by non-empty pages allocated in the data region.");
 
         mreg.register("PhysicalMemorySize",
             this::getPhysicalMemorySize,
-            "Gets total size of pages loaded to the RAM, in bytes");
+            "Total size of pages loaded to the RAM, in bytes.");
 
         mreg.register("UsedCheckpointBufferSize",
             this::getUsedCheckpointBufferSize,
-            "Gets used checkpoint buffer size in bytes");
+            "Used checkpoint buffer size in bytes.");
     }
 
     /**
@@ -874,5 +880,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             U.currentTimeMillis(), vals[vals.length - 1]));
 
         return list;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isEvictionsStarted() {
+        return evictionsStarted.get();
+    }
+
+    /** @return {@code True} if eviction has started for the first time. */
+    public boolean onPageEvictionsStarted() {
+        return evictionsStarted.compareAndSet(false, true);
     }
 }

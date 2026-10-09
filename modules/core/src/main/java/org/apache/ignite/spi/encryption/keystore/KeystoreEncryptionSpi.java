@@ -546,4 +546,9 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
             throw new IgniteSpiException(e);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "KeystoreEncryptionSpi";
+    }
 }

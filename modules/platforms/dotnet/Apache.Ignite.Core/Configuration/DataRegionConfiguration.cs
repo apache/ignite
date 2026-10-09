@@ -163,7 +163,7 @@ namespace Apache.Ignite.Core.Configuration
         public long MaxSize { get; set; }
 
         /// <summary>
-        /// Gets or sets the the path to the directory for memory-mapped files.
+        /// Gets or sets the path to the directory for memory-mapped files.
         /// <para />
         /// Null for no swap.
         /// </summary>

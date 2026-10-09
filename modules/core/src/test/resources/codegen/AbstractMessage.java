@@ -24,15 +24,10 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public abstract class AbstractMessage implements Message {
     @Order(0)
-    private int id;
+    int id;
 
-    public int id() {
-        return id;
-    }
-
-    public void id(int id) {
-        this.id = id;
-    }
+    @Order(1)
+    byte flags;
 
     public short directType() {
         return 0;

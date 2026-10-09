@@ -117,14 +117,14 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             final GridCacheContext cctx = cache.context();
 
             for (DataStreamerEntry e : col) {
-                e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                e.getKey().unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                 CacheObject val = e.getValue();
 
                 if (val != null) {
                     checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-                    val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                    val.unmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
                 }
                 else
                     checkSecurityPermission(SecurityPermission.CACHE_REMOVE);

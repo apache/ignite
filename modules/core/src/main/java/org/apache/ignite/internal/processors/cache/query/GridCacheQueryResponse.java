@@ -17,56 +17,53 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Page of cache query response.
  */
-public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
+    /** */
+    @Order(0)
+    boolean finished;
+
+    /** */
+    @Order(1)
+    long reqId;
+
+    /** */
+    @Order(2)
+    @Nullable ErrorMessage errMsg;
+
+    /** */
+    @Order(3)
+    boolean fields;
+
     /** */
     @Order(4)
-    private boolean finished;
+    IndexQueryResultMeta idxQryMetadata;
 
     /** */
-    @Order(value = 5, method = "requestId")
-    private long reqId;
+    @Order(5)
+    Collection<byte[]> dataBytes;
 
     /** */
-    @Order(value = 6, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
-
-    /** */
-    @Order(value = 7)
-    private boolean fields;
-
-    /** */
-    @Order(value = 8, method = "indexQueryMetadata")
-    private IndexQueryResultMeta idxQryMetadata;
-
-    /** */
-    @Order(value = 9)
-    private Collection<byte[]> dataBytes;
-
-    /** */
-    private Collection<Object> data;
+    @Marshalled("dataBytes")
+    Collection<Object> data;
 
     /**
      * Empty constructor.
@@ -80,14 +77,12 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      * @param reqId Request id.
      * @param finished Last response or not.
      * @param fields Fields query or not.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridCacheQueryResponse(int cacheId, long reqId, boolean finished, boolean fields, boolean addDepInfo) {
+    public GridCacheQueryResponse(int cacheId, long reqId, boolean finished, boolean fields) {
         this.cacheId = cacheId;
         this.reqId = reqId;
         this.finished = finished;
         this.fields = fields;
-        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -103,79 +98,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.addDepInfo = addDepInfo;
 
         finished = true;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (dataBytes == null && data != null)
-            dataBytes = marshalCollection(data, cctx);
-
-        if (addDepInfo && !F.isEmpty(data)) {
-            for (Object o : data) {
-                if (o instanceof Map.Entry) {
-                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
-
-                    prepareObject(e.getKey(), cctx);
-                    prepareObject(e.getValue(), cctx);
-                }
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (data == null)
-            data = unmarshalCollection0(dataBytes, ctx, ldr);
-    }
-
-    /**
-     * @param byteCol Collection to unmarshal.
-     * @param ctx Context.
-     * @param ldr Loader.
-     * @return Unmarshalled collection.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable protected <T> List<T> unmarshalCollection0(@Nullable Collection<byte[]> byteCol,
-        GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert ldr != null;
-        assert ctx != null;
-
-        if (byteCol == null)
-            return null;
-
-        List<T> col = new ArrayList<>(byteCol.size());
-
-        Marshaller marsh = ctx.marshaller();
-
-        ClassLoader ldr0 = U.resolveClassLoader(ldr, ctx.gridConfig());
-
-        CacheObjectContext cacheObjCtx = null;
-
-        for (byte[] bytes : byteCol) {
-            Object obj = bytes == null ? null : marsh.<T>unmarshal(bytes, ldr0);
-
-            if (obj instanceof Map.Entry) {
-                Object key = ((Map.Entry)obj).getKey();
-
-                if (key instanceof KeyCacheObject) {
-                    if (cacheObjCtx == null)
-                        cacheObjCtx = ctx.cacheContext(cacheId).cacheObjectContext();
-
-                    ((KeyCacheObject)key).finishUnmarshal(cacheObjCtx, ldr0);
-                }
-            }
-
-            col.add((T)obj);
-        }
-
-        return col;
     }
 
     /** {@inheritDoc} */
@@ -211,28 +133,9 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.data = (Collection<Object>)data;
     }
 
-    /**
-     * @return If this is last response for this request or not.
-     */
+    /** @return If this is last response for this request or not. */
     public boolean finished() {
         return finished;
-    }
-
-    /**
-     * @param finished If this is last response for this request or not.
-     */
-    public void finished(boolean finished) {
-        this.finished = finished;
-    }
-
-    /** */
-    public Collection<byte[]> dataBytes() {
-        return dataBytes;
-    }
-
-    /** */
-    public void dataBytes(Collection<byte[]> dataBytes) {
-        this.dataBytes = dataBytes;
     }
 
     /**
@@ -242,29 +145,9 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return reqId;
     }
 
-    /** */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
-    }
-
     /** {@inheritDoc} */
     @Override public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /** */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /** */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** */
-    public void fields(boolean fields) {
-        this.fields = fields;
     }
 
     /**
@@ -275,8 +158,22 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 59;
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
+
+        if (dataBytes == null && data != null)
+            deployCollection(data, cctx);
+
+        if (addDepInfo && !F.isEmpty(data)) {
+            for (Object o : data) {
+                if (o instanceof Map.Entry) {
+                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
+
+                    deployObject(e.getKey(), cctx);
+                    deployObject(e.getValue(), cctx);
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */

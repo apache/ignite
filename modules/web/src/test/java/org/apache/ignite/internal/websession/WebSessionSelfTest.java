@@ -57,12 +57,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.eclipse.jetty.ee11.servlet.ServletHolder;
+import org.eclipse.jetty.ee11.webapp.WebAppContext;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -998,10 +999,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         HashLoginService hashLoginSrvc = new HashLoginService();
         hashLoginSrvc.setName("Test Realm");
         createRealm();
-        hashLoginSrvc.setConfig("/tmp/realm.properties");
+        hashLoginSrvc.setConfig(ResourceFactory.root().newResource("/tmp/realm.properties"));
         SecurityHandler securityHnd = ctx.getSecurityHandler();
         // DefaultAuthenticatorFactory doesn't default to basic auth anymore.
-        securityHnd.setAuthMethod(Constraint.__BASIC_AUTH);
+        securityHnd.setAuthenticator(new BasicAuthenticator());
         securityHnd.setLoginService(hashLoginSrvc);
 
         srv.setHandler(ctx);

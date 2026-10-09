@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheDistributionCommandArg extends IgniteDataTransferObject {
@@ -33,37 +30,25 @@ public class CacheDistributionCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(example = "nodeId|null")
-    private String nodeIdOrNull;
+    String nodeIdOrNull;
 
     /** */
+    @Order(1)
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] caches;
+    String[] caches;
 
     /** */
-    private UUID nodeId;
+    @Order(2)
+    UUID nodeId;
 
     /** */
+    @Order(3)
     @Argument(optional = true, example = "attrName1,...,attrNameN")
-    private String[] userAttributes;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, nodeIdOrNull);
-        U.writeArray(out, caches);
-        U.writeUuid(out, nodeId);
-        U.writeArray(out, userAttributes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeIdOrNull = U.readString(in);
-        caches = U.readArray(in, String.class);
-        nodeId = U.readUuid(in);
-        userAttributes = U.readArray(in, String.class);
-    }
+    String[] userAttributes;
 
     /** */
     private void parse(String value) {

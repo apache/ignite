@@ -115,13 +115,6 @@ public interface GridCacheEntryEx {
     public boolean hasValue();
 
     /**
-     * @param val New value.
-     * @param ttl Time to live.
-     * @return Old value.
-     */
-    public CacheObject rawPut(CacheObject val, long ttl);
-
-    /**
      * Wraps this map entry into cache entry.
      *
      * @return Wrapped entry.
@@ -336,6 +329,7 @@ public interface GridCacheEntryEx {
      * @param drType DR type.
      * @param drExpireTime DR expire time (if any).
      * @param explicitVer Explicit version (if any).
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param taskName Task name.
      * @param dhtVer Dht version for near cache entry.
      * @param updateCntr Update counter.
@@ -355,6 +349,7 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -374,6 +369,7 @@ public interface GridCacheEntryEx {
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics notification.
      * @param keepBinary Keep binary flag.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param oldValPresent {@code True} if oldValue present.
      * @param oldVal Old value.
      * @param topVer Topology version.
@@ -394,6 +390,7 @@ public interface GridCacheEntryEx {
         boolean evt,
         boolean metrics,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         boolean oldValPresent,
         @Nullable CacheObject oldVal,
         AffinityTopologyVersion topVer,
@@ -433,6 +430,7 @@ public interface GridCacheEntryEx {
      * @param updateCntr Update counter.
      * @param fut Dht atomic future.
      * @param transformOp {@code True} if transform operation caused update.
+     * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @return Tuple where first value is flag showing whether operation succeeded,
      *      second value is old entry value if return value is requested, third is updated entry value,
      *      fourth is the version to enqueue for deferred delete the fifth is DR conflict context
@@ -452,6 +450,7 @@ public interface GridCacheEntryEx {
         boolean readThrough,
         boolean retval,
         boolean keepBinary,
+        boolean keepBinaryInInterceptor,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
@@ -746,25 +745,10 @@ public interface GridCacheEntryEx {
     public boolean lockedBy(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
-     * Will not fail for removed entries.
-     *
-     * @param threadId Thread ID to check.
-     * @return {@code True} if lock is owned by given thread.
-     */
-    public boolean lockedByThreadUnsafe(long threadId);
-
-    /**
      * @param ver Version to check for ownership.
      * @return {@code True} if owner has the specified version.
      */
     public boolean lockedByUnsafe(GridCacheVersion ver);
-
-    /**
-     *
-     * @param lockVer Lock ID to check.
-     * @return {@code True} if lock is owned by candidate.
-     */
-    public boolean lockedLocallyUnsafe(GridCacheVersion lockVer);
 
     /**
      * @param ver Lock version to check.

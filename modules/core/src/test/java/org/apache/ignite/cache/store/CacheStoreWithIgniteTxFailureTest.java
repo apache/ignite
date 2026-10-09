@@ -91,7 +91,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** */
     @Parameterized.Parameter(2)
-    public boolean withFaulireHnd;
+    public boolean withFailureHnd;
 
     /** */
     @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
@@ -140,7 +140,7 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return withFaulireHnd ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
+        return withFailureHnd ? new StopNodeFailureHandler() : super.getFailureHandler(igniteInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -182,23 +182,39 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
         else
             updateKeysInTx(txCoordinator, keysOnFaultyNode);
 
-        if (withFaulireHnd) {
-            // FH doesn't fail TX coordinator node now, this behavior is wrong and should be fixed here:
-            // TODO https://issues.apache.org/jira/browse/IGNITE-26060
+        if (withFailureHnd) {
             if (faultyNodeRole != FaultyNodeRole.TX_COORDINATOR) {
                 waitForTopology(3);
 
-                assertTrue("Client node should survive test scenario",
-                    G.allGrids()
-                        .stream()
-                        .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
-                        .count() == 1);
+                checkClientIsAvailable();
+            }
+            else {
+                waitForTopology(2);
+
+                checkFаultyNodeLeftTopology(FAULTY_NODE_IDX);
             }
         }
         else
             checkKeysOnFaultyNode(keysOnFaultyNode);
 
         checkKeysOnHealthyNodes(keysOnFaultyNode);
+    }
+
+    /** Check client node availability. */
+    private void checkClientIsAvailable() {
+        assertTrue("Client node should survive test scenario",
+            G.allGrids()
+                .stream()
+                .filter(ignite -> ((IgniteEx)ignite).context().clientNode())
+                .count() == 1);
+    }
+
+    /** Check that faulty node is absent in current topology. */
+    private void checkFаultyNodeLeftTopology(int faultyNodeIdx) {
+        assertTrue("Faulty node should not survive test scenario, idx=" + faultyNodeIdx,
+            G.allGrids()
+                .stream()
+                .noneMatch(ignite -> ignite.name().equals(getTestIgniteInstanceName(faultyNodeIdx))));
     }
 
     /** */

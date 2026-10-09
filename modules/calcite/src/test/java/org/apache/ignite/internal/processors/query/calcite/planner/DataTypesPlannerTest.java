@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.SetOp;
@@ -33,7 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Planner test various types, casts and coercions.
@@ -126,5 +127,16 @@ public class DataTypesPlannerTest extends AbstractPlannerTest {
     public void testSetOpNullableDateCast() throws Exception {
         assertPlan("SELECT NULL::DATE UNION ALL SELECT TIMESTAMP '2025-07-04 10:00:00'", createSchema(),
             rel -> rel.fieldIsNullable(0));
+    }
+
+    /** */
+    @Test
+    public void testLiteralToUuidConversion() throws Exception {
+        IgniteSchema schema = createSchema(createTable("T", IgniteDistributions.single(), "UID", SqlTypeName.UUID));
+
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        assertPlan("SELECT * FROM t WHERE uid in ('" + uuid1 + "', '" + uuid2 + "')", schema, isTableScan("T"));
     }
 }

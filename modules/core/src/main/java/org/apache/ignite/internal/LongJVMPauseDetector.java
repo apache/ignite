@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
@@ -69,6 +70,9 @@ public class LongJVMPauseDetector {
     /** Disabled flag. */
     private static final boolean DISABLED = getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED);
 
+    /** */
+    private final String igniteInstanceName;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -93,9 +97,11 @@ public class LongJVMPauseDetector {
     private final long[] longPausesDurations = new long[EVT_CNT];
 
     /**
+     * @param igniteInstanceName Ignite instance name.
      * @param log Logger.
      */
-    public LongJVMPauseDetector(IgniteLogger log) {
+    public LongJVMPauseDetector(String igniteInstanceName, IgniteLogger log) {
+        this.igniteInstanceName = igniteInstanceName;
         this.log = log;
     }
 
@@ -110,57 +116,56 @@ public class LongJVMPauseDetector {
             return;
         }
 
-        final Thread worker = new Thread("jvm-pause-detector-worker") {
+        final Thread worker = new IgniteThread(igniteInstanceName, "jvm-pause-detector-worker", () -> {
+            synchronized (this) {
+                lastWakeUpTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            }
 
-            @Override public void run() {
-                synchronized (LongJVMPauseDetector.this) {
-                    lastWakeUpTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+            if (log.isDebugEnabled())
+                log.debug(Thread.currentThread().getName() + " has been started.");
+
+            while (true) {
+                try {
+                    Thread.sleep(PRECISION);
+
+                    final long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+                    final long pause = now - PRECISION - lastWakeUpTime;
+
+                    if (pause >= THRESHOLD) {
+                        log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
+
+                        synchronized (this) {
+                            final int next = (int)(longPausesCnt % EVT_CNT);
+
+                            longPausesCnt++;
+
+                            longPausesTotalDuration += pause;
+
+                            longPausesTimestamps[next] = now;
+
+                            longPausesDurations[next] = pause;
+
+                            lastWakeUpTime = now;
+                        }
+                    }
+                    else {
+                        synchronized (this) {
+                            lastWakeUpTime = now;
+                        }
+                    }
                 }
+                catch (InterruptedException e) {
+                    Thread locThread = Thread.currentThread();
 
-                if (log.isDebugEnabled())
-                    log.debug(getName() + " has been started.");
+                    if (workerRef.compareAndSet(locThread, null))
+                        log.error(locThread.getName() + " has been interrupted.", e);
+                    else if (log.isDebugEnabled())
+                        log.debug(locThread.getName() + " has been stopped.");
 
-                while (true) {
-                    try {
-                        Thread.sleep(PRECISION);
-
-                        final long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-                        final long pause = now - PRECISION - lastWakeUpTime;
-
-                        if (pause >= THRESHOLD) {
-                            log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
-
-                            synchronized (LongJVMPauseDetector.this) {
-                                final int next = (int)(longPausesCnt % EVT_CNT);
-
-                                longPausesCnt++;
-
-                                longPausesTotalDuration += pause;
-
-                                longPausesTimestamps[next] = now;
-
-                                longPausesDurations[next] = pause;
-
-                                lastWakeUpTime = now;
-                            }
-                        }
-                        else {
-                            synchronized (LongJVMPauseDetector.this) {
-                                lastWakeUpTime = now;
-                            }
-                        }
-                    }
-                    catch (InterruptedException e) {
-                        if (workerRef.compareAndSet(this, null))
-                            log.error(getName() + " has been interrupted.", e);
-                        else if (log.isDebugEnabled())
-                            log.debug(getName() + " has been stopped.");
-
-                        break;
-                    }
+                    break;
                 }
             }
-        };
+        });
 
         if (!workerRef.compareAndSet(null, worker)) {
             log.warning(LongJVMPauseDetector.class.getSimpleName() + " already started!");

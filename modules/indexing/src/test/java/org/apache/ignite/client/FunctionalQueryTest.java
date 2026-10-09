@@ -114,8 +114,7 @@ public class FunctionalQueryTest {
                 }
             }
 
-            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, true);
-            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, false);
+            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp);
         }
     }
 
@@ -125,14 +124,17 @@ public class FunctionalQueryTest {
      * @param pageSize Page size.
      * @param expSize The size of the expected results.
      * @param exp Expected results.
-     * @param lazy Lazy mode flag.
      */
-    private void checkSqlFieldsQuery(ClientCache<Integer, Person> cache, int minId, int pageSize, int expSize,
-        Map<Integer, Person> exp, boolean lazy) {
+    private void checkSqlFieldsQuery(
+        ClientCache<Integer, Person> cache,
+        int minId,
+        int pageSize,
+        int expSize,
+        Map<Integer, Person> exp
+    ) {
         SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
             .setArgs(minId)
-            .setPageSize(pageSize)
-            .setLazy(lazy);
+            .setPageSize(pageSize);
 
         try (QueryCursor<List<?>> cur = cache.query(qry)) {
             List<List<?>> res = cur.getAll();

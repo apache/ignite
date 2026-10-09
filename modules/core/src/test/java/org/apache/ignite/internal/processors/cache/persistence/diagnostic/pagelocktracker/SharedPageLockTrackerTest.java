@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -112,16 +113,14 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         doTestTakeDumpByTime(20, 6, time, 8);
     }
 
-    /**
-     *
-     */
+    /** */
     private void doTestTakeDumpByCount(
         int pagesCnt,
         int structuresCnt,
         int dumpCnt,
         int threads
     ) throws IgniteCheckedException, InterruptedException {
-        SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker();
+        SharedPageLockTracker sharedPageLockTracker = createSharedPageLockTracker(log);
 
         List<PageMeta> pageMetas = new CopyOnWriteArrayList<>();
 
@@ -209,7 +208,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         int dumpTime,
         int threads
     ) throws IgniteCheckedException, InterruptedException {
-        SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker();
+        SharedPageLockTracker sharedPageLockTracker = createSharedPageLockTracker(log);
 
         List<PageMeta> pageMetas = new CopyOnWriteArrayList<>();
 
@@ -305,11 +304,16 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
     public void testMemoryLeakOnThreadTerminates() throws Exception {
         int threadLimits = 1000;
         int timeOutWorkerInterval = 10_000;
-        Consumer<Set<PageLockThreadState>> hnd = (threads) -> {
-        };
+        Consumer<Set<PageLockThreadState>> hnd = threads -> {};
 
         SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker(
-            threadLimits, timeOutWorkerInterval, hnd, new MemoryCalculator());
+            "testIgniteInstance",
+            threadLimits,
+            timeOutWorkerInterval,
+            hnd,
+            new MemoryCalculator(),
+            log
+        );
 
         int threads = 10_000;
 
@@ -410,6 +414,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         CountDownLatch awaitLatch = new CountDownLatch(1);
 
         SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker(
+            "testIgniteInstance",
             1000,
             10_000,
             hangsThreads -> {
@@ -450,7 +455,9 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                 }
 
                 awaitLatch.countDown();
-            }, new MemoryCalculator()
+            },
+            new MemoryCalculator(),
+            log
         );
 
         int cacheId = 1;
@@ -523,7 +530,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
      */
     @Test
     public void testCloseListener() {
-        SharedPageLockTracker tracker = new SharedPageLockTracker();
+        SharedPageLockTracker tracker = createSharedPageLockTracker(log);
 
         PageLockListener foo = tracker.registerStructure("foo");
         PageLockListener bar = tracker.registerStructure("bar");
@@ -587,5 +594,10 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                 ", pageAddr=" + pageAddr +
                 '}';
         }
+    }
+
+    /** */
+    public static SharedPageLockTracker createSharedPageLockTracker(IgniteLogger log) {
+        return new SharedPageLockTracker("testIgniteInstance", ids -> {}, new MemoryCalculator(), log);
     }
 }

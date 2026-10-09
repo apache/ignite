@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,12 +27,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 
@@ -49,19 +46,23 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    @Order(0)
+    AffinityTopologyVersion topVer;
 
     /** Collection of calculated affinity nodes. */
-    private List<List<ClusterNode>> assignment;
+    @Order(1)
+    List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
-    private Map<UUID, Set<Integer>> primary;
+    @Order(2)
+    Map<UUID, Set<Integer>> primary;
 
     /** Map of backup node partitions. */
-    private Map<UUID, Set<Integer>> backup;
+    @Order(3)
+    Map<UUID, Set<Integer>> backup;
 
     /** Set of partitions which primary is different than in ideal assignment. */
-    private Set<Integer> primariesDifferentToIdeal;
+    private transient Set<Integer> primariesDifferentToIdeal;
 
     /** Assignment node IDs */
     private transient volatile List<Collection<UUID>> assignmentIds;
@@ -335,27 +336,5 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridAffinityAssignmentV2.class, this, super.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(topVer);
-
-        U.writeCollection(out, assignment);
-
-        U.writeMap(out, primary);
-
-        U.writeMap(out, backup);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        topVer = (AffinityTopologyVersion)in.readObject();
-
-        assignment = U.readList(in);
-
-        primary = U.readMap(in);
-
-        backup = U.readMap(in);
     }
 }

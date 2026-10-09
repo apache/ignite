@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of running {@link FindAndDeleteGarbageInPersistenceTask} which would contain result
@@ -36,12 +33,14 @@ public class FindAndDeleteGarbageInPersistenceTaskResult extends IgniteDataTrans
     private static final long serialVersionUID = 0L;
 
     /** Results of indexes validation from node. */
+    @Order(0)
     @GridToStringInclude
-    private Map<UUID, FindAndDeleteGarbageInPersistenceJobResult> result;
+    Map<UUID, FindAndDeleteGarbageInPersistenceJobResult> result;
 
     /** Exceptions while indexes validation from node. */
+    @Order(1)
     @GridToStringInclude
-    private Map<UUID, Exception> exceptions;
+    Map<UUID, Exception> exceptions;
 
     /**
      *
@@ -74,18 +73,6 @@ public class FindAndDeleteGarbageInPersistenceTaskResult extends IgniteDataTrans
      */
     public Map<UUID, Exception> exceptions() {
         return exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, result);
-        U.writeMap(out, exceptions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        result = U.readMap(in);
-        exceptions = U.readMap(in);
     }
 
     /** {@inheritDoc} */

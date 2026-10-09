@@ -162,6 +162,17 @@ This utility can do the following commands:
     Parameters:
       new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
+  Kill all SQL/scan/index/continuous queries matching specified criteria:
+    control.(sh|bat) --kill all SQL|SCAN|INDEX|CONTINUOUS [--node-id node_id] [--min-duration 60] [--yes]
+
+    Parameters:
+      SQL                - SQL queries.
+      SCAN               - SCAN queries.
+      INDEX              - INDEX queries.
+      CONTINUOUS         - CONTINUOUS queries.
+      --node-id node_id  - Originating node ID to filter targets.
+      --min-duration 60  - Minimum duration in seconds.
+
   Kill compute task by session id:
     control.(sh|bat) --kill compute session_id
 
@@ -261,24 +272,19 @@ This utility can do the following commands:
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 
-  [EXPERIMENTAL]
   Print metadata command help:
     control.(sh|bat) --meta help
 
-  [EXPERIMENTAL]
   Print list of binary metadata types:
     control.(sh|bat) --meta list
 
-  [EXPERIMENTAL]
   Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
     control.(sh|bat) --meta details [--typeId <typeId>]|[--typeName <typeName>]
 
-  [EXPERIMENTAL]
   Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
 If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --meta remove [--out <fileName>] [--typeId <typeId>]|[--typeName <typeName>]
 
-  [EXPERIMENTAL]
   Update cluster metadata from specified file (file name is required):
     control.(sh|bat) --meta update --in <fileName>
 
@@ -288,78 +294,6 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     Parameters:
       IMMEDIATE        - Stop immediately as soon as all components are ready.
       GRACEFUL         - Node will stop if and only if it does not store any unique partitions, that don't have another copies in the cluster.
-
-  [EXPERIMENTAL]
-  Print tracing configuration:
-    control.(sh|bat) --tracing-configuration [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
-
-    Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
-        DISCOVERY                                      - Discovery scope.
-        EXCHANGE                                       - Exchange scope.
-        COMMUNICATION                                  - Communication scope.
-        TX                                             - Transactional scope.
-        SQL                                            - SQL scope.
-
-  [EXPERIMENTAL]
-  Print tracing configuration:
-    control.(sh|bat) --tracing-configuration get_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
-
-    Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
-        DISCOVERY                                      - Discovery scope.
-        EXCHANGE                                       - Exchange scope.
-        COMMUNICATION                                  - Communication scope.
-        TX                                             - Transactional scope.
-        SQL                                            - SQL scope.
-
-  [EXPERIMENTAL]
-  Print specific tracing configuration based on specified --scope and --label:
-    control.(sh|bat) --tracing-configuration get --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label]
-
-    Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
-        DISCOVERY                                      - Discovery scope.
-        EXCHANGE                                       - Exchange scope.
-        COMMUNICATION                                  - Communication scope.
-        TX                                             - Transactional scope.
-        SQL                                            - SQL scope.
-
-  [EXPERIMENTAL]
-  Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration:
-    control.(sh|bat) --tracing-configuration reset_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
-
-    Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
-        DISCOVERY                                      - Discovery scope.
-        EXCHANGE                                       - Exchange scope.
-        COMMUNICATION                                  - Communication scope.
-        TX                                             - Transactional scope.
-        SQL                                            - SQL scope.
-
-  [EXPERIMENTAL]
-  Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration:
-    control.(sh|bat) --tracing-configuration reset --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label]
-
-    Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
-        DISCOVERY                                      - Discovery scope.
-        EXCHANGE                                       - Exchange scope.
-        COMMUNICATION                                  - Communication scope.
-        TX                                             - Transactional scope.
-        SQL                                            - SQL scope.
-
-  [EXPERIMENTAL]
-  Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration:
-    control.(sh|bat) --tracing-configuration set --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
-
-    Parameters:
-      --scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL  - Tracing span scope.
-        DISCOVERY                                      - Discovery scope.
-        EXCHANGE                                       - Exchange scope.
-        COMMUNICATION                                  - Communication scope.
-        TX                                             - Transactional scope.
-        SQL                                            - SQL scope.
 
   Stop warm-up:
     control.(sh|bat) --warm-up --stop
@@ -378,22 +312,6 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   Set the property value:
     control.(sh|bat) --property set --name <property_name> --val <property_value>
-
-  [EXPERIMENTAL]
-  Enable rolling upgrade mode. It allows cluster with mixed-version nodes:
-      control.(sh|bat) --rolling-upgrade enable target_version [--force]
-
-      Parameters:
-        target_version  - Target Ignite version. The target version can be one minor higher if its maintenance version is zero, or one maintenance version higher (e.g. 2.18.0 -> 2.18.1 or 2.18.1 -> 2.19.0).
-        --force         - Enable rolling upgrade without target version checks. Use only when required, if the upgrade cannot proceed otherwise.
-
-  [EXPERIMENTAL]
-  Disable rolling upgrade mode. All nodes in the cluster must be running the same version:
-    control.(sh|bat) --rolling-upgrade disable
-
-  [EXPERIMENTAL]
-    Get status of rolling upgrade mode:
-      control.(sh|bat) --rolling-upgrade status
 
   Print system view content:
     control.(sh|bat) --system-view system_view_name [--node-id node_id|--node-ids nodeId1,nodeId2,..|--all-nodes]
@@ -514,6 +432,43 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   [EXPERIMENTAL]
   Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
+
+  Enable events on all server nodes:
+    control.(sh|bat) --event enable event1[,...,eventN]
+
+    Parameters:
+      event1[,...,eventN]  - Comma separated list of events.
+
+  Disable events on all server nodes:
+    control.(sh|bat) --event disable event1[,...,eventN]
+
+    Parameters:
+      event1[,...,eventN]  - Comma separated list of events.
+
+  List and status of events:
+    control.(sh|bat) --event list [--enabled]
+
+    Parameters:
+      --enabled  - Filter only enabled events.
+
+  Tests Communication SPI latency to all remote server nodes:
+    control.(sh|bat) --io-test communication --node-id node_id [--warmup warmup] [--duration duration] [--threads threads] [--payload-size payload_size] [--process-in-nio-thread]
+
+    Parameters:
+      --node-id node_id            - Source node ID.
+      --warmup warmup              - Warmup duration (millis, max 1 hour, 5000 by default).
+      --duration duration          - Test duration (millis, max 1 hour, 30000 by default).
+      --threads threads            - Number of test threads (max 64, 1 by default).
+      --payload-size payload_size  - Payload size in each direction (bytes, max 1 MiB, 0 by default).
+      --process-in-nio-thread      - Process requests and responses in NIO threads.
+
+  Tests how custom messages traverse the TcpDiscoverySpi ring:
+    control.(sh|bat) --io-test discovery [--samples samples] [--interval interval] [--payload-size payload_size]
+
+    Parameters:
+      --samples samples            - Number of samples (max 100, 10 by default).
+      --interval interval          - Interval between samples (millis, 10 to 60000, 100 by default).
+      --payload-size payload_size  - Payload size (bytes, max 64 KiB, 100 by default).
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

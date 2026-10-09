@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.EmptyMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
@@ -24,23 +25,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@EmptyMessage
 class ZkNoServersMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** {@inheritDoc} */
     @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
     }
 
     /** {@inheritDoc} */

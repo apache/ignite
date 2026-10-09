@@ -17,17 +17,14 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -37,38 +34,47 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(example = "XID", optional = true)
-    private String xid;
+    String xid;
 
     /** */
+    @Order(1)
     @Argument(example = "SECONDS", optional = true)
-    private Long minDuration;
+    Long minDuration;
 
     /** */
+    @Order(2)
     @Argument(example = "SIZE", optional = true)
-    private Integer minSize;
+    Integer minSize;
 
     /** */
+    @Order(3)
     @Argument(example = "PATTERN_REGEX", optional = true)
-    private String label;
+    String label;
 
     /** */
+    @Order(4)
     @Argument
-    private boolean servers;
+    boolean servers;
 
     /** */
+    @Order(5)
     @Argument
-    private boolean clients;
+    boolean clients;
 
     /** */
+    @Order(6)
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
-    private String[] nodes;
+    String[] nodes;
 
     /** */
+    @Order(7)
     @Argument(optional = true, example = "NUMBER")
-    private Integer limit;
+    Integer limit;
 
     /** */
+    @Order(8)
     @Argument(optional = true, description = "Output order")
     @EnumDescription(
         names = {
@@ -82,39 +88,12 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
             "Sort by start time"
         }
     )
-    private TxSortOrder order;
+    TxSortOrder order;
 
     /** */
+    @Order(9)
     @Argument(optional = true)
-    private boolean kill;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, xid);
-        out.writeObject(minDuration);
-        out.writeObject(minSize);
-        U.writeString(out, label);
-        out.writeBoolean(servers);
-        out.writeBoolean(clients);
-        U.writeArray(out, nodes);
-        out.writeObject(limit);
-        U.writeEnum(out, order);
-        out.writeBoolean(kill);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        xid = U.readString(in);
-        minDuration = (Long)in.readObject();
-        minSize = (Integer)in.readObject();
-        label = U.readString(in);
-        servers = in.readBoolean();
-        clients = in.readBoolean();
-        nodes = U.readArray(in, String.class);
-        limit = (Integer)in.readObject();
-        order = U.readEnum(in, TxSortOrder.class);
-        kill = in.readBoolean();
-    }
+    boolean kill;
 
     /** */
     public String xid() {

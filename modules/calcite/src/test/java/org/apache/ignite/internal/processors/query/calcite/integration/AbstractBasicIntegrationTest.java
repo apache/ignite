@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -33,24 +34,33 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -58,7 +68,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
+public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest {
     /** */
     protected static final Object[] NULL_RESULT = new Object[] { null };
 
@@ -69,6 +79,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected static IgniteEx client;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
 
@@ -82,6 +93,23 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         return true;
     }
 
+    /** */
+    @AfterEach
+    public void runAfterTest() throws Exception {
+        AtomicBoolean afterTestFinished = new AtomicBoolean(false);
+
+        ScheduledExecutorService scheduler = scheduleThreadDumpOnAfterTestTimeOut(afterTestFinished);
+
+        try {
+            afterTest();
+        }
+        finally {
+            afterTestFinished.set(true);
+
+            scheduler.shutdownNow();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -92,15 +120,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         assertTrue("Not finished queries found on client", waitForCondition(
             () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
 
-        waitForCondition(() -> {
-            for (Ignite ign : G.allGrids()) {
-                if (!queryProcessor(ign).mailboxRegistry().inboxes().isEmpty())
-                    return false;
-            }
-
-            return true;
-        }, INBOX_INITIALIZATION_TIMEOUT * 2);
-
         for (Ignite ign : G.allGrids()) {
             if (destroyCachesAfterTest()) {
                 for (String cacheName : ign.cacheNames())
@@ -109,15 +128,15 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
-            assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
-                0, qryProc.queryRegistry().runningQueries().size());
+            assertTrue("Not finished queries found [ignite=" + ign.name() + ']',
+                waitForCondition(() -> qryProc.queryRegistry().runningQueries().isEmpty(), 1_000));
 
             ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
                 0, execSvc.memoryTracker().allocated());
 
-            assertEquals("Count of inboxes must be 0 after test [ignite=" + ign.name() + ']',
-                0, qryProc.mailboxRegistry().inboxes().size());
+            assertTrue("Not closed inbox found [ignite=" + ign.name() + ']',
+                waitForCondition(() -> qryProc.mailboxRegistry().inboxes().isEmpty(), INBOX_INITIALIZATION_TIMEOUT * 2));
 
             assertEquals("Count of outboxes must be 0 after test [ignite=" + ign.name() + ']',
                 0, qryProc.mailboxRegistry().outboxes().size());
@@ -181,7 +200,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Asserts that executeSql throws an exception.
+     * Asserts that query throws an exception.
      *
      * @param sql Query.
      * @param cls Exception class.
@@ -189,6 +208,30 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      */
     protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
         assertThrowsAnyCause(log, () -> sql(sql, args), cls, msg);
+    }
+
+    /**
+     * Asserts that query throws an exception.
+     *
+     * @param ignite Ignite instance.
+     * @param sql Query.
+     * @param cls Exception class.
+     * @param msg Error message.
+     */
+    protected void assertThrows(IgniteEx ignite, String sql, Class<? extends Exception> cls, String msg, Object... args) {
+        assertThrowsAnyCause(log, () -> sql(ignite, sql, args), cls, msg);
+    }
+
+    /**
+     * Assert that closure throws an {@link IgniteSQLException}.
+     *
+     * @param query Sql query.
+     * @param args Arguments for the SQL function call.
+     * @param msg Optional message.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    protected void assertThrowsSqlException(String query, @Nullable String msg, Object... args) {
+        GridTestUtils.assertThrows(log, () -> sql(query, args), IgniteSQLException.class, msg);
     }
 
     /** */
@@ -240,21 +283,44 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        // {@code sql} can contain more than one query.
-        List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
+    protected List<List<?>> sqlAsRoot(IgniteEx ignite, String sql) throws Exception {
+        SecurityContext secCtx = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
-        if (allCurs.size() > 1) {
-            log.warning("The query statement '" + sql + "' contains " + allCurs.size() + " actual queries. " +
-                "All the cursors are fetched, but only the last result is returned.");
+        try (Scope ignored = ignite.context().security().withContext(secCtx)) {
+            return sql(ignite, sql);
         }
+    }
 
-        List<List<?>> res = Collections.emptyList();
+    /** */
+    protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
+        Transaction tx = ignite.transactions().tx();
+        QueryContext ctx = tx == null
+            ? queryContext()
+            : QueryContext.of(queryContext(), ((TransactionProxyImpl<?, ?>)tx).tx().xidVersion());
 
-        for (FieldsQueryCursor<List<?>> cur : allCurs)
-            res = cur.getAll();
+        if (tx != null)
+            tx.suspend();
 
-        return res;
+        try {
+            // {@code sql} can contain more than one query.
+            List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(ctx, "PUBLIC", sql, params);
+
+            if (allCurs.size() > 1) {
+                log.warning("The query statement '" + sql + "' contains " + allCurs.size() + " actual queries. " +
+                    "All the cursors are fetched, but only the last result is returned.");
+            }
+
+            List<List<?>> res = Collections.emptyList();
+
+            for (FieldsQueryCursor<List<?>> cur : allCurs)
+                res = cur.getAll();
+
+            return res;
+        }
+        finally {
+            if (tx != null)
+                tx.resume();
+        }
     }
 
     /** */
@@ -306,17 +372,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteTable table() {
             return delegate.table();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteLogicalIndexScan toRel(
-            RelOptCluster cluster,
-            RelOptTable relOptTbl,
-            @Nullable List<RexNode> proj,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.toRel(cluster, relOptTbl, proj, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */

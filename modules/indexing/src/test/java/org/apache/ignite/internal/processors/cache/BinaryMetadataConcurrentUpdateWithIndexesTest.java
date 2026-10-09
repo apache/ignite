@@ -44,10 +44,11 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryUtils.TestBinaryContext;
+import org.apache.ignite.internal.binary.BinaryUtils.TestBinaryContext.TestBinaryContextListener;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
-import org.apache.ignite.internal.util.IgniteUtils.TestBinaryContext;
-import org.apache.ignite.internal.util.IgniteUtils.TestBinaryContext.TestBinaryContextListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -343,14 +344,14 @@ public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbs
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.useTestBinaryCtx = true;
+        BinaryUtils.useTestBinaryCtx = true;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        U.useTestBinaryCtx = false;
+        BinaryUtils.useTestBinaryCtx = false;
 
         stopAllGrids();
     }

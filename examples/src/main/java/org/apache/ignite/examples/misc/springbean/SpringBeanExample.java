@@ -53,11 +53,9 @@ public final class SpringBeanExample {
         System.out.println();
         System.out.println(">>> Spring bean example started.");
 
-        // Initialize Spring factory.
-        ClassPathXmlApplicationContext ctx =
-            new ClassPathXmlApplicationContext("org/apache/ignite/examples/misc/springbean/spring-bean.xml");
-
-        try {
+        // Initialize Spring factory (closed automatically, which stops the local cluster node).
+        try (ClassPathXmlApplicationContext ctx =
+            new ClassPathXmlApplicationContext("org/apache/ignite/examples/misc/springbean/spring-bean.xml")) {
             // Get ignite from Spring (note that local cluster node is already started).
             Ignite ignite = (Ignite)ctx.getBean("mySpringBean");
 
@@ -80,10 +78,6 @@ public final class SpringBeanExample {
             System.out.println(">>> You should see printed out of 'Hello world' on one of the nodes.");
             System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
             System.out.println(">>>");
-        }
-        finally {
-            // Stop local cluster node.
-            ctx.destroy();
         }
     }
 }

@@ -22,7 +22,9 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -131,6 +133,60 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
             assert endTime <= obj.endTime();
             endTime = obj.endTime();
         }
+    }
+
+    /**
+     * Tests non-blocking cancellation of a running periodic task.
+     *
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testNonBlockingCancel() throws Exception {
+        ReentrantLock extLock = new ReentrantLock();
+        CountDownLatch extLockAcquired = new CountDownLatch(1);
+        CountDownLatch taskStarted = new CountDownLatch(1);
+        AtomicInteger taskCallCnt = new AtomicInteger();
+
+        GridTimeoutProcessor.CancelableTask task = ctx.timeout().schedule(() -> {
+            U.awaitQuiet(extLockAcquired);
+
+            taskCallCnt.incrementAndGet();
+
+            taskStarted.countDown();
+
+            extLock.lock();
+
+            try {
+                // No-op.
+            }
+            finally {
+                extLock.unlock();
+            }
+        }, 0, 1_000);
+
+        IgniteInternalFuture<?> cancelFut = GridTestUtils.runAsync(() -> {
+            extLock.lock();
+
+            try {
+                extLockAcquired.countDown();
+
+                assertTrue(taskStarted.await(10_000, MILLISECONDS));
+
+                task.cancel();
+            }
+            finally {
+                extLock.unlock();
+            }
+        }, "test-cancel-thread");
+
+        cancelFut.get(10_000);
+
+        // Wait for the timeout callback and its rescheduling logic to finish.
+        synchronized (task) {
+            assertEquals(1, taskCallCnt.get());
+        }
+
+        assertFalse(ctx.timeout().removeTimeoutObject(task));
     }
 
     /**

@@ -1,0 +1,66 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+
+/**
+ * The annotation specifies the position of a field in the serialized and deserialized byte sequence of a {@code Message} class.
+ * <p>
+ * The {@code value} indicates the index of the field in the serialization order.
+ * Fields annotated with {@code @Order} are processed in ascending order of their index.
+ * <p> By default, it is assumed that getters and setters are named as the annotated fields,
+ * e.g. field 'val' should have getters and setters with name 'val' (according Ignite's to code-style).
+ * <p> This annotation must be used on non-static fields, and access to those fields
+ * should be performed strictly through corresponding getter and setter methods
+ * following the naming convention: {@code fieldName()} for getter and {@code fieldName(Type)} for setter.
+ *
+ * @see FeatureGated
+ */
+@Retention(RetentionPolicy.CLASS)
+@Target(ElementType.FIELD)
+public @interface Order {
+    /** @return Order of the field. */
+    int value();
+
+    /**
+     * {@link IgniteFeature} that introduced the field marked with the current annotation.
+     *
+     * <p>An annotated field is included in message serialization only when doing so does not break backward compatibility
+     * during a Rolling Upgrade.</p>
+     *
+     * @return Name of the Ignite feature that introduced this field, or an empty string if the field is not gated.
+     */
+    String introducedBy() default "";
+
+    /**
+     * {@link IgniteFeature} that deprecated the field marked with the current annotation.
+     *
+     * <p>Deprecation means that the field is planned for removal in a future release.</p>
+     *
+     * <p>An annotated field is excluded from message serialization only when doing so does not break backward compatibility
+     * during a Rolling Upgrade.</p>
+     *
+     * @return Name of the Ignite feature that deprecated this field, or an empty string if the field is not gated.
+     */
+    String deprecatedBy() default "";
+}

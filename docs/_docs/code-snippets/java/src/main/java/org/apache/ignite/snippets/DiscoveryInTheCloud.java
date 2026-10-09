@@ -25,6 +25,7 @@ import java.util.Collections;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.azure.TcpDiscoveryAzureBlobStoreIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.cloud.TcpDiscoveryCloudIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.elb.TcpDiscoveryElbIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinder;
@@ -153,13 +154,13 @@ public class DiscoveryInTheCloud {
         //tag::azureBlobStorage[]
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
-        TcpDiscoveryAzureBlobStorageIpFinder ipFinder = new TcpDiscoveryGoogleStorageIpFinder();
+        TcpDiscoveryAzureBlobStoreIpFinder ipFinder = new TcpDiscoveryAzureBlobStoreIpFinder();
 
-        finder.setAccountName("yourAccountName");
-        finder.setAccountKey("yourAccountKey");
-        finder.setAccountEndpoint("yourEndpoint");
+        ipFinder.setAccountName("yourAccountName");
+        ipFinder.setAccountKey("yourAccountKey");
+        ipFinder.setAccountEndpoint("yourEndpoint");
 
-        finder.setContainerName("yourContainerName");
+        ipFinder.setContainerName("yourContainerName");
 
         spi.setIpFinder(ipFinder);
 

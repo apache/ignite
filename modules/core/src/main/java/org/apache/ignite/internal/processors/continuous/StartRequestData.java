@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,134 +17,86 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.Marshaller;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Start request data.
  */
-class StartRequestData implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class StartRequestData implements Message {
+    /** Node filter, restored by the processor reading this request. */
+    IgnitePredicate<ClusterNode> nodeFilter;
 
-    /** Projection predicate. */
-    private IgnitePredicate<ClusterNode> prjPred;
-
-    /** Serialized projection predicate. */
-    private byte[] prjPredBytes;
+    /** Serialized node filter. */
+    @Order(0)
+    byte[] nodeFilterBytes;
 
     /** Deployment class name. */
-    private String clsName;
+    @Order(1)
+    String clsName;
 
     /** Deployment info. */
-    private GridDeploymentInfo depInfo;
+    @Order(2)
+    GridDeploymentInfoMessage depInfo;
 
-    /** Handler. */
-    private GridContinuousHandler hnd;
+    /** Handler, restored by the processor reading this request. */
+    @Order(3)
+    GridContinuousHandler hnd;
 
     /** Buffer size. */
-    private int bufSize;
+    @Order(4)
+    int bufSize;
 
     /** Time interval. */
-    private long interval;
+    @Order(5)
+    long interval;
 
     /** Automatic unsubscribe flag. */
-    private boolean autoUnsubscribe;
+    @Order(6)
+    boolean autoUnsubscribe;
+
+    /** Keep binary flag. */
+    @Order(7)
+    boolean keepBinary;
+
+    /** */
+    public StartRequestData() {}
 
     /**
-     * Required by {@link java.io.Externalizable}.
-     */
-    public StartRequestData() {
-        // No-op.
-    }
-
-    /**
-     * @param prjPred Serialized projection predicate.
+     * @param nodeFilter Node filter.
      * @param hnd Handler.
      * @param bufSize Buffer size.
      * @param interval Time interval.
      * @param autoUnsubscribe Automatic unsubscribe flag.
      */
-    StartRequestData(@Nullable IgnitePredicate<ClusterNode> prjPred, GridContinuousHandler hnd,
-        int bufSize, long interval, boolean autoUnsubscribe) {
+    public StartRequestData(
+        IgnitePredicate<ClusterNode> nodeFilter,
+        GridContinuousHandler hnd,
+        int bufSize,
+        long interval,
+        boolean autoUnsubscribe,
+        boolean keepBinary) {
         assert hnd != null;
         assert bufSize > 0;
         assert interval >= 0;
 
-        this.prjPred = prjPred;
+        this.nodeFilter = nodeFilter;
         this.hnd = hnd;
         this.bufSize = bufSize;
         this.interval = interval;
         this.autoUnsubscribe = autoUnsubscribe;
+        this.keepBinary = keepBinary;
     }
 
     /**
-     * @param marsh Marshaller.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
+     * @return Node filter.
      */
-    void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
-        assert marsh != null;
-
-        prjPredBytes = U.marshal(marsh, prjPred);
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     * @throws org.apache.ignite.IgniteCheckedException In case of error.
-     */
-    void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        assert marsh != null;
-
-        assert prjPred == null;
-        assert prjPredBytes != null;
-
-        prjPred = U.unmarshal(marsh, prjPredBytes, ldr);
-    }
-
-    /**
-     * @return Projection predicate.
-     */
-    public IgnitePredicate<ClusterNode> projectionPredicate() {
-        return prjPred;
-    }
-
-    /**
-     * @param prjPred New projection predicate.
-     */
-    public void projectionPredicate(IgnitePredicate<ClusterNode> prjPred) {
-        this.prjPred = prjPred;
-    }
-
-    /**
-     * @return Serialized projection predicate.
-     */
-    public byte[] projectionPredicateBytes() {
-        return prjPredBytes;
-    }
-
-    /**
-     * @param prjPredBytes New serialized projection predicate.
-     */
-    public void projectionPredicateBytes(byte[] prjPredBytes) {
-        this.prjPredBytes = prjPredBytes;
-    }
-
-    /**
-     * @return Deployment class name.
-     */
-    public String className() {
-        return clsName;
+    public IgnitePredicate<ClusterNode> nodeFilter() {
+        return nodeFilter;
     }
 
     /**
@@ -155,16 +107,9 @@ class StartRequestData implements Externalizable {
     }
 
     /**
-     * @return Deployment info.
-     */
-    public GridDeploymentInfo deploymentInfo() {
-        return depInfo;
-    }
-
-    /**
      * @param depInfo New deployment info.
      */
-    public void deploymentInfo(GridDeploymentInfo depInfo) {
+    public void deploymentInfo(GridDeploymentInfoMessage depInfo) {
         this.depInfo = depInfo;
     }
 
@@ -176,24 +121,10 @@ class StartRequestData implements Externalizable {
     }
 
     /**
-     * @param hnd New handler.
-     */
-    public void handler(GridContinuousHandler hnd) {
-        this.hnd = hnd;
-    }
-
-    /**
      * @return Buffer size.
      */
     public int bufferSize() {
         return bufSize;
-    }
-
-    /**
-     * @param bufSize New buffer size.
-     */
-    public void bufferSize(int bufSize) {
-        this.bufSize = bufSize;
     }
 
     /**
@@ -222,44 +153,6 @@ class StartRequestData implements Externalizable {
      */
     public void autoUnsubscribe(boolean autoUnsubscribe) {
         this.autoUnsubscribe = autoUnsubscribe;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        boolean b = prjPredBytes != null;
-
-        out.writeBoolean(b);
-
-        if (b) {
-            U.writeByteArray(out, prjPredBytes);
-            U.writeString(out, clsName);
-            out.writeObject(depInfo);
-        }
-        else
-            out.writeObject(prjPred);
-
-        out.writeObject(hnd);
-        out.writeInt(bufSize);
-        out.writeLong(interval);
-        out.writeBoolean(autoUnsubscribe);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean b = in.readBoolean();
-
-        if (b) {
-            prjPredBytes = U.readByteArray(in);
-            clsName = U.readString(in);
-            depInfo = (GridDeploymentInfo)in.readObject();
-        }
-        else
-            prjPred = (IgnitePredicate<ClusterNode>)in.readObject();
-
-        hnd = (GridContinuousHandler)in.readObject();
-        bufSize = in.readInt();
-        interval = in.readLong();
-        autoUnsubscribe = in.readBoolean();
     }
 
     /** {@inheritDoc} */

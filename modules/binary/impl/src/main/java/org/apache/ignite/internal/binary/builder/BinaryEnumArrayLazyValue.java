@@ -19,10 +19,9 @@ package org.apache.ignite.internal.binary.builder;
 
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 
 /**
  *
@@ -51,7 +50,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
             Class cls;
 
             try {
-                cls = CommonUtils.forName(reader.readString(), reader.binaryContext().classLoader(), null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(reader.readString(), reader.binaryContext().classLoader());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -99,7 +98,7 @@ class BinaryEnumArrayLazyValue extends BinaryAbstractLazyValue {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
         if (val != null) {
             if (clsName != null)
                 ctx.writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, clsName);

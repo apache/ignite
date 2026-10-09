@@ -35,6 +35,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilter;
+import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,7 +48,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -52,11 +55,12 @@ import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -71,6 +75,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
@@ -125,7 +130,7 @@ public class ValidationOnNodeJoinUtils {
         Function<String, DynamicCacheDescriptor> cacheDescProvider
     ) {
         if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
-            CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
+            CacheJoinNodeDiscoveryData nodeData = discoData.joiningNodeData();
 
             boolean isGridActive = ctx.state().clusterState().active();
 
@@ -151,9 +156,9 @@ public class ValidationOnNodeJoinUtils {
                 }
             }
 
-            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+            for (CacheJoinInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
-                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
+                    try (Scope ignored = ctx.security().withContext(secCtx)) {
                         GridCacheProcessor.authorizeCacheCreate(ctx.security(), cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {
@@ -579,18 +584,6 @@ public class ValidationOnNodeJoinUtils {
         if (dsCfgBytes instanceof byte[])
             dsCfg = ctx.marshallerContext().jdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
 
-        if (dsCfg == null) {
-            // Try to use legacy memory configuration.
-            MemoryConfiguration memCfg = rmt.attribute(IgniteNodeAttributes.ATTR_MEMORY_CONFIG);
-
-            if (memCfg != null) {
-                dsCfg = new DataStorageConfiguration();
-
-                // All properties that are used in validation should be converted here.
-                dsCfg.setPageSize(memCfg.getPageSize());
-            }
-        }
-
         if (dsCfg != null) {
             DataStorageConfiguration locDsCfg = ctx.config().getDataStorageConfiguration();
 
@@ -642,6 +635,34 @@ public class ValidationOnNodeJoinUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Analyzes affinity settings of a provided {@link CacheConfiguration} to inspect if it provides guarantees
+     * that partitions of the cache will be spread across all datacenters presented in cluster.
+     *
+     * @return {@code true} if affinity settings guarantee spreading partitions across all datacenters and {@code false} otherwise.
+     */
+    static boolean isAffinityConfigurationMdcSafe(CacheConfiguration cc) {
+        if (cc.getCacheMode() == REPLICATED)
+            return true;
+
+        AffinityFunction affFunc = cc.getAffinity();
+
+        if (affFunc instanceof RendezvousAffinityFunction) {
+            IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter = ((RendezvousAffinityFunction)affFunc).getAffinityBackupFilter();
+
+            if (filter instanceof ClusterNodeAttributeAffinityBackupFilter attrFilter) {
+                if (!F.asList(attrFilter.getAttributeNames()).contains(ATTR_DATA_CENTER_ID))
+                    return false;
+            }
+
+            return filter instanceof MdcAffinityBackupFilter
+                    || filter instanceof ClusterNodeAttributeColocatedBackupFilter
+                    || filter instanceof ClusterNodeAttributeAffinityBackupFilter;
+        }
+
+        return true;
     }
 
     /**

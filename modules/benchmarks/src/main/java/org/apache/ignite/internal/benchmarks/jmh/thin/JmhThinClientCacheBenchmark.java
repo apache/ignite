@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.profile.GCProfiler;
 
 /**
  * Thin client cache benchmark.
@@ -64,18 +65,19 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
      */
     public static void main(String[] args) throws Exception {
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
-                .forks(1)
-                .threads(4)
-                .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
-                .jvmArguments("-Xms4g", "-Xmx4g");
+            .forks(1)
+            .threads(4)
+            .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
+            .jvmArguments("-Xms4g", "-Xmx4g")
+            .profilers(GCProfiler.class)
+            .measurementIterations(10)
+            .warmupIterations(10);
+
+        runner.run();
 
         runner
-                .benchmarkModes(Mode.Throughput)
-                .run();
-
-        runner
-                .benchmarkModes(Mode.AverageTime)
-                .outputTimeUnit(TimeUnit.MICROSECONDS)
-                .run();
+            .benchmarkModes(Mode.AverageTime)
+            .outputTimeUnit(TimeUnit.MICROSECONDS)
+            .run();
     }
 }

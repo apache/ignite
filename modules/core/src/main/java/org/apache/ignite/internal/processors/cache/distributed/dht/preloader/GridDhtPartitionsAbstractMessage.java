@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -29,21 +28,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /** */
-    private static final byte COMPRESSED_FLAG_MASK = 0x01;
-
-    /** */
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** Exchange ID. */
-    @Order(value = 3, method = "exchangeId")
-    private GridDhtPartitionExchangeId exchId;
+    @Order(0)
+    GridDhtPartitionExchangeId exchId;
 
     /** Last used cache version. */
-    @Order(value = 4, method = "lastVersion")
-    private GridCacheVersion lastVer;
+    @Order(1)
+    GridCacheVersion lastVer;
 
     /** */
-    @Order(5)
+    @Order(2)
     protected byte flags;
 
     /**
@@ -72,8 +68,8 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return GridIoMessage.STRIPE_DISABLED_PART;
+    @Override public int stripeIdx() {
+        return NO_STRIPE;
     }
 
     /** {@inheritDoc} */
@@ -105,41 +101,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      */
     @Nullable public GridCacheVersion lastVersion() {
         return lastVer;
-    }
-
-    /**
-     * @param lastVer Last used version among all nodes.
-     */
-    public void lastVersion(GridCacheVersion lastVer) {
-        this.lastVer = lastVer;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
-    }
-
-    /**
-     * @param flags Flags.
-     */
-    public void flags(byte flags) {
-        this.flags = flags;
-    }
-
-    /**
-     * @return {@code True} if message data is compressed.
-     */
-    public final boolean compressed() {
-        return (flags & COMPRESSED_FLAG_MASK) != 0;
-    }
-
-    /**
-     * @param compressed {@code True} if message data is compressed.
-     */
-    public final void compressed(boolean compressed) {
-        flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
     }
 
     /**

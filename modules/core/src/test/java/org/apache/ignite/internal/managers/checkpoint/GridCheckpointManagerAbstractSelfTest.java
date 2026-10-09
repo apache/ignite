@@ -53,7 +53,7 @@ import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.hsqldb.jdbc.jdbcDataSource;
+import org.hsqldb.jdbc.JDBCDataSource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -153,7 +153,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         else if (igniteInstanceName.contains("jdbc")) {
             JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 
-            jdbcDataSource ds = new jdbcDataSource();
+            JDBCDataSource ds = new JDBCDataSource();
 
             ds.setDatabase("jdbc:hsqldb:mem:gg_test_" + getClass().getSimpleName());
             ds.setUser("sa");

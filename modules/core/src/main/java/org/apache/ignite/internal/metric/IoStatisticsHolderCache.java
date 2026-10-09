@@ -39,10 +39,22 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     public static final String LOGICAL_READS = "LOGICAL_READS";
 
     /** */
+    public static final String INSERTED_BYTES = "insertedBytes";
+
+    /** */
+    public static final String REMOVED_BYTES = "removedBytes";
+
+    /** */
     private final LongAdderMetric logicalReadCtr;
 
     /** */
     private final LongAdderMetric physicalReadCtr;
+
+    /** */
+    private final LongAdderMetric insertedBytes;
+
+    /** */
+    private final LongAdderMetric removedBytes;
 
     /** */
     private final String grpName;
@@ -63,12 +75,14 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
         MetricRegistryImpl mreg = mmgr.registry(metricRegistryName());
 
-        mreg.longMetric("startTime", null).value(U.currentTimeMillis());
-        mreg.objectMetric("name", String.class, null).value(grpName);
-        mreg.intMetric("grpId", null).value(grpId);
+        mreg.longMetric("startTime", "Statistics collection start time, in milliseconds.").value(U.currentTimeMillis());
+        mreg.objectMetric("name", String.class, "Cache or cache group name.").value(grpName);
+        mreg.intMetric("grpId", "Cache group ID.").value(grpId);
 
-        this.logicalReadCtr = mreg.longAdderMetric(LOGICAL_READS, null);
-        this.physicalReadCtr = mreg.longAdderMetric(PHYSICAL_READS, null);
+        logicalReadCtr = mreg.longAdderMetric(LOGICAL_READS, "Count of logical page reads");
+        physicalReadCtr = mreg.longAdderMetric(PHYSICAL_READS, "Count of physical page reads");
+        insertedBytes = mreg.longAdderMetric(INSERTED_BYTES, "Count of inserted to store bytes");
+        removedBytes = mreg.longAdderMetric(REMOVED_BYTES, "Count of removed from store bytes");
     }
 
     /** {@inheritDoc} */
@@ -93,6 +107,16 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
 
             IoStatisticsQueryHelper.trackPhysicalAndLogicalReadQuery(pageAddr);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackPageInsertData(long bytes) {
+        insertedBytes.add(bytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trackPageRemoveData(long bytes) {
+        removedBytes.add(bytes);
     }
 
     /** {@inheritDoc} */

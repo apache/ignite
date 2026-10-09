@@ -41,7 +41,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
+import static org.apache.ignite.internal.util.IgniteUtils.getTotalMemoryAvailable;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -221,7 +221,7 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
 
         IgniteEx ignite0 = startGrid(0);
 
-        long ram = ignite0.localNode().attribute(ATTR_PHY_RAM);
+        long ram = getTotalMemoryAvailable();
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(1))
             .setDataStorageConfiguration(new DataStorageConfiguration()

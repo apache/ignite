@@ -131,7 +131,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                 }
             }, 1, "restart-thread");
 
-            long stopTime = System.currentTimeMillis() + 2 * 60_000L;
+            long stopTime = System.currentTimeMillis() + GridTestUtils.SF.applyLB(2 * 60_000, 20_000);
 
             for (int i = 0; System.currentTimeMillis() < stopTime; i++) {
                 log.info(">>> Iteration " + i);

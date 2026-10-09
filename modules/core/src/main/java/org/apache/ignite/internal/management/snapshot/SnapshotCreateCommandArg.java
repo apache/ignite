@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
@@ -31,43 +28,31 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Positional
     @Argument(description = "Snapshot name. " +
         "In the case of incremental snapshot (--incremental) full snapshot name must be provided")
-    private String snapshotName;
+    String snapshotName;
 
     /** */
+    @Order(1)
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot will be saved. " +
         "If not specified, the default configured snapshot directory will be used")
-    private String dest;
+    String dest;
 
     /** */
+    @Order(2)
     @Argument(optional = true, description = "Run the operation synchronously, " +
         "the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control")
-    private boolean sync;
+    boolean sync;
 
     /** */
+    @Order(3)
     @Argument(optional = true, description = "Create an incremental snapshot for previously created full snapshot. " +
         "Full snapshot must be accessible via --dest and snapshot_name")
-    private boolean incremental;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, snapshotName);
-        U.writeString(out, dest);
-        out.writeBoolean(sync);
-        out.writeBoolean(incremental);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        snapshotName = U.readString(in);
-        dest = U.readString(in);
-        sync = in.readBoolean();
-        incremental = in.readBoolean();
-    }
+    boolean incremental;
 
     /** */
     public String snapshotName() {

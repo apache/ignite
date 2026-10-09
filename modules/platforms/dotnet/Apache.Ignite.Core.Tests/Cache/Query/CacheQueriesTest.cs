@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         [Test]
         public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin,
-            [Values(true, false)] bool enforceJoinOrder, [Values(true, false)] bool lazy)
+            [Values(true, false)] bool enforceJoinOrder)
         {
             int cnt = MaxItemCnt;
 
@@ -397,8 +397,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 ReplicatedOnly = false,
 #pragma warning restore 618
                 Local = loc,
-                Timeout = TimeSpan.FromSeconds(2),
-                Lazy = lazy
+                Timeout = TimeSpan.FromSeconds(2)
             };
 
             using (var cursor = cache.Query(qry))

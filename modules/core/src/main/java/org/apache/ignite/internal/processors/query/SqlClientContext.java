@@ -54,9 +54,6 @@ public class SqlClientContext implements AutoCloseable {
     /** Replicated caches only flag. */
     private final boolean replicatedOnly;
 
-    /** Lazy query execution flag. */
-    private final boolean lazy;
-
     /** Local query flag. */
     private final boolean loc;
 
@@ -128,7 +125,6 @@ public class SqlClientContext implements AutoCloseable {
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
      * @param replicatedOnly Replicated caches only flag.
-     * @param lazy Lazy query execution flag.
      * @param loc Local query flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param dataPageScanEnabled Enable scan data page mode.
@@ -145,7 +141,6 @@ public class SqlClientContext implements AutoCloseable {
         boolean enforceJoinOrder,
         boolean collocated,
         boolean replicatedOnly,
-        boolean lazy,
         boolean loc,
         boolean skipReducerOnUpdate,
         @Nullable Boolean dataPageScanEnabled,
@@ -162,7 +157,6 @@ public class SqlClientContext implements AutoCloseable {
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
-        this.lazy = lazy;
         this.loc = loc;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.dataPageScanEnabled = dataPageScanEnabled;
@@ -258,13 +252,6 @@ public class SqlClientContext implements AutoCloseable {
      */
     public boolean isReplicatedOnly() {
         return replicatedOnly;
-    }
-
-    /**
-     * @return Lazy query execution flag.
-     */
-    public boolean isLazy() {
-        return lazy;
     }
 
     /**

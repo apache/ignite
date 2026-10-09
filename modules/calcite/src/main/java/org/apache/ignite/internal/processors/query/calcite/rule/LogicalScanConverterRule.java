@@ -111,6 +111,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     traits,
                     rel.getTable(),
                     rel.indexName(),
+                    rel.getRowType(),
                     rel.projects(),
                     rel.condition(),
                     rel.searchBounds(),
@@ -163,8 +164,8 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 if (!corrIds.isEmpty())
                     traits = traits.replace(CorrelationTrait.correlations(corrIds));
 
-                return new IgniteTableScan(rel.getCluster(), traits,
-                    rel.getTable(), rel.projects(), rel.condition(), rel.requiredColumns());
+                return new IgniteTableScan(rel.getCluster(), traits, rel.getTable(),
+                    rel.getRowType(), rel.projects(), rel.condition(), rel.requiredColumns());
             }
         };
 

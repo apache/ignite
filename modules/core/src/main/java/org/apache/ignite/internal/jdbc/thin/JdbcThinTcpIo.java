@@ -28,10 +28,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +41,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
@@ -67,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-import static java.lang.Math.abs;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinConnection.isolation;
 import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanToByte;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.DEFAULT_NESTED_TX_MODE;
@@ -106,8 +104,11 @@ public class JdbcThinTcpIo {
     /** Version 2.17.0. */
     private static final ClientListenerProtocolVersion VER_2_17_0 = ClientListenerProtocolVersion.create(2, 17, 0);
 
+    /** Version 2.18.0. */
+    private static final ClientListenerProtocolVersion VER_2_18_0 = ClientListenerProtocolVersion.create(2, 18, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_17_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_18_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -126,9 +127,6 @@ public class JdbcThinTcpIo {
 
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
-
-    /** Random. */
-    private static final AtomicLong IDX_GEN = new AtomicLong(new Random(U.currentTimeMillis()).nextLong());
 
     /** Connection properties. */
     private final ConnectionProperties connProps;
@@ -270,9 +268,9 @@ public class JdbcThinTcpIo {
     private HandshakeResult handshake(ClientListenerProtocolVersion ver) throws IOException, SQLException {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null, null));
+        marsh.setContext(new MarshallerContextImpl(null));
 
-        BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE), null);
+        BinaryWriterEx writer = BinaryUtils.writerWithoutSchema(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -287,7 +285,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isCollocated());
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
-        writer.writeBoolean(connProps.isLazy());
+        writer.writeBoolean(true); // Lazy flag.
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         if (ver.compareTo(VER_2_7_0) >= 0)
@@ -344,7 +342,7 @@ public class JdbcThinTcpIo {
             writer.writeString(connProps.getPassword());
         }
 
-        send(writer.array());
+        send(writer);
 
         BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, false);
 
@@ -406,7 +404,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + " address=" + sockAddr + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_13_0.equals(srvProtoVer0)
+            if (VER_2_17_0.equals(srvProtoVer0)
+                || VER_2_13_0.equals(srvProtoVer0)
                 || VER_2_9_0.equals(srvProtoVer0)
                 || VER_2_8_0.equals(srvProtoVer0)
                 || VER_2_7_0.equals(srvProtoVer0)
@@ -432,8 +431,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake_2_1_0() throws IOException, SQLException {
-        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
-            null);
+        BinaryWriterEx writer = BinaryUtils.writerWithoutSchema(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -449,7 +447,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isReplicatedOnly());
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
 
-        send(writer.array());
+        send(writer);
 
         BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), null, false);
 
@@ -590,23 +588,25 @@ public class JdbcThinTcpIo {
         req.writeBinary(writer, protoCtx);
 
         synchronized (connMux) {
-            send(writer.array());
+            send(writer);
         }
     }
 
     /**
-     * @param req JDBC request bytes.
+     * @param writer Writer with request bytes.
      * @throws IOException On error.
      */
-    private void send(byte[] req) throws IOException {
-        int size = req.length;
+    private void send(BinaryWriterEx writer) throws IOException {
+        BinaryOutputStream stream = writer.out();
+
+        int size = stream.position();
 
         out.write(size & 0xFF);
         out.write((size >> 8) & 0xFF);
         out.write((size >> 16) & 0xFF);
         out.write((size >> 24) & 0xFF);
 
-        out.write(req);
+        out.write(stream.array(), 0, size);
 
         out.flush();
     }
@@ -723,27 +723,20 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Whether transaction savepoint operations are supported by the server or not.
+     *
+     * @return {@code true} if transaction savepoint operations supported, {@code false} otherwise.
+     */
+    boolean isSavepointsSupported() {
+        return protoCtx.isFeatureSupported(JdbcThinFeature.SAVEPOINTS);
+    }
+
+    /**
      * @param isolation Transaction isolation level.
      * @return {@code True} if transaction isolation mode supported by the server, {@code false} otherwise.
      */
     boolean isIsolationLevelSupported(TransactionIsolation isolation) {
         return isolationLevelsSupported.contains(isolation);
-    }
-
-    /**
-     * Get next server index.
-     *
-     * @param len Number of servers.
-     * @return Index of the next server to connect to.
-     */
-    private static int nextServerIndex(int len) {
-        if (len == 1)
-            return 0;
-        else {
-            long nextIdx = IDX_GEN.getAndIncrement();
-
-            return (int)(abs(nextIdx) % len);
-        }
     }
 
     /**

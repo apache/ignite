@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -305,13 +305,6 @@ public class GridDhtPartitionDemander {
      */
     void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         lastExchangeFut = lastFut;
-    }
-
-    /**
-     * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
-     */
-    Collection<UUID> remainingNodes() {
-        return rebalanceFut.remainingNodes();
     }
 
     /**
@@ -573,7 +566,7 @@ public class GridDhtPartitionDemander {
                 AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
                 // Preload.
-                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.getInfosSafe().entrySet()) {
+                for (Map.Entry<Integer, List<GridCacheEntryInfo>> e : supplyMsg.getInfosSafe().entrySet()) {
                     int p = e.getKey();
 
                     if (aff.get(p).contains(ctx.localNode())) {
@@ -613,7 +606,7 @@ public class GridDhtPartitionDemander {
                                 long[] byteRcv = {0};
 
                                 GridIterableAdapter<GridCacheEntryInfo> infosWrap = new GridIterableAdapter<>(
-                                    new IteratorWrapper<GridCacheEntryInfo>(e.getValue().infos().iterator()) {
+                                    new IteratorWrapper<>(e.getValue().iterator()) {
                                         /** {@inheritDoc} */
                                         @Override public GridCacheEntryInfo nextX() throws IgniteCheckedException {
                                             GridCacheEntryInfo i = super.nextX();
@@ -628,7 +621,7 @@ public class GridDhtPartitionDemander {
                                 try {
                                     preloadEntries(topVer, part, infosWrap);
 
-                                    rebalanceFut.onReceivedKeys(p, e.getValue().infos().size(), node);
+                                    rebalanceFut.onReceivedKeys(p, e.getValue().size(), node);
                                 }
                                 catch (GridDhtInvalidPartitionException ignored) {
                                     if (log.isDebugEnabled())
@@ -1207,8 +1200,14 @@ public class GridDhtPartitionDemander {
                                     return;
                                 }
 
-                                if (waitCnt.decrementAndGet() == 0)
+                                if (waitCnt.decrementAndGet() == 0) {
+                                    U.log(log, "Eviction completed successfully" +
+                                        " [grp=" + grp.cacheOrGroupName() + ", reason='preparation for rebalancing'" +
+                                        ", evictedPartsCount=" + parts.size() +
+                                        ", evictedParts=" + S.toStringSortedDistinct(d.partitions().fullSet()) + "]");
+
                                     ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
+                                }
                             }
                         });
                     }
@@ -1615,13 +1614,6 @@ public class GridDhtPartitionDemander {
         }
 
         /**
-         * @return Collection of supplier nodes. Value {@code empty} means rebalance already finished.
-         */
-        private synchronized Collection<UUID> remainingNodes() {
-            return remaining.keySet();
-        }
-
-        /**
          *
          */
         private void sendRebalanceStartedEvent() {
@@ -1651,15 +1643,6 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing is forced on the same topology [grp="
                         + grp.cacheOrGroupName() + ", " + "top=" + topVer + ']');
-
-                return false;
-            }
-
-            if (newAssignments.affinityReassign()) {
-                if (log.isDebugEnabled())
-                    log.debug("Some of owned partitions were reassigned by coordinator [grp="
-                        + grp.cacheOrGroupName() + ", " + ", init=" + topVer +
-                        ", other=" + newAssignments.topologyVersion() + ']');
 
                 return false;
             }

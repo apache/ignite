@@ -102,6 +102,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @Override public IgniteInternalFuture<Boolean> txLockAsync(
         Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
@@ -112,7 +113,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, createTtl, accessTtl);
+        return lockAllAsync(keys, timeout, waitTimeout, tx, isInvalidate, isRead, retval, isolation, createTtl, accessTtl);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +122,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
         // Return value flag is true because we choose to bring values for explicit locks.
         return lockAllAsync(ctx.cacheKeysView(keys),
+            timeout,
             timeout,
             tx,
             false,
@@ -133,7 +135,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
     /**
      * @param keys Keys to lock.
-     * @param timeout Timeout.
+     * @param timeout Transaction timeout.
+     * @param waitTimeout Lock wait timeout.
      * @param tx Transaction
      * @param isInvalidate Invalidation flag.
      * @param isRead Indicates whether value is read or written.
@@ -145,6 +148,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      */
     protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
         long timeout,
+        long waitTimeout,
         @Nullable IgniteTxLocalEx tx,
         boolean isInvalidate,
         boolean isRead,

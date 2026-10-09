@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
@@ -31,39 +30,40 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Message {
+public class GridCacheReturn implements Message, CacheIdAware {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
 
     /** Cache object. */
-    @Order(value = 0, method = "cacheObject")
-    private @Nullable CacheObject cacheObj;
+    @Order(0)
+    @Nullable CacheObject cacheObj;
 
     /** Invoke direct results. */
-    @Order(value = 1, method = "invokeDirectResults")
-    private @Nullable Collection<CacheInvokeDirectResult> invokeResCol;
+    @Order(1)
+    @Nullable Collection<CacheInvokeDirectResult> invokeResCol;
 
     /** Success flag. */
     @Order(2)
-    private volatile boolean success;
+    volatile boolean success;
 
     /** Invoke result flag. */
-    @Order(value = 3, method = "invokeResult")
-    private volatile boolean invokeRes;
+    @Order(3)
+    volatile boolean invokeRes;
 
     /** Local result flag, if non local then do not need unwrap cache objects. */
     private boolean loc;
 
     /** Cache Id. */
     @Order(4)
-    private int cacheId;
+    int cacheId;
 
     /**
      * Empty constructor.
@@ -121,7 +121,26 @@ public class GridCacheReturn implements Message {
     /**
      * @return Value.
      */
-    @Nullable public <V> V value() {
+    @Nullable public <V> V value(GridCacheContext ctx) {
+        if (v == null) {
+            if (cacheObj != null)
+                v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ctx.deploy().globalLoader());
+
+            if (invokeRes && invokeResCol != null) {
+                Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
+
+                for (CacheInvokeDirectResult res : invokeResCol) {
+                    CacheInvokeResult<?> res0 = res.error() == null ?
+                        CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
+                        CacheInvokeResult.fromError(CU.prepareEntryProcessorError(res.error()));
+
+                    map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
+                }
+
+                v = map0;
+            }
+        }
+        
         return (V)v;
     }
 
@@ -259,7 +278,8 @@ public class GridCacheReturn implements Message {
                     throw (UnregisteredBinaryTypeException)err;
             }
 
-            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
+            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res)
+                : CacheInvokeResult.fromError(CU.prepareEntryProcessorError(err));
 
             Object resKey = key0 != null ? key0 :
                 ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
@@ -285,57 +305,20 @@ public class GridCacheReturn implements Message {
         }
     }
 
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
+    /** {@inheritDoc} */
+    @Override public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @param cacheId Cache ID.
-     */
-    public void cacheId(int cacheId) {
-        this.cacheId = cacheId;
-    }
-
-    /**
-     * @return Cache object.
-     */
-    public @Nullable CacheObject cacheObject() {
-        return cacheObj;
-    }
-
-    /**
-     * @param cacheObj Cache object.
-     */
-    public void cacheObject(@Nullable CacheObject cacheObj) {
-        this.cacheObj = cacheObj;
-    }
-
-    /**
-     * @return Invoke direct results.
-     */
-    public @Nullable Collection<CacheInvokeDirectResult> invokeDirectResults() {
-        return invokeResCol;
-    }
-
-    /**
-     * @param invokeResCol Invoke direct results.
-     */
-    public void invokeDirectResults(@Nullable Collection<CacheInvokeDirectResult> invokeResCol) {
-        this.invokeResCol = invokeResCol;
     }
 
     /**
      * @param other Other result to merge with.
      */
-    public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
+    public synchronized void mergeEntryProcessResults(GridCacheContext ctx, GridCacheReturn other) {
         assert invokeRes || v == null : "Invalid state to merge: " + this;
         assert other.invokeRes;
         assert loc == other.loc : loc;
 
-        if (other.v == null)
+        if (other.value(ctx) == null)
             return;
 
         invokeRes = true;
@@ -361,59 +344,6 @@ public class GridCacheReturn implements Message {
             for (CacheInvokeDirectResult directRes : invokeResCol)
                 directRes.marshalResult(ctx);
         }
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
-        assert !loc;
-
-        if (cacheObj != null)
-            cacheObj.prepareMarshal(ctx.cacheObjectContext());
-
-        if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.prepareMarshal(ctx);
-        }
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        loc = true;
-
-        if (cacheObj != null) {
-            cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-
-            v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false, ldr);
-        }
-
-        if (invokeRes && invokeResCol != null) {
-            for (CacheInvokeDirectResult res : invokeResCol)
-                res.finishUnmarshal(ctx, ldr);
-
-            Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
-
-            for (CacheInvokeDirectResult res : invokeResCol) {
-                CacheInvokeResult<?> res0 = res.error() == null ?
-                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false, null)) :
-                    CacheInvokeResult.fromError(res.error());
-
-                map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false, null), res0);
-            }
-
-            v = map0;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 88;
     }
 
     /** {@inheritDoc} */

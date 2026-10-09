@@ -29,11 +29,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.processors.tracing.SpanTags;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
@@ -57,9 +55,12 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
+import static org.apache.ignite.internal.MessageSerializationContext.IMMUTABLE_SCHEMA;
+import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForPeers;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_SER_CTX;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
@@ -121,8 +122,8 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
     /** NIO server. */
     private volatile GridNioServerWrapper nioSrvWrapper;
 
-    /** Communication worker. */
-    private volatile CommunicationWorker commWorker;
+    /** Communication connection state handler. */
+    private volatile CommunicationConnectionStateHandler connStateHnd;
 
     /** Client. */
     private final boolean client;
@@ -137,7 +138,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
      * @param locNodeSupplier Local node supplier.
      * @param stateProvider State provider.
      * @param clientPool Client pool.
-     * @param commWorker Communication worker.
+     * @param connStateHnd Communication connection state handler.
      * @param connectGate Connect gate.
      * @param failureProcessorSupplier Failure processor supplier.
      * @param attributeNames Attribute names.
@@ -155,7 +156,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         Supplier<ClusterNode> locNodeSupplier,
         ClusterStateProvider stateProvider,
         ConnectionClientPool clientPool,
-        CommunicationWorker commWorker,
+        CommunicationConnectionStateHandler connStateHnd,
         ConnectGateway connectGate,
         Supplier<FailureProcessor> failureProcessorSupplier,
         AttributeNames attributeNames,
@@ -172,7 +173,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         this.locNodeSupplier = locNodeSupplier;
         this.stateProvider = stateProvider;
         this.clientPool = clientPool;
-        this.commWorker = commWorker;
+        this.connStateHnd = connStateHnd;
         this.connectGate = connectGate;
         this.failureProcessorSupplier = failureProcessorSupplier;
         this.attributeNames = attributeNames;
@@ -214,6 +215,9 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
+        if (ses.meta(MSG_SER_CTX.ordinal()) == null)
+            ses.addMeta(MSG_SER_CTX.ordinal(), IMMUTABLE_SCHEMA);
+
         if (ses.accepted()) {
             if (log.isInfoEnabled()) {
                 log.info("Accepted incoming communication connection [locAddr=" + ses.localAddress() +
@@ -255,11 +259,6 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
 
     /** {@inheritDoc} */
     @Override public void onMessage(final GridNioSession ses, Message msg) {
-        Span span = MTC.span();
-
-        span.addLog(() -> "Communication received");
-        span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
-
         ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
         if (connKey == null) {
@@ -436,7 +435,7 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
                             DisconnectedSessionInfo disconnectData =
                                 new DisconnectedSessionInfo(outDesc, connId.connectionIndex());
 
-                            commWorker.addProcessDisconnectRequest(disconnectData);
+                            connStateHnd.addProcessDisconnectRequest(disconnectData);
                         }
                     }
                     else
@@ -520,6 +519,18 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         final ConnectionKey old = ses.addMeta(CONN_IDX_META, connKey);
 
         assert old == null;
+
+        try {
+            ses.addMeta(MSG_SER_CTX.ordinal(), buildForPeers(igniteExSupplier.get(), rmtNode));
+        }
+        catch (UnsupportedNodeVersionException | ClusterTopologyCheckedException e) {
+            U.warn(log, "Failed to resolve message serialization context for remote node session" +
+                " [rmtNodeId=" + sndId + ", ses=" + ses + ", errMsg=" + e.getMessage() + ']');
+
+            ses.close();
+
+            return;
+        }
 
         ClusterNode locNode = locNodeSupplier.get();
 
@@ -931,10 +942,10 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
     }
 
     /**
-     * @param commWorker New communication worker.
+     * @param connStateHnd New communication connection state handler.
      */
-    public void communicationWorker(CommunicationWorker commWorker) {
-        this.commWorker = commWorker;
+    public void communicationConnectionStateHandler(CommunicationConnectionStateHandler connStateHnd) {
+        this.connStateHnd = connStateHnd;
     }
 
     /**

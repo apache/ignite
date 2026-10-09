@@ -42,6 +42,7 @@ public class PerformingTransactions {
     public static void runAll() {
         enablingTransactions();
         executingTransactionsExample();
+        transactionSavepointsExample();
         optimisticTransactionExample();
         deadlockDetectionExample();
 
@@ -98,6 +99,38 @@ public class PerformingTransactions {
         }
     }
 
+    public static void transactionSavepointsExample() {
+        try (Ignite ignite = Ignition.start()) {
+            // tag::savepoints[]
+            CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>();
+            cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            cfg.setName("myCache");
+
+            IgniteCache<String, Integer> cache = ignite.getOrCreateCache(cfg);
+
+            try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+                    TransactionIsolation.REPEATABLE_READ)) {
+                cache.put("order:1", 10);
+
+                tx.savepoint("before-shipping");
+
+                cache.put("shipping:1", 5);
+                cache.put("order:1", 15);
+
+                tx.rollbackToSavepoint("before-shipping");
+
+                cache.put("order:1", 11);
+
+                tx.releaseSavepoint("before-shipping");
+
+                tx.commit();
+            }
+            // end::savepoints[]
+            System.out.println(cache.get("order:1"));
+            System.out.println(cache.get("shipping:1"));
+        }
+    }
+
     public static void optimisticTransactionExample() {
         try (Ignite ignite = Ignition.start()) {
             // tag::optimistic[]
@@ -133,8 +166,26 @@ public class PerformingTransactions {
         }
     }
 
-    void timeout() {
-        // tag::timeout[]
+    void defaultTimeout() {
+        // tag::default[]
+        // Create a configuration
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // Create a Transaction configuration
+        TransactionConfiguration txCfg = new TransactionConfiguration();
+
+        // Set the timeout to 5 minutes
+        txCfg.setDefaultTxTimeout(300000);
+
+        cfg.setTransactionConfiguration(txCfg);
+
+        // Start the node
+        Ignition.start(cfg);
+        // end::default[]
+    }
+
+    void pmeTimeout() {
+        // tag::pme[]
         // Create a configuration
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -148,7 +199,7 @@ public class PerformingTransactions {
 
         // Start the node
         Ignition.start(cfg);
-        // end::timeout[]
+        // end::pme[]
     }
 
     public static void deadlockDetectionExample() {

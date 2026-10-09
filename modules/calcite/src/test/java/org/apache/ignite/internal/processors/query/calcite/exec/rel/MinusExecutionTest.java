@@ -79,4 +79,16 @@ public class MinusExecutionTest extends AbstractSetOpExecutionTest {
 
         checkSetOp(single, all, Arrays.asList(ds1, ds2, ds3), expectedResult);
     }
+
+    /** {@inheritDoc} */
+    @Override protected int expectedResultSize(int[] totalRowsCnt, boolean all) {
+        int sum1 = 0;
+        for (int i = 1; i < totalRowsCnt.length; i++)
+            sum1 += totalRowsCnt[i];
+
+        if (all)
+            return Math.max(totalRowsCnt[0] - sum1, 0);
+        else
+            return (totalRowsCnt[0] > 0 && sum1 == 0) ? 1 : 0;
+    }
 }

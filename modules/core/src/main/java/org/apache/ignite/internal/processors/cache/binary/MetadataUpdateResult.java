@@ -69,6 +69,13 @@ final class MetadataUpdateResult {
     }
 
     /**
+     * @param errMsg Error message lead to request failure.
+     */
+    static MetadataUpdateResult createFailureResult(String errMsg) {
+        return createFailureResult(new BinaryObjectException(errMsg));
+    }
+
+    /**
      * @param err Error lead to request failure.
      */
     static MetadataUpdateResult createFailureResult(BinaryObjectException err) {

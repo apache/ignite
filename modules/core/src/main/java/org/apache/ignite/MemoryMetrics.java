@@ -17,15 +17,15 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
  * This interface provides page memory related metrics of a specific Apache Ignite node. The overall page memory
- * architecture is covered in {@link MemoryConfiguration}.
+ * architecture is covered in {@link DataStorageConfiguration}.
  * <p>
- * Since there are can be several memory regions configured with {@link MemoryPolicyConfiguration} on an individual
+ * Since there are can be several data regions configured with {@link DataRegionConfiguration} on an individual
  * Apache Ignite node, the metrics for every region will be collected and obtained separately.
  * <p>
  * There are two ways to get the metrics of an Apache Ignite node.
@@ -43,7 +43,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
  * <p>
  * Memory metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
- * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property.
+ * {@link DataStorageConfiguration#setMetricsEnabled(boolean)} configuration property.
  *
  * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  */

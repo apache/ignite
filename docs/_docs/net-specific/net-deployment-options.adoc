@@ -57,7 +57,7 @@ tab:MyApp.csproj[]
 Ignite.NET supports link:https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file[single file deployment] that is available in .NET Core 3 / .NET 5+.
 
 * Use the `IncludeAllContentForSelfExtract` MSBuild property to include jar files into the single-file bundle, or ship them separately.
-* See xref:net-troubleshooting.adoc#libcoreclr-not-found[Troubleshooting: DllNotFoundException] for a workaround that is required
+* See link:net-specific/net-troubleshooting#libcoreclr-not-found[Troubleshooting: DllNotFoundException] for a workaround that is required
 on .NET 5 with some Ignite versions.
 
 Publish command example:

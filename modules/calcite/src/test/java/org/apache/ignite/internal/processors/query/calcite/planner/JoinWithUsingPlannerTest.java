@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for JOIN with USING and NATURAL JOIN.
@@ -37,7 +37,7 @@ public class JoinWithUsingPlannerTest extends AbstractPlannerTest {
     private final Collection<IgniteSchema> schemas = new ArrayList<>();
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 
@@ -151,9 +151,8 @@ public class JoinWithUsingPlannerTest extends AbstractPlannerTest {
             hasColumns("EMPID", "DEPTID", "NAME", "D"));
 
         // Double join.
-        // TODO https://issues.apache.org/jira/browse/CALCITE-4921
-        //assertPlan("SELECT * FROM T1 NATURAL JOIN T2 NATURAL JOIN OTHER.T3", schemas,
-        //    hasColumns("DEPTID", "EMPTID", "NAME", "PARENTID", "D"));
+        assertPlan("SELECT * FROM T1 NATURAL JOIN T2 NATURAL JOIN OTHER.T3", schemas,
+            hasColumns("EMPID", "DEPTID", "NAME", "PARENTID", "D"));
 
         // Join table with subquery.
         assertPlan("SELECT * FROM T1 NATURAL JOIN (SELECT * FROM T2)", schemas,
@@ -164,7 +163,7 @@ public class JoinWithUsingPlannerTest extends AbstractPlannerTest {
             hasColumns("DEPTID", "NAME", "EMPID", "PARENTID"));
 
         // Select explicit columns, system columns. Columns not ambiguous.
-        // TODO https://issues.apache.org/jira/browse/CALCITE-4915
+        // TODO https://issues.apache.org/jira/browse/CALCITE-4923
         //assertPlan("SELECT DEPTID, T1._KEY, T2.NAME FROM T1 NATURAL JOIN T2", schemas,
         //    hasColumns("DEPTID", "_KEY", "NAME"));
 

@@ -35,8 +35,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -90,7 +90,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "HashJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
         );
 
         checkSplitAndSerialization(phys, publicSchema);
@@ -157,7 +157,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "HashJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
         );
 
         System.out.println("+++ \n" + RelOptUtil.toString(phys));
@@ -229,7 +229,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
      * Check sorted spool without input collation.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16430")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16430")
     public void testRestoreCollation() throws Exception {
         IgniteSchema publicSchema = createSchema(
             createTable("T0", 100, IgniteDistributions.random(),
@@ -252,7 +252,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                     .and(input(1, isInstanceOf(IgniteSortedIndexSpool.class)
                         .and(spool -> spool.collation().getFieldCollations().get(0).getFieldIndex() == equalIdx)
                     ))),
-                "MergeJoinConverter", "NestedLoopJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
+                "MergeJoinConverter", "NestedLoopJoinConverter", "HashJoinConverter", "FilterSpoolMergeToHashIndexSpoolRule"
             );
         }
     }

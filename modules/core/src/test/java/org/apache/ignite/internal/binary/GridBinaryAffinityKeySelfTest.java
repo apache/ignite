@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -100,6 +101,11 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
             catch (IllegalArgumentException ignore) {
                 // Expected error.
             }
+
+            assertTrue("Failed to wait for minor version change",
+                GridTestUtils.waitForCondition(() ->
+                        grid(0).context().discovery().topologyVersionEx().minorTopologyVersion() == 1,
+                    5_000));
 
             checkAffinity(igniteNoCache);
         }

@@ -223,6 +223,7 @@ Below is a list of .NET functions and their SQL equivalents that are supported b
 |`String.PadLeft`| `LPAD`
 |`String.PadRight`| `RPAD`
 |`Regex.Replace`| `REGEXP_REPLACE`
+|`Regex.Substr`| `REGEXP_SUBSTR`
 |`Regex.IsMatch`| `REGEXP_LIKE`
 |`Math.Abs`| `ABS`
 |`Math.Acos`| `ACOS`

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -25,10 +24,7 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -36,6 +32,8 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.internal.managers.communication.TestOverByteIdMessage.DIRECT_TYPE_OVER_BYTE;
+import static org.apache.ignite.internal.managers.communication.TestValidByteIdMessage.DIRECT_TYPE;
 
 /**
  * Send message test.
@@ -43,12 +41,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest {
     /** Sample count. */
     private static final int SAMPLE_CNT = 1;
-
-    /** */
-    private static final short DIRECT_TYPE = -127;
-
-    /** */
-    private static final short DIRECT_TYPE_OVER_BYTE = 1000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -71,7 +63,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend(new TestMessage(), TestMessage.class);
+            doSend(new TestValidByteIdMessage());
         }
         finally {
             stopAllGrids();
@@ -86,7 +78,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend(new TestOverByteIdMessage(), TestOverByteIdMessage.class);
+            doSend(new TestOverByteIdMessage());
         }
         finally {
             stopAllGrids();
@@ -101,7 +93,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         try {
             startGridsMultiThreaded(2);
 
-            doSend(new TestMessage(), TestMessage.class);
+            doSend(new TestValidByteIdMessage());
         }
         finally {
             stopAllGrids();
@@ -110,15 +102,15 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
 
     /**
      * @param msg Message to send.
-     * @param msgCls Message class to check the received message.
      *
      * @throws Exception If failed.
      */
-    private void doSend(Message msg, final Class<?> msgCls) throws Exception {
+    private void doSend(Message msg) throws Exception {
         GridIoManager mgr0 = grid(0).context().io();
         GridIoManager mgr1 = grid(1).context().io();
 
         String topic = "test-topic";
+        Class<?> msgCls = msg.getClass();
 
         final CountDownLatch latch = new CountDownLatch(SAMPLE_CNT);
 
@@ -148,52 +140,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static class TestMessage implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE;
-        }
-    }
-
-    /** */
-    private static class TestOverByteIdMessage implements Message {
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public short directType() {
-            return DIRECT_TYPE_OVER_BYTE;
-        }
-    }
-
-    /** */
     public static class TestPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
@@ -203,9 +149,9 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
             registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(DIRECT_TYPE, TestMessage::new);
-                    factory.register(DIRECT_TYPE_OVER_BYTE, TestOverByteIdMessage::new);
+                @Override public void registerAll(IgniteMessageFactory factory) {
+                    factory.register(DIRECT_TYPE, new TestValidByteIdMessageSerializer());
+                    factory.register(DIRECT_TYPE_OVER_BYTE, new TestOverByteIdMessageSerializer());
                 }
             });
         }

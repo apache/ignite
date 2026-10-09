@@ -74,6 +74,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringInclude
     private Boolean recovery;
 
+    /** Cached flag, {@code True} if {@link CacheStoreManager#isWriteThrough()} enabled for all caches involved. */
+    @GridToStringInclude
+    private Boolean storeWriteThrough;
+
     /** Async future. */
     @GridToStringExclude
     private final GridCacheAdapter.FutureHolder lastAsyncFut = new GridCacheAdapter.FutureHolder();
@@ -163,10 +167,19 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+        return deriveSyncMode(cctx, activeCacheIds);
+    }
+
+    /**
+     * @param cctx Context.
+     * @param cacheIds Processed caches.
+     * @return Write synchronization mode.
+     */
+    public static CacheWriteSynchronizationMode deriveSyncMode(GridCacheSharedContext<?, ?> cctx, GridIntList cacheIds) {
         CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
 
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = activeCacheIds.get(i);
+        for (int i = 0; i < cacheIds.size(); i++) {
+            int cacheId = cacheIds.get(i);
 
             CacheWriteSynchronizationMode cacheSyncMode =
                 cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
@@ -232,9 +245,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             }
             else
                 activeCacheIds.add(cacheId);
-
-            if (activeCacheIds.size() == 1)
-                tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
         }
     }
 
@@ -293,6 +303,16 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean storeWriteThrough(GridCacheSharedContext sctx) {
+        if (storeWriteThrough != null)
+            return storeWriteThrough;
+
+        storeWriteThrough = checkStoreWriteThrough(sctx);
+
+        return storeWriteThrough;
+    }
+
+    /** */
+    private boolean checkStoreWriteThrough(GridCacheSharedContext sctx) {
         if (!activeCacheIds.isEmpty()) {
             for (int i = 0; i < activeCacheIds.size(); i++) {
                 int cacheId = activeCacheIds.get(i);

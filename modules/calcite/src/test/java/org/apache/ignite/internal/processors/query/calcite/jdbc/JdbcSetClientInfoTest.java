@@ -26,6 +26,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Stream;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
@@ -34,21 +37,49 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.session.SessionContextProvider;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /** */
-public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
+@ParameterizedClass(name = "runInTx={0}, mode={1}")
+@MethodSource("data")
+public class JdbcSetClientInfoTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /** */
+    @Parameter(0)
+    public boolean runInTx;
+
+    /** */
+    @Parameter(1)
+    public CacheAtomicityMode cacheMode;
+
+    /** */
+    private static Stream<Arguments> data() {
+        Stream<Arguments> res = GridTestUtils.cartesianProduct(
+            List.of(false, true),
+            List.of(CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC)
+        ).stream().map(Arguments::of);
+
+        return res;
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -57,23 +88,38 @@ public class JdbcSetClientInfoTest extends GridCommonAbstractTest {
         cfg.setSqlConfiguration(new SqlConfiguration()
             .setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration().setDefault(true)));
 
+        cfg.getTransactionConfiguration().setTxAwareQueriesEnabled(runInTx);
+
+        QueryEntity entity = new QueryEntity()
+            .setTableName("MYTABLE")
+            .setKeyType(Integer.class.getName())
+            .setValueType(String.class.getName())
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("sessionId", String.class.getName(), null)
+            .setKeyFieldName("id")
+            .setValueFieldName("sessionId");
+
         cfg.setCacheConfiguration(new CacheConfiguration<>()
             .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(cacheMode)
             .setSqlSchema("PUBLIC")
+            .setQueryEntities(List.of(entity))
             .setSqlFunctionClasses(SessionContextFunctions.class));
 
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        IgniteEx ign = startGrids(3);
+    /** */
+    @BeforeEach
+    public void setup() throws Exception {
+        assumeFalse(runInTx && cacheMode == CacheAtomicityMode.ATOMIC);
 
-        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+        startGrids(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() {
+    /** */
+    @AfterEach
+    public void cleanUp() {
         stopAllGrids();
     }
 

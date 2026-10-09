@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -36,8 +37,8 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -62,22 +63,31 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
@@ -120,52 +130,19 @@ public class BinaryUtils {
         TreeSet.class, new BinaryTreeSetWriteReplacer()
     );
 
-    /** {@code true} if serialized value of this type cannot contain references to objects. */
-    private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
-
     /** Binary classes. */
     private static final Collection<Class<?>> BINARY_CLS;
 
     /** Class for SingletonList obtained at runtime. */
     static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
 
-    /** Flag: user type. */
-    static final short FLAG_USR_TYP = 0x0001;
-
-    /** Flag: only raw data exists. */
-    static final short FLAG_HAS_SCHEMA = 0x0002;
-
-    /** Flag indicating that object has raw data. */
-    static final short FLAG_HAS_RAW = 0x0004;
-
-    /** Flag: offsets take 1 byte. */
-    static final short FLAG_OFFSET_ONE_BYTE = 0x0008;
-
-    /** Flag: offsets take 2 bytes. */
-    static final short FLAG_OFFSET_TWO_BYTES = 0x0010;
-
-    /** Flag: compact footer, no field IDs. */
-    public static final short FLAG_COMPACT_FOOTER = 0x0020;
-
-    /** Flag: raw data contains .NET type information. Always 0 in Java. Keep it here for information only. */
-    @SuppressWarnings("unused")
-    public static final short FLAG_CUSTOM_DOTNET_TYPE = 0x0040;
-
-    /** Offset which fits into 1 byte. */
-    static final int OFFSET_1 = 1;
-
-    /** Offset which fits into 2 bytes. */
-    static final int OFFSET_2 = 2;
-
-    /** Offset which fits into 4 bytes. */
-    static final int OFFSET_4 = 4;
-
-    /** Field ID length. */
-    static final int FIELD_ID_LEN = 4;
-
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
         IgniteCommonsSystemProperties.getBoolean(IgniteCommonsSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
+
+    /** For tests. */
+    @SuppressWarnings("PublicField")
+    public static boolean useTestBinaryCtx;
 
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
@@ -257,19 +234,6 @@ public class BinaryUtils {
 
         BINARY_CLS = Set.copyOf(FLAG_TO_CLASS.values());
 
-        for (byte b : new byte[] {
-            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG,
-            GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN,
-            GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE,
-            GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME, GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR,
-            GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR,
-            GridBinaryMarshaller.TIME_ARR, GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR,
-            GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR,
-            GridBinaryMarshaller.TIMESTAMP_ARR, GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
-
-            PLAIN_TYPE_FLAG[b] = true;
-        }
-
         FIELD_TYPE_NAMES = new String[104];
 
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BYTE] = "byte";
@@ -309,57 +273,6 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.BINARY_ENUM] = "Enum";
-    }
-
-    /**
-     * Check if user type flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    static boolean isUserType(short flags) {
-        return isFlagSet(flags, FLAG_USR_TYP);
-    }
-
-    /**
-     * Check if raw-only flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    public static boolean hasSchema(short flags) {
-        return isFlagSet(flags, FLAG_HAS_SCHEMA);
-    }
-
-    /**
-     * Check if raw-only flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    static boolean hasRaw(short flags) {
-        return isFlagSet(flags, FLAG_HAS_RAW);
-    }
-
-    /**
-     * Check if "no-field-ids" flag is set.
-     *
-     * @param flags Flags.
-     * @return {@code True} if set.
-     */
-    static boolean isCompactFooter(short flags) {
-        return isFlagSet(flags, FLAG_COMPACT_FOOTER);
-    }
-
-    /**
-     * Check whether particular flag is set.
-     *
-     * @param flags Flags.
-     * @param flag Flag.
-     * @return {@code True} if flag is set in flags.
-     */
-    static boolean isFlagSet(short flags, short flag) {
-        return (flags & flag) == flag;
     }
 
     /**
@@ -403,172 +316,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Write value with flag. e.g. writePlainObject(writer, (byte)77) will write two byte: {BYTE, 77}.
-     *
-     * @param writer W
-     * @param val Value.
-     */
-    public static void writePlainObject(BinaryWriterEx writer, Object val) {
-        Byte flag = PLAIN_CLASS_TO_FLAG.get(val.getClass());
-
-        if (flag == null)
-            throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
-
-        switch (flag) {
-            case GridBinaryMarshaller.BYTE:
-                writer.writeByte(flag);
-                writer.writeByte((Byte)val);
-
-                break;
-
-            case GridBinaryMarshaller.SHORT:
-                writer.writeByte(flag);
-                writer.writeShort((Short)val);
-
-                break;
-
-            case GridBinaryMarshaller.INT:
-                writer.writeByte(flag);
-                writer.writeInt((Integer)val);
-
-                break;
-
-            case GridBinaryMarshaller.LONG:
-                writer.writeByte(flag);
-                writer.writeLong((Long)val);
-
-                break;
-
-            case GridBinaryMarshaller.FLOAT:
-                writer.writeByte(flag);
-                writer.writeFloat((Float)val);
-
-                break;
-
-            case GridBinaryMarshaller.DOUBLE:
-                writer.writeByte(flag);
-                writer.writeDouble((Double)val);
-
-                break;
-
-            case GridBinaryMarshaller.CHAR:
-                writer.writeByte(flag);
-                writer.writeChar((Character)val);
-
-                break;
-
-            case GridBinaryMarshaller.BOOLEAN:
-                writer.writeByte(flag);
-                writer.writeBoolean((Boolean)val);
-
-                break;
-
-            case GridBinaryMarshaller.DECIMAL:
-                writer.writeDecimal((BigDecimal)val);
-
-                break;
-
-            case GridBinaryMarshaller.STRING:
-                writer.writeString((String)val);
-
-                break;
-
-            case GridBinaryMarshaller.UUID:
-                writer.writeUuid((UUID)val);
-
-                break;
-
-            case GridBinaryMarshaller.DATE:
-                writer.writeDate((Date)val);
-
-                break;
-
-            case GridBinaryMarshaller.TIMESTAMP:
-                writer.writeTimestamp((Timestamp)val);
-
-                break;
-
-            case GridBinaryMarshaller.TIME:
-                writer.writeTime((Time)val);
-
-                break;
-
-            case GridBinaryMarshaller.BYTE_ARR:
-                writer.writeByteArray((byte[])val);
-
-                break;
-
-            case GridBinaryMarshaller.SHORT_ARR:
-                writer.writeShortArray((short[])val);
-
-                break;
-
-            case GridBinaryMarshaller.INT_ARR:
-                writer.writeIntArray((int[])val);
-
-                break;
-
-            case GridBinaryMarshaller.LONG_ARR:
-                writer.writeLongArray((long[])val);
-
-                break;
-
-            case GridBinaryMarshaller.FLOAT_ARR:
-                writer.writeFloatArray((float[])val);
-
-                break;
-
-            case GridBinaryMarshaller.DOUBLE_ARR:
-                writer.writeDoubleArray((double[])val);
-
-                break;
-
-            case GridBinaryMarshaller.CHAR_ARR:
-                writer.writeCharArray((char[])val);
-
-                break;
-
-            case GridBinaryMarshaller.BOOLEAN_ARR:
-                writer.writeBooleanArray((boolean[])val);
-
-                break;
-
-            case GridBinaryMarshaller.DECIMAL_ARR:
-                writer.writeDecimalArray((BigDecimal[])val);
-
-                break;
-
-            case GridBinaryMarshaller.STRING_ARR:
-                writer.writeStringArray((String[])val);
-
-                break;
-
-            case GridBinaryMarshaller.UUID_ARR:
-                writer.writeUuidArray((UUID[])val);
-
-                break;
-
-            case GridBinaryMarshaller.DATE_ARR:
-                writer.writeDateArray((Date[])val);
-
-                break;
-
-            case GridBinaryMarshaller.TIMESTAMP_ARR:
-                writer.writeTimestampArray((Timestamp[])val);
-
-                break;
-
-            case GridBinaryMarshaller.TIME_ARR:
-                writer.writeTimeArray((Time[])val);
-
-                break;
-
-            default:
-                throw new IllegalArgumentException("Can't write object with type: " + val.getClass());
-        }
-    }
-
-    /**
      * @param obj Value to unwrap.
      * @return Unwrapped value.
      */
@@ -580,21 +327,15 @@ public class BinaryUtils {
     }
 
     /**
-     * @return {@code true} if content of serialized value cannot contain references to other object.
+     * Get ODBC type ID for the type.
+     * @param dataType Data type class.
+     * @return Type ID.
      */
-    public static boolean isPlainType(int type) {
-        return type > 0 && type < PLAIN_TYPE_FLAG.length && PLAIN_TYPE_FLAG[type];
-    }
+    public static byte jdbcTypeByClass(Class<?> dataType) {
+        if (dataType.equals(java.sql.Date.class))
+            return GridBinaryMarshaller.DATE;
 
-    /**
-     * Checks whether an array type values can or can not contain references to other object.
-     *
-     * @param type Array type.
-     * @return {@code true} if content of serialized array value cannot contain references to other object.
-     */
-    public static boolean isPlainArrayType(int type) {
-        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR)
-            || type == GridBinaryMarshaller.TIMESTAMP_ARR || type == GridBinaryMarshaller.TIME_ARR;
+        return typeByClass(dataType);
     }
 
     /**
@@ -607,7 +348,7 @@ public class BinaryUtils {
         if (type != null)
             return type;
 
-        if (CommonUtils.isEnum(cls))
+        if (CommonUtils.isEnum(cls) || cls == Enum.class)
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
@@ -767,160 +508,6 @@ public class BinaryUtils {
      */
     public static int length(BinaryPositionReadable in, int start) {
         return in.readIntPositioned(start + GridBinaryMarshaller.TOTAL_LEN_POS);
-    }
-
-    /** */
-    static int dataStartRelative(BinaryPositionReadable in, int start) {
-        int typeId = in.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
-
-        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
-            // Gets the length of the type name which is stored as string.
-            int len = in.readIntPositioned(start + GridBinaryMarshaller.DFLT_HDR_LEN + /** object type */1);
-
-            return GridBinaryMarshaller.DFLT_HDR_LEN + /** object type */1 + /** string length */ 4 + len;
-        }
-        else
-            return GridBinaryMarshaller.DFLT_HDR_LEN;
-    }
-
-    /**
-     * Get footer start of the object.
-     *
-     * @param in Input stream.
-     * @param start Object start position inside the stream.
-     * @return Footer start.
-     */
-    private static int footerStartRelative(BinaryPositionReadable in, int start) {
-        short flags = in.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
-
-        if (hasSchema(flags))
-            // Schema exists, use offset.
-            return in.readIntPositioned(start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-        else
-            // No schema, footer start equals to object end.
-            return length(in, start);
-    }
-
-    /**
-     * Get object's footer.
-     *
-     * @param in Input stream.
-     * @param start Start position.
-     * @return Footer start.
-     */
-    public static int footerStartAbsolute(BinaryPositionReadable in, int start) {
-        return footerStartRelative(in, start) + start;
-    }
-
-    /**
-     * Get object's footer.
-     *
-     * @param in Input stream.
-     * @param start Start position.
-     * @return Footer.
-     */
-    public static IgniteBiTuple<Integer, Integer> footerAbsolute(BinaryPositionReadable in, int start) {
-        short flags = in.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
-
-        int footerEnd = length(in, start);
-
-        if (hasSchema(flags)) {
-            // Schema exists.
-            int footerStart = in.readIntPositioned(start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-            if (hasRaw(flags))
-                footerEnd -= 4;
-
-            assert footerStart <= footerEnd;
-
-            return F.t(start + footerStart, start + footerEnd);
-        }
-        else
-            // No schema.
-            return F.t(start + footerEnd, start + footerEnd);
-    }
-
-    /**
-     * Get relative raw offset of the object.
-     *
-     * @param in Input stream.
-     * @param start Object start position inside the stream.
-     * @return Raw offset.
-     */
-    private static int rawOffsetRelative(BinaryPositionReadable in, int start) {
-        short flags = in.readShortPositioned(start + GridBinaryMarshaller.FLAGS_POS);
-
-        int len = length(in, start);
-
-        if (hasSchema(flags)) {
-            // Schema exists.
-            if (hasRaw(flags))
-                // Raw offset is set, it is at the very end of the object.
-                return in.readIntPositioned(start + len - 4);
-            else
-                // Raw offset is not set, so just return schema offset.
-                return in.readIntPositioned(start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-        }
-        else
-            // No schema, raw offset is located on schema offset position.
-            return in.readIntPositioned(start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-    }
-
-    /**
-     * Get absolute raw offset of the object.
-     *
-     * @param in Input stream.
-     * @param start Object start position inside the stream.
-     * @return Raw offset.
-     */
-    public static int rawOffsetAbsolute(BinaryPositionReadable in, int start) {
-        return start + rawOffsetRelative(in, start);
-    }
-
-    /**
-     * Get offset length for the given flags.
-     *
-     * @param flags Flags.
-     * @return Offset size.
-     */
-    public static int fieldOffsetLength(short flags) {
-        if ((flags & FLAG_OFFSET_ONE_BYTE) == FLAG_OFFSET_ONE_BYTE)
-            return OFFSET_1;
-        else if ((flags & FLAG_OFFSET_TWO_BYTES) == FLAG_OFFSET_TWO_BYTES)
-            return OFFSET_2;
-        else
-            return OFFSET_4;
-    }
-
-    /**
-     * Get field ID length.
-     *
-     * @param flags Flags.
-     * @return Field ID length.
-     */
-    public static int fieldIdLength(short flags) {
-        return isCompactFooter(flags) ? 0 : FIELD_ID_LEN;
-    }
-
-    /**
-     * Get relative field offset.
-     *
-     * @param stream Stream.
-     * @param pos Position.
-     * @param fieldOffsetSize Field offset size.
-     * @return Relative field offset.
-     */
-    public static int fieldOffsetRelative(BinaryPositionReadable stream, int pos, int fieldOffsetSize) {
-        int res;
-
-        if (fieldOffsetSize == OFFSET_1)
-            res = (int)stream.readBytePositioned(pos) & 0xFF;
-        else if (fieldOffsetSize == OFFSET_2)
-            res = (int)stream.readShortPositioned(pos) & 0xFFFF;
-        else
-            res = stream.readIntPositioned(pos);
-
-        return res;
     }
 
     /**
@@ -1618,17 +1205,16 @@ public class BinaryUtils {
             cls = ctx.descriptorForTypeId(true, typeId, ldr, false).describedClass();
         else {
             String clsName = doReadClassName(in);
-            boolean useCache = Marshallers.USE_CACHE.get();
 
             try {
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
             // forces registering of class by type id, at least locally
-            if (useCache)
+            if (Marshallers.USE_CACHE.get())
                 ctx.registerType(cls, false, false);
         }
 
@@ -1648,11 +1234,14 @@ public class BinaryUtils {
         @Nullable ClassLoader ldr, boolean registerMeta) {
         Class cls;
 
+        if (ldr == null)
+            ldr = ctx.classLoader();
+
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
         else {
             try {
-                cls = CommonUtils.forName(clsName, ldr, null, Marshallers.USE_CACHE.get());
+                cls = ClassLoaderUtils.forName(clsName, ldr);
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
@@ -1696,70 +1285,6 @@ public class BinaryUtils {
                 arr[i] = null;
             else
                 arr[i] = doReadBinaryEnum(in, ctx, doReadEnumType(in));
-        }
-
-        return arr;
-    }
-
-    /**
-     * Having target class in place we simply read ordinal and create final representation.
-     *
-     * @param cls Enum class.
-     * @param useCache True if class loader cache will be used, false otherwise.
-     * @return Value.
-     */
-    static Enum<?> doReadEnum(BinaryInputStream in, Class<?> cls, boolean useCache) throws BinaryObjectException {
-        assert cls != null;
-
-        if (!cls.isEnum())
-            throw new BinaryObjectException("Class does not represent enum type: " + cls.getName());
-
-        int ord = in.readInt();
-
-        if (useCache)
-            return BinaryEnumCache.get(cls, ord);
-        else
-            return uncachedEnumValue(cls, ord);
-    }
-
-    /**
-     * Get value for the given class without any caching.
-     *
-     * @param cls Class.
-     */
-    private static <T> T uncachedEnumValue(Class<?> cls, int ord) throws BinaryObjectException {
-        assert cls != null;
-
-        if (ord >= 0) {
-            Object[] vals = cls.getEnumConstants();
-
-            if (ord < vals.length)
-                return (T)vals[ord];
-            else
-                throw new BinaryObjectException("Failed to get enum value for ordinal (do you have correct class " +
-                    "version?) [cls=" + cls.getName() + ", ordinal=" + ord + ", totalValues=" + vals.length + ']');
-        }
-        else
-            return null;
-    }
-
-    /**
-     * @param cls Enum class.
-     * @return Value.
-     */
-    static Object[] doReadEnumArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, Class<?> cls)
-        throws BinaryObjectException {
-        int len = in.readInt();
-
-        Object[] arr = (Object[])Array.newInstance(cls, len);
-
-        for (int i = 0; i < len; i++) {
-            byte flag = in.readByte();
-
-            if (flag == GridBinaryMarshaller.NULL)
-                arr[i] = null;
-            else
-                arr[i] = doReadEnum(in, doReadClass(in, ctx, ldr), Marshallers.USE_CACHE.get());
         }
 
         return arr;
@@ -2001,114 +1526,61 @@ public class BinaryUtils {
     }
 
     /**
-     * Unmarshall JDBC supported type.
-     * @param type Type.
-     * @param reader Binary reader.
-     * @param binObjAllow Allow to read non plaint objects.
-     * @param keepBinary Whether to deserialize objects or keep in binary format.
-     * @return Read object.
+     * Convert {@link java.sql.Types} to binary type constant (See {@link GridBinaryMarshaller} constants).
+     *
+     * @param sqlType SQL type.
+     * @return Binary type.
      */
-    public static Object unmarshallJdbc(byte type, BinaryReaderEx reader, boolean binObjAllow, boolean keepBinary) {
-        switch (type) {
-            case GridBinaryMarshaller.NULL:
-                return null;
+    public static byte sqlTypeToBinary(int sqlType) {
+        switch (sqlType) {
+            case Types.BIGINT:
+                return GridBinaryMarshaller.LONG;
 
-            case GridBinaryMarshaller.BOOLEAN:
-                return reader.readBoolean();
+            case Types.BOOLEAN:
+                return GridBinaryMarshaller.BOOLEAN;
 
-            case GridBinaryMarshaller.BYTE:
-                return reader.readByte();
+            case Types.DATE:
+                return GridBinaryMarshaller.DATE;
 
-            case GridBinaryMarshaller.CHAR:
-                return reader.readChar();
+            case Types.DOUBLE:
+                return GridBinaryMarshaller.DOUBLE;
 
-            case GridBinaryMarshaller.SHORT:
-                return reader.readShort();
+            case Types.FLOAT:
+            case Types.REAL:
+                return GridBinaryMarshaller.FLOAT;
 
-            case GridBinaryMarshaller.INT:
-                return reader.readInt();
+            case Types.NUMERIC:
+            case Types.DECIMAL:
+                return GridBinaryMarshaller.DECIMAL;
 
-            case GridBinaryMarshaller.LONG:
-                return reader.readLong();
+            case Types.INTEGER:
+                return GridBinaryMarshaller.INT;
 
-            case GridBinaryMarshaller.FLOAT:
-                return reader.readFloat();
+            case Types.SMALLINT:
+                return GridBinaryMarshaller.SHORT;
 
-            case GridBinaryMarshaller.DOUBLE:
-                return reader.readDouble();
+            case Types.TIME:
+                return GridBinaryMarshaller.TIME;
 
-            case GridBinaryMarshaller.STRING:
-                return doReadString(reader.in());
+            case Types.TIMESTAMP:
+                return GridBinaryMarshaller.TIMESTAMP;
 
-            case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(reader.in());
+            case Types.TINYINT:
+                return GridBinaryMarshaller.BYTE;
 
-            case GridBinaryMarshaller.UUID:
-                return doReadUuid(reader.in());
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGNVARCHAR:
+                return GridBinaryMarshaller.STRING;
 
-            case GridBinaryMarshaller.TIME:
-                return doReadTime(reader.in());
+            case Types.NULL:
+                return GridBinaryMarshaller.NULL;
 
-            case GridBinaryMarshaller.TIMESTAMP:
-                return doReadTimestamp(reader.in());
-
-            case GridBinaryMarshaller.DATE:
-                return doReadDate(reader.in());
-
-            case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(reader.in());
-
-            case GridBinaryMarshaller.BYTE_ARR:
-                return doReadByteArray(reader.in());
-
-            case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(reader.in());
-
-            case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(reader.in());
-
-            case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(reader.in());
-
-            case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(reader.in());
-
-            case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(reader.in());
-
-            case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(reader.in());
-
-            case GridBinaryMarshaller.STRING_ARR:
-                return doReadStringArray(reader.in());
-
-            case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(reader.in());
-
-            case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(reader.in());
-
-            case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(reader.in());
-
-            case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(reader.in());
-
-            case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(reader.in());
-
+            case Types.BINARY:
+            case Types.VARBINARY:
+            case Types.LONGVARBINARY:
             default:
-                reader.in().position(reader.in().position() - 1);
-
-                if (binObjAllow) {
-                    Object res = reader.readObjectDetached();
-
-                    return !keepBinary && res instanceof BinaryObject
-                        ? ((BinaryObject)res).deserialize()
-                        : res;
-                }
-                else
-                    throw new BinaryObjectException("Custom objects are not supported");
+                return GridBinaryMarshaller.BYTE_ARR;
         }
     }
 
@@ -2713,13 +2185,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Clears binary caches.
-     */
-    public static void clearCache() {
-        BinaryEnumCache.clear();
-    }
-
-    /**
      * Gets the schema.
      *
      * @param ctx Binary context.
@@ -2764,14 +2229,6 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@link BinaryEnumArray}.
-     */
-    public static boolean isBinaryEnumArray(Object val) {
-        return val instanceof BinaryEnumArray;
-    }
-
-    /**
-     * @param val Value to check.
      * @return {@code True} if {@code val} instance of binary Enum object.
      */
     public static boolean isBinaryEnumObject(Object val) {
@@ -2788,23 +2245,6 @@ public class BinaryUtils {
      */
     public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
         return binariesFactory.reader(ctx, in, ldr, forUnmarshal);
-    }
-
-    /**
-     * Creates reader instance.
-     *
-     * @param ctx Context.
-     * @param in Input stream.
-     * @param ldr Class loader.
-     * @param reader BinaryReaderEx.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
-     */
-    public static BinaryReaderEx reader(BinaryContext ctx,
-        BinaryInputStream in,
-        ClassLoader ldr,
-        BinaryReaderEx reader,
-        boolean forUnmarshal) {
-        return reader(ctx, in, ldr, reader.handles(), forUnmarshal);
     }
 
     /**
@@ -2862,16 +2302,6 @@ public class BinaryUtils {
 
     /**
      * @param ctx Context.
-     * @param failIfUnregistered Flag to fail while writing object of unregistered type.
-     * @param typeId Type id.
-     * @return Writer instance.
-     */
-    public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
-        return binariesFactory.writer(ctx, failIfUnregistered, typeId);
-    }
-
-    /**
-     * @param ctx Context.
      * @param out Output stream.
      * @return Writer instance.
      */
@@ -2884,8 +2314,8 @@ public class BinaryUtils {
      * @param out Output stream.
      * @return Writer instance.
      */
-    public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return binariesFactory.writer(ctx, out, schema);
+    public static BinaryWriterEx writerWithoutSchema(BinaryContext ctx, BinaryOutputStream out) {
+        return binariesFactory.writerWithoutSchema(ctx, out);
     }
 
     /** @return Instance of caching handler. */
@@ -2949,45 +2379,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Check for arrays equality.
-     *
-     * @param a1 Value 1.
-     * @param a2 Value 2.
-     * @return {@code True} if arrays equal.
-     */
-    public static boolean arrayEq(Object a1, Object a2) {
-        if (a1 == a2)
-            return true;
-
-        if (a1 == null || a2 == null)
-            return a1 != null || a2 != null;
-
-        if (a1.getClass() != a2.getClass())
-            return false;
-
-        if (a1 instanceof byte[])
-            return Arrays.equals((byte[])a1, (byte[])a2);
-        else if (a1 instanceof boolean[])
-            return Arrays.equals((boolean[])a1, (boolean[])a2);
-        else if (a1 instanceof short[])
-            return Arrays.equals((short[])a1, (short[])a2);
-        else if (a1 instanceof char[])
-            return Arrays.equals((char[])a1, (char[])a2);
-        else if (a1 instanceof int[])
-            return Arrays.equals((int[])a1, (int[])a2);
-        else if (a1 instanceof long[])
-            return Arrays.equals((long[])a1, (long[])a2);
-        else if (a1 instanceof float[])
-            return Arrays.equals((float[])a1, (float[])a2);
-        else if (a1 instanceof double[])
-            return Arrays.equals((double[])a1, (double[])a2);
-        else if (isBinaryArray(a1))
-            return a1.equals(a2);
-
-        return Arrays.deepEquals((Object[])a1, (Object[])a2);
-    }
-
-    /**
      * @param o Object to detach.
      * @return Detached object.
      */
@@ -3010,16 +2401,6 @@ public class BinaryUtils {
      */
     public static Collection<T2<Integer, int[]>> schemasAndFieldsIds(BinaryMetadata meta) {
         return F.viewReadOnly(meta.schemas(), s -> new T2<>(s.schemaId(), s.fieldIds()));
-    }
-
-    /**
-     * Gets field by its order.
-     *
-     * @param reader Reader.
-     * @param order Order.
-     */
-    public static int fieldId(BinaryReaderEx reader, int order) {
-        return reader.getOrCreateSchema().fieldId(order);
     }
 
     /**
@@ -3057,16 +2438,6 @@ public class BinaryUtils {
         return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
     }
 
-    /** */
-    public static int hashCode(byte[] data, int startPos, int endPos) {
-        int hash = 1;
-
-        for (int i = startPos; i < endPos; i++)
-            hash = 31 * hash + data[i];
-
-        return hash;
-    }
-
     /**
      * Enum type.
      */
@@ -3090,5 +2461,194 @@ public class BinaryUtils {
             this.typeId = typeId;
             this.clsName = clsName;
         }
+    }
+
+    /**
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    public static String affinityFieldName(Class cls) {
+        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Creates a binary context with default (empty) configuration for the given marshaller.
+     *
+     * @param marsh Binary marshaller (may be {@code null}).
+     * @return Binary context instance.
+     */
+    public static BinaryContext binaryContext(BinaryMarshaller marsh) {
+        return binaryContext(
+            cachingMetadataHandler(),
+            marsh,
+            null,
+            null,
+            new BinaryConfiguration(),
+            Collections.emptyMap(),
+            BinaryUtils::affinityFieldName,
+            NullLogger.INSTANCE
+        );
+    }
+
+    /**
+     * Creates a binary context from explicit values.
+     *
+     * @param metaHnd Binary metadata handler.
+     * @param marsh Binary marshaller.
+     * @param igniteInstanceName Ignite instance name.
+     * @param classLoader Class loader.
+     * @param binCfg Binary configuration.
+     * @param affFlds Affinity fields by type name.
+     * @param affFldNameProvider Affinity field name provider.
+     * @param log Logger.
+     * @return Binary context instance.
+     */
+    public static BinaryContext binaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        @Nullable String igniteInstanceName,
+        @Nullable ClassLoader classLoader,
+        BinaryConfiguration binCfg,
+        Map<String, String> affFlds,
+        Function<Class<?>, String> affFldNameProvider,
+        IgniteLogger log
+    ) {
+        return useTestBinaryCtx
+            ? new TestBinaryContext(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                classLoader,
+                binCfg.getSerializer(),
+                binCfg.getIdMapper(),
+                binCfg.getNameMapper(),
+                binCfg.getTypeConfigurations(),
+                affFlds,
+                binCfg.isCompactFooter(),
+                affFldNameProvider,
+                log
+            )
+            : new BinaryContext(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                classLoader,
+                binCfg.getSerializer(),
+                binCfg.getIdMapper(),
+                binCfg.getNameMapper(),
+                binCfg.getTypeConfigurations(),
+                affFlds,
+                binCfg.isCompactFooter(),
+                affFldNameProvider,
+                log
+            );
+    }
+
+    /** */
+    @SuppressWarnings("PublicInnerClass")
+    public static class TestBinaryContext extends BinaryContext {
+        /** */
+        private List<TestBinaryContextListener> listeners;
+
+        /** */
+        public TestBinaryContext(
+            BinaryMetadataHandler metaHnd,
+            @Nullable BinaryMarshaller marsh,
+            @Nullable String igniteInstanceName,
+            @Nullable ClassLoader clsLdr,
+            @Nullable BinarySerializer dfltSerializer,
+            @Nullable BinaryIdMapper idMapper,
+            @Nullable BinaryNameMapper nameMapper,
+            @Nullable Collection<BinaryTypeConfiguration> typeCfgs,
+            Map<String, String> affFlds,
+            boolean compactFooter,
+            Function<Class<?>, String> affFldNameProvider,
+            IgniteLogger log
+        ) {
+            super(
+                metaHnd,
+                marsh,
+                igniteInstanceName,
+                clsLdr,
+                dfltSerializer,
+                idMapper,
+                nameMapper,
+                typeCfgs,
+                affFlds,
+                compactFooter,
+                affFldNameProvider,
+                log
+            );
+        }
+
+
+        /** {@inheritDoc} */
+        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+            BinaryType metadata = super.metadata(typeId);
+
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onAfterMetadataRequest(typeId, metadata);
+            }
+
+            return metadata;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateMetadata(int typeId, BinaryMetadata meta, boolean failIfUnregistered) throws BinaryObjectException {
+            if (listeners != null) {
+                for (TestBinaryContextListener listener : listeners)
+                    listener.onBeforeMetadataUpdate(typeId, meta);
+            }
+
+            super.updateMetadata(typeId, meta, failIfUnregistered);
+        }
+
+        /** */
+        public interface TestBinaryContextListener {
+            /**
+             * @param typeId Type id.
+             * @param type Type.
+             */
+            void onAfterMetadataRequest(int typeId, BinaryType type);
+
+            /**
+             * @param typeId Type id.
+             * @param metadata Metadata.
+             */
+            void onBeforeMetadataUpdate(int typeId, BinaryMetadata metadata);
+        }
+
+        /** @param lsnr Listener. */
+        public void addListener(TestBinaryContextListener lsnr) {
+            if (listeners == null)
+                listeners = new ArrayList<>();
+
+            if (!listeners.contains(lsnr))
+                listeners.add(lsnr);
+        }
+
+        /** */
+        public void clearAllListener() {
+            if (listeners != null)
+                listeners.clear();
+        }
+    }
+
+    /**
+     * Represents the given cache version as an {@link IgniteUuid}.
+     *
+     * @param ver Cache version.
+     * @return Version represented as {@code IgniteUuid}.
+     */
+    public static @Nullable IgniteUuid asIgniteUuid(@Nullable GridCacheVersion ver) {
+        return ver == null ? null : new IgniteUuid(new UUID(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw()), ver.order());
     }
 }

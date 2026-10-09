@@ -17,10 +17,8 @@
 
 package org.apache.ignite.spi.communication;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /** */
 public class TestVolatilePayloadMessage implements Message {
@@ -28,13 +26,16 @@ public class TestVolatilePayloadMessage implements Message {
     public static final short DIRECT_TYPE = 210;
 
     /** */
-    private int idx;
+    @Order(0)
+    int idx;
 
     /** */
-    private byte[] payload;
+    @Order(1)
+    byte[] payload;
 
     /** */
-    private int payloadLen;
+    @Order(2)
+    int payloadLen;
 
     /** */
     public TestVolatilePayloadMessage() {
@@ -53,79 +54,9 @@ public class TestVolatilePayloadMessage implements Message {
         return idx;
     }
 
-    /**
-     * @return Network payload.
-     */
+    /** @return Network payload. */
     public byte[] payload() {
         return payload;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(idx))
-                    return false;
-
-                writer.incrementState();
-            case 1:
-                if (!writer.writeInt(payloadLen))
-                    return false;
-
-                writer.incrementState();
-            case 2:
-                if (!writer.writeByteArray(payload))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                idx = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                payloadLen = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                if (buf.remaining() < payloadLen)
-                    return false;
-
-                payload = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

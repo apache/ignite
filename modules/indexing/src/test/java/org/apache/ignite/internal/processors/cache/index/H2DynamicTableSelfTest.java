@@ -1747,7 +1747,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     private void assertDdlCommandThrows(final String cmd, String expErrMsg) {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
+            @Override public Object call() {
                 execute(cmd);
 
                 return null;

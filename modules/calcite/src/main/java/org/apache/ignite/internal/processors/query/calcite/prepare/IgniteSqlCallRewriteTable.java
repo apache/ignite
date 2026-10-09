@@ -26,14 +26,12 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.util.SqlBasicVisitor;
-import org.apache.calcite.sql.util.SqlVisitor;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.util.Util;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -41,7 +39,7 @@ import static org.apache.calcite.util.Static.RESOURCE;
  * Ignite SQL call rewrite table. Performs unconditional rewrites for some predefined Calcite SQL operators,
  * which can't be extended other ways by Ignite.
  */
-public class IgniteSqlCallRewriteTable {
+public class IgniteSqlCallRewriteTable implements IgniteSqlNodeRewriter {
     /** Instance. */
     public static final IgniteSqlCallRewriteTable INSTANCE = new IgniteSqlCallRewriteTable();
 
@@ -66,6 +64,14 @@ public class IgniteSqlCallRewriteTable {
     /** Registers rewriter for SQL operator. */
     public void register(String operatorName, BiFunction<SqlValidator, SqlCall, SqlCall> rewriter) {
         map.put(operatorName, rewriter);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlNode rewrite(SqlValidator validator, SqlNode node) {
+        if (node instanceof SqlCall)
+            return rewrite(validator, (SqlCall)node);
+        else
+            return node;
     }
 
     /** Rewrites SQL call. */
@@ -107,24 +113,8 @@ public class IgniteSqlCallRewriteTable {
     }
 
     /** */
-    public static boolean containsSubquery(SqlNode call) {
-        try {
-            SqlVisitor<Void> visitor = new SqlBasicVisitor<>() {
-                @Override public Void visit(SqlCall call) {
-                    if (call.getKind() == SqlKind.SELECT)
-                        throw new Util.FoundOne(call);
-
-                    return super.visit(call);
-                }
-            };
-
-            call.accept(visitor);
-
-            return false;
-        }
-        catch (Util.FoundOne e) {
-            return true;
-        }
+    public static boolean containsSubquery(SqlNode node) {
+        return SqlUtil.containsCall(node, call -> call.getKind() == SqlKind.SELECT);
     }
 
     /** Rewrites DECODE call to CASE WHEN call. */

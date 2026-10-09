@@ -17,23 +17,30 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.google.common.primitives.UnsignedBytes;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -45,16 +52,22 @@ import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImplEx;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -67,6 +80,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHa
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQueryTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.GlobalMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.IoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
@@ -74,9 +90,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -85,7 +101,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExecutionPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
@@ -98,6 +113,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan.LockTarget;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
@@ -105,15 +122,19 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -202,6 +223,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private InjectResourcesService injectSvc;
+
+    /** Limit for nested queries, initiated by UDF. */
+    private final AtomicInteger udfQryLimit = new AtomicInteger();
+
+    /** */
+    private final Map<String, FragmentPlan> fragmentPlanCache = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /**
      * @param ctx Kernal.
@@ -441,9 +468,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         performanceStatisticsProcessor(ctx.performanceStatistics());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor proc = Objects.requireNonNull(
-            Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
+        CalciteQueryProcessor proc = queryProcessor(ctx);
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
         taskExecutor(proc.taskExecutor());
@@ -465,14 +490,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         memoryTracker = cfg.getGlobalMemoryQuota() > 0 ? new GlobalMemoryTracker(cfg.getGlobalMemoryQuota()) :
             NoOpMemoryTracker.INSTANCE;
 
+        udfQryLimit.set(ctx.config().getQueryThreadPoolSize() - 1);
+
         init();
     }
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), MessageType.QUERY_START_REQUEST);
-        messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), QueryStartRequest.class);
+        messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), QueryStartResponse.class);
+        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), CalciteErrorMessage.class);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -502,7 +529,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
+    private FragmentPlan prepareFragment(BaseQueryContext ctx, String jsonFragment) {
         return new FragmentPlan(jsonFragment, fromJson(ctx, jsonFragment));
     }
 
@@ -529,10 +556,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 );
 
             case EXPLAIN:
-                return executeExplain(qry, (ExplainPlan)plan);
+                return executeExplain((ExplainPlan)plan);
 
             case DDL:
                 return executeDdl(qry, (DdlPlan)plan);
+
+            case FOR_UPDATE:
+                return executeForUpdate(qry, (SelectForUpdatePlan)plan);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
@@ -542,7 +572,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private FieldsQueryCursor<List<?>> executeDdl(RootQuery<Row> qry, DdlPlan plan) {
         try {
-            ddlCmdHnd.handle(qry.id(), plan.command());
+            ddlCmdHnd.handle(qry.id(), qry.context(), plan.command());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + qry.sql() +
@@ -563,7 +593,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
         else {
             QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(Collections.singletonList(
-                Collections.singletonList(0L)), null, false, false);
+                Collections.singletonList(0L)), null, false);
 
             IgniteTypeFactory typeFactory = qry.context().typeFactory();
 
@@ -572,6 +602,460 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return resCur;
         }
+    }
+
+    /**
+     * Executes a {@code SELECT ... FOR UPDATE} plan.
+     *
+     * <ol>
+     *   <li>Validates that the current transaction is PESSIMISTIC.</li>
+     *   <li>Runs the inner SELECT with hidden key, value, and version columns and materialises all rows.</li>
+     *   <li>Builds cache entries from the hidden columns.</li>
+     *   <li>Creates a savepoint, acquires pessimistic locks via {@code lockTxEntries()},
+     *       and releases the savepoint on success (or rolls back on failure).</li>
+     *   <li>Repeats the SELECT and lock attempt after a concurrent version change while the deadline permits.</li>
+     *   <li>Returns a cursor with only the user-visible columns (the appended _KEY is stripped).</li>
+     * </ol>
+     */
+    private FieldsQueryCursor<List<?>> executeForUpdate(RootQuery<Row> qry, SelectForUpdatePlan plan) {
+        GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
+
+        if (userTx == null || !userTx.pessimistic())
+            throw new IgniteSQLException(
+                IgniteResource.INSTANCE.selectForUpdateRequiresPessimisticTx().str(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        long waitMs = waitMillis(plan);
+
+        // Zero means that retries are limited only by the transaction or query timeout.
+        long lockAcquisitionEndTime = waitMs > 0
+            ? U.currentTimeMillis() + waitMs
+            : waitMs < 0 ? U.currentTimeMillis() : 0L;
+
+        MemoryTracker forUpdateMemoryTracker = QueryMemoryTracker.create(memoryTracker, cfg.getQueryMemoryQuota());
+
+        try {
+            RootQuery<Row> selectQry = qry;
+
+            while (true) {
+                FieldsQueryCursor<List<?>> cursor = tryExecuteForUpdate(
+                    selectQry,
+                    plan,
+                    userTx,
+                    waitMs,
+                    lockAcquisitionEndTime,
+                    forUpdateMemoryTracker
+                );
+
+                if (cursor != null)
+                    return cursor;
+
+                if (lockAcquisitionEndTime != 0 && U.currentTimeMillis() >= lockAcquisitionEndTime) {
+                    throw new IgniteSQLException(
+                        IgniteResource.INSTANCE.selectForUpdateLockFailed().str(),
+                        IgniteQueryErrorCode.CONCURRENT_UPDATE);
+                }
+
+                // The previous query has already been closed after execution, so retry with a fresh root query.
+                selectQry = qry.retryQuery();
+                qryReg.register(selectQry);
+            }
+        }
+        finally {
+            forUpdateMemoryTracker.reset();
+        }
+    }
+
+    /**
+     * Converts the SQL lock wait value to the internal millisecond representation.
+     *
+     * @param plan SELECT FOR UPDATE plan.
+     * @return {@code 0} for the remaining transaction/query timeout, {@code -1} for NOWAIT,
+     *      or a positive timeout in milliseconds.
+     */
+    private static long waitMillis(SelectForUpdatePlan plan) {
+        // Convert SQL waitSeconds to the internal lock-wait representation:
+        // null means use the remaining transaction time or the query timeout and is encoded as 0;
+        // 0 requests NOWAIT and is encoded as -1; a positive value is converted from seconds to milliseconds.
+        Long waitSeconds = plan.waitSeconds();
+
+        if (waitSeconds == null)
+            return 0L;
+        else if (waitSeconds == 0L)
+            return -1L;
+        else
+            return waitSeconds * 1000L;
+    }
+
+    /**
+     * Executes the inner SELECT and attempts to acquire transaction locks for the selected row versions.
+     *
+     * @param qry Root query for this execution attempt.
+     * @param plan SELECT FOR UPDATE plan.
+     * @param userTx Transaction that acquires the locks.
+     * @param waitMs Lock wait time in the internal representation.
+     * @param lockAcquisitionEndTime Absolute lock acquisition deadline in milliseconds.
+     * @param forUpdateMemoryTracker Memory tracker shared by the inner SELECT and materialized rows.
+     * @return Result cursor if all required locks were acquired, or {@code null} if at least one lock was not acquired.
+     */
+    @Nullable private FieldsQueryCursor<List<?>> tryExecuteForUpdate(
+        RootQuery<Row> qry,
+        SelectForUpdatePlan plan,
+        GridNearTxLocal userTx,
+        long waitMs,
+        long lockAcquisitionEndTime,
+        MemoryTracker forUpdateMemoryTracker
+    ) {
+        // Use one quota for both execution-node buffers and the rows retained by SELECT FOR UPDATE.
+        qry.createMemoryTracker(forUpdateMemoryTracker, 0);
+
+        // Run the inner SELECT (with _KEY, _VAL, _VER appended) and collect all rows.
+        ListFieldsQueryCursor<?> innerCursor = mapAndExecutePlan(qry, plan.innerPlan());
+        List<List<?>> rows = new ArrayList<>();
+        RowTracker<List<?>> rowTracker = ExecutionNodeMemoryTracker.create(
+            forUpdateMemoryTracker,
+            GridUnsafe.OBJ_REF_SIZE
+        );
+
+        try {
+            innerCursor.getAll(row -> {
+                rowTracker.onRowAdded(row);
+                rows.add(row);
+            });
+
+            int userColCnt = plan.userColumnCount();
+
+            if (rows.isEmpty())
+                return createResultCursor(qry, plan, rows, userColCnt);
+
+            List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches =
+                collectLockBatches(plan, rows);
+
+            if (!tryAcquireLocks(userTx, lockBatches, waitMs, lockAcquisitionEndTime))
+                return null;
+
+            return createResultCursor(qry, plan, rows, userColCnt);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), U.convertException(e));
+        }
+        catch (IgniteSQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+        finally {
+            rowTracker.reset();
+        }
+    }
+
+    /**
+     * Collects unique cache entries to lock and orders them by cache ID, partition ID, key hash, and key bytes.
+     *
+     * @param plan SELECT FOR UPDATE plan containing the lock targets.
+     * @param rows Selected rows containing the internal lock columns.
+     * @return Ordered cache-entry batches.
+     */
+    private List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>>
+        collectLockBatches(SelectForUpdatePlan plan, List<List<?>> rows) {
+        Map<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> lockBatches =
+            new TreeMap<>(Comparator.comparingInt(cache -> cache.context().cacheId()));
+
+        for (LockTarget target : plan.lockTargets()) {
+            SchemaPlus schemaPlus = schemaHolder.schema(target.schemaName());
+
+            if (schemaPlus == null)
+                throw new IgniteSQLException("Schema not found: " + target.schemaName(),
+                    IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
+
+            IgniteTable igniteTable = (IgniteTable)schemaPlus.getTable(target.tableName());
+
+            if (igniteTable == null)
+                throw new IgniteSQLException("Table not found: " + target.tableName(),
+                    IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+            GridCacheContext<Object, Object> cctx =
+                (GridCacheContext<Object, Object>)((CacheTableDescriptor)igniteTable.descriptor()).cacheContext();
+
+            IgniteInternalCache<Object, Object> cache = cctx.cache().keepBinary();
+            Map<Object, CacheEntry<Object, Object>> entries =
+                lockBatches.computeIfAbsent(cache, key -> new LinkedHashMap<>());
+            int keyColumnIdx = target.keyColumnIndex();
+
+            for (List<?> row : rows) {
+                Object key = row.get(keyColumnIdx);
+
+                // An outer join has no row to lock on its non-matching side.
+                if (key == null)
+                    continue;
+
+                Object val = row.get(keyColumnIdx + 1);
+                GridCacheVersion ver = (GridCacheVersion)row.get(keyColumnIdx + 2);
+
+                // JOINs can repeat a row, but a transaction needs only one lock per cache key.
+                entries.put(key, new CacheEntryImplEx<>(key, val, ver));
+            }
+        }
+
+        for (Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> batch :
+            lockBatches.entrySet()) {
+            Map<Object, CacheEntry<Object, Object>> entries = batch.getValue();
+
+            orderLockEntries(batch.getKey().context(), entries);
+        }
+
+        return new ArrayList<>(lockBatches.entrySet());
+    }
+
+    /**
+     * Orders entries by partition, key hash, and serialized key bytes in case of a hash collision.
+     *
+     * @param cctx Cache context used to prepare cache keys.
+     * @param entries Entries to order.
+     */
+    private static void orderLockEntries(
+        GridCacheContext<Object, Object> cctx,
+        Map<Object, CacheEntry<Object, Object>> entries
+    ) {
+        List<LockEntry> orderedEntries = new ArrayList<>(entries.size());
+
+        for (CacheEntry<Object, Object> entry : entries.values()) {
+            KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+            orderedEntries.add(new LockEntry(entry, key));
+        }
+
+        orderedEntries.sort(Comparator.comparingInt((LockEntry entry) -> entry.part)
+            .thenComparingInt(entry -> entry.keyHash));
+
+        for (int start = 0; start < orderedEntries.size(); ) {
+            LockEntry first = orderedEntries.get(start);
+            int end = start + 1;
+
+            while (end < orderedEntries.size()
+                && orderedEntries.get(end).part == first.part
+                && orderedEntries.get(end).keyHash == first.keyHash)
+                end++;
+
+            if (end - start > 1) {
+                try {
+                    for (int i = start; i < end; i++)
+                        orderedEntries.get(i).prepareKeyBytes(cctx.cacheObjectContext());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to serialize a cache key for lock ordering", e);
+                }
+
+                orderedEntries.subList(start, end).sort(Comparator.comparing(
+                    entry -> entry.keyBytes,
+                    UnsignedBytes.lexicographicalComparator()
+                ));
+            }
+
+            start = end;
+        }
+
+        entries.clear();
+
+        for (LockEntry entry : orderedEntries)
+            entries.put(entry.entry.getKey(), entry.entry);
+    }
+
+    /** Cache entry with the key attributes used for lock ordering. */
+    private static class LockEntry {
+        /** Cache entry. */
+        private final CacheEntry<Object, Object> entry;
+
+        /** Key partition. */
+        private final int part;
+
+        /** Key hash. */
+        private final int keyHash;
+
+        /** Cache key. */
+        private final KeyCacheObject key;
+
+        /** Serialized key bytes, initialized only for hash collisions. */
+        private byte[] keyBytes;
+
+        /**
+         * @param entry Cache entry.
+         * @param key Cache key.
+         */
+        private LockEntry(CacheEntry<Object, Object> entry, KeyCacheObject key) {
+            this.entry = entry;
+            this.key = key;
+            part = key.partition();
+            keyHash = key.hashCode();
+        }
+
+        /**
+         * Serializes the key for collision resolution.
+         *
+         * @param ctx Cache object context.
+         * @throws IgniteCheckedException If serialization fails.
+         */
+        private void prepareKeyBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+            keyBytes = key.valueBytes(ctx);
+        }
+    }
+
+    /**
+     * Tries to lock all collected entries within a transaction savepoint.
+     *
+     * @param userTx Transaction that acquires the locks.
+     * @param lockBatches Cache entries grouped by cache.
+     * @param waitMs Lock wait time in the internal representation.
+     * @param lockAcquisitionEndTime Absolute lock deadline, or {@code 0} to use the transaction/query timeout.
+     * @return {@code true} if every lock was acquired.
+     */
+    private static boolean tryAcquireLocks(
+        GridNearTxLocal userTx,
+        List<Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>>> lockBatches,
+        long waitMs,
+        long lockAcquisitionEndTime
+    ) {
+        try {
+            // lockTxEntries() requires the transaction to be bound to the current thread
+            // (it checks cctx.tm().threadLocalTx()). Resume it here and suspend afterwards,
+            // following the same pattern as ModifyNode.invokeInsideTransaction().
+            userTx.resume();
+
+            try {
+                // Create a savepoint so that a failed lock attempt can be rolled back without aborting the whole tx.
+                String spName = "_for_update_" + UUID.randomUUID();
+
+                userTx.savepoint(spName, false);
+
+                boolean locked = true;
+
+                try {
+                    for (Map.Entry<IgniteInternalCache<Object, Object>, Map<Object, CacheEntry<Object, Object>>> batch :
+                        lockBatches) {
+                        if (batch.getValue().isEmpty())
+                            continue;
+
+                        long batchWaitMs = waitMs;
+
+                        if (lockAcquisitionEndTime > 0) {
+                            batchWaitMs = lockAcquisitionEndTime - U.currentTimeMillis();
+
+                            // Excluse case where
+                            if (batchWaitMs == 0)
+                                batchWaitMs = -1L;
+                        }
+
+                        if (!batch.getKey().lockTxEntries(batch.getValue().values(), batchWaitMs)) {
+                            locked = false;
+                            break;
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    try {
+                        userTx.rollbackToSavepoint(spName);
+                    }
+                    catch (Exception rollbackEx) {
+                        e.addSuppressed(rollbackEx);
+                    }
+
+                    throw new IgniteSQLException("Failed to acquire locks for SELECT FOR UPDATE",
+                        IgniteQueryErrorCode.CONCURRENT_UPDATE, e);
+                }
+
+                if (!locked) {
+                    try {
+                        userTx.rollbackToSavepoint(spName);
+                    }
+                    catch (IgniteCheckedException rollbackEx) {
+                        throw new IgniteSQLException("Failed to rollback savepoint after lock failure",
+                            IgniteQueryErrorCode.UNKNOWN, rollbackEx);
+                    }
+
+                    return false;
+                }
+
+                try {
+                    userTx.releaseSavepoint(spName);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteSQLException("Failed to release savepoint after successful lock",
+                        IgniteQueryErrorCode.UNKNOWN, e);
+                }
+            }
+            finally {
+                userTx.suspend();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to get cache entries for SELECT FOR UPDATE",
+                IgniteQueryErrorCode.UNKNOWN, e);
+        }
+
+        return true;
+    }
+
+    /**
+     * Creates a cursor containing only user-visible columns and their metadata.
+     *
+     * @param qry Root query providing the type factory.
+     * @param plan SELECT FOR UPDATE plan providing field metadata.
+     * @param rows Selected rows containing user-visible and internal lock columns.
+     * @param userColCnt Number of user-visible columns.
+     * @return Cursor containing only user-visible data and metadata.
+     */
+    private FieldsQueryCursor<List<?>> createResultCursor(
+        RootQuery<Row> qry,
+        SelectForUpdatePlan plan,
+        List<List<?>> rows,
+        int userColCnt
+    ) {
+        List<List<?>> userRows = rows.isEmpty() ? Collections.emptyList() : new ArrayList<>(rows.size());
+
+        for (List<?> row : rows)
+            userRows.add(row.subList(0, userColCnt));
+
+        QueryCursorImpl<List<?>> resCur = new QueryCursorImpl<>(userRows, null, false);
+
+        IgniteTypeFactory typeFactory = qry.context().typeFactory();
+        List<GridQueryFieldMetadata> meta = plan.innerPlan().fieldsMetadata().queryFieldsMetadata(typeFactory);
+
+        resCur.fieldsMeta(meta.subList(0, userColCnt));
+
+        return resCur;
+    }
+
+    /**
+     * Checks that query is initiated by UDF.
+     *
+     * @return {@code True} if query is initiated by UDF (in this case UDF query limit is affected).
+     * @throws IgniteSQLException If query execution can lead to deadlocks.
+     */
+    private boolean checkUdfQuery() {
+        if (Thread.currentThread().getName().startsWith(AbstractQueryTaskExecutor.THREAD_PREFIX)) {
+            if (taskExecutor instanceof QueryBlockingTaskExecutor) {
+                if (udfQryLimit.getAndDecrement() <= 0) {
+                    udfQryLimit.getAndIncrement();
+
+                    throw new IgniteSQLException("Detected thread pool starvation by queries initiated by " +
+                        "user-defined functions. Starting more queries from UDF will lead to deadlock. Ensure that " +
+                        "the pool size is properly configured (property IgniteConfiguration.QueryThreadPoolSize). " +
+                        "The pool size should be greater than the maximum number of concurrent queries initiated by UDFs.");
+                }
+
+                return true;
+            }
+            else {
+                throw new IgniteSQLException("Detected query initiated by user-defined function. " +
+                    "When a striped query task executor (the default configuration) is used, tasks for such queries " +
+                    "can be assigned to the same thread as that held by the initial query, which can lead to a " +
+                    "deadlock. To avoid deadlocks switch to a blocking tasks executor (set the parameter: " +
+                    "-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true)");
+            }
+        }
+
+        return false;
     }
 
     /** */
@@ -594,203 +1078,220 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 checkPermissions(fragment.root());
         }
 
-        // Local execution
-        Fragment fragment = F.first(fragments);
+        boolean udfQry = checkUdfQuery();
 
-        if (U.assertionsEnabled()) {
-            assert fragment != null;
+        try {
+            // Local execution
+            Fragment fragment = F.first(fragments);
 
-            FragmentMapping mapping = execPlan.mapping(fragment);
+            if (U.assertionsEnabled()) {
+                assert fragment != null;
 
-            assert mapping != null;
+                FragmentMapping mapping = execPlan.mapping(fragment);
 
-            List<UUID> nodes = mapping.nodeIds();
+                assert mapping != null;
 
-            assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
+                List<UUID> nodes = mapping.nodeIds();
+
+                assert nodes != null && (nodes.size() == 1 && F.first(nodes).equals(localNodeId()) || nodes.isEmpty())
                     : "nodes=" + nodes + ", localNode=" + localNodeId();
-        }
+            }
 
-        long timeout = qry.remainingTime();
+            long timeout = qry.remainingTime();
 
-        if (timeout == 0) {
-            throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
-                new QueryCancelledException());
-        }
+            if (timeout == 0) {
+                throw new IgniteSQLException("The query was cancelled due to timeout", IgniteQueryErrorCode.QUERY_CANCELED,
+                    new QueryCancelledException());
+            }
 
-        FragmentDescription fragmentDesc = new FragmentDescription(
-            fragment.fragmentId(),
-            execPlan.mapping(fragment),
-            execPlan.target(fragment),
-            execPlan.remotes(fragment));
-
-        MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
-
-        final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
-
-        ExecutionContext<Row> ectx = new ExecutionContext<>(
-            qry.context(),
-            taskExecutor(),
-            injectSvc,
-            qry.id(),
-            locNodeId,
-            locNodeId,
-            mapCtx.topologyVersion(),
-            fragmentDesc,
-            handler,
-            qryMemoryTracker,
-            createIoTracker(locNodeId, qry.localQueryId()),
-            timeout,
-            qryParams,
-            userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
-
-        Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
-            exchangeService(), failureProcessor()).go(fragment.root());
-
-        qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
-
-        Map<UUID, Long> fragmentsPerNode = fragments.stream()
-            .skip(1)
-            .flatMap(f -> f.mapping().nodeIds().stream())
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-
-        // Start remote execution.
-        for (int i = 1; i < fragments.size(); i++) {
-            fragment = fragments.get(i);
-            fragmentDesc = new FragmentDescription(
+            FragmentDescription fragmentDesc = new FragmentDescription(
                 fragment.fragmentId(),
                 execPlan.mapping(fragment),
                 execPlan.target(fragment),
                 execPlan.remotes(fragment));
 
-            Throwable ex = null;
-            byte[] parametersMarshalled = null;
+            MemoryTracker qryMemoryTracker = qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota());
 
-            for (UUID nodeId : fragmentDesc.nodeIds()) {
-                if (ex != null)
-                    qry.onResponse(nodeId, fragment.fragmentId(), ex);
-                else {
-                    try {
-                        SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+            final GridNearTxLocal userTx = Commons.queryTransaction(qry.context(), ctx.cache().context());
 
-                        QueryStartRequest req = new QueryStartRequest(
-                            qry.id(),
-                            qry.localQueryId(),
-                            qry.context().schemaName(),
-                            fragment.serialized(),
-                            ectx.topologyVersion(),
-                            fragmentDesc,
-                            fragmentsPerNode.get(nodeId).intValue(),
-                            qry.parameters(),
-                            parametersMarshalled,
-                            timeout,
-                            ectx.getQryTxEntries(),
-                            sesCtx == null ? null : sesCtx.attributes()
-                        );
+            ExecutionContext<Row> ectx = new ExecutionContext<>(
+                qry.context(),
+                taskExecutor(),
+                injectSvc,
+                qry.id(),
+                locNodeId,
+                locNodeId,
+                mapCtx.topologyVersion(),
+                fragmentDesc,
+                handler,
+                qryMemoryTracker,
+                createIoTracker(locNodeId, qry.localQueryId()),
+                timeout,
+                qryParams,
+                userTx == null ? null : ExecutionContext.transactionChanges(userTx.writeEntries()));
 
-                        messageService().send(nodeId, req);
+            Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
+                exchangeService(), failureProcessor()).go(fragment.root());
 
-                        // Avoid marshaling of the same parameters for other nodes.
-                        if (parametersMarshalled == null)
-                            parametersMarshalled = req.parametersMarshalled();
-                    }
-                    catch (Throwable e) {
-                        qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
+            qry.run(ectx, execPlan, plan.fieldsMetadata(), node);
+
+            Map<UUID, Long> fragmentsPerNode = fragments.stream()
+                .skip(1)
+                .flatMap(f -> f.mapping().nodeIds().stream())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+            QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
+            boolean keepBinary = qryProps == null || qryProps.keepBinary();
+
+            // Start remote execution.
+            for (int i = 1; i < fragments.size(); i++) {
+                fragment = fragments.get(i);
+                fragmentDesc = new FragmentDescription(
+                    fragment.fragmentId(),
+                    execPlan.mapping(fragment),
+                    execPlan.target(fragment),
+                    execPlan.remotes(fragment));
+
+                Throwable ex = null;
+                byte[] parametersMarshalled = null;
+
+                for (UUID nodeId : fragmentDesc.nodeIds()) {
+                    if (ex != null)
+                        qry.onResponse(nodeId, fragment.fragmentId(), ex);
+                    else {
+                        try {
+                            SessionContextImpl sesCtx = qry.context().unwrap(SessionContextImpl.class);
+
+                            QueryStartRequest req = new QueryStartRequest(
+                                qry.id(),
+                                qry.localQueryId(),
+                                qry.context().schemaName(),
+                                fragment.serialized(),
+                                ectx.topologyVersion(),
+                                fragmentDesc,
+                                fragmentsPerNode.get(nodeId).intValue(),
+                                qry.parameters(),
+                                parametersMarshalled,
+                                timeout,
+                                ectx.getQryTxEntries(),
+                                sesCtx == null ? null : sesCtx.attributes(),
+                                keepBinary
+                            );
+
+                            messageService().send(nodeId, req);
+
+                            // Avoid marshaling of the same parameters for other nodes.
+                            if (parametersMarshalled == null)
+                                parametersMarshalled = req.parametersMarshalled();
+                        }
+                        catch (Throwable e) {
+                            qry.onResponse(nodeId, fragment.fragmentId(), ex = e);
+                        }
                     }
                 }
             }
-        }
 
-        if (perfStatProc.enabled()) {
-            perfStatProc.queryProperty(
-                GridCacheQueryType.SQL_FIELDS,
-                qry.initiatorNodeId(),
-                qry.localQueryId(),
-                "Query plan",
-                plan.textPlan()
-            );
-        }
-
-        if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
-            ctx.query().runningQueryManager().planHistoryTracker().addPlan(
-                plan.textPlan(),
-                qry.sql(),
-                qry.context().schemaName(),
-                qry.context().isLocal(),
-                CalciteQueryEngineConfiguration.ENGINE_NAME
-            );
-        }
-
-        QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
-
-        Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
-            o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
-
-        HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
-            .heavyQueriesTracker().resultSetChecker(qry);
-
-        Function<List<Object>, List<Object>> rowConverter;
-
-        // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
-        if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-            ClusterNode locNode = ctx.discovery().localNode();
-            UUID subjId = SecurityUtils.securitySubjectId(ctx);
-
-            rowConverter = row -> {
-                evtMgr.record(new CacheQueryReadEvent<>(
-                    locNode,
-                    "SQL fields query result set row read.",
-                    EVT_CACHE_QUERY_OBJECT_READ,
-                    CacheQueryType.SQL_FIELDS.name(),
-                    qryProps.cacheName(),
-                    null,
-                    qry.sql(),
-                    null,
-                    null,
-                    qry.parameters(),
-                    subjId,
-                    null,
-                    null,
-                    null,
-                    null,
-                    row));
-
-                resultSetChecker.checkOnFetchNext();
-
-                return row;
-            };
-        }
-        else {
-            rowConverter = row -> {
-                resultSetChecker.checkOnFetchNext();
-
-                return row;
-            };
-        }
-
-        Runnable onClose = () -> {
             if (perfStatProc.enabled()) {
-                perfStatProc.queryRowsProcessed(
+                perfStatProc.queryProperty(
                     GridCacheQueryType.SQL_FIELDS,
                     qry.initiatorNodeId(),
                     qry.localQueryId(),
-                    "Fetched",
-                    resultSetChecker.fetchedSize()
+                    "Query plan",
+                    plan.textPlan()
                 );
             }
 
-            resultSetChecker.checkOnClose();
-        };
+            if (ctx.query().runningQueryManager().planHistoryTracker().enabled()) {
+                ctx.query().runningQueryManager().planHistoryTracker().addPlan(
+                    plan.textPlan(),
+                    qry.sql(),
+                    qry.context().schemaName(),
+                    qry.context().isLocal(),
+                    CalciteQueryEngineConfiguration.ENGINE_NAME
+                );
+            }
 
-        Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
-            fieldConverter, rowConverter, onClose);
+            Function<Object, Object> fieldConverter = keepBinary ? null :
+                o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
 
-        // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
-        // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
-        // It's required, since query memory tracker can be closed concurrently during getAll() and
-        // tracked data for cursor can be lost without additional tracker.
-        MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+            HeavyQueriesTracker.ResultSetChecker resultSetChecker = ctx.query().runningQueryManager()
+                .heavyQueriesTracker().resultSetChecker(qry);
 
-        return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+            Function<List<Object>, List<Object>> rowConverter;
+
+            // Fire EVT_CACHE_QUERY_OBJECT_READ on initiator node before return result to cursor.
+            if (qryProps != null && qryProps.cacheName() != null && evtMgr.isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
+                ClusterNode locNode = ctx.discovery().localNode();
+                UUID subjId = SecurityUtils.securitySubjectId(ctx);
+
+                rowConverter = row -> {
+                    evtMgr.record(new CacheQueryReadEvent<>(
+                        locNode,
+                        "SQL fields query result set row read.",
+                        EVT_CACHE_QUERY_OBJECT_READ,
+                        CacheQueryType.SQL_FIELDS.name(),
+                        qryProps.cacheName(),
+                        null,
+                        qry.sql(),
+                        null,
+                        null,
+                        qry.parameters(),
+                        subjId,
+                        null,
+                        null,
+                        null,
+                        null,
+                        row));
+
+                    resultSetChecker.checkOnFetchNext();
+
+                    return row;
+                };
+            }
+            else {
+                rowConverter = row -> {
+                    resultSetChecker.checkOnFetchNext();
+
+                    return row;
+                };
+            }
+
+            Runnable onClose = () -> {
+                if (udfQry) // Restore UDF queries limit.
+                    udfQryLimit.getAndIncrement();
+
+                if (perfStatProc.enabled()) {
+                    perfStatProc.queryRowsProcessed(
+                        GridCacheQueryType.SQL_FIELDS,
+                        qry.initiatorNodeId(),
+                        qry.localQueryId(),
+                        "Fetched",
+                        resultSetChecker.fetchedSize()
+                    );
+                }
+
+                ctx.query().runningQueryManager().onFullyFetched(resultSetChecker.fetchedSize());
+
+                resultSetChecker.checkOnClose();
+            };
+
+            Iterator<List<?>> it = iteratorsHolder().iterator(new ConvertingClosableIterator<>(qry.iterator(), ectx,
+                fieldConverter, rowConverter, onClose));
+
+            // Make yet another tracking layer for cursor.getAll(), so tracking hierarchy will look like:
+            // Row tracker -> Cursor memory tracker -> Query memory tracker -> Global memory tracker.
+            // It's required, since query memory tracker can be closed concurrently during getAll() and
+            // tracked data for cursor can be lost without additional tracker.
+            MemoryTracker curMemoryTracker = QueryMemoryTracker.create(qryMemoryTracker, cfg.getQueryMemoryQuota());
+
+            return new ListFieldsQueryCursor<>(plan, it, ectx, curMemoryTracker);
+        }
+        catch (Exception e) {
+            if (udfQry) // Restore UDF queries limit.
+                udfQryLimit.getAndIncrement();
+
+            throw e;
+        }
     }
 
     /** */
@@ -828,7 +1329,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeExplain(RootQuery<Row> qry, ExplainPlan plan) {
+    private FieldsQueryCursor<List<?>> executeExplain(ExplainPlan plan) {
         QueryCursorImpl<List<?>> cur = new QueryCursorImpl<>(singletonList(singletonList(plan.plan())));
         cur.fieldsMeta(plan.fieldsMeta().queryFieldsMetadata(Commons.typeFactory()));
 
@@ -881,16 +1382,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 )
             );
 
+            boolean keepBinaryMode = msg.keepBinaryMode();
+            QueryProperties qryProps = new QueryProperties(null, keepBinaryMode, false);
+
             final BaseQueryContext qctx = createQueryContext(
-                msg.applicationAttributes() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.applicationAttributes())),
+                msg.applicationAttributes() == null ?
+                    Contexts.of(qryProps) :
+                    Contexts.of(new SessionContextImpl(msg.applicationAttributes()), qryProps),
                 msg.schema());
 
-            QueryPlan qryPlan = queryPlanCache().queryPlan(
-                new CacheKey(msg.schema(), msg.root()),
-                () -> prepareFragment(qctx, msg.root())
-            );
-
-            assert qryPlan.type() == QueryPlan.Type.FRAGMENT;
+            FragmentPlan fragmentPlan = fragmentPlanCache.computeIfAbsent(msg.root(), k -> prepareFragment(qctx, k));
 
             ExecutionContext<Row> ectx = new ExecutionContext<>(
                 qctx,
@@ -909,7 +1410,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.queryTransactionEntries()
             );
 
-            executeFragment(qry, (FragmentPlan)qryPlan, ectx);
+            executeFragment(qry, fragmentPlan, ectx);
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);
@@ -926,7 +1427,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
             }
             finally {
-                qryReg.query(msg.queryId()).onError(ex);
+                Query<?> qry = qryReg.query(msg.queryId());
+
+                if (qry != null)
+                    qry.onError(ex);
             }
         }
     }

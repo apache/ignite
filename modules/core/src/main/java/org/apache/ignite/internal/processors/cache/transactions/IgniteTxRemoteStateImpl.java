@@ -40,11 +40,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** Read set. */
     @GridToStringInclude
-    protected Map<IgniteTxKey, IgniteTxEntry> readMap;
+    protected final Map<IgniteTxKey, IgniteTxEntry> readMap;
 
     /** Write map. */
     @GridToStringInclude
-    protected Map<IgniteTxKey, IgniteTxEntry> writeMap;
+    protected final Map<IgniteTxKey, IgniteTxEntry> writeMap;
 
     /**
      * @param readMap Read map.

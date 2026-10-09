@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.benchmarks.jmh.diagnostic.pagelocktracker;
 
 import org.apache.ignite.internal.benchmarks.jmh.diagnostic.pagelocktracker.stack.LockTrackerNoBarrier;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -30,9 +31,6 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
@@ -47,11 +45,9 @@ public class JmhPageLockTrackerBenchmark {
      * @param args Params.
      */
     public static void main(String[] args) throws Exception {
-        Options opt = new OptionsBuilder()
-            .include(JmhPageLockTrackerBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(opt).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(JmhPageLockTrackerBenchmark.class.getSimpleName())
+            .run();
     }
 
     /** */

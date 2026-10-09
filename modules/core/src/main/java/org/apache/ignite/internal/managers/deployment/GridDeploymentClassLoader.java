@@ -299,11 +299,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     }
 
     /** {@inheritDoc} */
-    @Override public boolean localDeploymentOwner() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public long sequenceNumber() {
         return -1;
     }

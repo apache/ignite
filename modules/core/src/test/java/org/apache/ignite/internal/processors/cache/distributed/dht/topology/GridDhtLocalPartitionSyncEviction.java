@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -75,7 +74,7 @@ public class GridDhtLocalPartitionSyncEviction extends GridDhtLocalPartition {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rent() {
+    @Override public RentFuture rent() {
         if (mode == 0)
             sync();
 

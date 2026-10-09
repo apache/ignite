@@ -32,7 +32,7 @@ public class OptimizedMarshallerEnumSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEnumSerialisation() throws Exception {
-        Marshaller marsh = initTestMarshallerContext(Marshallers.optimized());
+        Marshaller marsh = initTestMarshallerContext(Marshallers.optimizedForSerializable());
 
         byte[] bytes = marsh.marshal(TestEnum.Bond);
 

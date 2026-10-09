@@ -77,7 +77,7 @@ The `126 ERROR_MOD_NOT_FOUND` code can occur due to missing dependencies:
 === Java class is not found
 
 Check your the `IGNITE_HOME` environment variable, `IgniteConfiguration.IgniteHome` and `IgniteConfiguration.JvmClasspath` properties.
-Refer to link:net-specific/deployment-options[Deployment] section for more details. ASP.NET/IIS scenarios require additional steps.
+Refer to link:net-specific/net-deployment-options[Deployment] section for more details. ASP.NET/IIS scenarios require additional steps.
 
 === Freeze on Ignition.Start
 
@@ -124,7 +124,7 @@ tab:XML[]
 === Could not load file or assembly 'MyAssembly' or one of its dependencies. The system cannot find the file specified.
 
 This exception can occur due to missing assemblies on remote nodes.
-See link:net-specific/standalone-nodes#load-user-assemblies[Standalone Nodes: Loading User Assemblies] for details.
+See link:net-specific/net-standalone-nodes#load-user-assemblies[Standalone Nodes: Loading User Assemblies] for details.
 
 === Stack smashing detected: dotnet terminated
 
@@ -156,7 +156,7 @@ To work around the issue, make sure that child processes are created either only
 
 For example, when `direct-io` is used, and .NET code requires starting a child process,
 move the process handling logic to Java side and invoke it with
-link:developers-guide/distributed-computing/distributed-computing[Compute] `ExecuteJavaTask` API.
+link:distributed-computing/distributed-computing[Compute] `ExecuteJavaTask` API.
 Alternatively, use Services API to call Java service from .NET.
 
 === [[libcoreclr-not-found]] DllNotFoundException: Unable to load shared library 'libcoreclr.so' or one of its dependencies

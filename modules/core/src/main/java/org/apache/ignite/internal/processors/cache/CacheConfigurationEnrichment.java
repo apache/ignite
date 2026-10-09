@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Object that contains serialized values for fields marked with {@link org.apache.ignite.configuration.SerializeSeparately}
@@ -29,16 +32,23 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * This object is needed to exchange and store shrinked cache configurations to avoid possible {@link ClassNotFoundException} errors
  * during deserialization on nodes where some specific class may not exist.
  */
-public class CacheConfigurationEnrichment implements Serializable {
+public class CacheConfigurationEnrichment implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Field name -> Field serialized value. */
-    private final Map<String, byte[]> enrichFields;
+    @Order(0)
+    Map<String, byte[]> enrichFields;
 
     /** Field name -> Field value class name. */
     @GridToStringInclude
-    private final Map<String, String> fieldClassNames;
+    @Order(1)
+    Map<String, String> fieldClassNames;
+
+    /** Empty constructor for {@link CoreMessagesProvider}. */
+    public CacheConfigurationEnrichment() {
+        // No-op.
+    }
 
     /**
      * Creates a new instance of CacheConfigurationEnrichment.

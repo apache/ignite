@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -482,6 +483,54 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         assertFalse("Failure handler should not be triggered.", failureHndTriggered);
+    }
+
+    /** */
+    @Test
+    public void testNearCacheExpiredEntriesIteration() throws Exception {
+        IgniteEx srv = startGrids(2);
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = srv.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setNearConfiguration(new NearCacheConfiguration<>())
+            .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 1)))
+            .setEagerTtl(false)
+        );
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, "val");
+
+        doSleep(10); // Wait for expiration.
+
+        cache.clear();
+
+        assertEquals(0, cache.size());
+    }
+
+    /** */
+    @Test
+    public void testReplaceExpiredOnheapEntriesUnderTx() throws Exception {
+        IgniteEx srv = startGrid(0);
+        srv.cluster().state(ACTIVE);
+
+        IgniteCache<Object, Object> cache = srv.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setOnheapCacheEnabled(true)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.MILLISECONDS, 1)))
+            .setEagerTtl(false)
+        );
+
+        cache.put(0, "val");
+
+        doSleep(10); // Wait for expiration.
+
+        try (Transaction tx = srv.transactions().txStart()) {
+            cache.replace(0, "val", "val1");
+
+            tx.commit();
+        }
+
+        assertNull(cache.get(0)); // Expired.
     }
 
     /**

@@ -14,8 +14,6 @@
 // limitations under the License.
 = System Views
 
-WARNING: The system views are an experimental feature and can be changed in future releases.
-
 Ignite provides a number of built-in SQL views that contain information about cluster nodes and node metrics.
 The views are available in the SYS schema.
 See the link:SQL/schemas[Understanding Schemas] page for the information on how to access a non-default schema.
@@ -181,7 +179,7 @@ The CACHE_GROUPS view contains information about the link:configuring-caches/cac
 |CACHE_MODE | VARCHAR | The cache mode.
 |DATA_REGION_NAME | VARCHAR | The name of the link:memory-configuration/data-regions[data region].
 |IS_SHARED|BOOLEAN | If this group contains more than one cache.
-|NODE_FILTER | VARCHAR | String representation of the the node filter defined for the cache group.
+|NODE_FILTER | VARCHAR | String representation of the node filter defined for the cache group.
 |PARTITION_LOSS_POLICY | VARCHAR | link:configuring-caches/partition-loss-policy[Partition loss policy].
 |PARTITIONS_COUNT|INT | The number of partitions.
 |REBALANCE_DELAY|LONG | link:data-rebalancing#other-properties[Rebalancing delay].
@@ -214,6 +212,7 @@ be updating the thick client with task-related execution details.
 |EXEC_NAME | string | Thread pool name executing task
 |INTERNAL | boolean | True if task is internal
 |USER_VERSION | string | Task user version
+|JOB_ID | UUID | Deprecated, use `ID` or `SESSION_ID` instead
 |===
 
 == JOBS
@@ -228,7 +227,7 @@ To view the status of the compute task refer to the `TASKS` system view.
 |SESSION_ID | UUID | Job's session ID. Note, `SESSION_ID` is equal to `TASKS.SESSION_ID` for the jobs belonging to a specific task.
 |ORIGIN_NODE_ID | UUID | The id of the node that started the job
 |TASK_NAME | string | The name of the task
-|TASK_CLASSNAME | string | Class name of the task
+|TASK_CLASS_NAME | string | Class name of the task
 |AFFINITY_CACHE_IDS | string | IDs of one or more caches if the job is executed against one of the `IgniteCompute.affinity..`
 methods. The parameter is empty, if you use `IgniteCompute` APIs that don't target specific caches.
 |AFFINITY_PARTITION_ID | int | IDs of one or more partitions if the job is executed via one of the `IgniteCompute.affinity..`
@@ -240,7 +239,7 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 |IS_FINISHING | boolean | `True` if the job is finishing
 |IS_INTERNAL | boolean | `True` if the job is internal
 |IS_STARTED | boolean | `True` if the job has been started
-|IS_TIMEDOUT | boolean | `True` if the job timed out before completing
+|IS_TIMED_OUT | boolean | `True` if the job timed out before completing
 |STATE | string | Possible values: +
 `ACTIVE` - Job is being executed. +
 `PASSIVE` - Job is added to the execution queue. Please, see `CollisionSPI` for more details. +
@@ -251,17 +250,18 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 
 [{table_opts}]
 |===
+| Column | Type |    Description
 |AFFINITY_KEY | string |  Affinity key value for service
 |CACHE_NAME | string |  Cache name
 |MAX_PER_NODE_COUNT | int | Maximum count of services instances per node
 |NAME | string |  Service name
-|NAME | TYPE |    DESCRIPTION
 |NODE_FILTER | string |  String representation of node filter
 |ORIGIN_NODE_ID | UUID |    Originating node ID
 |SERVICE_CLASS | string |  Service class name
 |SERVICE_ID | UUID |    Service ID
 |STATICALLY_CONFIGURED | boolean | True is service statically configured
 |TOTAL_COUNT | int | Total count of service instances
+|TOPOLOGY_SNAPSHOT | string | Number of service instances per node, as a map of node ID to instance count
 |===
 
 
@@ -269,34 +269,70 @@ methods. The parameter is empty, if you use `IgniteCompute` APIs that don't targ
 
 This view exposes information about currently running transactions.
 
+Each row in this view represents a transaction object on the node where the view is queried. A distributed transaction can be represented by several transaction objects on different nodes, such as near, DHT-local, and DHT-remote transaction objects. Therefore, rows for the same distributed transaction can differ from node to node.
+
 [{table_opts}]
 |===
 |NAME | TYPE |    DESCRIPTION
-|ORIGINATING_NODE_ID | UUID |
-|STATE | string |
-|XID | UUID |
-|LABEL | string |
-|START_TIME | long |
-|ISOLATION | string |
-|CONCURRENCY | string |
-|KEYS_COUNT | int |
-|CACHE_IDS | string |
-|COLOCATED | boolean |
-|DHT | boolean |
-|DURATION | long |
-|IMPLICIT | boolean |
-|IMPLICIT_SINGLE | boolean |
-|INTERNAL | boolean |
-|LOCAL | boolean |
-|LOCAL_NODE_ID | UUID |
-|NEAR | boolean |
-|ONE_PHASE_COMMIT | boolean |
-|OTHER_NODE_ID | UUID |
-|SUBJECT_ID | UUID |
-|SYSTEM | boolean |
-|THREAD_ID | long |
-|TIMEOUT | long |
-|TOP_VER | string |
+|ORIGINATING_NODE_ID | UUID | ID of the node that initiated the current transaction object. For a transaction object mapped to a primary partition, this is the transaction initiator node; for a transaction object mapped to a backup partition, this is the node that owns the primary partition
+|STATE | string | Current transaction state
+|XID | UUID | Unique transaction identifier
+|ORIGINATING_XID | UUID | Ttransaction ID on originating node
+|LABEL | string | Transaction label
+|START_TIME | long | Start time of the transaction on this node
+|ISOLATION | string | Transaction isolation level
+|CONCURRENCY | string | Transaction concurrency mode
+|KEYS_COUNT | int | Number of cache keys participating in the transaction
+|CACHE_IDS | string | Comma-separated IDs of caches participating in the transaction
+|COLOCATED | boolean | `True` if the transaction is DHT colocated
+|DHT | boolean | `True` if current node has data for this transaction
+|DURATION | long | Transaction duration in milliseconds
+|IMPLICIT | boolean | `True` if the transaction was started implicitly
+|IMPLICIT_SINGLE | boolean | `True` if the transaction is implicit with only one key
+|INTERNAL | boolean | `True` if transaction operates with keys related to Ignite internal data structures
+|LOCAL | boolean | `True` if this transaction object is on the initiator side or mapped to a primary partition, `false` if it is mapped to a backup partition
+|LOCAL_NODE_ID | UUID | Local node ID
+|NEAR | boolean | `True` if the transaction is near
+|ONE_PHASE_COMMIT | boolean | `True` if the transaction is a one-phase-commit transaction
+|OTHER_NODE_ID | UUID | ID of an additional node involved in the transaction
+|SUBJECT_ID | UUID | ID of the subject that initiated the transaction
+|SYSTEM | boolean | `True` if the transaction was started for a system cache
+|THREAD_ID | long | ID of the thread started the transaction
+|TIMEOUT | long | Transaction timeout in milliseconds
+|TOP_VER | string | Topology version assigned to the transaction. If not assigned explicitly, it is a topology version of the latest partition exchange.
+|===
+
+== CACHE_EXPLICIT_LOCKS
+
+This view exposes information about explicit locks acquired on the current node.
+Explicit locks are acquired using the `Cache.lock(key)` API.
+
+[{table_opts}]
+|===
+|NAME | TYPE |    DESCRIPTION
+|CACHE_ID | int | Cache ID
+|KEY | string | Locked key
+|THREAD_ID | long | ID of the thread that acquired the lock
+|XID | UUID | Lock ID (unique identifier)
+|===
+
+== CACHE_LOCKS
+
+This view exposes information about all locks (both explicit and transactional) requested for keys hosted on the current node.
+This includes locks from remote nodes trying to access primary keys on this node.
+
+[{table_opts}]
+|===
+|NAME | TYPE |    DESCRIPTION
+|CACHE_ID | int | Cache ID
+|KEY | string | Locked key
+|NODE_ID | UUID | ID of the node where the lock is hosted
+|ORIGINATING_NODE_ID | UUID | ID of the node that initiated the lock request
+|IS_OWNER | boolean | `True` if the lock is currently owned
+|IS_TX | boolean | `True` if the lock is part of a transaction
+|FLAGS | short | All flags for the lock. This field represents a bit mask with possible values: LOCAL(0x01), OWNER(0x02), READY(0x04), REENTRY(0x08), USED(0x10), TX(0x40), SINGLE_IMPLICIT(0x80), DHT_LOCAL(0x100), NEAR_LOCAL(0x200), REMOVED(0x400), READ(0x800);
+|XID | UUID | Current transaction ID (or explicit lock ID)
+|ORIGINATING_XID | UUID | Originating transaction ID (or explicit lock ID)
 |===
 
 == NODES
@@ -313,7 +349,8 @@ The NODES view contains information about the cluster nodes.
 |HOSTNAMES |VARCHAR |The host names of the node.
 |IS_CLIENT |BOOLEAN |Indicates whether the node is a client.
 |NODE_ID |UUID |Node ID.
-|NODE_ORDER |INT |Node order within the topology.
+|NODE_ORDER |BIGINT |Node order within the topology.
+|DATA_CENTER_ID |VARCHAR |Node data center ID.
 |VERSION |VARCHAR |Node version.
 |===
 
@@ -329,6 +366,7 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 |NODE_ID |UUID |Node ID.
 |NAME |VARCHAR |Attribute name.
+|VALUE |VARCHAR |Attribute value.
 
 |===
 
@@ -343,6 +381,22 @@ The CONFIGURATION view contains the configuration properties of node.
 
 |NAME |VARCHAR |Configuration property name.
 |VALUE |VARCHAR |Configuration property value.
+
+|===
+
+== IGNITE_PLUGINS
+
+
+The IGNITE_PLUGINS view contains information about ignite plugins configured on the node.
+
+[{table_opts}]
+|===
+| Column |Data Type |Description
+
+|NAME |VARCHAR |Plugin name.
+|VERSION |VARCHAR |Plugin version.
+|CLASS_NAME |VARCHAR |Plugin implementation class name.
+|INFO |VARCHAR |Plugin information returned by the provider.
 
 |===
 
@@ -388,6 +442,7 @@ This view exposes information about currently opened client connections: JDBC, O
 |TYPE | string |  Type of the connection
 |USER | string |  User name
 |VERSION | string |  Protocol version
+|DATA_CENTER_ID | string | Effective data center ID reported by the client
 |===
 
 == CLIENT_CONNECTION_ATTRIBUTES
@@ -493,12 +548,13 @@ This view exposes information about currently running SQL queries.
 [{table_opts}]
 |===
 |NAME | TYPE | DESCRIPTION
-|QUERY_ID | UUID | Query ID
+|QUERY_ID | string | Query ID
 |SQL | string | Query text
 |ORIGIN_NODE_ID | UUID | Node that started query
 |START_TIME | date | Query start time
 |DURATION | long | Query execution duration
 |INITIATOR_ID | string | User defined query initiator ID
+|MAP_QUERY | boolean | True if query is H2 map query
 |LOCAL | boolean | True if local only
 |SCHEMA_NAME | string | Schema name
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
@@ -573,7 +629,7 @@ This view exposes information about SQL schemas.
 [{table_opts}]
 |===
 |NAME |    TYPE |    DESCRIPTION
-|NAME  |  string|  Name of the schema
+|SCHEMA_NAME | string | Name of the schema
 |PREDEFINED |  boolean | If true schema is predefined
 |===
 
@@ -600,18 +656,18 @@ The NODE_METRICS view provides various metrics about the state of nodes, resourc
 |CUR_CANCELED_JOBS|INT| Number of cancelled jobs that are still running.
 |AVG_CANCELED_JOBS|FLOAT| Average number of cancelled jobs this node ever had running concurrently.
 |TOTAL_CANCELED_JOBS|INT| Number of jobs cancelled since the node startup.
-|MAX_JOBS_WAIT_TIME|TIME| Maximum time a job ever spent waiting in a queue before being executed.
-|CUR_JOBS_WAIT_TIME|TIME| Longest wait time among the jobs that are currently waiting for execution.
-|AVG_JOBS_WAIT_TIME|TIME| Average time jobs spend in the queue before being executed.
-|MAX_JOBS_EXECUTE_TIME|TIME|  Maximum job execution time.
-|CUR_JOBS_EXECUTE_TIME|TIME|  Longest time a current job has been executing for.
-|AVG_JOBS_EXECUTE_TIME|TIME| Average job execution time on this node.
-|TOTAL_JOBS_EXECUTE_TIME|TIME|Total time all finished jobs took to execute on this node since the node startup.
+|MAX_JOBS_WAIT_TIME|BIGINT| Maximum time a job ever spent waiting in a queue before being executed, in milliseconds.
+|CUR_JOBS_WAIT_TIME|BIGINT| Longest wait time among the jobs that are currently waiting for execution, in milliseconds.
+|AVG_JOBS_WAIT_TIME|BIGINT| Average time jobs spend in the queue before being executed, in milliseconds.
+|MAX_JOBS_EXECUTE_TIME|BIGINT| Maximum job execution time, in milliseconds.
+|CUR_JOBS_EXECUTE_TIME|BIGINT| Longest time a current job has been executing for, in milliseconds.
+|AVG_JOBS_EXECUTE_TIME|BIGINT| Average job execution time on this node, in milliseconds.
+|TOTAL_JOBS_EXECUTE_TIME|BIGINT| Total time all finished jobs took to execute on this node since the node startup, in milliseconds.
 |TOTAL_EXECUTED_JOBS|INT|  Total number of jobs handled by the node since the node startup.
 |TOTAL_EXECUTED_TASKS|INT| Total number of tasks handled by the node.
-|TOTAL_BUSY_TIME|TIME| Total time this node spent executing jobs.
-|TOTAL_IDLE_TIME|TIME| Total time this node spent idling (not executing any jobs).
-|CUR_IDLE_TIME|TIME| Time this node has spent idling since executing the last job.
+|TOTAL_BUSY_TIME|BIGINT| Total time this node spent executing jobs, in milliseconds.
+|TOTAL_IDLE_TIME|BIGINT| Total time this node spent idling (not executing any jobs), in milliseconds.
+|CUR_IDLE_TIME|BIGINT| Time this node has spent idling since executing the last job, in milliseconds.
 |BUSY_TIME_PERCENTAGE|FLOAT|Percentage of job execution vs idle time.
 |IDLE_TIME_PERCENTAGE|FLOAT|Percentage of idle vs job execution time.
 |TOTAL_CPU|INT| Number of CPUs available to the Java Virtual Machine.
@@ -628,7 +684,7 @@ The NODE_METRICS view provides various metrics about the state of nodes, resourc
 |NONHEAP_MEMORY_COMMITED|LONG| Amount of non-heap memory in bytes that is committed for the JVM to use. This amount of memory is guaranteed for the JVM to use. The non-heap memory consists of one or more memory pools. This value is the sum of committed non-heap memory values of all non-heap memory pools.
 |NONHEAP_MEMORY_MAX|LONG| Returns the maximum amount of non-heap memory in bytes that can be used for memory management. The column displays `-1` if the maximum memory size is undefined.
 |NONHEAP_MEMORY_TOTAL|LONG| Total amount of non-heap memory in bytes that can be used for memory management. The column displays `-1` if the total memory size is undefined.
-|UPTIME|TIME|Uptime of the JVM.
+|UPTIME|BIGINT| Uptime of the JVM, in milliseconds.
 |JVM_START_TIME|TIMESTAMP|Start time of the JVM.
 |NODE_START_TIME|TIMESTAMP| Start time of the node.
 |LAST_DATA_VERSION|LONG|In-Memory Data Grid assigns incremental versions to all cache operations. This column contains the latest data version on the node.
@@ -653,6 +709,8 @@ The TABLES view contains information about the SQL tables.
 |Column|Data Type|Description
 
 |AFFINITY_KEY_COLUMN | string |  Affinity key column name
+|CACHE_GROUP_ID | int | Cache group id for the table
+|CACHE_GROUP_NAME | string |  Cache group name for the table
 |CACHE_ID | int | Cache id for the table
 |CACHE_NAME | string |  Cache name for the table
 |IS_INDEX_REBUILD_IN_PROGRESS | boolean | True if some index rebuild for this table in progress
@@ -729,6 +787,8 @@ The INDEXES view contains information about SQL indexes.
 |TABLE_NAME | string |  Table name
 |CACHE_NAME | string |  Cache name
 |CACHE_ID | int | Cache ID
+|CACHE_GROUP_ID | int | Cache group ID
+|CACHE_GROUP_NAME | string |  Cache group name
 |INLINE_SIZE | int | Inline size in bytes
 |IS_PK | boolean | True if primary key index
 |IS_UNIQUE | boolean | True if unique index
@@ -775,6 +835,24 @@ and also helps to detect skews in page lists utilization.
 |PAGE_FREE_SPACE | int | Free space (in bytes) available to use for each page in this bucket.
 |===
 
+== PAGES_TIMESTAMP_HISTOGRAM
+
+The PAGES_TIMESTAMP_HISTOGRAM view shows how many pages of a data region were last accessed within each time interval.
+It helps to estimate how much of the data loaded into memory is "hot" and how much is "cold".
+The view is node-specific and contains rows only for the data regions with persistence enabled and link:monitoring-metrics/configuring-metrics#enabling-data-region-metrics[metrics enabled].
+By default, the intervals are one hour long and 24 intervals are kept.
+The first row of a region also counts the pages accessed before the earliest interval, the last row ends at the current time.
+The same data is exposed by the `PageTimestampHistogram` metric of the link:monitoring-metrics/new-metrics#data-region-io[data region register].
+
+[{table_opts}]
+|===
+|Column|Data Type|Description
+|DATA_REGION_NAME | string | Data region name.
+|INTERVAL_START | date | Start of the last-access time interval.
+|INTERVAL_END | date | End of the last-access time interval.
+|PAGES_COUNT | long | Number of pages last accessed within the interval.
+|===
+
 == PARTITION_STATES
 
 This view exposes information about the distribution of cache group partitions across cluster nodes.
@@ -787,6 +865,21 @@ This view exposes information about the distribution of cache group partitions a
 |NODE_ID | UUID | Node ID
 |STATE | string | Partition state. Possible states: MOVING - partition is being loaded from another node to this node; OWNING - this node is either a primary or backup owner; RENTING - this node is neither primary nor back up owner (is being currently evicted); EVICTED - partition has been evicted; LOST - partition state is invalid, the partition should not be used.
 |IS_PRIMARY | boolean  | Primary partition flag
+|===
+
+== LOCAL_CACHE_GROUPS_IO
+
+This view exposes information about local node IO statistics for cache groups.
+
+[{table_opts}]
+|===
+|Column | Data type |  Description
+|CACHE_GROUP_ID | int| Cache group ID
+|CACHE_GROUP_NAME | string| Cache group name
+|PHYSICAL_READS | long | Count of logical page reads
+|LOGICAL_READS | long | Count of physical page reads
+|INSERTED_BYTES | long | Count of inserted to store bytes
+|REMOVED_BYTES | long | Count of removed from store bytes
 |===
 
 == BINARY_METADATA
@@ -935,7 +1028,7 @@ Note, latch will be shown on the non parent node only after initial usage on tha
 |Column | Data type |  Description
 |NAME | string | Data structure name
 |COUNT | int | Current count
-|INITIAL_COUT | int | Initial count
+|INITIAL_COUNT | int | Initial count
 |AUTO_DELETE | boolean | True to automatically delete the latch from a cache when its count reaches zero
 |GROUP_NAME | string | Cache group name to store data structure
 |GROUP_ID | int | Cache group id to store data structure
@@ -1017,7 +1110,7 @@ The STATISTICS_LOCAL_DATA view contains link:SQL/sql-statistics[SQL statistics,w
 |TOTAL |BIGINT |Total number of values in column.
 |SIZE |INTEGER |Average value size in bytes.
 |VERSION |BIGINT |Statistics version.
-|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|LAST_UPDATE_TIME |TIMESTAMP |Maximum time of all partition statistics which was used to generate local one.
 |===
 
 == STATISTICS_PARTITION_DATA
@@ -1039,7 +1132,29 @@ The STATISTICS_PARTITION_DATA view contains information about link:SQL/sql-stati
 |TOTAL |BIGINT |Total number of values in column.
 |SIZE |INTEGER |Average value size in bytes.
 |VERSION |BIGINT |Statistics version.
-|LAST_UPDATE_TIME |VARCHAR |Maximum time of all partition statistics which was used to generate local one.
+|LAST_UPDATE_TIME |BIGINT |Time of the partition statistics collection, as a Unix timestamp in milliseconds.
+|===
+
+== STATISTICS_GLOBAL_DATA
+
+The STATISTICS_GLOBAL_DATA view contains global link:SQL/sql-statistics[SQL statistics,window=_blank]: the statistics of a whole table, aggregated from the local statistics of the server nodes that own its partitions.
+Global statistics of an object are gathered by one of the server nodes and delivered to the other nodes on request.
+The view is node-specific and lists the global statistics cached on the node.
+
+[cols="2,1,4",opts="header,stretch"]
+|===
+|Column|Data Type|Description
+|SCHEMA |VARCHAR |Schema name.
+|TYPE |VARCHAR |Object type.
+|NAME |VARCHAR |Object name.
+|COLUMN |VARCHAR |Column name.
+|ROWS_COUNT |BIGINT |Count of column rows.
+|DISTINCT |BIGINT |Number of unique non-null values.
+|NULLS |BIGINT |Number of null values.
+|TOTAL |BIGINT |Total number of values in column.
+|SIZE |INTEGER |Average value size in bytes.
+|VERSION |BIGINT |Statistics version.
+|LAST_UPDATE_TIME |TIMESTAMP |Time of the global statistics aggregation.
 |===
 
 == SNAPSHOT

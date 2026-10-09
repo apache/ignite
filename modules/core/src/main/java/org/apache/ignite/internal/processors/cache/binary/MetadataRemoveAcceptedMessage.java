@@ -17,43 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Acknowledge message for {@link MetadataRemoveProposedMessage}: see its javadoc for detailed description of protocol.
- *
+ * <p>
  * As discovery messaging doesn't guarantee that message makes only one pass across the cluster
  * <b>MetadataRemoveAcceptedMessage</b> enables to mark it as duplicated so other nodes won't process it but skip.
  */
-public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage {
+public class MetadataRemoveAcceptedMessage extends DiscoveryCustomMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    @Order(0)
+    int typeId;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(1)
+    boolean duplicated;
 
-    /** */
-    private final int typeId;
-
-    /** */
-    private boolean duplicated;
+    /** Constructor. */
+    public MetadataRemoveAcceptedMessage() {
+        // No-op.
+    }
 
     /**
      * @param typeId Type id.
      */
     MetadataRemoveAcceptedMessage(int typeId) {
-        this.typeId = typeId;
-    }
+        super(IgniteUuid.randomUuid());
 
-    /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */
@@ -64,12 +60,6 @@ public class MetadataRemoveAcceptedMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
-        AffinityTopologyVersion topVer, DiscoCache discoCache) {
-        throw new UnsupportedOperationException();
     }
 
     /** */

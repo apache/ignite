@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.Marshallers;
@@ -154,10 +153,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
             @Override public boolean isSystemType(String typeName) {
                 return false;
-            }
-
-            @Override public IgnitePredicate<String> classNameFilter() {
-                return null;
             }
 
             @Override public JdkMarshaller jdkMarshaller() {

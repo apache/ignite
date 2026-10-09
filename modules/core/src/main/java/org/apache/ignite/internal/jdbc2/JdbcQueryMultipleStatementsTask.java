@@ -78,9 +78,6 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
     /** Enforce join order flag. */
     private final boolean enforceJoinOrder;
 
-    /** Lazy query execution flag. */
-    private final boolean lazy;
-
     /**
      * @param ignite Ignite.
      * @param schemaName Schema name.
@@ -92,12 +89,11 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce joins order falg.
-     * @param lazy Lazy query execution flag.
+     * @param enforceJoinOrder Enforce joins order flag.
      */
     public JdbcQueryMultipleStatementsTask(Ignite ignite, String schemaName, String sql, Boolean isQry, boolean loc,
         Object[] args, int fetchSize, boolean locQry, boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy) {
+        boolean enforceJoinOrder) {
         this.ignite = ignite;
         this.args = args;
         this.schemaName = schemaName;
@@ -109,7 +105,6 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
-        this.lazy = lazy;
     }
 
     /** {@inheritDoc} */
@@ -122,7 +117,6 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
         qry.setCollocated(collocatedQry);
         qry.setDistributedJoins(distributedJoins);
         qry.setEnforceJoinOrder(enforceJoinOrder);
-        qry.setLazy(lazy);
         qry.setSchema(schemaName);
 
         if (!F.isEmpty(queryInitiatorId()))

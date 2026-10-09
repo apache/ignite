@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -35,14 +34,19 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexExecutable;
 import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.rex.RexProgramBuilder;
+import org.apache.calcite.rex.RexVisitor;
+import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
+import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 
@@ -133,9 +137,31 @@ public class RexExecutorImpl implements RexExecutor {
      * Do constant reduction using generated code.
      */
     @Override public void reduce(RexBuilder rexBuilder, List<RexNode> constExps, List<RexNode> reducedValues) {
+        RexVisitor<Void> nonDeterministicUdfFinder = new RexVisitorImpl<Void>(true) {
+            @Override public Void visitCall(RexCall call) {
+                if (call.getOperator() instanceof SqlUserDefinedFunction) {
+                    SqlUserDefinedFunction udfFunc = (SqlUserDefinedFunction)call.getOperator();
+
+                    if (udfFunc.getFunction() instanceof IgniteScalarFunction
+                        && !((IgniteScalarFunction)udfFunc.getFunction()).isDeterministic())
+                        throw Util.FoundOne.NULL; // Don't reduce non-deterministic UDF functions.
+                }
+
+                return super.visitCall(call);
+            }
+        };
+
         for (RexNode node : constExps) {
             // Do not simplify custom types, since we can't convert it to literal of this type.
             if (node.getType() instanceof IgniteCustomType) {
+                reducedValues.addAll(constExps);
+                return;
+            }
+
+            try {
+                node.accept(nonDeterministicUdfFinder);
+            }
+            catch (ControlFlowException foundNonDeterministic) {
                 reducedValues.addAll(constExps);
                 return;
             }

@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
@@ -28,8 +29,10 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TableFunction;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -80,7 +83,7 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
     @Override public RelDataType getRowType(RelDataTypeFactory typeFactory, List<?> arguments) {
         JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
 
-        List<RelDataType> converted = Stream.of(colTypes).map(cl -> tf.toSql(tf.createType(cl))).collect(Collectors.toList());
+        List<RelDataType> converted = Stream.of(colTypes).map(cl -> columnType(tf, cl)).collect(Collectors.toList());
 
         return typeFactory.createStructType(converted, colNames);
     }
@@ -98,6 +101,16 @@ public class IgniteTableFunction extends IgniteReflectiveFunctionBase implements
         }
 
         return Iterable.class;
+    }
+
+    /** Resolves collection types without treating user-defined classes as records. */
+    private static RelDataType columnType(JavaTypeFactory tf, Class<?> cls) {
+        RelDataType type = cls.isArray() || List.class.isAssignableFrom(cls) || Map.class.isAssignableFrom(cls)
+            ? tf.createType(cls)
+            : tf.createJavaType(cls);
+
+        RelDataType sqlType = tf.toSql(type);
+        return sqlType.getSqlTypeName() == SqlTypeName.OTHER ? new OtherType(sqlType.isNullable()) : sqlType;
     }
 
     /** Validates the parameters and throws an exception if it finds an incorrect parameter. */

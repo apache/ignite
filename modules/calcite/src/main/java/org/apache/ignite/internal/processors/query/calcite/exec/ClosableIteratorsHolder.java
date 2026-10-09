@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  */
@@ -37,7 +38,7 @@ public class ClosableIteratorsHolder {
     private final ReferenceQueue refQueue;
 
     /** */
-    private final Map<Reference, Object> refMap;
+    private final Map<Reference, Iterator<?>> refMap;
 
     /** */
     private final IgniteLogger log;
@@ -97,17 +98,29 @@ public class ClosableIteratorsHolder {
     }
 
     /** */
-    private AutoCloseable closeable(Object referent, Object resource) {
-        if (!(resource instanceof AutoCloseable))
+    private @Nullable AutoCloseable closeable(Object referent, Iterator<?> rsrc) {
+        if (!(rsrc instanceof AutoCloseable))
             return null;
 
-        return new CloseableReference(referent, resource);
+        CloseableReference ref = new CloseableReference(referent);
+
+        refMap.put(ref, rsrc);
+
+        return ref;
     }
 
     /** */
     private final class DelegatingIterator<T> implements Iterator<T>, AutoCloseable {
         /** */
         private final Iterator<T> delegate;
+
+        /**
+         * This variable is required to keep reference to current instance while delegate call
+         * (hasNext/next/remove/forEachRemaining) is not completed. We actually don't care about variable value and
+         * thread safety, it's only to prevent premature garbage collection and iterator closing before returning
+         * result to the user.
+         */
+        private boolean inUse;
 
         /** */
         private final AutoCloseable closeable;
@@ -119,26 +132,57 @@ public class ClosableIteratorsHolder {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return delegate.hasNext();
+            inUse = true;
+
+            try {
+                return delegate.hasNext();
+            }
+            finally {
+                inUse = false;
+            }
         }
 
         /** {@inheritDoc} */
         @Override public T next() {
-            return delegate.next();
+            inUse = true;
+
+            try {
+                return delegate.next();
+            }
+            finally {
+                inUse = false;
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void remove() {
-            delegate.remove();
+            inUse = true;
+
+            try {
+                delegate.remove();
+            }
+            finally {
+                inUse = false;
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void forEachRemaining(Consumer<? super T> action) {
-            delegate.forEachRemaining(action);
+            inUse = true;
+
+            try {
+                delegate.forEachRemaining(action);
+            }
+            finally {
+                inUse = false;
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void close() throws Exception {
+            if (log.isDebugEnabled())
+                log.debug("Closing iterator [delegate=" + delegate + ", inUse=" + inUse + ']');
+
             Commons.close(closeable);
         }
     }
@@ -146,10 +190,8 @@ public class ClosableIteratorsHolder {
     /** */
     private final class CloseableReference extends WeakReference implements AutoCloseable {
         /** */
-        private CloseableReference(Object referent, Object resource) {
+        private CloseableReference(Object referent) {
             super(referent, refQueue);
-
-            refMap.put(this, resource);
         }
 
         /** {@inheritDoc} */

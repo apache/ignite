@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,7 +37,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -750,17 +747,6 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         nodeA.cluster().state(ClusterState.ACTIVE);
 
         verifyBaselineTopologyOnNodes(verifier, new Ignite[] {nodeA, nodeB});
-    }
-
-    /**
-     * Creates BaselineNode with specific attribute indicating that this node is not client.
-     */
-    private BaselineNode createBaselineNodeWithConsId(String consId) {
-        Map<String, Object> attrs = new HashMap<>();
-
-        attrs.put("org.apache.ignite.cache.client", false);
-
-        return new DetachedClusterNode(consId, attrs);
     }
 
     /** */

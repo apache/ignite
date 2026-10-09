@@ -22,13 +22,11 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,26 +38,26 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Mini-future ID. */
-    @Order(5)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Error message. */
-    @Order(value = 6, method = "errorMessage")
-    @Nullable private volatile ErrorMessage errMsg;
+    @Order(2)
+    @Nullable volatile ErrorMessage errMsg;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
-    @Order(7)
-    private List<KeyCacheObject> missedKeys;
+    @Order(3)
+    List<KeyCacheObject> missedKeys;
 
     /** Cache entries. */
     @GridToStringInclude
-    @Order(value = 8, method = "forcedInfos")
-    private List<GridCacheEntryInfo> infos;
+    @Order(4)
+    List<GridCacheEntryInfo> infos;
 
     /**
      * Empty constructor.
@@ -72,25 +70,16 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
-     * @param addDepInfo Deployment info flag.
+     * @param err Error.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, IgniteCheckedException err) {
         assert futId != null;
         assert miniId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
-        this.addDepInfo = addDepInfo;
-    }
-
-    /**
-     * Sets error.
-     *
-     * @param err Error.
-     */
-    public void error(IgniteCheckedException err) {
-        errorMessage(new ErrorMessage(err));
+        this.errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
@@ -98,74 +87,24 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         return ErrorMessage.error(errMsg);
     }
 
-    /**
-     * @return The error message.
-     */
-    @Nullable public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * Sets the error message.
-     *
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @return Keys.
-     */
+    /** @return Keys. */
     public Collection<KeyCacheObject> missedKeys() {
         return F.emptyIfNull(missedKeys);
     }
 
-    /** @param missedKeys Missed keys. */
-    public void missedKeys(List<KeyCacheObject> missedKeys) {
-        this.missedKeys = missedKeys;
-    }
-
-    /**
-     * @return Forced entries.
-     */
+    /** @return Forced entries. */
     public Collection<GridCacheEntryInfo> forcedInfos() {
         return F.emptyIfNull(infos);
     }
 
-    /**
-     * @param infos Forced entries.
-     */
-    public void forcedInfos(List<GridCacheEntryInfo> infos) {
-        this.infos = infos;
-    }
-
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Mini-future ID.
-     */
+    /** @return Mini-future ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Mini-future ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /**
@@ -191,43 +130,8 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (missedKeys != null)
-            prepareMarshalCacheObjects(missedKeys, cctx);
-
-        if (infos != null) {
-            for (GridCacheEntryInfo info : infos)
-                info.marshal(cctx.cacheObjectContext());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (missedKeys != null)
-            finishUnmarshalCacheObjects(missedKeys, cctx, ldr);
-
-        if (infos != null) {
-            for (GridCacheEntryInfo info : infos)
-                info.unmarshal(cctx.cacheObjectContext(), ldr);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 43;
     }
 
     /** {@inheritDoc} */

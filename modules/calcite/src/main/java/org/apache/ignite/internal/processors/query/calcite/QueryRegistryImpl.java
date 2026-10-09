@@ -58,7 +58,7 @@ public class QueryRegistryImpl extends AbstractService implements QueryRegistry 
             RunningQueryManager qryMgr = kctx.query().runningQueryManager();
 
             long locId = qryMgr.register(rootQry.sql(), GridCacheQueryType.SQL_FIELDS, rootQry.context().schemaName(),
-                false, createCancelToken(qry), rootQry.initiatorId(), false, true, false);
+                false, createCancelToken(qry), rootQry.initiatorId(), false, false);
 
             rootQry.localQueryId(locId);
 

@@ -20,22 +20,31 @@ package org.apache.ignite.internal.processors.query.schema.operation;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage;
+import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage;
+import org.apache.ignite.internal.util.typedef.F;
 
-/**
- * Enabling indexing on cache operation.
- */
+/** Operation, which enables indexing on cache operation. */
 public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
-    /** */
-    private static final long serialVersionUID = 0L;
+    /** Query entities messages. */
+    @Order(0)
+    Collection<QueryEntityMessage> entitiesMsgs;
+
+    /** Original query entities. We keep them to avoid unneccessary conversions from messages. */
+    private Collection<QueryEntity> entities;
 
     /** */
-    private final Collection<QueryEntity> entities;
+    @Order(1)
+    int qryParallelism;
 
     /** */
-    private final int qryParallelism;
+    @Order(2)
+    boolean sqlEscape;
 
     /** */
-    private final boolean sqlEscape;
+    public SchemaAddQueryEntityOperation() {}
 
     /**
      * @param opId Operation ID.
@@ -57,26 +66,34 @@ public class SchemaAddQueryEntityOperation extends SchemaAbstractOperation {
         this.entities = entities;
         this.qryParallelism = qryParallelism;
         this.sqlEscape = sqlEscape;
+
+        entitiesMsgs = F.transform(entities, this::makeEntityMessage);
     }
 
-    /**
-     * @return Collection of query entities.
-     */
+    /** @return Collection of query entities. */
     public Collection<QueryEntity> entities() {
+        if (entities == null)
+            entities = F.transform(entitiesMsgs, QueryEntityMessage::toEntity);
+
         return entities;
     }
 
-    /**
-     * @return Query parallelism.
-     */
+    /** @return Query parallelism. */
     public int queryParallelism() {
         return qryParallelism;
     }
 
-    /**
-     * @return Sql escape flag.
-     */
+    /** @return Sql escape flag. */
     public boolean isSqlEscape() {
         return sqlEscape;
+    }
+
+    /**
+     * @param qryEntity Query entity.
+     * @return The appropriate query entity message.
+     */
+    private QueryEntityMessage makeEntityMessage(QueryEntity qryEntity) {
+        return qryEntity instanceof QueryEntityEx ? new QueryEntityExMessage((QueryEntityEx)qryEntity)
+            : new QueryEntityMessage(qryEntity);
     }
 }

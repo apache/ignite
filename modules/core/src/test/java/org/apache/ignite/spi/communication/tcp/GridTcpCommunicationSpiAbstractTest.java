@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
-import java.util.function.Supplier;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -38,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
@@ -45,6 +44,8 @@ import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
 
 /**
  * Test for {@link TcpCommunicationSpi}
@@ -86,8 +87,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
     }
 
     /** {@inheritDoc} */
-    @Override protected Map<Short, Supplier<Message>> customMessageTypes() {
-        return Collections.singletonMap(GridTestMessage.DIRECT_TYPE, GridTestMessage::new);
+    @Override protected MessageFactoryProvider customMessageFactory() {
+        return GRID_TEST_MESSAGE_FACTORY;
     }
 
     /** */

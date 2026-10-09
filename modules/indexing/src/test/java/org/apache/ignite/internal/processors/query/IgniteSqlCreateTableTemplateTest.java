@@ -33,8 +33,7 @@ import org.junit.Test;
 public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override public IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration configuration = new IgniteConfiguration();
-        configuration.setIgniteInstanceName(name);
+        IgniteConfiguration configuration = super.getConfiguration(name);
 
         CacheConfiguration dfltCacheConfiguration = new CacheConfiguration();
 
@@ -54,7 +53,6 @@ public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
     }

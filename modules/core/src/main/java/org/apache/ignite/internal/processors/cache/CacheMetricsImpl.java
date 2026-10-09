@@ -19,16 +19,20 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
@@ -246,6 +250,15 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
 
+    /** Affinity configuration MDC safe metric. */
+    private volatile Boolean affCfgMdcSafe;
+
+    /** Current partition distribution MDC safe metric. */
+    private volatile Boolean mdcSafePartDistrib;
+
+    /** Last affinity version when MdcSafe Partition Distribution metric was recalculated. */
+    private final AtomicReference<AffinityTopologyVersion> mdcSafeMetricLastVer = new AtomicReference<>();
+
     /**
      * Creates cache metrics.
      *
@@ -292,10 +305,10 @@ public class CacheMetricsImpl implements CacheMetrics {
             "The total time of cache invocations for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMinInvocationTime = mreg.longMetric("EntryProcessorMinInvocationTime",
-            "So far, the minimum time to execute cache invokes for which this node is the initiator.");
+            "So far, the minimum time to execute cache invokes for which this node is the initiator, in nanoseconds.");
 
         entryProcessorMaxInvocationTime = mreg.longMetric("EntryProcessorMaxInvocationTime",
-            "So far, the maximum time to execute cache invokes for which this node is the initiator.");
+            "So far, the maximum time to execute cache invokes for which this node is the initiator, in nanoseconds.");
 
         entryProcessorHits = mreg.longMetric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
@@ -429,7 +442,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         mreg.register("HeapEntriesCount", this::getHeapEntriesCount, "Onheap entries count.");
 
-        mreg.register("CacheSize", this::getCacheSize, "Local cache size.");
+        mreg.register("CacheSize", this::getCacheSize,
+            "Local cache size, the number of primary copies of entries on the node.");
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
@@ -1377,9 +1391,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapPrimaryEntriesCnt = 0L;
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
-        int size = 0;
-        long sizeLong = 0L;
-        boolean isEmpty;
 
         try {
             AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
@@ -1388,13 +1399,6 @@ public class CacheMetricsImpl implements CacheMetrics {
                 return unknownEntriesStat();
 
             final GridCacheAdapter<?, ?> cache = cctx.cache();
-
-            if (cache != null) {
-                offHeapEntriesCnt = cache.offHeapEntriesCount();
-
-                size = cache.localSize(null);
-                sizeLong = cache.localSizeLong(null);
-            }
 
             IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
             IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
@@ -1416,13 +1420,18 @@ public class CacheMetricsImpl implements CacheMetrics {
                 if (cache == null)
                     continue;
 
-                long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+                long offHeapCnt = part.dataStore().cacheSize(cctx.cacheId());
+
+                // All local partitions, not only primary and backup ones (e.g. renting too),
+                // the same as IgniteInternalCache#offHeapEntriesCount().
+                offHeapEntriesCnt += offHeapCnt;
 
                 if (primaries.contains(part.id()))
-                    offHeapPrimaryEntriesCnt += cacheSize;
+                    offHeapPrimaryEntriesCnt += offHeapCnt;
                 else if (backups.contains(part.id()))
-                    offHeapBackupEntriesCnt += cacheSize;
+                    offHeapBackupEntriesCnt += offHeapCnt;
 
+                // Onheap entries count.
                 heapEntriesCnt += part.publicSize(cctx.cacheId());
             }
         }
@@ -1430,18 +1439,17 @@ public class CacheMetricsImpl implements CacheMetrics {
             return unknownEntriesStat();
         }
 
-        isEmpty = (offHeapEntriesCnt == 0);
-
         EntriesStatMetrics stat = new EntriesStatMetrics();
 
         stat.offHeapEntriesCount(offHeapEntriesCnt);
         stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
-        stat.size(size);
-        stat.cacheSize(sizeLong);
-        stat.keySize(size);
-        stat.isEmpty(isEmpty);
+        // Local cache size counts primary copies of entries, see GridDistributedCacheAdapter#localSizeLong.
+        stat.size((int)offHeapPrimaryEntriesCnt);
+        stat.cacheSize(offHeapPrimaryEntriesCnt);
+        stat.keySize((int)offHeapPrimaryEntriesCnt);
+        stat.isEmpty(offHeapEntriesCnt == 0);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
 
@@ -1612,20 +1620,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
-     * @return Total number of allocated pages.
-     */
-    public long getTotalAllocatedPages() {
-        return 0;
-    }
-
-    /**
-     * @return Total number of evicted pages.
-     */
-    public long getTotalEvictedPages() {
-        return 0;
-    }
-
-    /**
      * Off-heap read callback.
      *
      * @param hit Hit or miss flag.
@@ -1677,6 +1671,71 @@ public class CacheMetricsImpl implements CacheMetrics {
         IgniteInternalFuture fut = cctx.shared().kernalContext().query().indexRebuildFuture(cctx.cacheId());
 
         return fut != null && !fut.isDone();
+    }
+
+    /**
+     * Returns {@code true} if affinity configuration is aware of multiple data centers, and
+     * it is able to spread partitions' copies across data centers.
+     */
+    private boolean isAffinityCfgMdcSafe() {
+        return affCfgMdcSafe != null && affCfgMdcSafe;
+    }
+
+    /**
+     * Returns {@code true} if current cache partition distribution maintains guarantee 'at least one partition copy in each datacenter'.
+     */
+    private boolean isMdcSafePartitionDistribution() {
+        return updateMdcSafeDistributionMetricIfNeeded();
+    }
+
+    /**
+     * Updates calculated value of Partition Distribution MDC safe metric if affinity has changed
+     * since last affinity change.
+     *
+     * @return Updated value of Partition Distribution MDC safe metric or cached value if affinity has not changed.
+     */
+    private boolean updateMdcSafeDistributionMetricIfNeeded() {
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        try {
+            AffinityTopologyVersion currVer = aff.affinityTopologyVersion();
+            AffinityTopologyVersion lastVer = mdcSafeMetricLastVer.get();
+
+            // Skip expensive recalculation if the aff topology has not changed.
+            if (!currVer.equals(lastVer)) {
+                if (mdcSafeMetricLastVer.compareAndSet(lastVer, currVer))
+                    mdcSafePartDistrib = recalculateMdcSafeMetric(aff.assignment(currVer));
+            }
+        }
+        catch (Exception ignored) {
+            // Affinity manager could throw an exception if aff not found for the cache.
+            // This should not break any code calling this method, so we just ignore it.
+        }
+
+        return mdcSafePartDistrib == null || mdcSafePartDistrib;
+    }
+
+    /**
+     * Recalcalculates Partition Distribution MDC safe metric based on provided assignment.
+     *
+     * @param assignment New assignment for the cache.
+     */
+    private Boolean recalculateMdcSafeMetric(AffinityAssignment assignment) {
+        BaselineTopology top = cctx.discovery().discoCache().state().baselineTopology();
+        if (top != null && top.numberOfDatacenters() > 1) {
+            int numberOfDataCenters = top.numberOfDatacenters();
+
+            for (List<ClusterNode> nodes : assignment.assignment()) {
+                int dcsCnt = (int)nodes.stream().map(ClusterNode::dataCenterId).distinct().count();
+
+                if (dcsCnt < numberOfDataCenters)
+                    return false;
+            }
+
+            return true;
+        }
+
+        return mdcSafePartDistrib;
     }
 
     /** {@inheritDoc} */
@@ -1743,6 +1802,20 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
+    }
+
+    /** Registers metric for partition distribution.  */
+    public void registerPartitionDistributionSafeMetric() {
+        mreg.register("IsCachePartitionDistributionSafe", this::isMdcSafePartitionDistribution,
+            "True if current cache partition distribution maintains guarantee 'one partition copy in each datacenter'.");
+    }
+
+    /** Registers metric for cache configuration related to distributing partitions across DCs. */
+    public void registerAffinityConfigurationSafeMetric(boolean affCfgMdcSafe) {
+        mreg.register("IsCacheAffinityConfigurationMdcSafe", this::isAffinityCfgMdcSafe,
+            "True if cache affinity guarantees having a copy of each partition in each data center.");
+
+        this.affCfgMdcSafe = affCfgMdcSafe;
     }
 
     /** {@inheritDoc} */

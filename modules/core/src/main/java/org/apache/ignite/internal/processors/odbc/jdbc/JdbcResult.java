@@ -93,6 +93,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** End transaction response. */
     static final byte TX_END = 24;
 
+    /** Savepoint operation response. */
+    static final byte TX_SAVEPOINT = 25;
+
     /** Success status. */
     private byte type;
 
@@ -240,6 +243,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case TX_END:
                 res = new JdbcTxEndResult();
+
+                break;
+
+            case TX_SAVEPOINT:
+                res = new JdbcTxSavepointResult();
 
                 break;
 

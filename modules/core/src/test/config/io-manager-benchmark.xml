@@ -34,6 +34,12 @@
             <list/>
         </property>
 
+        <property name="pluginProviders">
+            <list>
+                <bean class="org.apache.ignite.loadtests.communication.LoadTestsCommunicationPluginProvider"/>
+            </list>
+        </property>
+
         <!-- Configure load balancing SPI in the way that do not require extra event subscription. -->
         <property name="loadBalancingSpi">
             <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">

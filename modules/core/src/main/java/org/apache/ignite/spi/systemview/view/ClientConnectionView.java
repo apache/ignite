@@ -25,14 +25,18 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CONN_CTX_META_KEY;
 
 /**
  * Client connection system view row.
  */
+@SystemViewDescriptor
 public class ClientConnectionView {
     /** Nio session. */
     private final GridNioSession ses;
@@ -47,6 +51,7 @@ public class ClientConnectionView {
     }
 
     /** @return Connection id. */
+    @Order(0)
     public long connectionId() {
         if (ctx == null)
             return -1;
@@ -55,6 +60,7 @@ public class ClientConnectionView {
     }
 
     /** @return Connection type. */
+    @Order(3)
     public String type() {
         if (ctx == null)
             return null;
@@ -70,16 +76,19 @@ public class ClientConnectionView {
     }
 
     /** @return Connection local address. */
+    @Order(1)
     public InetSocketAddress localAddress() {
         return ses.localAddress();
     }
 
     /** @return Connection remote address. */
+    @Order(2)
     public InetSocketAddress remoteAddress() {
         return ses.remoteAddress();
     }
 
     /** @return User name. */
+    @Order(4)
     public String user() {
         SecurityContext secCtx = ctx == null ? null : ctx.securityContext();
 
@@ -90,6 +99,7 @@ public class ClientConnectionView {
     }
 
     /** @return Protocol version. */
+    @Order(5)
     public String version() {
         if (ctx == null)
             return null;
@@ -103,5 +113,10 @@ public class ClientConnectionView {
 
         return ver == null ? null : ver.asString();
     }
-}
 
+    /** @return Client data center ID. */
+    @Order(6)
+    @Nullable public String dataCenterId() {
+        return ctx == null ? null : ctx.attributes().get(IGNITE_DATA_CENTER_ID);
+    }
+}

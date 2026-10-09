@@ -268,7 +268,7 @@ select 100d * debt.ToManDay() / timeToDev.ToManDay()
 //
 // • the estimated total effort to develop the code base
 //
-// • and the the estimated total time to fix all issues (the Debt)
+// • and the estimated total time to fix all issues (the Debt)
 //
 // Estimated total effort to develop the code base is inferred from 
 // # lines of code of the code base and from the 
@@ -9681,7 +9681,7 @@ select 100d * debt.ToManDay() / timeToDev.ToManDay()
 //
 // • the estimated total time to develop the code base
 //
-// • and the the estimated total time to fix all issues (the Debt).
+// • and the estimated total time to fix all issues (the Debt).
 //
 // Estimated total time to develop the code base is inferred from 
 // # lines of code of the code base and from the 

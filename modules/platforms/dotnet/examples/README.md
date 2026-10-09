@@ -7,7 +7,7 @@
 # Requirements
 
 * [.NET 6 SDK](https://dotnet.microsoft.com/download/dotnet-core)
-* [JDK 11](https://www.oracle.com/java/technologies/javase-jdk11-downloads.html)
+* [JDK 17](https://www.oracle.com/java/technologies/downloads/#java17)
 
 Windows, Linux, and macOS are supported.
 

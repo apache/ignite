@@ -18,13 +18,15 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.systemview.Filtrable;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * Partition state representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class PartitionStateView {
     /** Cache group id. */
     private final int cacheGrpId;

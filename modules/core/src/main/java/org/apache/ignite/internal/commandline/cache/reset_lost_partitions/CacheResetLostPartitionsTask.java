@@ -65,10 +65,10 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
                 final CacheResetLostPartitionsTaskResult res = new CacheResetLostPartitionsTaskResult();
                 res.setMessageMap(new HashMap<>());
 
-                if (F.isEmpty(arg.caches()))
+                if (F.isEmpty(arg.cacheGroups()))
                     return res;
 
-                for (String grpName : arg.caches()) {
+                for (String grpName : arg.cacheGroups()) {
                     final int grpId = CU.cacheId(grpName);
 
                     CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);

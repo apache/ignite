@@ -20,10 +20,10 @@ package org.apache.ignite.testframework;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.Field;
@@ -33,8 +33,11 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -75,10 +78,12 @@ import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
+import javax.management.MBeanServer;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import com.google.common.collect.Lists;
+import com.sun.management.HotSpotDiagnosticMXBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -94,7 +99,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -105,7 +109,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -123,10 +126,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -137,6 +141,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Long.parseLong;
 import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
+import static org.apache.ignite.internal.binary.BinaryUtils.isBinaryArray;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
@@ -163,6 +168,12 @@ public final class GridTestUtils {
     /** */
     private static final GridAbsClosure NOOP = new NoOpClosure();
 
+    /** This is the name of the HotSpot Diagnostic MBean. */
+    private static final String HOTSPOT_BEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
+
+    /** Field to store the hotspot diagnostic MBean. */
+    private static volatile HotSpotDiagnosticMXBean hotspotMBean;
+
     /**
      * Creates an absolute (no-arg) closure that does nothing.
      *
@@ -173,20 +184,68 @@ public final class GridTestUtils {
     }
 
     /**
+     * Call this method from your application whenever you
+     * want to dump the heap snapshot into a file.
+     *
+     * @param fileName Name of the heap dump file.
+     * @param live Flag that tells whether to dump
+     * only the live objects.
+     */
+    public static void dumpHeap(String fileName, boolean live) {
+        // Initialize hotspot diagnostic MBean.
+        initHotspotMBean();
+
+        File f = new File(fileName);
+
+        if (f.exists())
+            f.delete();
+
+        try {
+            hotspotMBean.dumpHeap(fileName, live);
+        }
+        catch (RuntimeException re) {
+            throw re;
+        }
+        catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
+    }
+
+    /**
+     * Initialize the hotspot diagnostic MBean field.
+     */
+    private static void initHotspotMBean() {
+        if (hotspotMBean == null) {
+            synchronized (GridTestUtils.class) {
+                if (hotspotMBean == null)
+                    hotspotMBean = getMBean(HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
+            }
+        }
+    }
+
+    /**
+     * Get MXBean from the platform MBeanServer.
+     *
+     * @param mxbeanName The name for uniquely identifying the MXBean within an MBeanServer.
+     * @param mxbeanItf The MXBean interface.
+     * @return A proxy for a platform MXBean interface.
+     */
+    private static <T> T getMBean(String mxbeanName, Class<T> mxbeanItf) {
+        try {
+            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+            return ManagementFactory.newPlatformMXBeanProxy(srv, mxbeanName, mxbeanItf);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * Hook object intervenes to discovery message handling
      * and thus allows to make assertions or other actions like skipping certain discovery messages.
      */
     public static class DiscoveryHook {
-        /**
-         * Handles discovery message before {@link DiscoverySpiListener#onDiscovery} invocation.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void beforeDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                beforeDiscovery(unwrap((CustomMessageWrapper)msg));
-        }
-
         /**
          * Handles {@link DiscoveryCustomMessage} before {@link DiscoverySpiListener#onDiscovery} invocation.
          *
@@ -194,16 +253,6 @@ public final class GridTestUtils {
          */
         public void beforeDiscovery(DiscoveryCustomMessage customMsg) {
             // No-op.
-        }
-
-        /**
-         * Handles discovery message after {@link DiscoverySpiListener#onDiscovery} completion.
-         *
-         * @param msg Intercepted discovery message.
-         */
-        public void afterDiscovery(DiscoverySpiCustomMessage msg) {
-            if (msg instanceof CustomMessageWrapper)
-                afterDiscovery(unwrap((CustomMessageWrapper)msg));
         }
 
         /**
@@ -220,16 +269,6 @@ public final class GridTestUtils {
          */
         public void ignite(IgniteEx ignite) {
             // No-op.
-        }
-
-        /**
-         * Obtains {@link DiscoveryCustomMessage} from {@link CustomMessageWrapper}.
-         *
-         * @param wrapper Wrapper of {@link DiscoveryCustomMessage}.
-         * @return Unwrapped {@link DiscoveryCustomMessage}.
-         */
-        private DiscoveryCustomMessage unwrap(CustomMessageWrapper wrapper) {
-            return U.field(wrapper, "delegate");
         }
     }
 
@@ -254,11 +293,11 @@ public final class GridTestUtils {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
-            hook.beforeDiscovery(notification.getCustomMsgData());
+            hook.beforeDiscovery(U.unwrapCustomMessage(notification.customMessage()));
 
             IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
+            fut.listen(f -> hook.afterDiscovery(U.unwrapCustomMessage(notification.customMessage())));
 
             return fut;
         }
@@ -1419,54 +1458,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param path Path.
-     * @param startFilter Start filter.
-     * @param endFilter End filter.
-     * @return List of JARs that corresponds to the filters.
-     * @throws IOException If failed.
-     */
-    private static Collection<String> getFiles(String path, @Nullable final String startFilter,
-        @Nullable final String endFilter) throws IOException {
-        Collection<String> res = new ArrayList<>();
-
-        File file = new File(path);
-
-        assert file.isDirectory();
-
-        File[] jars = file.listFiles(new FilenameFilter() {
-            /**
-             * @see FilenameFilter#accept(File, String)
-             */
-            @SuppressWarnings({"UnnecessaryJavaDocLink"})
-            @Override public boolean accept(File dir, String name) {
-                // Exclude spring.jar because it tries to load META-INF/spring-handlers.xml from
-                // all available JARs and create instances of classes from there for example.
-                // Exclude logging as it is used by spring and casted to Log interface.
-                // Exclude log4j because of the design - 1 per VM.
-                if (name.startsWith("spring") || name.startsWith("log4j") ||
-                    name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("ignite-tests"))
-                    return false;
-
-                boolean ret = true;
-
-                if (startFilter != null)
-                    ret = name.startsWith(startFilter);
-
-                if (ret && endFilter != null)
-                    ret = name.endsWith(endFilter);
-
-                return ret;
-            }
-        });
-
-        for (File jar : jars)
-            res.add(jar.getCanonicalPath());
-
-        return res;
-    }
-
-    /**
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
@@ -1778,35 +1769,10 @@ public final class GridTestUtils {
      */
     public static void setFieldValue(Object obj, String fieldName, Object val) throws IgniteException {
         assert obj != null;
-        assert fieldName != null;
 
-        try {
-            Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
+        Class<?> cls = obj instanceof Class ? (Class)obj : obj.getClass();
 
-            Field field = cls.getDeclaredField(fieldName);
-
-            boolean isFinal = (field.getModifiers() & Modifier.FINAL) != 0;
-
-            boolean isStatic = (field.getModifiers() & Modifier.STATIC) != 0;
-
-            /**
-             * http://java.sun.com/docs/books/jls/third_edition/html/memory.html#17.5.3
-             * If a final field is initialized to a compile-time constant in the field declaration,
-             *   changes to the final field may not be observed.
-             */
-            if (isFinal && isStatic)
-                throw new IgniteException("Modification of static final field through reflection.");
-
-            boolean accessible = field.isAccessible();
-
-            if (!accessible)
-                field.setAccessible(true);
-
-            field.set(obj, val);
-        }
-        catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
-        }
+        setFieldValue(obj, cls, fieldName, val);
     }
 
     /**
@@ -1840,22 +1806,6 @@ public final class GridTestUtils {
              */
             if (isFinal && isStatic)
                 throw new IgniteException("Modification of static final field through reflection.");
-
-            if (isFinal && U.majorJavaVersion(U.jdkVersion()) >= 12) {
-                long fieldOffset = GridUnsafe.objectFieldOffset(field);
-
-                GridUnsafe.putObjectField(obj, fieldOffset, val);
-
-                return;
-            }
-
-            if (isFinal) {
-                Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-                modifiersField.setAccessible(true);
-
-                modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-            }
 
             field.set(obj, val);
         }
@@ -2659,5 +2609,95 @@ public final class GridTestUtils {
         GridNioServer<?> nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
 
         setFieldValue(nioSrvr, "skipRead", skip);
+    }
+
+    /** */
+    public static <T extends Message> MessageSerializer<T> loadSerializer(Class<? extends Message> msgCls) {
+        try {
+            Class<?> serCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Serializer");
+
+            return (MessageSerializer<T>)U.newInstance(serCls);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find serializer for message: " + msgCls, e);
+        }
+    }
+
+    /** Loads the generated {@code *Marshaller} class for {@code msgCls}; the marshaller is passed per call, not held. */
+    public static <T extends Message> MessageMarshaller<T> loadMarshaller(Class<? extends Message> msgCls) {
+        try {
+            Class<?> marshallerCls = U.gridClassLoader()
+                .loadClass(msgCls.getPackage().getName() + "." + msgCls.getSimpleName() + "Marshaller");
+
+            return (MessageMarshaller<T>)U.newInstance(marshallerCls);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to find marshaller for message: " + msgCls, e);
+        }
+    }
+
+    /**
+     * Calculates directory size, tolerating files that disappear during traversal.
+     *
+     * @param dir Directory.
+     * @return Size.
+     * @throws IOException If failed.
+     */
+    public static long sizeOfDirectory(File dir) throws IOException {
+        long[] size = {0L};
+
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                size[0] += attrs.size();
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return size[0];
+    }
+
+    /**
+     * Check for arrays equality.
+     *
+     * @param a1 Value 1.
+     * @param a2 Value 2.
+     * @return {@code True} if arrays equal.
+     */
+    public static boolean arrayEq(Object a1, Object a2) {
+        if (a1 == a2)
+            return true;
+
+        if (a1 == null || a2 == null)
+            return a1 != null || a2 != null;
+
+        if (a1.getClass() != a2.getClass())
+            return false;
+
+        if (a1 instanceof byte[])
+            return Arrays.equals((byte[])a1, (byte[])a2);
+        else if (a1 instanceof boolean[])
+            return Arrays.equals((boolean[])a1, (boolean[])a2);
+        else if (a1 instanceof short[])
+            return Arrays.equals((short[])a1, (short[])a2);
+        else if (a1 instanceof char[])
+            return Arrays.equals((char[])a1, (char[])a2);
+        else if (a1 instanceof int[])
+            return Arrays.equals((int[])a1, (int[])a2);
+        else if (a1 instanceof long[])
+            return Arrays.equals((long[])a1, (long[])a2);
+        else if (a1 instanceof float[])
+            return Arrays.equals((float[])a1, (float[])a2);
+        else if (a1 instanceof double[])
+            return Arrays.equals((double[])a1, (double[])a2);
+        else if (isBinaryArray(a1))
+            return a1.equals(a2);
+
+        return Arrays.deepEquals((Object[])a1, (Object[])a2);
     }
 }

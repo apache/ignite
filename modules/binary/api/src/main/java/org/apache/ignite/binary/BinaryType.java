@@ -41,7 +41,11 @@ public interface BinaryType {
     public int typeId();
 
     /**
-     * Gets collection of all field names for this binary type.
+     * Gets collection of all field names for this binary type in the order in which the fields were initially
+     * registered.
+     * <p>
+     * Older Ignite versions did not guarantee field registration order. For metadata created or processed by such a
+     * version, the returned order is not guaranteed to match the original registration order.
      *
      * @return Collection of all field names for this binary type.
      */

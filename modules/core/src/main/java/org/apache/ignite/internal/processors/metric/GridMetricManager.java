@@ -64,7 +64,6 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -225,8 +224,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         sunOs = sunOperatingSystemMXBeanAccessor();
 
-        ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
-
         heap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "heap"));
         nonHeap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "nonheap"));
 
@@ -238,14 +235,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, GC_CPU_LOAD_DESCRIPTION);
         cpuLoad = sysreg.doubleMetric(CPU_LOAD, CPU_LOAD_DESCRIPTION);
 
-        sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
-        sysreg.register(UP_TIME, rt::getUptime, null);
-        sysreg.register(THREAD_CNT, threads::getThreadCount, null);
-        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
-        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
-        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
-        sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
-        sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+        sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class,
+            "System load average for the last minute, or a negative value if not available.");
+        sysreg.register(UP_TIME, rt::getUptime, "JVM uptime, in milliseconds.");
+        sysreg.register(THREAD_CNT, threads::getThreadCount, "Current number of live threads, including daemon threads.");
+        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, "Peak live thread count since the JVM started.");
+        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount,
+            "Total number of threads created and started since the JVM started.");
+        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, "Current number of live daemon threads.");
+        sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime,
+            "CPU time of the thread that reads the metric, in nanoseconds.");
+        sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime,
+            "User-mode CPU time of the thread that reads the metric, in nanoseconds.");
 
         MetricRegistryImpl pmeReg = registry(PME_METRICS);
 
@@ -431,16 +432,22 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         });
 
-        try {
-            opsFut.markInitialized();
-            opsFut.get();
-        }
-        catch (NodeStoppingException ignored) {
-            // No-op.
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to remove metrics configuration.", e);
-        }
+        opsFut.markInitialized();
+
+        // Do not wait for the removal here: this method is invoked from the partition map exchange (cache stop), and
+        // the removal is a discovery custom message round trip. On a client node such message can be lost during
+        // reconnect to another router, so waiting for it would block the exchange on the client forever.
+        opsFut.listen(() -> {
+            try {
+                opsFut.get();
+            }
+            catch (NodeStoppingException ignored) {
+                // No-op.
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Failed to remove metrics configuration [regName=" + regName + ']', e);
+            }
+        });
     }
 
     /**
@@ -640,18 +647,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             throw new IgniteException("Failed to find registered metric with specified name [metricName=" + name + ']');
     }
 
-    /**
-     * @return Total system memory.
-     */
-    private long totalSysMemory() {
-        try {
-            return sunOs.getTotalPhysicalMemorySize();
-        }
-        catch (RuntimeException ignored) {
-            return -1;
-        }
-    }
-
     /** @return Accessor for {@link com.sun.management.OperatingSystemMXBean}. */
     private SunOperatingSystemMXBeanAccessor sunOperatingSystemMXBeanAccessor() {
         try {
@@ -661,10 +656,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 return new SunOperatingSystemMXBeanAccessor() {
                     @Override public long getProcessCpuTime() {
                         return sunOs.getProcessCpuTime();
-                    }
-
-                    @Override public long getTotalPhysicalMemorySize() {
-                        return sunOs.getTotalPhysicalMemorySize();
                     }
                 };
             }
@@ -677,10 +668,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         return new SunOperatingSystemMXBeanAccessor() {
             @Override public long getProcessCpuTime() {
                 return U.<Long>property(os, "processCpuTime");
-            }
-
-            @Override public long getTotalPhysicalMemorySize() {
-                return U.<Long>property(os, "totalPhysicalMemorySize");
             }
         };
     }
@@ -787,10 +774,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         public MemoryUsageMetrics(String grp, String metricNamePrefix) {
             MetricRegistryImpl mreg = registry(grp);
 
-            this.init = mreg.longMetric(metricName(metricNamePrefix, "init"), null);
-            this.used = mreg.longMetric(metricName(metricNamePrefix, "used"), null);
-            this.committed = mreg.longMetric(metricName(metricNamePrefix, "committed"), null);
-            this.max = mreg.longMetric(metricName(metricNamePrefix, "max"), null);
+            String kind = metricNamePrefix.endsWith("nonheap") ? "non-heap" : "heap";
+
+            this.init = mreg.longMetric(metricName(metricNamePrefix, "init"),
+                "Initial amount of " + kind + " memory requested by the JVM, in bytes; -1 if undefined.");
+            this.used = mreg.longMetric(metricName(metricNamePrefix, "used"),
+                "Amount of used " + kind + " memory, in bytes.");
+            this.committed = mreg.longMetric(metricName(metricNamePrefix, "committed"),
+                "Amount of " + kind + " memory committed for the JVM to use, in bytes.");
+            this.max = mreg.longMetric(metricName(metricNamePrefix, "max"),
+                "Maximum amount of " + kind + " memory that can be used, in bytes; -1 if undefined.");
         }
 
         /** Updates metric to the provided values. */
@@ -806,9 +799,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private interface SunOperatingSystemMXBeanAccessor {
         /** @see com.sun.management.OperatingSystemMXBean#getProcessCpuTime() */
         long getProcessCpuTime();
-
-        /** @see com.sun.management.OperatingSystemMXBean#getTotalPhysicalMemorySize() */
-        long getTotalPhysicalMemorySize();
     }
 
     /** Custom metrics impl. */

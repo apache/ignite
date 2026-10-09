@@ -35,6 +35,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -111,11 +112,9 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
 
     /**
      * Tests insertion of an entity.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testInsertEntityFields() throws Exception {
+    public void testInsertEntityFields() {
         cache.remove(entity.getId());
 
         assertEquals(0, cache.size());
@@ -136,11 +135,9 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
 
     /**
      * Tests MERGE statement.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testMergeEntityFields() throws Exception {
+    public void testMergeEntityFields() {
         assertEquals(1, cache.size());
 
         SqlFieldsQuery qry = new SqlFieldsQuery(
@@ -160,11 +157,9 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
     /**
      * Tests that DATEDIFF SQL function works for {@link LocalDateTime}
      * fields with the time part set to midnight.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testDateDiffForLocalDateTimeFieldAtMidnight() throws Exception {
+    public void testDateDiffForLocalDateTimeFieldAtMidnight() {
         SqlFieldsQuery qry =
             new SqlFieldsQuery("select DATEDIFF('DAY', locDateTime, CURRENT_DATE ()) from EntityWithDateTimeFields");
 
@@ -176,11 +171,9 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
 
     /**
      * Tests that selection for a {@link LocalTime} field returns {@link Time}.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testSelectLocalTimeFieldReturnsTime() throws Exception {
+    public void testSelectLocalTimeFieldReturnsTime() {
         SqlFieldsQuery qry = new SqlFieldsQuery("select locTime from EntityWithDateTimeFields");
 
         List<List<?>> qryResults = cache.query(qry).getAll();
@@ -191,11 +184,9 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
 
     /**
      * Tests that selection for a {@link LocalDate} field returns {@link Date}.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testSelectLocalDateFieldReturnsDate() throws Exception {
+    public void testSelectLocalDateFieldReturnsDate() {
         SqlFieldsQuery qry = new SqlFieldsQuery("select locDate from EntityWithDateTimeFields");
 
         List<List<?>> qryResults = cache.query(qry).getAll();
@@ -206,11 +197,9 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
 
     /**
      * Tests that selection for a {@link LocalDateTime} field returns {@link Timestamp}.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testSelectLocalDateTimeFieldReturnsTimestamp() throws Exception {
+    public void testSelectLocalDateTimeFieldReturnsTimestamp() {
         SqlFieldsQuery qry = new SqlFieldsQuery("select locDateTime from EntityWithDateTimeFields");
 
         List<List<?>> qryResults = cache.query(qry).getAll();
@@ -224,14 +213,27 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
      */
     @Test
     public void testSelectByAllFields() {
-        SqlFieldsQuery qry = new SqlFieldsQuery(
-            "select locDate from EntityWithDateTimeFields where locTime = ? and locDate = ? and locDateTime = ?"
-        ).setArgs(entity.getLocalTime(), entity.getLocalDate(), entity.getLocalDateTime());
+        String[] idxs = new String[] {
+            QueryUtils.PRIMARY_KEY_INDEX,
+            "ENTITYWITHDATETIMEFIELDS_LOCTIME_IDX",
+            "ENTITYWITHDATETIMEFIELDS_LOCDATETIME_IDX",
+            "ENTITYWITHDATETIMEFIELDS_LOCDATE_IDX",
+        };
 
-        List<List<?>> qryResults = cache.query(qry).getAll();
+        for (String idx : idxs) {
+            String sql = "select locDate, locTime, locDateTime from EntityWithDateTimeFields " +
+                "use index (\"" + idx + "\") where locTime = ? and locDate = ? and locDateTime = ?";
 
-        assertEquals(1, qryResults.size());
-        assertEquals(Date.valueOf(entity.getLocalDate()), qryResults.get(0).get(0));
+            SqlFieldsQuery qry = new SqlFieldsQuery(sql)
+                .setArgs(entity.getLocalTime(), entity.getLocalDate(), entity.getLocalDateTime());
+
+            List<List<?>> qryResults = cache.query(qry).getAll();
+
+            assertEquals("Unexpected result size for query [sql=" + sql + ']', 1, qryResults.size());
+            assertEquals(Date.valueOf(entity.getLocalDate()), qryResults.get(0).get(0));
+            assertEquals(Time.valueOf(entity.getLocalTime()), qryResults.get(0).get(1));
+            assertEquals(Timestamp.valueOf(entity.getLocalDateTime()), qryResults.get(0).get(2));
+        }
     }
 
     /**

@@ -19,7 +19,7 @@ package org.apache.ignite.spi.checkpoint.jdbc;
 
 import org.apache.ignite.spi.checkpoint.GridCheckpointSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.hsqldb.jdbc.jdbcDataSource;
+import org.hsqldb.jdbc.JDBCDataSource;
 
 /**
  * Grid jdbc checkpoint SPI custom config self test.
@@ -29,7 +29,7 @@ public class JdbcCheckpointSpiCustomConfigSelfTest extends
     GridCheckpointSpiAbstractTest<JdbcCheckpointSpi> {
     /** {@inheritDoc} */
     @Override protected void spiConfigure(JdbcCheckpointSpi spi) throws Exception {
-        jdbcDataSource ds = new jdbcDataSource();
+        JDBCDataSource ds = new JDBCDataSource();
 
         ds.setDatabase("jdbc:hsqldb:mem:gg_test_" + getClass().getSimpleName());
         ds.setUser("sa");

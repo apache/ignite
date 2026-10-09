@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -58,20 +59,13 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * Benchmark TPC-H SQL queries.
  */
 @State(Scope.Benchmark)
-// Use @Fork(value = 0) to debug or attach profiler.
-@Fork(value = 1, jvmArgs = {
-    "-Xms4g", "-Xmx4g",
-    "-Dcalcite.volcano.dump.graphviz=false",
-    "-Dcalcite.volcano.dump.sets=false"
-})
+// Use @Fork(0) to debug or attach profiler.
+@Fork(1)
 @Threads(1)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @SuppressWarnings({"unused"})
@@ -327,10 +321,11 @@ public class TpchBenchmark {
      * @throws Exception Exception.
      */
     public static void main(String[] args) throws Exception {
-        final Options options = new OptionsBuilder()
-            .include(TpchBenchmark.class.getSimpleName())
-            .build();
-
-        new Runner(options).run();
+        JmhIdeBenchmarkRunner.create()
+            .benchmarks(TpchBenchmark.class.getSimpleName())
+            .jvmArguments("-Xms4g", "-Xmx4g",
+                "-Dcalcite.volcano.dump.graphviz=false",
+                "-Dcalcite.volcano.dump.sets=false")
+            .run();
     }
 }

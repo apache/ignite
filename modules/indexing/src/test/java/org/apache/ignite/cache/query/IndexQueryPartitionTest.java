@@ -78,6 +78,7 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(cacheMode)
             .setIndexedTypes(Integer.class, Person.class)
+            .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(100));
 
         cfg.setCacheConfiguration(ccfg);
@@ -136,7 +137,7 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
                 }
             }
 
-            assertEquals(sendReq, TestRecordingCommunicationSpi.spi(grid()).recordedMessages(true).size());
+            assertEquals("part=" + part, sendReq, TestRecordingCommunicationSpi.spi(grid()).recordedMessages(true).size());
         }
     }
 
@@ -181,7 +182,7 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
                 GridTestUtils.assertThrows(null, () -> grid().cache("CACHE").query(qry).getAll(),
                     client ? IgniteException.class : CacheInvalidStateException.class,
                     client ? "Failed to execute local index query on a client node." :
-                        "Failed to execute index query because required partition has not been found on local node");
+                        "Failed to execute index query because required partition is not primary on local node");
             }
             else
                 assertTrue(!grid().cache("CACHE").query(qry).getAll().isEmpty());

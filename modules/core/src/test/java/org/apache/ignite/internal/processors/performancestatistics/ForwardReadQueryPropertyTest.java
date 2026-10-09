@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -28,31 +30,48 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsReader.LEGACY_FILE_FORMAT_VERSION_1;
+import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeString;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.writeUuid;
+import static org.junit.runners.Parameterized.Parameter;
+import static org.junit.runners.Parameterized.Parameters;
 
 /**
  * Tests forward read mode for {@link OperationType#QUERY_PROPERTY} records.
  */
+@RunWith(Parameterized.class)
 public class ForwardReadQueryPropertyTest extends AbstractPerformanceStatisticsTest {
     /** Read buffer size. */
     private static final int BUFFER_SIZE = 100;
+
+    /** File format version. */
+    @Parameter
+    public short fileFormatVer;
+
+    /** @return Test parameters. */
+    @Parameters(name = "fileFormatVer={0}")
+    public static Collection<?> parameters() {
+        return List.of(FILE_FORMAT_VERSION, LEGACY_FILE_FORMAT_VERSION_1);
+    }
 
     /** @throws Exception If failed. */
     @Test
     public void testStringForwardRead() throws Exception {
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
-        Map<String, String> expProps = createStatistics(dir);
+        Map<String, String> expProps = createStatistics(dir, fileFormatVer);
         Map<String, String> actualProps = new HashMap<>();
 
         new FilePerformanceStatisticsReader(BUFFER_SIZE, new TestHandler() {
-            @Override public void queryProperty(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String name,
-                String val) {
+            @Override public void queryProperty(UUID nodeId, GridCacheQueryType type, UUID qryNodeId, long id, String name, String val) {
                 assertNotNull(name);
                 assertNotNull(val);
 
@@ -64,14 +83,20 @@ public class ForwardReadQueryPropertyTest extends AbstractPerformanceStatisticsT
     }
 
     /** Creates test performance statistics file. */
-    private Map<String, String> createStatistics(File dir) throws Exception {
+    private Map<String, String> createStatistics(File dir, short fileFormatVer) throws Exception {
         File file = new File(dir, "node-" + randomUUID() + ".prf");
 
         try (FileIO fileIo = new RandomAccessFileIOFactory().create(file)) {
             ByteBuffer buf = ByteBuffer.allocate(1024).order(ByteOrder.nativeOrder());
 
             buf.put(OperationType.VERSION.id());
-            buf.putShort(FilePerformanceStatisticsWriter.FILE_FORMAT_VERSION);
+
+            if (fileFormatVer == FILE_FORMAT_VERSION) {
+                buf.putShort(fileFormatVer);
+                writeString(buf, VER_STR, false);
+            }
+            else
+                buf.putShort(fileFormatVer);
 
             writeQueryProperty(buf, "property", true, "val", true);
             writeQueryProperty(buf, "property", false, "val", false);

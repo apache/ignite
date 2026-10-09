@@ -37,8 +37,11 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CALCITE_EXEC_MODIF
  * Abstract node of execution tree.
  */
 public abstract class AbstractNode<Row> implements Node<Row> {
+    /** Special flag which marks that all the rows are received. */
+    static final int NOT_WAITING = -1;
+
     /** */
-    protected static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE, 512);
+    public static final int IN_BUFFER_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_IN_BUFFER_SIZE, 512);
 
     /** */
     protected static final int MODIFY_BATCH_SIZE = IgniteSystemProperties.getInteger(IGNITE_CALCITE_EXEC_MODIFY_BATCH_SIZE, 100);
@@ -79,8 +82,8 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /**
      * {@link Inbox} node may not have proper context at creation time in case it
      * creates on first message received from a remote source. This case the context
-     * sets in scope of {@link Inbox#init(ExecutionContext, Collection, Comparator)} method call.
-     */ /** {@inheritDoc} */
+     * sets in scope of {@link Inbox#init(ExecutionContext, RelDataType, Collection, Comparator)} method call.
+     */
     @Override public ExecutionContext<Row> context() {
         return ctx;
     }

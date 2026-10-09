@@ -274,7 +274,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
             if (nodes().isEmpty())
                 throw U.convertException(U.emptyTopologyException());
 
-            return new ClusterMetricsSnapshot(this);
+            return new ClusterMetricsSnapshot(nodes());
         }
         finally {
             unguard();

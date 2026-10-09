@@ -89,4 +89,34 @@ The write synchronization mode can be set to the following values:
 
 //NOTE: Regardless of write synchronization mode, cache data will always remain fully consistent across all participating nodes when using transactions.
 
+== Affinity Backup Filters
 
+`RendezvousAffinityFunction` can use an affinity backup filter to control where backup copies are placed.
+Backup filters are useful when cache copies must follow hardware, availability zone, rack, cell, or data center boundaries.
+
+Ignite provides the following built-in filters:
+
+[cols="1,3",opts="header"]
+|===
+| Filter | Description
+| `ClusterNodeAttributeAffinityBackupFilter`
+| Places backup copies on nodes that have different values of the configured node attributes.
+Use it to spread partition copies across availability zones, racks, or other failure domains.
+
+| `ClusterNodeAttributeColocatedBackupFilter`
+| Places backup copies on nodes that have the same value of the configured node attribute as the primary node.
+Use it to keep all copies of a partition inside the same cell or another co-location group.
+For example, if nodes are grouped by a `CELL` attribute, the primary and backups for one partition are placed
+on nodes from the same cell, while other partitions can be assigned to other cells.
+
+| `MdcAffinityBackupFilter`
+| Places partition copies evenly across data centers.
+Use it in link:clustering/multi-data-center[multi data center deployments].
+|===
+
+[NOTE]
+====
+`ClusterNodeAttributeColocatedBackupFilter` intentionally co-locates partition copies in the same attribute group.
+It is useful for cell-based layouts where the goal is to limit the failure impact to a cell.
+It should not be used when the goal is to spread copies across data centers or availability zones.
+====

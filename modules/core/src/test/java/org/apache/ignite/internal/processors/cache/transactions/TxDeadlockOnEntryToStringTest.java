@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Collections;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -30,12 +28,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
-import org.apache.ignite.internal.util.UUIDCollectionMessage;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
-import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
+import org.apache.ignite.spi.communication.tcp.internal.CommunicationConnectionStateHandler;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.communication.tcp.internal.InboundConnectionHandler;
@@ -104,7 +102,7 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
 
             nearNode.configuration().getCommunicationSpi().sendMessage(
                 incomingNode.localNode(),
-                new UUIDCollectionMessage(Collections.singletonList(UUID.randomUUID()))
+                new GridByteArrayList()
             );
 
             // Check
@@ -248,8 +246,8 @@ public class TxDeadlockOnEntryToStringTest extends GridCommonAbstractTest {
                     hnd.stop();
                 }
 
-                @Override public void communicationWorker(CommunicationWorker commWorker) {
-                    hnd.communicationWorker(commWorker);
+                @Override public void communicationConnectionStateHandler(CommunicationConnectionStateHandler connStateHnd) {
+                    hnd.communicationConnectionStateHandler(connStateHnd);
                 }
 
                 @Override public void onSessionIdleTimeout(GridNioSession ses) {

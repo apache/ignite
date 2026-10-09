@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,6 +76,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
     /** */
+    private long startTime;
+
+    /** */
     private long endTime;
 
     /** */
@@ -104,7 +105,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
-        long startTime = U.currentTimeMillis();
+        startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
         capacity = query().query().limit();
@@ -189,10 +190,15 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @throws IgniteCheckedException If future is done with an error.
      */
     private void checkError() throws IgniteCheckedException {
-        if (error() != null) {
+        Throwable err = error();
+
+        if (err == null && isCancelled())
+            err = new QueryCancelledException("Query was cancelled");
+
+        if (err != null) {
             clear();
 
-            throw U.cast(error());
+            throw U.cast(err);
         }
     }
 
@@ -313,34 +319,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @param col Collection.
-     * @return Collection with masked {@code null} values.
-     */
-    private Collection<Object> maskNulls(Collection<Object> col) {
-        assert col != null;
-
-        return F.viewReadOnly(col, new C1<Object, Object>() {
-            @Override public Object apply(Object e) {
-                return e != null ? e : NULL;
-            }
-        });
-    }
-
-    /**
-     * @param col Collection.
-     * @return Collection with unmasked {@code null} values.
-     */
-    private Collection<Object> unmaskNulls(Collection<Object> col) {
-        assert col != null;
-
-        return F.viewReadOnly(col, new C1<Object, Object>() {
-            @Override public Object apply(Object e) {
-                return e != NULL ? e : null;
-            }
-        });
-    }
-
-    /**
      * @param obj Object.
      * @return Unmasked object.
      */
@@ -385,6 +363,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public IgniteUuid timeoutId() {
         return timeoutId;
+    }
+
+    /** Query start time. */
+    public long startTime() {
+        return startTime;
     }
 
     /** {@inheritDoc} */

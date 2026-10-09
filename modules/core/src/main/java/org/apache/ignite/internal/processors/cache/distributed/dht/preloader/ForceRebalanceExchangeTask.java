@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.processors.cache.AbstractCachePartitionExchangeWorkerTask;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.cache.CachePartitionExchangeWorkerTask;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 
 /**
  *
  */
-public class ForceRebalanceExchangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class ForceRebalanceExchangeTask implements CachePartitionExchangeWorkerTask {
     /** */
     private final GridDhtPartitionExchangeId exchId;
 
@@ -32,17 +31,10 @@ public class ForceRebalanceExchangeTask extends AbstractCachePartitionExchangeWo
     private final GridCompoundFuture<Boolean, Boolean> forcedRebFut;
 
     /**
-     * @param secCtx Security context in which current task must be executed.
      * @param exchId Exchange ID.
      * @param forcedRebFut Rebalance future.
      */
-    public ForceRebalanceExchangeTask(
-        SecurityContext secCtx,
-        GridDhtPartitionExchangeId exchId,
-        GridCompoundFuture<Boolean, Boolean> forcedRebFut
-    ) {
-        super(secCtx);
-
+    public ForceRebalanceExchangeTask(GridDhtPartitionExchangeId exchId, GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
         assert exchId != null;
         assert forcedRebFut != null;
 

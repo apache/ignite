@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -45,6 +46,12 @@ public class CreateTableCommand implements DdlCommand {
     /** Name of cache key type. */
     private String keyTypeName;
 
+    /** Wrap key flag. */
+    private Boolean wrapKey;
+
+    /** Wrap value flag. */
+    private Boolean wrapValue;
+
     /** Name of cache value type. */
     private String valTypeName;
 
@@ -67,7 +74,7 @@ public class CreateTableCommand implements DdlCommand {
     private List<ColumnDefinition> cols;
 
     /** Primary key columns. */
-    private List<String> pkCols;
+    private List<String> pkCols = Collections.emptyList();
 
     /** Name of the column that represents affinity key. */
     private String affinityKey;
@@ -107,6 +114,34 @@ public class CreateTableCommand implements DdlCommand {
      */
     public void cacheName(String cacheName) {
         this.cacheName = cacheName;
+    }
+
+    /**
+     * @return wrap_key flag.
+     */
+    @Nullable public Boolean wrapKey() {
+        return wrapKey;
+    }
+
+    /**
+     * @param wrapKey wrap_key flag.
+     */
+    public void wrapKey(boolean wrapKey) {
+        this.wrapKey = wrapKey;
+    }
+
+    /**
+     * @return wrap_value flag.
+     */
+    @Nullable public Boolean wrapValue() {
+        return wrapValue;
+    }
+
+    /**
+     * @param wrapValue wrap_value flag.
+     */
+    public void wrapValue(boolean wrapValue) {
+        this.wrapValue = wrapValue;
     }
 
     /**

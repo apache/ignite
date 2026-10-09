@@ -29,7 +29,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -86,7 +88,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 /**
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
-public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKey, PartitionHashRecord>> {
+public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<SnapshotPartitionsVerifyHandlerResponse> {
     /** Shared context. */
     protected final GridCacheSharedContext<?, ?> cctx;
 
@@ -106,7 +108,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKey, PartitionHashRecord> invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+    @Override public SnapshotPartitionsVerifyHandlerResponse invoke(SnapshotHandlerContext opCtx) throws IgniteCheckedException {
         if (!opCtx.snapshotFileTree().root().exists())
             throw new IgniteCheckedException("Snapshot directory doesn't exists: " + opCtx.snapshotFileTree().root());
 
@@ -157,6 +159,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     continue;
 
                 partFiles.add(part);
+
+                if (opCtx.totalConsumer() != null)
+                    opCtx.totalConsumer().accept(getClass(), 1);
+
+                if (!opCtx.check() && opCtx.progressConsumer() != null)
+                    opCtx.progressConsumer().accept(getClass(), partId);
             }
 
             if (parts.isEmpty())
@@ -174,14 +182,18 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         if (!opCtx.check()) {
-            log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
+            if (log.isInfoEnabled())
+                log.info("Snapshot data integrity check skipped [snpName=" + meta.snapshotName() + ']');
 
-            return Collections.emptyMap();
+            return new SnapshotPartitionsVerifyHandlerResponse(Collections.emptyMap());
         }
 
-        return meta.dump()
-            ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+        return new SnapshotPartitionsVerifyHandlerResponse(
+            meta.dump()
+                ? checkDumpFiles(opCtx, partFiles)
+                : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()),
+                    opCtx.progressConsumer() == null ? null : partId -> opCtx.progressConsumer().accept(getClass(), partId))
+        );
     }
 
     /** */
@@ -190,9 +202,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Map<Integer, List<File>> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
-        boolean punchHoleEnabled
+        boolean punchHoleEnabled,
+        @Nullable Consumer<Integer> checkedCnsmr
     ) throws IgniteCheckedException {
-        Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>();
+        Map<PartitionKey, PartitionHashRecord> res = new ConcurrentHashMap<>(partFiles.size(), 1.0f);
+
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
             .order(ByteOrder.nativeOrder()));
 
@@ -311,6 +325,10 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     }
                     catch (IOException e) {
                         throw new IgniteCheckedException(e);
+                    }
+                    finally {
+                        if (checkedCnsmr != null)
+                            checkedCnsmr.accept(partId);
                     }
 
                     return null;
@@ -439,18 +457,23 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>>> results) throws IgniteCheckedException {
+    @Override public void complete(
+        String name,
+        Map<UUID, SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse>> results
+    ) throws IgniteCheckedException {
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (SnapshotHandlerResult<Map<PartitionKey, PartitionHashRecord>> res : results) {
+        for (Map.Entry<UUID, SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse>> e : results.entrySet()) {
+            UUID nodeId = e.getKey();
+            SnapshotHandlerResult<SnapshotPartitionsVerifyHandlerResponse> res = e.getValue();
+
             if (res.error() != null) {
-                bldr.addException(res.node(), res.error());
+                bldr.addException(cctx.discovery().historicalNode(nodeId), res.error());
 
                 continue;
             }
 
-            Map<PartitionKey, PartitionHashRecord> data = res.data();
+            Map<PartitionKey, PartitionHashRecord> data = res.data().response();
 
             bldr.addPartitionHashes(data);
         }

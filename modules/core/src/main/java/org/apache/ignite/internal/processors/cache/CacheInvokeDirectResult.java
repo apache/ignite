@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -33,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 public class CacheInvokeDirectResult implements Message {
     /** Cache key. */
     @Order(0)
-    private KeyCacheObject key;
+    KeyCacheObject key;
 
     /** */
     @GridToStringInclude
@@ -41,13 +40,13 @@ public class CacheInvokeDirectResult implements Message {
 
     /** Result. */
     @GridToStringInclude
-    @Order(value = 1, method = "result")
-    private CacheObject res;
+    @Order(1)
+    CacheObject res;
 
     /** Error message. */
     @GridToStringInclude(sensitive = true)
-    @Order(value = 2, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @Order(2)
+    ErrorMessage errMsg;
 
     /**
      * Default constructor.
@@ -98,13 +97,6 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param key Key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
      * @return Result.
      */
     public CacheObject result() {
@@ -112,44 +104,10 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param res Result.
-     */
-    public void result(CacheObject res) {
-        this.res = res;
-    }
-
-    /**
      * @return Error.
      */
     @Nullable public Throwable error() {
         return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void prepareMarshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
-        key.prepareMarshal(ctx.cacheObjectContext());
-
-        assert unprepareRes == null : "marshalResult() was not called for the result: " + this;
-
-        if (res != null)
-            res.prepareMarshal(ctx.cacheObjectContext());
     }
 
     /**
@@ -165,23 +123,6 @@ public class CacheInvokeDirectResult implements Message {
         finally {
             unprepareRes = null;
         }
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param ldr Class loader.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void finishUnmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-
-        if (res != null)
-            res.finishUnmarshal(ctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 93;
     }
 
     /** {@inheritDoc} */

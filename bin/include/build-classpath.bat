@@ -27,9 +27,11 @@
 
 for /D %%F in (modules\*) do if not %%F == "modules" call :includeToClassPath %%F
 for /D %%F in (modules\binary\*) do call :includeToClassPath %%F
+for /D %%F in (modules\thin-client\*) do call :includeToClassPath %%F
 
 for /F %%F in ('dir /A:D /b "%IGNITE_HOME%\modules\*" /b') do call :includeToClassPath "%IGNITE_HOME%\modules\%%F"
 for /F %%F in ('dir /A:D /b "%IGNITE_HOME%\modules\binary\*" /b') do call :includeToClassPath "%IGNITE_HOME%\modules\%%F"
+for /F %%F in ('dir /A:D /b "%IGNITE_HOME%\modules\thin-client\*" /b') do call :includeToClassPath "%IGNITE_HOME%\modules\%%F"
 goto :eof
 
 :includeToClassPath

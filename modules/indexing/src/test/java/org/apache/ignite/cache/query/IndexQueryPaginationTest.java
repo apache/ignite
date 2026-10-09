@@ -47,9 +47,6 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     private static final int NODES = 2;
 
     /** */
-    private Ignite grid;
-
-    /** */
     private IgniteCache<Integer, Person> cache;
 
     /** */
@@ -64,11 +61,13 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = startGrids(NODES);
+        Ignite srv = startGrids(NODES);
 
-        cache = grid.cache("cache");
+        cache = srv.cache("cache");
 
-        insertData(grid, cache, entries);
+        awaitPartitionMapExchange();
+
+        insertData(srv, cache, entries);
     }
 
     /** {@inheritDoc} */
@@ -119,7 +118,7 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
         QueryCursor<Cache.Entry<Integer, Person>> cursor = cache.query(
             new IndexQuery<Integer, Person>(Person.class).setPageSize(PAGE_SIZE));
 
-        assert entries == cursor.getAll().size();
+        assertEquals(entries, cursor.getAll().size());
 
         List<Object> msgs = new ArrayList<>();
 
@@ -131,18 +130,19 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
 
         int reqsSize = reqs.size();
 
-        assert reqsSize == reqsExpected && reqsSize == resp.size();
+        assertEquals(reqsExpected, reqsSize);
+        assertEquals(reqsSize, resp.size());
 
         for (int i = 0; i < reqsSize; i++) {
             int reqPage = reqs.get(i).pageSize();
             int respData = resp.get(i).data().size();
 
-            assert reqPage == PAGE_SIZE;
+            assertEquals(PAGE_SIZE, reqPage);
 
             if (i == reqsSize - 1 && remNodeLastPageEntries != 0)
-                assert respData == remNodeLastPageEntries;
+                assertEquals(remNodeLastPageEntries, respData);
             else
-                assert respData == reqPage;
+                assertEquals(respData, reqPage);
         }
     }
 

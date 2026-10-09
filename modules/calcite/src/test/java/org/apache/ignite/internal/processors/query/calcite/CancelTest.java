@@ -35,9 +35,9 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteExcept
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
@@ -46,9 +46,10 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.a
 /**
  * Cancel query test.
  */
-public class CancelTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+public class CancelTest extends GridCommonAbstractWrapperTest {
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
         startGrids(2);
 
         IgniteCache<Integer, String> c = grid(0).cache("TEST");
@@ -57,6 +58,7 @@ public class CancelTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
@@ -72,7 +74,7 @@ public class CancelTest extends GridCommonAbstractTest {
             .setKeyFieldName("id")
             .setValueFieldName("val")
             .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);;
+            .addQueryField("val", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -102,7 +104,8 @@ public class CancelTest extends GridCommonAbstractTest {
         cursors.forEach(QueryCursor::close);
 
         GridTestUtils.assertThrows(log, () -> {
-                it.next();
+                while (it.hasNext())
+                    it.next();
 
                 return null;
             },
@@ -141,14 +144,18 @@ public class CancelTest extends GridCommonAbstractTest {
         // Sometimes remote node during stopping can send error to originator node and this error processed before
         // node left event, in this case exception stack will looks like:
         // IgniteSQLException -> RemoteException -> exception on remote node during node stop.
+        // Also, remote node can be stopped during processing of QueryStartRequest, in this case QueryCloseRequest
+        // with an error will be sent to originator node, this causes query cancelation with an IgniteSQLException.
         if (!X.hasCause(ex, "node left", ClusterTopologyCheckedException.class) &&
-            !X.hasCause(ex, RemoteException.class)) {
+            !X.hasCause(ex, RemoteException.class) &&
+            !X.hasCause(ex, "The query was cancelled while executing", IgniteSQLException.class)
+        ) {
             log.error("Unexpected exception", ex);
 
             fail("Unexpected exception: " + ex);
         }
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> engine.runningQueries().isEmpty(), 10_000));
 
         awaitReservationsRelease(grid(0), "TEST");
@@ -175,7 +182,7 @@ public class CancelTest extends GridCommonAbstractTest {
         CalciteQueryProcessor engine1 = (CalciteQueryProcessor)Commons.lookupComponent(
             grid(1).context(), QueryEngine.class);
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> engine1.runningQueries().isEmpty(), 10_000));
 
         awaitReservationsRelease(grid(1), "TEST");

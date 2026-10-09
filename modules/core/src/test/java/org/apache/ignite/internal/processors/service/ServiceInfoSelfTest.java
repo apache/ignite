@@ -89,14 +89,14 @@ public class ServiceInfoSelfTest {
      * Tests {@link ServiceInfo#topologySnapshot()}.
      */
     @Test
-    public void testTopologySnapshotEquality() {
+    public void testServiceTopologyEquality() {
         assertEquals(new HashMap<>(), sut.topologySnapshot());
 
         HashMap<UUID, Integer> top = new HashMap<>();
 
         top.put(nodeId, 5);
 
-        sut.topologySnapshot(top);
+        sut.updateServiceTopology(new ServiceTopology(top));
 
         assertEquals(top, sut.topologySnapshot());
 

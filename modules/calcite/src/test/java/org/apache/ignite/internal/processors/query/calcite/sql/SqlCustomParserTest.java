@@ -41,6 +41,7 @@ import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
@@ -55,12 +56,10 @@ import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlSta
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.DISTINCT;
 import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.MAX_CHANGED_PARTITION_ROWS_PERCENT;
@@ -72,12 +71,12 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Test suite to verify parsing of the custom (DDL and others) command.
  */
-public class SqlCustomParserTest extends GridCommonAbstractTest {
+public class SqlCustomParserTest extends GridCommonAbstractWrapperTest {
     /**
      * Very simple case where only table name and a few columns are presented.
      */
@@ -249,7 +248,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
             " data_region=my_data_region," +
             " key_type=my_key_type," +
             " value_type=my_value_type," +
-            " encrypted=true";
+            " encrypted=true," +
+            " wrap_key=true," +
+            " wrap_value=true";
 
         SqlNode node = parse(qry);
 
@@ -268,6 +269,8 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         assertThatStringOptionPresent(createTable.createOptionList().getList(), "KEY_TYPE", "MY_KEY_TYPE");
         assertThatStringOptionPresent(createTable.createOptionList().getList(), "VALUE_TYPE", "MY_VALUE_TYPE");
         assertThatBooleanOptionPresent(createTable.createOptionList().getList(), "ENCRYPTED", true);
+        assertThatBooleanOptionPresent(createTable.createOptionList().getList(), "WRAP_KEY", true);
+        assertThatBooleanOptionPresent(createTable.createOptionList().getList(), "WRAP_VALUE", true);
     }
 
     /**
@@ -286,7 +289,9 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
             " data_region= my_data_region," +
             " key_type=my_key_type," +
             " value_type=my_value_type," +
-            " encrypted=true" +
+            " encrypted=true," +
+            " wrap_key=true," +
+            " wrap_value=true" +
             "\"";
 
         SqlNode node = parse(qry);
@@ -307,6 +312,8 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         assertThatStringOptionPresent(opts, "KEY_TYPE", "my_key_type");
         assertThatStringOptionPresent(opts, "VALUE_TYPE", "my_value_type");
         assertThatStringOptionPresent(opts, "ENCRYPTED", "true");
+        assertThatStringOptionPresent(opts, "WRAP_KEY", "true");
+        assertThatStringOptionPresent(opts, "WRAP_VALUE", "true");
 
         assertParserThrows("create table my_table(id int) with \"unknown_key=val\"", SqlParseException.class);
         assertParserThrows("create table my_table(id int) with \"template\"", SqlParseException.class);

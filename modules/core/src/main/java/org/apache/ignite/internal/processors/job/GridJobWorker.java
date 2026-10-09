@@ -46,16 +46,17 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -63,9 +64,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -124,9 +123,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final IgniteLogger log;
 
     /** */
-    private final Marshaller marsh;
-
-    /** */
     private final GridJobSessionImpl ses;
 
     /** */
@@ -145,16 +141,16 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final AtomicBoolean masterLeaveGuard = new AtomicBoolean();
 
     /** */
-    private volatile boolean timedOut;
-
-    /** */
-    private volatile boolean sysCancelled;
-
-    /** */
-    private volatile boolean sysStopping;
-
-    /** */
     private volatile boolean isStarted;
+
+    /** */
+    private volatile boolean isCancelledBySystem;
+
+    /** */
+    private volatile boolean isTimedOut;
+
+    /** */
+    private volatile boolean isNodeStopping;
 
     /** Deployed job. */
     private ComputeJob job;
@@ -246,8 +242,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         log = U.logger(ctx, logRef, this);
 
-        marsh = ctx.marshaller();
-
         UUID locNodeId = ctx.discovery().localNode().id();
 
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
@@ -270,15 +264,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     public GridDeployment getDeployment() {
         return dep;
-    }
-
-    /**
-     * Returns {@code True} if job was cancelled by the system.
-     *
-     * @return {@code True} if job was cancelled by the system.
-     */
-    boolean isSystemCanceled() {
-        return sysCancelled;
     }
 
     /**
@@ -402,7 +387,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @return {@code True} if job is timed out.
      */
     public boolean isTimedOut() {
-        return timedOut;
+        return isTimedOut;
     }
 
     /**
@@ -417,7 +402,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         if (finishing.get())
             return;
 
-        timedOut = true;
+        isTimedOut = true;
 
         U.warn(log, "Job has timed out: " + ses);
 
@@ -430,8 +415,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /**
      * Callback for whenever grid is stopping.
      */
-    public void onStopping() {
-        sysStopping = true;
+    public void onNodeStopping() {
+        isNodeStopping = true;
     }
 
     /**
@@ -540,7 +525,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         SqlFieldsQuery.setThreadedQueryInitiatorId("task:" + ses.getTaskName() + ":" + getJobId());
 
-        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
+        try (Scope ignored = ctx.security().withContext(secCtx)) {
             if (partsReservation != null) {
                 try {
                     if (!partsReservation.reserve()) {
@@ -553,17 +538,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     IgniteException ex = new IgniteException("Failed to lock partitions " +
                         "[jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
-                    U.error(log, "Failed to lock partitions [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);;
+                    U.error(log, "Failed to lock partitions [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
                     finishJob(null, ex, true);
 
                     return;
                 }
             }
-
-            if (isCancelled())
-                // If job was cancelled prior to assigning runner to it?
-                super.cancel();
 
             if (!skipNtf) {
                 if (holdLsnr.onUnheld(this)) {
@@ -618,7 +599,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 }
             }
             catch (IgniteException e) {
-                if (sysStopping && e.hasCause(IgniteInterruptedCheckedException.class, InterruptedException.class)) {
+                if (isNodeStopping && e.hasCause(IgniteInterruptedCheckedException.class, InterruptedException.class)) {
                     ex = handleThrowable(e);
 
                     assert ex != null;
@@ -700,7 +681,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         // Special handling for weird interrupted exception which
         // happens due to JDk 1.5 bug.
-        if (e instanceof InterruptedException && !sysStopping) {
+        if (e instanceof InterruptedException && !isNodeStopping) {
             msg = "Failed to execute job due to interrupted exception.";
 
             // Turn interrupted exception into checked exception.
@@ -716,7 +697,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }
-        else if (sysStopping && X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class)) {
+        else if (isNodeStopping && X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class)) {
             msg = "Job got interrupted due to system stop (will attempt failover).";
 
             ex = new ComputeExecutionRejectedException(e);
@@ -747,39 +728,32 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sys System flag.
      */
     public void cancel(boolean sys) {
-        try {
-            final ComputeJob job0 = job;
+        if (log.isDebugEnabled())
+            log.debug("Cancelling job: " + ses);
 
-            if (sys)
-                sysCancelled = true;
+        boolean firstCancel = isCancelled.compareAndSet(false, true);
 
-            if (job0 != null) {
-                if (log.isDebugEnabled())
-                    log.debug("Cancelling job: " + ses);
+        isCancelledBySystem = sys;
 
-                status = CANCELLED;
+        status = CANCELLED;
 
-                U.wrapThreadLoader(dep.classLoader(), (IgniteRunnable)() -> {
-                    try (OperationSecurityContext c = ctx.security().withContext(secCtx)) {
-                        job0.cancel();
-                    }
-                });
-            }
+        final ComputeJob job0 = job;
 
-            // Interrupting only when all 'cancelled' flags are set.
-            // This allows the 'job' to determine it's a cancellation.
-            super.cancel();
-
-            if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
-                recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
+        try (Scope ignored = ctx.security().withContext(secCtx)) {
+            U.wrapThreadLoader(dep.classLoader(), job0::cancel);
         }
-        // Catch throwable to protect against bad user code.
-        catch (Throwable e) {
+        catch (Throwable e) { // Catch throwable to protect against bad user code.
             U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
                 ", ses=" + ses + ']', e);
 
             if (e instanceof Error)
                 throw e;
+        }
+        finally {
+            onCancel(firstCancel);
+
+            if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
+                recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
         }
     }
 
@@ -844,7 +818,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         // Do not send reply if job has been cancelled from system.
         if (sndReply)
-            sndReply = !sysCancelled;
+            sndReply = !isCancelledBySystem;
 
         // We should save message ID here since listener callback will reset sequence.
         ClusterNode sndNode = ctx.discovery().node(taskNode.id());
@@ -908,8 +882,36 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 
-                            if (!loc)
-                                jobRes.marshallUserData(marsh, log);
+                            if (!loc) {
+                                try {
+                                    CommunicationMarshalling.marshal(jobRes, ctx, null);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    String ids = "[nodeId=" + sndNode.id() + ", ses=" + ses.getId() +
+                                        ", jobId=" + ses.getJobId() + ']';
+
+                                    logError("Failed to serialize job response " + ids, e);
+
+                                    // Drop the payload, keeping the job exception when there is one.
+                                    jobRes = jobRes.withError(jobRes.exception() != null
+                                        ? jobRes.exception()
+                                        : U.convertException(e));
+
+                                    try {
+                                        CommunicationMarshalling.marshal(jobRes, ctx, null);
+                                    }
+                                    catch (IgniteCheckedException e0) {
+                                        // Then the exception itself is what could not be written.
+                                        String errMsg = "Failed to serialize job exception " + ids;
+
+                                        logError(errMsg, e0);
+
+                                        jobRes = jobRes.withError(new IgniteException(errMsg));
+
+                                        CommunicationMarshalling.marshal(jobRes, ctx, null);
+                                    }
+                                }
+                            }
 
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 

@@ -38,6 +38,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.ANY;
@@ -57,8 +58,13 @@ public class Accumulators {
     public static <Row> Supplier<Accumulator<Row>> accumulatorFactory(AggregateCall call, ExecutionContext<Row> ctx) {
         Supplier<Accumulator<Row>> supplier = accumulatorFunctionFactory(call, ctx);
 
-        if (call.isDistinct())
-            return () -> new DistinctAccumulator<>(call, ctx.rowHandler(), supplier);
+        if (call.isDistinct()) {
+            return () -> {
+                Accumulator<Row> acc = supplier.get();
+
+                return acc.handlesDistinct() ? acc : new DistinctAccumulator<>(call, ctx.rowHandler(), acc);
+            };
+        }
 
         return supplier;
     }
@@ -69,6 +75,15 @@ public class Accumulators {
         ExecutionContext<Row> ctx
     ) {
         RowHandler<Row> hnd = ctx.rowHandler();
+
+        AccumulatorFactoryProvider prov = ctx.unwrap(AccumulatorFactoryProvider.class);
+
+        if (prov != null) {
+            Supplier<Accumulator<Row>> fac = prov.factory(call, ctx);
+
+            if (fac != null)
+                return fac;
+        }
 
         switch (call.getAggregation().getName()) {
             case "COUNT":
@@ -234,7 +249,11 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, true,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                throw new UnsupportedOperationException("MIN() is not supported for type '" + call.type + "'.");
+                return () -> new ComparableMinMax<>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(ANY), true));
+            case OTHER:
+                return () -> new ComparableMinMax<>(call, hnd, true,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.OTHER), true));
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, true);
@@ -263,7 +282,11 @@ public class Accumulators {
                 return () -> new ComparableMinMax<Row, UUID>(call, hnd, false,
                     tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.UUID), true));
             case ANY:
-                throw new UnsupportedOperationException("MAX() is not supported for type '" + call.type + "'.");
+                return () -> new ComparableMinMax<>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(ANY), true));
+            case OTHER:
+                return () -> new ComparableMinMax<>(call, hnd, false,
+                    tf -> tf.createTypeWithNullability(tf.createSqlType(SqlTypeName.OTHER), true));
             case BIGINT:
             default:
                 return () -> new LongMinMax<>(call, hnd, false);
@@ -271,7 +294,7 @@ public class Accumulators {
     }
 
     /** */
-    private abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
+    public abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
         /** */
         private final RowHandler<Row> hnd;
 
@@ -279,13 +302,13 @@ public class Accumulators {
         private final transient AggregateCall aggCall;
 
         /** */
-        AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
+        protected AbstractAccumulator(AggregateCall aggCall, RowHandler<Row> hnd) {
             this.aggCall = aggCall;
             this.hnd = hnd;
         }
 
         /** */
-        <T> T get(int idx, Row row) {
+        protected <T> T get(int idx, Row row) {
             assert idx < arguments().size() : "idx=" + idx + "; arguments=" + arguments();
 
             return (T)hnd.get(arguments().get(idx), row);
@@ -302,7 +325,7 @@ public class Accumulators {
         }
 
         /** */
-        int columnCount(Row row) {
+        protected int columnCount(Row row) {
             return hnd.columnCount(row);
         }
     }
@@ -1116,7 +1139,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class ComparableMinMax<Row, T extends Comparable<T>> extends AbstractAccumulator<Row> {
+    private static class ComparableMinMax<Row, T> extends AbstractAccumulator<Row> {
         /** */
         private final boolean min;
 
@@ -1149,8 +1172,8 @@ public class Accumulators {
                 return;
 
             val = empty ? in : min ?
-                (val.compareTo(in) < 0 ? val : in) :
-                (val.compareTo(in) < 0 ? in : val);
+                (compare(val, in) < 0 ? val : in) :
+                (compare(val, in) < 0 ? in : val);
 
             empty = false;
         }
@@ -1163,8 +1186,8 @@ public class Accumulators {
                 return;
 
             val = empty ? other0.val : min ?
-                (val.compareTo(other0.val) < 0 ? val : other0.val) :
-                (val.compareTo(other0.val) < 0 ? other0.val : val);
+                (compare(val, other0.val) < 0 ? val : other0.val) :
+                (compare(val, other0.val) < 0 ? other0.val : val);
 
             empty = false;
         }
@@ -1182,6 +1205,22 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeSupplier.apply(typeFactory);
+        }
+
+        /** */
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private int compare(Object a, Object b) {
+            if (Commons.isBinaryComparable(a, b))
+                return Commons.compareBinary(a, b);
+
+            if (a.getClass() != b.getClass()) {
+                throw new UnsupportedOperationException(String.format(
+                    "%s() is not supported for different value types: [type0=%s, type1=%s]",
+                    min ? "MIN" : "MAX", a.getClass().getName(), b.getClass().getName()
+                ));
+            }
+
+            return ((Comparable)a).compareTo(b);
         }
     }
 
@@ -1319,8 +1358,9 @@ public class Accumulators {
                 if (builder == null)
                     builder = new StringBuilder();
 
-                if (builder.length() != 0)
+                if (!builder.isEmpty())
                     builder.append(extractSeparator(row));
+
                 builder.append(val);
             }
 
@@ -1437,10 +1477,10 @@ public class Accumulators {
         private final List<Integer> args;
 
         /** */
-        private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Supplier<Accumulator<Row>> accSup) {
+        private DistinctAccumulator(AggregateCall aggCall, RowHandler<Row> hnd, Accumulator<Row> acc) {
             super(aggCall, hnd);
 
-            acc = accSup.get();
+            this.acc = acc;
 
             args = super.arguments().isEmpty() ? List.of(0) : super.arguments();
         }
@@ -1483,6 +1523,11 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean handlesDistinct() {
+            return true;
         }
     }
 }

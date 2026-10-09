@@ -38,7 +38,7 @@ public interface MessageFormatter extends Extension {
      * @return Message writer.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageWriter writer(MessageFactory msgFactory) throws IgniteCheckedException;
+    public MessageWriter writer(MessageFactory<? extends Message> msgFactory) throws IgniteCheckedException;
 
     /**
      * Creates new message reader instance.
@@ -47,5 +47,5 @@ public interface MessageFormatter extends Extension {
      * @return Message reader.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageReader reader(MessageFactory msgFactory) throws IgniteCheckedException;
+    public MessageReader reader(MessageFactory<? extends Message> msgFactory) throws IgniteCheckedException;
 }

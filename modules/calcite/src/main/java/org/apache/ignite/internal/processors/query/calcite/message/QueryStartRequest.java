@@ -20,64 +20,66 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.DeferredUnmarshalMessage;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
-public class QueryStartRequest implements MarshalableMessage, ExecutionContextAware {
+/** Message sent to remote nodes to start a query fragment execution. */
+public class QueryStartRequest implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
-    private String schema;
+    String schema;
 
     /** */
-    @Order(value = 1, method = "queryId")
-    private UUID qryId;
+    @Order(1)
+    UUID qryId;
 
     /** */
-    @Order(value = 2, method = "originatingQueryId")
-    private long originatingQryId;
+    @Order(2)
+    long originatingQryId;
 
     /** */
-    @Order(value = 3, method = "topologyVersion")
-    private AffinityTopologyVersion ver;
+    @Order(3)
+    AffinityTopologyVersion ver;
 
     /** */
-    @Order(value = 4, method = "fragmentDescription")
-    private FragmentDescription fragmentDesc;
+    @Order(4)
+    FragmentDescription fragmentDesc;
 
     /** */
-    @Order(value = 5)
-    private String root;
+    @Order(5)
+    String root;
 
     /** Total count of fragments in query for this node. */
-    @Order(value = 6, method = "totalFragmentsCount")
-    private int totalFragmentsCnt;
+    @Order(6)
+    int totalFragmentsCnt;
 
     /** */
-    private @Nullable Object[] params;
+    @Marshalled("paramsBytes")
+    @Nullable Object[] params;
 
     /** */
-    @Order(value = 7, method = "parametersBytes")
-    private @Nullable byte[] paramsBytes;
+    @Order(7)
+    @Nullable byte[] paramsBytes;
 
     /** */
-    @Order(value = 8)
-    private long timeout;
+    @Order(8)
+    long timeout;
 
     /** */
-    @Order(value = 9, method = "queryTransactionEntries")
-    private @Nullable Collection<QueryTxEntry> qryTxEntries;
+    @Order(9)
+    @Nullable Collection<QueryTxEntry> qryTxEntries;
 
     /** */
-    @Order(value = 10, method = "applicationAttributes")
-    private @Nullable Map<String, String> appAttrs;
+    @Order(10)
+    @Nullable Map<String, String> appAttrs;
+
+    /** */
+    @Order(11)
+    boolean keepBinaryMode;
 
     /** */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
@@ -93,24 +95,28 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         @Nullable byte[] paramsBytes,
         long timeout,
         @Nullable Collection<QueryTxEntry> qryTxEntries,
-        @Nullable Map<String, String> appAttrs
+        @Nullable Map<String, String> appAttrs,
+        boolean keepBinaryMode
     ) {
         this.qryId = qryId;
         this.originatingQryId = originatingQryId;
         this.schema = schema;
         this.root = root;
         this.ver = ver;
-        this.fragmentDesc = fragmentDesc;
+        this.fragmentDesc = fragmentDesc.preparedToSend();
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
         this.timeout = timeout;
         this.qryTxEntries = qryTxEntries;
         this.appAttrs = appAttrs;
+        this.keepBinaryMode = keepBinaryMode;
     }
 
     /** */
-    QueryStartRequest() {}
+    public QueryStartRequest() {
+        // No-op.
+    }
 
     /**
      * @return Schema name.
@@ -119,19 +125,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return schema;
     }
 
-    /** */
-    public void schema(String schema) {
-        this.schema = schema;
-    }
-
     /** {@inheritDoc} */
     @Override public UUID queryId() {
         return qryId;
-    }
-
-    /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
     }
 
     /**
@@ -139,21 +135,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
      */
     public long originatingQueryId() {
         return originatingQryId;
-    }
-
-    /** */
-    public void originatingQueryId(long originatingQryId) {
-        this.originatingQryId = originatingQryId;
-    }
-
-    /** */
-    public @Nullable byte[] parametersBytes() {
-        return paramsBytes;
-    }
-
-    /** */
-    public void parametersBytes(@Nullable byte[] paramsBytes) {
-        this.paramsBytes = paramsBytes;
     }
 
     /** {@inheritDoc} */
@@ -165,12 +146,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
      * @return Fragment description.
      */
     public FragmentDescription fragmentDescription() {
-        return fragmentDesc;
-    }
-
-    /** */
-    public void fragmentDescription(FragmentDescription fragmentDesc) {
-        this.fragmentDesc = fragmentDesc;
+        return fragmentDesc.received();
     }
 
     /**
@@ -180,11 +156,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return ver;
     }
 
-    /** */
-    public void topologyVersion(AffinityTopologyVersion ver) {
-        this.ver = ver;
-    }
-
     /**
      * @return Fragment plan.
      */
@@ -192,21 +163,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return root;
     }
 
-    /** */
-    public void root(String root) {
-        this.root = root;
-    }
-
     /**
      * @return Total count of fragments in query for this node.
      */
     public int totalFragmentsCount() {
         return totalFragmentsCnt;
-    }
-
-    /** */
-    public void totalFragmentsCount(int totalFragmentsCnt) {
-        this.totalFragmentsCnt = totalFragmentsCnt;
     }
 
     /**
@@ -232,16 +193,6 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         return timeout;
     }
 
-    /** */
-    public void timeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /** */
-    public void parametersBytes(long timeout) {
-        this.timeout = timeout;
-    }
-
     /**
      * @return Transaction entries to mixin on query processing.
      */
@@ -250,50 +201,13 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     }
 
     /** */
-    public void queryTransactionEntries(@Nullable Collection<QueryTxEntry> qryTxEntries) {
-        this.qryTxEntries = qryTxEntries;
-    }
-
-    /** */
     public @Nullable Map<String, String> applicationAttributes() {
         return appAttrs;
     }
 
     /** */
-    public void applicationAttributes(@Nullable Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
+    public boolean keepBinaryMode() {
+        return keepBinaryMode;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (paramsBytes == null && params != null)
-            paramsBytes = U.marshal(ctx, params);
-
-        fragmentDesc.prepareMarshal(ctx);
-
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.prepareMarshal(ctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        ClassLoader ldr = U.resolveClassLoader(ctx.gridConfig());
-
-        if (params == null && paramsBytes != null)
-            params = U.unmarshal(ctx, paramsBytes, ldr);
-
-        fragmentDesc.prepareUnmarshal(ctx);
-
-        if (qryTxEntries != null) {
-            for (QueryTxEntry e : qryTxEntries)
-                e.prepareUnmarshal(ctx, ldr);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageType type() {
-        return MessageType.QUERY_START_REQUEST;
-    }
 }

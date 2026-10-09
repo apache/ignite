@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for making sure that {@link GridCollisionManager} logs about specific conditions at correct levels,
@@ -56,9 +57,17 @@ public class GridCollisionManagerLoggingSelfTest {
     public void collisionResolutionDisabledMessageShouldBeLoggedAtInfoLevel() throws Exception {
         GridCollisionManager mgr = new GridCollisionManager(collisionResolutionDisabledContext());
 
-        mgr.start();
+        boolean infoLevel = logger.isInfoEnabled();
+        when(logger.isInfoEnabled()).thenReturn(true);
 
-        verify(logger).info("Collision resolution is disabled (all jobs will be activated upon arrival).");
+        try {
+            mgr.start();
+
+            verify(logger).info("Collision resolution is disabled (all jobs will be activated upon arrival).");
+        }
+        finally {
+            when(logger.isInfoEnabled()).thenReturn(infoLevel);
+        }
     }
 
     /**

@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.processors.service.inner.LongInitializedTestService;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -52,11 +52,8 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
         disco.setInternalListener(new DiscoverySpiTestListener() {
             @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
                 if (spi.isClientMode()) {
-                    boolean isUndeployMsg = msg instanceof CustomMessageWrapper
-                        && ((CustomMessageWrapper)msg).delegate() instanceof ServiceChangeBatchRequest;
-
-                    if (isUndeployMsg) {
-                        ServiceChangeBatchRequest batch = (ServiceChangeBatchRequest)((CustomMessageWrapper)msg).delegate();
+                    if (U.unwrapCustomMessage(msg) instanceof ServiceChangeBatchRequest) {
+                        ServiceChangeBatchRequest batch = (ServiceChangeBatchRequest)U.unwrapCustomMessage(msg);
 
                         long undeployReqCnt = batch.requests().stream()
                             .filter(r -> r instanceof ServiceUndeploymentRequest)

@@ -18,24 +18,19 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 
 /** Wraps transaction prepare request with application attributes. */
 public class TransactionAttributesAwareRequest extends GridCacheMessage {
-    /** */
-    public static final short TYPE_CODE = 181;
-
     /** Original transaction prepare message. */
-    @Order(3)
-    private GridDistributedTxPrepareRequest payload;
+    @Order(0)
+    GridDistributedTxPrepareRequest payload;
 
     /** Application attributes. */
-    @Order(value = 4, method = "applicationAttributes")
-    private Map<String, String> appAttrs;
+    @Order(1)
+    Map<String, String> appAttrs;
 
     /** */
     public TransactionAttributesAwareRequest() {
@@ -55,29 +50,9 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
         return payload;
     }
 
-    /** @param payload Original update message. */
-    public void payload(GridDistributedTxPrepareRequest payload) {
-        this.payload = payload;
-    }
-
     /** @return Application attributes. */
     public Map<String, String> applicationAttributes() {
         return appAttrs;
-    }
-
-    /** @param appAttrs Application attributes. */
-    public void applicationAttributes(Map<String, String> appAttrs) {
-        this.appAttrs = appAttrs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        payload.prepareMarshal(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        payload.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -85,8 +60,4 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

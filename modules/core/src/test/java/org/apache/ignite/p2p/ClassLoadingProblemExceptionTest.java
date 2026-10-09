@@ -38,7 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMetadata;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentStore;
@@ -197,8 +197,7 @@ public class ClassLoadingProblemExceptionTest extends GridCommonAbstractTest imp
                     GridCacheQueryRequest qryReq = (GridCacheQueryRequest)m;
 
                     if (qryReq.deployInfo() != null) {
-                        qryReq.prepare(
-                            new GridDeploymentInfoBean(
+                        qryReq.deploy(new GridDeploymentInfoMessage(
                                 IgniteUuid.fromUuid(UUID.randomUUID()),
                                 qryReq.deployInfo().userVersion(),
                                 qryReq.deployInfo().deployMode(),

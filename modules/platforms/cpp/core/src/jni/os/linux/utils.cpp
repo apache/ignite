@@ -285,6 +285,10 @@ namespace ignite
                 std::string binaryPath = home + "/modules/binary";
                 std::string binaryCp = ClasspathExploded(binaryPath, true);
                 res.append(binaryCp);
+
+                std::string thinClientPath = home + "/modules/thin-client";
+                std::string thinClientCp = ClasspathExploded(thinClientPath, true);
+                res.append(thinClientCp);
             }
 
             // 2. Add regular jars from "libs" folder excluding "optional".

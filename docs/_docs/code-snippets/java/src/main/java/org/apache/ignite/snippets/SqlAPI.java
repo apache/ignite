@@ -17,8 +17,10 @@
 package org.apache.ignite.snippets;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,6 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cache.query.annotations.QuerySqlTableFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -95,6 +98,18 @@ public class SqlAPI {
                 System.out.println("personName=" + row.get(0));
         }
         // end::simple-query[]
+    }
+
+    void queryInitiatorId(Ignite ignite) {
+        // tag::query-initiator-id[]
+        IgniteCache<Long, Person> cache = ignite.cache("Person");
+
+        SqlFieldsQuery sql = new SqlFieldsQuery(
+                "select name from Person")
+                .setQueryInitiatorId("person-report-job");
+
+        cache.query(sql).getAll();
+        // end::query-initiator-id[]
     }
 
     void insert(Ignite ignite) {
@@ -174,6 +189,14 @@ public class SqlAPI {
                 new Object[] {i * 10, "empty"}
             );
         }
+
+        @QuerySqlTableFunction(alias = "TABLE_FUNC_WITH_ARRAY", columnTypes = {String.class}, columnNames = {"RES_COL"})
+        public static Iterable<Object[]> table_function_with_arr(List<Object> array) {
+            return array.stream()
+                .map(Object::toString)
+                .map(str -> new Object[]{str})
+                .collect(Collectors.toList());
+        }
     }
     // end::sql-table-function-example[]
 
@@ -202,7 +225,11 @@ public class SqlAPI {
 
         IgniteCache cache = ignite.createCache(cfg);
 
-        SqlFieldsQuery query = new SqlFieldsQuery("SELECT STR_COL FROM TABLE_FUNCTION(10) WHERE INT_COL > 50");
+        SqlFieldsQuery query = new SqlFieldsQuery("SELECT STR_COL FROM TABLE(TABLE_FUNCTION(10)) WHERE INT_COL > 50");
+
+        cache.query(query).getAll();
+
+        query = new SqlFieldsQuery("SELECT RES_COL FROM TABLE(TABLE_FUNC_WITH_ARRAY(?))").setArgs(List.of("row1", "row2"));
 
         cache.query(query).getAll();
         // end::sql-table-function-config-query[]

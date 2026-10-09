@@ -57,7 +57,7 @@ public class TableDescriptor {
     public TableDescriptor(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc, boolean isSql) {
         this.cacheInfo = cacheInfo;
         this.typeDesc = typeDesc;
-        this.isSql = isSql;
+        this.isSql = isSql || typeDesc.sql();
 
         if (F.isEmpty(typeDesc.affinityKey()) || Objects.equals(typeDesc.affinityKey(), typeDesc.keyFieldName()))
             affKey = QueryUtils.KEY_FIELD_NAME;

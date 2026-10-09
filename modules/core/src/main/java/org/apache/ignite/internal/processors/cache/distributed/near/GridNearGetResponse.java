@@ -19,17 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
+import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,34 +39,34 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** Future ID. */
-    @Order(value = 4, method = "futureId")
-    private IgniteUuid futId;
+    @Order(0)
+    IgniteUuid futId;
 
     /** Sub ID. */
-    @Order(5)
-    private IgniteUuid miniId;
+    @Order(1)
+    IgniteUuid miniId;
 
     /** Version. */
-    @Order(value = 6, method = "version")
-    private GridCacheVersion ver;
+    @Order(2)
+    GridCacheVersion ver;
 
     /** Result. */
     @GridToStringInclude
-    @Order(7)
-    private Collection<GridCacheEntryInfo> entries;
+    @Order(3)
+    Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
-    @Order(value = 8, method = "invalidPartitions")
-    private Collection<Integer> invalidParts = new GridLeanSet<>();
+    @Order(4)
+    Collection<Integer> invalidParts = new GridLeanSet<>();
 
     /** Topology version if invalid partitions is not empty. */
-    @Order(value = 9, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(5)
+    AffinityTopologyVersion topVer;
 
     /** Error message. */
-    @Order(value = 10, method = "errorMessage")
-    private @Nullable ErrorMessage errMsg;
+    @Order(6)
+    @Nullable ErrorMessage errMsg;
 
     /**
      * Empty constructor.
@@ -101,44 +98,19 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         this.addDepInfo = addDepInfo;
     }
 
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return Sub ID.
-     */
+    /** @return Sub ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /**
-     * @param miniId Sub ID.
-     */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
-    }
-
-    /**
-     * @param ver Version.
-     */
-    public void version(GridCacheVersion ver) {
-        this.ver = ver;
     }
 
     /**
@@ -185,13 +157,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         return topVer != null ? topVer : super.topologyVersion();
     }
 
-    /**
-     * @param topVer Topology version if this response has invalid partitions.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
     /** {@inheritDoc} */
     @Override public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
@@ -205,54 +170,11 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             errMsg = new ErrorMessage(err);
     }
 
-    /**
-     * @return Error message.
-     */
-    public @Nullable ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
-
-        if (entries != null) {
-            for (GridCacheEntryInfo info : entries)
-                info.marshal(cctx);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId());
-
-        if (entries != null) {
-            for (GridCacheEntryInfo info : entries)
-                info.unmarshal(cctx, ldr);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 50;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.atomic.AtomicReference;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
 import javax.cache.CacheException;
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;

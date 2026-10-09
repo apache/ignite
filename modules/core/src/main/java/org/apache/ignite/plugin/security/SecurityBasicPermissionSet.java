@@ -20,20 +20,21 @@ package org.apache.ignite.plugin.security;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamField;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.security.SecurityUtils.compatibleServicePermissions;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.serializeVersion;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeResourcePermissions;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.toEnumSet;
 
 /**
  * Simple implementation of {@link SecurityPermissionSet} interface.
@@ -43,36 +44,45 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final ObjectStreamField[] serialPersistentFields = {
+        new ObjectStreamField("dfltAllowAll", boolean.class),
+        new ObjectStreamField("cachePermissions", Map.class),
+        new ObjectStreamField("sysPermissions", Collection.class),
+        new ObjectStreamField("taskPermissions", Map.class)
+    };
+
     /** Cache permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> cachePermissions = new HashMap<>();
+    @Order(0)
+    Map<String, EnumSet<SecurityPermission>> cachePermissions = new HashMap<>();
 
     /** Task permissions. */
     @GridToStringInclude
-    private Map<String, Collection<SecurityPermission>> taskPermissions = new HashMap<>();
+    @Order(1)
+    Map<String, EnumSet<SecurityPermission>> taskPermissions = new HashMap<>();
 
     /** Service permissions. */
     @GridToStringInclude
-    private transient Map<String, Collection<SecurityPermission>> servicePermissions = isSecurityCompatibilityMode()
-            ? compatibleServicePermissions()
-            : new HashMap<String, Collection<SecurityPermission>>();
+    @Order(2)
+    transient Map<String, EnumSet<SecurityPermission>> srvcPermissions = new HashMap<>();
 
     /** System permissions. */
     @GridToStringInclude
-    private Collection<SecurityPermission> systemPermissions;
+    @Order(3)
+    @Nullable EnumSet<SecurityPermission> sysPermissions;
 
     /** Default allow all. */
-    private boolean dfltAllowAll;
+    @Order(4)
+    boolean dfltAllowAll;
 
     /**
      * Setter for set cache permission map.
      *
      * @param cachePermissions Cache permissions.
      */
-    public void setCachePermissions(Map<String, Collection<SecurityPermission>> cachePermissions) {
-        A.notNull(cachePermissions, "cachePermissions");
-
-        this.cachePermissions = cachePermissions;
+    public void setCachePermissions(Map<String, EnumSet<SecurityPermission>> cachePermissions) {
+        this.cachePermissions = checkPermissions(cachePermissions, "cachePermissions");
     }
 
     /**
@@ -80,30 +90,26 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
      *
      * @param taskPermissions Task permissions.
      */
-    public void setTaskPermissions(Map<String, Collection<SecurityPermission>> taskPermissions) {
-        A.notNull(taskPermissions, "taskPermissions");
-
-        this.taskPermissions = taskPermissions;
+    public void setTaskPermissions(Map<String, EnumSet<SecurityPermission>> taskPermissions) {
+        this.taskPermissions = checkPermissions(taskPermissions, "taskPermissions");
     }
 
     /**
      * Setter for set service permission map.
      *
-     * @param servicePermissions Service permissions.
+     * @param srvcPermissions Service permissions.
      */
-    public void setServicePermissions(Map<String, Collection<SecurityPermission>> servicePermissions) {
-        A.notNull(taskPermissions, "servicePermissions");
-
-        this.servicePermissions = servicePermissions;
+    public void setServicePermissions(Map<String, EnumSet<SecurityPermission>> srvcPermissions) {
+        this.srvcPermissions = checkPermissions(srvcPermissions, "servicePermissions");
     }
 
     /**
      * Setter for set collection system permission.
      *
-     * @param systemPermissions System permissions.
+     * @param sysPermissions System permissions.
      */
-    public void setSystemPermissions(Collection<SecurityPermission> systemPermissions) {
-        this.systemPermissions = systemPermissions;
+    public void setSystemPermissions(@Nullable EnumSet<SecurityPermission> sysPermissions) {
+        this.sysPermissions = sysPermissions;
     }
 
     /**
@@ -116,23 +122,23 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> cachePermissions() {
+    @Override public Map<String, EnumSet<SecurityPermission>> cachePermissions() {
         return cachePermissions;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> taskPermissions() {
+    @Override public Map<String, EnumSet<SecurityPermission>> taskPermissions() {
         return taskPermissions;
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<SecurityPermission>> servicePermissions() {
-        return servicePermissions;
+    @Override public Map<String, EnumSet<SecurityPermission>> servicePermissions() {
+        return srvcPermissions;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Collection<SecurityPermission> systemPermissions() {
-        return systemPermissions;
+    @Nullable @Override public EnumSet<SecurityPermission> systemPermissions() {
+        return sysPermissions;
     }
 
     /** {@inheritDoc} */
@@ -153,8 +159,8 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         return dfltAllowAll == other.dfltAllowAll &&
             Objects.equals(cachePermissions, other.cachePermissions) &&
             Objects.equals(taskPermissions, other.taskPermissions) &&
-            Objects.equals(servicePermissions, other.servicePermissions) &&
-            Objects.equals(systemPermissions, other.systemPermissions);
+            Objects.equals(srvcPermissions, other.srvcPermissions) &&
+            Objects.equals(sysPermissions, other.sysPermissions);
     }
 
     /** {@inheritDoc} */
@@ -163,42 +169,64 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
 
         res = 31 * res + (cachePermissions != null ? cachePermissions.hashCode() : 0);
         res = 31 * res + (taskPermissions != null ? taskPermissions.hashCode() : 0);
-        res = 31 * res + (servicePermissions != null ? servicePermissions.hashCode() : 0);
-        res = 31 * res + (systemPermissions != null ? systemPermissions.hashCode() : 0);
+        res = 31 * res + (srvcPermissions != null ? srvcPermissions.hashCode() : 0);
+        res = 31 * res + (sysPermissions != null ? sysPermissions.hashCode() : 0);
 
         return res;
     }
 
-    /**
-     * @param out Out.
-     */
+    /** */
     private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
+        ObjectOutputStream.PutField fields = out.putFields();
 
-        if (serializeVersion() >= 2)
-            U.writeMap(out, servicePermissions);
+        fields.put("dfltAllowAll", dfltAllowAll);
+        fields.put("cachePermissions", cachePermissions);
+        fields.put("sysPermissions", sysPermissions);
+        fields.put("taskPermissions", taskPermissions);
+
+        out.writeFields();
+
+        U.writeMap(out, srvcPermissions);
     }
 
-    /**
-     * @param in In.
-     */
+    /** */
+    @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
+        ObjectInputStream.GetField fields = in.readFields();
 
-        if (serializeVersion() >= 2)
-            servicePermissions = U.readMap(in);
+        dfltAllowAll = fields.get("dfltAllowAll", false);
+        cachePermissions = readPermissions(fields, "cachePermissions");
+        taskPermissions = readPermissions(fields, "taskPermissions");
 
-        if (servicePermissions == null) {
-            // Allow all for compatibility mode
-            if (serializeVersion() < 2)
-                servicePermissions = compatibleServicePermissions();
-            else
-                servicePermissions = Collections.emptyMap();
-        }
+        Collection<SecurityPermission> sysPerms = (Collection<SecurityPermission>)fields.get("sysPermissions", null);
+
+        sysPermissions = sysPerms == null ? null : toEnumSet(sysPerms);
+
+        srvcPermissions = normalizeResourcePermissions(U.readMap(in));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SecurityBasicPermissionSet.class, this);
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static Map<String, EnumSet<SecurityPermission>> readPermissions(
+        ObjectInputStream.GetField fields,
+        String name
+    ) throws IOException, ClassNotFoundException {
+        return normalizeResourcePermissions((Map<String, ? extends Collection<SecurityPermission>>)fields.get(name, null));
+    }
+
+    /** */
+    private static Map<String, EnumSet<SecurityPermission>> checkPermissions(
+        Map<String, EnumSet<SecurityPermission>> perms,
+        String name
+    ) {
+        A.notNull(perms, name);
+        A.ensure(perms.values().stream().noneMatch(Objects::isNull), name + " must not contain a null permission set");
+
+        return perms;
     }
 }

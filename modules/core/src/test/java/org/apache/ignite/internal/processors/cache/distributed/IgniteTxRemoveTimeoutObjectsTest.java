@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalWrapper;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -36,6 +38,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
@@ -165,7 +168,7 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
 
             Map<String, Integer> objFreqMap = new HashMap<>();
 
-            Set<GridTimeoutObject> objs = getTimeoutObjects(igniteEx);
+            Collection<GridTimeoutObject> objs = getTimeoutObjects(igniteEx);
 
             for (GridTimeoutObject obj : objs) {
                 String clsName = obj.getClass().getSimpleName();
@@ -203,10 +206,10 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
      * @param igniteEx IgniteEx.
      * @return Set of timeout objects that process on current IgniteEx.
      */
-    private Set<GridTimeoutObject> getTimeoutObjects(IgniteEx igniteEx) {
-        GridTimeoutProcessor timeout = igniteEx.context().timeout();
+    private Collection<GridTimeoutObject> getTimeoutObjects(IgniteEx igniteEx) {
+        Collection<OperationContextAwareWrapper<GridTimeoutObject>> res = getFieldValue(igniteEx.context().timeout(), "timeoutObjs");
 
-        return GridTestUtils.getFieldValue(timeout, timeout.getClass(), "timeoutObjs");
+        return F.viewReadOnly(res, o -> (GridTimeoutObject)IgniteInternalWrapper.unwrap(o));
     }
 
     /** {@inheritDoc} */

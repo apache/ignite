@@ -170,7 +170,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         reuseList = createReuseList(CACHE_ID, pageMem, 0, true);
 
-        lockTrackerManager = new PageLockTrackerManager(log, "testTreeManager") {
+        lockTrackerManager = new PageLockTrackerManager("testIgniteInstance", "testTreeManager", log) {
             @Override public PageLockListener createPageLockTracker(String name) {
                 return new TestPageLockListener(super.createPageLockTracker(name));
             }
@@ -1516,14 +1516,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         assertFalse(tree.find(null, 0L).next());
 
         assertNoLocks();
-    }
-
-    /** */
-    private void doTestCursor(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = createTestTree(canGetRow);
-
-        for (long i = 15; i >= 0; i--)
-            tree.put(i);
     }
 
     /**

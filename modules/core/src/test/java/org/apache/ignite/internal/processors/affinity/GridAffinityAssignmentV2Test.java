@@ -29,7 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -37,6 +40,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
@@ -49,7 +53,11 @@ import static org.junit.Assert.fail;
  */
 public class GridAffinityAssignmentV2Test {
     /**  */
-    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider();
+    protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider() {
+        @Override public ClusterMetrics metrics() {
+            return new ClusterMetricsSnapshot();
+        }
+    };
 
     /** */
     protected IgniteProductVersion ver = new IgniteProductVersion();
@@ -242,7 +250,8 @@ public class GridAffinityAssignmentV2Test {
             0,
             metrics,
             v,
-            consistentId
+            consistentId,
+            LOCAL_CORE_FEATURES
         );
 
         node.setAttributes(Collections.emptyMap());

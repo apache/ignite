@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.FLAG_COMPACT_FOOTER;
 
 /**
  * Tests binary configuration behavior.

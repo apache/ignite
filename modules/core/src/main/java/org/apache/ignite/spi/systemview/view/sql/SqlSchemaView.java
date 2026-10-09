@@ -17,12 +17,14 @@
 
 package org.apache.ignite.spi.systemview.view.sql;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaDescriptor;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * Sql schema system view representation.
  */
+@SystemViewDescriptor
 public class SqlSchemaView {
     /** Schema. */
     private final SchemaDescriptor schema;

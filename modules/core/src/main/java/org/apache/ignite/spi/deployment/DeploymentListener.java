@@ -22,7 +22,11 @@ import java.util.EventListener;
 /**
  * Listener for deployment events. It is used by grid implementation
  * to properly create or release resources associated with any deployment.
+ *
+ * @deprecated Will be replaced with the
+ * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
+@Deprecated
 public interface DeploymentListener extends EventListener {
     /**
      * Called when a deployment has been unregistered..

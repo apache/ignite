@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -47,18 +48,23 @@ public interface IgniteIndex {
      *
      * @param cluster         Custer.
      * @param relOptTbl       Table.
+     * @param rowType         Row type.
      * @param proj            List of required projections.
      * @param cond            Conditions to filter rows.
      * @param requiredColumns Set of columns to extract from original row.
      * @return Table relational expression.
      */
-    public IgniteLogicalIndexScan toRel(
+    public default IgniteLogicalIndexScan toRel(
         RelOptCluster cluster,
         RelOptTable relOptTbl,
+        RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
-    );
+    ) {
+        return IgniteLogicalIndexScan.create(cluster, cluster.traitSet(), relOptTbl, name(),
+            rowType, proj, cond, requiredColumns);
+    }
 
     /**
      * Converts condition to index find predicate.

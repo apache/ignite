@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,6 +46,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_16_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_1_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_3_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
@@ -105,7 +105,11 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
     public void testNodeStartByOldVersionPersistenceData() throws Exception {
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVer > 11) {
+        if (majorJavaVer >= 21) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                VER_2_16_0.compareTo(IgniteReleasedVersion.fromString(version)) <= 0);
+        }
+        else if (majorJavaVer > 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
         }
@@ -248,7 +252,9 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)));
 
             cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
         }

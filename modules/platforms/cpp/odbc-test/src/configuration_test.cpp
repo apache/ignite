@@ -42,7 +42,6 @@ namespace
     const bool testEnforceJoinOrder = true;
     const bool testReplicatedOnly = true;
     const bool testCollocated = true;
-    const bool testLazy = true;
     const bool testSkipReducerOnUpdate = true;
     const EngineMode::Type testEngineMode = EngineMode::H2;
 
@@ -186,7 +185,6 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), testEnforceJoinOrder);
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), testReplicatedOnly);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), testCollocated);
-    BOOST_CHECK_EQUAL(cfg.IsLazy(), testLazy);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), testSkipReducerOnUpdate);
     BOOST_CHECK_EQUAL(cfg.GetEngineMode(), testEngineMode);
 
@@ -209,7 +207,6 @@ void CheckConnectionConfig(const Configuration& cfg)
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "driver={" << testDriverName << "};"
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
-                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
                 << "query_engine=" << EngineMode::ToString(testEngineMode) << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
@@ -233,7 +230,6 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), false);
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), false);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), false);
-    BOOST_CHECK_EQUAL(cfg.IsLazy(), false);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), false);
     BOOST_CHECK(cfg.GetAddresses().empty());
 }
@@ -252,7 +248,6 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testEnforceJoinOrder, Configuration::DefaultValue::enforceJoinOrder);
     BOOST_CHECK_NE(testReplicatedOnly, Configuration::DefaultValue::replicatedOnly);
     BOOST_CHECK_NE(testCollocated, Configuration::DefaultValue::collocated);
-    BOOST_CHECK_NE(testLazy, Configuration::DefaultValue::lazy);
     BOOST_CHECK_NE(testSkipReducerOnUpdate, Configuration::DefaultValue::skipReducerOnUpdate);
     BOOST_CHECK_NE(testEngineMode, Configuration::DefaultValue::engineMode);
 }
@@ -264,7 +259,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
     std::stringstream constructor;
 
     constructor << "DRIVER={" << testDriverName << "};"
-                << "LAZY=" << BoolToStr(testLazy, false) << ';'
                 << "ADDRESS=" << testAddressStr << ';'
                 << "DISTRIBUTED_JOINS=" << BoolToStr(testDistributedJoins, false) << ';'
                 << "ENFORCE_JOIN_ORDER=" << BoolToStr(testEnforceJoinOrder, false) << ';'
@@ -289,7 +283,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
-                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "address=" << testAddressStr << ';'
                 << "page_size=" << testPageSize << ';'
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
@@ -315,7 +308,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
 
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddressStr << ';'
-                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "collocated=" << BoolToStr(testCollocated) << ';'
@@ -341,7 +333,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
     std::stringstream constructor;
 
     constructor << "Driver={" << testDriverName << "};"
-                << "Lazy=" << BoolToStr(testLazy) << ';'
                 << "Address=" << testAddressStr << ';'
                 << "Page_Size=" << testPageSize << ';'
                 << "Distributed_Joins=" << BoolToStr(testDistributedJoins, false) << ';'
@@ -369,7 +360,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
                 << " ADDRESS =" << testAddressStr << "; "
                 << "   PAGE_SIZE= " << testPageSize << ';'
                 << "   DISTRIBUTED_JOINS=" << BoolToStr(testDistributedJoins, false) << ';'
-                << "LAZY=" << BoolToStr(testLazy, false) << ';'
                 << "COLLOCATED    =" << BoolToStr(testCollocated, false) << "  ;"
                 << "  REPLICATED_ONLY=   " << BoolToStr(testReplicatedOnly, false) << ';'
                 << "ENFORCE_JOIN_ORDER=   " << BoolToStr(testEnforceJoinOrder, false) << "  ;"
@@ -464,7 +454,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
     keys.insert("enforce_join_order");
     keys.insert("replicated_only");
     keys.insert("collocated");
-    keys.insert("lazy");
     keys.insert("skip_reducer_on_update");
 
     for (Set::const_iterator it = keys.begin(); it != keys.end(); ++it)
@@ -492,7 +481,6 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidBoolKeys)
     keys.insert("enforce_join_order");
     keys.insert("replicated_only");
     keys.insert("collocated");
-    keys.insert("lazy");
     keys.insert("skip_reducer_on_update");
 
     for (Set::const_iterator it = keys.begin(); it != keys.end(); ++it)

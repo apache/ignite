@@ -33,7 +33,6 @@ import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
-import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -286,7 +285,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
         assertEquals(-1, processedSize.value());
 
         // Calculate transfer rate limit.
-        long rate = FileUtils.sizeOfDirectory(ignite.context().pdsFolderResolver().fileTree().nodeStorage()) / 5;
+        long rate = GridTestUtils.sizeOfDirectory(ignite.context().pdsFolderResolver().fileTree().nodeStorage()) / 5;
 
         // Limit snapshot transfer rate.
         DistributedChangeableProperty<Serializable> rateProp =

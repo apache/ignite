@@ -24,9 +24,9 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** Test for numeric types precisions. */
 public class NumericTypesPrecisionsTest {
@@ -196,7 +196,7 @@ public class NumericTypesPrecisionsTest {
         for (int i = 0; i < TEST_SUITE.length; ++i) {
             RelDataType actualType = TYPE_FACTORY.leastRestrictive(Arrays.asList(testType, TEST_SUITE[i]));
 
-            assertEquals("leastRestrictive(" + testType + ", " + TEST_SUITE[i] + ")", expectedLeast[i], actualType);
+            assertEquals(expectedLeast[i], actualType, "leastRestrictive(" + testType + ", " + TEST_SUITE[i] + ")");
         }
     }
 }

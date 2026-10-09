@@ -22,9 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -64,14 +64,18 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
+    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered) {
+        return newWriter(ctx, failIfUnregistered, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+    }
+
+    /** */
+    public static BinaryWriterExImpl newWriter(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
         return new BinaryWriterExImpl(
             ctx,
-            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            new BinaryHeapOutputStream((int)CommonUtils.KB, locCtx.chunk()),
             locCtx.schemaHolder(),
-            null,
             failIfUnregistered,
             typeId
         );
@@ -83,15 +87,14 @@ public class BinariesFactoryImpl implements BinariesFactory {
             ctx,
             out,
             BinaryThreadLocalContext.get().schemaHolder(),
-            null,
             false,
             GridBinaryMarshaller.UNREGISTERED_TYPE_ID
         );
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+    @Override public BinaryWriterEx writerWithoutSchema(BinaryContext ctx, BinaryOutputStream out) {
+        return new BinaryWriterExImpl(ctx, out, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 
     /** {@inheritDoc} */
@@ -222,6 +225,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
     /** {@inheritDoc} */
     @Override public BinaryIdentityResolver arrayIdentityResolver() {
         return BinaryArrayIdentityResolver.instance();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearCache() {
+        BinaryEnumCache.clear();
     }
 
     /**

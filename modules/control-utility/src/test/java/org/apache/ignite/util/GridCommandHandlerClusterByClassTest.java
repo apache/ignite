@@ -1464,9 +1464,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         String expConfirmation = String.format(CacheDestroyCommand.CONFIRM_MSG,
             cacheNames.size(), S.joinToString(cacheNames, ", ", "..", 80, 0));
 
-        // Ensure we cannot delete a cache groups.
+        // Ensure we cannot delete a cache groups or not existed cache.
         injectTestSystemIn(CONFIRM_MSG);
-        assertEquals(EXIT_CODE_OK, execute("--cache", DESTROY, CACHES, "shared1,shared2"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--cache", DESTROY, CACHES, "shared1,shared2"));
+        assertContains(log, testOut.toString(), "Caches do not exist: shared1, shared2");
         assertTrue(crd.cacheNames().containsAll(cacheNames));
 
         // Destroy all user-created caches.
@@ -2366,7 +2367,6 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         cmdArgs.put("--wal", asList(new String[] {"print"}, new String[] {"delete"}));
         cmdArgs.put("--meta", asList(new String[] {"help"}, new String[] {"list"}));
-        cmdArgs.put("--tracing-configuration", singletonList(new String[] {"get_all"}));
         cmdArgs.put("--consistency", asList(
             new String[] {"repair", CACHE, "cache", PARTITIONS, "0", STRATEGY, "LWW"},
             new String[] {"status"},

@@ -17,25 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,52 +38,45 @@ import org.jetbrains.annotations.Nullable;
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
-    @Order(9)
-    private @Nullable Collection<GridCacheVersion> pending;
+    @Order(0)
+    @Nullable Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
-    @Order(value = 10, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(11)
-    private int miniId;
+    @Order(2)
+    int miniId;
 
     /** DHT version. */
-    @Order(value = 12, method = "dhtVersion")
-    private GridCacheVersion dhtVer;
+    @Order(3)
+    GridCacheVersion dhtVer;
 
     /** Write version. */
-    @Order(value = 13, method = "writeVersion")
-    private GridCacheVersion writeVer;
+    @Order(4)
+    GridCacheVersion writeVer;
 
-    /** Map of owned values to set on near node. */
+    /** Owned values to set on near node. */
+    @Order(5)
     @GridToStringInclude
-    private Map<IgniteTxKey, CacheVersionedValue> ownedVals;
-
-    /** OwnedVals' keys for marshalling. */
-    @Order(value = 14, method = "ownedValuesKeys")
-    private @Nullable Collection<IgniteTxKey> ownedValKeys;
-
-    /** OwnedVals' values for marshalling. */
-    @Order(value = 15, method = "ownedValuesValues")
-    private @Nullable Collection<CacheVersionedValue> ownedValVals;
+    @Nullable Collection<KeyedVersionedValue> ownedVals;
 
     /** Cache return value. */
-    @Order(value = 16, method = "returnValue")
-    private GridCacheReturn retVal;
+    @Order(6)
+    GridCacheReturn retVal;
 
     /** Keys that did not pass the filter. */
-    @Order(17)
-    private @Nullable Collection<IgniteTxKey> filterFailedKeys;
+    @Order(7)
+    @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
     /** Topology version, which is set when client node should remap lock request. */
-    @Order(value = 18, method = "clientRemapVersion")
-    private @Nullable AffinityTopologyVersion clientRemapVer;
+    @Order(8)
+    @Nullable AffinityTopologyVersion clientRemapVer;
 
     /** One-phase commit on primary flag. */
-    @Order(19)
-    private boolean onePhaseCommit;
+    @Order(9)
+    boolean onePhaseCommit;
 
     /**
      * Empty constructor.
@@ -138,32 +124,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.onePhaseCommit = onePhaseCommit;
     }
 
-    /**
-     * @return One-phase commit on primary flag.
-     */
+    /** @return One-phase commit on primary flag. */
     public boolean onePhaseCommit() {
         return onePhaseCommit;
     }
 
-    /**
-     * @param onePhaseCommit New one-phase commit on primary flag.
-     */
-    public void onePhaseCommit(boolean onePhaseCommit) {
-        this.onePhaseCommit = onePhaseCommit;
-    }
-
-    /**
-     * @return Topology version, which is set when client node should remap lock request.
-     */
+    /** @return Topology version, which is set when client node should remap lock request. */
     @Nullable public AffinityTopologyVersion clientRemapVersion() {
         return clientRemapVer;
-    }
-
-    /**
-     * @param clientRemapVer New topology version, which is set when client node should remap lock request.
-     */
-    public void clientRemapVersion(@Nullable AffinityTopologyVersion clientRemapVer) {
-        this.clientRemapVer = clientRemapVer;
     }
 
     /**
@@ -180,60 +148,24 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         this.pending = pending;
     }
 
-    /**
-     * @return Mini future ID.
-     */
+    /** @return Mini future ID. */
     public int miniId() {
         return miniId;
     }
 
-    /**
-     * @param miniId New mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
-     * @return Future ID.
-     */
+    /** @return Future ID. */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /**
-     * @param futId New future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
-     * @return DHT version.
-     */
+    /** @return DHT version. */
     public GridCacheVersion dhtVersion() {
         return dhtVer;
     }
 
-    /**
-     * @param dhtVer New DHT version.
-     */
-    public void dhtVersion(GridCacheVersion dhtVer) {
-        this.dhtVer = dhtVer;
-    }
-
-    /**
-     * @return Write version.
-     */
+    /** @return Write version. */
     public GridCacheVersion writeVersion() {
         return writeVer;
-    }
-
-    /**
-     * @param writeVer New write version.
-     */
-    public void writeVersion(GridCacheVersion writeVer) {
-        this.writeVer = writeVer;
     }
 
     /**
@@ -248,32 +180,21 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             return;
 
         if (ownedVals == null)
-            ownedVals = new HashMap<>();
+            ownedVals = new ArrayList<>();
 
-        CacheVersionedValue oVal = new CacheVersionedValue(val, ver);
-
-        ownedVals.put(key, oVal);
+        ownedVals.add(new KeyedVersionedValue(key, val, ver));
     }
 
     /**
-     * @return Map of owned values to set on near node.
+     * @return Owned values to set on near node.
      */
-    public Map<IgniteTxKey, CacheVersionedValue> ownedValues() {
-        return ownedVals == null ? Collections.emptyMap() : Collections.unmodifiableMap(ownedVals);
+    public Collection<KeyedVersionedValue> ownedValues() {
+        return ownedVals == null ? Collections.emptyList() : Collections.unmodifiableCollection(ownedVals);
     }
 
-    /**
-     * @return Cache return value.
-     */
+    /** @return Cache return value. */
     public GridCacheReturn returnValue() {
         return retVal;
-    }
-
-    /**
-     * @param retVal New cache return value.
-     */
-    public void returnValue(GridCacheReturn retVal) {
-        this.retVal = retVal;
     }
 
     /**
@@ -288,137 +209,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      */
     public @Nullable Collection<IgniteTxKey> filterFailedKeys() {
         return filterFailedKeys;
-    }
-
-    /**
-     * @param key Key.
-     * @return {@code True} if response has owned value for given key.
-     */
-    public boolean hasOwnedValue(IgniteTxKey key) {
-        return F.mapContainsKey(ownedVals, key);
-    }
-
-    /**
-     * @return OwnedVals' keys for marshalling.
-     */
-    public @Nullable Collection<IgniteTxKey> ownedValuesKeys() {
-        return ownedValKeys;
-    }
-
-    /**
-     * @param ownedValKeys New ownedVals' keys for marshalling.
-     */
-    public void ownedValuesKeys(@Nullable Collection<IgniteTxKey> ownedValKeys) {
-        this.ownedValKeys = ownedValKeys;
-    }
-
-    /**
-     * @return OwnedVals' values for marshalling.
-     */
-    public @Nullable Collection<CacheVersionedValue> ownedValuesValues() {
-        return ownedValVals;
-    }
-
-    /**
-     * @param ownedValVals New ownedVals' values for marshalling.
-     */
-    public void ownedValuesValues(@Nullable Collection<CacheVersionedValue> ownedValVals) {
-        this.ownedValVals = ownedValVals;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        // There are separate collections for keys and values of the 'ownedVals' map, because IgniteTxKey
-        // can not be inserted directly in a map as a key during invocation of MessageReader#read.
-        // The IgniteTxKey's hash code calculation will fail due to delegation of calculation
-        // to KeyCacheObjectImpl#hashCode, which in turn fails with assertion error if KeyCacheObjectImpl#val
-        // has not initialized yet in KeyCacheObjectImpl#finishUnmarshal.
-        if (ownedVals != null && ownedValKeys == null) {
-            ownedValKeys = ownedVals.keySet();
-
-            ownedValVals = ownedVals.values();
-
-            for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(entry.getKey().cacheId());
-
-                entry.getKey().prepareMarshal(cacheCtx);
-
-                entry.getValue().prepareMarshal(cacheCtx.cacheObjectContext());
-            }
-        }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.prepareMarshal(cctx);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.prepareMarshal(cctx);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        // There are separate collections for keys and values of the 'ownedVals' map, because IgniteTxKey
-        // can not be inserted directly in a map as a key during invocation of MessageReader#read.
-        // The IgniteTxKey's hash code calculation will fail due to delegation of calculation
-        // to KeyCacheObjectImpl#hashCode, which in turn fails with assertion error if KeyCacheObjectImpl#val
-        // has not initialized yet in KeyCacheObjectImpl#finishUnmarshal.
-        if (ownedValKeys != null && ownedVals == null) {
-            ownedVals = U.newHashMap(ownedValKeys.size());
-
-            assert ownedValKeys.size() == ownedValVals.size();
-
-            Iterator<IgniteTxKey> keyIter = ownedValKeys.iterator();
-
-            Iterator<CacheVersionedValue> valIter = ownedValVals.iterator();
-
-            while (keyIter.hasNext()) {
-                IgniteTxKey key = keyIter.next();
-
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                CacheVersionedValue val = valIter.next();
-
-                key.finishUnmarshal(cctx, ldr);
-
-                val.finishUnmarshal(cctx, ldr);
-
-                ownedVals.put(key, val);
-            }
-        }
-
-        if (retVal != null && retVal.cacheId() != 0) {
-            GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
-
-            assert cctx != null : retVal.cacheId();
-
-            retVal.finishUnmarshal(cctx, ldr);
-        }
-
-        if (filterFailedKeys != null) {
-            for (IgniteTxKey key : filterFailedKeys) {
-                GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
-
-                key.finishUnmarshal(cctx, ldr);
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 56;
     }
 
     /** {@inheritDoc} */

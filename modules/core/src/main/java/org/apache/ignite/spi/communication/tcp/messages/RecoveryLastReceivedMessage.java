@@ -18,10 +18,8 @@
 package org.apache.ignite.spi.communication.tcp.messages;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Recovery acknowledgment message.
@@ -42,7 +40,7 @@ public class RecoveryLastReceivedMessage implements Message {
     /**
      * Message body size in bytes. In worst case it uses 10 bytes for serialization.
      *
-     * @see DirectByteBufferStream#writeLong(long).
+     * @see org.apache.ignite.internal.direct.stream.DirectByteBufferStream#writeLong(long).
      */
     private static final int MESSAGE_SIZE = 10;
 
@@ -50,8 +48,8 @@ public class RecoveryLastReceivedMessage implements Message {
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
-    @Order(value = 0, method = "received")
-    private long rcvCnt;
+    @Order(0)
+    long rcvCnt;
 
     /**
      * Default constructor.
@@ -74,17 +72,6 @@ public class RecoveryLastReceivedMessage implements Message {
         return rcvCnt;
     }
 
-    /**
-     * @param rcvCnt Number of received messages.
-     */
-    public void received(long rcvCnt) {
-        this.rcvCnt = rcvCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

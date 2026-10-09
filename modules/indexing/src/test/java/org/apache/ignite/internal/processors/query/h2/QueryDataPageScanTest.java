@@ -341,7 +341,6 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                         "from TestData a use index(), TestData b use index() " +
                         "where a.z between ? and ? " +
                         "and check_scan_flag(?,true)")
-                    .setLazy(true)
                     .setArgs(1, expNestedLoops, DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setPageSize(keysCnt / 10) // Must be less than keysCnt.
             )

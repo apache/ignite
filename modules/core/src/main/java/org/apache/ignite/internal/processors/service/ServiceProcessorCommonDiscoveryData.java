@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.List;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Initial data container to be sent to newly joining node for initialization of {@link IgniteServiceProcessor}.
- */
-class ServiceProcessorCommonDiscoveryData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+/** Initial data container to be sent to newly joining node for initialization of {@link IgniteServiceProcessor}. */
+public class ServiceProcessorCommonDiscoveryData implements Message {
     /** Clusters registered services descriptors. */
-    private final ArrayList<ServiceInfo> registeredServices;
+    @Order(0)
+    List<ServiceInfo> registeredServices;
 
-    /**
-     * @param registeredServices Clusters registered services descriptors.
-     */
-    public ServiceProcessorCommonDiscoveryData(@NotNull ArrayList<ServiceInfo> registeredServices) {
+    /** Default constructor for {@link MessageFactory}. */
+    public ServiceProcessorCommonDiscoveryData() {
+        // No-op.
+    }
+
+    /** @param registeredServices Clusters registered services descriptors. */
+    public ServiceProcessorCommonDiscoveryData(@NotNull List<ServiceInfo> registeredServices) {
         this.registeredServices = registeredServices;
     }
 
@@ -44,7 +45,7 @@ class ServiceProcessorCommonDiscoveryData implements Serializable {
      *
      * @return Registered services descriptors.
      */
-    public ArrayList<ServiceInfo> registeredServices() {
+    public List<ServiceInfo> registeredServices() {
         return registeredServices;
     }
 

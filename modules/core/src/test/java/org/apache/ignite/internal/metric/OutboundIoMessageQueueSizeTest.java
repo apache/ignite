@@ -23,21 +23,17 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.BlockTcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.DummyCustomDiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
@@ -60,6 +56,8 @@ public class OutboundIoMessageQueueSizeTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new BlockTcpDiscoverySpi().setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder()));
         cfg.setGridLogger(log);
+
+        cfg.setPluginProviders(new MessagesPluginProvider(DummyCustomDiscoveryMessage.class));
 
         return cfg;
     }
@@ -127,7 +125,7 @@ public class OutboundIoMessageQueueSizeTest extends GridCommonAbstractTest {
 
         metric.reset(); // Reset value accumulated before discovery SPI startup.
 
-        srv0.context().discovery().sendCustomEvent(new DummyCustomDiscoveryMessage(IgniteUuid.randomUuid()));
+        srv0.context().discovery().sendCustomEvent(new DummyCustomDiscoveryMessage());
 
         // Assume our message can be added to queue concurrently with other messages
         // (for example, with metrics update message).
@@ -145,46 +143,12 @@ public class OutboundIoMessageQueueSizeTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 0; i <= MSG_LIMIT; i++)
-                srv0.context().discovery().sendCustomEvent(new DummyCustomDiscoveryMessage(IgniteUuid.randomUuid()));
+                srv0.context().discovery().sendCustomEvent(new DummyCustomDiscoveryMessage());
 
             assertTrue(metric.value() >= MSG_LIMIT);
         }
         finally {
             latch.countDown();
-        }
-    }
-
-    /** */
-    private static class DummyCustomDiscoveryMessage implements DiscoveryCustomMessage {
-        /** */
-        private final IgniteUuid id;
-
-        /**
-         * @param id Message id.
-         */
-        DummyCustomDiscoveryMessage(IgniteUuid id) {
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid id() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isMutable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
-            DiscoCache discoCache) {
-            throw new UnsupportedOperationException();
         }
     }
 }

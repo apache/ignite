@@ -514,8 +514,6 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
                 ClassLoader ldr = classLoader();
 
-                ctx.cache().onUndeployed(ldr);
-
                 // Clear optimized marshaller's cache.
                 if (ctx.marshaller() instanceof AbstractMarshaller)
                     ((AbstractMarshaller)ctx.marshaller()).onUndeploy(ldr);

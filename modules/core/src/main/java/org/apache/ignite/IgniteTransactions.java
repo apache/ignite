@@ -130,7 +130,10 @@ public interface IgniteTransactions {
     /**
      * Returns an instance of {@code IgniteTransactions} tran will trace every transaction.
      *
-     * @return Trace-enabled transactions intance.
+     * @return Trace-enabled transactions instance.
+     * @deprecated The Ignite Tracing is deprecated and subject to removal in a future release. Ignite Tracing has been
+     * retired in favor of Ignite Performance Statistics and Ignite Metrics.
      */
+    @Deprecated(forRemoval = true)
     public IgniteTransactions withTracing();
 }

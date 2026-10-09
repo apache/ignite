@@ -17,32 +17,25 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 public class DefaultMapperEnumFieldsMessage implements Message {
     @Order(0)
-    private TransactionIsolation publicEnum;
+    TransactionIsolation publicEnum;
 
     @Order(1)
-    private GridCacheOperation internalEnum;
+    GridCacheOperation internalEnum;
 
-    public TransactionIsolation publicEnum() {
-        return publicEnum;
-    }
+    @Order(2)
+    Map<Collection<TransactionIsolation>, String> isolationStringMap;
 
-    public void publicEnum(TransactionIsolation publicEnum) {
-        this.publicEnum = publicEnum;
-    }
-
-    public GridCacheOperation internalEnum() {
-        return internalEnum;
-    }
-
-    public void internalEnum(GridCacheOperation internalEnum) {
-        this.internalEnum = internalEnum;
-    }
+    @Order(3)
+    Collection<PartitionHashRecord.PartitionState> partStates;
 
     public short directType() {
         return 0;

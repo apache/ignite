@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesFastTest;
 import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesLongTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.query.ScanQueryTransactionsUn
 import org.apache.ignite.internal.processors.cache.query.ScanQueryUpdateTtlTest;
 import org.apache.ignite.internal.processors.query.DmlBatchSizeDeadlockTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateTest;
-import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
+import org.apache.ignite.internal.processors.query.LocalQueryTest;
 import org.apache.ignite.internal.processors.query.LongRunningQueryTest;
 import org.apache.ignite.internal.processors.query.SqlAffinityCacheTest;
 import org.apache.ignite.internal.processors.query.SqlAffinityHistoryForDynamicallyCreatedCachesTest;
@@ -46,8 +45,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.RetryCauseMessageS
 import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubquerySelfTest;
 import org.apache.ignite.sqltests.SqlByteArrayTest;
 import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -75,7 +72,7 @@ import org.junit.runners.Suite;
 
     IgniteSqlCreateTableTemplateTest.class,
 
-    LocalQueryLazyTest.class,
+    LocalQueryTest.class,
 
     LongRunningQueryTest.class,
 
@@ -105,9 +102,4 @@ import org.junit.runners.Suite;
     ScanQueryUpdateTtlTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite4 {
-    /** Setup lazy mode default. */
-    @BeforeClass
-    public static void setupLazy() {
-        GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
-    }
 }

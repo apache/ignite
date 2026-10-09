@@ -41,9 +41,6 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
     /** */
     private static final String A_STRING = "test_test_test_test_test_test_test_test_test_test_test_test_test_test";
 
-    /** */
-    private static final int AN_INT = Integer.MAX_VALUE;
-
     /**
      * @throws Exception If failed.
      */
@@ -128,44 +125,12 @@ public class GridTopicExternalizableSelfTest extends IgniteExternalizableAbstrac
      * @throws Exception If failed.
      */
     @Test
-    public void testSerializationTopicCreatedByStringAndIntAndLong() throws Exception {
-        for (Marshaller marsh : getMarshallers()) {
-            info("Test GridTopic externalization [marshaller=" + marsh + ']');
-
-            for (GridTopic topic : GridTopic.values()) {
-                Externalizable msgOut = (Externalizable)topic.topic(A_STRING, AN_INT, A_LONG);
-
-                assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
-            }
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSerializationTopicCreatedByStrinAndLong() throws Exception {
+    public void testSerializationTopicCreatedByStringAndLong() throws Exception {
         for (Marshaller marsh : getMarshallers()) {
             info("Test GridTopic externalization [marshaller=" + marsh + ']');
 
             for (GridTopic topic : GridTopic.values()) {
                 Externalizable msgOut = (Externalizable)topic.topic(A_STRING, A_LONG);
-
-                assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
-            }
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSerializationTopicCreatedByStringAndUUIDAndIntAndLong() throws Exception {
-        for (Marshaller marsh : getMarshallers()) {
-            info("Test GridTopic externalization [marshaller=" + marsh + ']');
-
-            for (GridTopic topic : GridTopic.values()) {
-                Externalizable msgOut = (Externalizable)topic.topic(A_STRING, AN_UUID, AN_INT, A_LONG);
 
                 assertEquals(msgOut, GridTestIoUtils.externalize(msgOut, marsh));
             }

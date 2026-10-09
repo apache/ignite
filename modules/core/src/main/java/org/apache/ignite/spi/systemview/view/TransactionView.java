@@ -20,10 +20,12 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +37,7 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  * Transaction representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class TransactionView {
     /** Transaction. */
     private final IgniteInternalTx tx;
@@ -121,6 +124,14 @@ public class TransactionView {
     @Order(2)
     public IgniteUuid xid() {
         return tx.xid();
+    }
+
+    /**
+     * @return Near transaction ID.
+     * @see IgniteInternalTx#nearXidVersion() ()
+     */
+    public IgniteUuid originatingXid() {
+        return BinaryUtils.asIgniteUuid(tx.nearXidVersion());
     }
 
     /**
@@ -282,6 +293,5 @@ public class TransactionView {
         catch (Throwable e) {
             return null;
         }
-
     }
 }

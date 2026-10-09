@@ -24,20 +24,16 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} issues with classloading.
  */
-@WithSystemProperty(key = IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, value = "false")
 public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTest {
     /** Failure handler that keeps count of failures (initialized before every test). */
     private CountingFailureHandler failureHandler;
@@ -45,6 +41,9 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (cfg.isClientMode())
+            cfg.setClassLoader(getExternalClassLoader());
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -63,65 +62,29 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
         failureHandler = new CountingFailureHandler();
     }
 
-    /**
-     * Test that receiving data of unknown class into distributed metastorage doesn't lead to failure.
-     *
-     * Description:
-     * Start server node with exclusion of certain BamboozleClass (this is done via system property
-     * which adds class filter to class loader).
-     * Start client node and write new instance of BamboozleClass to the distributed metastorage to test that
-     * new value is not marshalled.
-     * Write another instance of BamboozleClass (with different value of fields) to test that
-     * old value is not unmarshalled.
-     * There must be no failures and all 2 grids must be alive.
-     *
-     * @throws Exception If failed.
-     */
+    /** Test that receiving data of unknown class into distributed metastorage doesn't lead to failure. */
     @Test
     public void testWontFailReceivingDataOfUnknownClass() throws Exception {
-        String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_test_excluded.txt").getPath();
-
-        System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
         startGrid(1);
-        System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
 
         IgniteEx client = startClientGrid(0);
 
-        client.context().distributedMetastorage().write("hey", new BamboozleClass(0));
-        client.context().distributedMetastorage().write("hey", new BamboozleClass(1));
+        client.context().distributedMetastorage().write("hey", serverUnknown("one"));
+        client.context().distributedMetastorage().write("hey", serverUnknown("two"));
 
         assertEquals(0, failureHandler.getCount());
     }
 
-    /**
-     * Test that reading data of unknown class from distributed metastorage doesn't lead to failure.
-     *
-     * Description:
-     * Start server node with exclusion of certain BamboozleClass (this is done via system property
-     * which adds class filter to class loader).
-     * Start client node and write new instance of BamboozleClass to the distributed metastorage.
-     * Try reading data of BamboozleClass
-     *
-     * @throws Exception If failed.
-     */
+    /** Test that reading data of unknown class from distributed metastorage doesn't lead to failure. */
     @Test
     public void testWontFailReadingDataOfUnknownClass() throws Exception {
-        String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_test_excluded.txt").getPath();
-
-        System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
         IgniteEx ignite = startGrid(1);
-        System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
 
         IgniteEx client = startClientGrid(0);
 
-        client.context().distributedMetastorage().write("hey", new BamboozleClass(0));
+        client.context().distributedMetastorage().write("hey", serverUnknown("0"));
 
-        try {
-            Serializable hey = ignite.context().distributedMetastorage().read("hey");
-        }
-        catch (Exception ignored) {
-            // Ignore.
-        }
+        assertThrowsWithCause(() -> ignite.context().distributedMetastorage().read("hey"), ClassNotFoundException.class);
 
         assertEquals(0, failureHandler.getCount());
     }
@@ -141,24 +104,13 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
      */
     @Test
     public void testFailListeningForDataOfUnknownClass() throws Exception {
-        String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_test_excluded.txt").getPath();
-
-        System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
         IgniteEx ignite = startGrid(1);
-        System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
 
         IgniteEx client = startClientGrid(0);
 
-        ignite.context().distributedMetastorage().listen("hey"::equals, (key, oldVal, newVal) -> {
-            System.out.println(newVal);
-        });
+        ignite.context().distributedMetastorage().listen("hey"::equals, (key, oldVal, newVal) -> System.out.println(newVal));
 
-        try {
-            client.context().distributedMetastorage().write("hey", new BamboozleClass(0));
-        }
-        catch (Exception ignored) {
-            // Ignore.
-        }
+        client.context().distributedMetastorage().write("hey", serverUnknown("0"));
 
         assertEquals(1, failureHandler.getCount());
     }
@@ -167,24 +119,6 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
     @After
     public void after() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * Class that would be excluded on the certain npde.
-     */
-    public static final class BamboozleClass implements Serializable {
-        /** */
-        private final int i;
-
-        /** */
-        public BamboozleClass(int i) {
-            this.i = i;
-        }
-
-        /** */
-        public int getI() {
-            return i;
-        }
     }
 
     /**
@@ -209,6 +143,12 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
         public int getCount() {
             return count;
         }
+    }
+
+    /** */
+    private static Serializable serverUnknown(String name) throws Exception {
+        return (Serializable)getExternalClassLoader().loadClass("org.apache.ignite.tests.p2p.cache.Person")
+            .getConstructor(String.class).newInstance(name);
     }
 
 }

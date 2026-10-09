@@ -89,14 +89,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
      * IS NOT DISTINCT FROM condition).
      */
     private @Nullable GroupKey<Row> key(Row r) {
-        if (!allowNulls) {
-            for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
-                if (keysRowHnd.get(i, r) == null)
-                    return null;
-            }
-        }
-
-        return new GroupKey<>(r, keysRowHnd);
+        return GroupKey.of(r, keysRowHnd, allowNulls);
     }
 
     /**

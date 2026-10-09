@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of the ScheduleIndexRebuildJob.
@@ -33,16 +30,20 @@ public class ScheduleIndexRebuildJobRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map cache names -> indexes scheduled for the rebuild. */
-    private Map<String, Set<String>> cacheToIndexes;
+    @Order(0)
+    Map<String, Set<String>> cacheToIndexes;
 
     /** Names of cache indexes that were not found (cache -> set of indexes). */
-    private Map<String, Set<String>> notFoundIndexes;
+    @Order(1)
+    Map<String, Set<String>> notFoundIndexes;
 
     /** Names of caches that were not found. */
-    private Set<String> notFoundCacheNames;
+    @Order(2)
+    Set<String> notFoundCacheNames;
 
     /** Names of cache groups that were not found. */
-    private Set<String> notFoundGroupNames;
+    @Order(3)
+    Set<String> notFoundGroupNames;
 
     /**
      * Empty constructor required for Serializable.
@@ -69,22 +70,6 @@ public class ScheduleIndexRebuildJobRes extends IgniteDataTransferObject {
         this.notFoundIndexes = notFoundIndexes;
         this.notFoundCacheNames = notFoundCacheNames;
         this.notFoundGroupNames = notFoundGroupNames;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, cacheToIndexes);
-        U.writeMap(out, notFoundIndexes);
-        U.writeCollection(out, notFoundCacheNames);
-        U.writeCollection(out, notFoundGroupNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheToIndexes = U.readMap(in);
-        notFoundIndexes = U.readMap(in);
-        notFoundCacheNames = U.readSet(in);
-        notFoundGroupNames = U.readSet(in);
     }
 
     /**

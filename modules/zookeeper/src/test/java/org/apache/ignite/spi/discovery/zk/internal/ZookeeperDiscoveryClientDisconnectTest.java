@@ -39,7 +39,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.TestZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -89,7 +89,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         assertEquals(1, srv1.cluster().forClients().nodes().size());
 
         ZookeeperDiscoverySpiMBean bean = getMxBean(srv1.name(), "SPIs",
-            ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
+            TestZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
         assertNotNull(bean);
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -30,8 +31,12 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.TableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests partition reservation/releasing for queries over unstable topology.
@@ -44,12 +49,14 @@ public class PartitionsReservationIntegrationTest extends AbstractBasicIntegrati
     private static final int KEYS = PARTS * 100_000;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         // No-op. Don't start any grids.
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
         startGrids(2);
 
         client = startClientGrid();
@@ -88,18 +95,25 @@ public class PartitionsReservationIntegrationTest extends AbstractBasicIntegrati
     @Test
     public void testIndexScan() throws Exception {
         checkPartitionsReservationRelease(
-            assertQuery("SELECT /*+ FORCE_INDEX */ * FROM Employer")
+            assertQuery("SELECT /*+ FORCE_INDEX */ * FROM Employer WHERE salary::int % 100 = 0")
                 .matches(QueryChecker.containsSubPlan(IndexScan.class.getSimpleName()))
-                .resultSize(KEYS));
+                .resultSize(KEYS / 100));
     }
 
     /** */
     @Test
     public void testTableScan() throws Exception {
+        for (Ignite grid : G.allGrids()) {
+            IgniteCacheTable tbl = (IgniteCacheTable)queryProcessor(grid).schemaHolder()
+                .schema("PUBLIC").tables().get("EMPLOYER");
+
+            tbl.markIndexRebuildInProgress(true);
+        }
+
         checkPartitionsReservationRelease(
-            assertQuery("SELECT * FROM Employer")
+            assertQuery("SELECT * FROM Employer WHERE salary::int % 100 = 0")
                 .matches(QueryChecker.containsSubPlan(TableScan.class.getSimpleName()))
-                .resultSize(KEYS));
+                .resultSize(KEYS / 100));
     }
 
     /** */

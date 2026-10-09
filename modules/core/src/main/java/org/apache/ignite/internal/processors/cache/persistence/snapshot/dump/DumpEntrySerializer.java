@@ -97,7 +97,7 @@ public class DumpEntrySerializer {
     /** */
     public void kernalContext(GridKernalContext cctx) {
         co = cctx.cacheObjects();
-        fakeCacheObjCtx = new CacheObjectContext(cctx, null, null, false, false, false, false, false);
+        fakeCacheObjCtx = new CacheObjectContext(cctx, null, null, false, false, false, false);
     }
 
     /** @param keepBinary If {@code true} then return data in form of {@link BinaryObject}. */

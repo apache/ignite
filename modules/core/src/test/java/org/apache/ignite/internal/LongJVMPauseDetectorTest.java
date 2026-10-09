@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.regex.Pattern;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -27,20 +29,27 @@ import org.junit.Test;
  */
 public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
     /** */
-    private GridStringLogger strLog;
+    private static ListeningTestLogger listeningTestLogger;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        return super.getConfiguration(gridName)
+            .setGridLogger(listeningTestLogger);
+    }
 
-        if (strLog != null)
-            cfg.setGridLogger(strLog);
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        return cfg;
+        setLoggerDebugLevel();
+
+        listeningTestLogger = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
@@ -49,13 +58,14 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJulMessage() throws Exception {
-        this.strLog = new GridStringLogger(true);
+        // We should discard ring check latency on server node.
+        LogListener lsnr = LogListener.matches("LongJVMPauseDetector was successfully started").times(1).build();
 
-        strLog.logLength(300000);
+        listeningTestLogger.registerListener(lsnr);
 
         startGrid(0);
 
-        assertTrue(strLog.toString().contains("LongJVMPauseDetector was successfully started"));
+        assertTrue(lsnr.check());
     }
 
     /**
@@ -63,17 +73,16 @@ public class LongJVMPauseDetectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStopWorkerThread() throws Exception {
-        strLog = new GridStringLogger(true);
+        LogListener stopLsnr = LogListener.matches(Pattern.compile("jvm-pause-detector-worker-.* has been stopped\\.")).times(1).build();
+        LogListener interruptLsnr = LogListener.matches(Pattern.compile("jvm-pause-detector-worker-.* has been interrupted\\.")).build();
 
-        strLog.logLength(300_000);
+        listeningTestLogger.registerListener(stopLsnr);
+        listeningTestLogger.registerListener(interruptLsnr);
 
         startGrid(0);
-
         stopGrid(0);
 
-        String log = strLog.toString();
-
-        assertFalse(log.contains("jvm-pause-detector-worker has been interrupted."));
-        assertTrue(log.contains("jvm-pause-detector-worker has been stopped."));
+        assertFalse(interruptLsnr.check());
+        assertTrue(stopLsnr.check());
     }
 }

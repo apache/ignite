@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -49,6 +51,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.systemview.CacheExplicitLockViewWalker;
+import org.apache.ignite.internal.systemview.CacheLockViewWalker;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -67,6 +71,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
+import org.apache.ignite.spi.systemview.view.CacheLockView;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 
@@ -93,6 +99,18 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** */
     private static final int MAX_NESTED_LSNR_CALLS =
         getInteger(IGNITE_MAX_NESTED_LISTENER_CALLS, DFLT_MAX_NESTED_LISTENER_CALLS);
+
+    /** System view name for cache explicit locks. */
+    public static final String CACHE_EXPLICIT_LOCKS_VIEW = "cacheExplicitLocks";
+
+    /** System view description for cache explicit locks. */
+    public static final String CACHE_EXPLICIT_LOCKS_VIEW_DESC = "Explicit locks on cache keys";
+
+    /** System view name for cache locks. */
+    public static final String CACHE_LOCKS_VIEW = "cacheLocks";
+
+    /** System view description for cache keys locks. */
+    public static final String CACHE_LOCKS_VIEW_DESC = "Held and queued locks on cache keys";
 
     /** Pending locks per thread. */
     private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
@@ -282,6 +300,38 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         pendingExplicit = GridConcurrentFactory.newMap();
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+        cctx.kernalContext().systemView().registerInnerCollectionView(
+            CACHE_EXPLICIT_LOCKS_VIEW,
+            CACHE_EXPLICIT_LOCKS_VIEW_DESC,
+            new CacheExplicitLockViewWalker(),
+            pendingExplicit.values(),
+            GridCacheExplicitLockSpan::candidates,
+            (threadId, lock) -> new CacheExplicitLockView(lock)
+        );
+
+        List<GridCacheMvccCandidate> locks = new ArrayList<>();
+
+        cctx.kernalContext().systemView().registerInnerCollectionView(
+            CACHE_LOCKS_VIEW,
+            CACHE_LOCKS_VIEW_DESC,
+            new CacheLockViewWalker(),
+            locked.values(),
+            entry -> {
+                entry.lockEntry();
+                try {
+                    locks.clear();
+
+                    GridCacheMvcc mvcc = entry.mvccExtras();
+
+                    return mvcc != null ? mvcc.localCandidatesCopy(locks) : Collections.emptyList();
+                }
+                finally {
+                    entry.unlockEntry();
+                }
+            },
+            (entry, cand) -> new CacheLockView(cand)
+        );
     }
 
     /** {@inheritDoc} */

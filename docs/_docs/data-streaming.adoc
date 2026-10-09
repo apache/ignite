@@ -68,7 +68,7 @@ DataStreamer doesn't guarantee:
 If <<overwriting, 'allowOverwrite'>> property is 'false' (default), consider:
 []
 - You should not have the same keys repeating in the data being streamed;
-- Streamer cancelation or streamer node failure can cause data inconsistency;
+- Streamer cancelation or topology change can cause data inconsistency;
 - If loading into a persistent cache, concurrently created snapshot may contain inconsistent data and might not be restored entirely.
 
 Most important behavior of Ignite Data Streamer is defined by <<receivers, stream receiver>> and

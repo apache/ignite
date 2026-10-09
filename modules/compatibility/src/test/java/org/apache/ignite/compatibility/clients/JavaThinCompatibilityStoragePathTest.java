@@ -32,10 +32,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.junit.Assume;
 
 import static org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest.ADDR;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests java thin client compatibility. This test only checks that thin client can perform basic operations with
@@ -59,9 +59,18 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
     @Override protected void processRemoteConfiguration(IgniteConfiguration cfg) {
         super.processRemoteConfiguration(cfg);
 
-        cfg.setCacheConfiguration(new CacheConfiguration<>("nodeCache"))
-            .setDataStorageConfiguration(new DataStorageConfiguration()
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>("nodeCache");
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
+
+        if (ver.compareTo(VER_2_18_0) >= 0) {
+            ccfg.setIndexPath("one").setStoragePaths(STORAGE_PATH);
+
+            cfg.getDataStorageConfiguration().setExtraStoragePaths("one", "two", "three");
+        }
+
+        cfg.setCacheConfiguration(ccfg);
     }
 
     /** {@inheritDoc} */
@@ -72,16 +81,28 @@ public class JavaThinCompatibilityStoragePathTest extends AbstractClientCompatib
 
     /** {@inheritDoc} */
     @Override public void testOldClientToCurrentServer() throws Exception {
-        Assume.assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+        assumeVersionSupported();
 
         super.testOldClientToCurrentServer();
     }
 
     /** {@inheritDoc} */
     @Override public void testCurrentClientToOldServer() throws Exception {
-        Assume.assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
+        assumeVersionSupported();
 
         super.testCurrentClientToOldServer();
+    }
+
+    /** Skips the test if the old version doesn't support the cluster state API or the current JDK. */
+    private void assumeVersionSupported() {
+        int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
+
+        if (majorJavaVer >= 21)
+            assumeTrue("JDK 21 support is available starting with release 2.16.0", ver.compareTo(VER_2_16_0) >= 0);
+        else if (majorJavaVer >= 17)
+            assumeTrue("JDK 17 support is available starting with release 2.13.0", ver.compareTo(VER_2_13_0) >= 0);
+        else
+            assumeTrue("Cluster state API exists only from 2.9.0 release", ver.compareTo(VER_2_9_0) >= 0);
     }
 
 

@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -165,6 +164,9 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final TransactionIsolation isolation,
         final boolean oneOp
     ) throws Exception {
+        if (nodes > 1)
+            awaitPartitionMapExchange();
+
         final Ignite ignite = grid(new Random().nextInt(nodes));
 
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -183,7 +185,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, isolation,
                     timeout, keys.size())) {
 
@@ -204,7 +206,9 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (Exception e) {
-                    ex.compareAndSet(null, e);
+                    // TransactionDeadlockException raised at least for one transaction involved in the deadlock
+                    if (X.hasCause(e, TransactionDeadlockException.class))
+                        ex.compareAndSet(null, e);
                 }
             }
         }, 2, "tx");
@@ -268,7 +272,7 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
         /**
          * Change balance by specified amount.
          *
-         * @param amount Amount to add to balance (may be negative).
+         * @param amount Amount to add to balance (maybe negative).
          */
         void update(double amount) {
             balance += amount;

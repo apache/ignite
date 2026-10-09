@@ -19,9 +19,8 @@ package org.apache.ignite.internal.management.cache;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,16 +31,19 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
+    @Order(0)
     @Argument(description = "Path to the Spring XML configuration that contains " +
         "'org.apache.ignite.configuration.CacheConfiguration' beans to create caches from", example = "springXmlConfigPath")
-    private String springxmlconfig;
+    String springxmlconfig;
 
     /** */
+    @Order(1)
     @Argument(description = "Optional flag to skip existing caches", optional = true)
-    private boolean skipExisting;
+    boolean skipExisting;
 
     /** */
-    private String fileContent;
+    @Order(2)
+    String fileContent;
 
     /** */
     private void readFile() {
@@ -57,20 +59,6 @@ public class CacheCreateCommandArg extends IgniteDataTransferObject {
             throw new IgniteException("Failed to create caches. Failed to read Spring XML configuration file " +
                 "[file=" + springxmlconfig + ']', e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, springxmlconfig);
-        U.writeString(out, fileContent);
-        out.writeBoolean(skipExisting);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        springxmlconfig = U.readString(in);
-        fileContent = U.readString(in);
-        skipExisting = in.readBoolean();
     }
 
     /** */

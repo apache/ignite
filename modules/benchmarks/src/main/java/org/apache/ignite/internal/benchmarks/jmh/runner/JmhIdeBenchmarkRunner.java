@@ -17,29 +17,44 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.runner;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.typedef.F;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
+
+import static org.apache.ignite.internal.util.FeatureChecker.JAVA_17_OPTIONS;
 
 /**
  * JMH IDE benchmark runner configuration.
  */
 public class JmhIdeBenchmarkRunner {
+    /** Default JVM arguments. */
+    private static final String[] DFLT_JVM_ARGS = JAVA_17_OPTIONS.split("\n");
+
     /** Benchmark modes. */
-    private Mode[] benchmarkModes = new Mode[] { Mode.Throughput };
+    private Mode[] benchmarkModes;
 
     /** Amount of forks */
     private int forks = 1;
 
     /** Warmup iterations. */
-    private int warmupIterations = 10;
+    private int warmupIterations = -1;
+
+    /** Warmup time. */
+    private TimeValue warmupTime;
 
     /** Measurement operations. */
-    private int measurementIterations = 10;
+    private int measurementIterations;
+
+    /** Measurement time. */
+    private TimeValue measurementTime;
 
     /** Output time unit. */
-    private TimeUnit outputTimeUnit = TimeUnit.SECONDS;
+    private TimeUnit outputTimeUnit;
 
     /** Benchmarks to run. */
     private Object[] benchmarks;
@@ -103,11 +118,31 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
+     * @param warmupTime Warmup time.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner warmupTime(TimeValue warmupTime) {
+        this.warmupTime = warmupTime;
+
+        return this;
+    }
+
+    /**
      * @param measurementIterations Measurement iterations.
      * @return This instance.
      */
     public JmhIdeBenchmarkRunner measurementIterations(int measurementIterations) {
         this.measurementIterations = measurementIterations;
+
+        return this;
+    }
+
+    /**
+     * @param measurementTime Measurement time.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner measurementTime(TimeValue measurementTime) {
+        this.measurementTime = measurementTime;
 
         return this;
     }
@@ -181,10 +216,24 @@ public class JmhIdeBenchmarkRunner {
         OptionsBuilder builder = new OptionsBuilder();
 
         builder.forks(forks);
-        builder.warmupIterations(warmupIterations);
-        builder.measurementIterations(measurementIterations);
-        builder.timeUnit(outputTimeUnit);
-        builder.threads(threads);
+
+        if (warmupIterations >= 0)
+            builder.warmupIterations(warmupIterations);
+
+        if (warmupTime != null)
+            builder.warmupTime(warmupTime);
+
+        if (measurementIterations > 0)
+            builder.measurementIterations(measurementIterations);
+
+        if (measurementTime != null)
+            builder.measurementTime(measurementTime);
+
+        if (outputTimeUnit != null)
+            builder.timeUnit(outputTimeUnit);
+
+        if (threads > 0)
+            builder.threads(threads);
 
         if (benchmarkModes != null) {
             for (Mode benchmarkMode : benchmarkModes)
@@ -200,8 +249,7 @@ public class JmhIdeBenchmarkRunner {
             }
         }
 
-        if (jvmArgs != null)
-            builder.jvmArgs(jvmArgs);
+        builder.jvmArgs(jvmArgs != null ? F.concat(DFLT_JVM_ARGS, jvmArgs) : DFLT_JVM_ARGS);
 
         if (output != null)
             builder.output(output);
@@ -215,12 +263,13 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
-     * Run benchmarks.
+     * Run benchmarks and return results.
      *
+     * @return Results.
      * @throws Exception If failed.
      */
-    public void run() throws Exception {
-        new Runner(optionsBuilder().build()).run();
+    public Collection<RunResult> run() throws Exception {
+        return new Runner(optionsBuilder().build()).run();
     }
 
     /**

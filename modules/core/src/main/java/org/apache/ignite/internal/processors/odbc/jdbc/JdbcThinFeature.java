@@ -43,7 +43,10 @@ public enum JdbcThinFeature implements ThinProtocolFeature {
     CLIENT_INFO(5),
 
     /** Execute local queries. */
-    LOCAL_QUERIES(6);
+    LOCAL_QUERIES(6),
+
+    /** Transaction savepoint operations. */
+    SAVEPOINTS(7);
 
     /** */
     private static final EnumSet<JdbcThinFeature> ALL_FEATURES_AS_ENUM_SET = EnumSet.allOf(JdbcThinFeature.class);

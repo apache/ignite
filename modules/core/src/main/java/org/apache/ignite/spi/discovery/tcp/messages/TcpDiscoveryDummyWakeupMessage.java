@@ -18,16 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 /**
- *
+ * The message must not be serialized.
  */
 public class TcpDiscoveryDummyWakeupMessage extends TcpDiscoveryAbstractMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * @return Will throw an exception, the message must not be serialized.
-     */
-    protected Object writeReplace() {
-        throw new IllegalStateException("Dummy message must not be serialized");
-    }
+    // No-op.
 }

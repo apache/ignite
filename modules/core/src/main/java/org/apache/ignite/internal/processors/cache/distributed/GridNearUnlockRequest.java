@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -33,8 +32,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
-    @Order(7)
-    private List<KeyCacheObject> keys;
+    @Order(0)
+    public List<KeyCacheObject> keys;
+
+    /** Savepoint rollback flag. */
+    @Order(1)
+    public boolean forSavepoint;
 
     /**
      * Empty constructor.
@@ -46,19 +49,11 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
-     * @param addDepInfo Deployment info flag.
      */
-    public GridNearUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
-        super(keyCnt, addDepInfo);
+    public GridNearUnlockRequest(int cacheId, int keyCnt) {
+        super(keyCnt, false);
 
         this.cacheId = cacheId;
-    }
-
-    /**
-     * Sets the keys
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
     }
 
     /**
@@ -66,6 +61,20 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
      */
     public List<KeyCacheObject> keys() {
         return keys;
+    }
+
+    /**
+     * @return {@code True} if unlock request is sent during rollback to savepoint.
+     */
+    public boolean forSavepoint() {
+        return forSavepoint;
+    }
+
+    /**
+     * @param forSavepoint Savepoint rollback flag.
+     */
+    public void forSavepoint(boolean forSavepoint) {
+        this.forSavepoint = forSavepoint;
     }
 
     /**
@@ -79,35 +88,15 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : -1;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
+    @Override public int stripeIdx() {
+        return keys != null && !keys.isEmpty() ? keys.get(0).partition() : ANY_STRIPE;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
     }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 57;
-    }
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearUnlockRequest.class, this, "super", super.toString());

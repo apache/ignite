@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,13 +29,16 @@ public class ClusterChangeTagTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String tag;
+    @Order(0)
+    String tag;
 
     /** */
-    private Boolean success;
+    @Order(1)
+    Boolean success;
 
     /** */
-    private String errResp;
+    @Order(2)
+    String errResp;
 
     /** Default constructor. */
     public ClusterChangeTagTaskResult() {
@@ -53,22 +54,6 @@ public class ClusterChangeTagTaskResult extends IgniteDataTransferObject {
         this.tag = tag;
         this.success = success;
         this.errResp = errResp;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(success);
-        out.writeObject(errResp);
-
-        out.writeObject(tag);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        success = (Boolean)in.readObject();
-        errResp = (String)in.readObject();
-
-        tag = (String)in.readObject();
     }
 
     /** */

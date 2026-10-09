@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.DeployableMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
@@ -44,71 +43,69 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT prepare request.
  */
-public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
+public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest implements DeployableMessage {
     /** Max order. */
-    @Order(20)
-    private UUID nearNodeId;
+    @Order(0)
+    UUID nearNodeId;
 
     /** Future ID. */
-    @Order(value = 21, method = "futureId")
-    private IgniteUuid futId;
+    @Order(1)
+    IgniteUuid futId;
 
     /** Mini future ID. */
-    @Order(22)
-    private int miniId;
+    @Order(2)
+    int miniId;
 
     /** Topology version. */
-    @Order(value = 23, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    @Order(3)
+    AffinityTopologyVersion topVer;
 
     /** Invalidate near entries flags. */
-    @Order(24)
-    private BitSet invalidateNearEntries;
+    @Order(4)
+    BitSet invalidateNearEntries;
 
     /** Near writes. */
-    @Order(25)
+    @Order(5)
     @GridToStringInclude
-    private Collection<IgniteTxEntry> nearWrites;
+    Collection<IgniteTxEntry> nearWrites;
 
     /** Owned versions by key. */
     @GridToStringInclude
-    private Map<IgniteTxKey, GridCacheVersion> owned;
+    @Marshalled(keys = "ownedKeys", values = "ownedVals")
+    Map<IgniteTxKey, GridCacheVersion> owned;
 
     /** Owned keys. */
-    @Order(26)
-    private Collection<IgniteTxKey> ownedKeys;
+    @Order(6)
+    Collection<IgniteTxKey> ownedKeys;
 
     /** Owned values. */
-    @Order(value = 27, method = "ownedValues")
-    private Collection<GridCacheVersion> ownedVals;
+    @Order(7)
+    Collection<GridCacheVersion> ownedVals;
 
     /** */
-    @Order(value = 28, method = "updateCounters")
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    @Order(8)
+    Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /** Near transaction ID. */
-    @Order(value = 29, method = "nearXidVersion")
-    private GridCacheVersion nearXidVer;
+    @Order(9)
+    GridCacheVersion nearXidVer;
 
     /** Task name hash. */
-    @Order(30)
-    private int taskNameHash;
+    @Order(10)
+    int taskNameHash;
 
     /** Preload keys. */
-    @Order(31)
-    private BitSet preloadKeys;
-
-    /** */
-    private List<IgniteTxKey> nearWritesCacheMissed;
+    @Order(11)
+    BitSet preloadKeys;
 
     /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
-    @Order(value = 32, method = "skipCompletedVersion")
-    private boolean skipCompletedVers;
+    @Order(12)
+    boolean skipCompletedVers;
 
     /** Transaction label. */
-    @Order(value = 33, method = "txLabel")
+    @Order(13)
     @GridToStringInclude
-    @Nullable private String txLbl;
+    @Nullable String txLbl;
 
     /**
      * Empty constructor.
@@ -128,7 +125,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
-     * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
      * @param updCntrs Update counters for Tx.
@@ -146,19 +142,11 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean last,
         boolean onePhaseCommit,
         int taskNameHash,
-        boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
-        Collection<PartitionUpdateCountersMessage> updCntrs) {
-        super(tx,
-            timeout,
-            null,
-            dhtWrites,
-            txNodes,
-            retVal,
-            last,
-            onePhaseCommit,
-            addDepInfo);
+        Collection<PartitionUpdateCountersMessage> updCntrs
+    ) {
+        super(tx, timeout, null, dhtWrites, txNodes, retVal, last, onePhaseCommit);
 
         assert futId != null;
         assert miniId != 0;
@@ -191,31 +179,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param updCntrs Update counters list.
-     */
-    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
-    }
-
-    /**
-     * @return Near cache writes for which cache was not found (possible if client near cache was closed).
-     */
-    @Nullable public List<IgniteTxKey> nearWritesCacheMissed() {
-        return nearWritesCacheMissed;
-    }
-
-    /**
      * @return Near transaction ID.
      */
     public GridCacheVersion nearXidVersion() {
         return nearXidVer;
-    }
-
-    /**
-     * @param nearXidVer Near transaction ID.
-     */
-    public void nearXidVersion(GridCacheVersion nearXidVer) {
-        this.nearXidVer = nearXidVer;
     }
 
     /**
@@ -226,27 +193,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param nodeId Near node ID.
-     */
-    public void nearNodeId(UUID nodeId) {
-        nearNodeId = nodeId;
-    }
-
-    /**
-     * @return Invalidate near entries flags.
-     */
-    public BitSet invalidateNearEntries() {
-        return invalidateNearEntries;
-    }
-
-    /**
-     * @param invalidateNearEntries Invalidate near entries flags.
-     */
-    public void invalidateNearEntries(BitSet invalidateNearEntries) {
-        this.invalidateNearEntries = invalidateNearEntries;
-    }
-
-    /**
      * @return Task name hash.
      */
     public int taskNameHash() {
@@ -254,24 +200,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param taskNameHash Task name hash.
-     */
-    public void taskNameHash(int taskNameHash) {
-        this.taskNameHash = taskNameHash;
-    }
-
-    /**
      * @return Near writes.
      */
     public Collection<IgniteTxEntry> nearWrites() {
         return nearWrites == null ? Collections.emptyList() : nearWrites;
-    }
-
-    /**
-     * @param nearWrites Near writes.
-     */
-    public void nearWrites(Collection<IgniteTxEntry> nearWrites) {
-        this.nearWrites = nearWrites;
     }
 
     /**
@@ -320,13 +252,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param futId Future ID.
-     */
-    public void futureId(IgniteUuid futId) {
-        this.futId = futId;
-    }
-
-    /**
      * @return Mini future ID.
      */
     public int miniId() {
@@ -334,66 +259,10 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param miniId Mini future ID.
-     */
-    public void miniId(int miniId) {
-        this.miniId = miniId;
-    }
-
-    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
-     * @return Owned keys.
-     */
-    public Collection<IgniteTxKey> ownedKeys() {
-        return ownedKeys;
-    }
-
-    /**
-     * @param ownedKeys Owned keys.
-     */
-    public void ownedKeys(Collection<IgniteTxKey> ownedKeys) {
-        this.ownedKeys = ownedKeys;
-    }
-
-    /**
-     * @return Owned values.
-     */
-    public Collection<GridCacheVersion> ownedValues() {
-        return ownedVals;
-    }
-
-    /**
-     * @param ownedVals Owned values.
-     */
-    public void ownedValues(Collection<GridCacheVersion> ownedVals) {
-        this.ownedVals = ownedVals;
-    }
-
-    /**
-     * @return Preload keys.
-     */
-    public BitSet preloadKeys() {
-        return preloadKeys;
-    }
-
-    /**
-     * @param preloadKeys Preload keys.
-     */
-    public void preloadKeys(BitSet preloadKeys) {
-        this.preloadKeys = preloadKeys;
     }
 
     /**
@@ -424,109 +293,26 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     }
 
     /**
-     * @param skipCompletedVers {@code True} if remote tx should skip adding itself to completed versions map on finish.
-     */
-    public void skipCompletedVersion(boolean skipCompletedVers) {
-        this.skipCompletedVers = skipCompletedVers;
-    }
-
-    /**
      * @return Transaction label.
      */
     @Nullable public String txLabel() {
         return txLbl;
     }
 
-    /**
-     * @param txLbl Transaction label.
-     */
-    public void txLabel(String txLbl) {
-        this.txLbl = txLbl;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @param ctx
-     */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
+    /** {@inheritDoc} */
+    @Override public void deploy(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (owned != null && ownedKeys == null) {
-            ownedKeys = owned.keySet();
-
-            ownedVals = owned.values();
-
-            for (IgniteTxKey key: ownedKeys) {
+            for (IgniteTxKey key : owned.keySet()) {
                 GridCacheContext<?, ?> cctx = ctx.cacheContext(key.cacheId());
 
-                key.prepareMarshal(cctx);
-
                 if (addDepInfo)
-                    prepareObject(key, cctx);
-            }
-        }
-
-        if (nearWrites != null)
-            marshalTx(nearWrites, ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (ownedKeys != null) {
-            assert ownedKeys.size() == ownedVals.size();
-
-            owned = U.newHashMap(ownedKeys.size());
-
-            Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
-
-            Iterator<GridCacheVersion> valIter = ownedVals.iterator();
-
-            while (keyIter.hasNext()) {
-                IgniteTxKey key = keyIter.next();
-
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(key.cacheId());
-
-                if (cacheCtx != null) {
-                    key.finishUnmarshal(cacheCtx, ldr);
-
-                    owned.put(key, valIter.next());
-                }
-            }
-        }
-
-        if (nearWrites != null) {
-            for (Iterator<IgniteTxEntry> it = nearWrites.iterator(); it.hasNext();) {
-                IgniteTxEntry e = it.next();
-
-                GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(e.cacheId());
-
-                if (cacheCtx == null) {
-                    it.remove();
-
-                    if (nearWritesCacheMissed == null)
-                        nearWritesCacheMissed = new ArrayList<>();
-
-                    nearWritesCacheMissed.add(e.txKey());
-                }
-                else {
-                    e.context(cacheCtx);
-
-                    e.unmarshal(ctx, true, ldr);
-                }
+                    deployObject(key, cctx);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 34;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         return U.safeAbs(version().hashCode());
     }
 

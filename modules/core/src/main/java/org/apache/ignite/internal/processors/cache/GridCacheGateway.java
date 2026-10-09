@@ -63,9 +63,6 @@ public class GridCacheGateway<K, V> {
      * Enter a cache call.
      */
     public void enter() {
-        if (ctx.deploymentEnabled())
-            ctx.deploy().onEnter();
-
         rwLock.readLock().lock();
 
         checkState(true, true);
@@ -254,9 +251,6 @@ public class GridCacheGateway<K, V> {
      */
     private void onEnter(boolean checkAtomicOpsInTx) {
         ctx.itHolder().checkWeakQueue();
-
-        if (ctx.deploymentEnabled())
-            ctx.deploy().onEnter();
 
         if (checkAtomicOpsInTx)
             checkAtomicOpsInTx();

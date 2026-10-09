@@ -46,11 +46,11 @@ class ClusterNodeMetrics {
 
     /** */
     public ClusterNodeMetrics(NodeFullMetricsMessage msg) {
-        nodeMetrics = new ClusterMetricsSnapshot(msg.nodeMetricsMsg());
+        nodeMetrics = new ClusterMetricsSnapshot(msg.nodeMetricsMessage());
 
-        cacheMetrics = new HashMap<>(msg.cachesMetrics().size(), 1.0f);
+        cacheMetrics = new HashMap<>(msg.cachesMetricsMessages().size(), 1.0f);
 
-        msg.cachesMetrics().entrySet().forEach(e -> cacheMetrics.put(e.getKey(), new CacheMetricsSnapshot(e.getValue())));
+        msg.cachesMetricsMessages().forEach((key, value) -> cacheMetrics.put(key, new CacheMetricsSnapshot(value)));
     }
 
     /**

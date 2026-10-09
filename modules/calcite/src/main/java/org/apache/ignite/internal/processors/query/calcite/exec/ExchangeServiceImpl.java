@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,12 +32,11 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
-import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
-import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchAcknowledgeMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryInboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
@@ -53,7 +51,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     public static final long INBOX_INITIALIZATION_TIMEOUT = 1_000L;
 
     /** */
-    private final UUID locaNodeId;
+    private final UUID locNodeId;
 
     /** */
     private QueryTaskExecutor taskExecutor;
@@ -76,7 +74,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     public ExchangeServiceImpl(GridKernalContext ctx) {
         super(ctx);
 
-        locaNodeId = ctx.localNodeId();
+        locNodeId = ctx.localNodeId();
     }
 
     /**
@@ -143,7 +141,8 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
     /** {@inheritDoc} */
     @Override public <Row> void sendBatch(UUID nodeId, UUID qryId, long fragmentId, long exchangeId, int batchId,
         boolean last, List<Row> rows) throws IgniteCheckedException {
-        messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last, Commons.cast(rows)));
+        messageService().send(nodeId, new QueryBatchMessage(qryId, fragmentId, exchangeId, batchId, last,
+            Commons.cast(rows)));
 
         if (batchId == 0) {
             Query<?> qry = qryRegistry.query(qryId);
@@ -166,7 +165,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void closeInbox(UUID nodeId, UUID qryId, long fragmentId, long exchangeId) throws IgniteCheckedException {
-        messageService().send(nodeId, new InboxCloseMessage(qryId, fragmentId, exchangeId));
+        messageService().send(nodeId, new QueryInboxCloseMessage(qryId, fragmentId, exchangeId));
     }
 
     /** {@inheritDoc} */
@@ -176,8 +175,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        CalciteQueryProcessor proc =
-            Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor proc = queryProcessor(ctx);
 
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());
@@ -190,10 +188,10 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n, m) -> onMessage(n, (InboxCloseMessage)m), MessageType.QUERY_INBOX_CANCEL_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage)m), MessageType.QUERY_ACKNOWLEDGE_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage)m), MessageType.QUERY_BATCH_MESSAGE);
-        messageService().register((n, m) -> onMessage(n, (QueryCloseMessage)m), MessageType.QUERY_CLOSE_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryInboxCloseMessage)m), QueryInboxCloseMessage.class);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchAcknowledgeMessage)m), QueryBatchAcknowledgeMessage.class);
+        messageService().register((n, m) -> onMessage(n, (QueryBatchMessage)m), QueryBatchMessage.class);
+        messageService().register((n, m) -> onMessage(n, (QueryCloseMessage)m), QueryCloseMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -219,11 +217,11 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return locaNodeId;
+        return locNodeId;
     }
 
     /** */
-    protected void onMessage(UUID nodeId, InboxCloseMessage msg) {
+    protected void onMessage(UUID nodeId, QueryInboxCloseMessage msg) {
         Collection<Inbox<?>> inboxes = mailboxRegistry().inboxes(msg.queryId(), msg.fragmentId(), msg.exchangeId());
 
         if (!F.isEmpty(inboxes)) {
@@ -350,7 +348,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
             taskExecutor(),
             null,
             qryId,
-            locaNodeId,
+            locNodeId,
             nodeId,
             null,
             new FragmentDescription(

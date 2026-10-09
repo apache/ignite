@@ -1863,7 +1863,7 @@ public class GridToStringBuilder {
     /** @return {@code True} if field should be added. */
     private static boolean addField(Field f, Class<?> type) {
         // Include only private non-static
-        return Modifier.isPrivate(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()) &&
+        return !Modifier.isStatic(f.getModifiers()) &&
             // No direct objects & serializable.
             Object.class != type &&
             Serializable.class != type &&

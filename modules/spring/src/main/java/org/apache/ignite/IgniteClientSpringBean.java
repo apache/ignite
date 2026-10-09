@@ -49,7 +49,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
  * A note should be taken that Ignite client instance is started after all other
  * Spring beans have been initialized and right before Spring context is refreshed.
  * That implies that it's not valid to reference {@link IgniteClientSpringBean} from
- * any kind of Spring bean init methods like {@link javax.annotation.PostConstruct}.
+ * any kind of Spring bean init methods like {@code @PostConstruct}.
  * If it's required to reference {@link IgniteClientSpringBean} for other bean
  * initialization purposes, it should be done from a {@link ContextRefreshedEvent}
  * listener method declared in that bean.

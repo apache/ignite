@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ScalarFunction;
@@ -26,28 +27,43 @@ import org.apache.calcite.schema.ScalarFunction;
  * Implementation of {@link ScalarFunction} for Ignite user defined functions.
  */
 public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implements ScalarFunction {
+    /** */
+    private final boolean deterministic;
+
     /**
      * Private constructor.
      */
-    private IgniteScalarFunction(Method method, CallImplementor implementor) {
+    private IgniteScalarFunction(Method method, CallImplementor implementor, boolean deterministic) {
         super(method, implementor);
+
+        this.deterministic = deterministic;
     }
 
     /**
      * Creates {@link ScalarFunction} from given method.
      *
      * @param method Method that is used to implement the function.
+     * @param deterministic Is function deterministic.
      * @return Created {@link ScalarFunction}.
      */
-    public static ScalarFunction create(Method method) {
+    public static ScalarFunction create(Method method, boolean deterministic) {
         CallImplementor implementor = RexImpTable.createImplementor(
             new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
 
-        return new IgniteScalarFunction(method, implementor);
+        return new IgniteScalarFunction(method, implementor, deterministic);
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType getReturnType(RelDataTypeFactory typeFactory) {
-        return typeFactory.createJavaType(method.getReturnType());
+        JavaTypeFactory tf = (JavaTypeFactory)typeFactory;
+
+        return tf.toSql(tf.createJavaType(method.getReturnType()));
+    }
+
+    /**
+     * @return Deterministic flag.
+     */
+    public boolean isDeterministic() {
+        return deterministic;
     }
 }

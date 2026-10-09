@@ -55,6 +55,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -377,6 +378,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 Affinity<Integer> aff = cache0.affinity();
 
+                IgniteCacheDatabaseSharedManager db = grid(g).context().cache().context().database();
+
                 for (int key = 0; key < cnt * threads; key++) {
                     if (aff.isPrimary(locNode, key) || aff.isBackup(locNode, key)) {
                         GridCacheEntryEx entry = cache0.entryEx(key);
@@ -394,7 +397,14 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                                 entry = cache0.entryEx(key);
                             }
 
-                            entry.unswap();
+                            db.checkpointReadLock();
+
+                            try {
+                                entry.unswap();
+                            }
+                            finally {
+                                db.checkpointReadUnlock();
+                            }
 
                             assertEquals(new Integer((key < 100 ? -1 : key)),
                                 CU.value(entry.rawGet(), cache0.context(), false));
@@ -680,34 +690,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Wraps integer to closure returning it.
-     *
-     * @param i Value to wrap.
-     * @return Callable.
-     */
-    private static Callable<Integer> callable(@Nullable final Integer i) {
-        return new Callable<Integer>() {
-            @Override public Integer call() throws Exception {
-                return i;
-            }
-        };
-    }
-
-    /**
-     * Wraps integer to closure returning it.
-     *
-     * @param i Value to wrap.
-     * @return Closure.
-     */
-    private static IgniteClosure<Integer, Integer> closure(@Nullable final Integer i) {
-        return new IgniteClosure<Integer, Integer>() {
-            @Override public Integer apply(Integer e) {
-                return e == null ? i : e + i;
-            }
-        };
-    }
-
-    /**
      * Wraps object to closure returning it.
      *
      * @param obj Value to wrap.
@@ -720,23 +702,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     "Expects the same types [e=" + e + ", obj=" + obj + ']';
 
                 return obj;
-            }
-        };
-    }
-
-    /**
-     * Wraps integer to closure expecting it and returning {@code null}.
-     *
-     * @param exp Expected closure value.
-     * @return Remove expected cache value closure.
-     */
-    private static <T> IgniteClosure<T, T> removeClosure(@Nullable final T exp) {
-        return new IgniteClosure<T, T>() {
-            @Override public T apply(T act) {
-                if (exp == null ? act == null : exp.equals(act))
-                    return null;
-
-                throw new AssertionError("Unexpected value [exp=" + exp + ", act=" + act + ']');
             }
         };
     }

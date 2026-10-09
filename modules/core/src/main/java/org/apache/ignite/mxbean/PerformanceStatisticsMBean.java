@@ -18,7 +18,6 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * MBean that provides access to performance statistics management.
@@ -27,7 +26,6 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @deprecated Use managements API beans, instead.
  */
 @Deprecated
-@IgniteExperimental
 @MXBeanDescription("MBean provide access to performance statistics management.")
 public interface PerformanceStatisticsMBean {
     /** Start collecting performance statistics in the cluster. */

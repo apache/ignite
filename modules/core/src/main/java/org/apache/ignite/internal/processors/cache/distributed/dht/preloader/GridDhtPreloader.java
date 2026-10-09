@@ -25,11 +25,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -41,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander.RebalanceFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -138,13 +137,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * @return Node stop exception.
-     */
-    private IgniteCheckedException stopError() {
-        return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
-    }
-
-    /**
      * @return Rebalance cancellation optimization flag.
      */
     public boolean disableRebalancingCancellationOptimization() {
@@ -177,7 +169,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         GridDhtPartitionTopology top = grp.topology();
 
         if (!grp.rebalanceEnabled())
-            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion(), false);
+            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
 
         int partitions = grp.affinity().partitions();
 
@@ -192,8 +184,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 ", grp=" + grp.name() +
                 ", topVer=" + top.readyTopologyVersion() + ']';
 
-        GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer,
-            exchFut != null && exchFut.affinityReassign());
+        GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
@@ -221,12 +212,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert part != null;
                 assert part.id() == p;
 
+                GridDhtPartitionState state = part.state();
+
                 // Do not rebalance OWNING or LOST partitions.
-                if (part.state() == OWNING || part.state() == LOST)
+                if (state == OWNING || state == LOST)
                     continue;
 
                 // State should be switched to MOVING during PME.
-                if (part.state() != MOVING) {
+                if (state != MOVING) {
                     throw new AssertionError("Partition has invalid state for rebalance "
                         + aff.topologyVersion() + " " + part);
                 }

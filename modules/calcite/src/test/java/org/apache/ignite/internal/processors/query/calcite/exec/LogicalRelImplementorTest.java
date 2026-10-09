@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
@@ -37,11 +38,14 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
@@ -51,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -58,15 +63,15 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-
+import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 
 /**
  * Test LogicalRelImplementor class.
  */
-public class LogicalRelImplementorTest extends GridCommonAbstractTest {
+public class LogicalRelImplementorTest extends GridCommonAbstractWrapperTest {
     /** */
     private LogicalRelImplementor<Object[]> relImplementor;
 
@@ -86,8 +91,9 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     private IgniteTypeFactory tf;
 
     /** */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    @BeforeEach
+    void setup() throws Exception {
+        beforeTest();
 
         tf = Commons.typeFactory();
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(tf);
@@ -191,7 +197,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         node = relImplementor.visit(idxScan);
 
         assertTrue(node instanceof SortNode);
-        assertEquals(1, (int)U.field(node, "limit"));
+        assertEquals(1L, (long)U.field(node, "limit"));
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
     }
@@ -244,6 +250,12 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         RelDataType rowType = tbl.getRowType(tf);
         RelDataType sqlTypeInt = rowType.getFieldList().get(2).getType();
         RelDataType sqlTypeVarchar = rowType.getFieldList().get(3).getType();
+
+        RelDataType projRowType = new RelDataTypeFactory.Builder(tf)
+            .add("A", sqlTypeVarchar)
+            .add("B", sqlTypeInt)
+            .add("C", sqlTypeInt)
+            .build();
 
         // Projects, filters and required columns.
         List<RexNode> project = F.asList(
@@ -303,6 +315,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             cluster.traitSet(),
             qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
             "IDX",
+            projRowType,
             project,
             filter,
             RexUtils.buildSortedSearchBounds(cluster, idxCollation, filter, rowType, requiredColumns),
@@ -376,6 +389,58 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testScanTableRow() {
+        RelCollation idxCollation = TraitUtils.createCollation(Collections.singletonList(2));
+        tbl.addIndex(new ScannableTestIndex(idxCollation, QueryUtils.PRIMARY_KEY_INDEX, tbl));
+
+        RelDataType rowType = tbl.getRowType(tf);
+        RelDataType sqlTypeInt = rowType.getFieldList().get(2).getType();
+        RelDataType sqlTypeVarchar = rowType.getFieldList().get(3).getType();
+
+        RelDataType projRowType = new RelDataTypeFactory.Builder(tf)
+            .add("A", sqlTypeVarchar)
+            .build();
+
+        List<RexNode> project = F.asList(rexBuilder.makeLocalRef(sqlTypeVarchar, 1));
+
+        RexNode filterOneField = rexBuilder.makeCall(
+            SqlStdOperatorTable.EQUALS,
+            rexBuilder.makeLocalRef(sqlTypeInt, 0),
+            rexBuilder.makeLiteral(1, sqlTypeInt)
+        );
+
+        RexNode filterTwoFields = rexBuilder.makeCall(
+            SqlStdOperatorTable.EQUALS,
+            rexBuilder.makeCast(sqlTypeVarchar, rexBuilder.makeLocalRef(sqlTypeInt, 0)),
+            rexBuilder.makeLocalRef(sqlTypeVarchar, 1)
+        );
+
+        ImmutableBitSet requiredColumns = ImmutableBitSet.of(2, 3);
+
+        IgniteIndexScan scan = new IgniteIndexScan(
+            cluster,
+            cluster.traitSet(),
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
+            QueryUtils.PRIMARY_KEY_INDEX,
+            projRowType,
+            project,
+            filterOneField,
+            RexUtils.buildSortedSearchBounds(cluster, idxCollation, filterOneField, rowType, requiredColumns),
+            requiredColumns,
+            idxCollation
+        );
+
+        // Not all fields participating in filter, it worth to create ScanTableRowNode.
+        checkNodesChain(relImplementor, scan, node -> node instanceof ScanTableRowNode);
+
+        scan = createScan(scan, idxCollation, project, filterTwoFields, requiredColumns);
+
+        // All fields participating in filter, regular ScanStorageNode should be created.
+        checkNodesChain(relImplementor, scan, node -> !(node instanceof ScanTableRowNode));
+    }
+
+    /** */
     private IgniteIndexScan createScan(
         IgniteIndexScan templateScan,
         RelCollation collation,
@@ -388,6 +453,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             templateScan.getTraitSet().replace(collation),
             templateScan.getTable(),
             templateScan.indexName(),
+            templateScan.getRowType(),
             projects,
             filters,
             templateScan.searchBounds(),
@@ -443,6 +509,36 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             ImmutableBitSet bitSet
         ) {
             return Collections.emptyList();
+        }
+    }
+
+    /** */
+    private static class ScannableTestIndex extends CacheIndexImpl {
+        /** */
+        public ScannableTestIndex(RelCollation collation, String name, TestTable tbl) {
+            super(collation, name, null, tbl);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Iterable<Row> scan(
+            ExecutionContext<Row> execCtx,
+            ColocationGroup grp,
+            RangeIterable<Row> ranges,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return new TableRowIterable<>() {
+                @Override public Iterator<Row> iterator() {
+                    return Collections.emptyIterator();
+                }
+
+                @Override public Iterator<Object> tableRowIterator() {
+                    return Collections.emptyIterator();
+                }
+
+                @Override public Row enrichRow(Object o, Row nodeRow, int[] fieldColMapping) {
+                    return null;
+                }
+            };
         }
     }
 }

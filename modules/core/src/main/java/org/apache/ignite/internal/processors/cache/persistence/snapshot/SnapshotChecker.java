@@ -23,8 +23,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -34,7 +36,10 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -58,26 +63,28 @@ public class SnapshotChecker {
     }
 
     /** Launches local metas checking. */
-    public CompletableFuture<List<SnapshotMetadata>> checkLocalMetas(
+    public IgniteCompletableFuture<List<SnapshotMetadata>> checkLocalMetas(
         SnapshotFileTree sft,
         int incIdx,
         @Nullable Collection<Integer> grpIds
     ) {
-        return CompletableFuture.supplyAsync(
+        return IgniteCompletableFuture.supplyAsync(
             new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, incIdx, grpIds),
             executor
         );
     }
 
     /** */
-    public CompletableFuture<IncrementalSnapshotVerifyResult> checkIncrementalSnapshot(
+    public IgniteCompletableFuture<IncrementalSnapshotVerifyResult> checkIncrementalSnapshot(
         SnapshotFileTree sft,
-        int incIdx
+        int incIdx,
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedCnsmr
     ) {
         assert incIdx > 0;
 
-        return CompletableFuture.supplyAsync(
-            new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx),
+        return IgniteCompletableFuture.supplyAsync(
+            new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx, totalCnsmr, checkedCnsmr),
             executor
         );
     }
@@ -100,12 +107,18 @@ public class SnapshotChecker {
             if (!F.isEmpty(res.partiallyCommittedTxs()))
                 bldr.addPartiallyCommited(nodeRes.getKey(), res.partiallyCommittedTxs());
 
-            bldr.addPartitionHashes(res.partHashRes());
+            Map<PartitionKey, PartitionHashRecord> partHashRes = res.partHashRes().stream()
+                .collect(Collectors.toMap(PartitionHashRecord::partitionKey, Function.identity()));
+
+            bldr.addPartitionHashes(partHashRes);
 
             if (log.isDebugEnabled())
                 log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getKey() + ", taskRes=" + res + ']');
 
-            bldr.addIncrementalHashRecords(nodeRes.getKey(), res.txHashRes());
+            Map<Object, TransactionsHashRecord> txHashRes = res.txHashRes().stream().collect(
+                Collectors.toMap(TransactionsHashRecord::remoteConsistentId, Function.identity()));
+
+            bldr.addIncrementalHashRecords(nodeRes.getKey(), txHashRes);
         }
 
         return bldr.build();
@@ -156,31 +169,59 @@ public class SnapshotChecker {
      *
      * @see IgniteSnapshotManager#handlers()
      */
-    public CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> invokeCustomHandlers(
+    public IgniteCompletableFuture<Map<String, SnapshotHandlerResult<Message>>> invokeCustomHandlers(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
-        boolean check
+        boolean check,
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> processedCnsmr
     ) {
         // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
-        return CompletableFuture.supplyAsync(
-            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check)
+        return IgniteCompletableFuture.supplyAsync(() -> {
+                try {
+                    SnapshotHandlerContext hndCnt = new SnapshotHandlerContext(
+                        meta,
+                        grps,
+                        kctx.cluster().get().localNode(),
+                        sft,
+                        false,
+                        check,
+                        totalCnsmr == null ? null : (hndCls, totalCnt) -> totalCnsmr.accept(totalCnt),
+                        processedCnsmr == null ? null : (hndCls, partId) -> processedCnsmr.accept(partId)
+                    );
+
+                    return kctx.cache().context().snapshotMgr().handlers().invokeAll(SnapshotHandlerType.RESTORE, hndCnt);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
         );
     }
 
     /** Launches local partitions checking. */
-    public CompletableFuture<Map<PartitionKey, PartitionHashRecord>> checkPartitions(
+    public IgniteCompletableFuture<SnapshotPartitionsVerifyHandlerResponse> checkPartitions(
         SnapshotMetadata meta,
         SnapshotFileTree sft,
         @Nullable Collection<String> grps,
         boolean forCreation,
-        boolean checkParts
+        boolean checkParts,
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedPartCnsmr
     ) {
-        // Await in the default executor to avoid blocking the snapshot executor if it has just one thread.
-        return CompletableFuture.supplyAsync(() -> {
+        return IgniteCompletableFuture.supplyAsync(() -> {
             SnapshotHandlerContext hctx = new SnapshotHandlerContext(
-                meta, grps, kctx.cluster().get().localNode(), sft, false, checkParts);
+                meta,
+                grps,
+                kctx.cluster().get().localNode(),
+                sft,
+                false,
+                checkParts,
+                totalCnsmr == null ? null : (hndCls, unitsToWork) -> totalCnsmr.accept(unitsToWork),
+                checkedPartCnsmr == null ? null : (hndCls, partId) -> checkedPartCnsmr.accept(partId)
+            );
 
             try {
                 return new SnapshotPartitionsVerifyHandler(kctx.cache().context()).invoke(hctx);

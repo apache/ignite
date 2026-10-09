@@ -1212,7 +1212,7 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public boolean supportsSavepoints() throws SQLException {
-        return false;
+        return conn.savepointsSupportedByServer();
     }
 
     /** {@inheritDoc} */

@@ -17,23 +17,24 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * <b>DiscoveryCustomMessage</b> messages are handled by discovery protocol which provides some guarantees around them.
- *
+ * <p>
  * When some node sends <b>DiscoveryCustomMessage</b> with {@link GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)}
  * call, message firstly goes to current coordinator, is verified there and after that gets sent to the cluster.
  * Only after verification it is delivered to listeners on all nodes starting from coordinator.
- *
+ * <p>
  * To register a listener {@link GridDiscoveryManager#setCustomEventListener(Class, CustomEventListener)} method is used.
- *
+ * <p>
  * Discovery protocol guarantees include:
  * <ol>
  *     <li>
@@ -54,7 +55,7 @@ import org.jetbrains.annotations.Nullable;
  *     <li>
  *         Guarantee #2 doesn't encompass <b>DiscoveryCustomMessage</b>s created automatically on
  *         {@link DiscoveryCustomMessage#ackMessage()} method call.
- *
+ * <p>
  *         If there were messages of this type in between <b>TcpDiscoveryNodeAddedMessage</b> and
  *         <b>TcpDiscoveryNodeAddFinishedMessage</b> messages, they won't be delivered to new joiner node.
  *     </li>
@@ -74,31 +75,24 @@ import org.jetbrains.annotations.Nullable;
  *     </li>
  * </ol>
  */
-public interface DiscoveryCustomMessage extends Serializable {
-    /**
-     * @return Unique custom message ID.
-     */
-    public IgniteUuid id();
+public abstract class DiscoveryCustomMessage implements DiscoverySpiCustomMessage {
+    /** Unique custom message ID. */
+    @Order(0)
+    public IgniteUuid id;
 
-    /**
-     * Called when custom message has been handled by all nodes.
-     *
-     * @return Ack message or {@code null} if ack is not required.
-     */
-    @Nullable public DiscoveryCustomMessage ackMessage();
+    /** Constructor for {@link MessageFactory}. */
+    protected DiscoveryCustomMessage() {
+        // No-op.
+    }
 
-    /**
-     * @return {@code True} if message can be modified during listener notification. Changes will be sent to next nodes.
-     */
-    public boolean isMutable();
+    /** @param id Message ID. */
+    protected DiscoveryCustomMessage(IgniteUuid id) {
+        this.id = id;
+    }
 
-    /**
-     * See {@link DiscoverySpiCustomMessage#stopProcess()}.
-     *
-     * @return {@code True} if message should not be sent to others nodes after it was processed on coordinator.
-     */
-    public default boolean stopProcess() {
-        return false;
+    /** @return Unique custom message ID. */
+    public IgniteUuid id() {
+        return id;
     }
 
     /**
@@ -108,6 +102,9 @@ public interface DiscoveryCustomMessage extends Serializable {
      * @param topVer New topology version.
      * @param discoCache Current discovery cache.
      * @return Reused discovery cache.
+     * @see GridCacheProcessor#onCustomEvent
      */
-    public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache);
+    public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer, DiscoCache discoCache) {
+        throw new UnsupportedOperationException();
+    }
 }

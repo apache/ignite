@@ -18,11 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobSibling;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,11 +30,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobSiblingsResponse implements Message {
     /** */
-    private @Nullable Collection<ComputeJobSibling> siblings;
-
-    /** */
     @Order(0)
-    private byte[] siblingsBytes;
+    public @Nullable IgniteUuid[] siblingJobsIds;
 
     /**
      * Empty constructor.
@@ -48,59 +44,10 @@ public class GridJobSiblingsResponse implements Message {
      * @param siblings Siblings.
      */
     public GridJobSiblingsResponse(@Nullable Collection<ComputeJobSibling> siblings) {
-        this.siblings = siblings;
-    }
+        if (F.isEmpty(siblings))
+            return;
 
-    /**
-     * @return Job siblings.
-     */
-    public @Nullable Collection<ComputeJobSibling> jobSiblings() {
-        return siblings;
-    }
-
-    /**
-     * @return Serialized siblings.
-     */
-    public byte[] siblingsBytes() {
-        return siblingsBytes;
-    }
-
-    /**
-     * @param siblingsBytes Serialized siblings.
-     */
-    public void siblingsBytes(byte[] siblingsBytes) {
-        this.siblingsBytes = siblingsBytes;
-    }
-
-    /**
-     * Marshals siblings to byte array.
-     *
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void marshalSiblings(Marshaller marsh) throws IgniteCheckedException {
-        siblingsBytes = U.marshal(marsh, siblings);
-    }
-
-    /**
-     * Unmarshals siblings from byte array.
-     *
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void unmarshalSiblings(Marshaller marsh) throws IgniteCheckedException {
-        assert marsh != null;
-
-        if (siblingsBytes != null) {
-            siblings = U.unmarshal(marsh, siblingsBytes, null);
-
-            siblingsBytes = null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 4;
+        siblingJobsIds = siblings.stream().map(ComputeJobSibling::getJobId).toArray(IgniteUuid[]::new);
     }
 
     /** {@inheritDoc} */

@@ -237,6 +237,23 @@ public interface GridQueryTypeDescriptor {
     public void implicitPk(boolean implicitPk);
 
     /**
+     * Gets whether a type was created by SQL.
+     *
+     * NOTE: There is a difference between query type descriptor sql flag and cache descriptor sql flag. The same flag
+     * on cache descriptor specifies whether entire cache was created by sql, but query type descriptor sql flag can
+     * be set to true even when cache sql flag is false (for example, when cache was created by cache API,
+     * but query type was added by SQL).
+     */
+    public boolean sql();
+
+    /**
+     * Sets whether a type was created by DDL.
+     *
+     * @param sql Whether a type was created by SQL.
+     */
+    public void sql(boolean sql);
+
+    /**
      * @return {@code true} if absent PK parts should be filled with defaults, {@code false} otherwise.
      */
     public boolean fillAbsentPKsWithDefaults();

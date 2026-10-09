@@ -17,9 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -41,14 +38,8 @@ import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -60,6 +51,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_ACQUIRING_THREADS_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_AVG_LIFE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_CONSIST_ID;
@@ -67,7 +59,7 @@ import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientP
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_MAX_NET_IDLE_TIME;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_MSG_QUEUE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_REMOVED_CNT;
-import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.nodeMetricsRegName;
+import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests metrics of {@link ConnectionClientPool}. */
@@ -134,7 +126,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         cfg.setCommunicationSpi(communicationSpi);
 
-        cfg.setPluginProviders(new TestCommunicationMessagePluginProvider());
+        cfg.setPluginProviders(new MessagesPluginProvider(TestDelayMessage.class));
 
         return cfg;
     }
@@ -153,9 +145,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? cli : srvr;
 
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         AtomicBoolean runFlag = new AtomicBoolean(true);
-        TestMessage msg = new TestMessage();
+        TestDelayMessage msg = new TestDelayMessage();
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null);
 
@@ -164,7 +155,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             if (node == ldr)
                 continue;
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+            MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
             assertTrue(waitForCondition(
                 () -> {
@@ -187,7 +178,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             if (node == ldr)
                 continue;
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+            MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value() >= connsPerNode,
                 getTestTimeout()));
@@ -206,9 +197,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? cli : srvr;
 
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         AtomicBoolean runFlag = new AtomicBoolean(true);
-        Message msg = new TestMessage();
+        Message msg = new TestDelayMessage();
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, null, maxConnIdleTimeout, maxConnIdleTimeout * 4);
 
@@ -217,7 +207,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             if (node == ldr)
                 continue;
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+            MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
             assertTrue(waitForCondition(
                 () -> {
@@ -241,6 +231,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testMetricsBasics() throws Exception {
+        maxConnIdleTimeout = 500;
+
         int preloadCnt = 300;
         int srvrCnt = 3;
 
@@ -250,14 +242,14 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         Ignite ldr = clientLdr ? cli : srvr;
 
         GridMetricManager ldrMetricsMgr = ((IgniteEx)ldr).context().metric();
-        MetricRegistryImpl mreg0 = ldrMetricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
+        MetricRegistryImpl mreg0 = ldrMetricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
 
         assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_NAME_POOL_SIZE).value());
         assertEquals(pairedConns, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
-        TestMessage msg = new TestMessage();
+        TestDelayMessage msg = new TestDelayMessage();
 
         long loadMillis0 = System.currentTimeMillis();
 
@@ -277,9 +269,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             if (node == ldr)
                 continue;
 
-            UUID nodeId = node.cluster().localNode().id();
-
-            MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
+            MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
             // We assume that entire pool was used at least once.
             assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(METRIC_NAME_CUR_CNT).value(),
@@ -316,11 +306,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             if (!node.cluster().localNode().isClient() && --srvrCnt == 0)
                 break;
 
-            UUID nodeId = node.cluster().localNode().id();
-
             // Wait until there is no messages to this node.
             assertTrue(waitForCondition(() -> {
-                MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
+                MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
                 assert mreg != null;
 
@@ -330,7 +318,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(G.stop(node.name(), false));
 
             assertTrue(waitForCondition(() -> {
-                MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
+                MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
                 return mreg == null || !mreg.iterator().hasNext();
             }, getTestTimeout()));
@@ -352,7 +340,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? cli : srvr;
 
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         AtomicBoolean runFlag = new AtomicBoolean(true);
 
         IgniteInternalFuture<?> monFut = GridTestUtils.runAsync(() -> {
@@ -361,7 +348,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                     if (node == ldr)
                         continue;
 
-                    MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+                    MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
                     IntMetric m = mreg.findMetric(METRIC_NAME_ACQUIRING_THREADS_CNT);
 
@@ -373,7 +360,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             }
         });
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestMessage((int)maxConnIdleTimeout * 3), null);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> new TestDelayMessage((int)maxConnIdleTimeout * 3), null);
 
         monFut.get(getTestTimeout());
 
@@ -392,7 +379,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? client : server;
 
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
 
@@ -401,7 +387,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         IgniteInternalFuture<?> loadFut = runLoad(
             ldr,
             runFlag,
-            () -> new TestMessage(writeDelay.get()),
+            () -> new TestDelayMessage(writeDelay.get()),
             loadCnt
         );
 
@@ -420,7 +406,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             if (node == ldr)
                 continue;
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+            MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
             assertTrue(waitForCondition(
                 () -> mreg.<IntMetric>findMetric(METRIC_NAME_MSG_QUEUE_SIZE).value() >= Math.max(10, msgQueueLimit),
@@ -490,13 +476,11 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         if (!log.isInfoEnabled())
             return;
 
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
-
         for (Ignite node : G.allGrids()) {
             if (node == ldr)
                 continue;
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
+            MetricRegistryImpl mreg = metricsForCommunicationConnection(ldr, node);
 
             StringBuilder b = new StringBuilder()
                 .append("Pool metrics from node ").append(ldr.cluster().localNode().order())
@@ -526,49 +510,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     }
 
     /** */
-    public static class TestCommunicationMessagePluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "TEST_PLUGIN";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-            registry.registerExtension(MessageFactoryProvider.class, new MessageFactoryProvider() {
-                @Override public void registerAll(MessageFactory factory) {
-                    factory.register(TestMessage.DIRECT_TYPE, TestMessage::new);
-                }
-            });
-        }
-    }
-
-    /** */
-    private static class TestMessage extends GridTestMessage {
-        /** */
-        private final int writeDelay;
-
-        /** */
-        public TestMessage(int writeDelay) {
-            this.writeDelay = writeDelay;
-        }
-
-        /** */
-        public TestMessage() {
-            this(0);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            if (writeDelay > 0) {
-                try {
-                    U.sleep(writeDelay);
-                }
-                catch (IgniteInterruptedCheckedException ignored) {
-                    // No-op.
-                }
-            }
-
-            return super.writeTo(buf, writer);
-        }
+    public static MetricRegistryImpl metricsForCommunicationConnection(Ignite from, Ignite to) {
+        return ((IgniteEx)from).context()
+            .metric()
+            .registry(metricName(SHARED_METRICS_REGISTRY_NAME, ((IgniteEx)to).context().localNodeId().toString()));
     }
 }

@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.G;
@@ -155,6 +154,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
             put(jcache(), ENTRY_CNT);
 
         Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
+
+        // We need to wait for the local Cache Affinity Version to be updated on each node after the rebalance is complete.
+        // Otherwise, the IgniteCache#size() call may be made while the Cache Affinity Version change is still in process.
+        // It can lead to the situation when some nodes calculate the local cache size based on the updated Affinity version,
+        // while others relies on the old one. As a result, the IgniteCache#size() value will not match the expected value.
+        awaitPartitionMapExchange();
 
         check(cache(g), ENTRY_CNT);
 
@@ -374,11 +379,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws Exception If failed.
      */
     private void check(final IgniteCache<String, Integer> cache, final int expSize) throws Exception {
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return cache.size() >= expSize;
-            }
-        }, 5000);
+        GridTestUtils.waitForCondition(() -> cache.size() >= expSize, 5000);
 
         int size = cache.size();
 

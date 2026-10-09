@@ -91,7 +91,7 @@ public class IgniteSqlSchemasDiffConfigurationsTest extends AbstractIndexingComm
     /** */
     protected List<List<?>> execSql(String ignName, String qry) {
         return grid(ignName).context().query()
-            .querySqlFields(new SqlFieldsQuery(qry).setLazy(true), false)
+            .querySqlFields(new SqlFieldsQuery(qry), false)
             .getAll();
     }
 }

@@ -39,6 +39,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -760,10 +761,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
             GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr0 + 4, arr.length);
 
-            BinaryObject offheapObj = (BinaryObject)
-                ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
-
-            assertEquals(BinaryObjectOffheapImpl.class, offheapObj.getClass());
+            BinaryObjectOffheapImpl offheapObj = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).marshaller().
+                unmarshal(BinaryStreams.inputStream(ptr + 5, len));
 
             assertEquals(expectedHashCode("Class"), offheapObj.type().typeId());
             assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), offheapObj.hashCode());
@@ -820,6 +819,34 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
         assertEquals(expectedTypeName("org.test.MetaTest2"), meta.typeName());
         assertEquals("Object", meta.fieldTypeName("objectField"));
+    }
+
+    /** */
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void testSetBinaryEnumFieldWithEnumClass() {
+        IgniteBinary binary = binaries();
+
+        binary.registerEnum(BuilderEnum.class.getName(), F.asMap(
+            BuilderEnum.ONE.name(), BuilderEnum.ONE.ordinal(),
+            BuilderEnum.TWO.name(), BuilderEnum.TWO.ordinal()));
+
+        String typeName = "org.test.EnumMetaTest";
+        String fld = "enumField";
+
+        BinaryObject bo = builder(typeName)
+            .setField(fld, binary.buildEnum(BuilderEnum.class.getName(), BuilderEnum.ONE.name()))
+            .build();
+
+        assertEquals("Enum", bo.type().fieldTypeName(fld));
+        assertEquals(BuilderEnum.ONE.ordinal(), bo.<BinaryObject>field(fld).enumOrdinal());
+
+        bo = builder(typeName)
+            .setField(fld, binary.buildEnum(BuilderEnum.class.getName(), BuilderEnum.TWO.name()), (Class)Enum.class)
+            .build();
+
+        assertEquals("Enum", bo.type().fieldTypeName(fld));
+        assertEquals(BuilderEnum.TWO.ordinal(), bo.<BinaryObject>field(fld).enumOrdinal());
     }
 
     /**
@@ -1075,6 +1102,15 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
         /** */
         private int i = 10;
+    }
+
+    /** */
+    private enum BuilderEnum {
+        /** */
+        ONE,
+
+        /** */
+        TWO
     }
 
     /**

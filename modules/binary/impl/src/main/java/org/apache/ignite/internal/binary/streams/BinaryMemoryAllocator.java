@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_R
 /**
  * On-heap memory allocator.
  */
-abstract class BinaryMemoryAllocator {
+public abstract class BinaryMemoryAllocator {
     /** Buffer size re-check frequency. */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
@@ -135,6 +135,7 @@ abstract class BinaryMemoryAllocator {
                     if (this.maxMsgSize < halfSize)
                         this.data = new byte[halfSize];
 
+                    this.maxMsgSize = 0;
                     lastCheckNanos = nowNanos;
                 }
             }

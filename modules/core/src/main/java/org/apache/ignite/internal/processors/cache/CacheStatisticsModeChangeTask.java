@@ -17,23 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache statistics mode change task for exchange worker.
  */
-public class CacheStatisticsModeChangeTask extends AbstractCachePartitionExchangeWorkerTask {
+public class CacheStatisticsModeChangeTask implements CachePartitionExchangeWorkerTask {
     /** Discovery message. */
     private final CacheStatisticsModeChangeMessage msg;
 
-    /**
-     * @param secCtx Security context in which current task must be executed.
-     * @param msg Message.
-     */
-    public CacheStatisticsModeChangeTask(SecurityContext secCtx, CacheStatisticsModeChangeMessage msg) {
-        super(secCtx);
-
+    /** @param msg Message. */
+    public CacheStatisticsModeChangeTask(CacheStatisticsModeChangeMessage msg) {
         assert msg != null;
 
         this.msg = msg;

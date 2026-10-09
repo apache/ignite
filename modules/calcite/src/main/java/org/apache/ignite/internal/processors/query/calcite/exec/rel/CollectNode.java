@@ -114,6 +114,11 @@ public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleN
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
+        else if (waiting < 0) {
+            requested = 0;
+
+            downstream().end();
+        }
     }
 
     /** {@inheritDoc} */
@@ -138,6 +143,7 @@ public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleN
     @Override public void end() throws Exception {
         assert downstream() != null;
         assert waiting > 0;
+        assert requested > 0;
 
         checkState();
 
@@ -146,10 +152,13 @@ public class CollectNode<Row> extends MemoryTrackingNode<Row> implements SingleN
         if (isClosed())
             return;
 
+        requested--;
+
+        downstream().push(collector.get());
+
         if (requested > 0) {
             requested = 0;
 
-            downstream().push(collector.get());
             downstream().end();
         }
     }

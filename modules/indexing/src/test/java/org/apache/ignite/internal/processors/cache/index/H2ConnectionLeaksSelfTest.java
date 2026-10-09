@@ -252,6 +252,6 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     /**
      */
     private List<List<?>> sql(IgniteEx ign, String sql, Object... params) {
-        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql).setLazy(true).setArgs(params), false).getAll();
+        return ign.context().query().querySqlFields(new SqlFieldsQuery(sql).setArgs(params), false).getAll();
     }
 }

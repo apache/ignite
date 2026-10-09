@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 
 /**
  * This class provides an interface {@link #headPage()} that returns a future will be completed with {@link NodePage}
@@ -39,7 +39,7 @@ public class NodePageStream<R> {
     private boolean hasRemotePages = true;
 
     /** Promise to notify the stream consumer about delivering new page. */
-    private CompletableFuture<NodePage<R>> head = new CompletableFuture<>();
+    private IgniteCompletableFuture<NodePage<R>> head = new IgniteCompletableFuture<>();
 
     /** */
     public NodePageStream(UUID nodeId, Runnable reqPages, Runnable cancelPages) {
@@ -58,7 +58,7 @@ public class NodePageStream<R> {
      *
      * @return Future that will be completed with query result page.
      */
-    public synchronized CompletableFuture<NodePage<R>> headPage() {
+    public synchronized IgniteCompletableFuture<NodePage<R>> headPage() {
         return head;
     }
 
@@ -78,7 +78,7 @@ public class NodePageStream<R> {
                 if (!reqNext) {
                     synchronized (NodePageStream.this) {
                         if (hasRemotePages) {
-                            head = new CompletableFuture<>();
+                            head = new IgniteCompletableFuture<>();
 
                             reqPages.run();
                         }

@@ -105,22 +105,22 @@ class InMemoryCachedDistributedMetaStorageBridge {
      * Returns all {@code <key, value>} pairs currently stored in distributed metastorage. Values are not unmarshalled.
      * All keys are sorted in ascending order.
      *
-     * @return Array of all keys and values.
+     * @return All the keys and values.
      */
-    public DistributedMetaStorageKeyValuePair[] localFullData() {
-        return cache.entrySet().stream().map(
-            entry -> new DistributedMetaStorageKeyValuePair(entry.getKey(), entry.getValue())
-        ).toArray(DistributedMetaStorageKeyValuePair[]::new);
+    public Map<String, byte[]> localFullData() {
+        return cache;
     }
 
     /** */
     public void writeFullNodeData(DistributedMetaStorageClusterNodeData fullNodeData) {
-        assert fullNodeData.fullData != null;
+        assert fullNodeData.fullDataKeys != null;
+        assert fullNodeData.fullDataValsBytes != null;
+        assert fullNodeData.fullDataKeys.length == fullNodeData.fullDataValsBytes.length;
 
         cache.clear();
 
-        for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
-            cache.put(item.key, item.valBytes);
+        for (int i = 0; i < fullNodeData.fullDataKeys.length; ++i)
+            cache.put(fullNodeData.fullDataKeys[i], fullNodeData.fullDataValsBytes[i]);
     }
 
     /** */

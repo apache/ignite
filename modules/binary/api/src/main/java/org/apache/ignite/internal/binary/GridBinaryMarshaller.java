@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
@@ -250,10 +252,61 @@ public class GridBinaryMarshaller {
         if (obj == null)
             return new byte[] { NULL };
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, failIfUnregistered, UNREGISTERED_TYPE_ID)) {
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, failIfUnregistered)) {
             writer.marshal(obj);
 
-            return writer.array();
+            return writer.out().arrayCopy();
+        }
+    }
+
+    /**
+     * Marshals the object directly into the given stream, without allocating a trimmed copy of the whole result.
+     *
+     * @param obj Object to marshal.
+     * @param out Output stream.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void marshal(@Nullable Object obj, OutputStream out) throws BinaryObjectException {
+        try {
+            if (obj == null) {
+                out.write(NULL);
+
+                return;
+            }
+
+            try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, false)) {
+                writer.marshal(obj);
+
+                BinaryOutputStream s = writer.out();
+
+                out.write(s.array(), 0, s.position());
+            }
+        }
+        catch (IOException e) {
+            throw new BinaryObjectException("Failed to marshal the object: " + obj, e);
+        }
+    }
+
+    /**
+     * Marshals the object directly into the given stream, without allocating a trimmed copy of the whole result.
+     *
+     * @param obj Object to marshal.
+     * @param out Output stream.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void marshal(Object obj, BinaryOutputStream out) {
+        if (obj == null) {
+            out.writeByte(NULL);
+
+            return;
+        }
+
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(ctx, false)) {
+            writer.marshal(obj);
+
+            BinaryOutputStream s = writer.out();
+
+            out.write(s.array(), 0, s.position());
         }
     }
 
@@ -268,7 +321,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes, 0), ctx, clsLdr);
+            return (T)BinaryUtils.unmarshal(BinaryStreams.inputStream(bytes), ctx, clsLdr);
         }
         finally {
             popContext(oldCtx);
@@ -382,7 +435,7 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return deserialize(BinaryStreams.inputStream(arr, 0), ldr, null);
+        return deserialize(BinaryStreams.inputStream(arr), ldr, null);
     }
 
     /**

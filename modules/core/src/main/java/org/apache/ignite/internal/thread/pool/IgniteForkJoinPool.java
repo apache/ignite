@@ -1,0 +1,88 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.thread.pool;
+
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareExecutorService;
+import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareScheduledExecutorService;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
+
+/**
+ * Ignite specific wrapper over {@link ForkJoinPool} that supports {@link OperationContext} propagation and customizes
+ * pool's thread factory using Ignite instance info.
+ *
+ * @see OperationContext
+ * @see OperationContextAwareScheduledExecutorService
+ */
+public class IgniteForkJoinPool extends OperationContextAwareExecutorService<ForkJoinPool> {
+    /** */
+    private static final IgniteForkJoinPool COMMON = new IgniteForkJoinPool(ForkJoinPool.commonPool());
+
+    /** */
+    public IgniteForkJoinPool(
+        String threadNamePrefix,
+        @Nullable String igniteInstanceName,
+        int parallelism,
+        @Nullable Thread.UncaughtExceptionHandler handler,
+        boolean asyncMode
+    ) {
+        this(new ForkJoinPool(
+            parallelism,
+            new IgniteForkJoinWorkerThreadFactory(threadNamePrefix, igniteInstanceName),
+            handler,
+            asyncMode
+        ));
+    }
+
+    /** */
+    private IgniteForkJoinPool(ForkJoinPool delegate) {
+        super(delegate);
+    }
+
+    /** */
+    public static IgniteForkJoinPool commonPool() {
+        return COMMON;
+    }
+
+    /** */
+    private static final class IgniteForkJoinWorkerThreadFactory implements ForkJoinPool.ForkJoinWorkerThreadFactory {
+        /** */
+        private final String threadName;
+
+        /** */
+        private final String igniteInstanceName;
+
+        /** */
+        private IgniteForkJoinWorkerThreadFactory(String threadName, String igniteInstanceName) {
+            this.threadName = threadName;
+            this.igniteInstanceName = igniteInstanceName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+            ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+
+            worker.setName(IgniteThread.createName(worker.getPoolIndex(), threadName, igniteInstanceName));
+
+            return worker;
+        }
+    }
+}

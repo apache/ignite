@@ -31,9 +31,14 @@ git-patch-prop-local.sh
 **/dotnet/libs/
 *.classname*
 *.exe
+deliveries/docker/apache-ignite/arm64/run.sh
+deliveries/docker/apache-ignite/arm64/apache-ignite-*
+deliveries/docker/apache-ignite/x86_64/run.sh
+deliveries/docker/apache-ignite/x86_64/apache-ignite-*
 
-#Ignore all Intellij IDEA files (except default inspections config)
-.idea/
+#Ignore all Intellij IDEA files (except project icon and default inspections config)
+.idea/*
+!.idea/icon.png
 !.idea/inspectionProfiles/Project_Default.xml
 
 #Visual Studio files
@@ -86,6 +91,7 @@ CMakeSettings.json
 
 #Ducktape
 /results
+/.ducktests-demo
 .ducktape
 *.pyc
 /tests/venv
@@ -95,3 +101,6 @@ modules/ducktests/tests/certs/*
 modules/ducktests/tests/ignitetest.egg-info/**
 modules/ducktests/tests/build/**
 modules/ducktests/tests/dist/**
+/.gigaide/gigaide.properties
+*.bkp
+/.git

@@ -67,13 +67,13 @@ public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * Test lazy query on replicated cache to check table unlock logic.
+     * Test query on replicated cache to check table unlock logic.
      */
     @Test
-    public void testLazyMode() throws Exception {
+    public void test() throws Exception {
         final int ROWS = 10;
 
-        try (Connection c = connect(grid(0), "lazy=true&replicatedOnly=true")) {
+        try (Connection c = connect(grid(0), "replicatedOnly=true")) {
             try (Statement stmt = c.createStatement()) {
                 stmt.executeUpdate("CREATE TABLE TEST (ID LONG PRIMARY KEY, VAL VARCHAR) " +
                     "WITH \"TEMPLATE=REPLICATED\"");

@@ -22,15 +22,12 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -49,11 +46,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(10)
+    @Order(0)
     protected KeyCacheObject key;
 
     /** Value to update. */
-    @Order(value = 11, method = "value")
+    @Order(1)
     protected CacheObject val;
 
     /**
@@ -74,7 +71,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
      * @param op Cache update operation.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateRequest(
         int cacheId,
@@ -84,8 +80,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        short flags,
-        boolean addDepInfo
+        short flags
     ) {
         super(cacheId,
             nodeId,
@@ -94,13 +89,12 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
+    @Override public int stripeIdx() {
         assert key != null;
 
         return key.partition();
@@ -145,20 +139,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return Collections.singletonList(key);
     }
 
-    /**
-     * @param key Key to update.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
-     * @return Key to update.
-     */
-    public KeyCacheObject key() {
-        return key;
-    }
-
     /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
@@ -169,20 +149,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     /** {@inheritDoc} */
     @Override public List<?> values() {
         return Collections.singletonList(val);
-    }
-
-    /**
-     * @return Cache object value to update.
-     */
-    public CacheObject value() {
-        return val;
-    }
-
-    /**
-     * @param val Cache object value to update.
-     */
-    public void value(CacheObject val) {
-        this.val = val;
     }
 
     /** {@inheritDoc} */
@@ -248,42 +214,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        prepareMarshalCacheObject(key, cctx);
-
-        if (val != null)
-            prepareMarshalCacheObject(val, cctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-        if (val != null)
-            val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKey) {
         val = null;
 
         if (clearKey)
             key = null;
     }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 125;
-    }
-
+    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearAtomicSingleUpdateRequest.class, this, "parent", super.toString());

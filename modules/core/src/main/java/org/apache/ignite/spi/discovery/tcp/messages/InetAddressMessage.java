@@ -21,21 +21,21 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetAddressMessage implements Message {
     /** */
     @Order(0)
-    private String hostName;
+    String hostName;
 
     /** */
-    @Order(value = 1, method = "addressBytes")
-    private byte[] addrBytes;
+    @Order(1)
+    byte[] addrBytes;
 
-    /** Default constructor for {@link DiscoveryMessageFactory}. */
+    /** Default constructor for {@link MessageFactory}. */
     public InetAddressMessage() {
         // No-op.
     }
@@ -44,16 +44,6 @@ public class InetAddressMessage implements Message {
     public InetAddressMessage(InetAddress addr) {
         hostName = addr.getHostName();
         addrBytes = addr.getAddress();
-    }
-
-    /** @return {@link InetAddress#getAddress()} */
-    public byte[] addressBytes() {
-        return addrBytes;
-    }
-
-    /** @param addrBytes {@link InetAddress#getAddress()} */
-    public void addressBytes(byte[] addrBytes) {
-        this.addrBytes = addrBytes;
     }
 
     /** @return {@link InetAddress#getByAddress(String, byte[])} */
@@ -66,20 +56,6 @@ public class InetAddressMessage implements Message {
         }
     }
 
-    /** @return Host name. */
-    public String hostName() {
-        return hostName;
-    }
-
-    /** @param hostName Host name. */
-    public void hostName(String hostName) {
-        this.hostName = hostName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -100;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

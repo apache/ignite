@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Period;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -41,7 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
@@ -655,6 +656,20 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00a00a00')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00/00/00')", errType, errDate);
         assertThrows("INSERT INTO timestamp_t VALUES ('1900-1-1 00-00-00')", errType, errDate);
+    }
+
+    /** */
+    @Test
+    public void testInsertMultiRowValues() {
+        sql("CREATE TABLE test (id int, val int) WITH " + atomicity());
+
+        int rowsCnt = 50;
+
+        String sql = "INSERT INTO test VALUES " + String.join(", ", Collections.nCopies(rowsCnt, "(?, ?)"));
+
+        sql(sql, new Object[rowsCnt * 2]);
+
+        assertQuery("SELECT * FROM test").resultSize(rowsCnt).check();
     }
 
     /** */

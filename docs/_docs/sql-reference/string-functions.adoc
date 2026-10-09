@@ -572,6 +572,22 @@ SELECT REGEXP_REPLACE(name, 'w+', 'W', 'i') FROM Players;
 ----
 
 
+== REGEXP_SUBSTR
+
+Returns the substring that matches a regular expression. For details, see the Java `Matcher.find()` method.
+
+[source,sql]
+----
+REGEXP_SUBSTR(inputString, regexString[, startInt[, occurrenceInt]])
+----
+
+
+Example:
+----
+SELECT REGEXP_SUBSTR(name, '[A-Za-z]+', 1, 2) FROM Players;
+----
+
+
 == REGEXP_LIKE
 
 Matches string to a regular expression. For details, see the Java `Matcher.find()` method. If any parameter is null (except the optional `flagsString` parameter), the result is null.

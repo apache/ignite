@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -25,15 +24,15 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class IgniteDiagnosticResponse implements Message {
     /** */
-    @Order(value = 0, method = "futureId")
-    private long futId;
+    @Order(0)
+    long futId;
 
     /** */
-    @Order(value = 1, method = "responseInfo")
-    private @Nullable String respInfo;
+    @Order(1)
+    @Nullable String respInfo;
 
     /**
-     * Default constructor required by {@link GridIoMessageFactory}.
+     * Default constructor required by {@link CoreMessagesProvider}.
      */
     public IgniteDiagnosticResponse() {
         // No-op.
@@ -58,24 +57,10 @@ public class IgniteDiagnosticResponse implements Message {
     }
 
     /** */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-    /** */
     public @Nullable String responseInfo() {
         return respInfo;
     }
 
-    /** */
-    public void responseInfo(@Nullable String respInfo) {
-        this.respInfo = respInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -62;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

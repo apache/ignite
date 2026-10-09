@@ -48,7 +48,6 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -66,7 +65,6 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
-import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -376,44 +374,32 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assertHints(conn, false, false, false, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, false, false, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, true, false, false, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, true, false, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&collocated=true")) {
-            assertHints(conn, false, false, true, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, false, true, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, DFLT_LAZY,
-                false, partitionAwareness);
-        }
-
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&lazy=" + (!DFLT_LAZY))) {
-            assertHints(conn, false, false, false, false, !DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, false, false, true, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, DFLT_LAZY,
-                true, partitionAwareness);
+            assertHints(conn, false, false, false, false, true, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp + "&distributedJoins=true&" +
-            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=" + (!DFLT_LAZY) + "&skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, !DFLT_LAZY,
-                true, partitionAwareness);
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, true, partitionAwareness);
         }
     }
 
@@ -425,39 +411,32 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSqlHintsSemicolon() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true")) {
-            assertHints(conn, true, false, false, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, true, false, false, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";enforceJoinOrder=true")) {
-            assertHints(conn, false, true, false, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, true, false, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";collocated=true")) {
-            assertHints(conn, false, false, true, false, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, false, true, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";replicatedOnly=true")) {
-            assertHints(conn, false, false, false, true, DFLT_LAZY,
-                false, partitionAwareness);
+            assertHints(conn, false, false, false, true, false, partitionAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";lazy=" + (!DFLT_LAZY))) {
-            assertHints(conn, false, false, false, false, !DFLT_LAZY,
-                false, partitionAwareness);
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon)) {
+            assertHints(conn, false, false, false, false, false, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";skipReducerOnUpdate=true")) {
-            assertHints(conn, false, false, false, false, DFLT_LAZY,
-                true, partitionAwareness);
+            assertHints(conn, false, false, false, false, true, partitionAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessPropSemicolon + ";distributedJoins=true;" +
-            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=" + (!DFLT_LAZY) + ";skipReducerOnUpdate=true")) {
-            assertHints(conn, true, true, true, true, !DFLT_LAZY,
-                true, partitionAwareness);
+            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, true, partitionAwareness);
         }
     }
 
@@ -469,18 +448,23 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @param enforceJoinOrder Enforce join order.
      * @param collocated Co-located.
      * @param replicatedOnly Replicated only.
-     * @param lazy Lazy.
      * @param skipReducerOnUpdate Skip reducer on update.
      * @throws Exception If failed.
      */
-    private void assertHints(Connection conn, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
-        boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate, boolean partitionAwarenessEnabled)throws Exception {
+    private void assertHints(
+        Connection conn,
+        boolean distributedJoins,
+        boolean enforceJoinOrder,
+        boolean collocated,
+        boolean replicatedOnly,
+        boolean skipReducerOnUpdate,
+        boolean partitionAwarenessEnabled
+    ) throws Exception {
         for (JdbcThinTcpIo io: ios(conn)) {
             assertEquals(distributedJoins, io.connectionProperties().isDistributedJoins());
             assertEquals(enforceJoinOrder, io.connectionProperties().isEnforceJoinOrder());
             assertEquals(collocated, io.connectionProperties().isCollocated());
             assertEquals(replicatedOnly, io.connectionProperties().isReplicatedOnly());
-            assertEquals(lazy, io.connectionProperties().isLazy());
             assertEquals(skipReducerOnUpdate, io.connectionProperties().isSkipReducerOnUpdate());
             assertEquals(partitionAwarenessEnabled, io.connectionProperties().isPartitionAwareness());
         }
@@ -749,7 +733,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         assert !conn.isValid(2) : "Connection must be closed";
 
-        assertThrows(log, new Callable<Object>() {
+        assertThrows(log, new Callable<>() {
             @Override public Object call() throws Exception {
                 conn.isValid(-2);
 
@@ -812,7 +796,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
 
                     assertThrows(log,
-                        new Callable<Object>() {
+                        new Callable<>() {
                             @Override public Object call() throws Exception {
                                 return conn.createStatement(type, concur);
                             }
@@ -871,7 +855,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                         }
 
                         assertThrows(log,
-                            new Callable<Object>() {
+                            new Callable<>() {
                                 @Override public Object call() throws Exception {
                                     return conn.createStatement(type, concur, holdabililty);
                                 }
@@ -903,7 +887,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // null query text
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(null);
                     }
@@ -953,7 +937,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                         // null query text
                         assertThrows(log,
-                            new Callable<Object>() {
+                            new Callable<>() {
                                 @Override public Object call() throws Exception {
                                     return conn.prepareStatement(null, type, concur);
                                 }
@@ -966,7 +950,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     }
 
                     assertThrows(log,
-                        new Callable<Object>() {
+                        new Callable<>() {
                             @Override public Object call() throws Exception {
                                 return conn.prepareStatement(sqlText, type, concur);
                             }
@@ -1018,7 +1002,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                             // null query text
                             assertThrows(log,
-                                new Callable<Object>() {
+                                new Callable<>() {
                                     @Override public Object call() throws Exception {
                                         return conn.prepareStatement(null, type, concur, holdabililty);
                                     }
@@ -1031,7 +1015,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                         }
 
                         assertThrows(log,
-                            new Callable<Object>() {
+                            new Callable<>() {
                                 @Override public Object call() throws Exception {
                                     return conn.prepareStatement(sqlText, type, concur, holdabililty);
                                 }
@@ -1065,7 +1049,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final String sqlText = "insert into test (val) values (?)";
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, RETURN_GENERATED_KEYS);
                     }
@@ -1075,7 +1059,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, NO_GENERATED_KEYS);
                     }
@@ -1085,7 +1069,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, new int[] {1});
                     }
@@ -1095,7 +1079,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, new String[] {"ID"});
                     }
@@ -1115,7 +1099,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final String sqlText = "exec test()";
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareCall(sqlText);
                     }
@@ -1125,7 +1109,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
                     }
@@ -1135,7 +1119,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY,
                             CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
@@ -1155,7 +1139,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // null query text
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.nativeSQL(null);
                     }
@@ -1212,7 +1196,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Should not be called in auto-commit mode
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.commit();
 
@@ -1227,7 +1211,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Should not be called in auto-commit mode
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.commit();
 
@@ -1257,7 +1241,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Should not be called in auto-commit mode
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.rollback();
 
@@ -1364,7 +1348,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Invalid parameter value
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @SuppressWarnings("MagicConstant")
                     @Override public Object call() throws Exception {
                         conn.setTransactionIsolation(-1);
@@ -1448,7 +1432,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetSetTypeMap() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.getTypeMap();
                     }
@@ -1458,7 +1442,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setTypeMap(new HashMap<String, Class<?>>());
 
@@ -1473,7 +1457,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.getTypeMap();
                     }
@@ -1484,7 +1468,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setTypeMap(new HashMap<String, Class<?>>());
 
@@ -1514,7 +1498,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Invalid constant
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setHoldability(-1);
 
@@ -1528,7 +1512,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.getHoldability();
                     }
@@ -1538,7 +1522,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setHoldability(HOLD_CURSORS_OVER_COMMIT);
 
@@ -1557,11 +1541,11 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSetSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint();
 
@@ -1588,11 +1572,11 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testSetSavepointName() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint(null);
 
@@ -1607,7 +1591,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Disallowed in auto-commit mode
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint(name);
 
@@ -1632,13 +1616,50 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testSavepointsDisabledFeature() throws Exception {
+        try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp +
+            "&disabledFeatures=savepoints")) {
+            assertFalse(conn.getMetaData().supportsSavepoints());
+
+            conn.setAutoCommit(false);
+
+            assertThrows(log,
+                new Callable<>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint();
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported."
+            );
+
+            assertThrows(log,
+                new Callable<>() {
+                    @Override public Object call() throws Exception {
+                        conn.setSavepoint("savepoint");
+
+                        return null;
+                    }
+                },
+                SQLFeatureNotSupportedException.class,
+                "Savepoints are not supported."
+            );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testRollbackSavePoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.rollback(null);
 
@@ -1653,7 +1674,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Disallowed in auto-commit mode
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.rollback(savepoint);
 
@@ -1693,11 +1714,11 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testReleaseSavepoint() throws Exception {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
-            assert !conn.getMetaData().supportsSavepoints();
+            assert conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.releaseSavepoint(null);
 
@@ -1710,11 +1731,17 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             final Savepoint savepoint = getFakeSavepoint();
 
-            checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
-                    conn.releaseSavepoint(savepoint);
-                }
-            });
+            assertThrows(log,
+                new Callable<>() {
+                    @Override public Object call() throws Exception {
+                        conn.releaseSavepoint(savepoint);
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Invalid savepoint"
+            );
 
             conn.close();
 
@@ -1738,7 +1765,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createClob();
                     }
@@ -1761,7 +1788,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createBlob();
                     }
@@ -1780,7 +1807,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Unsupported
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createNClob();
                     }
@@ -1792,7 +1819,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createNClob();
                     }
@@ -1811,7 +1838,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Unsupported
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createSQLXML();
                     }
@@ -1823,7 +1850,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createSQLXML();
                     }
@@ -1860,7 +1887,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             });
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setClientInfo(name, val);
 
@@ -1899,7 +1926,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             });
 
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setClientInfo(props);
 
@@ -1921,7 +1948,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Invalid typename
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.createArrayOf(null, null);
 
@@ -1958,7 +1985,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             // Invalid typename
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         return conn.createStruct(null, null);
                     }
@@ -2029,7 +2056,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(urlWithPartitionAwarenessProp)) {
             //Invalid executor
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.abort(null);
 
@@ -2063,7 +2090,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             //Invalid timeout
             assertThrows(log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Override public Object call() throws Exception {
                         conn.setNetworkTimeout(executor, -1);
 
@@ -2098,7 +2125,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSslClientAndPlainServer() {
-        Throwable e = assertThrows(log, new Callable<Object>() {
+        Throwable e = assertThrows(log, new Callable<>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection(urlWithPartitionAwarenessProp + "&sslMode=require" +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
@@ -2210,10 +2237,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             @Override public boolean isSystemType(String typeName) {
                 return false;
-            }
-
-            @Override public IgnitePredicate<String> classNameFilter() {
-                return null;
             }
 
             @Override public JdkMarshaller jdkMarshaller() {

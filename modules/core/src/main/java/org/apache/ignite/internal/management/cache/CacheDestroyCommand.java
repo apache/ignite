@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -55,16 +56,17 @@ public class CacheDestroyCommand
         CacheDestroyCommandArg arg,
         Consumer<String> printer
     ) {
-        if (arg.destroyAllCaches()) {
-            Set<String> caches = new TreeSet<>();
+        Set<String> caches = new TreeSet<>(client != null ? client.cacheNames() : ignite.cacheNames());
 
-            if (client != null)
-                caches.addAll(client.cacheNames());
-            else
-                caches.addAll(ignite.cacheNames());
+        if (!F.isEmpty(arg.caches())) {
+            Collection<String> notExisted = F.view(F.asList(arg.caches()), F.not(caches::contains));
 
-            arg.caches(caches.toArray(U.EMPTY_STRS));
+            if (!notExisted.isEmpty())
+                throw new IllegalArgumentException("Caches do not exist: " + String.join(", ", notExisted));
         }
+
+        if (arg.destroyAllCaches())
+            arg.caches(caches.toArray(U.EMPTY_STRS));
 
         if (F.isEmpty(arg.caches())) {
             printer.accept(NOOP_MSG);

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -31,29 +30,26 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class CachePartitionPartialCountersMap implements Serializable, Message {
     /** */
-    public static final short TYPE_CODE = 500;
-
-    /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
 
     /** */
-    @Order(value = 0, method = "partitionIds")
-    private int[] partIds;
+    @Order(0)
+    int[] partIds;
 
     /** */
-    @Order(value = 1, method = "initialUpdateCounters")
-    private long[] initialUpdCntrs;
+    @Order(1)
+    long[] initialUpdCntrs;
 
     /** */
-    @Order(value = 2, method = "updateCounters")
-    private long[] updCntrs;
+    @Order(2)
+    long[] updCntrs;
 
     /** */
-    @Order(value = 3, method = "currentIndex")
-    private int curIdx;
+    @Order(3)
+    int curIdx;
 
     /** */
     public CachePartitionPartialCountersMap() {
@@ -206,15 +202,14 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
      * @param cntrsMap Partial local counters map.
      * @return Partition ID to partition counters map.
      */
-    public static Map<Integer, T2<Long, Long>> toCountersMap(CachePartitionPartialCountersMap cntrsMap) {
+    public static Map<Integer, Long> toCountersMap(CachePartitionPartialCountersMap cntrsMap) {
         if (cntrsMap.size() == 0)
             return Collections.emptyMap();
 
-        Map<Integer, T2<Long, Long>> res = U.newHashMap(cntrsMap.size());
+        Map<Integer, Long> res = U.newHashMap(cntrsMap.size());
 
         for (int idx = 0; idx < cntrsMap.size(); idx++)
-            res.put(cntrsMap.partitionAt(idx),
-                new T2<>(cntrsMap.initialUpdateCounterAt(idx), cntrsMap.updateCounterAt(idx)));
+            res.put(cntrsMap.partitionAt(idx), cntrsMap.updateCounterAt(idx));
 
         return res;
     }
@@ -236,64 +231,4 @@ public class CachePartitionPartialCountersMap implements Serializable, Message {
         return sb.toString();
     }
 
-    /**
-     * @return Partition IDs.
-     */
-    public int[] partitionIds() {
-        return partIds;
-    }
-
-    /**
-     * @param partIds Partition IDs.
-     */
-    public void partitionIds(int[] partIds) {
-        this.partIds = partIds;
-    }
-
-    /**
-     * @return Partition initial update counters.
-     */
-    public long[] initialUpdateCounters() {
-        return initialUpdCntrs;
-    }
-
-    /**
-     * @param initialUpdCntrs Partition initial update counters.
-     */
-    public void initialUpdateCounters(long[] initialUpdCntrs) {
-        this.initialUpdCntrs = initialUpdCntrs;
-    }
-
-    /**
-     * @return Partition update counters.
-     */
-    public long[] updateCounters() {
-        return updCntrs;
-    }
-
-    /**
-     * @param updCntrs Partition update counters.
-     */
-    public void updateCounters(long[] updCntrs) {
-        this.updCntrs = updCntrs;
-    }
-
-    /**
-     * @return Current index.
-     */
-    public int currentIndex() {
-        return curIdx;
-    }
-
-    /**
-     * @param curIdx Current index.
-     */
-    public void currentIndex(int curIdx) {
-        this.curIdx = curIdx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
 }

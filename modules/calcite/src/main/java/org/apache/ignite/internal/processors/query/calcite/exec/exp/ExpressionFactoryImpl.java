@@ -33,7 +33,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
@@ -46,6 +46,7 @@ import org.apache.calcite.linq4j.tree.MethodDeclaration;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
@@ -80,6 +81,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -337,6 +340,14 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(typeFactory, rowType);
 
         List<RangeConditionImpl> ranges = new ArrayList<>();
+
+        if (collation.getKeys().isEmpty()) {
+            collation = RelCollations.of(IntStream.range(0, searchBounds.size())
+                .filter(i -> searchBounds.get(i) != null)
+                .mapToObj(RelFieldCollation::new)
+                .collect(toList())
+            );
+        }
 
         Comparator<Row> rowComparator = comparator(collation);
 
@@ -1003,7 +1014,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             // should not affect ordering.
             if (!sorted) {
                 ranges = ranges.stream().filter(r -> !r.skip()).sorted(RangeConditionImpl::compareTo)
-                    .collect(Collectors.toList());
+                    .collect(toList());
 
                 List<RangeConditionImpl> ranges0 = new ArrayList<>(ranges.size());
 

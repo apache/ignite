@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -188,7 +189,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
 
             awaitRebuild();
 
-            assertTrue("Rebuild must not succeed", false);
+            assertTrue("Rebuild must not succeed",
+                GridTestUtils.waitForCondition(() -> grid(0).context().failure().nodeStopping(), 1_000L));
         }
         catch (Exception ignore) {
             // No-op

@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
@@ -98,7 +97,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
      * @return Test metrics.
      */
     private ClusterMetrics createMetrics() {
-        NodeMetricsMessage metrics = new NodeMetricsMessage();
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.totalCpus(1);
         metrics.averageActiveJobs(2);

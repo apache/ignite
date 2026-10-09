@@ -17,47 +17,91 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.enumerable.NullPolicy;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlLiteral;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexContext;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.BuiltInMethod;
+import org.apache.calcite.util.Optionality;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulator;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorFactoryProvider;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
-import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlCallRewriteTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlNodeRewriter;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlSemantics;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlValidator;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Tests SQL engine extension with plugin.
  */
 public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final SqlConformance TEST_CONFORMANCE = new SqlDelegatingConformance(
+        CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig().conformance()) {
+        /** {@inheritDoc} */
+        @Override public boolean isSupportedDualTable() {
+            return true;
+        }
+    };
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration(igniteInstanceName, TEST_CONFORMANCE);
+    }
+
+    /** */
+    private IgniteConfiguration getConfiguration(String igniteInstanceName, SqlConformance conformance) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new AbstractTestPluginProvider() {
                 @Override public String name() {
@@ -67,9 +111,21 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                     if (FrameworkConfig.class.equals(cls)) {
                         FrameworkConfig cfg = Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
+                            .parserConfig(CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig()
+                                .withConformance(conformance))
                             .convertletTable(new ConvertletTable())
                             .operatorTable(SqlOperatorTables.chain(
                                 new OperatorTable().init(), CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable()))
+                            .sqlValidatorConfig(
+                                ((IgniteSqlValidator.Config)CalciteQueryProcessor.FRAMEWORK_CONFIG.getSqlValidatorConfig())
+                                    .withSqlNodeRewriter(new SqlRewriter())
+                                    .withConformance(conformance))
+                            .context(Contexts.chain(
+                                CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
+                                Contexts.of(IgniteSqlSemantics.builder()
+                                    .paginationRoundingMode(RoundingMode.DOWN)
+                                    .build()),
+                                Contexts.of(new AccumulatorFactoryProviderImpl())))
                             .build();
 
                         return (T)cfg;
@@ -85,6 +141,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             OperatorTable.TO_NUMBER,
                             OperatorsExtensionIntegrationTest.class.getMethod("toNumber", String.class),
                             NullPolicy.STRICT
+                        );
+
+                        RexImpTable.INSTANCE.defineReflective(
+                            OperatorTable.REFLECTIVE_BINARY_LENGTH,
+                            OperatorsExtensionIntegrationTest.class.getMethod("binaryLength", byte[].class)
+                        );
+
+                        RexImpTable.INSTANCE.defineReflective(
+                            OperatorTable.REFLECTIVE_BINARY_VALUE,
+                            OperatorsExtensionIntegrationTest.class.getMethod("binaryValue")
                         );
                     }
                     catch (NoSuchMethodException e) {
@@ -103,9 +169,10 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                         ), NullPolicy.ARG0, false
                     ));
 
-                    // Tests operator extension via SQL rewrite.
-                    IgniteSqlCallRewriteTable.INSTANCE.register("LTRIM",
-                        OperatorsExtensionIntegrationTest::rewriteLtrim);
+                    // A plugin can declare a Java return type while its implementor returns an internal SQL value.
+                    RexImpTable.INSTANCE.define(OperatorTable.JAVA_BINARY_IDENTITY, RexImpTable.createRexCallImplementor(
+                        (translator, call, translatedOperands) -> translatedOperands.get(0), NullPolicy.ARG0, false
+                    ));
                 }
             });
     }
@@ -123,6 +190,54 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
     /** */
     @Test
+    public void testByteArrayFunctions() {
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(x'010203')").returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(?)").withParams((Object)new byte[] {1, 2, 3}).returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
+
+        assertQuery("SELECT OCTET_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
+
+        assertQuery("SELECT REFLECTIVE_BINARY_VALUE()")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(1, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnType() {
+        assertQuery("SELECT JAVA_BINARY_IDENTITY(x'010203'), JAVA_BINARY_IDENTITY(x''), "
+            + "JAVA_BINARY_IDENTITY(CAST(NULL AS VARBINARY))")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(3, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+                assertArrayEquals(new byte[0], (byte[])rows.get(0).get(1));
+                assertNull(rows.get(0).get(2));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnTypeDynamicParameters() {
+        for (byte[] bytes : new byte[][] {new byte[] {1, 2, 3}, new byte[0], null}) {
+            assertQuery("SELECT JAVA_BINARY_IDENTITY(?)")
+                .withParams((Object)bytes)
+                .withResultChecker(rows -> {
+                    assertEquals(1, rows.size());
+                    assertEquals(1, rows.get(0).size());
+                    assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
+                })
+                .check();
+        }
+    }
+
+    /** */
+    @Test
     public void testOperatorsCallsInViews() {
         sql("create table my_table(id int primary key, val_str varchar)");
 
@@ -131,6 +246,151 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         sql("create or replace view my_view as select to_number(val_str) val_str from my_table");
 
         assertQuery("SELECT val_str from my_view").returns(new BigDecimal("0")).check();
+    }
+
+    /** */
+    @Test
+    public void testCustomAggregateFunction() {
+        assertQuery("SELECT TEST_SUM(x) FROM (VALUES (1), (2), (3)) t(x)")
+            .returns(6L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCustomAggregateHandlesDistinct() {
+        assertQuery("SELECT TEST_COUNT_PAIRS(DISTINCT x, y) "
+            + "FROM (VALUES (1, 10), (1, 20), (1, 20), (2, 10)) t(x, y)")
+            .returns(3L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testCustomAggregateUsesDefaultDistinctHandling() {
+        assertQuery("SELECT TEST_SUM(DISTINCT x) FROM (VALUES (1), (1), (2)) t(x)")
+            .returns(3L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testRowNumRewrite() {
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 2")
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 3")
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < (1 + NVL(2, 10000))")
+            .returns(1)
+            .returns(2)
+            .check();
+
+        assertQuery("SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < (COALESCE(4, 10000))")
+            .returns(1)
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT COUNT(*) FROM ("
+            + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < 2)")
+            .returns(1L)
+            .check();
+
+        assertQuery("SELECT COUNT(*) FROM ("
+            + "SELECT * FROM (VALUES (1), (2), (3)) t(id) WHERE ROWNUM < ?)")
+            .withParams(3)
+            .returns(2L)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testPaginationRoundingPolicy() {
+        assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x LIMIT 1.9")
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x FETCH FIRST 1.9 ROWS ONLY")
+            .returns(0)
+            .check();
+
+        assertQuery("SELECT x FROM (VALUES (0), (1), (2)) t(x) ORDER BY x OFFSET 1.9 ROWS")
+            .returns(1)
+            .returns(2)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testDualTable() {
+        assertQuery("SELECT 1 + 1 FROM dual").returns(2).check();
+
+        assertQuery("SELECT * FROM DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+
+        assertQuery("SELECT DUMMY FROM DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+
+        assertQuery("SELECT LAG(rate, 1, rate) OVER (ORDER BY period) FROM "
+            + "(SELECT 1 AS rate, 1 AS period FROM dual)")
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testDualWithisFromRequired() throws Exception {
+        SqlConformance conformance = new SqlDelegatingConformance(TEST_CONFORMANCE) {
+            /** {@inheritDoc} */
+            @Override public boolean isFromRequired() {
+                return true;
+            }
+        };
+
+        try (IgniteEx c = startClientGrid(getConfiguration("from-required-client", conformance))) {
+            assertThrows(c, "SELECT 1", IgniteSQLException.class, "SELECT must have a FROM clause");
+
+            assertQuery(c, "SELECT 1 + 1 FROM dual").returns(2).check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testDualTableInNewSchema() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("CUSTOM_SCHEMA_MARKER")
+            .setSqlSchema("CUSTOM_SCHEMA")
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        assertQuery("SELECT DUMMY FROM CUSTOM_SCHEMA.DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testUserDefinedDualView() {
+        sql("CREATE VIEW PUBLIC.DUAL AS SELECT 'USER' AS DUMMY");
+
+        try {
+            assertQuery("SELECT DUMMY FROM PUBLIC.DUAL")
+                .columnNames("DUMMY")
+                .returns("USER")
+                .check();
+        }
+        finally {
+            sql("DROP VIEW IF EXISTS PUBLIC.DUAL");
+        }
     }
 
     /** Rewrites LTRIM with 2 parameters. */
@@ -149,6 +409,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     /** Implementor for {@code TO_NUMBER} function. */
     public static BigDecimal toNumber(String s) {
         return new BigDecimal(s);
+    }
+
+    /** Implementor for {@code REFLECTIVE_BINARY_LENGTH} function. */
+    public static int binaryLength(byte[] bytes) {
+        return bytes.length;
+    }
+
+    /** Implementor for {@code REFLECTIVE_BINARY_VALUE} function. */
+    public static byte[] binaryValue() {
+        return new byte[] {1, 2, 3};
     }
 
     /** Extended operator table. */
@@ -192,6 +462,42 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             OperandTypes.STRING_STRING,
             SqlFunctionCategory.STRING
         );
+
+        /** */
+        public static final SqlAggFunction TEST_SUM = new SqlTestSumAggFunction();
+
+        /** */
+        public static final SqlAggFunction TEST_COUNT_PAIRS = new SqlTestCountPairsAggFunction();
+
+        /** */
+        public static final SqlFunction REFLECTIVE_BINARY_LENGTH = new SqlFunction(
+            "REFLECTIVE_BINARY_LENGTH",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.INTEGER_NULLABLE,
+            null,
+            OperandTypes.BINARY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction REFLECTIVE_BINARY_VALUE = new SqlFunction(
+            "REFLECTIVE_BINARY_VALUE",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.VARBINARY),
+            null,
+            OperandTypes.NILADIC,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction JAVA_BINARY_IDENTITY = new SqlFunction(
+            "JAVA_BINARY_IDENTITY",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createJavaType(byte[].class),
+            null,
+            OperandTypes.BINARY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
     }
 
     /** Extended convertlet table. */
@@ -215,6 +521,184 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 return rexBuilder.makeCall(SqlStdOperatorTable.FLOOR,
                     ImmutableList.of(cx.convertExpression(call.operand(0)), day));
             }
+        }
+    }
+
+    /** Extended SQL rewriter. */
+    private static class SqlRewriter implements IgniteSqlNodeRewriter {
+        /** {@inheritDoc} */
+        @Override public SqlNode rewrite(SqlValidator validator, SqlNode node) {
+            if (node instanceof SqlCall && "LTRIM".equals(((SqlCall)node).getOperator().getName()))
+                node = rewriteLtrim(validator, (SqlCall)node);
+
+            if (node instanceof SqlSelect) {
+                SqlSelect select = (SqlSelect)node;
+                SqlNode condition = select.getWhere();
+
+                if (condition instanceof SqlCall && condition.getKind() == SqlKind.LESS_THAN) {
+                    SqlCall call = (SqlCall)condition;
+                    SqlNode left = call.operand(0);
+
+                    if (left instanceof SqlIdentifier
+                        && ((SqlIdentifier)left).isSimple()
+                        && "ROWNUM".equalsIgnoreCase(((SqlIdentifier)left).getSimple())) {
+                        SqlNode one = SqlLiteral.createExactNumeric("1", call.getParserPosition());
+                        SqlNode fetch = SqlStdOperatorTable.MINUS.createCall(
+                            call.getParserPosition(), call.operand(1), one);
+
+                        select.setWhere(null);
+                        select.setFetch(fetch);
+                    }
+                }
+            }
+
+            return node;
+        }
+    }
+
+    /** */
+    private static class AccumulatorFactoryProviderImpl implements AccumulatorFactoryProvider {
+        /** {@inheritDoc} */
+        @Override public @Nullable <Row> Supplier<Accumulator<Row>> factory(AggregateCall call, ExecutionContext<Row> ctx) {
+            if (call.getAggregation().getName().equals(OperatorTable.TEST_SUM.getName()))
+                return () -> new TestSum<>(call, ctx.rowHandler());
+
+            if (call.getAggregation().getName().equals(OperatorTable.TEST_COUNT_PAIRS.getName()))
+                return () -> new TestCountPairs<>(call, ctx.rowHandler());
+
+            return null;
+        }
+    }
+
+    /** */
+    public static class SqlTestSumAggFunction extends SqlAggFunction {
+        /** */
+        public SqlTestSumAggFunction() {
+            super(
+                "TEST_SUM",
+                null,
+                SqlKind.OTHER_FUNCTION,
+                ReturnTypes.AGG_SUM,
+                null,
+                OperandTypes.NUMERIC,
+                SqlFunctionCategory.NUMERIC,
+                false,
+                false,
+                Optionality.FORBIDDEN
+            );
+        }
+    }
+
+    /** */
+    public static class SqlTestCountPairsAggFunction extends SqlAggFunction {
+        /** */
+        public SqlTestCountPairsAggFunction() {
+            super(
+                "TEST_COUNT_PAIRS",
+                null,
+                SqlKind.OTHER_FUNCTION,
+                opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.BIGINT),
+                null,
+                OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC),
+                SqlFunctionCategory.NUMERIC,
+                false,
+                false,
+                Optionality.FORBIDDEN
+            );
+        }
+    }
+
+    /** */
+    private static class TestSum<Row> extends Accumulators.AbstractAccumulator<Row> {
+        /** */
+        private long sum;
+
+        /** */
+        protected TestSum(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            Number val = get(0, row);
+
+            if (val != null)
+                sum += val.longValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            sum += ((TestSum<Row>)other).sum;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return sum;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return List.of(typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(org.apache.calcite.sql.type.SqlTypeName.BIGINT);
+        }
+    }
+
+    /** */
+    private static class TestCountPairs<Row> extends Accumulators.AbstractAccumulator<Row> {
+        /** */
+        private long cnt;
+
+        /** */
+        private final Set<List<Object>> distinctPairs = new HashSet<>();
+
+        /** */
+        protected TestCountPairs(AggregateCall aggCall, RowHandler<Row> hnd) {
+            super(aggCall, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Row row) {
+            if (aggregateCall().isDistinct())
+                distinctPairs.add(List.of(get(0, row), get(1, row)));
+            else
+                cnt++;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator<Row> other) {
+            TestCountPairs<Row> other0 = (TestCountPairs<Row>)other;
+
+            if (aggregateCall().isDistinct())
+                distinctPairs.addAll(other0.distinctPairs);
+            else
+                cnt += other0.cnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return aggregateCall().isDistinct() ? (long)distinctPairs.size() : cnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            RelDataType type =
+                typeFactory.createTypeWithNullability(typeFactory.createSqlType(SqlTypeName.BIGINT), true);
+
+            return List.of(type, type);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(SqlTypeName.BIGINT);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean handlesDistinct() {
+            return true;
         }
     }
 }

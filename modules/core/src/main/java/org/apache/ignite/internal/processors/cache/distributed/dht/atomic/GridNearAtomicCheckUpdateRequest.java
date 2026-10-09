@@ -32,12 +32,12 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     private GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** */
-    @Order(value = 4, method = "partition")
-    private int partId;
+    @Order(0)
+    int partId;
 
     /** */
-    @Order(value = 5, method = "futureId")
-    private long futId;
+    @Order(1)
+    long futId;
 
     /**
      *
@@ -54,7 +54,7 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
 
         this.updateReq = updateReq;
         this.cacheId = updateReq.cacheId();
-        this.partId = updateReq.partition();
+        this.partId = updateReq.stripeIdx();
         this.futId = updateReq.futureId();
 
         assert partId >= 0;
@@ -68,30 +68,19 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param futId Future ID on near node.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
-    }
-
-
-    /**
      * @return Related update request.
      */
     GridNearAtomicAbstractUpdateRequest updateRequest() {
         return updateReq;
     }
 
-    /** {@inheritDoc} */
-    @Override public int partition() {
-        return partId;
-    }
-
     /**
-     * @param partId Partition ID this message is targeted to or {@code -1} if it cannot be determined.
+     * The value travels because the primary puts it into the response, it cannot restore it otherwise.
+     *
+     * {@inheritDoc}
      */
-    public void partition(int partId) {
-        this.partId = partId;
+    @Override public int stripeIdx() {
+        return partId;
     }
 
     /** {@inheritDoc} */
@@ -104,10 +93,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return -50;
-    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

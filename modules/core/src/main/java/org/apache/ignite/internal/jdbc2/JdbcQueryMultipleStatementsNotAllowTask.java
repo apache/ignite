@@ -39,14 +39,13 @@ class JdbcQueryMultipleStatementsNotAllowTask extends JdbcQueryMultipleStatement
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
-     * @param enforceJoinOrder Enforce joins order falg.
-     * @param lazy Lazy query execution flag.
+     * @param enforceJoinOrder Enforce joins order flag.
      */
     public JdbcQueryMultipleStatementsNotAllowTask(Ignite ignite, String schemaName, String sql, Boolean isQry, boolean loc,
         Object[] args, int fetchSize, boolean locQry, boolean collocatedQry, boolean distributedJoins,
-        boolean enforceJoinOrder, boolean lazy) {
+        boolean enforceJoinOrder) {
         super(ignite, schemaName, sql, isQry, loc, args, fetchSize, locQry, collocatedQry, distributedJoins,
-            enforceJoinOrder, lazy);
+            enforceJoinOrder);
     }
 
     /** {@inheritDoc} */

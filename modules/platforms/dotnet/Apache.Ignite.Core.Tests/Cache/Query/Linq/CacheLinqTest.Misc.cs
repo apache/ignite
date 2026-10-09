@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
     using NUnit.Framework.Constraints;
@@ -347,7 +348,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             });
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<CacheException>(() =>
+            var ex = Assert.Throws<IgniteException>(() =>
             {
                 for (var i = 0; i < 100; i++)
                 {

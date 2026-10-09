@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
@@ -124,9 +123,7 @@ final class ClientMetadataRequestFuture extends GridFutureAdapter<MetadataUpdate
 
         if (noSrvsInCluster)
             onDone(MetadataUpdateResult.createFailureResult(
-                    new BinaryObjectException(
-                            "All server nodes have left grid, cannot request metadata [typeId: "
-                                    + typeId + "]")));
+                "All server nodes have left grid, cannot request metadata [typeId: " + typeId + "]"));
     }
 
     /**

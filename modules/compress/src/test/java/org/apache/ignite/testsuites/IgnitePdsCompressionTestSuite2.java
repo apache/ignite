@@ -22,11 +22,9 @@ import java.util.List;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
-import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
-
 /** */
 @RunWith(DynamicSuite.class)
-public class IgnitePdsCompressionTestSuite2 {
+public class IgnitePdsCompressionTestSuite2 extends AbstractIgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
      */

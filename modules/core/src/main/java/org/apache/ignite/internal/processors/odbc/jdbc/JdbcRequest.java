@@ -94,6 +94,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Finish transaction request. */
     public static final byte TX_END = 22;
 
+    /** Savepoint operation request. */
+    public static final byte TX_SAVEPOINT = 23;
+
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
 
@@ -262,6 +265,11 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
             case TX_END:
                 req = new JdbcTxEndRequest();
+
+                break;
+
+            case TX_SAVEPOINT:
+                req = new JdbcTxSavepointRequest();
 
                 break;
 

@@ -17,46 +17,56 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /** Offset, fetch|limit support node. */
 public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** Offset if its present, otherwise 0. */
-    private final int offset;
+    /** */
+    public static final long FETCH_DEFAULT = -1;
 
-    /** Fetch if its present, otherwise 0. */
-    private final int fetch;
+    /** */
+    public static final long OFFSET_DEFAULT = 0;
 
-    /** Already processed (pushed to upstream) rows count. */
-    private int rowsProcessed;
+    /** Offset param. */
+    private final long offset;
 
-    /** Fetch can be unset, in this case we need all rows. */
-    private @Nullable Supplier<Integer> fetchNode;
+    /** How many rows need to be processed, if {@code 0} it depends on {@link #rowsSummary}. */
+    private final long fetch;
+
+    /** Summary rows to process. */
+    private final long rowsSummary;
+
+    /** Already processed (pushed to downstream) rows count. */
+    private long rowsProcessed;
 
     /** Waiting results counter. */
     private int waiting;
+
+    /** Upper requested rows. */
+    private int requested;
 
     /**
      * Constructor.
      *
      * @param ctx Execution context.
      * @param rowType Row type.
+     * @param offset How many rows need to be skipped.
+     * @param fetch How many rows need to be processed, {@link #FETCH_DEFAULT} if param is undefined.
      */
     public LimitNode(
         ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Integer> offsetNode,
-        Supplier<Integer> fetchNode
+        long offset,
+        long fetch
     ) {
         super(ctx, rowType);
 
-        offset = offsetNode == null ? 0 : offsetNode.get();
-        fetch = fetchNode == null ? 0 : fetchNode.get();
-        this.fetchNode = fetchNode;
+        this.offset = offset;
+        rowsSummary = fetch == FETCH_DEFAULT ? Long.MAX_VALUE : IgniteMath.addExact(fetch, offset);
+        this.fetch = fetch == FETCH_DEFAULT ? 0 : fetch;
     }
 
     /** {@inheritDoc} */
@@ -64,19 +74,22 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         assert !F.isEmpty(sources()) && sources().size() == 1;
         assert rowsCnt > 0;
 
-        if (fetchNone()) {
+        if (!hasMoreData()) {
             end();
 
             return;
         }
 
-        if (offset > 0 && rowsProcessed == 0)
-            rowsCnt = offset + rowsCnt;
+        assert requested == 0 : requested;
+        requested = rowsCnt;
+
+        if (fetch > 0) {
+            long remain = rowsSummary - rowsProcessed;
+
+            rowsCnt = remain > rowsCnt ? rowsCnt : (int)remain;
+        }
 
         waiting = rowsCnt;
-
-        if (fetch > 0)
-            rowsCnt = Math.min(rowsCnt, (fetch + offset) - rowsProcessed);
 
         checkState();
 
@@ -85,38 +98,49 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
 
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
-        if (waiting == -1)
+        if (waiting == NOT_WAITING)
             return;
-
-        ++rowsProcessed;
 
         --waiting;
 
-        checkState();
-
-        if (rowsProcessed > offset) {
-            if (fetchNode == null || (fetchNode != null && rowsProcessed <= fetch + offset))
-                downstream().push(row);
+        if (rowsProcessed >= offset && hasMoreData()) {
+            // This two rows can`t be swapped, cause if all requested rows have been pushed it will trigger further request call.
+            --requested;
+            downstream().push(row);
         }
 
-        if (fetch > 0 && rowsProcessed == fetch + offset && waiting > 0)
+        ++rowsProcessed;
+
+        // There several cases are possible:
+        //  1) requested = 512, limit = 1, offset = not defined: need to pass 1 row and call end()
+        //  2) requested = 512, limit = 512, offset = not defined: just need to pass all rows without end() call
+        //  3) requested = 512, limit = 512, offset = 1: need to request initially 512 and further 1 row
+        if (!hasMoreData() && requested > 0)
             end();
+
+        if (waiting == 0 && requested > 0)
+            source().request(waiting = requested);
     }
 
     /** {@inheritDoc} */
     @Override public void end() throws Exception {
-        if (waiting == -1)
+        if (waiting == NOT_WAITING)
             return;
 
         assert downstream() != null;
 
-        waiting = -1;
+        waiting = NOT_WAITING;
+
+        if (requested > 0)
+            requested = 0;
 
         downstream().end();
     }
 
     /** {@inheritDoc} */
     @Override protected void rewindInternal() {
+        waiting = 0;
+        requested = 0;
         rowsProcessed = 0;
     }
 
@@ -128,8 +152,8 @@ public class LimitNode<Row> extends AbstractNode<Row> implements SingleNode<Row>
         return this;
     }
 
-    /** {@code True} if requested 0 results, or all already processed. */
-    private boolean fetchNone() {
-        return (fetchNode != null && fetch == 0) || (fetch > 0 && rowsProcessed == fetch + offset);
+    /** {@code True} If current rows processed is less than required or undefined. */
+    private boolean hasMoreData() {
+        return rowsProcessed < rowsSummary;
     }
 }

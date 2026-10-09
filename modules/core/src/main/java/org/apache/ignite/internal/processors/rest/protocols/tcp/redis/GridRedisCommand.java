@@ -78,7 +78,9 @@ public enum GridRedisCommand {
     /** FLUSHDB. */
     FLUSHDB("FLUSHDB"),
     /** FLUSHALL. */
-    FLUSHALL("FLUSHALL");
+    FLUSHALL("FLUSHALL"),
+    /** CLIENT. */
+    CLIENT("CLIENT");
 
     /** String for command. */
     private final String cmd;

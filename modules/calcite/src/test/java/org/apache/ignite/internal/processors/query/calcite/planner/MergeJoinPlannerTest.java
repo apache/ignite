@@ -30,8 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
 import static org.apache.calcite.rel.RelFieldCollation.Direction.DESCENDING;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
@@ -44,7 +43,8 @@ public class MergeJoinPlannerTest extends AbstractPlannerTest {
         "NestedLoopJoinConverter",
         "CorrelatedNestedLoopJoin",
         "FilterSpoolMergeRule",
-        "JoinCommuteRule"
+        "JoinCommuteRule",
+        "HashJoinConverter"
     };
 
     /** */

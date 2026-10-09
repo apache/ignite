@@ -17,7 +17,6 @@
 
 package org.apache.ignite.maintenance;
 
-import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.Nullable;
  * call {@link MaintenanceRegistry#actionsForMaintenanceTask(String)}
  *
  */
-@IgniteExperimental
 public interface MaintenanceAction<T> {
     /**
      * Executes operations of current maintenance action.

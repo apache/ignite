@@ -49,7 +49,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Transactions;
@@ -500,18 +499,6 @@ namespace Apache.Ignite.Core
                 memEventStorage.Write(writer);
             }
 
-#pragma warning disable 618  // Obsolete
-            if (MemoryConfiguration != null)
-            {
-                writer.WriteBoolean(true);
-                MemoryConfiguration.Write(writer);
-            }
-            else
-            {
-                writer.WriteBoolean(false);
-            }
-#pragma warning restore 618
-
             // SQL connector.
 #pragma warning disable 618  // Obsolete
             if (SqlConnectorConfiguration != null)
@@ -537,19 +524,6 @@ namespace Apache.Ignite.Core
             }
 
             writer.WriteBoolean(ClientConnectorConfigurationEnabled);
-
-            // Persistence.
-#pragma warning disable 618  // Obsolete
-            if (PersistentStoreConfiguration != null)
-            {
-                writer.WriteBoolean(true);
-                PersistentStoreConfiguration.Write(writer);
-            }
-            else
-            {
-                writer.WriteBoolean(false);
-            }
-#pragma warning restore 618
 
             // Data storage.
             if (DataStorageConfiguration != null)
@@ -819,13 +793,6 @@ namespace Apache.Ignite.Core
                     break;
             }
 
-            if (r.ReadBoolean())
-            {
-#pragma warning disable 618  // Obsolete
-                MemoryConfiguration = new MemoryConfiguration(r);
-#pragma warning restore 618  // Obsolete
-            }
-
             // SQL.
             if (r.ReadBoolean())
             {
@@ -841,14 +808,6 @@ namespace Apache.Ignite.Core
             }
 
             ClientConnectorConfigurationEnabled = r.ReadBoolean();
-
-            // Persistence.
-            if (r.ReadBoolean())
-            {
-#pragma warning disable 618 // Obsolete
-                PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
-#pragma warning restore 618
-            }
 
             // Data storage.
             if (r.ReadBoolean())
@@ -1417,15 +1376,6 @@ namespace Apache.Ignite.Core
         public IEventStorageSpi EventStorageSpi { get; set; }
 
         /// <summary>
-        /// Gets or sets the page memory configuration.
-        /// <see cref="MemoryConfiguration"/> for more details.
-        /// <para />
-        /// Obsolete, use <see cref="DataStorageConfiguration"/>.
-        /// </summary>
-        [Obsolete("Use DataStorageConfiguration.")]
-        public MemoryConfiguration MemoryConfiguration { get; set; }
-
-        /// <summary>
         /// Gets or sets the data storage configuration.
         /// </summary>
         public DataStorageConfiguration DataStorageConfiguration { get; set; }
@@ -1563,14 +1513,6 @@ namespace Apache.Ignite.Core
             get { return _longQueryWarningTimeout ?? DefaultLongQueryWarningTimeout; }
             set { _longQueryWarningTimeout = value; }
         }
-
-        /// <summary>
-        /// Gets or sets the persistent store configuration.
-        /// <para />
-        /// Obsolete, use <see cref="DataStorageConfiguration"/>.
-        /// </summary>
-        [Obsolete("Use DataStorageConfiguration.")]
-        public PersistentStoreConfiguration PersistentStoreConfiguration { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
