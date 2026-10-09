@@ -761,6 +761,18 @@ Register name: `sql.queries.user`
 |success | long | Number of successfully executed user queries that have been started on this node.
 |===
 
+== SQL Query Tree Corruption
+
+Counter of SQL queries that failed due to B+Tree cursor corruption (AssertionError during B+Tree page iteration).
+
+Register name: `sql.queries.treeCorruption`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|count | long | The number of queries that failed due to B+Tree cursor corruption (AssertionError during iteration).
+|===
+
 == Services
 
 Invocation histograms of a deployed service. The register is created on the nodes where the service instance is deployed, and only if `ServiceConfiguration.setStatisticsEnabled(true)` is set. One histogram is registered per public method of the service interfaces; durations are measured in nanoseconds, the default bounds correspond to 1, 10, 50, 200 and 1000 milliseconds.
