@@ -558,6 +558,7 @@ Register name: `io.dataregion.{data_region_name}`
 |PagesReplaceTime | long | Total pages replace time in nanoseconds since last restart.
 |PagesReplaced | long | Number of pages replaced from last restart.
 |PagesWritten | long | Number of pages written from last restart.
+|PersistenceEnabled | boolean | True if persistence is enabled for the data region, false if the data region is in-memory.
 |PhysicalMemoryPages | long | Number of pages residing in physical RAM.
 |PhysicalMemorySize | long | Total size of pages loaded to the RAM, in bytes.
 |SizeUsedByData | long | Estimated number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account the empty space in non-empty pages.
