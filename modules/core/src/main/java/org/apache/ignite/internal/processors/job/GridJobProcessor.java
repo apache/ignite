@@ -495,8 +495,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
             }
         }
 
-        U.join(activeJobs.values(), log);
-        U.join(cancelledJobs.values(), log);
+        U.join(activeJobs.values(), -1L, log);
+        U.join(cancelledJobs.values(), -1L, log);
 
         // Ignore topology changes.
         ctx.event().removeLocalEventListener(discoLsnr);
