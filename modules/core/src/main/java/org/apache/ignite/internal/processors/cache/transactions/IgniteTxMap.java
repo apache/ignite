@@ -85,13 +85,6 @@ public class IgniteTxMap extends AbstractMap<IgniteTxKey, IgniteTxEntry> impleme
         return this;
     }
 
-    /**
-     * @return Sealed flag.
-     */
-    boolean sealed() {
-        return sealed;
-    }
-
     /** {@inheritDoc} */
     @Override public Set<Entry<IgniteTxKey, IgniteTxEntry>> entrySet() {
         if (entrySet == null) {
