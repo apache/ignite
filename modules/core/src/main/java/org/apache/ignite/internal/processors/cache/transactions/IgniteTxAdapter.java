@@ -645,13 +645,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return log;
     }
 
-    /**
-     * @return True if transaction reflects changes in primary -> backup direction.
-     */
-    public boolean remote() {
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean near() {
         return false;

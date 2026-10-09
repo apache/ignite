@@ -1506,20 +1506,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param reqs Cache requests to start.
-     * @param fut Completable future.
-     */
-    public void registrateProxyRestart(Map<String, DynamicCacheChangeRequest> reqs, GridFutureAdapter<?> fut) {
-        for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values()) {
-            if (reqs.containsKey(proxy.getName()) &&
-                proxy.isRestarting() &&
-                !reqs.get(proxy.getName()).disabledAfterStart()
-            )
-                proxy.registrateFutureRestart(fut);
-        }
-    }
-
-    /**
-     * @param reqs Cache requests to start.
      * @param initVer Init exchange version.
      * @param doneVer Finish excahnge vertison.
      */
@@ -1626,26 +1612,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             new IgnitePredicate<DynamicCacheDescriptor>() {
                 @Override public boolean apply(DynamicCacheDescriptor desc) {
                     return desc.cacheType().userCache();
-                }
-            }
-        );
-    }
-
-    /**
-     * Gets a collection of currently started public cache names.
-     *
-     * @return Collection of currently started public cache names
-     */
-    public Collection<String> publicAndDsCacheNames() {
-        return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            },
-            new IgnitePredicate<DynamicCacheDescriptor>() {
-                @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES;
                 }
             }
         );
@@ -2404,38 +2370,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ctx.dataStructures().restart(proxy.getName(), proxy.internalProxy());
             }
         }
-    }
-
-    /**
-     * Complete stopping of caches if they were marked as restarting but it failed.
-     * @return Cache names of proxies which were restarted.
-     */
-    public List<String> resetRestartingProxies() {
-        List<String> res = new ArrayList<>();
-
-        for (Map.Entry<String, IgniteCacheProxyImpl<?, ?>> e : jCacheProxies.entrySet()) {
-            IgniteCacheProxyImpl<?, ?> proxy = e.getValue();
-
-            if (proxy == null)
-                continue;
-
-            if (proxy.isRestarting()) {
-                String cacheName = e.getKey();
-
-                res.add(cacheName);
-
-                jCacheProxies.remove(cacheName);
-
-                proxy.onRestarted(null, null);
-
-                if (DataStructuresProcessor.isDataStructureCache(cacheName))
-                    ctx.dataStructures().restart(cacheName, null);
-            }
-        }
-
-        cachesInfo.removeRestartingCaches();
-
-        return res;
     }
 
     /**
