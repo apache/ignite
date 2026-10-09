@@ -1537,8 +1537,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             completeMasterKeyChangeFuture(id, err);
         }
-        else if (U.isLocalNodeCoordinator(ctx.discovery()))
-            performMKChangeProc.start(id, masterKeyChangeRequest);
+        else
+            performMKChangeProc.startByCoordinator(id, masterKeyChangeRequest);
     }
 
     /**
