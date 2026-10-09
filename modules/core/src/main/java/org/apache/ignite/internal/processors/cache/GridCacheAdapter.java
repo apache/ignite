@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -124,6 +125,7 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -165,6 +167,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.VERSIONED_TX_LOCK_FEATURE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -3040,10 +3043,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockTxEntries(Collection<CacheEntry<K, V>> entries, long waitTimeout)
-        throws IgniteCheckedException {
-        A.notNull(entries, "entries");
-
+    @Override public Map<CacheEntry<K, V>, Boolean> lockTxEntries(
+        Collection<CacheEntry<K, V>> entries,
+        long waitTimeout
+    ) throws IgniteCheckedException {
         return lockTxEntriesAsync(entries, waitTimeout).get();
     }
 
@@ -3051,11 +3054,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<K, V> entry, long waitTimeout) {
         A.notNull(entry, "entry");
 
-        return lockTxEntriesAsync(Collections.singleton(entry), waitTimeout);
+        return lockTxEntriesAsync(Collections.singleton(entry), waitTimeout).chain(fut -> {
+            try {
+                return fut.get().get(entry);
+            }
+            catch (IgniteCheckedException e) {
+                throw new GridClosureException(e);
+            }
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockTxEntriesAsync(
+    @Override public IgniteInternalFuture<Map<CacheEntry<K, V>, Boolean>> lockTxEntriesAsync(
         Collection<CacheEntry<K, V>> entries,
         long waitTimeout
     ) {
@@ -3071,181 +3081,88 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to acquire transactional lock in optimistic transaction."));
 
-        // Wait for previous per-transaction async operations to finish.
+        if (!ctx.kernalContext().rollingUpgrade().features().isActive(VERSIONED_TX_LOCK_FEATURE))
+            return new GridFinishedFuture<>(new IgniteCheckedException(
+                "Primary-side versioned transactional locks require rolling upgrade to be finalized."));
+
         tx.txState().awaitLastFuture();
 
         if (!tx.init())
             return new GridFinishedFuture<>(new IgniteTxRollbackCheckedException(
                 "Failed to acquire transactional lock because transaction has been completed: " + tx));
 
-        if (entries.isEmpty())
-            return new GridFinishedFuture<>(true);
+        List<CacheEntry<K, V>> inputs = new ArrayList<>(entries);
+        Map<CacheEntry<K, V>, Boolean> results = new HashMap<>();
+        Map<KeyCacheObject, IgniteTxEntry> enlisted = new LinkedHashMap<>();
+        Map<KeyCacheObject, IgniteTxEntry> snapshots = new HashMap<>();
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        for (CacheEntry<K, V> entry : inputs)
+            A.notNull(entry, "entry");
 
         try {
             tx.addActiveCache(ctx, false);
+
+            for (CacheEntry<K, V> entry : inputs) {
+                KeyCacheObject key = ctx.toCacheKeyObject(entry.getKey());
+
+                if (enlisted.containsKey(key)) {
+                    throw new IgniteCheckedException("Failed to acquire transactional lock because " +
+                        "entry is duplicated [key=" + key + ", entry=" + entry + ']');
+                }
+
+                IgniteTxEntry oldEntry = tx.entry(ctx.txKey(key));
+
+                if (oldEntry != null && (oldEntry.op() != READ || oldEntry.locked())) {
+                    results.put(entry, true);
+
+                    continue;
+                }
+
+                if (!(entry.version() instanceof GridCacheVersion)) {
+                    throw new IgniteCheckedException(
+                        "Failed to acquire transactional lock for entry with unsupported version type: " + entry);
+                }
+
+                snapshots.put(key, oldEntry == null ? null : oldEntry.copy());
+
+                GridCacheEntryEx cached = ctx.isColocated()
+                    ? ctx.colocated().entryExx(key, tx.topologyVersion(), true) : entryEx(key);
+                IgniteTxEntry txEntry = tx.addEntry(
+                    READ,
+                    ctx.toCacheObject(entry.getValue()),
+                    null,
+                    null,
+                    cached,
+                    null,
+                    null,
+                    true,
+                    -1L,
+                    -1L,
+                    null,
+                    opCtx != null && opCtx.skipStore(),
+                    opCtx != null && opCtx.skipReadThrough(),
+                    opCtx != null && opCtx.keepBinaryInInterceptor(),
+                    opCtx != null && opCtx.isKeepBinary(),
+                    CU.isNearEnabled(ctx)
+                );
+
+                txEntry.expectedLockVersion((GridCacheVersion)entry.version());
+                txEntry.versionedLockResult(null);
+                enlisted.put(key, txEntry);
+            }
         }
         catch (IgniteCheckedException e) {
+            for (Map.Entry<KeyCacheObject, IgniteTxEntry> entry : enlisted.entrySet())
+                tx.removeFailedLockEntry(entry.getValue(), snapshots.get(entry.getKey()));
+
             return new GridFinishedFuture<>(e);
         }
 
-        Collection<KeyCacheObject> keys = new ArrayList<>(entries.size());
-        List<IgniteTxEntry> txEntries = new ArrayList<>(entries.size());
-        List<GridCacheVersion> expVers = new ArrayList<>(entries.size());
-        Set<IgniteTxKey> txKeys = new HashSet<>(entries.size());
+        if (enlisted.isEmpty())
+            return new GridFinishedFuture<>(results);
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        for (CacheEntry<K, V> entry : entries) {
-            A.notNull(entry, "entry");
-
-            KeyCacheObject key = ctx.toCacheKeyObject(entry.getKey());
-            IgniteTxKey txKey = ctx.txKey(key);
-
-            if (!txKeys.add(txKey))
-                continue;
-
-            IgniteTxEntry lockedTxEntry = tx.entry(txKey);
-
-            if (lockedTxEntry != null && (lockedTxEntry.op() != READ || lockedTxEntry.locked()))
-                continue;
-
-            if (!(entry.version() instanceof GridCacheVersion)) {
-                tx.removeAndUnlockTxEntries(txEntries);
-
-                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to acquire transactional lock for entry with " +
-                    "unsupported version type [entry=" + entry + ", version=" + entry.version() + ']'));
-            }
-
-            CacheObject val = ctx.toCacheObject(entry.getValue());
-            GridCacheEntryEx entryEx = ctx.isColocated() ? ctx.colocated().entryExx(key, tx.topologyVersion(), true) : entryEx(key);
-
-            IgniteTxEntry txEntry = tx.addEntry(
-                READ,
-                val,
-                null,
-                null,
-                entryEx,
-                null,
-                null,
-                true,
-                -1L,
-                -1L,
-                null,
-                opCtx != null && opCtx.skipStore(),
-                opCtx != null && opCtx.skipReadThrough(),
-                opCtx != null && opCtx.keepBinaryInInterceptor(),
-                opCtx != null && opCtx.isKeepBinary(),
-                CU.isNearEnabled(ctx)
-            );
-
-            keys.add(key);
-            txEntries.add(txEntry);
-            expVers.add((GridCacheVersion)entry.version());
-        }
-
-        if (keys.isEmpty())
-            return new GridFinishedFuture<>(true);
-
-        // Acquire transactional lock future from concrete cache implementation. Use txLockAsync which
-        // delegates to cache-specific lockAllAsync implementations for distributed caches.
-        long lockWaitStartTime = U.currentTimeMillis();
-        long timeout = tx.remainingTime();
-        long effectiveWaitTimeout = CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
-        long lockWaitEndTime = effectiveWaitTimeout > 0
-            ? lockWaitStartTime + effectiveWaitTimeout
-            : effectiveWaitTimeout < 0 ? lockWaitStartTime : 0L;
-
-        IgniteInternalFuture<Boolean> lockFut = txLockAsync(keys,
-            timeout,
-            waitTimeout,
-            tx,
-            /*isRead*/true,
-            /*retval*/false,
-            tx.isolation(),
-            /*invalidate*/false,
-            /*createTtl*/0L,
-            /*accessTtl*/0L);
-
-        IgniteInternalFuture<Boolean> res = new GridEmbeddedFuture<>(
-            lockFut,
-            (locked, ex) -> {
-                if (ex != null)
-                    return new GridFinishedFuture<>(ex);
-
-                if (!locked) {
-                    tx.removeAndUnlockTxEntries(txEntries);
-
-                    return new GridFinishedFuture<>(false);
-                }
-
-                try {
-                    for (int i = 0; i < txEntries.size(); i++) {
-                        IgniteTxEntry txEntry = txEntries.get(i);
-                        EntryGetResult getRes;
-                        int retryCnt = 0;
-
-                        while (true) {
-                            try {
-                                GridCacheEntryEx cached = txEntry.cached();
-
-                                getRes = cached.innerGetVersioned(
-                                    null,
-                                    tx,
-                                    /*update-metrics*/false,
-                                    /*event*/false,
-                                    null,
-                                    tx.resolveTaskName(),
-                                    null,
-                                    false,
-                                    null);
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignored) {
-                                // NOWAIT still permits one immediate retry because renewing an obsolete entry does not
-                                // wait for a lock. Other modes stop when their effective timeout expires.
-                                boolean allowNowaitRetry = waitTimeout < 0 && retryCnt == 0;
-
-                                if (!allowNowaitRetry && lockWaitEndTime != 0
-                                    && U.currentTimeMillis() >= lockWaitEndTime) {
-                                    getRes = null;
-
-                                    break;
-                                }
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Got removed exception in lockTxEntries postLock (will retry): "
-                                        + txEntry.cached());
-
-                                KeyCacheObject key = txEntry.key();
-                                GridCacheEntryEx cached = ctx.isColocated()
-                                    ? ctx.colocated().entryExx(key, tx.topologyVersion(), true)
-                                    : entryEx(key, tx.topologyVersion());
-
-                                txEntry.cached(cached);
-                                retryCnt++;
-                            }
-                        }
-
-                        if (getRes == null || !expVers.get(i).equals(getRes.version())) {
-                            tx.removeAndUnlockTxEntries(txEntries);
-
-                            return new GridFinishedFuture<>(false);
-                        }
-                    }
-
-                    return new GridFinishedFuture<>(true);
-                }
-                catch (IgniteCheckedException e) {
-                    tx.removeAndUnlockTxEntries(txEntries);
-
-                    return new GridFinishedFuture<>(e);
-                }
-            }
-        );
-
-        // Register this future in transaction's async-holder so that subsequent operations
-        // that call tx.txState().awaitLastFuture() will wait for it.
+        GridFutureAdapter<Map<CacheEntry<K, V>, Boolean>> res = new GridFutureAdapter<>();
         GridCacheAdapter.FutureHolder holder = tx.txState().lastAsyncFuture();
 
         if (holder != null) {
@@ -3258,6 +3175,57 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 holder.unlock();
             }
         }
+
+        // Keep the existing distributed mapping and lock order: one request per consecutive primary group,
+        // rather than one request per entry. Individual outcomes travel in the primary's batch response.
+        IgniteInternalFuture<Boolean> lockFut = txLockAsync(
+            enlisted.keySet(),
+            tx.remainingTime(),
+            waitTimeout,
+            tx,
+            true,
+            false,
+            tx.isolation(),
+            false,
+            0L,
+            0L
+        );
+
+        lockFut.listen(fut -> {
+            try {
+                boolean completed = fut.get();
+
+                if (tx.remainingTime() == -1)
+                    throw tx.timeoutException();
+
+                if (tx.isRollbackOnly())
+                    throw tx.rollbackException();
+
+                for (CacheEntry<K, V> entry : inputs) {
+                    if (!results.containsKey(entry)) {
+                        IgniteTxEntry txEntry = enlisted.get(ctx.toCacheKeyObject(entry.getKey()));
+
+                        assert !completed || txEntry.versionedLockResult() != null;
+
+                        results.put(entry, completed && Boolean.TRUE.equals(txEntry.versionedLockResult()));
+                    }
+                }
+
+                for (Map.Entry<KeyCacheObject, IgniteTxEntry> entry : enlisted.entrySet()) {
+                    IgniteTxEntry txEntry = entry.getValue();
+
+                    if (completed && Boolean.TRUE.equals(txEntry.versionedLockResult()))
+                        txEntry.markLocked();
+                    else
+                        tx.removeFailedLockEntry(txEntry, snapshots.get(entry.getKey()));
+                }
+
+                res.onDone(results);
+            }
+            catch (IgniteCheckedException | RuntimeException e) {
+                res.onDone(e);
+            }
+        });
 
         return res;
     }

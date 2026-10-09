@@ -216,6 +216,37 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
     @Order(12)
     GridCacheVersion serReadVer;
 
+    /** Expected data version for a conditional pessimistic lock; sent in the lock request, not in prepare. */
+    private GridCacheVersion expectedLockVer;
+
+    /** Per-key outcome of the current conditional lock request; not part of prepare messages. */
+    private Boolean versionedLockRes;
+
+    /** @return Per-key conditional lock outcome, or {@code null} if not completed. */
+    @Nullable public Boolean versionedLockResult() {
+        return versionedLockRes;
+    }
+
+    /** @param res Per-key conditional lock outcome. */
+    public void versionedLockResult(@Nullable Boolean res) {
+        versionedLockRes = res;
+    }
+
+    /** @return Whether the current operation still needs a conditional lock for this entry. */
+    public boolean versionedLockPending() {
+        return expectedLockVer != null && versionedLockRes == null;
+    }
+
+    /** @return Expected data version, or {@code null} for an unconditional lock. */
+    @Nullable public GridCacheVersion expectedLockVersion() {
+        return expectedLockVer;
+    }
+
+    /** @param ver Expected data version, or {@code null} for an unconditional lock. */
+    public void expectedLockVersion(@Nullable GridCacheVersion ver) {
+        expectedLockVer = ver;
+    }
+
     /**
      * Empty constructor.
      */
@@ -423,6 +454,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         cp.flags = flags;
         cp.partUpdateCntr = partUpdateCntr;
         cp.serReadVer = serReadVer;
+        cp.expectedLockVer = expectedLockVer;
+        cp.versionedLockRes = versionedLockRes;
 
         return cp;
     }
@@ -468,6 +501,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, MarshallableMessage, 
         flags = snapshot.flags;
         partUpdateCntr = snapshot.partUpdateCntr;
         serReadVer = snapshot.serReadVer;
+        expectedLockVer = snapshot.expectedLockVer;
+        versionedLockRes = snapshot.versionedLockRes;
     }
 
     /**
