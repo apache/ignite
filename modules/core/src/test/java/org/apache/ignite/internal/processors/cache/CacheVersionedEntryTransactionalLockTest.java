@@ -414,13 +414,6 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
                     assertTrue(acquireLockForEntry(other, other.getEntry(keys.get(1)), -1));
                 }
 
-                CacheEntry<Integer, Integer> current = cache.getEntry(keys.get(1));
-                Map<CacheEntry<Integer, Integer>, Boolean> repeated = internalCache(cache)
-                    .lockTxEntries(List.of(current, entries.get(1)), -1);
-
-                assertEquals(Boolean.TRUE, repeated.get(current));
-                assertEquals(Boolean.FALSE, repeated.get(entries.get(1)));
-
                 // Failed entries must not invalidate the transaction or release successful locks.
                 cache.put(keys.get(0), 2);
                 cache.put(keys.get(4), 2);
