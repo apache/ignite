@@ -150,7 +150,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(BinaryUtils.reader(bctx, inMem.input(), null, true));
+                processPrepareResult(BinaryUtils.reader(bctx, inMem.input(), true));
             }
         }
     }

@@ -56,12 +56,9 @@ public class BinariesFactoryImpl implements BinariesFactory {
     @Override public BinaryReaderEx reader(
         BinaryContext ctx,
         BinaryInputStream in,
-        ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds,
-        boolean skipHdrCheck,
-        boolean forUnmarshal
+        ClassLoader ldr
     ) {
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+        return new BinaryReaderExImpl(ctx, in, ldr, null, true, true);
     }
 
     /** {@inheritDoc} */

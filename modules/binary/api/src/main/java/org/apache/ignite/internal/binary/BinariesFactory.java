@@ -62,16 +62,8 @@ public interface BinariesFactory {
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
-     * @param hnds Context.
-     * @param skipHdrCheck Whether to skip header check.
-     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
-    public BinaryReaderEx reader(BinaryContext ctx,
-                                 BinaryInputStream in,
-                                 ClassLoader ldr,
-                                 @Nullable BinaryReaderHandles hnds,
-                                 boolean skipHdrCheck,
-                                 boolean forUnmarshal);
+    public BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr);
 
     /**
      * Unmarshals object from the input stream without deserialization of user types.

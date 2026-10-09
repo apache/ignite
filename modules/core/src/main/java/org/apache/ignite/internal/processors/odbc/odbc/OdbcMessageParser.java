@@ -83,7 +83,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
         BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
-        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), stream, ctx.config().getClassLoader(), true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), stream, true);
 
         byte cmd = reader.readByte();
 

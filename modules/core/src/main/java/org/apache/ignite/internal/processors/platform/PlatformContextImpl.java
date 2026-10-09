@@ -179,11 +179,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public BinaryReaderEx reader(PlatformInputStream in) {
-        return BinaryUtils.reader(bctx,
-            in,
-            ctx.config().getClassLoader(),
-            true,
-            true);
+        return BinaryUtils.readerForContext(bctx, in);
     }
 
     /** {@inheritDoc} */
