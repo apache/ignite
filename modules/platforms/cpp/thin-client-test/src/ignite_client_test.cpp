@@ -73,6 +73,30 @@ public:
         BOOST_CHECK_EQUAL(GetActiveConnections(), expect);
     }
     /**
+     * Get the number of threads once it stops changing: a joined thread is still listed in the process for a while.
+     *
+     * @return Number of threads.
+     */
+    static int32_t GetSettledThreadsCount()
+    {
+        int32_t cnt = ignite::common::concurrent::GetThreadsCount();
+
+        for (int i = 0; i < 25; ++i)
+        {
+            boost::this_thread::sleep_for(boost::chrono::milliseconds(200));
+
+            int32_t cnt0 = ignite::common::concurrent::GetThreadsCount();
+
+            if (cnt0 == cnt)
+                break;
+
+            cnt = cnt0;
+        }
+
+        return cnt;
+    }
+
+    /**
      * Check that client started with specified size of user thread pool started exactly the specified number of threads
      * in thread pool.
      *
@@ -85,7 +109,7 @@ public:
         server.PushHandshakeResponse(true);
         server.Start();
 
-        int32_t threadsBefore = ignite::common::concurrent::GetThreadsCount();
+        int32_t threadsBefore = GetSettledThreadsCount();
         int32_t netThreads = 1;
 
 #ifdef _WIN32
@@ -103,7 +127,7 @@ public:
             BOOST_CHECK_EQUAL(threadsExpected, threadsActual);
         }
 
-        int32_t threadsAfter = ignite::common::concurrent::GetThreadsCount();
+        int32_t threadsAfter = GetSettledThreadsCount();
 
         BOOST_CHECK_EQUAL(threadsBefore, threadsAfter);
         BOOST_CHECK_EQUAL(num, cfg.GetUserThreadPoolSize());
