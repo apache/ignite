@@ -4954,8 +4954,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                                 t
                                             );
 
-                                            if (!cctx.kernalContext().isStopping())
-                                                cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
+                                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
 
                                             throw t;
                                         }

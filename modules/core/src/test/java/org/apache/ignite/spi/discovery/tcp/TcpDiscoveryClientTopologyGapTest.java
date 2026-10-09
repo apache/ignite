@@ -41,7 +41,7 @@ public class TcpDiscoveryClientTopologyGapTest extends GridCommonAbstractTest {
     private static final int CLIENTS = 4;
 
     /** */
-    private static final int ITERS = GridTestUtils.SF.apply(200);
+    private static final int ITERS = 300;
 
     /** Critical failures captured on nodes, by instance name. */
     private static final Map<String, Throwable> failures = new ConcurrentHashMap<>();
