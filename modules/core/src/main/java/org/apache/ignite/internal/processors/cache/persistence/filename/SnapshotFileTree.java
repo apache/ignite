@@ -332,6 +332,7 @@ public class SnapshotFileTree extends NodeFileTree {
     public static File root(SharedFileTree ft, String name, @Nullable String path) {
         assert name != null : "Snapshot name cannot be empty or null.";
 
+        // TODO: use the default snapshots directory for relative {@code path} https://issues.apache.org/jira/browse/IGNITE-29126
         return path == null ? new File(ft.snapshotsRoot(), name) : new File(path, name);
     }
 
@@ -373,6 +374,8 @@ public class SnapshotFileTree extends NodeFileTree {
     }
 
     /**
+     * TODO: support the extra storages for incremental snapshots https://issues.apache.org/jira/browse/IGNITE-29128
+     *
      * Modifies {@link #extraStorages} for this tree to reflect snapshot options.
      * In case {@link IgniteConfiguration#getSnapshotPath()} points to absolute directory or {@link #path} for snapshot provided
      * then all snapshot files must be stored inside one folder.
