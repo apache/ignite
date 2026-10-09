@@ -236,19 +236,21 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * Marks all candidates added for given key as owned.
      *
      * @param key Key.
+     * @return {@code True} if candidate owned, {@code false} otherwise.
      */
-    public void markOwned(IgniteTxKey key) {
+    public boolean markOwned(IgniteTxKey key) {
         lock();
 
         try {
             Deque<GridCacheMvccCandidate> deque = cands.get(key);
 
-            // Candidates may have been already removed from the span if the lock future was cancelled on node stop or client disconnect.
             if (deque == null)
-                return;
+                return false;
 
             for (GridCacheMvccCandidate cand : deque)
                 cand.setOwner();
+
+            return true;
         }
         finally {
             unlock();
