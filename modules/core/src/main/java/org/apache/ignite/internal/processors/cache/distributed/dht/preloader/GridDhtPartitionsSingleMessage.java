@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Information about partitions of a single node. Sent in response to {@link GridDhtPartitionsSingleRequest} and during
  * processing partitions exchange future. <br>
- * Has to be completelly restored after receiving from another node.
+ * Has to be completely restored after receiving from another node.
  *
  * @see #afterReceive()
  */
