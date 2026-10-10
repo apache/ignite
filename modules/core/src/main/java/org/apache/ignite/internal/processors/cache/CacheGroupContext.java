@@ -980,7 +980,7 @@ public class CacheGroupContext {
      * @return {@code True} if {@link DataRecord} should be loged in the WAL.
      */
     public boolean logDataRecords() {
-        return walEnabled() && (persistenceEnabled || cdcEnabled());
+        return walEnabled() && (persistenceEnabled || (cdcEnabled() && !wal().cdcForceDisabled()));
     }
 
     /** @return {@code True} if CDC enabled. */

@@ -51,6 +51,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.CDC_DISABLED;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
@@ -154,11 +155,13 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                 caches.add(cache);
             }
 
-            if (log.isInfoEnabled())
-                log.info("CDC cache data resend started [caches=" + String.join(", ", arg.caches()) + ']');
-
             wal = ignite.context().cache().context().wal(true);
             exchange = ignite.context().cache().context().exchange();
+
+            ensureCdcEnabled();
+
+            if (log.isInfoEnabled())
+                log.info("CDC cache data resend started [caches=" + String.join(", ", arg.caches()) + ']');
 
             try {
                 Iterator<IgniteInternalCache<?, ?>> iter = caches.iterator();
@@ -198,6 +201,7 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
                     break;
 
                 ensureTopologyNotChanged();
+                ensureCdcEnabled();
 
                 KeyCacheObject key = row.key();
 
@@ -255,6 +259,12 @@ public class CdcCacheDataResendTask extends VisorMultiNodeTask<CdcResendCommandA
 
                 lastFut = fut;
             }
+        }
+
+        /** */
+        private void ensureCdcEnabled() {
+            if (wal.cdcForceDisabled())
+                throw new IgniteException("CDC is disabled by the '" + CDC_DISABLED + "' distributed property.");
         }
     }
 }
