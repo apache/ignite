@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.GridArraysSelfTest;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
 import org.apache.ignite.internal.util.GridCountDownCallbackTest;
 import org.apache.ignite.internal.util.HostAndPortRangeTest;
+import org.apache.ignite.internal.util.IgniteClockTimerTest;
 import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
@@ -86,6 +87,7 @@ import org.junit.runners.Suite;
     IgniteThreadPoolSizeTest.class,
     IgniteUtilsSelfTest.class,
     IgniteUtilsUnitTest.class,
+    IgniteClockTimerTest.class,
     IgniteVersionUtilsSelfTest.class,
     GridSpinReadWriteLockSelfTest.class,
     GridQueueSelfTest.class,

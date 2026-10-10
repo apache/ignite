@@ -164,6 +164,12 @@ public abstract class CommonUtils {
     /** Grid counter. */
     static int gridCnt;
 
+    /**
+     * If {@code true}, {@link #curTimeMillis} is updated by an external clock (e.g. by tests),
+     * so the internal clock timer is never started.
+     */
+    static boolean extClock;
+
     /** Indicates whether current OS is some version of Windows. */
     private static boolean win;
 
@@ -593,14 +599,14 @@ public abstract class CommonUtils {
     }
 
     /**
-     * Starts clock timer if grid is first.
+     * Starts clock timer if grid is first and clock is not updated externally.
      *
      * @param igniteInstanceName Ignite instance name.
      */
     @SuppressWarnings({"BusyWait"})
     public static void onGridStart(String igniteInstanceName) {
         synchronized (mux) {
-            if (gridCnt == 0) {
+            if (gridCnt == 0 && !extClock) {
                 assert timer == null;
 
                 timer = new IgniteThread(igniteInstanceName, "ignite-clock", () -> {
@@ -639,15 +645,42 @@ public abstract class CommonUtils {
 
             --gridCnt;
 
-            Thread timer0 = timer;
+            if (gridCnt == 0)
+                stopClockTimer();
+        }
+    }
 
-            if (gridCnt == 0 && timer0 != null) {
-                timer = null;
+    /**
+     * Switches to the external clock: stops the internal clock timer if it is running
+     * and prevents it from being started on subsequent grid starts.
+     * After this call {@link #curTimeMillis} must be updated by the caller.
+     *
+     * @throws InterruptedException If interrupted while waiting for the clock timer to stop.
+     */
+    static void useExternalClock() throws InterruptedException {
+        synchronized (mux) {
+            extClock = true;
 
-                timer0.interrupt();
+            stopClockTimer();
+        }
+    }
 
-                timer0.join();
-            }
+    /**
+     * Stops clock timer if it is running. Must be called under {@link #mux}.
+     *
+     * @throws InterruptedException If interrupted.
+     */
+    private static void stopClockTimer() throws InterruptedException {
+        assert Thread.holdsLock(mux);
+
+        Thread timer0 = timer;
+
+        if (timer0 != null) {
+            timer = null;
+
+            timer0.interrupt();
+
+            timer0.join();
         }
     }
 
