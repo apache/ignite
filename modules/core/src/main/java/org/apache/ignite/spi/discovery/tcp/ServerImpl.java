@@ -6745,6 +6745,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             " [rmtAddr=" + rmtAddr + ", errMsg=" + unsupportedVerEx.getMessage() + ']', e);
                     }
                     else if (e.hasCause(SocketTimeoutException.class)) {
+                        spi.stats.onSocketReadTimeout();
+
                         LT.warn(log, "Socket operation timed out on handshake " +
                             "(consider increasing 'networkTimeout' configuration property) " +
                             "[netTimeout=" + spi.netTimeout + ']');

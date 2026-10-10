@@ -76,6 +76,12 @@ public class TcpDiscoveryStatistics {
     /** Metric that indicates connections count that were rejected due to SSL errors. */
     private final IntMetricImpl rejectedSslConnectionsCnt;
 
+    /** Metric that indicates socket read timeouts count. */
+    private final IntMetricImpl sockReadTimeoutsCnt;
+
+    /** Metric that indicates socket write timeouts count. */
+    private final IntMetricImpl sockWriteTimeoutsCnt;
+
     /** */
     public TcpDiscoveryStatistics() {
         joinedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedNodes"), "Joined nodes count");
@@ -90,6 +96,16 @@ public class TcpDiscoveryStatistics {
         rejectedSslConnectionsCnt = new IntMetricImpl(
             metricName(DISCO_METRICS, "RejectedSslConnectionsCount"),
             "TCP discovery connections count that were rejected due to SSL errors."
+        );
+
+        sockReadTimeoutsCnt = new IntMetricImpl(
+            metricName(DISCO_METRICS, "SocketReadTimeoutsCount"),
+            "TCP discovery socket read operations count that timed out"
+        );
+
+        sockWriteTimeoutsCnt = new IntMetricImpl(
+            metricName(DISCO_METRICS, "SocketWriteTimeoutsCount"),
+            "TCP discovery socket write operations count that timed out"
         );
     }
 
@@ -106,6 +122,8 @@ public class TcpDiscoveryStatistics {
         discoReg.register(leftNodesCnt);
         discoReg.register(pendingMsgsRegistered);
         discoReg.register(rejectedSslConnectionsCnt);
+        discoReg.register(sockReadTimeoutsCnt);
+        discoReg.register(sockWriteTimeoutsCnt);
     }
 
     /**
@@ -139,6 +157,16 @@ public class TcpDiscoveryStatistics {
     /** Increments connections count that were rejected due to SSL errors. */
     public void onSslConnectionRejected() {
         rejectedSslConnectionsCnt.increment();
+    }
+
+    /** Increments socket read timeouts count. */
+    public void onSocketReadTimeout() {
+        sockReadTimeoutsCnt.increment();
+    }
+
+    /** Increments socket write timeouts count. */
+    public void onSocketWriteTimeout() {
+        sockWriteTimeoutsCnt.increment();
     }
 
     /**
@@ -334,6 +362,8 @@ public class TcpDiscoveryStatistics {
         rcvdMsgs.clear();
         sentMsgs.clear();
         rejectedSslConnectionsCnt.reset();
+        sockReadTimeoutsCnt.reset();
+        sockWriteTimeoutsCnt.reset();
     }
 
     /** {@inheritDoc} */

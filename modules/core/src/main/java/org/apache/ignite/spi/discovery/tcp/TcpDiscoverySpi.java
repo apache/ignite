@@ -1790,11 +1790,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ses.readMessage(timeout);
         }
         catch (IOException | IgniteCheckedException e) {
-            if (X.hasCause(e, SocketTimeoutException.class))
+            if (X.hasCause(e, SocketTimeoutException.class)) {
+                stats.onSocketReadTimeout();
+
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
                     "long GC pauses on remote node) [curTimeout=" + timeout +
                     ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
                     ", rmtPort=" + ses.socket().getPort() + ']');
+            }
 
             StreamCorruptedException streamCorruptedCause = X.cause(e, StreamCorruptedException.class);
 
@@ -1878,6 +1881,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ses.read(timeout);
         }
         catch (SocketTimeoutException e) {
+            stats.onSocketReadTimeout();
+
             LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
                 "configuration property). Will retry to send message with increased timeout " +
@@ -2498,6 +2503,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (done.compareAndSet(false, true)) {
                 // Close session - timeout occurred.
                 ses.close();
+
+                stats.onSocketWriteTimeout();
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
