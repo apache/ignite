@@ -601,7 +601,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /**
      * Test snapshot list operation when a node can't read some snapshot part due to insufficient permissions.
-     * I.e. a test node is able to read snapshot meta but can't read some the snapshot's data.
+     * I.e. a test node is able to read snapshot meta but can't read some of the snapshot's data.
      */
     @Test
     public void testDeniedPermissions() throws Exception {
@@ -908,7 +908,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         CountDownLatch snpLstBeginLatch = new CountDownLatch(grids);
         CountDownLatch snpLstProceedLatch = new CountDownLatch(1);
 
-        // Delays snapshot creation after its metadata is written.
+        // Delays snapshot reading.
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
                 return "TestSnpMgrProvider";

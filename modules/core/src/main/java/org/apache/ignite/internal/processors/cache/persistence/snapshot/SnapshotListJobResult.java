@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-/** Per-node result of the snapshot list command. Contains information of the snapshots found on current node. */
+/** Per-node result of the snapshot list command. Contains information of the snapshots found on the current node. */
 public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

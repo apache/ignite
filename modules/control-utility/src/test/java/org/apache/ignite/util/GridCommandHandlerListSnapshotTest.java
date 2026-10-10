@@ -56,7 +56,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** Flag to use {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
     private boolean extStorages;
 
-    /** Resolved external storages paths. {@code null} if {@code extStorages} is {@code null}. */
+    /** Resolved external storages paths. {@code null} if {@code extStorages} is {@code false}. */
     private @Nullable String[] extStoragePaths;
 
     /** Consistent id postfix. */
@@ -331,7 +331,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     private static int countEntries(String txt, String entry) {
         String prev = txt;
 
-        txt = txt.replaceAll(entry, "");
+        txt = txt.replace(entry, "");
 
         return (prev.length() - txt.length()) / entry.length();
     }
