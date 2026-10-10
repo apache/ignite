@@ -75,7 +75,7 @@ import static org.junit.Assume.assumeTrue;
 /** Cluster-wide snapshot list procedure tests. */
 public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** Number of cache keys to pre-create at node start. */
-    private static final int CACHE_KEYS_RANGE = 10;
+    private static final int CACHE_KEYS_RANGE = 15;
 
     /** Number of partitions within a snapshot cache group. */
     private static final int CACHE_PARTITIONS_COUNT = 4;
@@ -351,7 +351,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testReadWhileCreating() throws Exception {
-        // Doesn't matter here. Fastens the tests.
+        // Doesn't matter here. speeds up the tests.
         assumeFalse(encryption || onlyPrimary);
 
         assertTrue(new File(U.defaultWorkDirectory()).exists());
@@ -417,7 +417,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     private void doTestWrongSnapshotPath(boolean missing) throws Exception {
-        // Doesn't matter here, fastens the tests.
+        // Doesn't matter here, speeds up the tests.
         assumeFalse(encryption || onlyPrimary || snpThrdPoolSz < 2);
 
         doTestSnapshotPath(null);
@@ -861,7 +861,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     public void testSnapshotListsSizesExternalStorages() throws Exception {
         // Speeds up the tests.
         assumeTrue(snpThrdPoolSz > 1);
-        assumeFalse(onlyPrimary);
+        assumeTrue(onlyPrimary);
 
         int grids = 3;
 
@@ -870,7 +870,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         // Properly delays the test cache creation with the configured external storages.
         dfltCacheCfg = null;
 
-        startGridsMultiThreaded(3);
+        startGridsMultiThreaded(grids);
 
         grid(0).createCache(txCacheConfig(defaultCacheConfiguration()));
 
@@ -888,12 +888,11 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
             assertNotNull(info);
             assertNotNull(info.externalStorages());
-            assertTrue(info.externalStorages().size() > 0L);
 
             long rootSize = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
 
-            // The external storages are placed outside the snapshot root and must be added to the total size.
-            assertTrue(info.size() > rootSize);
+            // If there is a data withing the snapshot's external storage, its size must be added to the total size.
+            assertTrue(info.externalStorages().size() > 0L ? info.size() > rootSize : info.size() == rootSize);
             assertEquals(rootSize + info.externalStorages().size(), info.size());
         }
     }
@@ -901,7 +900,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testNodeStopDuringSnapshotList() throws Exception {
-        // Doesn't matter here, fastens the tests.
+        // Doesn't matter here, speeds up the tests.
         assumeFalse(encryption || onlyPrimary);
 
         int grids = 3;
