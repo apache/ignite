@@ -39,8 +39,10 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageUpdateResult;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -90,7 +92,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
-    private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
+    private final PageHandler<T, Boolean> updateSinglePageRow = new UpdateSinglePageRowHandler();
 
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -104,7 +106,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /**
      *
      */
-    private final class UpdateRowHandler extends PageHandler<T, Boolean> {
+    private final class UpdateSinglePageRowHandler extends PageHandler<T, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean run(
             int cacheId,
@@ -115,37 +117,59 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean walPlc,
             T row,
             int itemId,
-            IoStatisticsHolder statHolder)
-            throws IgniteCheckedException {
+            IoStatisticsHolder statHolder
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = row.size();
 
-            boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
+            boolean updated = io.updateRow(pageAddr, itemId, pageSize(), row, rowSize);
 
             evictionTracker.touchPage(pageId);
 
-            if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
-                // TODO This record must contain only a reference to a logical WAL record with the actual data.
-                byte[] payload = new byte[rowSize];
-
-                DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
-
-                assert data.payloadSize() == rowSize;
-
-                PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
-
+            if (updated) {
                 statHolder.trackPageRemoveData(rowSize);
                 statHolder.trackPageInsertData(rowSize);
 
-                wal.log(new DataPageUpdateRecord(
-                    cacheId,
-                    pageId,
-                    itemId,
-                    payload));
+                if (needWalDeltaRecord(pageId, page, walPlc)) {
+                    // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
+                    byte[] payload = new byte[rowSize];
+
+                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
+
+                    assert data.payloadSize() == rowSize;
+
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+
+                    wal.log(new DataPageUpdateRecord(
+                        cacheId,
+                        pageId,
+                        itemId,
+                        payload));
+                }
             }
 
             return updated;
+        }
+    }
+
+    /** Current state (for last processed page) of partially written row. */
+    private final class PartiallyWritten {
+        /** */
+        private final T row;
+
+        /** */
+        private long nextLink;
+
+        /** */
+        private int written;
+
+        /** */
+        private boolean modified;
+
+        /** */
+        public PartiallyWritten(T row) {
+            this.row = row;
         }
     }
 
@@ -208,6 +232,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             // If the full row does not fit into this page write only a fragment.
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRowFull(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
+
+            // A non-head fragment (the row is not complete after the fragment write) always occupies the whole
+            // initially empty page (see takePage), so a page can be shared between rows only as a head fragment page.
+            // Deadlock freedom of the fragmented row lock coupling (see updateFragmentedRow) relies on this.
+            assert written == rowSize || io.getDirectCount(pageAddr) == 1 :
+                "Non-head fragment is written to a shared page [pageId=" + U.hexLong(pageId) +
+                    ", items=" + io.getDirectCount(pageAddr) + ']';
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
@@ -760,19 +791,46 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, T row,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public boolean updateDataRow(
+        T oldRow,
+        T newRow,
+        boolean allowFragmented,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException {
+        long link = oldRow.link();
+        int size = newRow.size();
+
         assert link != 0;
+        assert oldRow.size() == size :
+            "Unexpected row size on update [oldSize=" + oldRow.size() + ", newSize=" + size + ']';
 
         try {
             long pageId = PageIdUtils.pageId(link);
             int itemId = PageIdUtils.itemId(link);
 
-            Boolean updated = write(pageId, updateRow, row, itemId, null, statHolder);
+            if (!allowFragmented || size <= pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD) {
+                Boolean updated = write(pageId, updateSinglePageRow, newRow, itemId, null, statHolder);
 
-            assert updated != null; // Can't fail here.
+                assert updated != null; // Can't fail here.
 
-            return updated;
+                if (updated || !allowFragmented)
+                    return updated;
+
+                // Fallback if row is fragmented and allow fragmented.
+            }
+
+            PartiallyWritten updateRes = updateFragmentedRow(link, newRow, statHolder);
+
+            statHolder.trackPageRemoveData(size);
+            statHolder.trackPageInsertData(size);
+
+            assert updateRes.written == size :
+                "Unexpected written row size [written=" + updateRes.written + ", rowSize=" + size + ']';
+
+            assert updateRes.nextLink == 0 :
+                "Unexpected next page link [nextLink=" + Long.toHexString(updateRes.nextLink) + ']';
+
+            return true;
         }
         catch (AssertionError e) {
             throw corruptedFreeListException(e);
@@ -782,6 +840,163 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to update data row", t, grpId);
+        }
+    }
+
+    /**
+     * Updates fragmented row in-place.
+     * <p>
+     * Fragments are updated in the order of fragment links (from the head fragment to the tail one) using lock
+     * coupling: the write lock on the next fragment page is acquired before the write lock on the current fragment
+     * page is released. Readers of fragmented rows traverse fragments in the same order with the same lock coupling
+     * (see {@code CacheDataRowAdapter#doInitFromLink}), so a concurrent update can neither overtake a reader in the
+     * middle of the row nor be overtaken by it, and every reader observes either the entirely old or the entirely new
+     * row.
+     * <p>
+     * Lock coupling is deadlock-free: a page can be shared between rows only as a head fragment page, since non-head
+     * fragments always occupy the whole page (see {@link #takePage}, {@code WriteRowHandler#addRow}), and the head
+     * page is never requested while a lock on another page of the same or another row is held.
+     *
+     * @param link Row link.
+     * @param row Row with the new data.
+     * @param statHolder Statistics holder.
+     * @return Final state of the update.
+     * @throws IgniteCheckedException If failed.
+     */
+    private PartiallyWritten updateFragmentedRow(
+        long link, T row,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException {
+        PartiallyWritten state = new PartiallyWritten(row);
+
+        int size = row.size();
+
+        long pageId = PageIdUtils.pageId(link);
+        int itemId = PageIdUtils.itemId(link);
+        long page = 0L;
+        long pageAddr = 0L;
+        boolean dirty = false;
+
+        try {
+            page = acquirePage(pageId, statHolder);
+            pageAddr = lockFragmentPage(pageId, page, link);
+
+            while (true) {
+                updateFragmentPage(pageId, page, pageAddr, pageIoRslvr.resolve(pageAddr), state, itemId);
+
+                dirty = state.modified;
+
+                assert PageIO.getCrc(pageAddr) == 0; // See PageHandler#writePage.
+
+                if (state.written >= size)
+                    return state;
+
+                assert state.nextLink != 0L : "Unexpected end of the fragmented row [link=" + U.hexLong(link) +
+                    ", written=" + state.written + ", rowSize=" + size + ']';
+
+                long nextPageId = PageIdUtils.pageId(state.nextLink);
+                int nextItemId = PageIdUtils.itemId(state.nextLink);
+
+                // Lock coupling: acquire the write lock on the next fragment page before releasing the current one.
+                long nextPage = acquirePage(nextPageId, statHolder);
+                long nextPageAddr;
+
+                try {
+                    nextPageAddr = lockFragmentPage(nextPageId, nextPage, state.nextLink);
+                }
+                catch (Throwable t) {
+                    releasePage(nextPageId, nextPage);
+
+                    throw t;
+                }
+
+                try {
+                    writeUnlock(pageId, page, pageAddr, null, dirty);
+                    releasePage(pageId, page);
+                }
+                finally {
+                    pageId = nextPageId;
+                    itemId = nextItemId;
+                    page = nextPage;
+                    pageAddr = nextPageAddr;
+                    dirty = false;
+                }
+            }
+        }
+        finally {
+            if (pageAddr != 0L)
+                writeUnlock(pageId, page, pageAddr, null, dirty);
+
+            if (page != 0L)
+                releasePage(pageId, page);
+        }
+    }
+
+    /**
+     * Acquires the write lock on the fragment page of the live (referenced from the data tree) row.
+     *
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param link Fragment link (for diagnostics).
+     * @return Page address.
+     */
+    private long lockFragmentPage(long pageId, long page, long link) {
+        long pageAddr = writeLock(pageId, page);
+
+        // Pages of the live row can't be recycled, so the lock can't fail here.
+        assert pageAddr != 0L : "Failed to lock fragment page of the live row [link=" + U.hexLong(link) +
+            ", tag=" + PageIdUtils.tag(pageId) + ']';
+
+        return pageAddr;
+    }
+
+    /**
+     * Updates locked fragment page of the row.
+     *
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param pageAddr Page address.
+     * @param iox Page IO
+     * @param fragment Partially written fragment state.
+     * @param itemId Item ID.
+     */
+    private void updateFragmentPage(
+        long pageId,
+        long page,
+        long pageAddr,
+        PageIO iox,
+        PartiallyWritten fragment,
+        int itemId
+    ) throws IgniteCheckedException {
+        AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
+
+        boolean walEnabled = wal != null && !wal.pageRecordsDisabled(grpId, pageId);
+        // Never need payload for in-memory. For persistence need payload if wal is enabled and need to compare
+        // page to mark it dirty if it's not dirty yet even if wal is disabled.
+        boolean needPayload = pageMem instanceof PageMemoryEx && (walEnabled || !pageMem.isDirty(grpId, pageId, page));
+
+        DataPageUpdateResult updateRes = io.updateRowFragment(pageMem, pageAddr, itemId, pageSize(),
+            fragment.row, fragment.written, needPayload);
+
+        evictionTracker.touchPage(pageId);
+
+        if (updateRes != null) {
+            if (updateRes.modifiedPayload() != null && walEnabled && needWalDeltaRecord(pageId, page, null)) {
+                wal.log(new DataPageUpdateRecord(
+                    grpId,
+                    pageId,
+                    itemId,
+                    updateRes.modifiedPayload()));
+            }
+
+            fragment.modified = !needPayload || updateRes.modifiedPayload() != null;
+            fragment.nextLink = updateRes.nextLink();
+            fragment.written += updateRes.payloadSize();
+        }
+        else {
+            fragment.modified = true;
+            fragment.nextLink = 0L;
+            fragment.written = fragment.row.size();
         }
     }
 

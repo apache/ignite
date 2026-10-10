@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.FreeListCutTailDifferentGcTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
+import org.apache.ignite.internal.processors.database.MultiPageInPlaceUpdateTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorMetricsTest;
@@ -232,6 +233,7 @@ import org.junit.runners.Suite;
     MdcCacheReadRequestsRoutingTest.class,
 
     IgniteConfigurationTest.class,
+    MultiPageInPlaceUpdateTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }
