@@ -81,6 +81,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
@@ -528,6 +529,8 @@ public class CommandHandlerParsingTest {
         else if (cmd.getClass() == EncryptionChangeCacheKeyCommand.class)
             cmdText = F.concat(cmdText, "cacheGroup1");
         else if (cmd.getClass() == SnapshotRestoreCommand.class)
+            cmdText = F.concat(cmdText, "snp1");
+        else if (cmd.getClass() == SnapshotDeleteCommand.class)
             cmdText = F.concat(cmdText, "snp1");
         else if (cmd.getClass() == MetaUpdateCommand.class)
             return;
