@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
@@ -97,6 +100,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Data region this free list belongs to (used for proactive size-aware reserve on fragmented writes). */
+    private final DataRegion dataRegion;
+
+    /** Database shared manager (used for proactive size-aware reserve on fragmented writes). */
+    private final IgniteCacheDatabaseSharedManager dbMgr;
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -462,6 +471,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         rmvRow = new RemoveRowHandler(cacheGrpId == 0);
 
         this.evictionTracker = dataRegion.evictionTracker();
+        this.dataRegion = dataRegion;
+        // dbMgr is needed only for the proactive reserve (eviction-enabled in-memory region); null in unit tests
+        // without a cache processor (where eviction is disabled and the reserve never fires).
+        dbMgr = ctx.cache() == null ? null : ctx.cache().context().database();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -591,6 +604,35 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return pageMem.allocatePage(grpId, part, FLAG_DATA);
     }
 
+    /**
+     * Proactively reserves enough free space for the row and then takes a page. The reserve targets
+     * {@code requiredPages + emptyPagesPoolSize} (see {@link IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert}),
+     * so after this thread consumes its pages at least {@code emptyPagesPoolSize} pages remain for concurrent writers.
+     *
+     * @param size Free space required on the page.
+     * @param row Row to write.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Page identifier or 0 if no page could be obtained after reserving.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long takePageWithReserve(int size, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        if (dbMgr == null || dataRegion.config().isPersistenceEnabled() ||
+            dataRegion.config().getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            return takePage(size, row, statHolder);
+
+        dbMgr.ensureFreeSpaceForInsert(dataRegion, size);
+
+        long pageId = takePage(size, row, statHolder);
+
+        if (pageId == 0L) {
+            dbMgr.ensureFreeSpaceForInsert(dataRegion, size);
+
+            pageId = takePage(size, row, statHolder);
+        }
+
+        return pageId;
+    }
+
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int written = 0;
@@ -604,7 +646,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
             while (written != COMPLETE);
         }
-        catch (IgniteCheckedException | Error e) {
+        catch (IgniteCheckedException | Error | IgniteOutOfMemoryException e) {
             throw e;
         }
         catch (Throwable t) {
@@ -623,8 +665,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void insertDataRows(Collection<T> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
             GridCursor<T> cur = new GridCursorIteratorWrapper<>(rows.iterator());
 
@@ -648,7 +689,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 AbstractDataPageIO initIo = null;
 
-                long pageId = takePage(row.size() - written, row, statHolder);
+                long pageId = takePageWithReserve(row.size() - written, row, statHolder);
 
                 if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
@@ -660,6 +701,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 assert written != FAIL_I; // We can't fail here.
             }
+        }
+        catch (IgniteOutOfMemoryException e) {
+            throw e;
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
@@ -703,7 +747,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         AbstractDataPageIO initIo = null;
 
-        long pageId = takePage(row.size() - written, row, statHolder);
+        long pageId = takePageWithReserve(row.size() - written, row, statHolder);
 
         if (pageId == 0L) {
             pageId = allocateDataPage(row.partition());
@@ -808,6 +852,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 nextLink = write(pageId, rmvRow, bag, itemId, FAIL_L, statHolder);
 
                 assert nextLink != FAIL_L; // Can't fail here.
+
+                evictionTracker.forgetPage(pageId);
             }
 
             reuseList.addForRecycle(bag);
