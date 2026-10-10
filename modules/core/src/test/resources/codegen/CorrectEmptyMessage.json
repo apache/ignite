@@ -1,0 +1,5 @@
+{
+  "class": "org.apache.ignite.internal.CorrectEmptyMessage",
+  "annotations": ["@org.apache.ignite.internal.EmptyMessage"],
+  "fields": []
+}

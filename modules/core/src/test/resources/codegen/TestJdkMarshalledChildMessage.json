@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.TestJdkMarshalledChildMessage",
+  "annotations": ["@org.apache.ignite.internal.JdkMarshalled"],
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "dataBytes"},
+    {"order": 1, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "nested"},
+    {"order": 2, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "nioMsg", "annotations": ["@org.apache.ignite.internal.NioField"]},
+    {"order": 3, "type": "byte[]", "name": "ownBytes"},
+    {"type": "java.lang.Object", "name": "data", "annotations": ["@org.apache.ignite.internal.Marshalled(\"dataBytes\")"]},
+    {"type": "java.lang.Object", "name": "own", "annotations": ["@org.apache.ignite.internal.Marshalled(\"ownBytes\")"]}
+  ]
+}

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.codegen;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -48,6 +49,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -56,6 +58,9 @@ public class MessageProcessorTest {
     /** Custom mapper error. */
     public static final String CUSTOM_MAPPER_ERROR = "Annotation @CustomMapper must only be used for enum fields or " +
         "enum collections and maps, including nested ones.";
+
+    /** Directory of the representations in the class output. */
+    private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
     /** */
     @Test
@@ -73,6 +78,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestMarshalledObjectsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestMarshalledObjectsMessage.json"));
     }
 
     /** */
@@ -91,6 +100,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestMessage.json"));
     }
 
     /** */
@@ -103,6 +116,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestRollingUpgradeAwareMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestRollingUpgradeAwareMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestRollingUpgradeAwareMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestRollingUpgradeAwareMessage.json"));
     }
 
     /** */
@@ -163,6 +180,14 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestEnumSetMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestEnumSetMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestEnumSetMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestEnumSetMessage.json"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 
     /** */
@@ -215,6 +240,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.CorrectEmptyMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CorrectEmptyMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.CorrectEmptyMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("CorrectEmptyMessage.json"));
     }
 
     /** */
@@ -254,6 +283,13 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.ChildMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("ChildMessage.json"));
+
+        assertTrue(compilation
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.AbstractMessage.json").isEmpty());
     }
 
     /** */
@@ -433,6 +469,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.CustomMapperEnumFieldsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("CustomMapperEnumFieldsMessage.json"));
     }
 
     /** */
@@ -512,6 +552,10 @@ public class MessageProcessorTest {
             "TransactionIsolationEnumMapper.java");
 
         assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 
     /**
@@ -618,6 +662,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestMarshalledMapMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestMarshalledMapMessage.json"));
     }
 
     /** Verifies array-backed Map reconstruction of {@code @Marshalled} fields, both rebuilt and final maps. */
@@ -752,6 +800,74 @@ public class MessageProcessorTest {
     }
 
     /** */
+    @Test
+    public void testCompressFieldsMessage() {
+        Compilation compilation = compile("TestCompressFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestCompressFieldsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestCompressFieldsMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testWildcardFieldsMessage() {
+        Compilation compilation = compile("TestWildcardFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestWildcardFieldsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestWildcardFieldsMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testTypeVariableMessage() {
+        Compilation compilation = compile("TestTypeVariableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestTypeVariableMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestTypeVariableMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testRepresentationsAreDeterministic() {
+        String[] srcs = {"TestMessage.java", "TestEnumSetMessage.java"};
+
+        Compilation first = compile(srcs);
+        Compilation second = compile(srcs);
+
+        for (String path : List.of("messages/org.apache.ignite.internal.TestMessage.json",
+            "messages/org.apache.ignite.internal.TestEnumSetMessage.json",
+            "enums/org.apache.ignite.transactions.TransactionIsolation.json")) {
+            assertThat(second)
+                .generatedFile(CLASS_OUTPUT, WIRE_DIR + path)
+                .contentsAsUtf8String().isEqualTo(content(first.generatedFile(CLASS_OUTPUT, WIRE_DIR + path).orElseThrow()));
+        }
+    }
+
+    /** */
+    static String jsonFile(String name) {
+        return content(javaFile(name));
+    }
+
+    /** */
+    private static String content(JavaFileObject file) {
+        try {
+            return file.getCharContent(false).toString();
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Unable to read: " + file.getName(), e);
+        }
+    }
+
+    /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);
     }
@@ -811,5 +927,9 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledChildMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestJdkMarshalledChildMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestJdkMarshalledChildMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestJdkMarshalledChildMessage.json"));
     }
 }

@@ -1,0 +1,21 @@
+{
+  "class": "org.apache.ignite.internal.TestMessage",
+  "fields": [
+    {"order": 0, "type": "int", "name": "id"},
+    {"order": 1, "type": "byte[]", "name": "byteArr"},
+    {"order": 2, "type": "java.lang.String", "name": "str"},
+    {"order": 3, "type": "java.lang.String[]", "name": "strArr"},
+    {"order": 4, "type": "int[][]", "name": "intMatrix"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]", "name": "verArr"},
+    {"order": 7, "type": "java.util.UUID", "name": "uuid"},
+    {"order": 8, "type": "org.apache.ignite.lang.IgniteUuid", "name": "ignUuid"},
+    {"order": 9, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 10, "type": "java.util.BitSet", "name": "bitSet"},
+    {"order": 11, "type": "java.lang.String", "name": "field"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "keyCacheObject"},
+    {"order": 13, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "cacheObject"},
+    {"order": 14, "type": "org.apache.ignite.internal.util.GridLongList", "name": "gridLongList"},
+    {"order": 15, "type": "org.apache.ignite.internal.GridTopicMessage", "name": "nioMsg", "annotations": ["@org.apache.ignite.internal.NioField"]}
+  ]
+}
