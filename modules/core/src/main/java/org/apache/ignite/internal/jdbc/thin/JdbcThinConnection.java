@@ -472,12 +472,14 @@ public class JdbcThinConnection implements Connection {
                         + cliIo.igniteVersion() + ']', INTERNAL_ERROR);
                 }
 
-                streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
+                StreamState streamState0 = new StreamState(cmd0, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null, NONE_TX), stmt, cliIo);
 
-                streamState.start();
+                streamState = streamState0;
+
+                streamState0.start();
             }
         }
         else

@@ -891,10 +891,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             throw new CacheException("Indexing is disabled for cache: " + cacheName +
                     ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 
-        if (!ctx.kernalContext().query().moduleEnabled() &&
-            (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
+        if (!ctx.kernalContext().query().moduleEnabled() && qry instanceof SqlFieldsQuery) {
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
-                    "of all Ignite nodes or configure any query engine.");
+                "of all Ignite nodes or configure any query engine.");
+        }
+
+        if ((qry instanceof SqlQuery || qry instanceof TextQuery) && !ctx.kernalContext().query().indexingEnabled()) {
+            throw new CacheException("Failed to execute query. " + qry.getClass().getSimpleName() + " is supported " +
+                "by the H2 query engine only, add module 'ignite-indexing' to the classpath of all Ignite nodes" +
+                (qry instanceof SqlQuery ? " or use SqlFieldsQuery instead." : "."));
+        }
     }
 
     /** {@inheritDoc} */

@@ -71,7 +71,8 @@ Here is how it can be imported into your POM file:
 All optional modules can be imported just like the core module, but with different artifact IDs.
 
 The following modules are available:
-- ignite-indexing (for SQL querying and indexing)
+- ignite-calcite (for SQL querying)
+- ignite-indexing (legacy module for SQL querying and indexing)
 - ignite-jcl (for Apache Commons logging)
 - ignite-jta (for XA integration)
 - ignite-log4j2 (for Log4j 2 logging)
