@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -93,7 +94,7 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** Default constructor. */
     public IntHashMap() {
-        entries = (Entry<V>[])new Entry[INITIAL_CAPACITY];
+        this(INITIAL_CAPACITY);
     }
 
     /** Create map with preallocated array. */
@@ -111,9 +112,27 @@ public class IntHashMap<V> implements IntMap<V> {
      * Copy constructor.
      */
     public IntHashMap(IntMap<? extends V> other) {
-        this(other.size());
+        this(capacityFor(other.size()));
 
         other.forEach(this::put);
+    }
+
+    /**
+     * Copy constructor.
+     */
+    public IntHashMap(Map<Integer, ? extends V> other) {
+        this(capacityFor(other.size()));
+
+        other.forEach(this::put);
+    }
+
+    /**
+     * @param size Number of elements.
+     * @return Capacity that fits the elements below the load factor: capacity is a table size, so passing the number
+     *      of elements as is would get the map resized once it is filled above the load factor.
+     */
+    private static int capacityFor(int size) {
+        return (int)(size / (double)SCALE_LOAD_FACTOR) + 1;
     }
 
     /** {@inheritDoc} */
