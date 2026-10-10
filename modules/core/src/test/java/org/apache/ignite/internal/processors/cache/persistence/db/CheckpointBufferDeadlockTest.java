@@ -50,8 +50,6 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.SF;
-
 /**
  *
  */
@@ -73,6 +71,9 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
     /** Pages touched under CP lock. */
     private static final int PAGES_TOUCHED_UNDER_CP_LOCK = 20;
+
+    /** Four checkpoint threads test iterations. */
+    private static final int FOUR_CHECKPOINT_THREADS_ITERATIONS = 3;
 
     /** Slop load flag. */
     private static final AtomicBoolean stop = new AtomicBoolean(false);
@@ -135,7 +136,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     public void testFourCheckpointThreads() throws Exception {
         checkpointThreads = 4;
 
-        for (int i = 0; i < SF.applyLB(10, 3); i++) {
+        for (int i = 0; i < FOUR_CHECKPOINT_THREADS_ITERATIONS; i++) {
             beforeTest();
 
             try {
