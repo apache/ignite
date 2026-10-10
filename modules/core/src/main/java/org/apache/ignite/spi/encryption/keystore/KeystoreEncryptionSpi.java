@@ -151,7 +151,8 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
     @Override public void spiStop() throws IgniteSpiException {
         ensureStarted();
 
-        //empty.
+        aesWithPadding.remove();
+        aesWithoutPadding.remove();
     }
 
     /** {@inheritDoc} */
@@ -188,12 +189,26 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
     /** {@inheritDoc} */
     @Override public void encrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doEncryption(data, aesWithPadding.get(), key, res);
+        Cipher cipher = aesWithPadding.get();
+
+        try {
+            doEncryption(data, cipher, key, res);
+        }
+        finally {
+            aesWithPadding.remove();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void encryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doEncryption(data, aesWithoutPadding.get(), key, res);
+        Cipher cipher = aesWithoutPadding.get();
+
+        try {
+            doEncryption(data, cipher, key, res);
+        }
+        finally {
+            aesWithoutPadding.remove();
+        }
     }
 
     /** {@inheritDoc} */
@@ -202,10 +217,10 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
 
         ensureStarted();
 
+        Cipher cipher = aesWithPadding.get();
+
         try {
             SecretKeySpec keySpec = new SecretKeySpec(((KeystoreEncryptionKey)key).key().getEncoded(), CIPHER_ALGO);
-
-            Cipher cipher = aesWithPadding.get();
 
             cipher.init(DECRYPT_MODE, keySpec, new IvParameterSpec(data, 0, cipher.getBlockSize()));
 
@@ -215,16 +230,33 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
             BadPaddingException e) {
             throw new IgniteSpiException(e);
         }
+        finally {
+            aesWithPadding.remove();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void decrypt(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doDecryption(data, aesWithPadding.get(), key, res);
+        Cipher cipher = aesWithPadding.get();
+
+        try {
+            doDecryption(data, cipher, key, res);
+        }
+        finally {
+            aesWithPadding.remove();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void decryptNoPadding(ByteBuffer data, Serializable key, ByteBuffer res) {
-        doDecryption(data, aesWithoutPadding.get(), key, res);
+        Cipher cipher = aesWithoutPadding.get();
+
+        try {
+            doDecryption(data, cipher, key, res);
+        }
+        finally {
+            aesWithoutPadding.remove();
+        }
     }
 
     /**
