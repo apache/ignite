@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
  * Class that execute several commands passed via command line.
  */
 public class CommandHandler {
+    /** Help. */
     static final String CMD_HELP = "--help";
 
     /** */
