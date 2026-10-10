@@ -49,7 +49,15 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
-          cache: 'maven'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/org/apache/ignite/*/*-SNAPSHOT
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2-
 
       - name: Install prerequisites
         run: |
@@ -131,7 +139,7 @@ jobs:
 
       - name: Check javadocs.
         run : |
-          ./mvnw -DskipTests install -pl modules/commons,modules/tools,modules/codegen,modules/core,modules/binary/api,modules/core,modules/binary/impl,modules/core,modules/unsafe,modules/thin-client/api,modules/thin-client/impl,modules/nio,modules/indexing  -B -V && ./mvnw initialize -Pjavadoc -B -V
+          ./mvnw -DskipTests install -pl modules/commons,modules/tools,modules/codegen,modules/core,modules/binary/api,modules/binary/impl,modules/unsafe,modules/thin-client/api,modules/thin-client/impl,modules/nio,modules/indexing  -B -V && ./mvnw initialize -Pjavadoc -B -V
 
       - name: Documentation code snippets compilation check
         run: |
