@@ -67,6 +67,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -812,7 +813,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         assertTrue(snpLstBeginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(testGridIdx, true));
+        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(testGridIdx));
+
+        assertTrue(waitForCondition(() -> grid(testGridIdx).context().isStopping(), getTestTimeout()));
 
         snpLstProceedLatch.countDown();
 

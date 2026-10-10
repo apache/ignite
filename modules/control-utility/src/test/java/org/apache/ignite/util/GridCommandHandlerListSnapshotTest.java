@@ -50,13 +50,13 @@ import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
 public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstractTest {
-    /** Extra storage path. */
+    /** External storage path. */
     private static final String EXT_STORAGE_PATH = "extStorage";
 
     /** Flag to use {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
-    private boolean extraStorages;
+    private boolean extStorages;
 
-    /** Resolved extra storages paths. {@code null} if {@code extraStorages} is {@code null}. */
+    /** Resolved external storages paths. {@code null} if {@code extStorages} is {@code null}. */
     private @Nullable String[] extStoragePaths;
 
     /** Consistent id postfix. */
@@ -70,7 +70,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Parameter(2)
     public boolean separatedWorkDir;
 
-    /** Flag to add extra server node after the snapshot creation. */
+    /** Flag to add external server node after the snapshot creation. */
     @Parameter(3)
     public boolean addExtraSrvr;
 
@@ -130,7 +130,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         cfg.getDataStorageConfiguration().setWalCompactionEnabled(incCnt > 0);
 
-        if (extraStorages) {
+        if (extStorages) {
             cfg.getDataStorageConfiguration().setExtraStoragePaths(
                 workDir + File.separator,
                 workDir + File.separator + EXT_STORAGE_PATH
@@ -184,12 +184,12 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** */
     @Test
-    public void testExtraStorages() throws Exception {
-        // Extra storeages are required to be the same as configured in the node's PDS storages. Thus, we skip different work folders.
+    public void testExternalStorages() throws Exception {
+        // External storages are required to be the same as configured in the node's PDS storages. Thus, we skip different work folders.
         // Also, extra snapshot storages aren't used if snapshot is created with a custom path.
         assumeFalse(separatedWorkDir || customPath);
 
-        extraStorages = true;
+        extStorages = true;
 
         doTestSnapshotsLists(2, false, false);
     }
@@ -319,10 +319,10 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
             assertEquals(certainSnpRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + snpIdx + "'"));
 
-            for (int i = 0; i < incCnt; i++)
+            if (incCnt > 0)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "incremental snapshots: cnt=" + incCnt));
 
-            if (extraStorages)
+            if (extStorages)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "external storages: cnt=1, size="));
         }
     }
@@ -344,7 +344,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     ) {
         CacheConfiguration<?, ?> ccfg = super.testCacheConfiguration(cacheName, partitions, filter);
 
-        if (extraStorages)
+        if (extStorages)
             ccfg.setStoragePaths(extStoragePaths);
 
         return ccfg;
