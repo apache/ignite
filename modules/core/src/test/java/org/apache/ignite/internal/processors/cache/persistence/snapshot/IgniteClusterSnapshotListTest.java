@@ -166,7 +166,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         // Speeds up the tests.
-        ccfg = super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
+        ccfg = super.txCacheConfig(ccfg)
+            .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT))
+            .setBackups(1);
 
         if (extStorages) {
             assert !F.isEmpty(extStoragePaths);
