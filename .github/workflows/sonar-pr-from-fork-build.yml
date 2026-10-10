@@ -42,13 +42,14 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Cache local Maven repository
+      - name: Cache Maven packages
         uses: actions/cache@v4
         with:
-          path: ~/.m2/repository
+          path: |
+            ~/.m2/repository
+            !~/.m2/repository/org/apache/ignite/*/*-SNAPSHOT
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-m2
+          restore-keys: ${{ runner.os }}-m2-
 
       - name: Install Libnuma
         run: sudo apt-get update && sudo apt-get install libnuma-dev
