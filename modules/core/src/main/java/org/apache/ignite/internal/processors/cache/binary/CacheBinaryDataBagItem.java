@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class CacheBinaryDataBagItem implements Message {
+public class CacheBinaryDataBagItem extends AbstractMessage {
     /** */
     @Order(0)
     Map<Integer, BinaryMetadataVersionInfo> meta;

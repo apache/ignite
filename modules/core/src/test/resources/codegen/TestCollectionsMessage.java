@@ -26,9 +26,9 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestCollectionsMessage implements Message {
+public class TestCollectionsMessage extends AbstractMessage {
     @Order(0)
     List<boolean[]> booleanArrayList;
 

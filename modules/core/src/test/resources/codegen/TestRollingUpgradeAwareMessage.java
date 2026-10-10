@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
 @FeatureGated(registry = TestFeatureRegistry.class)
-public class TestRollingUpgradeAwareMessage implements Message {
+public class TestRollingUpgradeAwareMessage extends AbstractMessage {
     /** */
     @Order(0)
     int plain;
@@ -31,12 +31,12 @@ public class TestRollingUpgradeAwareMessage implements Message {
     String oldFld;
 
     /** */
-    @Order(value = 2, introducedBy = "FIRST_FEATURE")
+    @Order(value = 2, introducedBy = "SECOND_FEATURE")
     String newFld;
 
     /** */
-    @Order(value = 3, introducedBy = "FIRST_FEATURE", deprecatedBy = "SECOND_FEATURE")
-    long windowed;
+    @Order(value = 3, introducedBy = "THIRD_FEATURE")
+    long newCnt;
 
     /** {@inheritDoc} */
     @Override public short directType() {

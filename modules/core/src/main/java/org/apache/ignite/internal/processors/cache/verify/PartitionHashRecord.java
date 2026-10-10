@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.Veri
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * consistent id.
  */
 @JdkMarshalled
-public class PartitionHashRecord implements Message, Serializable {
+public class PartitionHashRecord extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

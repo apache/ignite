@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-public class CacheEvictionEntry implements Message {
+public class CacheEvictionEntry extends AbstractMessage {
     /** */
     @Order(0)
     @GridToStringInclude

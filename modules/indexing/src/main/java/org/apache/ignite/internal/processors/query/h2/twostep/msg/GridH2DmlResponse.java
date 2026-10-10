@@ -27,12 +27,12 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Response to remote DML request.
  */
-public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
+public class GridH2DmlResponse extends AbstractMessage implements GridCacheQueryMarshallable {
     /** Request id. */
     @GridToStringInclude
     @Order(0)

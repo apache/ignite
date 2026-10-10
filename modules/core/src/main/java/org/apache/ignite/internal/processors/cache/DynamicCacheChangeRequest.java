@@ -29,13 +29,13 @@ import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start/stop request.
  */
-public class DynamicCacheChangeRequest implements Message, Serializable {
+public class DynamicCacheChangeRequest extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

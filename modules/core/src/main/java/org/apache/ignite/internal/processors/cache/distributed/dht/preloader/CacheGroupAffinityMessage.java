@@ -32,13 +32,13 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about affinity assignment.
  */
-public class CacheGroupAffinityMessage implements Message {
+public class CacheGroupAffinityMessage extends AbstractMessage {
     /** */
     @Order(0)
     List<GridLongList> assigns;

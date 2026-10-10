@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Task result request.
  */
-public class GridTaskResultRequest implements Message {
+public class GridTaskResultRequest extends AbstractMessage {
     /** Task ID. */
     @Order(0)
     IgniteUuid taskId;

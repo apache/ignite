@@ -20,10 +20,10 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TwoDifferentEnumsInCollectionMessage implements Message {
+public class TwoDifferentEnumsInCollectionMessage extends AbstractMessage {
     @Order(0)
     private Collection<Map<TransactionIsolation, GridCacheOperation>> col;
 

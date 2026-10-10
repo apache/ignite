@@ -117,11 +117,99 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testSameFeatureInBothGatesRejected() {
-        Compilation compilation = compile("TestFeatureConflictMessage.java");
+    public void testImmutableSchemaMessageHasNoRawFields() {
+        Compilation compilation = compile("TestImmutableSchemaMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestImmutableSchemaMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestImmutableSchemaMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testIntroducedFieldOnImmutableSchemaRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestImmutableSchemaIntroducedFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("must not reference the same feature");
+        assertThat(compilation).hadErrorContaining("A message with an immutable schema must not have fields gated by features");
+    }
+
+    /** */
+    @Test
+    public void testDeprecatedFieldOnImmutableSchemaSubclassRejected() {
+        Compilation compilation = compile("TestImmutableSchemaMessage.java", "TestImmutableSchemaDeprecatedFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A message with an immutable schema must not have fields gated by features");
+    }
+
+    /** */
+    @Test
+    public void testGatedFieldsOfDifferentRegistriesRejected() {
+        Compilation compilation = compile(
+            "TestFeatureRegistry.java",
+            "TestSecondFeatureRegistry.java",
+            "TestMixedRegistryBaseMessage.java",
+            "TestMixedRegistryMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("must resolve to the same feature registry");
+    }
+
+    /** */
+    @Test
+    public void testFeatureIntroducingTwoFieldsRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestTwoIntroducedFieldsMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining(", feature=FIRST_FEATURE, field=otherNewFld, otherField=newFld]");
+    }
+
+    /** */
+    @Test
+    public void testFeatureDeprecatingTwoFieldsRejected() {
+        Compilation compilation = compile(
+            "TestFeatureRegistry.java",
+            "TestTwoDeprecatedFieldsBaseMessage.java",
+            "TestTwoDeprecatedFieldsMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining(", feature=SECOND_FEATURE, field=otherOldFld, otherField=oldFld]");
+    }
+
+    /** */
+    @Test
+    public void testFeatureDeprecatingAndIntroducingFieldsRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestIntroducedAndDeprecatedFieldsMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining(", feature=FIRST_FEATURE, field=newFld, otherField=oldFld]");
+    }
+
+    /** */
+    @Test
+    public void testIntroducedAndDeprecatedFieldRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestIntroducedAndDeprecatedFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(
+            "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it is retired [cls=");
+        assertThat(compilation).hadErrorContaining(", field=fld, introducedBy=FIRST_FEATURE, deprecatedBy=SECOND_FEATURE]");
+    }
+
+    /** */
+    @Test
+    public void testInitializerOnGatedFieldRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestGatedFieldInitializerMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A field gated by a feature must not have an initializer [cls=");
+        assertThat(compilation).hadErrorContaining(", field=oldCnt]");
     }
 
     /** */
@@ -244,7 +332,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testInheritedMessages() {
-        Compilation compilation = compile("AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("AbstractTestMessage.java", "ChildMessage.java");
 
         assertThat(compilation).succeeded();
 
@@ -259,7 +347,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testMultipleMessages() {
-        Compilation compilation = compile("TestMessage.java", "AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("TestMessage.java", "AbstractTestMessage.java", "ChildMessage.java");
 
         assertThat(compilation).succeeded();
 

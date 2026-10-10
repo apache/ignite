@@ -16,12 +16,15 @@
  */
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestFeatureRegistry;
 import org.apache.ignite.internal.TestRollingUpgradeAwareMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -54,21 +57,32 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 2:
-                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE)) {
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.SECOND_FEATURE)) {
                     if (!writer.writeString(msg.newFld))
                         return false;
                 }
+                else if (ctx.includeRawFields() && msg.newFld != null)
+                    writer.postponeRawFieldWrite(TestFeatureRegistry.SECOND_FEATURE.id(), w -> w.writeString(msg.newFld));
 
                 writer.incrementState();
 
             case 3:
-                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE) && ctx.includeFieldDeprecatedBy(TestFeatureRegistry.SECOND_FEATURE)) {
-                    if (!writer.writeLong(msg.windowed))
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.THIRD_FEATURE)) {
+                    if (!writer.writeLong(msg.newCnt))
+                        return false;
+                }
+                else if (ctx.includeRawFields() && msg.newCnt != 0)
+                    writer.postponeRawFieldWrite(TestFeatureRegistry.THIRD_FEATURE.id(), w -> w.writeLong(msg.newCnt));
+
+                writer.incrementState();
+
+            case 4:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
                         return false;
                 }
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -96,7 +110,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 2:
-                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE)) {
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.SECOND_FEATURE)) {
                     msg.newFld = reader.readString();
 
                     if (!reader.isLastRead())
@@ -106,8 +120,8 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 3:
-                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.FIRST_FEATURE) && ctx.includeFieldDeprecatedBy(TestFeatureRegistry.SECOND_FEATURE)) {
-                    msg.windowed = reader.readLong();
+                if (ctx.includeFieldIntroducedBy(TestFeatureRegistry.THIRD_FEATURE)) {
+                    msg.newCnt = reader.readLong();
 
                     if (!reader.isLastRead())
                         return false;
@@ -115,9 +129,40 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
 
                 reader.incrementState();
 
+            case 4:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
+
+                reader.incrementState();
         }
 
         return true;
+    }
+
+    /** */
+    private static boolean consumeKnownField(TestRollingUpgradeAwareMessage msg, RawField f, MessageReader reader, MessageSerializationContext ctx) {
+        if (f.tag() == TestFeatureRegistry.SECOND_FEATURE.id()) {
+            msg.newFld = reader.deserializeRawField(f, in -> in.readString());
+
+            return true;
+        }
+
+        if (f.tag() == TestFeatureRegistry.THIRD_FEATURE.id()) {
+            msg.newCnt = reader.deserializeRawField(f, in -> in.readLong());
+
+            return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */

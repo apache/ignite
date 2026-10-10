@@ -22,9 +22,10 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class QueryBatchMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
+public class QueryBatchMessage extends AbstractMessage implements DeferredUnmarshalMessage, ExecutionContextAware {
     /** */
     @Order(0)
     UUID qryId;

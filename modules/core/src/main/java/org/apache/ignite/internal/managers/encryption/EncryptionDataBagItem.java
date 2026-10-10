@@ -19,10 +19,10 @@ package org.apache.ignite.internal.managers.encryption;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class EncryptionDataBagItem implements Message {
+public class EncryptionDataBagItem extends AbstractMessage {
     /** */
     @Order(0)
     Map<Integer, GroupKeyEncrypted> knownKeys;
