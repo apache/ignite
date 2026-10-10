@@ -31,13 +31,13 @@ import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
  * Represents a storage of {@link OperationContextAttribute}s and their corresponding values bound to the JVM thread.
  * The state of {@link OperationContext} is determined by a sequence of {@link Update}s applied to it. Each Update
  * stores the updated or newly added {@link OperationContextAttribute} values and link to the previous Update.
- * <pre>
+ * <pre>{@code
  *         +-----------+   +-----------+
  *         |           |   | A1 -> V2  |
  * null <--| A1 -> V1  |<--|           |
  *         |           |   | A2 -> V3  |
  *         +-----------+   +-----------+
- *</pre>
+ * }</pre>
  * {@link OperationContext} Updates can be undone in the same order they were applied by closing the {@link Scope}
  * associated with each update (see {@link #set(OperationContextAttribute, Object)} and related methods).
  *<p>

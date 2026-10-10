@@ -79,7 +79,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     static final StatisticsKey SMALL_KEY = new StatisticsKey(SCHEMA, "SMALL");
 
     /** Statistics target for the whole small table. */
-    static final StatisticsTarget SMALL_TARGET = new StatisticsTarget(SMALL_KEY, null);
+    static final StatisticsTarget SMALL_TARGET = new StatisticsTarget(SMALL_KEY);
 
     /** Async operation timeout for test */
     static final int TIMEOUT = 10_000;

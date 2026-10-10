@@ -108,7 +108,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setCacheConfiguration(null);
+        cfg.setCacheConfiguration();
 
         if (cfg.isClientMode())
             return cfg;

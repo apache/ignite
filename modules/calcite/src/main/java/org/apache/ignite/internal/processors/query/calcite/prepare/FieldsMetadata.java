@@ -33,7 +33,7 @@ public interface FieldsMetadata {
 
     /**
      * @param typeFactory Type factory.
-     * @return Query field descriptors collection&
+     * @return Query field descriptors collection.
      */
     List<GridQueryFieldMetadata> queryFieldsMetadata(IgniteTypeFactory typeFactory);
 }
