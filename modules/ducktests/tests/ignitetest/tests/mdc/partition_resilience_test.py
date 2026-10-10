@@ -58,7 +58,7 @@ class MdcPartitionResilienceTest(IgniteTest):
         via restart -> writes restored everywhere, distribution and consistency verified.
         """
         mdc = MdcCluster(self, ignite_version, srv_per_dc=5, runners_per_dc=1,
-                         network_timeout=20_000, tcp_connect_timeout=10_000)
+                         network_timeout=20_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
@@ -118,7 +118,7 @@ class MdcPartitionResilienceTest(IgniteTest):
         not see the main DC), and writes must resume in both DCs once the main DC returns.
         No network impairments are involved - the main DC is stopped, not partitioned.
         """
-        mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc=1)
+        mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc=1, network_timeout=20_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms):
             mdc.start_servers()
@@ -170,7 +170,7 @@ class MdcPartitionResilienceTest(IgniteTest):
         still one ACTIVE cluster, all data is intact and both DCs accept writes.
         """
         mdc = MdcCluster(self, ignite_version, srv_per_dc=3, runners_per_dc=1, loaders_per_dc=1,
-                         network_timeout=20_000, tcp_connect_timeout=10_000)
+                         network_timeout=20_000)
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
