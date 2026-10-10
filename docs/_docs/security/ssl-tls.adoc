@@ -165,19 +165,44 @@ The following is a procedure for updating certificate.
 This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
 +
 --
-Repeat the following procedure for the nodes where the certificate is not trusted:
-
-.. Import the new certificate to the trusted store of the node.
-.. Gracefully restart the node.
-.. Repeat these steps for all server nodes.
+Import the new certificate to the trusted store of every node, server or client, then run `control.sh --ssl reload`.
+Also import it to the trusted stores of applications that connect to the cluster with SSL, including `control.sh` itself (`--truststore`).
+`--ssl reload` does not reach applications, so restart a running Java or C++ thin client: it reads its trusted store only when it starts.
 
 Now all nodes trust the new certificates.
 --
 
-. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Then gracefully restart the node. Repeat this procedure for all certificates you want to update.
+. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Repeat this for all certificates you want to update, then run `control.sh --ssl reload`.
+Check with `control.sh --ssl status` that every node serves the new certificate.
+HTTP REST with stores set in the Jetty configuration is not reloaded: restart the node to put the new stores in use there.
 
+If a private key has been compromised, make sure the trusted stores no longer accept its certificate, for example by moving to a new certificate authority.
+Then run `control.sh --ssl reload` and restart the nodes one at a time: a reload does not close the connections that are already open.
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
+
+== Renewing Certificates Automatically
+
+A node can pick up a new certificate from its key store file by itself before the current one expires.
+Renewal is off by default.
+To turn it on, set the `renewalEnabled` property of the SSL context factory and restart the nodes one at a time.
+A node with renewal settings out of range does not start.
+
+The node then reads the key store and trust store files again in the renewal window.
+By default, the window is the last 15% of the certificate lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
+Put the new files in place before the window, and only files you are ready to use: the node picks them up by itself.
+The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
+If the factory serves discovery or communication, the node's own trust store must also accept the new certificate.
+A changed trust store alone is not picked up.
+To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
+
+Until the files hold a newer certificate, the node keeps the one in use and reads the files again with a growing pause, from 1 minute to 1 hour.
+While the node waits, it logs a warning once a day.
+Once less than half of the window is left, or the certificate would expire before the next attempt, it logs an error instead.
+If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
+`control.sh --ssl status` and the `NextRenewalTime` metric show when the next renewal is due.
+HTTP REST is renewed only when its certificates come from `ConnectorConfiguration.httpSslFactory`.
+A key store set in the Jetty configuration is not renewed.
 
 == SslContextFactory Properties
 
@@ -206,6 +231,14 @@ Now all nodes trust the new certificates.
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`renewalEnabled`
+|Whether a node renews the certificate by itself before it expires.
+|`false`
+
+|`renewBeforeFraction`
+|Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it. Greater than `0` and less than `1`.
+|`0.15`
 
 |`trustStoreFilePath`
 |The path to the trust store file.

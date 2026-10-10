@@ -470,6 +470,12 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       --interval interval          - Interval between samples (millis, 10 to 60000, 100 by default).
       --payload-size payload_size  - Payload size (bytes, max 64 KiB, 100 by default).
 
+  Reload TLS certificates on all cluster nodes from the configured key and trust stores:
+    control.(sh|bat) --ssl reload
+
+  Show the TLS certificates of all cluster nodes and how their reloads went:
+    control.(sh|bat) --ssl status
+
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.
 

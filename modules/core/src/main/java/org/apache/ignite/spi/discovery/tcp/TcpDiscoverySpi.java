@@ -40,8 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
@@ -113,6 +112,7 @@ import org.jetbrains.annotations.TestOnly;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -416,11 +416,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL server socket factory. */
-    protected SSLServerSocketFactory sslSrvSockFactory;
-
-    /** SSL socket factory. */
-    protected SSLSocketFactory sslSockFactory;
+    /** SSL context of the connections opened and accepted, {@code null} if SSL is disabled. */
+    @GridToStringExclude
+    private SSLContext sslCtx;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1660,7 +1658,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslSockFactory.createSocket();
+                sock = sslCtx.getSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1676,6 +1674,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             throw e;
         }
+    }
+
+    /**
+     * @param sock Socket accepted by the server.
+     * @return Server-side SSL socket over it on the SSL context in use, or the socket itself if SSL is disabled.
+     * @throws IOException If TLS cannot be set up on it.
+     */
+    Socket acceptedSocket(Socket sock) throws IOException {
+        if (!isSslEnabled())
+            return sock;
+
+        SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory().createSocket(sock, null, sock.getPort(), true);
+
+        sslSock.setUseClientMode(false);
+        sslSock.setNeedClientAuth(true);
+
+        return sslSock;
     }
 
     /**
@@ -2149,10 +2164,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
-
-                sslSockFactory = sslCtx.getSocketFactory();
-                sslSrvSockFactory = sslCtx.getServerSocketFactory();
+                sslCtx = ((IgniteEx)ignite).context().sslContexts().register(ignite.configuration().getSslContextFactory(), DISCOVERY);
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "

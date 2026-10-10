@@ -14,20 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.management.ssl;
 
-/**
- * Integration tests for Grid REST functionality; Jetty is under the hood.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    RestProcessorAuthorizationTest.class,
-    RestSetupSimpleTest.class,
-    IgniteRestExtensionTest.class,
-    JettySslContextReloadTest.class
-})
-public class GridRestSuite {
+import org.apache.ignite.internal.management.api.NoArg;
+
+/** */
+public class SslReloadCommand extends AbstractSslCommand {
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Reload TLS certificates on all cluster nodes from the configured key and trust stores";
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<SslReloadTask> taskClass() {
+        return SslReloadTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt(NoArg arg) {
+        return "Warning: the command will reload TLS certificates on all cluster nodes.";
+    }
 }

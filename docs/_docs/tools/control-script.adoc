@@ -1747,3 +1747,69 @@ Examples:
 ----
 control.sh|bat --event list --enabled
 ----
+
+== TLS Certificates
+
+=== Reloading Certificates
+
+[source, shell]
+----
+control.sh|bat --ssl reload [--yes]
+----
+
+Every server and client node in the topology reads its key and trust stores again.
+This covers communication, discovery, the client connector, binary REST, and HTTP REST when its certificates come from `ConnectorConfiguration.httpSslFactory`.
+A key store set in the Jetty configuration is not reloaded.
+New connections use the new certificates.
+Established connections keep the old ones, even with a peer that the new trust store no longer accepts.
+
+The command does not reach thin clients or JDBC and ODBC drivers.
+ODBC, and JDBC with its own store settings, read their stores on every new connection.
+A Java or C++ thin client, and JDBC with the default JVM stores (`javax.net.ssl.*`), read them only when they start.
+
+A node keeps its old certificate if a certificate in the new chain is not valid now.
+It also keeps the old one if clients get no certificate from the new key store, for example because the key store has no private key.
+If the SSL context factory serves discovery or communication, the node also keeps the old certificate if its own trust store does not accept the new one.
+This applies to all transports of that factory, and other nodes are not asked.
+A custom SSL context factory whose `create()` returns a cached context has nothing to read again, so its reload fails.
+
+Nodes reload independently.
+For each node, the command prints one line per SSL context factory, with all transports that use it.
+If some nodes fail, the others keep the new certificates.
+The command then lists the failed nodes first, apart from the others, and ends with an error:
+
+[source,text]
+----
+Failed on 1 node(s):
+46db5416-d199-48d6-a807-88b7f1300000: failed on client connector, communication, discovery (A handshake between nodes on the new certificate was refused, checked against this node's own trust store [subject=CN=node02, issuer=CN=newca, serial=5f3a91c2e8, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z]: No trusted certificate found)
+
+Succeeded on 1 node(s):
+e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, discovery; serving subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
+----
+
+Fix the cause on the failed nodes and run the command again.
+Every node logs the certificate it put in use and who ran the command, or why the reload failed.
+
+=== Checking Certificates
+
+[source, shell]
+----
+control.sh|bat --ssl status
+----
+
+For every node, the command shows the transports that share an SSL context factory, the certificate they serve and the result of the last reload.
+If the node renews the certificate by itself, the command also shows the time of the next renewal:
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000: client connector, communication, discovery
+    serving subject=CN=node01, issuer=CN=ca, serial=2c41d7a09b, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
+    last reload succeeded at 2026-10-05T09:00:02Z
+    next automatic renewal at 2027-08-11T15:00:00Z
+----
+
+If a certificate authority in the chain expires before the certificate, the `serving` line also shows `chainNotAfter`: peers refuse the chain from that time.
+After a failed reload, the node still serves its old certificate.
+The status then shows `last reload failed N time(s) in a row` with the time and reason of the last failure.
+The command ends with an error only if a certificate in the chain a node serves is not valid now.
+Such a node is marked `PROBLEM: the certificate is not valid now, peers refuse it` and listed first, apart from the others.

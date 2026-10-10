@@ -51,6 +51,7 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
 
 /**
  * TCP binary protocol implementation.
@@ -102,9 +103,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                     throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
 
                 if (factory != null)
-                    sslCtx = factory.create();
+                    sslCtx = ctx.sslContexts().register(factory, BINARY_REST);
                 else
-                    sslCtx = igniteFactory.create();
+                    sslCtx = ctx.sslContexts().register(igniteFactory, BINARY_REST);
             }
             int startPort = cfg.getPort();
             int portRange = cfg.getPortRange();

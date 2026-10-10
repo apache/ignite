@@ -29,7 +29,6 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -38,9 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
- *
- * This factory caches the result of the first successful attempt to create an {@link SSLContext} and always returns it
- * as a result of further invocations of the {@link SslContextFactory#create()}} method.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager

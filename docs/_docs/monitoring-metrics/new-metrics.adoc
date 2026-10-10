@@ -503,6 +503,28 @@ Register name: `rest.client`
 
 NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registered only when SSL is enabled.
 
+== SSL
+
+The certificate one SSL-enabled transport serves and the results of its reloads.
+`{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
+`http.rest` is there only when `ConnectorConfiguration.httpSslFactory` is set.
+Times are in milliseconds since the epoch, `0` meaning unknown or never.
+Automatic renewals that put a new certificate in use or fail count as reloads.
+
+Register name: `ssl.{transport}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|CertificateIssuer | string | Issuer DN of the certificate presented on new connections.
+|CertificateSubject | string | Subject DN of the certificate presented on new connections.
+|ChainNotAfter | long | Earliest expiry time in the chain presented on new connections.
+|ConsecutiveReloadFailures | integer | Failed reloads in a row since the last successful one.
+|LastReloadFailureReason | string | Reason of the last failed reload since the last successful one.
+|LastReloadSuccessTime | long | Time of the last successful reload.
+|NextRenewalTime | long | Time of the next automatic renewal.
+|===
+
 == Discovery IO
 
 Register name: `io.discovery`

@@ -116,6 +116,9 @@ public class ConnectorConfiguration {
     /** SSL context factory for rest binary server. */
     private Factory<SSLContext> sslFactory;
 
+    /** SSL context factory for HTTP REST. */
+    private Factory<SSLContext> httpSslFactory;
+
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
 
@@ -158,6 +161,7 @@ public class ConnectorConfiguration {
         sslClientAuth = cfg.isSslClientAuth();
         sslEnabled = cfg.isSslEnabled();
         sslFactory = cfg.getSslFactory();
+        httpSslFactory = cfg.getHttpSslFactory();
         idleQryCurTimeout = cfg.getIdleQueryCursorTimeout();
         idleQryCurCheckFreq = cfg.getIdleQueryCursorCheckFrequency();
     }
@@ -502,6 +506,32 @@ public class ConnectorConfiguration {
      */
     public ConnectorConfiguration setSslFactory(Factory<SSLContext> sslFactory) {
         this.sslFactory = sslFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets the factory of the SSL context HTTP REST serves.
+     *
+     * @return SSL context factory, or {@code null} if HTTP REST takes its TLS settings from the Jetty configuration only.
+     */
+    public Factory<SSLContext> getHttpSslFactory() {
+        return httpSslFactory;
+    }
+
+    /**
+     * Sets the factory of the SSL context HTTP REST serves. HTTP REST then serves HTTPS, and its certificates are reloaded, checked,
+     * reported and renewed the same way as those of the other transports of the node.
+     * <p>
+     * A Jetty configuration set with {@link #setJettyPath(String)} must then have an SSL connection factory without a key store,
+     * trust store, SSL context or SSL session settings of its own. Settings such as client authentication stay in the Jetty
+     * configuration, while those that build an SSL context, such as {@code crlPath}, are not used.
+     *
+     * @param httpSslFactory SSL context factory.
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setHttpSslFactory(Factory<SSLContext> httpSslFactory) {
+        this.httpSslFactory = httpSslFactory;
 
         return this;
     }

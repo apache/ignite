@@ -19,7 +19,6 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -29,17 +28,16 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-/**
- * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
- * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
- * {@link AbstractSslContextFactory#create()}} method.
- */
+/** Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}. */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /** Default share of the certificate lifetime left when a node renews it. */
+    public static final double DFLT_RENEW_BEFORE_FRACTION = 0.15;
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -50,8 +48,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Enabled protocols. */
     protected String[] protocols;
 
-    /** Cached instance of an {@link SSLContext}. */
-    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
+    /** Whether a node renews the certificate by itself before it expires. */
+    private boolean renewalEnabled;
+
+    /** Share of the certificate lifetime left when a node renews it. */
+    private double renewBeforeFraction = DFLT_RENEW_BEFORE_FRACTION;
 
     /**
      * Gets protocol for secure transport.
@@ -107,6 +108,37 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     public void setProtocols(String... protocols) {
         this.protocols = protocols;
+    }
+
+    /** @return Whether a node renews the certificate by itself before it expires. */
+    public boolean isRenewalEnabled() {
+        return renewalEnabled;
+    }
+
+    /**
+     * Sets whether a node renews the certificate by itself before it expires. Disabled by default.
+     *
+     * @param renewalEnabled Whether renewal is enabled.
+     */
+    public void setRenewalEnabled(boolean renewalEnabled) {
+        this.renewalEnabled = renewalEnabled;
+    }
+
+    /** @return Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it. */
+    public double getRenewBeforeFraction() {
+        return renewBeforeFraction;
+    }
+
+    /**
+     * Sets the share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it;
+     * greater than {@code 0} and less than {@code 1}. If not specified, {@link #DFLT_RENEW_BEFORE_FRACTION} is used.
+     *
+     * @param renewBeforeFraction Share of the lifetime.
+     */
+    public void setRenewBeforeFraction(double renewBeforeFraction) {
+        A.ensure(renewBeforeFraction > 0 && renewBeforeFraction < 1, "renewBeforeFraction must be greater than 0 and less than 1");
+
+        this.renewBeforeFraction = renewBeforeFraction;
     }
 
     /**
@@ -180,20 +212,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** {@inheritDoc} */
     @Override public SSLContext create() {
-        SSLContext ctx = sslCtx.get();
-
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
-
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
-            }
+        try {
+            return createSslContext();
         }
-
-        return ctx;
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
     }
 }

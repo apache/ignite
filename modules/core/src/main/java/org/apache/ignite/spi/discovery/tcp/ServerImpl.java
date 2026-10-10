@@ -63,7 +63,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -6295,16 +6294,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled()) {
-                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
-                            .createServerSocket(port, 0, spi.locHost);
-
-                        sslSock.setNeedClientAuth(true);
-
-                        srvrSock = sslSock;
-                    }
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -6348,6 +6338,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         blockingSectionEnd();
+                    }
+
+                    try {
+                        sock = spi.acceptedSocket(sock);
+                    }
+                    catch (IOException | IllegalArgumentException e) {
+                        U.warn(log, "Failed to set TLS up on an accepted connection [rmtAddr=" + sock.getInetAddress() +
+                            ", err=" + e + ']');
+
+                        U.closeQuiet(sock);
+
+                        continue;
                     }
 
                     if (log.isInfoEnabled()) {
