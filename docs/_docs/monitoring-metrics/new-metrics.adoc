@@ -287,6 +287,7 @@ Register name: `threadPools.{thread_pool_name}`
 |PoolSize | integer | Current number of threads in the pool.
 |QueueSize | integer | Current size of the execution queue.
 |RejectedExecutionHandlerClass | string | Class name of current rejection handler.
+|StarvationEventsCount | long | Number of possible starvation events detected in the striped pool.
 |Shutdown | boolean | True if this executor has been shut down.
 |TaskCount | long | Approximate total number of tasks that have been scheduled for execution.
 |TaskExecutionTime | histogram | Tasks execution times as histogram (milliseconds).
