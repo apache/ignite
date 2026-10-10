@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,6 +90,12 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     private PluginProvider<PluginConfiguration> pluginProvider;
 
+    /** Flag to spread the test cache data over the external storages. */
+    private boolean extStorages;
+
+    /** Resolved external storages paths. {@code null} if {@link #extStorages} is {@code false}. */
+    private @Nullable String[] extStoragePaths;
+
     /** Parameters. */
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, snpThrdPoolSz={2}")
     public static Collection<Object[]> params() {
@@ -106,6 +113,21 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         if (pluginProvider != null)
             cfg.setPluginProviders(pluginProvider);
+
+        if (extStorages) {
+            // External storage paths must be identical on all the nodes (a cache has the single storage paths
+            // setting). Thus, a shared work directory is used, like in GridCommandHandlerListSnapshotTest.
+            cfg.setWorkDirectory(U.defaultWorkDirectory());
+
+            cfg.getDataStorageConfiguration().setExtraStoragePaths(
+                U.defaultWorkDirectory() + File.separator,
+                U.defaultWorkDirectory() + File.separator + "extStorage"
+            );
+
+            extStoragePaths = cfg.getDataStorageConfiguration().getExtraStoragePaths();
+
+            cfg.getDataStorageConfiguration().setExtraSnapshotPaths("", "extStorage");
+        }
 
         cfg.setSnapshotThreadPoolSize(snpThrdPoolSz);
 
@@ -144,7 +166,15 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         // Speeds up the tests.
-        return super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
+        ccfg = super.txCacheConfig(ccfg).setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTITIONS_COUNT));
+
+        if (extStorages) {
+            assert !F.isEmpty(extStoragePaths);
+
+            ccfg.setStoragePaths(extStoragePaths);
+        }
+
+        return ccfg;
     }
 
     /** */
@@ -767,6 +797,107 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
+    public void testSnapshotListsSizes() throws Exception {
+        // Incremental snapshots do not support the only-primary mode or encryption.
+        assumeFalse(onlyPrimary || encryption);
+        // Speeds up the tests.
+        assumeTrue(snpThrdPoolSz > 1);
+
+        int grids = 3;
+
+        IgniteEx ig = startGridsWithCache(grids, txCacheConfig(defaultCacheConfiguration()), CACHE_KEYS_RANGE);
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        SnapshotListTaskResult res = listSnapshots(grid(0));
+
+        Map<UUID, Long> sizes0 = collectSizes(res);
+
+        // Check the sizes.
+        for (int g = 0; g < grids; g++) {
+            long sz = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
+
+            assertEquals(sz, sizes0.get(grid(g).localNode().id()).longValue());
+
+            assertNull(snapshotInfo(res, grid(g)).externalStorages());
+            assertNull(snapshotInfo(res, grid(g)).incrementals());
+        }
+
+        // Add some data and create an incremental snapshot.
+        try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int kv = CACHE_KEYS_RANGE; kv < CACHE_KEYS_RANGE * 2; ++kv)
+                ds.addData(kv, kv);
+        }
+
+        snp(ig).createSnapshot(SNAPSHOT_NAME, null, true, onlyPrimary).get(getTestTimeout());
+
+        // Repeat the operation.
+        res = listSnapshots(grid(0));
+
+        Map<UUID, Long> sizes1 = collectSizes(res);
+
+        for (int g = 0; g < grids; g++) {
+            UUID nodeId = grid(g).localNode().id();
+
+            SnapshotListJobResult.SnapshotInfo info = snapshotInfo(res, grid(g));
+
+            assertNotNull(info.incrementals());
+            assertEquals(1, info.incrementals().number().intValue());
+
+            // The size must grow, but exactly to the actual directory size: the incremental part
+            // is placed inside the snapshot root and must not be counted twice.
+            assertTrue(sizes1.get(nodeId) > sizes0.get(nodeId));
+
+            long sz = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
+
+            assertEquals(sz, sizes1.get(nodeId).longValue());
+        }
+    }
+
+    /** */
+    @Test
+    public void testSnapshotListsSizesExternalStorages() throws Exception {
+        // Speeds up the tests.
+        assumeTrue(snpThrdPoolSz > 1);
+        assumeFalse(onlyPrimary);
+
+        int grids = 3;
+
+        extStorages = true;
+
+        // Properly delays the test cache creation with the configured external storages.
+        dfltCacheCfg = null;
+
+        startGridsMultiThreaded(3);
+
+        grid(0).createCache(txCacheConfig(defaultCacheConfiguration()));
+
+        try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+                ds.addData(i, i);
+        }
+
+        snp(grid(0)).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
+
+        SnapshotListTaskResult res = listSnapshots(grid(0));
+
+        for (int g = 0; g < grids; g++) {
+            SnapshotListJobResult.SnapshotInfo info = snapshotInfo(res, grid(g));
+
+            assertNotNull(info);
+            assertNotNull(info.externalStorages());
+            assertTrue(info.externalStorages().size() > 0L);
+
+            long rootSize = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
+
+            // The external storages are placed outside the snapshot root and must be added to the total size.
+            assertTrue(info.size() > rootSize);
+            assertEquals(rootSize + info.externalStorages().size(), info.size());
+        }
+    }
+
+    /** */
+    @Test
     public void testNodeStopDuringSnapshotList() throws Exception {
         // Doesn't matter here, fastens the tests.
         assumeFalse(encryption || onlyPrimary);
@@ -843,5 +974,30 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     private static SnapshotListTaskResult listSnapshots(IgniteEx grid) throws Exception {
         return listSnapshots(grid, null);
+    }
+
+    /** @return The test snapshot info reported for the node. */
+    private static @Nullable SnapshotListJobResult.SnapshotInfo snapshotInfo(SnapshotListTaskResult res, IgniteEx node) {
+        for (int i = 0; i < res.nodesIds().length; i++) {
+            if (res.nodesIds()[i].equals(node.localNode().id()))
+                return res.nodesSnapshots()[i].snapshots().get(SNAPSHOT_NAME);
+        }
+
+        return null;
+    }
+
+    /** @return The test snapshot sizes reported by the list operation per node id. */
+    private static Map<UUID, Long> collectSizes(SnapshotListTaskResult res) {
+        Map<UUID, Long> sizes = new HashMap<>();
+
+        for (int i = 0; i < res.nodesIds().length; i++) {
+            SnapshotListJobResult.SnapshotInfo info = res.nodesSnapshots()[i].snapshots().get(SNAPSHOT_NAME);
+
+            assertNotNull(info);
+
+            sizes.put(res.nodesIds()[i], info.size());
+        }
+
+        return sizes;
     }
 }
