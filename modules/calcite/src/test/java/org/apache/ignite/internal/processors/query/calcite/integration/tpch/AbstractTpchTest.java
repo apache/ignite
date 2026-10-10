@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @MethodSource("parameters")
 public abstract class AbstractTpchTest extends AbstractBasicIntegrationTest {
     /** */
-    protected static final Collection<Integer> USED_TESTS = F.asList(15, 16, 17, 19, 20);
+    protected static final Collection<Integer> USED_TESTS = F.asList(5, 15, 16, 17, 19, 20);
 
     /** Query ID. */
     @Parameter(0)
