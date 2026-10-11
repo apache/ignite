@@ -21,12 +21,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.MessagesPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -51,6 +54,11 @@ public class DistributedProcessStartByCoordinatorTest extends GridCommonAbstract
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        stopAllGrids();
+    }
+
     /** Coordinator fails after the first process is finished and before it sends the initial request of the next one. */
     @Test
     public void testCoordinatorFailsBetweenProcesses() throws Exception {
@@ -73,7 +81,7 @@ public class DistributedProcessStartByCoordinatorTest extends GridCommonAbstract
                 TEST_PROCESS,
                 (ignored, req) -> new GridFinishedFuture<>(req),
                 (id, res, err) -> {
-                    if (res.values().stream().allMatch(msg -> msg.value() == 1))
+                    if (res.size() == NODES_CNT && res.values().stream().allMatch(msg -> msg.value() == 1))
                         procByNode.get(grid.name()).startByCoordinator(id, new TestIntegerMessage(2));
                     else if (res.size() == NODES_CNT - 1 && res.values().stream().allMatch(msg -> msg.value() == 2))
                         finishLatch.countDown();
@@ -89,5 +97,68 @@ public class DistributedProcessStartByCoordinatorTest extends GridCommonAbstract
         stopGrid(0);
 
         assertTrue(finishLatch.await(getTestTimeout(), MILLISECONDS));
+    }
+
+    /**
+     * Coordinator fails after the initial request of the next process is delivered, so the next coordinator must not
+     * send it again.
+     */
+    @Test
+    public void testCoordinatorFailsAfterNextProcessStarted() throws Exception {
+        startGrids(NODES_CNT);
+
+        // Initial requests sent by the next coordinator.
+        AtomicInteger initMsgs = new AtomicInteger();
+
+        ((IgniteDiscoverySpiInternalListenerSupport)grid(1).configuration().getDiscoverySpi()).setInternalListener(
+            (spi, log, msg) -> {
+                if (U.unwrapCustomMessage(msg) instanceof InitMessage)
+                    initMsgs.incrementAndGet();
+
+                return true;
+            });
+
+        CountDownLatch nextProcStarted = new CountDownLatch(NODES_CNT);
+        CountDownLatch finishLatch = new CountDownLatch(NODES_CNT - 1);
+
+        // The next process is in progress while the coordinator leaves, so it finishes on the new coordinator after
+        // the node left is handled there and the counter is final.
+        GridFutureAdapter<TestIntegerMessage> nextProcRes = new GridFutureAdapter<>();
+
+        Map<String, DistributedProcess<TestIntegerMessage, TestIntegerMessage>> procByNode = new HashMap<>();
+
+        for (Ignite grid : G.allGrids()) {
+            procByNode.put(grid.name(), new DistributedProcess<>(
+                ((IgniteEx)grid).context(),
+                TEST_PROCESS,
+                (ignored, req) -> {
+                    if (req.value() == 1)
+                        return new GridFinishedFuture<>(req);
+
+                    nextProcStarted.countDown();
+
+                    return nextProcRes;
+                },
+                (id, res, err) -> {
+                    if (res.size() == NODES_CNT && res.values().stream().allMatch(msg -> msg.value() == 1))
+                        procByNode.get(grid.name()).startByCoordinator(id, new TestIntegerMessage(2));
+                    else if (res.size() == NODES_CNT - 1 && res.values().stream().allMatch(msg -> msg.value() == 2))
+                        finishLatch.countDown();
+                    else
+                        fail("Unexpected process result [res=" + res + ", err=" + err + ']');
+                }));
+        }
+
+        procByNode.get(grid(0).name()).start(UUID.randomUUID(), new TestIntegerMessage(1));
+
+        assertTrue(nextProcStarted.await(getTestTimeout(), MILLISECONDS));
+
+        stopGrid(0);
+
+        nextProcRes.onDone(new TestIntegerMessage(2));
+
+        assertTrue(finishLatch.await(getTestTimeout(), MILLISECONDS));
+
+        assertEquals(0, initMsgs.get());
     }
 }
