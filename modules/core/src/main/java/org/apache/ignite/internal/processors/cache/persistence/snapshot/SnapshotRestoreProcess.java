@@ -1332,7 +1332,7 @@ public class SnapshotRestoreProcess {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
-        assert opCtx.reqId == req.requestId();
+        assert opCtx.reqId.equals(req.requestId());
 
         SnapshotRestoreContext opCtx0 = opCtx;
 

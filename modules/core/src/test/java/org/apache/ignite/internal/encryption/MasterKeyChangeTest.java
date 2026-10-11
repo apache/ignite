@@ -443,7 +443,7 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         stopGrid(GRID_0, true);
 
-        fut.get();
+        fut.get(getTestTimeout());
 
         assertEquals(MASTER_KEY_NAME_2, grids.get2().encryption().getMasterKeyName());
     }
