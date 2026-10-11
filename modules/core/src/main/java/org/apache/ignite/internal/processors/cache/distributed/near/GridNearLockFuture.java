@@ -674,6 +674,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                 return false;
                             }
 
+                            if (inTx())
+                                tx.entry(cached.txKey()).markLocked();
+
                             break;
                         }
                         // Possible in concurrent cases, when owner is changed after locks

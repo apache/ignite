@@ -235,6 +235,63 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
         checkLockBeforePut(cache, key, REPEATABLE_READ);
     }
 
+    /** Repeatable reads must retain their locks across a conditional lock request and savepoint rollback. */
+    @Test
+    public void testVersionedEntryLockAfterRepeatableRead() throws Exception {
+        IgniteCache<Integer, Integer> cache = transactionalCache(ignite1);
+        GridCacheAdapter<Integer, Integer> internal = internalCache(cache);
+        List<CacheEntry<Integer, Integer>> entries = new ArrayList<>();
+
+        // Exercise both a remote primary and the initiator's local primary.
+        for (Integer key : List.of(primaryKey(ignite0.cache(DEFAULT_CACHE_NAME)), primaryKey(cache))) {
+            cache.put(key, 0);
+            entries.add(cache.getEntry(key));
+        }
+
+        IgniteCache<Integer, Integer> competitorCache = grid(2).cache(DEFAULT_CACHE_NAME);
+
+        for (boolean commit : new boolean[] {false, true}) {
+            try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10_000, 0)) {
+                for (CacheEntry<Integer, Integer> entry : entries) {
+                    assertEquals(Integer.valueOf(0), cache.get(entry.getKey()));
+
+                    // Ownership must be recorded before a savepoint can snapshot the transaction entry.
+                    assertTrue("Repeatable read must record lock ownership",
+                        internal.tx().entry(internal.context().txKey(
+                            internal.context().toCacheKeyObject(entry.getKey()))).locked());
+                }
+
+                tx.savepoint("afterRead");
+
+                if (batch)
+                    assertTrue(acquireLockForEntries(cache, entries, -1));
+                else {
+                    for (CacheEntry<Integer, Integer> entry : entries)
+                        assertTrue(acquireLockForEntry(cache, entry, -1));
+                }
+
+                tx.rollbackToSavepoint("afterRead");
+
+                try (Transaction competitor = grid(2).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+                    for (CacheEntry<Integer, Integer> entry : entries)
+                        assertFalse(acquireLockForEntry(competitorCache, entry, -1));
+                }
+
+                if (commit)
+                    tx.commit();
+                else
+                    tx.rollback();
+            }
+
+            // Both ways of finishing the transaction must release the primary locks.
+            try (Transaction competitor = grid(2).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+                assertTrue(acquireLockForEntries(competitorCache, entries, 1_000));
+
+                competitor.commit();
+            }
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
