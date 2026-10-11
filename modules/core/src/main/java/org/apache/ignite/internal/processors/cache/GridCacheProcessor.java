@@ -5044,6 +5044,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.restartId(restartId);
 
         if (ccfg != null) {
+            CU.validateCacheGroupName(ccfg.getGroupName());
+
             cloneCheckSerializable(ccfg);
 
             if (desc != null) {
