@@ -525,6 +525,23 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return 0L;
     }
 
+    /**
+     * Attempts to acquire the read lock regardless of the page tag, without ever blocking.
+     *
+     * @param cacheId Cache group ID.
+     * @param pageId Page ID.
+     * @param page Page absolute pointer.
+     * @return Page address or {@code 0L} if the page is currently write-locked.
+     */
+    public long tryReadLock(int cacheId, long pageId, long page) {
+        assert started;
+
+        if (rwLock.tryReadLock(page + LOCK_OFFSET, -1))
+            return page + PAGE_OVERHEAD;
+
+        return 0L;
+    }
+
     /** {@inheritDoc} */
     @Override public void readUnlock(int cacheId, long pageId, long page) {
         assert started;

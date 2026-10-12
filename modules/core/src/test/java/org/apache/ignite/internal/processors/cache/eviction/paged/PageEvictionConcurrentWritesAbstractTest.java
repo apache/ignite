@@ -22,13 +22,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-/** Concurrent deadlock test for size-aware page eviction. */
+/** Concurrent deadlock and data-integrity tests for size-aware page eviction. */
 public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvictionAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -38,8 +40,6 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
     /**
      * Concurrent large inserts into a region pre-filled with small entries must complete within the deadline without
      * deadlock, and without corrupting the free list (eviction frees small entries rather than overrunning the region).
-     * After the concurrent phase, the cache must remain functional: a new put+get must succeed, and at least some of
-     * the large entries written by concurrent threads must be readable.
      *
      * @throws Exception If failed.
      */
@@ -56,10 +56,10 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         long regionMax = regionMaxSize(ignite);
 
         // Small value: sized so that 'smallEntries' of them fill ~80% of the region, staying under the 90% eviction threshold.
-        byte[] smallVal = new byte[(int)(regionMax * 0.8 / smallEntries)];
+        int smallValSize = (int)(regionMax * 0.8 / smallEntries);
 
         for (int i = 0; i < smallEntries; i++)
-            cache.put(i, smallVal);
+            cache.put(i, valueFor(i, smallValSize));
 
         assertFalse("Eviction must not have started during pre-fill", isEvictionsStarted(ignite));
 
@@ -67,15 +67,18 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         AtomicInteger threadIdx = new AtomicInteger();
 
         // Large value: 5% of the region — large enough to trigger eviction during concurrent writes.
-        byte[] largeVal = new byte[(int)(regionMax / 20)];
+        int largeValSize = (int)(regionMax / 20);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             U.awaitQuiet(startLatch);
 
             int idx = threadIdx.getAndIncrement();
 
-            for (int k = 0; k < largeRowsPerThread; k++)
-                cache.put(smallEntries + idx * largeRowsPerThread + k, largeVal);
+            for (int k = 0; k < largeRowsPerThread; k++) {
+                int key = smallEntries + idx * largeRowsPerThread + k;
+
+                cache.put(key, valueFor(key, largeValSize));
+            }
         }, threads, "paged-writer");
 
         startLatch.countDown();
@@ -85,11 +88,9 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
 
         // Verify the free list is not corrupted: a new put+get must succeed.
-        byte[] probeVal = new byte[pageSize(ignite) - 200];
-
-        Arrays.fill(probeVal, (byte)1);
-
         int probeKey = smallEntries + threads * largeRowsPerThread + 1;
+
+        byte[] probeVal = valueFor(probeKey, pageSize(ignite) - 200);
 
         cache.put(probeKey, probeVal);
 
@@ -98,17 +99,121 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         assertNotNull(read);
         assertTrue(Arrays.equals(probeVal, read));
 
-        int readableLarge = 0;
+        verifyContent(cache, 0, smallEntries, smallValSize);
 
-        for (int t = 0; t < threads; t++) {
-            for (int k = 0; k < largeRowsPerThread; k++) {
-                int key = smallEntries + t * largeRowsPerThread + k;
+        int survivedLarge = verifyContent(cache, smallEntries, threads * largeRowsPerThread, largeValSize);
 
-                if (cache.get(key) != null)
-                    readableLarge++;
-            }
+        assertTrue("At least one large entry must survive", survivedLarge > 0);
+    }
+
+    /**
+     * Batch insert path test.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalanceBatchInsertsWithEviction() throws Exception {
+        IgniteEx ignite1 = startGrid(1);
+
+        int largeValSize = (int)(regionMaxSize(ignite1) / 20);
+        int largeRows = 25;
+
+        IgniteCache<Integer, Object> cache = ignite1.createCache(new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32)).setBackups(1));
+
+        for (int k = 0; k < largeRows; k++)
+            cache.put(k, valueFor(k, largeValSize));
+
+        byte[] smallVal = new byte[pageSize(ignite1) - 200];
+
+        int smallKeyBase = largeRows + 1;
+
+        for (int i = 0; i < totalPages(ignite1); i++) {
+            cache.put(smallKeyBase + i, smallVal);
+
+            if (isEvictionsStarted(ignite1))
+                break;
         }
 
-        assertTrue(readableLarge > 0);
+        assertTrue("Eviction must start during overflow fill", isEvictionsStarted(ignite1));
+
+        IgniteEx ignite2 = startGrid(2);
+
+        // Writers keep adding large rows on the coordinator while the joining node stores rebalance batches.
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger threadIdx = new AtomicInteger();
+
+        int writers = 4;
+        int rowsPerWriter = 5;
+
+        int writerKeyBase = smallKeyBase + (int)totalPages(ignite1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            U.awaitQuiet(startLatch);
+
+            int idx = threadIdx.getAndIncrement();
+
+            for (int k = 0; k < rowsPerWriter; k++) {
+                int key = writerKeyBase + idx * rowsPerWriter + k;
+
+                cache.put(key, valueFor(key, largeValSize));
+            }
+        }, writers, "paged-writer");
+
+        startLatch.countDown();
+
+        awaitPartitionMapExchange();
+
+        cache.rebalance().get(TimeUnit.MINUTES.toMillis(2));
+
+        fut.get(TimeUnit.MINUTES.toMillis(2));
+
+        assertTrue("Eviction must have started on the rebalanced node", isEvictionsStarted(ignite2));
+
+        int survived = verifyContent(cache, 0, largeRows, largeValSize) +
+            verifyContent(cache, writerKeyBase, writers * rowsPerWriter, largeValSize);
+
+        assertTrue("At least one large entry must survive", survived > 0);
+    }
+
+    /**
+     * @param key Key the value is stored under.
+     * @param size Value size in bytes.
+     * @return Deterministic per-key value content.
+     */
+    private static byte[] valueFor(int key, int size) {
+        byte[] val = new byte[size];
+
+        for (int i = 0; i < size; i++)
+            val[i] = (byte)(key * 31 + i);
+
+        return val;
+    }
+
+    /**
+     * Reads {@code cnt} entries starting from {@code base} and asserts that every non-null value is byte-identical
+     * to the deterministic content written for its key.
+     *
+     * @param cache Cache to read from.
+     * @param base First key.
+     * @param cnt Number of keys to check.
+     * @param valSize Size of the values written for these keys.
+     * @return Number of entries that survived eviction.
+     */
+    private static int verifyContent(IgniteCache<Integer, ?> cache, int base, int cnt, int valSize) {
+        int survived = 0;
+
+        for (int k = base; k < base + cnt; k++) {
+            byte[] read = (byte[])cache.get(k);
+
+            if (read == null)
+                continue; // Evicted.
+
+            assertTrue("Content mismatch for key " + k, Arrays.equals(valueFor(k, valSize), read));
+
+            survived++;
+        }
+
+        return survived;
     }
 }

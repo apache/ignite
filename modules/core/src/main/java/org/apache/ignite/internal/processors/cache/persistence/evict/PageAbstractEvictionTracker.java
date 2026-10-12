@@ -104,7 +104,10 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         List<CacheDataRowAdapter> rowsToEvict;
 
         try {
-            long pageAddr = pageMem.readLockForce(0, fakePageId, page);
+            long pageAddr = pageMem.tryReadLock(0, fakePageId, page);
+
+            if (pageAddr == 0L)
+                return false; // Candidate page is write-locked: skip it.
 
             try {
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)

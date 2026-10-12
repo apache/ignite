@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.internal.processors.cache.persistence.evict.PageAbstractEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
+import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -350,7 +352,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 if (written == COMPLETE) {
                     // If the data row was completely written without remainder, proceed to the next.
-                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                    if ((written = writeWholePages(row, statHolder, false)) == COMPLETE)
                         continue;
 
                     if (io.getFreeSpace(pageAddr) < row.size() - written)
@@ -605,32 +607,36 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Proactively reserves enough free space for the row and then takes a page. The reserve targets
-     * {@code requiredPages + emptyPagesPoolSize} (see {@link IgniteCacheDatabaseSharedManager#ensureFreeSpaceForInsert}),
-     * so after this thread consumes its pages at least {@code emptyPagesPoolSize} pages remain for concurrent writers.
+     * Takes a page, optionally running the size-aware reserve first (see {@link #ensureFreeSpaceForInsert(int)}).
+     * The reserve targets {@code requiredPages + emptyPagesPoolSize}, so after this thread consumes its pages
+     * at least {@code emptyPagesPoolSize} pages remain for concurrent writers.
      *
      * @param size Free space required on the page.
      * @param row Row to write.
      * @param statHolder Statistics holder to track IO operations.
+     * @param reserve {@code true} to run the size-aware reserve before taking the page. Must be {@code false}
+     * when the current thread already holds a page write lock: the reserve may evict, and eviction takes a
+     * blocking read lock on the candidate data page, while {@link OffheapReadWriteLock} is not reentrant
+     * (see {@link PageAbstractEvictionTracker}).
      * @return Page identifier or 0 if no page could be obtained after reserving.
      * @throws IgniteCheckedException If failed.
      */
-    private long takePageWithReserve(int size, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (dbMgr == null || dataRegion.config().isPersistenceEnabled() ||
-            dataRegion.config().getPageEvictionMode() == DataPageEvictionMode.DISABLED)
-            return takePage(size, row, statHolder);
+    private long takePageWithReserve(int size, T row, IoStatisticsHolder statHolder, boolean reserve) throws IgniteCheckedException {
+        if (reserve) {
+            ensureFreeSpaceForInsert(size);
 
-        dbMgr.ensureFreeSpaceForInsert(dataRegion, size);
+            long pageId = takePage(size, row, statHolder);
 
-        long pageId = takePage(size, row, statHolder);
+            if (pageId == 0L) {
+                ensureFreeSpaceForInsert(size);
 
-        if (pageId == 0L) {
-            dbMgr.ensureFreeSpaceForInsert(dataRegion, size);
+                pageId = takePage(size, row, statHolder);
+            }
 
-            pageId = takePage(size, row, statHolder);
+            return pageId;
         }
 
-        return pageId;
+        return takePage(size, row, statHolder);
     }
 
     /** {@inheritDoc} */
@@ -642,7 +648,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 if (written != 0)
                     memMetrics.incrementLargeEntriesPages();
 
-                written = writeSinglePage(row, written, statHolder);
+                written = writeSinglePage(row, written, statHolder, true);
             }
             while (written != COMPLETE);
         }
@@ -682,14 +688,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 }
 
                 if (written == COMPLETE) {
-                    written = writeWholePages(row, statHolder);
+                    written = writeWholePages(row, statHolder, true);
 
                     continue;
                 }
 
                 AbstractDataPageIO initIo = null;
 
-                long pageId = takePageWithReserve(row.size() - written, row, statHolder);
+                long pageId = takePageWithReserve(row.size() - written, row, statHolder, true);
 
                 if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
@@ -716,18 +722,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      *
      * @param row Row to process.
      * @param statHolder Statistics holder to track IO operations.
+     * @param reserve {@code true} to run the size-aware reserve before each page allocation; must be {@code false}
+     * when the current thread holds a page write lock.
      * @return Number of bytes written, {@link #COMPLETE} if the row was fully written, {@code 0} if data row was
      * ignored because it is less than the max payload of an empty data page.
      * @throws IgniteCheckedException If failed.
      */
-    private int writeWholePages(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    private int writeWholePages(T row, IoStatisticsHolder statHolder, boolean reserve) throws IgniteCheckedException {
         assert row.link() == 0 : row.link();
 
         int written = 0;
         int rowSize = row.size();
 
         while (rowSize - written >= MIN_SIZE_FOR_DATA_PAGE) {
-            written = writeSinglePage(row, written, statHolder);
+            written = writeSinglePage(row, written, statHolder, reserve);
 
             memMetrics.incrementLargeEntriesPages();
         }
@@ -741,13 +749,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param row Row to write.
      * @param written Written size.
      * @param statHolder Statistics holder to track IO operations.
+     * @param reserve {@code true} to run the size-aware reserve before taking the page; must be {@code false}
+     * when the current thread holds a page write lock.
      * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
      * @throws IgniteCheckedException If failed.
      */
-    private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    private int writeSinglePage(T row, int written, IoStatisticsHolder statHolder, boolean reserve) throws IgniteCheckedException {
         AbstractDataPageIO initIo = null;
 
-        long pageId = takePageWithReserve(row.size() - written, row, statHolder);
+        long pageId = takePageWithReserve(row.size() - written, row, statHolder, reserve);
 
         if (pageId == 0L) {
             pageId = allocateDataPage(row.partition());
@@ -966,6 +976,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to count recycled pages", t, grpId);
         }
+    }
+
+    /**
+     * Runs the size-aware reserve for an in-memory region with enabled page eviction; no-op otherwise.
+     *
+     * @param size Size of the row (or its remaining part) to be inserted.
+     * @throws IgniteCheckedException If failed to evict data pages.
+     */
+    private void ensureFreeSpaceForInsert(int size) throws IgniteCheckedException {
+        if (dbMgr == null || dataRegion.config().isPersistenceEnabled() ||
+            dataRegion.config().getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            return;
+
+        dbMgr.ensureFreeSpaceForInsert(dataRegion, size);
     }
 
     /** {@inheritDoc} */
