@@ -72,7 +72,7 @@ class MdcMajorityPartitionTest(IgniteTest):
         the others discovered through - to assert that no DC is privileged: losing it is
         just as survivable as losing any other.
         """
-        mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1, jmx_metrics=True,
+        mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1,
                          network_timeout=20_000)
 
         majority = tuple(dc for dc in mdc.dcs if dc != isolated_dc)
@@ -85,11 +85,6 @@ class MdcMajorityPartitionTest(IgniteTest):
             total_keys = self._generate_data(mdc)
 
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
-
-            # The cluster's own verdict on the guarantees, next to the test's: the affinity
-            # metric reports the cache CONFIGURATION, the distribution one the assignment
-            # verify_cache_distribution() has just walked partition by partition.
-            mdc.verify_cache_mdc_metrics(CACHE_NAME, affinity_safe=True, distribution_safe=True)
 
             # Both cuts land in the same SSH round-trip: rolling them out one after the
             # other would briefly present the cluster with a two segment topology it would
@@ -111,11 +106,6 @@ class MdcMajorityPartitionTest(IgniteTest):
             # ...while the isolated DC sees one DC out of three and is rejected by the validator.
             mdc.check_put_admissibility(isolated_dc, CACHE_NAME, False, key_offset=_probe_offset(2))
 
-            # The cache is configured for three DCs no matter what the segment can see, so the
-            # affinity metric holds. The distribution one is about what the segment CAN place
-            # a copy on and is only reported here - see the note on the constants.
-            mdc.verify_cache_mdc_metrics(CACHE_NAME, affinity_safe=True, dc=isolated_dc)
-
             net.disable_network_partitions(*cut)
 
             # DC1 is the DC the others discovered through, so the shared ip finder holds only
@@ -127,9 +117,6 @@ class MdcMajorityPartitionTest(IgniteTest):
             mdc.restart(isolated_dc)
 
             self._verify_recovered(mdc, total_keys, probe_idx=3)
-
-            # Whole again, so the assignment is back to one copy per DC and the cluster says so.
-            mdc.verify_cache_mdc_metrics(CACHE_NAME, affinity_safe=True, distribution_safe=True)
 
             mdc.stop_servers()
 

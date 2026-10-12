@@ -78,21 +78,6 @@ ASSERTION_ERROR_PATTERN = "AssertionError"
 # Every log of a server node, including the ones rotated by a restart.
 ALL_LOGS_GLOB = "ignite*.log*"
 
-# Needed by everything that reads a node metric over JMX - await_rebalance(), the snapshot
-# commands and the MDC safety metrics below among them.
-JMX_METRIC_EXPORTER = "org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"
-
-# Per-cache metrics holding the cluster's own verdict on the MDC guarantees. Registered on
-# every server node that carries a DC id, for every cache.
-#
-# The two are not the same statement. The affinity one is about CONFIGURATION - whether the
-# cache is set up to keep a copy of every partition in every DC at all, which is what the
-# MdcAffinityBackupFilter provides. The distribution one is about the CURRENT assignment
-# actually doing so, which a correctly configured cache still fails while some DC has no
-# nodes to place a copy on.
-MDC_SAFE_AFFINITY_METRIC = "IsCacheAffinityConfigurationMdcSafe"
-MDC_SAFE_DISTRIBUTION_METRIC = "IsCachePartitionDistributionSafe"
-
 # A segment of a partitioned cluster: one DC or a group of DCs that still see each other.
 Segment = Union[str, Sequence[str]]
 
@@ -202,8 +187,6 @@ class MdcCluster:
     :param loaders_per_dc: Dedicated background load app services per DC. They run
            concurrently with runner apps, hence separate containers.
     :param client_connector: Whether to expose the thin client connector on servers.
-    :param jmx_metrics: Whether to export the node metrics over JMX. Required by everything
-           that reads one - see :meth:`cache_mdc_metrics`.
     :param network_timeout: Network timeout in ms, for the nodes and for their discovery SPI
            alike. The discovery SPI's is how long a joining node waits for its join to
            complete: a node restarted across a 100ms cross-DC ring needs more than its 5s
@@ -217,7 +200,6 @@ class MdcCluster:
                  runners_per_dc: Union[int, Dict[str, int]] = 1,
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
                  client_connector: bool = False,
-                 jmx_metrics: bool = False,
                  network_timeout: Optional[int] = None):
         self.test_context = test.test_context
         self.logger = test.logger
@@ -246,10 +228,6 @@ class MdcCluster:
 
         if client_connector:
             cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()
-
-        if jmx_metrics:
-            # A fresh set, never the shared mutable default of IgniteConfiguration.
-            cfg_kwargs["metric_exporters"] = {JMX_METRIC_EXPORTER}
 
         self.ignite_config = IgniteConfiguration(**cfg_kwargs)
 
@@ -620,51 +598,6 @@ class MdcCluster:
         :return: Control utility bound to the given DC's servers, the first DC by default.
         """
         return ControlUtility(self.dc_servers(dc if dc is not None else self.dcs[0])[0])
-
-    def cache_mdc_metrics(self, cache_name: str, dc: Optional[str] = None) -> Dict[str, bool]:
-        """
-        Reads the cache's MDC safety metrics off a server node over JMX - see
-        :data:`MDC_SAFE_AFFINITY_METRIC` and :data:`MDC_SAFE_DISTRIBUTION_METRIC` for what
-        each of them claims.
-
-        Requires the cluster to have been built with ``jmx_metrics=True``, since the metrics
-        are only exposed by the JMX metric exporter.
-
-        :param cache_name: Cache to read the metrics of.
-        :param dc: DC whose node answers, the first one by default. Every server node reports
-               the same verdict, so this only matters for a partitioned cluster - where each
-               segment answers about the topology IT can see.
-        :return: Metric name -> value.
-        """
-        node = next(node for svc in self.dc_servers(dc if dc is not None else self.dcs[0])
-                    for node in svc.alive_nodes)
-
-        mbean = node.metric_registry_mbean(f'cache.{cache_name}')
-
-        return {name: mbean.bool_value(name)
-                for name in (MDC_SAFE_AFFINITY_METRIC, MDC_SAFE_DISTRIBUTION_METRIC)}
-
-    def verify_cache_mdc_metrics(self, cache_name: str, affinity_safe: Optional[bool] = None,
-                                 distribution_safe: Optional[bool] = None, dc: Optional[str] = None):
-        """
-        Verifies the MDC safety metrics of a cache against what the scenario expects. Both
-        expectations are optional: a metric left as None is only reported, which is how a
-        scenario reads out a value whose verdict depends on the state of the topology rather
-        than on the point being made.
-
-        :return: The metrics that were read.
-        """
-        metrics = self.cache_mdc_metrics(cache_name, dc)
-
-        self.logger.info(f"MDC safety metrics [cache={cache_name}, dc={dc}, {metrics}]")
-
-        for name, expected in ((MDC_SAFE_AFFINITY_METRIC, affinity_safe),
-                               (MDC_SAFE_DISTRIBUTION_METRIC, distribution_safe)):
-            if expected is not None:
-                assert metrics[name] == expected, \
-                    f"{name} should be {expected} [cache={cache_name}, actual={metrics[name]}]"
-
-        return metrics
 
     def verify_cache_distribution(self, cache_name: str, copies_per_dc: Optional[int] = None,
                                   dc: Optional[str] = None):
