@@ -78,8 +78,8 @@ public class DistributedProcess<I extends Message, R extends Message> {
     /** Active processes. */
     private final ConcurrentHashMap<UUID, Process> processes = new ConcurrentHashMap<>(1);
 
-    /** Starts waiting for the coordinator to send the initial request, see {@link #startByCoordinator}. */
-    private final ConcurrentHashMap<UUID, Runnable> pendingStarts = new ConcurrentHashMap<>(1);
+    /** Start requests to run when the local node becomes the coordinator, see {@link #startByCoordinator}. */
+    private final ConcurrentHashMap<UUID, Runnable> pendingStartRequests = new ConcurrentHashMap<>(1);
 
     /** Synchronization mutex for coordinator initializing and the remaining collection operations. */
     private final Object mux = new Object();
@@ -132,7 +132,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
             if (msg.type() != type.ordinal())
                 return;
 
-            pendingStarts.remove(msg.processId());
+            pendingStartRequests.remove(msg.processId());
 
             Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
@@ -223,7 +223,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
         ctx.event().addDiscoveryEventListener((evt, discoCache) -> {
             UUID leftNodeId = evt.eventNode().id();
 
-            startPending();
+            startPendingRequests();
 
             for (Process p : processes.values()) {
                 p.initFut.listen(() -> {
@@ -298,12 +298,12 @@ public class DistributedProcess<I extends Message, R extends Message> {
         if (crd.isLocal())
             start(id, req);
         else
-            pendingStarts.put(id, () -> start(id, req));
+            pendingStartRequests.put(id, () -> start(id, req));
     }
 
-    /** Starts the pending starts if the local node has become the coordinator. */
-    private void startPending() {
-        if (pendingStarts.isEmpty())
+    /** Runs the pending start requests if the local node has become the coordinator. */
+    private void startPendingRequests() {
+        if (pendingStartRequests.isEmpty())
             return;
 
         ClusterNode crd = coordinator();
@@ -311,8 +311,8 @@ public class DistributedProcess<I extends Message, R extends Message> {
         if (crd == null || !crd.isLocal())
             return;
 
-        for (UUID id : pendingStarts.keySet()) {
-            Runnable start = pendingStarts.remove(id);
+        for (UUID id : pendingStartRequests.keySet()) {
+            Runnable start = pendingStartRequests.remove(id);
 
             if (start != null)
                 start.run();
@@ -427,7 +427,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
     /** Handles case when all server nodes have left the grid. */
     private void onAllServersLeft() {
         processes.clear();
-        pendingStarts.clear();
+        pendingStartRequests.clear();
     }
 
     /** @return Cluster coordinator, {@code null} if failed to determine. */
