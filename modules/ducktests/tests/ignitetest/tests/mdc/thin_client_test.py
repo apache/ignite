@@ -68,7 +68,8 @@ class MdcThinClientTest(IgniteTest):
         but rejects writes, and writes resume after the heal.
         """
         mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc={DC_1: 1},
-                         client_connector=True, network_timeout=20_000)
+                         client_connector=True, network_timeout=20_000,
+                         discovery_network_timeout=20_000)
 
         # All thin clients get the full address list of both DCs: DC preference must come
         # from routing, not from the address list.

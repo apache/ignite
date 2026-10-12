@@ -113,9 +113,11 @@ class TcpDiscoverySpi(DiscoverySpi):
     def __init__(self, ip_finder=TcpDiscoveryVmIpFinder(), port=47500, port_range=100, local_address=None,
                  network_timeout=None):
         """
-        :param network_timeout: The SPI's own network timeout, in ms - among others, how long a joining
-               node waits for its join to complete before it retries. IgniteConfiguration.network_timeout
-               does not reach it. None leaves Ignite's default.
+        :param ip_finder: IP finder with the hosts to join through.
+        :param port: Local port, and the port the SPI joins through on every host.
+        :param port_range: Number of ports after ``port`` the SPI tries, locally and on every host.
+        :param local_address: Local address to bind to, None for the default.
+        :param network_timeout: Network timeout in ms, None for Ignite's default.
         """
         self.ip_finder = ip_finder
         self.port = port

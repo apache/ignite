@@ -22,10 +22,15 @@ to cut. All of that is compiled without a cluster, so it is checked without one.
 """
 
 import logging
+from itertools import count
+from types import SimpleNamespace
 
 import pytest
 
-from checks.support.discovery_template import discovery_spi, render_discovery_spi
+from checks.support.ducktape_doubles import fake_nodes
+from ignitetest.services.ignite import IgniteService
+from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.mdc import mdc_cluster
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, mdc_topology_params, min_backups, all_pairs, \
     cross_dc_network, per_dc, CACHE_TOP_VALIDATOR_GLOBAL, DCS_2, DCS_3, DC_1, DC_2, DC_3
@@ -188,71 +193,92 @@ class CheckMdcCacheParams:
         assert params["topologyValidator"] is False
 
 
-class CheckMdcDiscovery:
+_HOSTS = count(1)
+
+
+class FakeIgniteService(IgniteService):
     """
-    Checks the discovery SPI every node of an MDC cluster joins through.
+    A server service on nodes of its own, built without ducktape.
     """
-    @pytest.mark.parametrize("spi_args", [{}, {"port_range": 100, "network_timeout": 1}])
-    def check_a_rejoin_tries_one_address_per_host_and_waits_the_cluster_timeout(self, spi_args):
-        """
-        A node that restarts across a slow cross-DC ring can outwait the SPI's own network
-        timeout before its join completes, and then retries the join address by address.
-        Both have to fit the ring: the cluster's timeout, and one address per host instead
-        of a whole port range.
-        """
-        mdc = _fixture(DCS_3)
-        mdc.network_timeout = 20_000
-
-        xml = render_discovery_spi(mdc._discovery_spi(discovery_spi(**spi_args)))
-
-        assert '<property name="networkTimeout" value="20000"/>' in xml
-
-        assert "<value>ducker02:47500</value>" in xml
-
-        assert ".." not in xml
+    def __init__(self, context, config, num_nodes=1, **kwargs):
+        self.config = config
+        self.nodes = fake_nodes(*(f"ducker{next(_HOSTS)}" for _ in range(num_nodes)))
 
 
-class FakeTest:
+class FakeAppService(IgniteApplicationService):
     """
-    The two members the MdcCluster constructor reads off a ducktape test.
+    An application service on a node of its own, built without ducktape.
     """
-    def __init__(self):
-        self.test_context = type("FakeTestContext", (), {"globals": {}})()
-        self.logger = logging.getLogger(__name__)
+    def __init__(self, context, config, **kwargs):
+        self.config = config
+        self.nodes = fake_nodes(f"ducker{next(_HOSTS)}")
 
 
 @pytest.fixture
-def no_services(monkeypatch):
+def new_mdc(monkeypatch):
     """
-    Lets the real MdcCluster constructor run without a ducktape cluster: no service is built.
+    :return: A factory of MdcCluster over fake services.
     """
-    monkeypatch.setattr(MdcCluster, "_server_service", lambda self, dc, num_nodes: None)
-    monkeypatch.setattr(MdcCluster, "_app_service", lambda self, dc: None)
+    monkeypatch.setattr(mdc_cluster, "IgniteService", FakeIgniteService)
+    monkeypatch.setattr(mdc_cluster, "IgniteApplicationService", FakeAppService)
+
+    test = SimpleNamespace(test_context=SimpleNamespace(globals={}), logger=logging.getLogger(__name__))
+
+    return lambda **kwargs: MdcCluster(test, "dev", **kwargs)
+
+
+def _hosts(services):
+    return {node.account.externally_routable_ip for svc in services for node in svc.nodes}
+
+
+class CheckMdcDiscovery:
+    """
+    Checks which nodes the servers and clients of an MDC cluster discover through.
+    """
+    def check_every_server_discovers_through_every_dc(self, new_mdc):
+        """Any DC can restart and rejoin through the others."""
+        mdc = new_mdc(dcs=DCS_3, srv_per_dc=2)
+
+        for svc in mdc.servers.values():
+            assert set(svc.config.discovery_spi.ip_finder.addresses) == _hosts(mdc.servers.values())
+
+            assert svc.config.discovery_spi.port_range == 0
+
+    def check_a_client_discovers_through_its_own_dc(self, new_mdc):
+        """A client started in a cut DC must not wait on the other DCs."""
+        mdc = new_mdc(dcs=DCS_3, srv_per_dc=2)
+
+        spi = mdc.runners[DC_2][0].config.discovery_spi
+
+        assert set(spi.ip_finder.addresses) == _hosts([mdc.servers[DC_2]])
 
 
 class CheckMdcTimeouts:
     """
-    Checks which timeouts an MDC cluster sets on its nodes: none the tests don't need. An
-    explicit communication connect timeout, for one, turns off failure detection for that SPI.
+    Checks that each timeout parameter reaches only its own setting.
     """
-    def check_a_default_cluster_sets_no_timeout(self, no_services):
-        """
-        By default nothing differs from a plain node: the configuration keeps the framework's
-        network timeout, the SPIs set none of their own.
-        """
-        mdc = MdcCluster(FakeTest(), "dev")
+    def check_a_default_cluster_sets_no_timeout(self, new_mdc):
+        """A default cluster keeps the framework's node timeout and Ignite's discovery one."""
+        mdc = new_mdc()
 
         assert mdc.ignite_config.network_timeout == IgniteConfiguration().network_timeout
-        assert mdc.ignite_config.discovery_spi.network_timeout is None
-        assert mdc.ignite_config.communication_spi.connect_timeout is None
 
-    def check_a_network_timeout_reaches_the_nodes_and_their_discovery(self, no_services):
-        """
-        One value for both: the discovery SPI's bounds a rejoin, the configuration's sets when
-        a slow PME is reported.
-        """
-        mdc = MdcCluster(FakeTest(), "dev", network_timeout=20_000)
+        assert mdc.servers[DC_1].config.discovery_spi.network_timeout is None
+
+    def check_the_node_timeout_reaches_only_the_nodes(self, new_mdc):
+        """The node timeout leaves discovery alone."""
+        mdc = new_mdc(network_timeout=20_000)
 
         assert mdc.ignite_config.network_timeout == 20_000
-        assert mdc.ignite_config.discovery_spi.network_timeout == 20_000
-        assert mdc.ignite_config.communication_spi.connect_timeout is None
+
+        assert mdc.servers[DC_1].config.discovery_spi.network_timeout is None
+
+    def check_the_discovery_timeout_reaches_servers_and_clients(self, new_mdc):
+        """The discovery timeout leaves the node timeout alone."""
+        mdc = new_mdc(discovery_network_timeout=20_000)
+
+        assert mdc.ignite_config.network_timeout == IgniteConfiguration().network_timeout
+
+        assert mdc.servers[DC_1].config.discovery_spi.network_timeout == 20_000
+
+        assert mdc.runners[DC_1][0].config.discovery_spi.network_timeout == 20_000

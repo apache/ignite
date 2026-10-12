@@ -38,8 +38,7 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
-    from_ignite_services
+from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, TcpDiscoveryVmIpFinder
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils.version import IgniteVersion
 
@@ -180,12 +179,8 @@ class MdcCluster:
     :param loaders_per_dc: Dedicated background load app services per DC. They run
            concurrently with runner apps, hence separate containers.
     :param client_connector: Whether to expose the thin client connector on servers.
-    :param network_timeout: Network timeout in ms, for the nodes and for their discovery SPI
-           alike. The discovery SPI's is how long a joining node waits for its join to
-           complete: a node restarted across a 100ms cross-DC ring needs more than its 5s
-           default. The nodes' timeout sets when a slow PME is reported (2 x timeout), and a PME after
-           a split can wait ~17s for a transaction of a client on the other side. Unset by
-           default: the nodes keep the framework's value, the SPI its own.
+    :param network_timeout: Network timeout of the nodes, in ms.
+    :param discovery_network_timeout: Network timeout of the discovery SPI, in ms.
     """
     def __init__(self, test, ignite_version: str, dcs: Sequence[str] = DCS_2,
                  main_dc: Optional[str] = None,
@@ -193,7 +188,8 @@ class MdcCluster:
                  runners_per_dc: Union[int, Dict[str, int]] = 1,
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
                  client_connector: bool = False,
-                 network_timeout: Optional[int] = None):
+                 network_timeout: Optional[int] = None,
+                 discovery_network_timeout: Optional[int] = None):
         self.test_context = test.test_context
         self.logger = test.logger
 
@@ -203,18 +199,9 @@ class MdcCluster:
 
         self.main_dc = main_dc if main_dc is not None else self.dcs[0]
 
-        self.network_timeout = network_timeout
+        self.discovery_network_timeout = discovery_network_timeout
 
-        # A single discovery SPI (hence a single ip finder) shared by all DCs' server
-        # services is what makes the DCs form ONE cluster: prepare_on_start() memoizes the
-        # addresses of the first started DC into the shared ip finder, so every later DC
-        # discovers through the first DC's nodes, and restart() re-joins the same way.
-        # Restarting the first started DC itself is the one case this breaks - see
-        # sync_service_discovery().
-        cfg_kwargs = {
-            "version": IgniteVersion(ignite_version),
-            "discovery_spi": self._discovery_spi(TcpDiscoverySpi()),
-        }
+        cfg_kwargs = {"version": IgniteVersion(ignite_version)}
 
         if network_timeout is not None:
             cfg_kwargs["network_timeout"] = network_timeout
@@ -228,6 +215,12 @@ class MdcCluster:
 
         self.servers: Dict[str, IgniteService] = {
             dc: self._server_service(dc, num) for dc, num in self.srv_per_dc.items() if num > 0}
+
+        # Every DC discovers through all of them, so any DC can restart and rejoin the others.
+        server_spi = self._discovery_spi([node for svc in self.servers.values() for node in svc.nodes])
+
+        for svc in self.servers.values():
+            svc.config = svc.config._replace(discovery_spi=server_spi)
 
         self.runners: Dict[str, List[IgniteApplicationService]] = {
             dc: [self._app_service(dc) for _ in range(num)]
@@ -289,43 +282,16 @@ class MdcCluster:
         """
         return mdc_topology_params(self.dcs, self.main_dc)
 
-    def sync_service_discovery(self):
+    def _discovery_spi(self, nodes) -> TcpDiscoverySpi:
         """
-        Points every server service at a discovery SPI covering all DCs.
-
-        Required before restarting the FIRST started DC: the shared ip finder holds only
-        that DC's addresses, so after a full stop its nodes would seed off themselves and
-        form a separate cluster instead of rejoining the surviving DCs.
+        :return: Discovery SPI that joins through the given nodes, one port per host.
         """
-        discovery_spi = self._discovery_spi(from_ignite_services(self.all_servers()))
-
-        for service in self.all_servers():
-            service.config = service.config._replace(discovery_spi=discovery_spi)
-
-    def _discovery_spi(self, spi: TcpDiscoverySpi) -> TcpDiscoverySpi:
-        """
-        Fits a discovery SPI to the cross-DC ring.
-
-        A node joining across DCs - above all one restarted after a split - may wait longer
-        for its join to complete than the SPI's own network timeout, which defaults to 5s and
-        is not the cluster's. It then retries the join address by address, ~200ms per refused
-        one, and a port range per host makes that hundreds of addresses, i.e. tens of seconds
-        while the rest of the cluster already waits for it in PME. So: the cluster's timeout,
-        if one is given, and every node on the default port of its own host.
-
-        :param spi: SPI to fit, modified in place.
-        :return: The same SPI.
-        """
-        spi.port_range = 0
-        spi.network_timeout = self.network_timeout
-
-        return spi
+        return TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(nodes), port_range=0,
+                               network_timeout=self.discovery_network_timeout)
 
     def _app_service(self, dc: str) -> IgniteApplicationService:
-        # Seeding off the DC's first server service is enough: all of them are one cluster.
         client_cfg = self.ignite_config._replace(client_mode=True,
-                                                 discovery_spi=self._discovery_spi(
-                                                     from_ignite_cluster(self.dc_servers(dc)[0])))
+                                                 discovery_spi=self._discovery_spi(self.servers[dc].nodes))
 
         return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
 
@@ -423,8 +389,6 @@ class MdcCluster:
 
         Every DC is started before the first wait, so that their joins are not serialized
         behind each other's rebalance.
-
-        Restarting the FIRST started DC needs :meth:`sync_service_discovery` beforehand.
         """
         for dc in dcs:
             for svc in self.dc_servers(dc):

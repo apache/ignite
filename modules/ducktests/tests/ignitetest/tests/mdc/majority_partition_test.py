@@ -73,7 +73,7 @@ class MdcMajorityPartitionTest(IgniteTest):
         just as survivable as losing any other.
         """
         mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1,
-                         network_timeout=20_000)
+                         network_timeout=20_000, discovery_network_timeout=20_000)
 
         majority = tuple(dc for dc in mdc.dcs if dc != isolated_dc)
 
@@ -104,11 +104,6 @@ class MdcMajorityPartitionTest(IgniteTest):
 
             for dc in majority:
                 net.disable_network_partition(isolated_dc, dc)
-
-            # DC1 is the DC the others discovered through, so the shared ip finder holds only
-            # its own addresses and a restart would seed it off itself. Point discovery at
-            # every DC so the isolated DC rejoins the majority ring.
-            mdc.sync_service_discovery()
 
             # Split-brain does not self-heal: the read-only segment rejoins via restart.
             mdc.restart(isolated_dc)
