@@ -701,7 +701,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
-        if (ldr == null)
+        if (!ctx.isCustomLoader(ldr))
             return deserialize();
 
         Marshallers.USE_CACHE.set(Boolean.FALSE);

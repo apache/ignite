@@ -22,7 +22,6 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -361,6 +360,9 @@ public class BinaryImplUtils {
     /**
      * Read object serialized using optimized marshaller.
      *
+     * @param in Input stream.
+     * @param ctx Binary context.
+     * @param clsLdr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
      * @return Result.
      */
     public static Object doReadOptimized(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader clsLdr) {
@@ -369,7 +371,7 @@ public class BinaryImplUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, CommonUtils.resolveClassLoader(clsLdr, ctx.classLoader()));
+            return ctx.optimizedMarsh().unmarshal(input, ctx.resolveClassLoader(clsLdr));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -385,15 +387,15 @@ public class BinaryImplUtils {
      * @param ctx Binary context.
      * @param typeId Type ID.
      * @param clsName Class name.
-     * @param ldr Class loaded.
-     * @return Resovled class.
+     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
+     * @return Resolved class.
      */
     static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
                               @Nullable ClassLoader ldr, boolean registerMeta) {
         Class cls;
 
-        if (ldr == null)
-            ldr = ctx.classLoader();
+        ldr = ctx.resolveClassLoader(ldr);
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();

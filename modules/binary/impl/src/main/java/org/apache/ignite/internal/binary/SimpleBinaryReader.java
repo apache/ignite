@@ -55,7 +55,10 @@ class SimpleBinaryReader {
     /** Input stream. */
     final BinaryInputStream in;
 
-    /** Class loader. */
+    /**
+     * Class loader to resolve classes with: custom loader or {@link BinaryContext#classLoader()}, resolved once here.
+     * {@code null} only when {@link #ctx} is {@code null}; such readers can read primitives only.
+     */
     final ClassLoader ldr;
 
     /** Reader context which is constantly passed between objects. */
@@ -64,12 +67,12 @@ class SimpleBinaryReader {
     /**
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Class loader.
+     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
      */
     SimpleBinaryReader(BinaryContext ctx, BinaryInputStream in, @Nullable ClassLoader ldr) {
         this.ctx = ctx;
         this.in = in;
-        this.ldr = ldr;
+        this.ldr = ctx == null ? ldr : ctx.resolveClassLoader(ldr);
     }
 
     /**
@@ -420,7 +423,7 @@ class SimpleBinaryReader {
 
         InvocationHandler ih = (InvocationHandler)doReadObject();
 
-        return Proxy.newProxyInstance(ldr != null ? ldr : CommonUtils.gridClassLoader(), intfs, ih);
+        return Proxy.newProxyInstance(ldr, intfs, ih);
     }
 
     /**

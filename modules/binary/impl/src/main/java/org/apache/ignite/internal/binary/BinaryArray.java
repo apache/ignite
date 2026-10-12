@@ -104,7 +104,7 @@ class BinaryArray implements BinaryObjectEx, Externalizable, Comparable<BinaryAr
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException {
-        if (ldr != null)
+        if (ctx.isCustomLoader(ldr))
             Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {

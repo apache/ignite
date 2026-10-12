@@ -354,10 +354,8 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
 
         assert paramsBytes != null;
 
-        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
-
         // To avoid deserializing of enum types.
-        params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
+        params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, null));
     }
 
 

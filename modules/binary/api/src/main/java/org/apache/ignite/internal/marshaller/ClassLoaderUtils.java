@@ -29,6 +29,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Utility class to deal with class loading.
  * Contains internal class cache.
+ * <p>
+ * A {@code null} class loader passed to any method of this class means the loader Ignite itself was loaded by,
+ * {@link CommonUtils#gridClassLoader()}. This fallback serves {@link org.apache.ignite.marshaller.Marshaller} API
+ * callers and deployment code.
+ * Binary code resolves loaders through {@code BinaryContext#resolveClassLoader(ClassLoader)} and never passes
+ * {@code null} here.
  */
 public class ClassLoaderUtils {
     /** Primitive class map. */
@@ -100,7 +106,7 @@ public class ClassLoaderUtils {
      * Gets class for provided name. Accepts primitive types names.
      *
      * @param clsName Class name.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
@@ -159,7 +165,7 @@ public class ClassLoaderUtils {
      * Gets class for provided name. Accepts primitive types names.
      *
      * @param clsName Class name.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
@@ -168,7 +174,7 @@ public class ClassLoaderUtils {
     }
 
     /**
-     * Gets class for provided name. Accepts primitive types names.
+     * Gets class for provided name using {@link CommonUtils#gridClassLoader()}. Accepts primitive types names.
      *
      * @param clsName Class name.
      * @return Class.
