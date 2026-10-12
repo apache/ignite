@@ -1028,7 +1028,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param engineName Query engine name.
      * @return {@code True} if a query engine with the given name can be selected by the {@code QUERY_ENGINE} hint or
-     *      by the {@code queryEngine} client connection property.
+     *      by the client connection property.
      */
     public boolean queryEngineConfigured(String engineName) {
         if (qryEnginesCfg == null)
