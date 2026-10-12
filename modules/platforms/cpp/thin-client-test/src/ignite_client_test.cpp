@@ -19,6 +19,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/bind.hpp>
 
+#include <sstream>
+
 #include <ignite/ignition.h>
 
 #include <ignite/thin/ignite_client_configuration.h>
@@ -81,7 +83,7 @@ public:
      */
     static void CheckThreadsNum(IgniteClientConfiguration &cfg, uint32_t num)
     {
-        ignite::TestServer server;
+        ignite::TestServer server(0);
         server.PushHandshakeResponse(true);
         server.Start();
 
@@ -95,20 +97,45 @@ public:
         int32_t threadsExpected = static_cast<int32_t>(num) + netThreads;
 
         cfg.SetUserThreadPoolSize(num);
+
+        std::stringstream endpoint;
+        endpoint << "127.0.0.1:" << server.GetPort();
+        cfg.SetEndPoints(endpoint.str());
+
         {
             IgniteClient client = IgniteClient::Start(cfg);
 
-            int32_t threadsActual = ignite::common::concurrent::GetThreadsCount() - threadsBefore;
-
-            BOOST_CHECK_EQUAL(threadsExpected, threadsActual);
+            BOOST_CHECK(WaitForThreadsCount(threadsBefore + threadsExpected));
         }
 
-        int32_t threadsAfter = ignite::common::concurrent::GetThreadsCount();
-
-        BOOST_CHECK_EQUAL(threadsBefore, threadsAfter);
+        BOOST_CHECK(WaitForThreadsCount(threadsBefore));
         BOOST_CHECK_EQUAL(num, cfg.GetUserThreadPoolSize());
 
         server.Stop();
+    }
+
+    /**
+     * Wait for threads count.
+     *
+     * @param expected Expected threads count.
+     * @return True if condition was met, false if timeout has been reached.
+     */
+    static bool WaitForThreadsCount(int32_t expected)
+    {
+        return ignite_test::WaitForCondition(
+                boost::bind(&IgniteClientTestSuiteFixture::CheckThreadsCount, expected),
+                5000);
+    }
+
+    /**
+     * Check threads count.
+     *
+     * @param expected Expected threads count.
+     * @return @c true on success.
+     */
+    static bool CheckThreadsCount(int32_t expected)
+    {
+        return ignite::common::concurrent::GetThreadsCount() == expected;
     }
 
     /**
