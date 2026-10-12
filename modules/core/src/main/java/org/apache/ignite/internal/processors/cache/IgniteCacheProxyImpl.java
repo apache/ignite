@@ -115,6 +115,10 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCacheProxy<K, V> {
     /** */
+    public static final String NO_QRY_ENGINE_MSG = "Failed to execute query. Add module 'ignite-indexing' to the " +
+        "classpath of all Ignite nodes or configure any query engine.";
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
@@ -891,10 +895,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             throw new CacheException("Indexing is disabled for cache: " + cacheName +
                     ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 
-        if (!ctx.kernalContext().query().moduleEnabled() && qry instanceof SqlFieldsQuery) {
-            throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
-                "of all Ignite nodes or configure any query engine.");
-        }
+        if (!ctx.kernalContext().query().moduleEnabled() && qry instanceof SqlFieldsQuery)
+            throw new CacheException(NO_QRY_ENGINE_MSG);
 
         if ((qry instanceof SqlQuery || qry instanceof TextQuery) && !ctx.kernalContext().query().indexingEnabled()) {
             throw new CacheException("Failed to execute query. '" + qry.getClass().getSimpleName() + "' is supported " +
