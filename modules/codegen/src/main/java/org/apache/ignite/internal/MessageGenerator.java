@@ -25,7 +25,7 @@ import javax.lang.model.element.VariableElement;
 interface MessageGenerator {
     /**
      * @param type Message class.
-     * @param fields Fields annotated with {@link Order} in the serialization order: superclass fields first.
+     * @param fields Fields annotated with {@link Order} in the serialization order.
      * @throws Exception If generation failed.
      */
     void generate(TypeElement type, List<VariableElement> fields) throws Exception;

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -187,12 +187,15 @@ public class MessageProcessor extends AbstractProcessor {
             msgFields.put(clazz, fields);
         }
 
-        List<Function<ProcessingEnvironment, MessageGenerator>> generators = List.of(
-            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
+        List<Supplier<MessageGenerator>> generators = List.of(
+            () -> new MessageSerializerGenerator(processingEnv),
+            () -> new MessageMarshallerGenerator(processingEnv),
+            () -> new MessageDeploymentGenerator(processingEnv),
+            () -> new MessageJsonGenerator(processingEnv));
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
-            for (Function<ProcessingEnvironment, MessageGenerator> factory : generators) {
-                MessageGenerator gen = factory.apply(processingEnv);
+            for (Supplier<MessageGenerator> factory : generators) {
+                MessageGenerator gen = factory.get();
 
                 try {
                     gen.generate(type.getKey(), type.getValue());
