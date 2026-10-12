@@ -79,7 +79,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
     private final ConcurrentHashMap<UUID, Process> processes = new ConcurrentHashMap<>(1);
 
     /** Starts waiting for the coordinator to send the initial request, see {@link #startByCoordinator}. */
-    private final ConcurrentHashMap<UUID, PendingStart> pendingStarts = new ConcurrentHashMap<>(1);
+    private final ConcurrentHashMap<UUID, Runnable> pendingStarts = new ConcurrentHashMap<>(1);
 
     /** Synchronization mutex for coordinator initializing and the remaining collection operations. */
     private final Object mux = new Object();
@@ -223,7 +223,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
         ctx.event().addDiscoveryEventListener((evt, discoCache) -> {
             UUID leftNodeId = evt.eventNode().id();
 
-            reassignPendingStarts(leftNodeId);
+            startPending();
 
             for (Process p : processes.values()) {
                 p.initFut.listen(() -> {
@@ -295,32 +295,27 @@ public class DistributedProcess<I extends Message, R extends Message> {
         if (crd == null)
             return;
 
-        pendingStarts.put(id, new PendingStart(crd.id(), req));
-
         if (crd.isLocal())
             start(id, req);
+        else
+            pendingStarts.put(id, () -> start(id, req));
     }
 
-    /** Reassigns the pending starts of the left coordinator to the new one and starts them if it is the local node. */
-    private void reassignPendingStarts(UUID leftNodeId) {
-        for (Map.Entry<UUID, PendingStart> e : pendingStarts.entrySet()) {
-            PendingStart pending = e.getValue();
+    /** Starts the pending starts if the local node has become the coordinator. */
+    private void startPending() {
+        if (pendingStarts.isEmpty())
+            return;
 
-            if (!Objects.equals(leftNodeId, pending.crdId))
-                continue;
+        ClusterNode crd = coordinator();
 
-            ClusterNode crd = coordinator();
+        if (crd == null || !crd.isLocal())
+            return;
 
-            if (crd == null) {
-                onAllServersLeft();
+        for (UUID id : pendingStarts.keySet()) {
+            Runnable start = pendingStarts.remove(id);
 
-                return;
-            }
-
-            pending.crdId = crd.id();
-
-            if (crd.isLocal())
-                start(e.getKey(), pending.req);
+            if (start != null)
+                start.run();
         }
     }
 
@@ -469,21 +464,6 @@ public class DistributedProcess<I extends Message, R extends Message> {
         /** @param id Process id. */
         private Process(UUID id) {
             this.id = id;
-        }
-    }
-
-    /** Start waiting for the coordinator to send the initial request. */
-    private class PendingStart {
-        /** Coordinator node id. */
-        private volatile UUID crdId;
-
-        /** Initial request. */
-        private final I req;
-
-        /** */
-        private PendingStart(UUID crdId, I req) {
-            this.crdId = crdId;
-            this.req = req;
         }
     }
 
