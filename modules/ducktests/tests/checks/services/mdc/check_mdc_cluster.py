@@ -28,7 +28,7 @@ import pytest
 from checks.support.discovery_template import discovery_spi, render_discovery_spi
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, mdc_topology_params, min_backups, all_pairs, \
-    isolation_pairs, cross_dc_network, per_dc, CACHE_TOP_VALIDATOR_GLOBAL, DCS_2, DCS_3, DC_1, DC_2, DC_3
+    cross_dc_network, per_dc, CACHE_TOP_VALIDATOR_GLOBAL, DCS_2, DCS_3, DC_1, DC_2, DC_3
 
 DELAY_MS = 100
 
@@ -87,15 +87,6 @@ class CheckMdcNetworkLayout:
         assert all_pairs(DCS_2) == [(DC_1, DC_2)]
 
         assert all_pairs(DCS_3) == [(DC_1, DC_2), (DC_1, DC_3), (DC_2, DC_3)]
-
-    def check_isolation_pairs_cut_one_dc_only(self):
-        """Isolating a DC cuts its own links and leaves the rest of the mesh intact."""
-        cut = isolation_pairs(DC_3, DCS_3)
-
-        assert cut == [(DC_3, DC_1), (DC_3, DC_2)]
-
-        assert (DC_1, DC_2) not in [tuple(sorted(pair)) for pair in cut], \
-            "The DCs left behind must keep seeing each other"
 
     def check_symmetric_impairment_reaches_every_pair(self):
         """One delay argument impairs the whole mesh, not just the first pair."""

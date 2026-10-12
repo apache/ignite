@@ -20,7 +20,8 @@ The fixture spans an arbitrary number of data centers, which selects the
     mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1)
 
     with cross_dc_network(self.logger, mdc, delay_ms=20) as net:
-        net.enable_network_partitions(*isolation_pairs(DC_3, mdc.dcs))
+        net.enable_network_partition(DC_3, DC_1)
+        net.enable_network_partition(DC_3, DC_2)
         mdc.verify_segments((DC_1, DC_2), DC_3)
 
 Globals:
@@ -127,14 +128,6 @@ def all_pairs(dcs: Sequence[str]) -> List[Tuple[str, str]]:
     :return: Every unordered DC pair - the full cross-DC mesh.
     """
     return list(combinations(dcs, 2))
-
-
-def isolation_pairs(dc: str, dcs: Sequence[str]) -> List[Tuple[str, str]]:
-    """
-    :return: The DC pairs that cut ``dc`` off from every other DC, leaving the rest
-             connected. Feed to :meth:`NetworkGroupManager.enable_network_partitions`.
-    """
-    return [(dc, other) for other in dcs if other != dc]
 
 
 def per_dc(value: Union[int, Dict[str, int]], dcs: Sequence[str]) -> Dict[str, int]:

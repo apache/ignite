@@ -44,7 +44,7 @@ ACTION_DEPLOY = "deploy"
 MAX_PARALLEL_SSH_SESSIONS = 16
 
 # Separates the qdisc, filter and iptables sections in the output of the batched
-# network probe issued by _probe_network.
+# network probe issued by _log_network.
 PROBE_SECTION_SEPARATOR = "=== ignitetest network probe section ==="
 
 # A rule spec: (src_group, dst_group, action, config).
@@ -128,36 +128,23 @@ class NetworkGroupManager:
         simulating a split-brain. The netem impairments deployed via tcset are
         left untouched underneath.
         """
-        self.enable_network_partitions((group_a, group_b))
+        self.logger.info(f"Enabling network partition between [{group_a}] <---> [{group_b}]")
 
-    def enable_network_partitions(self, *group_pairs: Tuple[str, str]):
-        """
-        Cuts several group pairs apart at once, e.g. to isolate one group from
-        every other one or to split a three group cluster three ways.
+        chain = partition_chain_name(group_a, group_b)
 
-        Every chain a node takes part in is installed by the same single SSH
-        round-trip, so a multi-way split takes effect near-atomically instead of
-        rolling out pair by pair - the intermediate topologies of a pair-by-pair
-        rollout are themselves valid segmentations the cluster would react to.
-        """
-        pairs_str = ", ".join(f"[{a}] <---> [{b}]" for a, b in group_pairs)
+        tasks = []
 
-        self.logger.info(f"Enabling network partition between {pairs_str}")
+        for src_group, dst_group in self._bidirectional(group_a, group_b):
+            remote_ips = self._resolve_group_ips(dst_group)
 
-        per_node = {}
+            cmd = to_partition_enable_cmd(chain, remote_ips)
 
-        for group_a, group_b in group_pairs:
-            chain = partition_chain_name(group_a, group_b)
+            for node in self._iter_group_nodes(src_group):
+                tasks.append((node, cmd))
 
-            for src_group, dst_group in self._bidirectional(group_a, group_b):
-                cmd = to_partition_enable_cmd(chain, self._resolve_group_ips(dst_group))
+        self._ssh_parallel(tasks, tag="PARTITION_ON")
 
-                for node in self._iter_group_nodes(src_group):
-                    per_node.setdefault(id(node), (node, []))[1].append(cmd)
-
-        self._ssh_parallel([(node, " && ".join(cmds)) for node, cmds in per_node.values()], tag="PARTITION_ON")
-
-        self._log_network(f"PARTITION {pairs_str}")
+        self._log_network(f"PARTITION {group_a} <-> {group_b}")
 
     def disable_network_partition(self, group_a: str, group_b: str):
         """
@@ -166,31 +153,17 @@ class NetworkGroupManager:
         node. The originally deployed tcset impairments were never modified,
         so they are back in effect immediately without any re-application.
         """
-        self.disable_network_partitions((group_a, group_b))
+        self.logger.info(f"Disabling network partition between [{group_a}] <---> [{group_b}]")
 
-    def disable_network_partitions(self, *group_pairs: Tuple[str, str]):
-        """
-        Heals several partitions at once, one SSH round-trip per node - the
-        counterpart of :meth:`enable_network_partitions`.
-        """
-        pairs_str = ", ".join(f"[{a}] <---> [{b}]" for a, b in group_pairs)
+        cmd = to_partition_disable_cmd(partition_chain_name(group_a, group_b))
 
-        self.logger.info(f"Disabling network partition between {pairs_str}")
+        tasks = [(node, cmd)
+                 for group in (group_a, group_b)
+                 for node in self._iter_group_nodes(group)]
 
-        per_node = {}
+        self._ssh_parallel(tasks, tag="PARTITION_OFF")
 
-        for group_a, group_b in group_pairs:
-            cmd = to_partition_disable_cmd(partition_chain_name(group_a, group_b))
-
-            for group in (group_a, group_b):
-                for node in self._iter_group_nodes(group):
-                    per_node.setdefault(id(node), (node, []))[1].append(cmd)
-
-        # ';' rather than '&&': healing is best effort, and a chain that was never installed
-        # on this node must not stop the rest of its chains from being flushed.
-        self._ssh_parallel([(node, " ; ".join(cmds)) for node, cmds in per_node.values()], tag="PARTITION_OFF")
-
-        self._log_network(f"NET RESTORED {pairs_str}")
+        self._log_network(f"NET RESTORED {group_a} <-> {group_b}")
 
     def _resolve_group_ips(self, group: str) -> List[str]:
         return [socket.gethostbyname(node.account.externally_routable_ip)

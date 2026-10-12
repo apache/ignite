@@ -33,7 +33,7 @@ from time import sleep
 
 from ducktape.mark import parametrize
 
-from ignitetest.services.mdc.mdc_cluster import MdcCluster, cross_dc_network, isolation_pairs, DCS_3, DC_1
+from ignitetest.services.mdc.mdc_cluster import MdcCluster, cross_dc_network, DCS_3, DC_1
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH
@@ -77,8 +77,6 @@ class MdcMajorityPartitionTest(IgniteTest):
 
         majority = tuple(dc for dc in mdc.dcs if dc != isolated_dc)
 
-        cut = isolation_pairs(isolated_dc, mdc.dcs)
-
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
@@ -86,10 +84,8 @@ class MdcMajorityPartitionTest(IgniteTest):
 
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
 
-            # Both cuts land in the same SSH round-trip: rolling them out one after the
-            # other would briefly present the cluster with a two segment topology it would
-            # legitimately react to, which is not the scenario under test.
-            net.enable_network_partitions(*cut)
+            for dc in majority:
+                net.enable_network_partition(isolated_dc, dc)
 
             sleep(SPLIT_SETTLE_SECS)
 
@@ -106,7 +102,8 @@ class MdcMajorityPartitionTest(IgniteTest):
             # ...while the isolated DC sees one DC out of three and is rejected by the validator.
             mdc.check_put_admissibility(isolated_dc, CACHE_NAME, False, key_offset=_probe_offset(2))
 
-            net.disable_network_partitions(*cut)
+            for dc in majority:
+                net.disable_network_partition(isolated_dc, dc)
 
             # DC1 is the DC the others discovered through, so the shared ip finder holds only
             # its own addresses and a restart would seed it off itself. Point discovery at
