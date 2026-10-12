@@ -100,12 +100,12 @@ public class TcpDiscoveryStatistics {
 
         sockReadTimeoutsCnt = new IntMetricImpl(
             metricName(DISCO_METRICS, "SocketReadTimeoutsCount"),
-            "TCP discovery socket read operations count that timed out"
+            "TCP discovery socket read operations count that timed out."
         );
 
         sockWriteTimeoutsCnt = new IntMetricImpl(
             metricName(DISCO_METRICS, "SocketWriteTimeoutsCount"),
-            "TCP discovery socket write operations count that timed out"
+            "TCP discovery socket write operations count that timed out."
         );
     }
 
