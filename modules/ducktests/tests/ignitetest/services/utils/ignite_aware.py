@@ -48,6 +48,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
     """
     The base class to build services aware of Ignite.
     """
+    # Source name of the volumes mount_tmpfs makes, so that clean_node finds them in /proc/mounts.
+    TMPFS_SOURCE = "ignitetest-tmpfs"
+
     @constructible
     class NetPart(IntEnum):
         """
@@ -79,6 +82,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         self.disconnected_nodes = []
 
+        self.tmpfs_volumes = {}
+
     @property
     def product(self):
         return str(self.config.version)
@@ -109,7 +114,20 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, nodes=nodes, from_the_beginning=True)
 
+    def mount_tmpfs(self, path, size_mb):
+        """
+        Puts a size-limited tmpfs over a directory on every node of the service, so that writes into it fail with
+        "No space left on device" once size_mb is used. The mount is made when a node starts, before the service
+        creates its directories and configs, and is removed when the node is cleaned. Mounting needs sudo, which the
+        ducker user has.
+        :param path: Absolute path on the node, e.g. log_dir, or persistent_root for one volume holding everything.
+        :param size_mb: Volume size in megabytes.
+        """
+        self.tmpfs_volumes[path] = size_mb
+
     def start_node(self, node, **kwargs):
+        self.__mount_tmpfs_volumes(node)
+
         self.init_shared(node)
         self.init_persistent(node)
 
@@ -186,7 +204,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
     def clean_node(self, node, **kwargs):
         super().clean_node(node, **kwargs)
 
-        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
+        # A mount point can't be removed, so the volumes go first, the nested ones before their parents. Every volume
+        # mount_tmpfs made on the node goes, including one left by an aborted run: they share the source name.
+        node.account.ssh(f"awk '$1 == \"{self.TMPFS_SOURCE}\" {{print $2}}' /proc/mounts | sort -r | "
+                         f"xargs -r -n1 sudo umount -l; rm -rf -- {self.persistent_root}", allow_fail=False)
+
+    def __mount_tmpfs_volumes(self, node):
+        """
+        Mounts the volumes registered by mount_tmpfs, the parents before the nested ones.
+        """
+        for path, size_mb in sorted(self.tmpfs_volumes.items()):
+            node.account.ssh(f"mountpoint -q {path} || (mkdir -p {path} && sudo mount -t tmpfs "
+                             f"-o size={size_mb}m,uid=$(id -u),gid=$(id -g) {self.TMPFS_SOURCE} {path})",
+                             allow_fail=False)
 
     def init_persistent(self, node):
         """
