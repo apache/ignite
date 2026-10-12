@@ -24,6 +24,7 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
@@ -46,10 +47,19 @@ class CdcLinkManager {
     private final GridCacheSharedContext<?, ?> cctx;
 
     /** */
+    private final IgniteWriteAheadLogManager wal;
+
+    /** */
     private final IgniteLogger log;
 
     /** */
     private final NodeFileTree ft;
+
+    /**
+     * {@code True} if a data region with CDC has no persistence.
+     * Unlike {@code FileWriteAheadLogManager#inMemoryCdc}, {@code true} on a node with persistence too.
+     */
+    private final boolean inMemoryCdcRegion;
 
     /** CDC disabled flag. */
     private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED,
@@ -65,16 +75,16 @@ class CdcLinkManager {
     private volatile long disableSgmnt = -1;
 
     /** */
-    CdcLinkManager(GridCacheSharedContext<?, ?> cctx) throws IgniteCheckedException {
+    CdcLinkManager(GridCacheSharedContext<?, ?> cctx, IgniteWriteAheadLogManager wal) throws IgniteCheckedException {
         this.cctx = cctx;
+        this.wal = wal;
 
         log = cctx.logger(CdcLinkManager.class);
         ft = cctx.kernalContext().pdsFolderResolver().fileTree();
 
         DataStorageConfiguration dsCfg = cctx.gridConfig().getDataStorageConfiguration();
 
-        // True on a node with persistence too, unlike FileWriteAheadLogManager#inMemoryCdc.
-        boolean inMemoryCdcRegion = F.exist(
+        inMemoryCdcRegion = F.exist(
             F.concat(false, dsCfg.getDefaultDataRegionConfiguration(), F.asList(dsCfg.getDataRegionConfigurations())),
             reg -> reg.isCdcEnabled() && !reg.isPersistenceEnabled());
 
@@ -102,10 +112,19 @@ class CdcLinkManager {
         });
     }
 
+    /**
+     * The property listener runs before the WAL logging is resumed on a persistent node restarted with CDC disabled, and
+     * the gap made at the disabling is not guaranteed: the segment can be archived after CDC is enabled again.
+     */
+    void resumeLogging() {
+        if (inMemoryCdcRegion && forceDisabled())
+            markDisableSegment();
+    }
+
     /** */
     private void markDisableSegment() {
-        // -1 if the WAL logging is not resumed yet: the node is restarted with CDC disabled, the gap is already made.
-        disableSgmnt = Math.max(disableSgmnt, cctx.wal(true).currentSegment());
+        // -1 before the WAL logging is resumed, see #resumeLogging.
+        disableSgmnt = Math.max(disableSgmnt, wal.currentSegment());
     }
 
     /** */
@@ -125,8 +144,8 @@ class CdcLinkManager {
     void linkSegment(long idx, File segment) throws IOException {
         if (forceDisabled())
             log.warning("Creation of segment CDC link skipped. '" + CDC_DISABLED + "' distributed property is 'true'.");
-        else if (idx <= disableSgmnt)
-            log.warning("Creation of segment CDC link skipped. The segment was not archived before CDC was disabled.");
+        else if (idx == disableSgmnt)
+            log.warning("Creation of segment CDC link skipped. The segment was current when CDC was disabled.");
         else if (!checkCdcWalDirectorySize(segment.length()))
             log.error("Creation of segment CDC link skipped. Configured CDC directory maximum size exceeded.");
         else

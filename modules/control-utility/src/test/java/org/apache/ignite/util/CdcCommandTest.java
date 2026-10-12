@@ -17,9 +17,7 @@
 
 package org.apache.ignite.util;
 
-import java.io.File;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -45,7 +43,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
@@ -64,6 +61,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cdc.AbstractCdcTest.KEYS_CNT;
+import static org.apache.ignite.cdc.AbstractCdcTest.linkedSegments;
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -253,13 +251,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private void checkLinks(IgniteEx srv, List<Long> expLinks) {
-        NodeFileTree ft = srv.context().pdsFolderResolver().fileTree();
-
-        File[] links = ft.walCdcSegments();
-
-        assertEquals(expLinks.size(), links.length);
-        assertTrue(Arrays.stream(links).map(File::toPath).map(ft::walSegmentIndex)
-            .allMatch(expLinks::contains));
+        assertEquals(expLinks, linkedSegments(srv.context().pdsFolderResolver().fileTree()));
     }
 
     /** Archives segments, disabling and enabling CDC the given number of times. */

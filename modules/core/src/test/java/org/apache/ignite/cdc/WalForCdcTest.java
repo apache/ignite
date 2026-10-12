@@ -27,7 +27,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -62,6 +61,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cdc.AbstractCdcTest.linkedSegments;
 import static org.apache.ignite.cdc.CdcSelfTest.WAL_ARCHIVE_TIMEOUT;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.util.IgniteUtils.KB;
@@ -247,8 +247,7 @@ public class WalForCdcTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> ft.walCdcSegments().length == 1, getTestTimeout()));
 
-        assertEquals(F.asList(sgmnt + 1), Arrays.stream(ft.walCdcSegments()).map(File::toPath).map(ft::walSegmentIndex)
-            .collect(Collectors.toList()));
+        assertEquals(F.asList(sgmnt + 1), linkedSegments(ft));
 
         assertEquals(RECORD_COUNT, checkDataRecords(ignite));
     }

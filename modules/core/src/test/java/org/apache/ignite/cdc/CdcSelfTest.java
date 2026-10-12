@@ -952,12 +952,6 @@ public class CdcSelfTest extends AbstractCdcTest {
     }
 
     /** */
-    private static List<Long> linkedSegments(NodeFileTree ft) {
-        return Arrays.stream(ft.walCdcSegments()).map(File::toPath).map(ft::walSegmentIndex).sorted()
-            .collect(Collectors.toList());
-    }
-
-    /** */
     public static void addData(IgniteCache<Integer, User> cache, int from, int to) {
         for (int i = from; i < to; i++)
             cache.put(i, createUser(i));

@@ -45,11 +45,6 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public boolean isFullSync();
 
     /**
-     * @return {@code True} if CDC is disabled by the {@code cdc.disabled} distributed property.
-     */
-    public boolean cdcForceDisabled();
-
-    /**
      * @return Current serializer version.
      */
     public int serializerVersion();
@@ -246,4 +241,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param idx Segment index.
      */
     void awaitCompacted(long idx) throws IgniteInterruptedCheckedException;
+
+    /** @return {@code True} if CDC is disabled by the {@code cdc.disabled} distributed property. */
+    default boolean cdcForceDisabled() {
+        return false;
+    }
 }

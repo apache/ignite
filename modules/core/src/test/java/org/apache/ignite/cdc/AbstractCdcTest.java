@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -100,6 +101,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** @return Indices of the segments linked to the CDC directory. */
+    public static List<Long> linkedSegments(NodeFileTree ft) {
+        return Arrays.stream(ft.walCdcSegments()).map(File::toPath).map(ft::walSegmentIndex).sorted()
+            .collect(Collectors.toList());
     }
 
     /** */

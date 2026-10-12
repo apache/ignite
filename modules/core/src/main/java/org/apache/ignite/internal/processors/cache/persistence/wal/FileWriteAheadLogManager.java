@@ -452,7 +452,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             U.ensureDirectory(ft.walArchive(), "write ahead log work directory", log);
 
             if (cdcConfigured)
-                cdcLinkMgr = new CdcLinkManager(cctx);
+                cdcLinkMgr = new CdcLinkManager(cctx, this);
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
 
@@ -761,6 +761,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         if (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0)
             scheduleNextRolloverCheck();
+
+        if (cdcLinkMgr != null)
+            cdcLinkMgr.resumeLogging();
     }
 
     /**

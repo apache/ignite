@@ -45,11 +45,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cdcForceDisabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public int serializerVersion() {
         return 0;
     }
