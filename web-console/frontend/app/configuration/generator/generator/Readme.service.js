@@ -36,8 +36,8 @@ export default class IgniteReadmeGenerator {
         sb.append('Project structure:');
         sb.append('    /jdbc-drivers - this folder should contains proprietary JDBC drivers.');
         sb.append('    /src - this folder contains generated java code.');
-        sb.append('    /src/main/java/config - this folder contains generated java classes with cluster configuration from code.');
-        sb.append('    /src/main/java/startup - this folder contains generated java classes with server and client nodes startup code.');
+        sb.append('    /src/main/java/[cluster]/config - this folder contains generated java classes with cluster configuration from code.');
+        sb.append('    /src/main/java/[cluster]/startup - this folder contains generated java classes with server and client nodes startup code.');
         sb.append('    /src/main/java/[model] - this optional folder will be named as package name for your POJO classes and contain generated POJO files.');
         sb.append('    /src/main/resources - this folder contains generated configurations in XML format and secret.properties file with security sensitive information if any.');
         sb.append('    Dockerfile - sample Docker file. With this file you could package Ignite deployment with all the dependencies into a standard container.');

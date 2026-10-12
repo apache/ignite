@@ -980,9 +980,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
     static isIndexedField(fieldName, indexes) {
         if (!Array.isArray(indexes)) return false;
-        return indexes.some(index =>
+        return indexes.some((index) =>
             Array.isArray(index.fields) &&
-            index.fields.some(field => field.name === fieldName)
+            index.fields.some((field) => field.name === fieldName)
         );
     }
 

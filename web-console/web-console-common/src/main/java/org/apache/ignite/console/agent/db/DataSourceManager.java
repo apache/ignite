@@ -26,12 +26,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.console.utils.Utils.fromJson;
 
+
 public class DataSourceManager {
 	private static final Logger log = LoggerFactory.getLogger(DataSourceManager.class);
 	/** */
     public static final Map<String, Driver> drivers = new HashMap<>();
 	private static final Map<String,DBinitialContext> initialContextMap = new ConcurrentHashMap<>();
 	private static HttpClient httpClient;
+	private static String adminServerUrl = "http://127.0.0.1:3000";
 	private static String datasourceGetUrl = "";
 	private static String datasourceCreateUrl = "";
 	private static String taskflowGetUrl = "";
@@ -46,7 +48,9 @@ public class DataSourceManager {
 	public static void setAccountToken(String accountToken) {
 		DataSourceManager.accountToken.set(accountToken);
 	}
-
+	public static String getAdminServerUrl() {
+		return adminServerUrl;
+	}
 
 	static class DBinitialContext extends InitialContext {
 		private final String _accountToken;
@@ -121,6 +125,7 @@ public class DataSourceManager {
 			serverUri = serverUri.replaceAll("ws:/", "https:/");
 		}
 		validTokens = tokens;
+		adminServerUrl = serverUri;
 		datasourceGetUrl = serverUri+"/api/v1/datasource";
 		datasourceCreateUrl = serverUri+"/api/v1/datasource";
 		taskflowGetUrl = serverUri+"/api/v1/taskflow/cluster/%s?target=%s";

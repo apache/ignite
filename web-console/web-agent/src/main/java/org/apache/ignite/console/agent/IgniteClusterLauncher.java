@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
+import org.apache.ignite.console.agent.db.DataSourceManager;
 import org.apache.ignite.console.agent.handlers.RestClusterHandler;
 import org.apache.ignite.console.agent.handlers.StringStreamHandler;
 import org.apache.ignite.console.agent.service.*;
@@ -64,6 +65,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.java.JavaLogger;
 
 import org.apache.ignite.spi.discovery.isolated.IsolatedDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryWebConsoleServerIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -171,6 +174,21 @@ public class IgniteClusterLauncher implements StartNodeCallable{
 	        IsolatedDiscoverySpi discoSpi = new IsolatedDiscoverySpi(); 
 	        cfg.setDiscoverySpi(discoSpi);
         }
+		else if(cfg.getDiscoverySpi() instanceof TcpDiscoverySpi){
+			TcpDiscoverySpi disco = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+			TcpDiscoveryWebConsoleServerIpFinder ipFinder = null;
+			if(disco.getIpFinder()==null){
+				ipFinder = new TcpDiscoveryWebConsoleServerIpFinder();
+				ipFinder.setMasterUrl(DataSourceManager.getAdminServerUrl());
+				ipFinder.setAccountToken(DataSourceManager.getAccountToken());
+				disco.setIpFinder(ipFinder);
+			}
+			else if(disco.getIpFinder() instanceof TcpDiscoveryWebConsoleServerIpFinder){
+				ipFinder = (TcpDiscoveryWebConsoleServerIpFinder)disco.getIpFinder();
+				ipFinder.setMasterUrl(DataSourceManager.getAdminServerUrl());
+				ipFinder.setAccountToken(DataSourceManager.getAccountToken());
+			}
+		}
         
         cfg.setFailureHandler(new NoOpFailureHandler());
         cfg.setMetricsLogFrequency(0);

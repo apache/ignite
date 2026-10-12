@@ -26,7 +26,7 @@ const spring = IgniteSpringTransformer;
 
 const generator = IgniteConfigurationGenerator;
 
-const escapeFileName = (name) => name.replace(/[\\\/*\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
+const escapeFileName = (name) => name.replace(/[\\\/\"\[\],\.:;|=<>?]/g, '-').replace(/ /g, '_');
 
 const kubernetesConfig = (cluster) => {
     if (!cluster.discovery.Kubernetes)
@@ -70,8 +70,9 @@ onmessage = function(e) {
     const srcPath = 'src/main/java';
     const resourcesPath = 'src/main/resources';
 
-    const serverXml = `${escapeFileName(cluster.name)}-server.xml`;
-    const clientXml = `${escapeFileName(cluster.name)}-client.xml`;
+    const clusterName = escapeFileName(cluster.name);
+    const serverXml = `${clusterName}-server.xml`;
+    const clientXml = `${clusterName}-client.xml`;
 
     const metaPath = `${resourcesPath}/META-INF`;
 
@@ -81,32 +82,32 @@ onmessage = function(e) {
     zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg, targetVer).asString());
     zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, targetVer).asString());
 
-    const cfgPath = `${srcPath}/config`;
+    const cfgPath = `${srcPath}/${clusterName}/config`;
 
-    zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, targetVer, 'config', 'ServerConfigurationFactory').asString());
-    zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, targetVer, 'config', 'ClientConfigurationFactory').asString());
+    zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, targetVer, clusterName+'.config', 'ServerConfigurationFactory').asString());
+    zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, targetVer, clusterName+'.config', 'ClientConfigurationFactory').asString());
 
     if (java.isDemoConfigured(cluster, demo)) {
-        zip.file(`${srcPath}/demo/DemoStartup.java`, java.nodeStartup(cluster, 'demo.DemoStartup',
-            'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
+        zip.file(`${srcPath}/demo/startup/DemoStartup.java`, java.nodeStartup(cluster, 'demo.startup.DemoStartup',
+            'ServerConfigurationFactory.createConfiguration()', clusterName+'.config.ServerConfigurationFactory'));
     }
 
     // Generate loader for caches with configured store.
     const cachesToLoad = filter(cluster.caches, (cache) => nonNil(_.get(cache, 'cacheStoreFactory.kind')));
 
     if (nonEmpty(cachesToLoad))
-        zip.file(`${srcPath}/load/LoadCaches.java`, java.loadCaches(cachesToLoad, 'load', 'LoadCaches', `"${clientXml}"`));
+        zip.file(`${srcPath}/${clusterName}/load/LoadCaches.java`, java.loadCaches(cachesToLoad, clusterName+'.load', 'LoadCaches', `"${clientXml}"`));
 
-    const startupPath = `${srcPath}/startup`;
+    const startupPath = `${srcPath}/${clusterName}/startup`;
 
-    zip.file(`${startupPath}/ServerNodeSpringStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeSpringStartup', `"${serverXml}"`));
-    zip.file(`${startupPath}/ClientNodeSpringStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeSpringStartup', `"${clientXml}"`));
+    zip.file(`${startupPath}/ServerNodeSpringStartup.java`, java.nodeStartup(cluster, clusterName+'.startup.ServerNodeSpringStartup', `"${serverXml}"`));
+    zip.file(`${startupPath}/ClientNodeSpringStartup.java`, java.nodeStartup(cluster, clusterName+'.startup.ClientNodeSpringStartup', `"${clientXml}"`));
 
-    zip.file(`${startupPath}/ServerNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ServerNodeCodeStartup',
-        'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
+    zip.file(`${startupPath}/ServerNodeCodeStartup.java`, java.nodeStartup(cluster, clusterName+'.startup.ServerNodeCodeStartup',
+        'ServerConfigurationFactory.createConfiguration()', clusterName+'.config.ServerConfigurationFactory'));
     
-    zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, 'startup.ClientNodeCodeStartup',
-        'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory'));
+    zip.file(`${startupPath}/ClientNodeCodeStartup.java`, java.nodeStartup(cluster, clusterName+'.startup.ClientNodeCodeStartup',
+        'ClientConfigurationFactory.createConfiguration()', clusterName+'.config.ClientConfigurationFactory'));
 
     zip.file('pom.xml', maven.generate(cluster, targetVer));
 

@@ -37,7 +37,15 @@ const config = {
             app,
             images: path.join(basedir, 'public/images'),
             libs: path.join(basedir, 'public/libs'),
-            views: path.join(basedir, 'views')
+            views: path.join(basedir, 'views'),
+            'generator-function': path.resolve(
+                                __dirname,
+                                'node_modules/generator-function/legacy.js'
+                              ),
+           'async-function': path.resolve(
+                               __dirname,
+                               'node_modules/async-function/legacy.js'
+                             ),
         },
         extensions: ['.wasm', '.mjs', '.js', '.ts', '.json']
     },
