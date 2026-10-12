@@ -34,7 +34,8 @@ from time import sleep
 from ducktape.mark import parametrize
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.mdc.mdc_cluster import MdcCluster, dc_jvm_opts, DC_1, DC_2, cross_dc_network, THIN_LOAD_APP
+from ignitetest.services.mdc.mdc_cluster import MdcCluster, DC_1, DC_2, cross_dc_network, THIN_LOAD_APP
+from ignitetest.services.mdc.mdc_utils import dc_jvm_opts
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest

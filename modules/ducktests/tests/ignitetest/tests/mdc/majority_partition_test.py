@@ -14,20 +14,7 @@
 # limitations under the License.
 
 """
-Three data center MDC resilience: majority based topology validation.
-
-With an ODD number of data centers MdcTopologyValidator switches from "the main DC must
-be visible" to "a majority of the DC set must be visible". That is a different guarantee
-and not a bigger version of the two DC one: no data center is privileged, and a segment
-holding a minority of DCs goes read-only even though it is perfectly healthy internally.
-
-Every partition owns exactly one copy per DC (backups = 2), so every segment - down to a
-single isolated DC - can still serve every read. That is what separates the read
-assertions from the write ones.
-
-Only the case that needs a real network stays here: isolating DC1 under cross-DC latency.
-The validator's rules themselves (three way split, losing DCs one by one) need no real
-network and belong in JUnit tests of the core module.
+MDC with three data centers: only a segment that sees a majority of them accepts writes.
 """
 from time import sleep
 
@@ -40,47 +27,37 @@ from ignitetest.utils.version import DEV_BRANCH
 
 CACHE_NAME = "mdc-majority"
 
-# Keys generated from each DC; the whole data set is [0, KEYS_PER_DC * len(DCS_3)).
 KEYS_PER_DC = 100
 
 # Time for discovery to detect the partition and for every segment to complete PME.
 SPLIT_SETTLE_SECS = 20
 
-# Probe key ranges of the put admissibility checks. Well above the data set, and one range
-# per check, so that the writes an admissible check performs never collide.
-PROBE_BASE = 1_000_000
-PROBE_STRIDE = 1_000_000
-
-
-def _probe_offset(idx: int) -> int:
-    return PROBE_BASE + idx * PROBE_STRIDE
-
 
 class MdcMajorityPartitionTest(IgniteTest):
     """
-    Tests for majority based MDC topology validation across three data centers.
+    Tests majority based MDC topology validation across three data centers.
     """
     @cluster(num_nodes=9)
     @ignite_versions(str(DEV_BRANCH))
+    # DC1 is the main DC of a two DC cluster; with three DCs it must have no such role.
     @parametrize(cross_dc_latency_ms=100, isolated_dc=DC_1)
     def test_minority_dc_isolation(self, ignite_version, cross_dc_latency_ms, isolated_dc):
         """
-        One DC is cut off from the two others. The majority segment must stay writable and
-        the isolated one must go read-only while still serving every read.
-
-        The isolated DC is DC1 - the main DC of the equivalent two DC cluster, and the DC
-        the others discovered through - to assert that no DC is privileged: losing it is
-        just as survivable as losing any other.
+        Cuts one DC off from the other two: they keep accepting writes, the cut DC rejects them,
+        and every DC still reads all keys. Then heals the network and restarts the cut DC.
         """
         mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1,
                          network_timeout=20_000, discovery_network_timeout=20_000)
 
-        majority = tuple(dc for dc in mdc.dcs if dc != isolated_dc)
+        majority = [dc for dc in mdc.dcs if dc != isolated_dc]
+
+        total_keys = len(mdc.dcs) * KEYS_PER_DC
 
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
-            total_keys = self._generate_data(mdc)
+            for idx, dc in enumerate(mdc.dcs):
+                mdc.generate_data(dc, CACHE_NAME, idx * KEYS_PER_DC, (idx + 1) * KEYS_PER_DC)
 
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
 
@@ -89,57 +66,34 @@ class MdcMajorityPartitionTest(IgniteTest):
 
             sleep(SPLIT_SETTLE_SECS)
 
-            mdc.verify_segments(majority, isolated_dc)
+            mdc.verify_split_brain(majority, isolated_dc)
 
-            # One copy of every partition lives in every DC, so both segments read everything.
+            # Every DC holds a copy of every partition, so both segments read all keys.
             for dc in mdc.dcs:
                 mdc.check_data(dc, CACHE_NAME, 0, total_keys)
 
-            # Two DCs out of three are a majority - the segment keeps writing...
-            for idx, dc in enumerate(majority):
-                mdc.check_put_admissibility(dc, CACHE_NAME, True, key_offset=_probe_offset(idx))
+            for dc in majority:
+                mdc.check_put_admissibility(dc, CACHE_NAME, True)
 
-            # ...while the isolated DC sees one DC out of three and is rejected by the validator.
-            mdc.check_put_admissibility(isolated_dc, CACHE_NAME, False, key_offset=_probe_offset(2))
+            mdc.check_put_admissibility(isolated_dc, CACHE_NAME, False)
 
             for dc in majority:
                 net.disable_network_partition(isolated_dc, dc)
 
-            # Split-brain does not self-heal: the read-only segment rejoins via restart.
+            # A split cluster does not merge back by itself: the cut DC rejoins by restarting.
             mdc.restart(isolated_dc)
 
-            self._verify_recovered(mdc, total_keys, probe_idx=3)
+            mdc.verify_whole_cluster_healthy()
+
+            for dc in mdc.dcs:
+                mdc.check_put_admissibility(dc, CACHE_NAME, True)
+
+            mdc.check_data(DC_1, CACHE_NAME, 0, total_keys)
+
+            mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
+
+            mdc.control().idle_verify(CACHE_NAME)
+
+            mdc.verify_servers_log_clean()
 
             mdc.stop_servers()
-
-    @staticmethod
-    def _generate_data(mdc: MdcCluster) -> int:
-        """
-        Populates the cache from every DC in turn, each with its own key range.
-
-        :return: The size of the whole data set, i.e. the exclusive upper key bound.
-        """
-        for idx, dc in enumerate(mdc.dcs):
-            mdc.generate_data(dc, CACHE_NAME, idx * KEYS_PER_DC, (idx + 1) * KEYS_PER_DC)
-
-        return len(mdc.dcs) * KEYS_PER_DC
-
-    @staticmethod
-    def _verify_recovered(mdc: MdcCluster, total_keys: int, probe_idx: int):
-        """
-        Verifies that the cluster is whole again: one ACTIVE cluster spanning every DC,
-        writes accepted everywhere, the whole data set intact and evenly spread, and no
-        segment left a suspicious trace in its logs.
-        """
-        mdc.verify_whole_cluster_healthy()
-
-        for idx, dc in enumerate(mdc.dcs):
-            mdc.check_put_admissibility(dc, CACHE_NAME, True, key_offset=_probe_offset(probe_idx + idx))
-
-        mdc.check_data(mdc.dcs[0], CACHE_NAME, 0, total_keys)
-
-        mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
-
-        mdc.control().idle_verify(CACHE_NAME)
-
-        mdc.verify_servers_log_clean()

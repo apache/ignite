@@ -88,8 +88,6 @@ class MdcTransactionalPartitionTest(IgniteTest):
                 "keyTo": LOAD_KEY_TO_DC_2,
                 "stopOnError": True,
                 "resultPrefix": f"txLoad{DC_2}",
-                # The MDC topology parameters (validator mode, DC count) are injected by
-                # the fixture, so the cache this load creates matches the cluster's DC set.
                 "createCache": True,
                 "backups": BACKUPS,
                 "atomicity": "TRANSACTIONAL",

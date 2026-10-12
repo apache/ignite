@@ -14,15 +14,17 @@
 # limitations under the License.
 
 """
-The fixture spans an arbitrary number of data centers, which selects the
-:class:`MdcTopologyValidator` mode (see :func:`mdc_topology_params`):
+MDC test fixture.
 
     mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1)
 
     with cross_dc_network(self.logger, mdc, delay_ms=20) as net:
-        net.enable_network_partition(DC_3, DC_1)
-        net.enable_network_partition(DC_3, DC_2)
-        mdc.verify_segments((DC_1, DC_2), DC_3)
+        mdc.start_servers()
+        mdc.generate_data(DC_1, CACHE, 0, 1000)
+        mdc.verify_cache_distribution(CACHE, copies_per_dc=1)
+
+        net.enable_network_partition(DC_1, DC_2)
+        ...
 
 Globals:
 
@@ -30,10 +32,12 @@ Globals:
     MdcTopologyValidator, default true.
 """
 from itertools import combinations
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.mdc.mdc_utils import DATA_CENTER_ATTR, dc_jvm_opts, per_dc, \
+    assert_cross_dc_distribution_by_attribute
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
@@ -46,20 +50,12 @@ DC_1 = "DC1"
 DC_2 = "DC2"
 DC_3 = "DC3"
 
-# The two DC layouts the MDC topology validator distinguishes: an even DC count is
-# validated against a main DC, an odd one by a majority of visible DCs.
 DCS_2 = (DC_1, DC_2)
 DCS_3 = (DC_1, DC_2, DC_3)
 
 IGNITE_STARTUP_TIMEOUT_SEC = 90
 
-# Global: set to false to create the MDC caches without the cache level topology validator.
 CACHE_TOP_VALIDATOR_GLOBAL = "mdc_cache_topology_validator"
-
-DATA_CENTER_ATTR = "IGNITE_DATA_CENTER_ID"
-IGNITE_SQL_RETRY_TIMEOUT_ATTR = "IGNITE_SQL_RETRY_TIMEOUT"
-
-IGNITE_SQL_RETRY_TIMEOUT_MS = 1_000
 
 _APP_PKG = "org.apache.ignite.internal.ducktest.tests.mdc."
 
@@ -78,89 +74,8 @@ ASSERTION_ERROR_PATTERN = "AssertionError"
 # Every log of a server node, including the ones rotated by a restart.
 ALL_LOGS_GLOB = "ignite*.log*"
 
-# A segment of a partitioned cluster: one DC or a group of DCs that still see each other.
-Segment = Union[str, Sequence[str]]
-
-
-def dc_jvm_opts(dc: str) -> List[str]:
-    """
-    :return: JVM options assigning a node to the given data center.
-    """
-    return [f"-D{DATA_CENTER_ATTR}={dc}", f"-D{IGNITE_SQL_RETRY_TIMEOUT_ATTR}={IGNITE_SQL_RETRY_TIMEOUT_MS}"]
-
-
-def mdc_topology_params(dcs: Sequence[str], main_dc: Optional[str] = None) -> dict:
-    """
-    Compiles the cache parameters that pin ``MdcTopologyValidator`` and
-    ``MdcAffinityBackupFilter`` to the given DC set.
-
-    The validator has two modes and the DC count picks one: with an EVEN number of DCs a
-    segment stays writable while it sees the main DC (``mainDc``), with an ODD number
-    while it sees a majority of the DC set (``datacenters``). Passing both is rejected by
-    ``MdcTopologyValidator.checkConfiguration()``, so exactly one is emitted here.
-
-    :param dcs: All data centers the cluster spans.
-    :param main_dc: Main DC for the even-count mode, defaults to the first DC. Ignored for
-           an odd DC count, where the validator is majority based.
-    """
-    params = {"dcsNum": len(dcs)}
-
-    if len(dcs) % 2 == 1:
-        params["datacenters"] = list(dcs)
-    else:
-        params["mainDc"] = main_dc if main_dc is not None else dcs[0]
-
-    return params
-
-
-def min_backups(dcs: Sequence[str]) -> int:
-    """
-    :return: Smallest backup count that gives every DC exactly one copy of every partition.
-             ``MdcAffinityBackupFilter`` requires ``(backups + 1)`` to be divisible by the
-             number of DCs, so this is the smallest admissible value at all.
-    """
-    return len(dcs) - 1
-
-
-def all_pairs(dcs: Sequence[str]) -> List[Tuple[str, str]]:
-    """
-    :return: Every unordered DC pair - the full cross-DC mesh.
-    """
-    return list(combinations(dcs, 2))
-
-
-def per_dc(value: Union[int, Dict[str, int]], dcs: Sequence[str]) -> Dict[str, int]:
-    """
-    Normalizes an int-or-dict per-DC count into a dict, e.g. 3 -> {DC1: 3, DC2: 3}.
-
-    A dict naming a DC the cluster does not span is rejected here rather than left to fail
-    later: such a DC is skipped by :meth:`MdcCluster.network_registry`, so its nodes would
-    run with no impairments and no partition rules while every other call site kept working.
-    """
-    if not isinstance(value, dict):
-        return {dc: value for dc in dcs}
-
-    unknown = sorted(dc for dc in value if dc not in dcs)
-
-    assert not unknown, \
-        f"Per-DC counts name data centers the cluster does not span [unknown={unknown}, dcs={list(dcs)}]"
-
-    return dict(value)
-
-
-def _as_segment(segment: Segment) -> Tuple[str, ...]:
-    """
-    Normalizes a single DC name or a collection of DC names into a tuple of DC names.
-    """
-    return (segment,) if isinstance(segment, str) else tuple(segment)
-
-
-def _fmt_segment(segment: Tuple[str, ...]) -> str:
-    """
-    :return: Segment rendered for an assertion message, e.g. "DC1+DC2" - a Python tuple
-             reads poorly in the middle of one, and a single DC renders as itself.
-    """
-    return "+".join(segment)
+# Put admissibility check N writes keys from N * PROBE_KEY_STEP on, far above any data set.
+PROBE_KEY_STEP = 1_000_000
 
 
 class MdcCluster:
@@ -170,9 +85,7 @@ class MdcCluster:
 
     :param test: The ducktape test instance.
     :param ignite_version: Ignite version string.
-    :param dcs: Data centers the cluster spans, two by default. The count selects the
-           topology validator mode - see :func:`mdc_topology_params`.
-    :param main_dc: Main DC for an even-sized DC set, defaults to the first DC.
+    :param dcs: Data centers the cluster spans; the first one is the main DC of an even DC set.
     :param srv_per_dc: Servers per DC, an int or a per-DC dict (asymmetric DCs).
     :param runners_per_dc: Reusable run-to-completion app services per DC (generator,
            checkers, load bursts). An int or a per-DC dict.
@@ -183,7 +96,6 @@ class MdcCluster:
     :param discovery_network_timeout: Network timeout of the discovery SPI, in ms.
     """
     def __init__(self, test, ignite_version: str, dcs: Sequence[str] = DCS_2,
-                 main_dc: Optional[str] = None,
                  srv_per_dc: Union[int, Dict[str, int]] = 3,
                  runners_per_dc: Union[int, Dict[str, int]] = 1,
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
@@ -195,26 +107,16 @@ class MdcCluster:
 
         self.dcs = tuple(dcs)
 
-        assert len(self.dcs) >= 2, f"An MDC cluster spans at least two data centers [dcs={self.dcs}]"
-
-        self.main_dc = main_dc if main_dc is not None else self.dcs[0]
-
         self.discovery_network_timeout = discovery_network_timeout
 
-        cfg_kwargs = {"version": IgniteVersion(ignite_version)}
-
-        if network_timeout is not None:
-            cfg_kwargs["network_timeout"] = network_timeout
-
-        if client_connector:
-            cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()
-
-        self.ignite_config = IgniteConfiguration(**cfg_kwargs)
+        self.ignite_config = self._ignite_config(ignite_version, client_connector, network_timeout)
 
         self.srv_per_dc = per_dc(srv_per_dc, self.dcs)
 
         self.servers: Dict[str, IgniteService] = {
-            dc: self._server_service(dc, num) for dc, num in self.srv_per_dc.items() if num > 0}
+            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc),
+                              startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
+            for dc, num in self.srv_per_dc.items() if num > 0}
 
         # Every DC discovers through all of them, so any DC can restart and rejoin the others.
         server_spi = self._discovery_spi([node for svc in self.servers.values() for node in svc.nodes])
@@ -240,47 +142,21 @@ class MdcCluster:
         # Admissibility checks run on reusable services, so each check needs a unique result prefix.
         self._adm_checks = 0
 
-        # Cache parameters applied to every cache this fixture creates, unless a call overrides them.
-        self.cache_defaults = {
-            "topologyValidator": self.test_context.globals.get(CACHE_TOP_VALIDATOR_GLOBAL, True)
-        }
+    @staticmethod
+    def _ignite_config(ignite_version: str, client_connector: bool,
+                       network_timeout: Optional[int]) -> IgniteConfiguration:
+        """
+        :return: Configuration shared by the servers and clients of every DC.
+        """
+        cfg_kwargs = {"version": IgniteVersion(ignite_version)}
 
-        self.logger.info(f"MDC cache defaults [{self.cache_defaults}]")
+        if network_timeout is not None:
+            cfg_kwargs["network_timeout"] = network_timeout
 
-    def _server_service(self, dc: str, num_nodes: int) -> IgniteService:
-        """
-        Builds the server service of one DC. The single place a server command line is put
-        together.
-        """
-        return IgniteService(self.test_context, self.ignite_config, num_nodes=num_nodes,
-                             jvm_opts=dc_jvm_opts(dc), startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
+        if client_connector:
+            cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()
 
-    def dc_servers(self, dc: str) -> List[IgniteService]:
-        """
-        :return: All server services of the given DC, one per DC in this fixture.
-        """
-        return [self.servers[dc]] if dc in self.servers else []
-
-    def all_servers(self) -> List[IgniteService]:
-        """
-        :return: Every server service of the cluster, DCs in order.
-        """
-        return [svc for dc in sorted(self.servers) for svc in self.dc_servers(dc)]
-
-    @property
-    def min_backups(self) -> int:
-        """
-        :return: Smallest backup count giving every DC one copy of every partition
-                 (2 for a three DC cluster, 1 for a two DC one).
-        """
-        return min_backups(self.dcs)
-
-    def topology_params(self) -> dict:
-        """
-        :return: Cache parameters pinning the topology validator and the affinity backup
-                 filter to this cluster's DC set.
-        """
-        return mdc_topology_params(self.dcs, self.main_dc)
+        return IgniteConfiguration(**cfg_kwargs)
 
     def _discovery_spi(self, nodes) -> TcpDiscoverySpi:
         """
@@ -294,6 +170,28 @@ class MdcCluster:
                                                  discovery_spi=self._discovery_spi(self.servers[dc].nodes))
 
         return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
+
+    @property
+    def min_backups(self) -> int:
+        """
+        :return: Fewest backups that give every DC a copy of every partition.
+        """
+        return len(self.dcs) - 1
+
+    def _cache_params(self) -> dict:
+        """
+        :return: Parameters of an MDC cache that match the cluster's DCs.
+        """
+        params = {"dcsNum": len(self.dcs),
+                  "topologyValidator": self.test_context.globals.get(CACHE_TOP_VALIDATOR_GLOBAL, True)}
+
+        # The validator checks an odd DC set by majority and an even one by the main DC.
+        if len(self.dcs) % 2 == 1:
+            params["datacenters"] = list(self.dcs)
+        else:
+            params["mainDc"] = self.dcs[0]
+
+        return params
 
     def register(self, dc: str, service):
         """
@@ -310,7 +208,10 @@ class MdcCluster:
         registry = {}
 
         for dc in self.dcs:
-            services = list(self.dc_servers(dc))
+            services = []
+
+            if dc in self.servers:
+                services.append(self.servers[dc])
 
             services += self.runners.get(dc, [])
             services += self.loaders.get(dc, [])
@@ -336,7 +237,7 @@ class MdcCluster:
 
         for dc in self.dcs:
             roles = [(label, [node.account.hostname for svc in services for node in svc.nodes])
-                     for label, services in (("server", self.dc_servers(dc)),
+                     for label, services in (("server", [self.servers[dc]] if dc in self.servers else []),
                                              ("runner", self.runners.get(dc, [])),
                                              ("loader", self.loaders.get(dc, [])),
                                              ("extra", self.extras.get(dc, [])))]
@@ -357,56 +258,33 @@ class MdcCluster:
         """
         port = self.ignite_config.client_connector_configuration.port
 
-        return [f"{node.account.hostname}:{port}" for svc in self.all_servers() for node in svc.nodes]
+        return [f"{node.account.hostname}:{port}"
+                for dc in sorted(self.servers) for node in self.servers[dc].nodes]
 
     def start_servers(self):
         """
         Starts all server services.
         """
-        for svc in self.all_servers():
-            svc.start()
+        for dc in sorted(self.servers):
+            self.servers[dc].start()
 
     def stop_servers(self):
         """
         Stops all server services.
         """
-        for svc in self.all_servers():
-            svc.stop()
-
-    def stop_dcs(self, *dcs: str):
-        """
-        Stops the server services of the given DCs, in the order given - a data center
-        outage, as opposed to the network partition :func:`cross_dc_network` produces.
-        """
-        for dc in dcs:
-            for svc in self.dc_servers(dc):
-                svc.stop()
-
-    def start_dcs(self, *dcs: str, clean: bool = False, await_rebalance: bool = True):
-        """
-        Starts the given DCs back, by default preserving their persistence, and waits until
-        the cluster has rebalanced onto them.
-
-        Every DC is started before the first wait, so that their joins are not serialized
-        behind each other's rebalance.
-        """
-        for dc in dcs:
-            for svc in self.dc_servers(dc):
-                svc.start(clean=clean)
-
-        if await_rebalance:
-            for dc in dcs:
-                for svc in self.dc_servers(dc):
-                    svc.await_rebalance()
+        for dc in sorted(self.servers):
+            self.servers[dc].stop()
 
     def restart(self, dc: str, clean: bool = False, await_rebalance: bool = True):
         """
         Restarts a whole DC preserving its persistence (the pattern used to rejoin a
         read-only segment back into the main cluster after a partition heals).
         """
-        self.stop_dcs(dc)
+        self.servers[dc].stop()
+        self.servers[dc].start(clean=clean)
 
-        self.start_dcs(dc, clean=clean, await_rebalance=await_rebalance)
+        if await_rebalance:
+            self.servers[dc].await_rebalance()
 
     def run_app(self, dc: str, java_class: str, params: dict, runner: int = 0) -> IgniteApplicationService:
         """
@@ -425,7 +303,7 @@ class MdcCluster:
         if java_class is not None:
             svc.java_class_name = java_class
 
-        svc.params = self._with_cache_params(params)
+        svc.params = {**self._cache_params(), **params}
 
         svc.start(clean=self._first_start(svc))
         svc.wait()
@@ -437,14 +315,12 @@ class MdcCluster:
                      java_class: str = LOAD_APP) -> IgniteApplicationService:
         """
         Starts a background load application (runs until stopped). Any exception raised
-        by the application surfaces in :meth:`stop_loader`. A load that creates the cache
-        (``createCache``) has the MDC cache parameters injected - see
-        :meth:`_with_cache_params`.
+        by the application surfaces in :meth:`stop_loader`.
         """
         svc = self.loaders[dc][loader]
 
         svc.java_class_name = java_class
-        svc.params = self._with_cache_params(params)
+        svc.params = {**self._cache_params(), **params}
 
         svc.start(clean=self._first_start(svc))
 
@@ -461,24 +337,6 @@ class MdcCluster:
 
         return svc
 
-    def _with_cache_params(self, params: dict, creates_cache: bool = False) -> dict:
-        """
-        Injects everything the MDC cache is configured from - the topology validator mode,
-        the DC count the affinity backup filter needs, and :attr:`cache_defaults` - into
-        the parameters of an application that creates it, so no call site can configure a
-        cache that disagrees with the DC set. Explicit parameters still win.
-
-        The single injection point for all of it: an application that does not create the
-        cache is handed none of it, since it would only ever be ignored.
-
-        :param creates_cache: Whether the application always creates the cache. The ones
-               that decide at run time say so with a ``createCache`` parameter instead.
-        """
-        if not (creates_cache or params.get("createCache")):
-            return params
-
-        return {**self.topology_params(), **self.cache_defaults, **params}
-
     def _first_start(self, svc) -> bool:
         first = id(svc) not in self._started_apps
 
@@ -491,20 +349,14 @@ class MdcCluster:
         """
         Creates the MDC cache (if absent) and populates keys ``[from_idx, to_idx)``.
         Extra cache parameters (``atomicity``, ``writeSync``, ``readFromBackup``,
-        ``partitions``, ...) are passed through to the cache configuration builder, on top
-        of the MDC cache parameters - see :meth:`_with_cache_params`.
+        ``partitions``, ...) are passed through to the cache configuration builder.
 
-        :param backups: Backup count, by default the smallest one that gives every DC a
-               single copy of every partition (see :attr:`min_backups`).
+        :param backups: Backups, :attr:`min_backups` by default.
         """
-        params = {"cacheName": cache_name,
-                  "backups": self.min_backups if backups is None else backups,
-                  "from": from_idx, "to": to_idx, "sqlMode": sql_mode,
-                  **cache_params}
+        params = {"cacheName": cache_name, "backups": self.min_backups if backups is None else backups,
+                  "from": from_idx, "to": to_idx, "sqlMode": sql_mode, **cache_params}
 
-        # The generator always creates the cache, so it carries no createCache parameter
-        # for _with_cache_params() to key off.
-        return self.run_app(dc, GENERATOR_APP, self._with_cache_params(params, creates_cache=True))
+        return self.run_app(dc, GENERATOR_APP, params)
 
     def check_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int) -> Optional[IgniteApplicationService]:
         """
@@ -522,17 +374,17 @@ class MdcCluster:
         return self.run_app(dc, DATA_CHECKER_APP, params)
 
     def check_put_admissibility(self, dc: str, cache_name: str, admissible: bool,
-                                key_offset: int = 1_000_000, probes: int = 100) -> IgniteApplicationService:
+                                key_offset: Optional[int] = None, probes: int = 100) -> IgniteApplicationService:
         """
-        Verifies that put load from the given DC is admissible (the segment passes the
-        topology validator) or rejected by it (read-only segment). A PUT burst of the load
-        application: an admissible check fails fast on the first rejected put, an
-        inadmissible check fails if any of the probe puts succeeds.
-
-        Probe keys start at ``key_offset`` (defaults to 1_000_000) so they never intersect
-        with the data set verified by ``check_data``.
+        Verifies that puts from the given DC are accepted by the topology validator, or
+        rejected by it. An admissible check fails on the first rejected put, an inadmissible
+        one if any put succeeds. Each check writes its own key range unless ``key_offset``
+        is given.
         """
         self._adm_checks += 1
+
+        if key_offset is None:
+            key_offset = self._adm_checks * PROBE_KEY_STEP
 
         return self.run_load(dc, "PUT", cache_name, f"admCheck{self._adm_checks}",
                              keyFrom=key_offset, keyTo=key_offset + probes,
@@ -543,21 +395,18 @@ class MdcCluster:
         """
         Runs a load burst (see ``MdcContinuousLoadApplication``) and returns the service.
         ``result_prefix`` must be unique per burst because runner services are reused.
-        A burst that creates the cache (``createCache``) has the MDC cache parameters
-        injected - see :meth:`_with_cache_params`.
         """
         load_params = {"mode": mode, "cacheName": cache_name, "resultPrefix": result_prefix, **params}
 
         return self.run_app(dc, LOAD_APP, load_params, runner=runner)
 
-    def control(self, dc: Optional[str] = None) -> ControlUtility:
+    def control(self, dc: str = DC_1) -> ControlUtility:
         """
-        :return: Control utility bound to the given DC's servers, the first DC by default.
+        :return: Control utility bound to the given DC's servers.
         """
-        return ControlUtility(self.dc_servers(dc if dc is not None else self.dcs[0])[0])
+        return ControlUtility(self.servers[dc])
 
-    def verify_cache_distribution(self, cache_name: str, copies_per_dc: Optional[int] = None,
-                                  dc: Optional[str] = None):
+    def verify_cache_distribution(self, cache_name: str, copies_per_dc: Optional[int] = None, dc: str = DC_1):
         """
         Verifies that every partition of the cache has an OWNING copy in every DC, and
         optionally that each DC holds exactly ``copies_per_dc`` copies.
@@ -571,84 +420,53 @@ class MdcCluster:
 
         return distribution
 
-    def verify_split_brain(self):
+    def verify_split_brain(self, *segments: Union[str, Sequence[str]]):
         """
-        Verifies that the network partition split the cluster into as many independent
-        segments as there are DCs, i.e. every DC ended up on its own.
+        Verifies that the cluster split into exactly the given segments, one per DC by default.
+        A segment is a DC or a tuple of DCs that still see each other.
         """
-        self.verify_segments(*self.dcs)
+        segments = [(seg,) if isinstance(seg, str) else tuple(seg) for seg in segments or self.dcs]
 
-    def verify_segments(self, *segments: Segment):
-        """
-        Verifies that the cluster has split into exactly the given independent segments:
-        every segment is healthy on its own, no two segments share a baseline node, and
-        each segment elected its own coordinator.
+        states = {seg: self.verify_segment_healthy(*seg) for seg in segments}
 
-        A segment is a DC name or a collection of DC names that still see each other, e.g.
-        ``verify_segments((DC_1, DC_2), DC_3)`` for a cluster with DC3 cut off.
-        """
-        normalized = [_as_segment(segment) for segment in segments]
+        baselines = {seg: {node.consistent_id for node in states[seg].baseline} for seg in segments}
 
-        # The state each segment is checked healthy against is the same one its baseline and
-        # coordinator are read from: a partitioned segment answers control.sh over the very
-        # links the test just cut, so it is fetched once per segment and passed around.
-        states = {segment: self.verify_segment_healthy(segment) for segment in normalized}
-
-        baselines = {segment: {node.consistent_id for node in states[segment].baseline} for segment in normalized}
-
-        for seg_a, seg_b in combinations(normalized, 2):
+        for seg_a, seg_b in combinations(segments, 2):
             common_nodes = baselines[seg_a] & baselines[seg_b]
 
             assert not common_nodes, \
                 f"Segment baselines should not intersect [common={sorted(common_nodes)}, " \
-                f"{_fmt_segment(seg_a)}={sorted(baselines[seg_a])}, " \
-                f"{_fmt_segment(seg_b)}={sorted(baselines[seg_b])}]"
+                f"{seg_a}={sorted(baselines[seg_a])}, {seg_b}={sorted(baselines[seg_b])}]"
 
-        coordinators = {}
+        for seg in segments:
+            coordinator = states[seg].coordinator
 
-        for segment in normalized:
-            coordinator = states[segment].coordinator
+            assert coordinator, f"Coordinator is not found in the {seg} segment baseline output!"
 
-            assert coordinator, \
-                f"Coordinator is not found in the {_fmt_segment(segment)} segment baseline output!"
+            assert coordinator.consistent_id in baselines[seg], \
+                f"{seg} coordinator should belong to its own segment baseline " \
+                f"[coordinator={coordinator.consistent_id}, baseline={sorted(baselines[seg])}]"
 
-            assert coordinator.consistent_id in baselines[segment], \
-                f"{_fmt_segment(segment)} coordinator should belong to its own segment baseline " \
-                f"[coordinator={coordinator.consistent_id}, baseline={sorted(baselines[segment])}]"
-
-            coordinators[_fmt_segment(segment)] = coordinator.consistent_id
-
-        assert len(set(coordinators.values())) == len(normalized), \
-            f"Every segment should have elected its own coordinator [coordinators={coordinators}]"
-
-    def verify_segment_healthy(self, segment: Segment):
+    def verify_segment_healthy(self, *dcs: str):
         """
-        Verifies that a segment is fully alive, ACTIVE, and its baseline covers exactly
-        the servers of the DCs it consists of - and nothing else.
+        Verifies that the servers of the given DCs are alive and form an ACTIVE cluster whose
+        baseline holds exactly them.
 
-        :return: The ClusterState the segment was verified against, so that a caller
-                 asserting further on it (see :meth:`verify_segments`) needs no second
-                 control.sh round-trip into a segment that may be cut off.
+        :return: The cluster state read from the segment.
         """
-        dcs = _as_segment(segment)
-
-        name = _fmt_segment(dcs)
-
-        # get(): a per-DC dict is allowed to name only the DCs it populates, and
-        # verify_whole_cluster_healthy() asks about every DC the cluster spans.
         exp_alive_nodes = sum(self.srv_per_dc.get(dc, 0) for dc in dcs)
-        act_alive_nodes = sum(len(svc.alive_nodes) for dc in dcs for svc in self.dc_servers(dc))
+        act_alive_nodes = sum(len(self.servers[dc].alive_nodes) for dc in dcs if dc in self.servers)
 
         assert act_alive_nodes == exp_alive_nodes, \
-            f"{exp_alive_nodes} nodes should be alive in {name}! [actual={act_alive_nodes}]"
+            f"{exp_alive_nodes} nodes should be alive in {dcs}! [actual={act_alive_nodes}]"
 
         cluster_state = self.control(dcs[0]).cluster_state()
 
         assert "ACTIVE" == cluster_state.state, \
-            f"{name} segment state should remain ACTIVE [actual={cluster_state.state}]"
+            f"{dcs} segment state should remain ACTIVE [actual={cluster_state.state}]"
 
         assert len(cluster_state.baseline) == exp_alive_nodes, \
-            f"{name} segment baseline is not expected " \
+            f"{dcs} segment baseline is not expected " \
             f"[exp={exp_alive_nodes}, actual_baseline={cluster_state.baseline}]"
 
         return cluster_state
@@ -656,9 +474,9 @@ class MdcCluster:
     def verify_whole_cluster_healthy(self):
         """
         Verifies that all DCs form a single ACTIVE cluster: every server node is alive
-        and the baseline seen from the first DC covers all servers of every DC.
+        and the baseline covers all servers of every DC.
         """
-        self.verify_segment_healthy(self.dcs)
+        self.verify_segment_healthy(*self.dcs)
 
     def verify_servers_log_clean(self):
         """
@@ -666,10 +484,10 @@ class MdcCluster:
         were detected, no PME hang and no lost partitions were reported.
         """
         for pattern in (LRT_PATTERN, PME_FREEZE_PATTERN, LOST_PARTITIONS_PATTERN, ASSERTION_ERROR_PATTERN):
-            for svc in self.all_servers():
+            for svc in self.servers.values():
                 svc.check_event_absent(pattern, log_file=ALL_LOGS_GLOB)
 
-    def verify_no_hanging_txs(self, dc: Optional[str] = None, try_kill_hanging_tx: bool = False):
+    def verify_no_hanging_txs(self, dc: str = DC_1, try_kill_hanging_tx: bool = False):
         """
         Verifies that no active transactions are left on the cluster.
         """
@@ -710,106 +528,20 @@ class MdcCluster:
 def cross_dc_network(logger, mdc: MdcCluster, delay_ms: Optional[int] = None,
                      loss: Optional[float] = None) -> NetworkGroupManager:
     """
-    Builds a :class:`NetworkGroupManager` (context manager) for the cluster, applying the
-    same impairment to every DC pair. With no impairments the manager still owns partition
+    Builds a :class:`NetworkGroupManager` (context manager) for the cluster with the same
+    impairments on every DC pair. With no impairments the manager still owns partition
     enable/disable and the final network cleanup.
-
-    A cluster whose links are not all alike needs no fixture support: build the
-    :class:`NetworkGroupStore` and construct the manager directly, the registry is all it
-    takes from here - ``NetworkGroupManager(logger, store, mdc.network_registry())``.
 
     :param delay_ms: One-way cross-DC latency in milliseconds (the effective RTT is twice
            that, since netem delay is applied on egress in both directions).
     :param loss: Cross-DC packet loss fraction in [0.0, 1.0].
     """
-    cfg = CrossNetworkGroupConfiguration(delay=f"{delay_ms}ms" if delay_ms is not None else None, loss=loss)
-
     store = NetworkGroupStore()
 
+    cfg = CrossNetworkGroupConfiguration(delay=f"{delay_ms}ms" if delay_ms is not None else None, loss=loss)
+
     if not cfg.is_empty:
-        for dc_a, dc_b in all_pairs(mdc.dcs):
+        for dc_a, dc_b in combinations(mdc.dcs, 2):
             store.set_config(dc_a, dc_b, cfg)
 
     return NetworkGroupManager(logger, store, mdc.network_registry())
-
-
-def assert_cross_dc_distribution_by_attribute(distribution, dc_attr, expected_dcs, owning_only=True,
-                                              copies_per_dc=None):
-    """
-    Asserts that every partition of every cache group has at least one copy in every DC,
-    using a node attribute (requested via --user-attributes) as the DC marker.
-
-    :param distribution: CacheDistribution returned by ControlUtility.cache_distribution(),
-                         requested with user_attributes=[dc_attr].
-    :param dc_attr: Attribute name holding the DC id, e.g. "IGNITE_DATA_CENTER_ID".
-    :param expected_dcs: Collection of DC ids that must own a copy of every partition.
-    :param owning_only: Count only copies in OWNING state as present.
-    :param copies_per_dc: If set, each DC must hold exactly this many copies of every
-                          partition - the MdcAffinityBackupFilter guarantee
-                          ``(backups + 1) / dcsNum``.
-    """
-    def dc_of(copy):
-        return copy.user_attributes.get(dc_attr)
-
-    assert_spread(distribution, set(expected_dcs), dc_of, owning_only, copies_per_dc, label="DC",
-                  layout_hint=f"DC attribute: {dc_attr}, expected DCs: {sorted(expected_dcs)}")
-
-
-def assert_spread(distribution, expected_groups, group_of, owning_only, copies_per_group, label,
-                  layout_hint):
-    """
-    Asserts that every partition of every cache group has a copy in every expected group,
-    where a group is whatever ``group_of(copy)`` returns.
-
-    Public because the grouping is the only thing that varies: the DC spread above is one
-    ``group_of``, and an affinity backup filter that spreads copies by something finer - a
-    cell, an availability zone, a tuple of node attributes - is another. Such a check reuses
-    this rather than walking the distribution again.
-
-    :param distribution: CacheDistribution requested with the attributes ``group_of`` reads.
-    :param expected_groups: Group keys that must each own a copy of every partition.
-    :param group_of: Copy -> its group key.
-    :param owning_only: Count only copies in OWNING state as present.
-    :param copies_per_group: If set, each group must hold exactly this many copies.
-    :param label: What a group is called in the assertion message, e.g. "DC".
-    :param layout_hint: Line appended to the message, naming the layout that was expected.
-    """
-    violations = []
-
-    for group in distribution.groups.values():
-        for part, copies in sorted(group.partitions.items()):
-            counted = [c for c in copies if not owning_only or c.state == "OWNING"]
-
-            per_group = {key: 0 for key in expected_groups}
-
-            for copy in counted:
-                key = group_of(copy)
-
-                if key in per_group:
-                    per_group[key] += 1
-
-            missing = {key for key, cnt in per_group.items() if cnt == 0}
-
-            unbalanced = {} if copies_per_group is None else \
-                {key: cnt for key, cnt in per_group.items() if cnt != copies_per_group}
-
-            if missing or unbalanced:
-                copies_dump = ", ".join(
-                    f"{c.node_id}({'P' if c.primary else 'B'},{c.state},{label}={group_of(c)},"
-                    f"{c.node_addresses})"
-                    for c in copies)
-
-                problems = []
-
-                if missing:
-                    problems.append(f"missing {label}s={sorted(missing)}")
-
-                if unbalanced:
-                    problems.append(f"copies per {label} != {copies_per_group}: {unbalanced}")
-
-                violations.append(f"group={group.name}(id={group.group_id}), partition={part}, "
-                                  f"{', '.join(problems)}, copies=[{copies_dump}]")
-
-    assert not violations, \
-        f"Partition distribution does not cover every {label}:\n  " + "\n  ".join(violations) + \
-        "\n" + layout_hint

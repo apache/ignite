@@ -19,7 +19,6 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -30,11 +29,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.MdcAffinityBackupFilter;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.tests.dto.IndexedDataRecord;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.topology.MdcTopologyValidator;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
@@ -137,13 +134,6 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
 
         int dcsNum = jNode.path("dcsNum").asInt(DFLT_DCS_NUM);
 
-        RendezvousAffinityFunction affinity = new RendezvousAffinityFunction().setPartitions(partitions);
-
-        IgniteBiPredicate<ClusterNode, List<ClusterNode>> backupFilter = backupFilter(jNode, dcsNum, backups);
-
-        if (backupFilter != null)
-            affinity.setAffinityBackupFilter(backupFilter);
-
         CacheConfiguration<Integer, V> cacheCfg = new CacheConfiguration<Integer, V>()
             .setName(cacheName)
             .setCacheMode(cacheMode)
@@ -151,7 +141,9 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
             .setWriteSynchronizationMode(writeSync)
             .setBackups(backups)
             .setReadFromBackup(readFromBackup)
-            .setAffinity(affinity);
+            .setAffinity(new RendezvousAffinityFunction()
+                .setPartitions(partitions)
+                .setAffinityBackupFilter(new MdcAffinityBackupFilter(dcsNum, backups)));
 
         if (jNode.path("topologyValidator").asBoolean(DFLT_CACHE_TOP_VALIDATOR))
             cacheCfg.setTopologyValidator(mdcTopologyValidator(jNode));
@@ -159,20 +151,6 @@ public abstract class MdcCacheAwareApplication extends IgniteAwareApplication {
             log.info("Cache level topology validator is disabled [cache=" + cacheName + "]");
 
         return cacheCfg;
-    }
-
-    /**
-     * The affinity backup filter the cache is configured with. A {@link RendezvousAffinityFunction}
-     * holds exactly one, so an override replaces the MDC filter rather than complementing it.
-     *
-     * @param jNode Parameters.
-     * @param dcsNum Number of data centers.
-     * @param backups Number of backups.
-     * @return Affinity backup filter to set, or {@code null} for plain rendezvous affinity.
-     */
-    protected IgniteBiPredicate<ClusterNode, List<ClusterNode>> backupFilter(JsonNode jNode, int dcsNum,
-        int backups) {
-        return new MdcAffinityBackupFilter(dcsNum, backups);
     }
 
     /**
