@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.CacheStor
 import org.apache.ignite.internal.processors.query.calcite.integration.CacheWithInterceptorIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBasicSecondaryIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.CalciteOnlyNodeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalcitePlanningDumpTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CollectIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
@@ -182,6 +183,7 @@ import org.junit.platform.suite.api.Suite;
     TpchScale010Test.class,
     TpchScale100Test.class,
     UnnestIntegrationTest.class,
+    CalciteOnlyNodeIntegrationTest.class,
     CalcitePlanningDumpTest.class,
     KeyClassChangeIntegrationTest.class,
     QueryEntityValueColumnAliasTest.class,
