@@ -194,7 +194,7 @@ public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
                     }
                 });
 
-                return createRow(ses, data);
+                return createRow(ses, (Object[])data);
             }
         };
     }
