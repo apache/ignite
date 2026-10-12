@@ -81,9 +81,8 @@ public class CopyOnWriteIntMap<V> implements IntMap<V> {
     /**
      * {@inheritDoc}
      * <p>
-     * The collection is weakly consistent, like {@link java.util.concurrent.ConcurrentHashMap#values()}: it reflects
-     * the current state, its iterator traverses the map as it was when the iterator was created and does not support
-     * removal.
+     * The collection reflects the current state; its iterator traverses a snapshot taken at creation time and does not
+     * support removal.
      */
     @Override public Collection<V> values() {
         return vals;

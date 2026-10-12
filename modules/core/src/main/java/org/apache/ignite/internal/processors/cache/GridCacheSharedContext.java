@@ -535,6 +535,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @param cacheCtx Cache context to remove.
      */
+    @SuppressWarnings("unchecked")
     void removeCacheContext(GridCacheContext cacheCtx) {
         int cacheId = cacheCtx.cacheId();
 

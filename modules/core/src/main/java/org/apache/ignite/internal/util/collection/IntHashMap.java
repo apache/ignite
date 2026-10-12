@@ -168,7 +168,7 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** @return Shallow copy of the same table size: the entries are immutable and shared with this map. */
     IntHashMap<V> copy() {
-        return new IntHashMap<>(Arrays.copyOf(entries, entries.length), size);
+        return new IntHashMap<>(entries.clone(), size);
     }
 
     /** {@inheritDoc} */
