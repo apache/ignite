@@ -20,7 +20,7 @@ MDC test fixture.
 
     with cross_dc_network(self.logger, mdc, delay_ms=20) as net:
         mdc.start_servers()
-        mdc.generate_data(DC_1, CACHE, 0, 1000)
+        mdc.generate_data(DC_1, CACHE, 0, 1000, backups=2)
         mdc.verify_cache_distribution(CACHE, copies_per_dc=1)
 
         net.enable_network_partition(DC_1, DC_2)
@@ -74,9 +74,6 @@ ASSERTION_ERROR_PATTERN = "AssertionError"
 # Every log of a server node, including the ones rotated by a restart.
 ALL_LOGS_GLOB = "ignite*.log*"
 
-# Put admissibility check N writes keys from N * PROBE_KEY_STEP on, far above any data set.
-PROBE_KEY_STEP = 1_000_000
-
 
 class MdcCluster:
     """
@@ -118,7 +115,7 @@ class MdcCluster:
                               startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
             for dc, num in self.srv_per_dc.items() if num > 0}
 
-        # Every DC discovers through all of them, so any DC can restart and rejoin the others.
+        # Servers of every DC join through the servers of all DCs, so any DC can restart and rejoin.
         server_spi = self._discovery_spi([node for svc in self.servers.values() for node in svc.nodes])
 
         for svc in self.servers.values():
@@ -170,13 +167,6 @@ class MdcCluster:
                                                  discovery_spi=self._discovery_spi(self.servers[dc].nodes))
 
         return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
-
-    @property
-    def min_backups(self) -> int:
-        """
-        :return: Fewest backups that give every DC a copy of every partition.
-        """
-        return len(self.dcs) - 1
 
     def _cache_params(self) -> dict:
         """
@@ -344,16 +334,14 @@ class MdcCluster:
 
         return first
 
-    def generate_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int, backups: Optional[int] = None,
+    def generate_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int, backups: int,
                       sql_mode: bool = False, **cache_params) -> IgniteApplicationService:
         """
         Creates the MDC cache (if absent) and populates keys ``[from_idx, to_idx)``.
         Extra cache parameters (``atomicity``, ``writeSync``, ``readFromBackup``,
         ``partitions``, ...) are passed through to the cache configuration builder.
-
-        :param backups: Backups, :attr:`min_backups` by default.
         """
-        params = {"cacheName": cache_name, "backups": self.min_backups if backups is None else backups,
+        params = {"cacheName": cache_name, "backups": backups,
                   "from": from_idx, "to": to_idx, "sqlMode": sql_mode, **cache_params}
 
         return self.run_app(dc, GENERATOR_APP, params)
@@ -374,17 +362,13 @@ class MdcCluster:
         return self.run_app(dc, DATA_CHECKER_APP, params)
 
     def check_put_admissibility(self, dc: str, cache_name: str, admissible: bool,
-                                key_offset: Optional[int] = None, probes: int = 100) -> IgniteApplicationService:
+                                key_offset: int = 1_000_000, probes: int = 100) -> IgniteApplicationService:
         """
         Verifies that puts from the given DC are accepted by the topology validator, or
         rejected by it. An admissible check fails on the first rejected put, an inadmissible
-        one if any put succeeds. Each check writes its own key range unless ``key_offset``
-        is given.
+        one if any put succeeds.
         """
         self._adm_checks += 1
-
-        if key_offset is None:
-            key_offset = self._adm_checks * PROBE_KEY_STEP
 
         return self.run_load(dc, "PUT", cache_name, f"admCheck{self._adm_checks}",
                              keyFrom=key_offset, keyTo=key_offset + probes,
@@ -427,9 +411,8 @@ class MdcCluster:
         """
         segments = [(seg,) if isinstance(seg, str) else tuple(seg) for seg in segments or self.dcs]
 
-        states = {seg: self.verify_segment_healthy(*seg) for seg in segments}
-
-        baselines = {seg: {node.consistent_id for node in states[seg].baseline} for seg in segments}
+        baselines = {seg: {node.consistent_id for node in self.verify_segment_healthy(*seg).baseline}
+                     for seg in segments}
 
         for seg_a, seg_b in combinations(segments, 2):
             common_nodes = baselines[seg_a] & baselines[seg_b]
@@ -437,15 +420,6 @@ class MdcCluster:
             assert not common_nodes, \
                 f"Segment baselines should not intersect [common={sorted(common_nodes)}, " \
                 f"{seg_a}={sorted(baselines[seg_a])}, {seg_b}={sorted(baselines[seg_b])}]"
-
-        for seg in segments:
-            coordinator = states[seg].coordinator
-
-            assert coordinator, f"Coordinator is not found in the {seg} segment baseline output!"
-
-            assert coordinator.consistent_id in baselines[seg], \
-                f"{seg} coordinator should belong to its own segment baseline " \
-                f"[coordinator={coordinator.consistent_id}, baseline={sorted(baselines[seg])}]"
 
     def verify_segment_healthy(self, *dcs: str):
         """

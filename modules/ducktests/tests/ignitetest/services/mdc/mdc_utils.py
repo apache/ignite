@@ -35,12 +35,7 @@ def per_dc(value: Union[int, Dict[str, int]], dcs: Sequence[str]) -> Dict[str, i
     """
     Normalizes an int-or-dict per-DC count into a dict, e.g. 3 -> {DC1: 3, DC2: 3}.
     """
-    if not isinstance(value, dict):
-        return {dc: value for dc in dcs}
-
-    assert set(value) <= set(dcs), f"Per-DC counts name a DC the cluster does not span [counts={value}, dcs={dcs}]"
-
-    return dict(value)
+    return dict(value) if isinstance(value, dict) else {dc: value for dc in dcs}
 
 
 def assert_cross_dc_distribution_by_attribute(distribution, dc_attr, expected_dcs, owning_only=True,

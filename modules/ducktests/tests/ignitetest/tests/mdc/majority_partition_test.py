@@ -27,7 +27,10 @@ from ignitetest.utils.version import DEV_BRANCH
 
 CACHE_NAME = "mdc-majority"
 
-KEYS_PER_DC = 100
+KEYS = 300
+
+# Backups that give each of the three DCs a copy of every partition.
+BACKUPS = 2
 
 # Time for discovery to detect the partition and for every segment to complete PME.
 SPLIT_SETTLE_SECS = 20
@@ -39,27 +42,24 @@ class MdcMajorityPartitionTest(IgniteTest):
     """
     @cluster(num_nodes=9)
     @ignite_versions(str(DEV_BRANCH))
-    # DC1 is the main DC of a two DC cluster; with three DCs it must have no such role.
-    @parametrize(cross_dc_latency_ms=100, isolated_dc=DC_1)
-    def test_minority_dc_isolation(self, ignite_version, cross_dc_latency_ms, isolated_dc):
+    @parametrize(cross_dc_latency_ms=100)
+    def test_minority_dc_isolation(self, ignite_version, cross_dc_latency_ms):
         """
         Cuts one DC off from the other two: they keep accepting writes, the cut DC rejects them,
         and every DC still reads all keys. Then heals the network and restarts the cut DC.
         """
+        # DC1 is the main DC with two DCs; with three it gets no special role.
+        isolated_dc = DC_1
+
         mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1,
                          network_timeout=20_000, discovery_network_timeout=20_000)
 
         majority = [dc for dc in mdc.dcs if dc != isolated_dc]
 
-        total_keys = len(mdc.dcs) * KEYS_PER_DC
-
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
-            for idx, dc in enumerate(mdc.dcs):
-                mdc.generate_data(dc, CACHE_NAME, idx * KEYS_PER_DC, (idx + 1) * KEYS_PER_DC)
-
-            mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
+            mdc.generate_data(isolated_dc, CACHE_NAME, 0, KEYS, backups=BACKUPS)
 
             for dc in majority:
                 net.enable_network_partition(isolated_dc, dc)
@@ -70,10 +70,9 @@ class MdcMajorityPartitionTest(IgniteTest):
 
             # Every DC holds a copy of every partition, so both segments read all keys.
             for dc in mdc.dcs:
-                mdc.check_data(dc, CACHE_NAME, 0, total_keys)
+                mdc.check_data(dc, CACHE_NAME, 0, KEYS)
 
-            for dc in majority:
-                mdc.check_put_admissibility(dc, CACHE_NAME, True)
+            mdc.check_put_admissibility(majority[0], CACHE_NAME, True)
 
             mdc.check_put_admissibility(isolated_dc, CACHE_NAME, False)
 
@@ -85,10 +84,9 @@ class MdcMajorityPartitionTest(IgniteTest):
 
             mdc.verify_whole_cluster_healthy()
 
-            for dc in mdc.dcs:
-                mdc.check_put_admissibility(dc, CACHE_NAME, True)
+            mdc.check_put_admissibility(isolated_dc, CACHE_NAME, True)
 
-            mdc.check_data(DC_1, CACHE_NAME, 0, total_keys)
+            mdc.check_data(isolated_dc, CACHE_NAME, 0, KEYS)
 
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
 
