@@ -198,9 +198,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         Pattern.compile("QUERY_ENGINE[\\s]*\\([\\s]*'([a-z0-9]+)'[\\s]*\\)",
             CASE_INSENSITIVE);
 
-    /** Error message for the features that require the H2 query engine when it is not on the classpath. */
-    private static final String INDEXING_DISABLED_MSG = "Failed to execute query because indexing is disabled " +
-        "(consider adding module " + INDEXING.module() + " to classpath or moving it from 'optional' to 'libs' folder).";
+    /** Error message of the SQL features that require the H2 query engine when it is not on the classpath. */
+    public static final String INDEXING_DISABLED_MSG = "Failed to execute query because indexing is disabled " +
+        "(consider adding module '" + INDEXING.module() + "' to classpath or moving it from 'optional' to 'libs' folder).";
 
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
@@ -297,8 +297,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** All available query engines. */
     private QueryEngine[] qryEngines;
 
-    /** Query engines configuration. */
-    private QueryEngineConfigurationEx[] qryEnginesCfg;
+    /** Query engines configuration. {@code null} if neither indexing nor any query engine is available. */
+    private @Nullable QueryEngineConfigurationEx[] qryEnginesCfg;
 
     /** Running query manager. */
     private RunningQueryManager runningQryMgr;
@@ -566,12 +566,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // If indexing is disabled, try to find any query engine in components.
             if (!indexingEnabled()) {
                 for (GridComponent cmp : ctx.components()) {
-                    if (cmp instanceof QueryEngine && ((QueryEngine)cmp).config() != null) {
-                        QueryEngine qryEngine = (QueryEngine)cmp;
-
+                    if (cmp instanceof QueryEngine qryEngine && qryEngine.config() != null) {
                         qryEngines = new QueryEngine[] {qryEngine};
-                        this.qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
                         dfltQryEngine = qryEngine;
+                        this.qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
+
+                        break;
                     }
                 }
             }
@@ -1028,7 +1028,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param engineName Query engine name.
-     * @return {@code true} If a query engine with the given name can be selected by the {@code QUERY_ENGINE} hint or
+     * @return {@code True} if a query engine with the given name can be selected by the {@code QUERY_ENGINE} hint or
      *      by the client connection property.
      */
     public boolean queryEngineConfigured(String engineName) {
@@ -2935,15 +2935,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @throws IgniteException If indexing is disabled.
+     * @throws IgniteException If neither indexing nor any query engine is enabled.
      */
     private void checkxModuleEnabled() throws IgniteException {
-        if (!moduleEnabled()) {
-            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
-                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
-                "from 'optional' to 'libs' folder or configuring any query engine with " +
-                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
-        }
+        if (!moduleEnabled())
+            throw new IgniteException(INDEXING_DISABLED_MSG);
     }
 
     /**

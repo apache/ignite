@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -68,7 +67,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
- * Checks behaviour of a node that has the Calcite engine on the classpath but <b>not</b> the H2 engine
+ * Checks behavior of a node that has the Calcite engine on the classpath but <b>not</b> the H2 engine
  * ({@code ignite-indexing}).
  * This is the default node layout after the H2 module is moved to {@code libs/optional} (IGNITE-29117).
  */
@@ -77,11 +76,21 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     /** */
     private static final String JDBC_URL = "jdbc:ignite:thin://127.0.0.1";
 
-    /**
-     * Fragment that must be present in the error message of the query types that are implemented by the H2 engine only
-     * ({@link SqlQuery}, {@link TextQuery}), so that a user knows which module to add.
-     */
-    private static final String H2_ONLY_FEATURE_MSG = "ignite-indexing";
+    /** */
+    public static final String H2_ONLY_QRY_MSG = "is supported by the H2 query engine only. Add module " +
+        "'ignite-indexing' to the classpath of all Ignite nodes";
+
+    /** Name of the H2 engine, which is not available to the node. */
+    private static final String H2_ENGINE_NAME = "h2";
+
+    /** */
+    private static final String[] CLASS_PATH_PROPS = {"java.class.path", "surefire.test.class.path"};
+
+    /** */
+    private static final String[] H2_ENTRY_PREFIXES = {"ignite-indexing", "h2-", "lucene-"};
+
+    /** */
+    private static final String INDEXING_MODULE_DIR = "/modules/indexing/target/";
 
     /** Error message of the H2-only SQL commands ({@code SET STREAMING}, {@code COPY}): Calcite cannot parse them. */
     private static final String PARSE_ERR_MSG = "Failed to parse query";
@@ -148,7 +157,8 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
                 Collection<String> args = super.filteredJvmArgs();
 
                 args.add("-cp");
-                args.add(Stream.of(System.getProperty("java.class.path"), System.getProperty("surefire.test.class.path"))
+                args.add(Arrays.stream(CLASS_PATH_PROPS)
+                    .map(System::getProperty)
                     .filter(Objects::nonNull)
                     .flatMap(s -> Arrays.stream(s.split(File.pathSeparator)))
                     .filter(e -> !isH2Entry(e))
@@ -167,7 +177,8 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
         assertEquals(CalciteQueryEngineConfiguration.ENGINE_NAME, nodeOp(OP_QUERY_ENGINE));
 
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
-             Statement stmt = conn.createStatement()) {
+             Statement stmt = conn.createStatement()
+        ) {
             stmt.executeUpdate("CREATE TABLE t(id INT PRIMARY KEY, val VARCHAR) WITH \"template=replicated\"");
             stmt.executeUpdate("INSERT INTO t VALUES (1, 'a')");
 
@@ -185,7 +196,7 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     public void testSqlQueryNotSupported() throws Exception {
         String msg = nodeOp(OP_SQL_QUERY);
 
-        assertTrue(msg, msg.startsWith(ERR_PREFIX) && msg.contains(H2_ONLY_FEATURE_MSG));
+        assertTrue(msg, msg.startsWith(ERR_PREFIX) && msg.contains(H2_ONLY_QRY_MSG));
     }
 
     /** Deprecated {@link SqlQuery} sent by the Java thin client fails on the server node with the same error. */
@@ -197,7 +208,7 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
                 log,
                 () -> cli.cache(DEFAULT_CACHE_NAME).query(new SqlQuery<Integer, String>(String.class, "_val = ?").setArgs("v2")).getAll(),
                 ClientException.class,
-                H2_ONLY_FEATURE_MSG
+                H2_ONLY_QRY_MSG
             );
         }
     }
@@ -207,7 +218,7 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     public void testTextQuery() throws Exception {
         String res = nodeOp(OP_TEXT_QUERY);
 
-        assertTrue(res, res.startsWith(ERR_PREFIX) && res.contains(H2_ONLY_FEATURE_MSG));
+        assertTrue(res, res.startsWith(ERR_PREFIX) && res.contains(H2_ONLY_QRY_MSG));
     }
 
     /**
@@ -239,7 +250,9 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     /** {@code COPY} (bulk load) is implemented by the H2 engine only and is rejected by the Calcite parser. */
     @Test
     public void testCopy() throws Exception {
-        try (Connection conn = DriverManager.getConnection(JDBC_URL); Statement stmt = conn.createStatement()) {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL);
+             Statement stmt = conn.createStatement()
+        ) {
             assertThrowsAnyCause(
                 log,
                 () -> stmt.executeUpdate("COPY FROM '/nonexistent.csv' INTO \"test\".String(_key, _val) FORMAT CSV"),
@@ -249,15 +262,39 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
         }
     }
 
+    /** The only available engine is the default one: no JDBC property and no hint is needed. */
+    @Test
+    public void testJdbcDefaultQueryEngine() throws Exception {
+        try (Connection conn = DriverManager.getConnection(JDBC_URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT QUERY_ENGINE()")
+        ) {
+            assertTrue(rs.next());
+            assertEquals(CalciteQueryEngineConfiguration.ENGINE_NAME, rs.getString(1));
+        }
+    }
+
     /** The only available engine can be selected by name via the JDBC property without an explicit configuration. */
     @Test
     public void testJdbcQueryEngineProperty() throws Exception {
         try (Connection conn = DriverManager.getConnection(JDBC_URL + "?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT QUERY_ENGINE()")) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT QUERY_ENGINE()")
+        ) {
             assertTrue(rs.next());
             assertEquals(CalciteQueryEngineConfiguration.ENGINE_NAME, rs.getString(1));
         }
+    }
+
+    /** The H2 engine cannot be selected via the JDBC property: the handshake is rejected. */
+    @Test
+    public void testJdbcH2QueryEngineProperty() {
+        assertThrowsAnyCause(
+            log,
+            () -> DriverManager.getConnection(JDBC_URL + "?queryEngine=" + H2_ENGINE_NAME),
+            SQLException.class,
+            "Not found configuration for query engine: " + H2_ENGINE_NAME
+        );
     }
 
     /** The only available engine can be selected by the query hint without an explicit configuration. */
@@ -267,9 +304,27 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
 
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(qry)) {
+             ResultSet rs = stmt.executeQuery(qry)
+        ) {
             assertTrue(rs.next());
             assertEquals(CalciteQueryEngineConfiguration.ENGINE_NAME, rs.getString(1));
+        }
+    }
+
+    /** The H2 engine cannot be selected by the query hint. */
+    @Test
+    public void testH2QueryEngineHint() throws Exception {
+        String qry = "SELECT /*+ QUERY_ENGINE('" + H2_ENGINE_NAME + "') */ QUERY_ENGINE()";
+
+        try (Connection conn = DriverManager.getConnection(JDBC_URL);
+             Statement stmt = conn.createStatement()
+        ) {
+            assertThrowsAnyCause(
+                log,
+                () -> stmt.executeQuery(qry),
+                SQLException.class,
+                "Query engine not found: " + H2_ENGINE_NAME
+            );
         }
     }
 
@@ -277,10 +332,8 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     private static boolean isH2Entry(String entry) {
         String name = new File(entry).getName();
 
-        return name.startsWith("ignite-indexing")
-            || name.startsWith("h2-")
-            || name.startsWith("lucene-")
-            || entry.replace('\\', '/').contains("/modules/indexing/target/");
+        return Arrays.stream(H2_ENTRY_PREFIXES).anyMatch(name::startsWith)
+            || entry.replace('\\', '/').contains(INDEXING_MODULE_DIR);
     }
 
     /** */
@@ -301,7 +354,7 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     }
 
     /** Runs a cache API operation inside the Calcite-only node, see {@link #nodeOp(String)}. */
-    public static class NodeTask extends ComputeTaskSplitAdapter<String, String> {
+    private static class NodeTask extends ComputeTaskSplitAdapter<String, String> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String op) {
             return Collections.singleton(new NodeJob(op));

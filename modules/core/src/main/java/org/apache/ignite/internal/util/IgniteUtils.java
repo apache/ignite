@@ -2230,7 +2230,7 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Copy source file (or folder) to destination file (or folder). Supported source & destination:
+     * Copy source file (or folder) to destination file (or folder). Supported source and destination:
      * <ul>
      * <li>File to File</li>
      * <li>File to Folder</li>
