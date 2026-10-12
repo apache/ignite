@@ -399,6 +399,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @deprecated It is recommended to use {@link Ignite#reentrantLock(String, boolean, boolean, boolean)} instead.
      *      This method will be removed in future releases.
      */
+    @Deprecated
     public Lock lockAll(Collection<? extends K> keys);
 
     /**
