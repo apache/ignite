@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -200,7 +201,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Error message for the features that require the H2 query engine when it is not on the classpath. */
     private static final String INDEXING_DISABLED_MSG = "Failed to execute query because indexing is disabled " +
-        "(consider adding module " + INDEXING.module() + " to classpath or moving it from 'optional' to 'libs' folder).";
+        "(consider adding module '" + INDEXING.module() + "' to classpath or moving it from 'optional' to 'libs' folder).";
 
     /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
@@ -297,8 +298,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** All available query engines. */
     private QueryEngine[] qryEngines;
 
-    /** Query engines configuration. */
-    private QueryEngineConfigurationEx[] qryEnginesCfg;
+    /** Query engines configuration. {@code null} if neither indexing nor any query engine is available. */
+    private @Nullable QueryEngineConfigurationEx[] qryEnginesCfg;
 
     /** Running query manager. */
     private RunningQueryManager runningQryMgr;
@@ -566,12 +567,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // If indexing is disabled, try to find any query engine in components.
             if (!indexingEnabled()) {
                 for (GridComponent cmp : ctx.components()) {
-                    if (cmp instanceof QueryEngine && ((QueryEngine)cmp).config() != null) {
-                        QueryEngine qryEngine = (QueryEngine)cmp;
-
+                    if (cmp instanceof QueryEngine qryEngine && qryEngine.config() != null) {
                         qryEngines = new QueryEngine[] {qryEngine};
-                        this.qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
                         dfltQryEngine = qryEngine;
+                        this.qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
                     }
                 }
             }
@@ -1028,8 +1027,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param engineName Query engine name.
-     * @return {@code true} If a query engine with the given name can be selected by the {@code QUERY_ENGINE} hint or
-     *      by the client connection property.
+     * @return {@code True} if a query engine with the given name can be selected by the {@code QUERY_ENGINE} hint or
+     *      by the {@code queryEngine} client connection property.
      */
     public boolean queryEngineConfigured(String engineName) {
         if (qryEnginesCfg == null)
