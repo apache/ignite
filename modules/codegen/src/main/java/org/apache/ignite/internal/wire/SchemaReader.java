@@ -20,6 +20,7 @@ package org.apache.ignite.internal.wire;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -27,10 +28,12 @@ import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
@@ -90,6 +93,34 @@ public class SchemaReader {
         return new Schema(env.getElementUtils().getBinaryName(type).toString(), clsAnnotations.stream().distinct().sorted().toList(), res);
     }
 
+    /**
+     * @param fields Fields of a class.
+     * @return Schemas of the enums the fields refer to.
+     */
+    public List<Schema> enums(List<VariableElement> fields) {
+        Set<TypeElement> enums = new HashSet<>();
+
+        for (VariableElement field : fields)
+            enums.addAll(enumTypes(field.asType()));
+
+        List<Schema> res = new ArrayList<>();
+
+        for (TypeElement enumEl : enums) {
+            String enumName = env.getElementUtils().getBinaryName(enumEl).toString();
+
+            List<FieldRepresentation> constants = new ArrayList<>();
+
+            for (Element el : enumEl.getEnclosedElements()) {
+                if (el.getKind() == ElementKind.ENUM_CONSTANT)
+                    constants.add(new FieldRepresentation(constants.size(), enumName, el.getSimpleName().toString(), List.of()));
+            }
+
+            res.add(new Schema(enumName, List.of(), constants));
+        }
+
+        return res;
+    }
+
     /** @return Serialization annotations of an element as the compiler prints them. */
     private List<String> annotations(Element el) {
         List<String> res = new ArrayList<>();
@@ -106,6 +137,26 @@ public class SchemaReader {
         }
 
         Collections.sort(res);
+
+        return res;
+    }
+
+    /** @return Enums {@code type} refers to. */
+    private Set<TypeElement> enumTypes(TypeMirror type) {
+        if (type.getKind() == TypeKind.ARRAY)
+            return enumTypes(((ArrayType)type).getComponentType());
+
+        Set<TypeElement> res = new HashSet<>();
+
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declared = (DeclaredType)type;
+
+            if (declared.asElement().getKind() == ElementKind.ENUM)
+                res.add((TypeElement)declared.asElement());
+
+            for (TypeMirror arg : declared.getTypeArguments())
+                res.addAll(enumTypes(arg));
+        }
 
         return res;
     }

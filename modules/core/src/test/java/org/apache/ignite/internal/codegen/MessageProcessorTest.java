@@ -184,6 +184,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestEnumSetMessage.json")
             .contentsAsUtf8String().isEqualTo(jsonFile("TestEnumSetMessage.json"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 
     /** */
@@ -548,6 +552,10 @@ public class MessageProcessorTest {
             "TransactionIsolationEnumMapper.java");
 
         assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 
     /**

@@ -19,7 +19,9 @@ package org.apache.ignite.internal;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -30,7 +32,7 @@ import org.apache.ignite.internal.wire.WireJsonWriter;
 
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 
-/** Generates JSON representations of messages. */
+/** Generates JSON representations of messages and of the enums their fields refer to. */
 public class MessageJsonGenerator implements MessageGenerator {
     /** Directory of the representations in the class output. */
     private static final String WIRE_DIR = "META-INF/ignite-wire/";
@@ -45,6 +47,9 @@ public class MessageJsonGenerator implements MessageGenerator {
     private final WireJsonWriter writer = new WireJsonWriter();
 
     /** */
+    private final Set<String> describedEnums = new HashSet<>();
+
+    /** */
     MessageJsonGenerator(ProcessingEnvironment env) {
         this.env = env;
 
@@ -54,6 +59,11 @@ public class MessageJsonGenerator implements MessageGenerator {
     /** {@inheritDoc} */
     @Override public void generate(TypeElement type, List<VariableElement> fields) throws Exception {
         write("messages/", reader.read(type, fields), type);
+
+        for (Schema enumSchema : reader.enums(fields)) {
+            if (describedEnums.add(enumSchema.cls()))
+                write("enums/", enumSchema, type);
+        }
     }
 
     /** {@inheritDoc} */

@@ -126,6 +126,9 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
+    /** */
+    private MessageJsonGenerator jsonGen;
+
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeElement msgEl = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE);
@@ -187,11 +190,14 @@ public class MessageProcessor extends AbstractProcessor {
             msgFields.put(clazz, fields);
         }
 
+        if (jsonGen == null)
+            jsonGen = new MessageJsonGenerator(processingEnv);
+
         List<Supplier<MessageGenerator>> generators = List.of(
             () -> new MessageSerializerGenerator(processingEnv),
             () -> new MessageMarshallerGenerator(processingEnv),
             () -> new MessageDeploymentGenerator(processingEnv),
-            () -> new MessageJsonGenerator(processingEnv));
+            () -> jsonGen);
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
             for (Supplier<MessageGenerator> factory : generators) {
