@@ -68,7 +68,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
- * Checks behaviour of a node that has the Calcite engine on the classpath but <b>not</b> the H2 engine
+ * Checks behavior of a node that has the Calcite engine on the classpath but <b>not</b> the H2 engine
  * ({@code ignite-indexing}).
  * This is the default node layout after the H2 module is moved to {@code libs/optional} (IGNITE-29117).
  */

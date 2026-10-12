@@ -570,6 +570,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         qryEngines = new QueryEngine[] {qryEngine};
                         dfltQryEngine = qryEngine;
                         this.qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
+
+                        break;
                     }
                 }
             }
