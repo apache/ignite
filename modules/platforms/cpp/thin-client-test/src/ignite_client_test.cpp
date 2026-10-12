@@ -72,8 +72,10 @@ public:
 
         BOOST_CHECK_EQUAL(GetActiveConnections(), expect);
     }
+
     /**
-     * Get the number of threads once it stops changing: a joined thread is still listed in the process for a while.
+     * Get the number of threads once it stops changing: a joined thread is still listed in the process for a while,
+     * and the in-process JVM started by other tests creates and stops its own threads.
      *
      * @return Number of threads.
      */
