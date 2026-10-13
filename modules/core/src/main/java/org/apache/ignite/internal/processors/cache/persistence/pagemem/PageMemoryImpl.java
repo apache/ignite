@@ -474,7 +474,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public void releasePage(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         Segment seg = segment(grpId, pageId);
 
@@ -490,35 +490,35 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLock(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return readLock(page, pageId, false);
     }
 
     /** {@inheritDoc} */
     @Override public void readUnlock(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         readUnlockPage(page);
     }
 
     /** {@inheritDoc} */
     @Override public long writeLock(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return writeLock(grpId, pageId, page, false);
     }
 
     /** {@inheritDoc} */
     @Override public long writeLock(int grpId, long pageId, long page, boolean restore) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return writeLockPage(page, new FullPageId(pageId, grpId), !restore);
     }
 
     /** {@inheritDoc} */
     @Override public long tryWriteLock(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return tryWriteLockPage(page, new FullPageId(pageId, grpId), true);
     }
@@ -526,7 +526,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @Override public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         writeUnlock(grpId, pageId, page, walPlc, dirtyFlag, false);
     }
@@ -534,14 +534,14 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @Override public void writeUnlock(int grpId, long pageId, long page, Boolean walPlc,
         boolean dirtyFlag, boolean restore) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         writeUnlockPage(page, new FullPageId(pageId, grpId), walPlc, dirtyFlag, restore);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDirty(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return isDirty(page);
     }
@@ -552,7 +552,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             flags == PageIdAllocator.FLAG_IDX && partId == PageIdAllocator.INDEX_PARTITION :
             "flags = " + flags + ", partId = " + partId;
 
-        assert started;
+        assert started : "Page memory is stopped";
         assert stateChecker.checkpointLockIsHeldByThread();
 
         if (isThrottlingEnabled())
@@ -697,7 +697,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long partitionMetaPageId(int grpId, int partId) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return PageIdUtils.pageId(partId, PageIdAllocator.FLAG_DATA, 0);
     }
@@ -710,7 +710,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** {@inheritDoc} */
     @Override public long acquirePage(int grpId, long pageId,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return acquirePage(grpId, pageId, statHolder, false);
     }
@@ -735,7 +735,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      */
     private long acquirePage(int grpId, long pageId, IoStatisticsHolder statHolder,
         boolean restore, @Nullable AtomicBoolean pageAllocated) throws IgniteCheckedException {
-        assert started;
+        assert started : "Page memory is stopped";
 
         int partId = PageIdUtils.partId(pageId);
 
@@ -1582,7 +1582,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLock(long absPtr, long pageId, boolean force, boolean touch) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         int tag = force ? -1 : PageIdUtils.tag(pageId);
 
@@ -1601,7 +1601,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public long readLockForce(int grpId, long pageId, long page) {
-        assert started;
+        assert started : "Page memory is stopped";
 
         return readLock(page, pageId, true);
     }
