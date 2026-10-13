@@ -318,10 +318,10 @@ public class IdleVerifyUtility {
 
                 ctx.update(row.key(), row.value(), row.version());
             }
-        }
 
-        if (cancelled.getAsBoolean())
-            throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
+            if (cancelled.getAsBoolean())
+                throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
+        }
 
         return new PartitionHashRecord(
             partKey,
