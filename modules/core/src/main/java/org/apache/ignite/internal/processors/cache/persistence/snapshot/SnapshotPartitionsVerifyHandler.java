@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -63,11 +62,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMeta
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridIterableAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -307,6 +308,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                         // There is no `primary` partitions for snapshot.
                         PartitionKey key = new PartitionKey(grpId, partId, grpName);
 
+                        GridKernalContext kctx = cctx.kernalContext();
+
                         PartitionHashRecord hash = calculatePartitionHash(
                             key,
                             updateCntr,
@@ -315,8 +318,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                             false,
                             size,
                             skipHash()
-                                ? null
-                                : wrapPageIterator(snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore), cctx.kernalContext()),
+                                ? F.emptyIterator()
+                                : protectedPageIterator(snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore), kctx),
                             () -> cctx.kernalContext().isStopping()
                         );
 
@@ -523,20 +526,17 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
         return false;
     }
 
-    /**
-     * Protects B-Tree reading from concurrent node stop. Uses single gateway lock for {@link GridIterator#hasNext()}
-     * and {@link GridIterator#next()}.
-     */
-    public static Supplier<CacheDataRow> wrapPageIterator(
-        GridIterator<CacheDataRow> origIt,
-        GridKernalContext kctx
-    ) {
-        return new Supplier<>() {
-            @Override public @Nullable CacheDataRow get() {
+    /** Protects B-Tree reading from concurrent node stoppage. */
+    public static GridIterator<CacheDataRow> protectedPageIterator(GridIterator<CacheDataRow> origIt, GridKernalContext kctx) {
+        return new GridIterableAdapter<>(origIt) {
+            @Override public boolean hasNextX() throws IgniteCheckedException {
                 kctx.gateway().readLock();
 
                 try {
-                    return !kctx.isStopping() && origIt.hasNext() ? origIt.next() : null;
+                    if (kctx.isStopping())
+                        throw IdleVerifyUtility.cancelledException();
+
+                    return origIt.hasNextX();
                 }
                 finally {
                     kctx.gateway().readUnlock();

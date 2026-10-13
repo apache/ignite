@@ -66,7 +66,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandler.wrapPageIterator;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandler.protectedPageIterator;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
@@ -253,6 +253,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
+                    // Avoid excessive wrapping.
                     else if (e.getCause() instanceof IgniteException ie)
                         throw ie;
                     else
@@ -330,16 +331,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 ExecutorService execSrvs = ignite.context().pools().getIdleVerifyExecutorService();
 
-                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions()) {
-                    Future<Map<PartitionKey, PartitionHashRecord>> partitionFut = calculatePartitionHashAsync(
-                        execSrvs,
-                        grpCtx,
-                        part,
-                        () -> isCancelled() || ignite.context().isStopping()
-                    );
-
-                    partHashCalcFutures.add(partitionFut);
-                }
+                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
+                    partHashCalcFutures.add(calculatePartitionHashAsync(execSrvs, grpCtx, part, this::isCancelled));
             }
 
             return partHashCalcFutures;
@@ -516,7 +509,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
-                        wrapPageIterator(gctx.offheap().partitionIterator(part.id()), ignite.context()),
+                        protectedPageIterator(gctx.offheap().partitionIterator(part.id()), ignite.context()),
                         cancelled
                     );
 
