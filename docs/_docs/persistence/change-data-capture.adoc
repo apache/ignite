@@ -160,7 +160,8 @@ WARNING: All changes in skipped segments will be lost!
 
 Caches of the data regions without persistence do not write changes to the WAL while the CDC is disabled manually.
 On the nodes with such regions the segment that is current at the disabling is skipped as well, so the gap appears
-even if no segment is archived while the CDC is disabled.
+even if no segment is archived while the CDC is disabled: the application fails after every manual disabling there,
+even if nothing was changed while the CDC was disabled.
 
 So when enabled there will be gap between segments: `0000000000000002.wal`, `0000000000000010.wal`, `0000000000000011.wal`, for example.
 In this case `ignite-cdc.sh` will fail with the something like "Found missed segments. Some events are missed. Exiting! [lastSegment=2, nextSegment=10]".
