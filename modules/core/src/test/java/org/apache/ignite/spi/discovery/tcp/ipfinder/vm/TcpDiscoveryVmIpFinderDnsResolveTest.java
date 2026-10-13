@@ -26,17 +26,19 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**  */
+@WithSystemProperty(key = "sun.net.inetaddr.ttl", value = "0")
 public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest {
 
     /** Fqnd */
@@ -148,11 +150,6 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         assertEquals(expectedCount, resolved1.size());
 
         InetSocketAddress addr1 = resolved1.iterator().next();
-
-        //because of JAVA networkaddress cache ttl can be turn on.
-        //will be great to change current test and run it in separate JVM.
-        //and set there -Dsun.net.inetaddr.ttl=0 -Dsun.net.inetaddr.negative.ttl=0
-        Thread.sleep(50_000);
 
         Collection<InetSocketAddress> resolved2 = ipFinder.getRegisteredAddresses();
 
@@ -527,59 +524,38 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
     /** */
     public interface INameService extends InvocationHandler {
         /** */
-        static void install(
-            INameService dns
-        ) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, ClassNotFoundException {
-            final Class<?> inetAddrCls = InetAddress.class;
+        static void install(INameService dns) throws ReflectiveOperationException {
+            Field nameSvcField = nameServiceField();
 
-            Object neu;
+            Class<?> iface = nameSvcField.getType();
 
-            Field nameSvcField;
+            nameSvc = nameSvcField.get(null);
 
-            try {
-                //JAVA 9+ class
-                final Class<?> iface = Class.forName("java.net.InetAddress$NameService");
-
-                nameSvcField = inetAddrCls.getDeclaredField("nameService");
-
-                neu = Proxy.newProxyInstance(iface.getClassLoader(), new Class<?>[] {iface}, dns);
-            }
-            catch (final ClassNotFoundException | NoSuchFieldException e) {
-                //JAVA <8 class
-                nameSvcField = inetAddrCls.getDeclaredField("nameServices");
-
-                final Class<?> iface = Class.forName("sun.net.spi.nameservice.NameService");
-
-                neu = Collections.singletonList(Proxy.newProxyInstance(iface.getClassLoader(), new Class<?>[] {iface}, dns));
-            }
-
-            nameSvcField.setAccessible(true);
-
-            nameSvc = nameSvcField.get(inetAddrCls);
-
-            nameSvcField.set(inetAddrCls, neu);
+            nameSvcField.set(null, Proxy.newProxyInstance(iface.getClassLoader(), new Class<?>[] {iface}, dns));
         }
 
         /** */
-        static void uninstall() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
-            final Class<?> inetAddrCls = InetAddress.class;
+        static void uninstall() throws ReflectiveOperationException {
+            nameServiceField().set(null, nameSvc);
+        }
 
+        /**
+         * @return Accessible {@link InetAddress} static field holding the system-wide name service:
+         *      {@code InetAddressResolver resolver} since JDK 18, {@code InetAddress.NameService nameService} before.
+         */
+        private static Field nameServiceField() throws NoSuchFieldException {
             Field nameSvcField;
 
             try {
-                //JAVA 9+ class
-                Class.forName("java.net.InetAddress$NameService");
-
-                nameSvcField = inetAddrCls.getDeclaredField("nameService");
+                nameSvcField = InetAddress.class.getDeclaredField("nameService");
             }
-            catch (final ClassNotFoundException | NoSuchFieldException e) {
-                //JAVA <8 class
-                nameSvcField = inetAddrCls.getDeclaredField("nameServices");
+            catch (NoSuchFieldException e) {
+                nameSvcField = InetAddress.class.getDeclaredField("resolver");
             }
 
             nameSvcField.setAccessible(true);
 
-            nameSvcField.set(inetAddrCls, nameSvc);
+            return nameSvcField;
         }
 
         /**
@@ -604,9 +580,15 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
         @Override default Object invoke(final Object proxy, final Method method,
             final Object[] args) throws Throwable {
             switch (method.getName()) {
+                // InetAddress.NameService, JDK 9-17.
                 case "lookupAllHostAddr":
                     return lookupAllHostAddr((String)args[0]);
                 case "getHostByAddr":
+                    return getHostByAddr((byte[])args[0]);
+                // java.net.spi.InetAddressResolver, JDK 18+.
+                case "lookupByName":
+                    return Stream.of(lookupAllHostAddr((String)args[0]));
+                case "lookupByAddress":
                     return getHostByAddr((byte[])args[0]);
                 default:
                     final StringBuilder o = new StringBuilder();

@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.MultiPageInPlaceUpdateTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
+import org.apache.ignite.internal.processors.failure.FailureProcessorMetricsTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorThreadDumpThrottlingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageClassloadingTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMapTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.collection.IntHashMapTest;
 import org.apache.ignite.internal.util.collection.IntRWHashMapTest;
@@ -140,6 +142,7 @@ import org.junit.runners.Suite;
     MetricConfigurationTest.class,
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
+    CopyOnWriteIntMapTest.class,
     ImmutableIntSetTest.class,
     IntHashMapTest.class,
     IntRWHashMapTest.class,
@@ -165,6 +168,7 @@ import org.junit.runners.Suite;
     OomFailureHandlerTest.class,
     TransactionIntegrityWithSystemWorkerDeathTest.class,
     FailureProcessorLoggingTest.class,
+    FailureProcessorMetricsTest.class,
     FailureProcessorThreadDumpThrottlingTest.class,
     ExchangeTaskHandlerWaitingForTasksTest.class,
 

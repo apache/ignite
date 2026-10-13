@@ -242,13 +242,6 @@ public final class GridCacheAtomicReferenceImpl<T> extends AtomicDataStructurePr
         }
     }
 
-    /**
-     * @return Error.
-     */
-    private IllegalStateException removedError() {
-        return new IllegalStateException("Atomic reference was removed from cache: " + name);
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx.kernalContext());

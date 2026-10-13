@@ -1031,14 +1031,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @param key Key.
      * @param threadId Thread id.
+     * @return {@code False} if there is no explicit lock candidate for the given thread and key.
      */
-    public void markExplicitOwner(IgniteTxKey key, long threadId) {
+    public boolean markExplicitOwner(IgniteTxKey key, long threadId) {
         assert threadId > 0;
 
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
-        if (span != null)
-            span.markOwned(key);
+        return span != null && span.markOwned(key);
     }
 
     /**

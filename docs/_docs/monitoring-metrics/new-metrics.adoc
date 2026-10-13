@@ -108,7 +108,7 @@ Register name: `cache.{cache_name}.{near}`
 |CacheMisses | long | A miss is a get request that is not satisfied.
 |CachePuts | long | The total number of puts to the cache.
 |CacheRemovals | long | The total number of removals from the cache.
-|CacheSize | long | Local cache size.
+|CacheSize | long | Local cache size, the number of primary copies of entries on the node.
 |CacheTxCommits | long | Total number of transaction commits.
 |CacheTxRollbacks | long | Total number of transaction rollbacks.
 |CommitTime | histogram | Commit time in nanoseconds.
@@ -772,6 +772,23 @@ Register name: `Services.{service_name}`
 |Name | Type | Description
 |{method_name} | histogram | Duration in nanoseconds of '{method_name}()'.
 |===
+
+== Failure Handling
+
+Counters of the failures suppressed by the configured failure handler. One counter is registered per failure type the handler ignores, see link:perf-and-troubleshooting/handling-exceptions#critical-workers-health-check[Critical Workers Health Check].
+
+Register name: `failure.ignored`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|{failure_type} | long | The number of failures of the given type suppressed in accordance with the configured failure handler.
+|===
+
+== Change Data Capture
+
+The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, through the exporters configured in `CdcConfiguration`.
+See link:persistence/change-data-capture#metrics[Change Data Capture] for the list of metrics.
 
 == Custom Metrics
 

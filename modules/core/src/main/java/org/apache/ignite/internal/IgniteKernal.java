@@ -73,7 +73,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -2685,18 +2684,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
         cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
-    }
-
-    /** */
-    private Collection<BaselineNode> baselineNodes() {
-        Collection<ClusterNode> srvNodes = cluster().forServers().nodes();
-
-        ArrayList baselineNodes = new ArrayList(srvNodes.size());
-
-        for (ClusterNode clN : srvNodes)
-            baselineNodes.add(clN);
-
-        return baselineNodes;
     }
 
     /** {@inheritDoc} */
