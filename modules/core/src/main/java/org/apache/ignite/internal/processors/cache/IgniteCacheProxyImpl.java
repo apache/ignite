@@ -115,6 +115,10 @@ import org.jetbrains.annotations.Nullable;
 public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCacheProxy<K, V> {
     /** */
+    public static final String NO_QRY_ENGINE_MSG = "Failed to execute query. Add module 'ignite-indexing' to the " +
+        "classpath of all Ignite nodes or configure any query engine.";
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
@@ -891,10 +895,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             throw new CacheException("Indexing is disabled for cache: " + cacheName +
                     ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 
-        if (!ctx.kernalContext().query().moduleEnabled() &&
-            (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
-            throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
-                    "of all Ignite nodes or configure any query engine.");
+        if (!ctx.kernalContext().query().moduleEnabled() && qry instanceof SqlFieldsQuery)
+            throw new CacheException(NO_QRY_ENGINE_MSG);
+
+        if ((qry instanceof SqlQuery || qry instanceof TextQuery) && !ctx.kernalContext().query().indexingEnabled()) {
+            throw new CacheException("Failed to execute query. '" + qry.getClass().getSimpleName() + "' is supported " +
+                "by the H2 query engine only. Add module 'ignite-indexing' to the classpath of all Ignite nodes" +
+                (qry instanceof SqlQuery && ctx.kernalContext().query().moduleEnabled()
+                    ? " or use SqlFieldsQuery instead."
+                    : "."));
+        }
     }
 
     /** {@inheritDoc} */
@@ -1984,7 +1994,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in binary format), you should acquire following projection to avoid deserialization:
      * <pre>
-     * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
+     * IgniteInternalCache&lt;Integer, GridBinaryObject&gt; prj = cache.keepBinary();
      *
      * // Value is not deserialized and returned in binary format.
      * GridBinaryObject po = prj.get(1);
