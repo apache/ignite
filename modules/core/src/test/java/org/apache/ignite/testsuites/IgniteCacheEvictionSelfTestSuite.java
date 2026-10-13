@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageE
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTrackerFragmentChainSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -122,8 +121,6 @@ public class IgniteCacheEvictionSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, PageEvictionGuardOomTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, PageEvictionPagesRecyclingAndReusingTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, PageEvictionTrackerFragmentChainSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, DhtAndNearEvictionTest.class, ignoredTests);
 

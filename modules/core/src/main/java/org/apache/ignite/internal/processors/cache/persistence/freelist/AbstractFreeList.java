@@ -659,6 +659,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 // If eviction is required - free up memory before locking the next page.
                 while (evictionTracker.evictionRequired()) {
+                    if (memMetrics.onPageEvictionsStarted()) {
+                        U.warn(log, "Page-based evictions started." +
+                            " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
+                    }
+
                     evictionTracker.evictDataPage();
 
                     memMetrics.updateEvictionRate();
@@ -839,8 +844,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 nextLink = write(pageId, rmvRow, bag, itemId, FAIL_L, statHolder);
 
                 assert nextLink != FAIL_L; // Can't fail here.
-
-                evictionTracker.forgetPage(pageId);
             }
 
             reuseList.addForRecycle(bag);
@@ -983,9 +986,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Takes a page, optionally running the size-aware reserve first (see {@link #ensureFreeSpaceForInsert(int)}).
+     * Takes a page, optionally running the size-aware reserve first.
      * The reserve targets {@code requiredPages + emptyPagesPoolSize}, so after this thread consumes its pages
      * at least {@code emptyPagesPoolSize} pages remain for concurrent writers.
+     * <p>
+     * The reserve is a check-then-act on shared counters: concurrent writers may drain the free list and the
+     * allocation headroom between the gate check and {@link #takePage}. If {@code takePage} finds no page, the
+     * reserve is re-evaluated on fresh state and given a second chance to evict before the caller falls back to
+     * allocating a brand-new page, which fails with a raw out-of-memory once the region is physically exhausted.
      *
      * @param size Free space required on the page.
      * @param row Row to write.
@@ -998,13 +1006,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @throws IgniteCheckedException If failed.
      */
     private long takePageWithReserve(int size, T row, IoStatisticsHolder statHolder, boolean reserve) throws IgniteCheckedException {
-        if (reserve) {
-            ensureFreeSpaceForInsert(size);
+        if (reserve && !dataRegion.config().isPersistenceEnabled() &&
+            !(dataRegion.config().getPageEvictionMode() == DataPageEvictionMode.DISABLED)) {
+            reserveSpaceForInsert(size);
 
             long pageId = takePage(size, row, statHolder);
 
             if (pageId == 0L) {
-                ensureFreeSpaceForInsert(size);
+                reserveSpaceForInsert(size);
 
                 pageId = takePage(size, row, statHolder);
             }
@@ -1013,20 +1022,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
 
         return takePage(size, row, statHolder);
-    }
-
-    /**
-     * Runs the size-aware reserve for an in-memory region with enabled page eviction; no-op otherwise.
-     *
-     * @param size Size of the row (or its remaining part) to be inserted.
-     * @throws IgniteCheckedException If failed to evict data pages.
-     */
-    private void ensureFreeSpaceForInsert(int size) throws IgniteCheckedException {
-        if (dataRegion.config().isPersistenceEnabled() ||
-            dataRegion.config().getPageEvictionMode() == DataPageEvictionMode.DISABLED)
-            return;
-
-        reserveSpaceForInsert(size);
     }
 
     /**

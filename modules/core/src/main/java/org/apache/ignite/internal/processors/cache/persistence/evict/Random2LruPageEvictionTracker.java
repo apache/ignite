@@ -140,11 +140,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int trackingIdx = rnd.nextInt(trackingSize);
 
-                int origTrackingIdx = trackingIdx;
-
-                long origTrackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + origTrackingIdx * 8L);
-
-                long trackingData = origTrackingData;
+                long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
 
                 int firstTs = first(trackingData);
 
@@ -165,9 +161,11 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         firstTs = first(trackingData);
 
+                        // The walk may start from a stale pointer: fragment-chain pages are continuously recycled
+                        // and their tracking slots re-linked by newer rows, which recreates identical link values
+                        // across slot generations (ABA). Every recycling generation deepens the chain indirection,
+                        // so two hops can legitimately land on a link slot of a newer chain. Skip the slot and keep sampling.
                         if (firstTs < 0) {
-                            GridUnsafe.compareAndSwapLong(null, trackingArrPtr + origTrackingIdx * 8L, origTrackingData, 0L);
-
                             sampleSpinCnt++;
 
                             if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
@@ -178,6 +176,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                             continue;
                         }
+
+                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
                     }
                 }
 

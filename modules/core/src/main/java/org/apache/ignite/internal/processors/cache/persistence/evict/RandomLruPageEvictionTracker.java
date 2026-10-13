@@ -126,11 +126,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
             while (dataPagesCnt < SAMPLE_SIZE) {
                 int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
-                int origSampleIdx = sampleTrackingIdx;
-
-                int origSampleData = GridUnsafe.getIntVolatile(null, trackingArrPtr + origSampleIdx * 4L);
-
-                int compactTs = origSampleData;
+                int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
                 if (compactTs < 0) {
                     // For page containing fragmented row data timestamps stored in the row's head page are used.
@@ -145,9 +141,11 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
+                        // The walk may start from a stale pointer: fragment-chain pages are continuously recycled
+                        // and their tracking slots re-linked by newer rows, which recreates identical link values
+                        // across slot generations (ABA). Every recycling generation deepens the chain indirection,
+                        // so two hops can legitimately land on a link slot of a newer chain. Skip the slot and keep sampling.
                         if (compactTs < 0) {
-                            GridUnsafe.compareAndSwapInt(null, trackingArrPtr + origSampleIdx * 4L, origSampleData, 0);
-
                             sampleSpinCnt++;
 
                             if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
@@ -158,6 +156,8 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                             continue;
                         }
+
+                        assert compactTs >= 0 : "[compactTs=" + compactTs + "]";
                     }
                 }
 

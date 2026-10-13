@@ -210,23 +210,6 @@ public class OffheapReadWriteLock {
     }
 
     /**
-     * Attempts to acquire the read lock without ever blocking.
-     *
-     * @param lock Lock address.
-     * @param tag Validation tag.
-     * @return {@code True} if the read lock was acquired, {@code false} if the lock is held by a writer (or the tag
-     * validation failed) — the caller may retry later or skip the page.
-     */
-    public boolean tryReadLock(long lock, int tag) {
-        long state = GridUnsafe.getLongVolatile(null, lock);
-
-        assert state != 0;
-
-        return checkTag(state, tag) && canReadLock(state) &&
-            GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, 1, 0, 0));
-    }
-
-    /**
      * @param lock Lock address.
      */
     public boolean writeLock(long lock, int tag) {
