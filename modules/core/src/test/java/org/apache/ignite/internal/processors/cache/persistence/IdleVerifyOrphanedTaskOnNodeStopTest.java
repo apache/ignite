@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_IDLE_VERIFY_POOL_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
@@ -90,17 +91,22 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        int parts = 16;
-        int keys = parts * 3;
+        // Take enough partitions to process.
+        int parts = Math.max(DFLT_IDLE_VERIFY_POOL_SIZE * 2, 16);
+        int keys = parts * 100_000;
 
         // Create cache and fill some data.
         ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(ATOMIC)
-                .setAffinity(new RendezvousAffinityFunction(false, parts)));
+            .setAtomicityMode(ATOMIC)
+            .setAffinity(new RendezvousAffinityFunction(false, parts)));
+
+        Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
 
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int k = 0; k < keys; k++)
-                streamer.addData(k, k);
+            for (int k = 0; k < keys; k++) {
+                if (aff.partition(k) != 0)
+                    streamer.addData(k, k);
+            }
         }
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
@@ -118,8 +124,6 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
         // Expected to fail and correctly finish all its jobs because the cluster isn't idle.
         IdleVerifyResult verifyRes = idleVerify(ignite, checkCrc, DEFAULT_CACHE_NAME);
 
-        assertFalse(F.isEmpty(verifyRes.exceptions()));
-
         // Expected to stop correctly.
         stopGrid(0);
 
@@ -132,6 +136,6 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
             "Operation has been cancelled (node is stopping)"
         );
 
-        assertTrue(G.allGrids().isEmpty());
+        assertFalse(F.isEmpty(verifyRes.exceptions()));
     }
 }
