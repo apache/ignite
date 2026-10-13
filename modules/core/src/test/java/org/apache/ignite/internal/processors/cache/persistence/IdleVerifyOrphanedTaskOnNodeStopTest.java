@@ -99,7 +99,7 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
                 .setAffinity(new RendezvousAffinityFunction(false, parts)));
 
         try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int k = 0; k < keys * 3; k++)
+            for (int k = 0; k < keys; k++)
                 streamer.addData(k, k);
         }
 
@@ -109,7 +109,7 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
 
         AtomicBoolean stopUpdatingFlag = new AtomicBoolean();
 
-        // Keeps updating one partition.
+        // Keeps updating of one partition.
         IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(() -> {
             for (int i = 0; !stopUpdatingFlag.get(); i++)
                 cache.put(keyUnderLoad, i);
