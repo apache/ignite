@@ -23,7 +23,7 @@ single grouped result.
 
 [NOTE]
 ====
-Window functions are supported by the Calcite-based SQL engine.
+Window functions are supported by the Calcite-based SQL engine, which is the default engine. They are not available with the legacy H2 engine.
 ====
 
 == Supported Window Functions

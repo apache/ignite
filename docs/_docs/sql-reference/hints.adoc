@@ -14,4 +14,4 @@
 // limitations under the License.
 = Optimizer hints
 
-Currently, optimizer hints are supported only with link:SQL/sql-calcite#hints[Calcite SQL engine].
+Optimizer hints are supported by the link:SQL/sql-calcite#hints[Calcite-based SQL engine], which is the default engine. The legacy H2 engine does not support them.

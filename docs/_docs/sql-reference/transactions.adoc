@@ -14,7 +14,7 @@
 // limitations under the License.
 = Transactions
 
-This page describes SQL transaction commands supported by the Calcite-based SQL engine.
+This page describes SQL transaction commands supported by the Calcite-based SQL engine, which is the default engine. The legacy H2 engine does not support them.
 
 == SAVEPOINT
 
