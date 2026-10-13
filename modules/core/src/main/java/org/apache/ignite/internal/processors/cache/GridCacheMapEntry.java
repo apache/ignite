@@ -3624,7 +3624,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private void ensureFreeSpace() throws IgniteCheckedException {
         // Deadlock alert: evicting a data page removes (and locks) all entries on the page one by one, so this must
         // only run while NOT holding this entry's lock (all call sites run before lockEntry()). The size-aware path
-        // (RowStore.addRow -> ensureFreeSpaceForInsert) runs under the lock and instead uses the non-blocking
+        // (RowStore.addRow -> FreeList.ensureFreeSpace) runs under the lock and instead uses the non-blocking
         // tryLockEntry(0) inside evictInternal.
         assert !lock.isHeldByCurrentThread();
 

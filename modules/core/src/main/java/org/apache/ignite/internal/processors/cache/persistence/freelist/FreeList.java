@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
@@ -55,6 +56,15 @@ public interface FreeList<T extends Storable> {
      * @throws IgniteCheckedException If failed.
      */
     public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+
+    /**
+     * Ensures the data region backing this free list can accommodate a row of the given size.
+     *
+     * @param rowSize Size of the row to be inserted.
+     * @throws IgniteOutOfMemoryException If the row cannot be accommodated even after eviction.
+     * @throws IgniteCheckedException If failed to evict data pages.
+     */
+    public void ensureFreeSpace(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException;
 
     /**
      * @param log Logger.
