@@ -25,6 +25,8 @@ import java.util.Map;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
+import org.apache.calcite.rel.metadata.CyclicMetadataException;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdSelectivity;
@@ -44,7 +46,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.SqlTypeFamily;
-import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
@@ -67,13 +68,13 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     private static final double IS_NULL_SELECTIVITY = 0.1;
 
     /** Default selectivity for IS NOT NULL conditions. */
-    private static final double IS_NOT_NULL_SELECTIVITY = 1 - IS_NULL_SELECTIVITY;
+    public static final double IS_NOT_NULL_SELECTIVITY = 1 - IS_NULL_SELECTIVITY;
 
     /** Default selectivity for equals conditions. */
-    private static final double EQUALS_SELECTIVITY = 0.15;
+    public static final double EQUALS_SELECTIVITY = 0.15;
 
     /** Default selectivity for comparison conitions. */
-    private static final double COMPARISON_SELECTIVITY = 0.5;
+    public static final double COMPARISON_SELECTIVITY = 0.5;
 
     /** Default selectivity for other conditions. */
     private static final double OTHER_SELECTIVITY = 0.25;
@@ -81,12 +82,11 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
     /**
      * Math context to use in estimations calculations.
      */
-    private final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
+    private static final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
 
     /** */
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.SELECTIVITY.method, new IgniteMdSelectivity());
+        ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdSelectivity(), BuiltInMetadata.Selectivity.Handler.class);
 
     /** */
     public Double getSelectivity(ProjectableFilterableTableScan rel, RelMetadataQuery mq, RexNode predicate) {
@@ -116,14 +116,24 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         return mq.getSelectivity(rel.getInput(), rel.condition());
     }
 
-    /** */
+    /**
+     * Selectivity for a subset.
+     *
+     * <p>Resolved through the original (logical) expression of the set rather than through the current best plan,
+     * because the best expression changes during optimization and metadata depending on it makes estimates of the same
+     * expression unstable (see {@link IgniteMdColumnOrigins#getColumnOrigins(RelSubset, RelMetadataQuery, int)}).
+     */
     public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
-        RelNode best = rel.getBest();
+        RelNode original = rel.getOriginal();
 
-        if (best == null)
-            return super.getSelectivity(rel, mq, predicate);
-
-        return getSelectivity(best, mq, predicate);
+        try {
+            return mq.getSelectivity(original != null ? original :
+                rel.stripped(), predicate);
+        }
+        catch (CyclicMetadataException ignore) {
+            // Cyclic set (see CALCITE-1048): fall back to the predicate-only guess.
+            return RelMdUtil.guessSelectivity(predicate);
+        }
     }
 
     /**
