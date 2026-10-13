@@ -516,7 +516,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
-                        wrapPageIterator(gctx.offheap().partitionIterator(part.id()), ignite.context().gateway()),
+                        wrapPageIterator(gctx.offheap().partitionIterator(part.id()), ignite.context()),
                         cancelled
                     );
 

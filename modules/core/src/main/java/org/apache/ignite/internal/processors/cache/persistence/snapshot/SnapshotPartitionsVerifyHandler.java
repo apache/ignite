@@ -40,7 +40,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
@@ -308,8 +307,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                         // There is no `primary` partitions for snapshot.
                         PartitionKey key = new PartitionKey(grpId, partId, grpName);
 
-                        GridKernalGateway gw = cctx.kernalContext().gateway();
-
                         PartitionHashRecord hash = calculatePartitionHash(
                             key,
                             updateCntr,
@@ -319,7 +316,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                             size,
                             skipHash()
                                 ? null
-                                : wrapPageIterator(snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore), gw),
+                                : wrapPageIterator(snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore), cctx.kernalContext()),
                             () -> cctx.kernalContext().isStopping()
                         );
 
@@ -532,17 +529,17 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
      */
     public static Supplier<CacheDataRow> wrapPageIterator(
         GridIterator<CacheDataRow> origIt,
-        GridKernalGateway gateway
+        GridKernalContext kctx
     ) {
         return new Supplier<>() {
             @Override public @Nullable CacheDataRow get() {
-                gateway.readLock();
+                kctx.gateway().readLock();
 
                 try {
-                    return origIt.hasNext() ? origIt.next() : null;
+                    return !kctx.isStopping() && origIt.hasNext() ? origIt.next() : null;
                 }
                 finally {
-                    gateway.readUnlock();
+                    kctx.gateway().readUnlock();
                 }
             }
         };
