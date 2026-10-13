@@ -20,9 +20,9 @@ package org.apache.ignite.internal.thread.context;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -68,6 +68,12 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     private static final User SECOND_USR_VAL = User.create("1", "1");
 
+    /** */
+    private static volatile Consumer<CollisionContext> onCollision;
+
+    /** */
+    private static volatile CountDownLatch firstJobArrivedLatch;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -86,7 +92,10 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        TestCollisionSpi.firstJobAction = null;
+        onCollision = null;
+        firstJobArrivedLatch = new CountDownLatch(1);
+
+        startGrids(2);
     }
 
     /** {@inheritDoc} */
@@ -99,8 +108,6 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     @Test
     public void testJobNodeLeftResponseIsProcessedUnderTheTaskContext() throws Exception {
-        startGrids(2);
-
         spi(grid(1)).blockMessages((node, msg) -> msg instanceof GridJobExecuteResponse);
 
         IgniteFuture<TaskExecution> fut = executeWithContext(new RegularJob(), FIRST_USR_VAL);
@@ -114,10 +121,18 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
     /** */
     @Test
-    public void testRejectionTriggeredByAnotherTaskIsProcessedUnderTheTaskContext() throws Exception {
-        startGrids(2);
+    public void testJobRejectedByAnotherTaskIsProcessedUnderItsOwnContext() throws Exception {
+        // The first job stays queued; the second one rejects it and runs.
+        onCollision = ctx -> {
+            List<CollisionJobContext> waiting = new ArrayList<>(ctx.waitingJobs());
 
-        TestCollisionSpi.initialize(FirstJobAction.REJECT_QUEUED);
+            if (waiting.size() == 1)
+                firstJobArrivedLatch.countDown();
+            else if (waiting.size() == 2) {
+                waiting.get(0).cancel();
+                waiting.get(1).activate();
+            }
+        };
 
         AtomicReference<User> attrSeenByRejectionLsnr = new AtomicReference<>();
         CountDownLatch jobRejectedLatch = new CountDownLatch(1);
@@ -132,7 +147,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
         IgniteFuture<TaskExecution> firstTaskFut = executeWithContext(new RegularJob(), FIRST_USR_VAL);
 
-        assertTrue(TestCollisionSpi.firstJobArrivedLatch.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(firstJobArrivedLatch.await(getTestTimeout(), MILLISECONDS));
 
         TaskExecution secondExecRes = executeWithContext(new RegularJob(), SECOND_USR_VAL).get(getTestTimeout());
         TaskExecution firstExecRes = firstTaskFut.get(getTestTimeout());
@@ -147,13 +162,17 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     @Test
     public void testJobActivatedByAnotherTaskRunsUnderTheJobContext() throws Exception {
-        startGrids(2);
-
-        TestCollisionSpi.initialize(FirstJobAction.ACTIVATE_QUEUED);
+        // The first job stays queued; the second one activates both.
+        onCollision = ctx -> {
+            if (ctx.waitingJobs().size() == 1)
+                firstJobArrivedLatch.countDown();
+            else
+                ctx.waitingJobs().forEach(CollisionJobContext::activate);
+        };
 
         IgniteFuture<TaskExecution> firstFut = executeWithContext(new RegularJob(), FIRST_USR_VAL);
 
-        assertTrue(TestCollisionSpi.firstJobArrivedLatch.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(firstJobArrivedLatch.await(getTestTimeout(), MILLISECONDS));
 
         TaskExecution secondExecRes = executeWithContext(new RegularJob(), SECOND_USR_VAL).get(getTestTimeout());
         TaskExecution firstExecRes = firstFut.get(getTestTimeout());
@@ -165,13 +184,20 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     @Test
     public void testJobCancelledByAnotherTaskIsCancelledUnderTheJobContext() throws Exception {
-        startGrids(2);
+        // The first job runs; the second one cancels it and runs.
+        onCollision = ctx -> {
+            if (ctx.waitingJobs().isEmpty())
+                return;
 
-        TestCollisionSpi.initialize(FirstJobAction.CANCEL_RUNNING);
+            ctx.activeJobs().forEach(CollisionJobContext::cancel);
+            ctx.waitingJobs().forEach(CollisionJobContext::activate);
+
+            firstJobArrivedLatch.countDown();
+        };
 
         IgniteFuture<TaskExecution> firstFut = executeWithContext(new CancellableJob(), FIRST_USR_VAL);
 
-        assertTrue(TestCollisionSpi.firstJobArrivedLatch.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(firstJobArrivedLatch.await(getTestTimeout(), MILLISECONDS));
 
         TaskExecution secondExecRes = executeWithContext(new RegularJob(), SECOND_USR_VAL).get(getTestTimeout());
         TaskExecution firstExecRes = firstFut.get(getTestTimeout());
@@ -183,17 +209,14 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     @Test
     public void testSuspendedJobResumedUnderAnotherContextRunsUnderTheJobContext() throws Exception {
-        startGrids(2);
-
         SuspendedJob.jobSuspendedLatch = new CountDownLatch(1);
-        SuspendedJob.resumeFut = new CompletableFuture<>();
 
         IgniteFuture<TaskExecution> fut = executeWithContext(new SuspendedJob(), FIRST_USR_VAL);
 
         assertTrue(SuspendedJob.jobSuspendedLatch.await(getTestTimeout(), MILLISECONDS));
 
         try (Scope ignored = OperationContext.set(USR_ATTR, SECOND_USR_VAL)) {
-            SuspendedJob.resumeFut.complete(null);
+            SuspendedJob.jobCtx.callcc();
         }
 
         assertExecutedWith(FIRST_USR_VAL, fut.get(getTestTimeout()));
@@ -202,12 +225,8 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     @Test
     public void testMasterNodeLeftCallbackRunsUnderTheJobContext() throws Exception {
-        startGrids(2);
-
         MasterLeaveAwareJob.jobStartedLatch = new CountDownLatch(1);
-        MasterLeaveAwareJob.jobUnblockedLatch = new CountDownLatch(1);
-        MasterLeaveAwareJob.masterNodeLeftProcessedLatch = new CountDownLatch(1);
-        MasterLeaveAwareJob.attrSeenByMasterLeft = null;
+        MasterLeaveAwareJob.masterNodeLeftLatch = new CountDownLatch(1);
 
         executeWithContext(new MasterLeaveAwareJob(), FIRST_USR_VAL);
 
@@ -216,12 +235,11 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
             stopGrid(0, true);
 
-            assertTrue(MasterLeaveAwareJob.masterNodeLeftProcessedLatch.await(getTestTimeout(), MILLISECONDS));
-
+            assertTrue(MasterLeaveAwareJob.masterNodeLeftLatch.await(getTestTimeout(), MILLISECONDS));
             assertEquals(FIRST_USR_VAL, MasterLeaveAwareJob.attrSeenByMasterLeft);
         }
         finally {
-            MasterLeaveAwareJob.jobUnblockedLatch.countDown();
+            MasterLeaveAwareJob.masterNodeLeftLatch.countDown();
         }
     }
 
@@ -310,10 +328,10 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
     /** */
     private static class SuspendedJob extends ComputeJobAdapter {
         /** */
-        static volatile CompletableFuture<Void> resumeFut;
+        static volatile CountDownLatch jobSuspendedLatch;
 
         /** */
-        static volatile CountDownLatch jobSuspendedLatch;
+        static volatile ComputeJobContext jobCtx;
 
         /** */
         @JobContextResource
@@ -329,7 +347,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
             suspended = true;
 
-            resumeFut.thenRun(ctx::callcc);
+            jobCtx = ctx;
 
             ctx.holdcc();
 
@@ -345,10 +363,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         static volatile CountDownLatch jobStartedLatch;
 
         /** */
-        static volatile CountDownLatch jobUnblockedLatch;
-
-        /** */
-        static volatile CountDownLatch masterNodeLeftProcessedLatch;
+        static volatile CountDownLatch masterNodeLeftLatch;
 
         /** */
         static volatile User attrSeenByMasterLeft;
@@ -358,7 +373,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
             jobStartedLatch.countDown();
 
             try {
-                jobUnblockedLatch.await();
+                masterNodeLeftLatch.await();
             }
             catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
@@ -371,70 +386,21 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             attrSeenByMasterLeft = OperationContext.get(USR_ATTR);
 
-            masterNodeLeftProcessedLatch.countDown();
+            masterNodeLeftLatch.countDown();
         }
     }
 
     /** */
     @IgniteSpiMultipleInstancesSupport(true)
     public static class TestCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
-        /** */
-        static volatile @Nullable FirstJobAction firstJobAction;
-
-        /** */
-        static volatile CountDownLatch firstJobArrivedLatch;
-
-        /** */
-        static void initialize(FirstJobAction action) {
-            firstJobArrivedLatch = new CountDownLatch(1);
-            firstJobAction = action;
-        }
-
         /** {@inheritDoc} */
         @Override public void onCollision(CollisionContext ctx) {
-            FirstJobAction action = firstJobAction;
+            Consumer<CollisionContext> hnd = onCollision;
 
-            List<CollisionJobContext> waitingJobs = new ArrayList<>(ctx.waitingJobs());
-
-            if (action == null) {
-                waitingJobs.forEach(CollisionJobContext::activate);
-
-                return;
-            }
-
-            if (waitingJobs.isEmpty())
-                return;
-
-            List<CollisionJobContext> activeJobs = new ArrayList<>(ctx.activeJobs());
-
-            if (activeJobs.isEmpty() && waitingJobs.size() == 1) {
-                if (action == FirstJobAction.CANCEL_RUNNING)
-                    waitingJobs.get(0).activate();
-
-                firstJobArrivedLatch.countDown();
-
-                return;
-            }
-
-            CollisionJobContext firstJob = action == FirstJobAction.CANCEL_RUNNING ? activeJobs.get(0) : waitingJobs.get(0);
-            CollisionJobContext secondJob = waitingJobs.get(waitingJobs.size() - 1);
-
-            switch (action) {
-                case ACTIVATE_QUEUED:
-                    firstJob.activate();
-
-                    break;
-
-                case REJECT_QUEUED:
-                case CANCEL_RUNNING:
-                    firstJob.cancel();
-
-                    break;
-            }
-
-            secondJob.activate();
-
-            firstJobAction = null;
+            if (hnd == null)
+                ctx.waitingJobs().forEach(CollisionJobContext::activate);
+            else
+                hnd.accept(ctx);
         }
 
         /** {@inheritDoc} */
@@ -451,18 +417,6 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
         @Override public void spiStop() throws IgniteSpiException {
             // No-op.
         }
-    }
-
-    /** */
-    private enum FirstJobAction {
-        /** */
-        ACTIVATE_QUEUED,
-
-        /** */
-        REJECT_QUEUED,
-
-        /** */
-        CANCEL_RUNNING
     }
 
     /** */
