@@ -138,7 +138,7 @@ public class IdleVerifyUtility {
         catch (Throwable e) {
             String msg0 = CRC_CHECK_ERR_MSG + " [partId=" + partId +
                 ", grpName=" + (pageStore == null ? "" : cacheName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
-                ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
+                ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ", cause=" + e.getMessage() + ']';
 
             throw new IgniteException(msg0, e);
         }
