@@ -66,6 +66,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandler.wrapPageIterator;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
@@ -217,8 +218,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts =
-                calcPartitionHashAsync(grpIds);
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
@@ -227,11 +227,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             long lastProgressLogTs = U.currentTimeMillis();
 
             for (int i = 0; i < partHashCalcFuts.size(); ) {
-                if (isCancelled()) {
-                    cancelFuts(i, partHashCalcFuts);
-
+                if (isCancelled())
                     throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-                }
 
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
@@ -251,10 +248,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         continue;
                     }
 
-                    cancelFuts(i, partHashCalcFuts);
+                    // Propagate the cancellation to the async partition hash calculations.
+                    cancel();
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
+                    else if (e.getCause() instanceof IgniteException ie)
+                        throw ie;
                     else
                         throw new IgniteException(e.getCause());
                 }
@@ -278,28 +278,17 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /**
-         * Cancels futures from given index.
-         *
-         * @param start Index to start from.
-         * @param partHashCalcFuts Partitions hash calculation futures to cancel.
-         */
-        private void cancelFuts(int start, List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts) {
-            for (int i = start; i < partHashCalcFuts.size(); i++)
-                partHashCalcFuts.get(i).cancel(false);
-        }
-
-        /**
          * Class that processes cache filtering chain.
          */
         private class CachesFiltering {
             /**
              * Initially all cache descriptors are included.
              */
-            private final Set<CacheGroupContext> filteredCacheGroups;
+            private final Set<CacheGroupContext> filteredCacheGrps;
 
             /** */
             public CachesFiltering(Collection<CacheGroupContext> cacheGroups) {
-                filteredCacheGroups = new HashSet<>(cacheGroups);
+                filteredCacheGrps = new HashSet<>(cacheGroups);
             }
 
             /**
@@ -309,7 +298,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
              * @return this
              */
             public CachesFiltering filter(IgniteInClosure<Set<CacheGroupContext>> closure) {
-                closure.apply(filteredCacheGroups);
+                closure.apply(filteredCacheGrps);
 
                 return this;
             }
@@ -322,7 +311,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             public Set<Integer> result() {
                 Set<Integer> res = new HashSet<>();
 
-                for (CacheGroupContext cacheGrp : filteredCacheGroups)
+                for (CacheGroupContext cacheGrp : filteredCacheGrps)
                     res.add(cacheGrp.groupId());
 
                 return res;
@@ -341,8 +330,16 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 ExecutorService execSrvs = ignite.context().pools().getIdleVerifyExecutorService();
 
-                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
-                    partHashCalcFutures.add(calculatePartitionHashAsync(execSrvs, grpCtx, part, this::isCancelled));
+                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions()) {
+                    Future<Map<PartitionKey, PartitionHashRecord>> partitionFut = calculatePartitionHashAsync(
+                        execSrvs,
+                        grpCtx,
+                        part,
+                        () -> isCancelled() || ignite.context().isStopping()
+                    );
+
+                    partHashCalcFutures.add(partitionFut);
+                }
             }
 
             return partHashCalcFutures;
@@ -512,13 +509,14 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
-                    PartitionHashRecord hash = calculatePartitionHash(key,
+                    PartitionHashRecord hash = calculatePartitionHash(
+                        key,
                         updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
                         ignite.context().discovery().localNode().consistentId(),
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
-                        gctx.offheap().partitionIterator(part.id()),
+                        wrapPageIterator(gctx.offheap().partitionIterator(part.id()), ignite.context().gateway()),
                         cancelled
                     );
 

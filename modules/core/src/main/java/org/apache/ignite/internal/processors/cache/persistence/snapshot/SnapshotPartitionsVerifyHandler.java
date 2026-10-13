@@ -33,12 +33,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
@@ -66,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -304,15 +308,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                         // There is no `primary` partitions for snapshot.
                         PartitionKey key = new PartitionKey(grpId, partId, grpName);
 
-                        PartitionHashRecord hash = calculatePartitionHash(key,
+                        GridKernalGateway gw = cctx.kernalContext().gateway();
+
+                        PartitionHashRecord hash = calculatePartitionHash(
+                            key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
-                            null
+                            skipHash()
+                                ? null
+                                : wrapPageIterator(snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore), gw),
+                            () -> cctx.kernalContext().isStopping()
                         );
 
                         assert hash != null : "OWNING must have hash: " + key;
@@ -516,6 +524,28 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
         }
 
         return false;
+    }
+
+    /**
+     * Protects B-Tree reading from concurrent node stop. Uses single gateway lock for {@link GridIterator#hasNext()}
+     * and {@link GridIterator#next()}.
+     */
+    public static Supplier<CacheDataRow> wrapPageIterator(
+        GridIterator<CacheDataRow> origIt,
+        GridKernalGateway gateway
+    ) {
+        return new Supplier<>() {
+            @Override public @Nullable CacheDataRow get() {
+                gateway.readLock();
+
+                try {
+                    return origIt.hasNext() ? origIt.next() : null;
+                }
+                finally {
+                    gateway.readUnlock();
+                }
+            }
+        };
     }
 
     /**

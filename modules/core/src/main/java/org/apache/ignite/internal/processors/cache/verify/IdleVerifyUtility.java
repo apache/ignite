@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerify.HashHolder;
-import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -275,7 +275,7 @@ public class IdleVerifyUtility {
      * @param state Partition state to check.
      * @param isPrimary {@code true} if partition is primary.
      * @param partSize Partition size on disk.
-     * @param it Iterator though partition data rows.
+     * @param rowsSupplier Iterator/sequential rows supplier.
      * @param cancelled Supplier of cancelled status.
      * @throws IgniteCheckedException If fails.
      * @return Map of calculated partition.
@@ -287,18 +287,19 @@ public class IdleVerifyUtility {
         GridDhtPartitionState state,
         boolean isPrimary,
         long partSize,
-        GridIterator<CacheDataRow> it,
-        @Nullable BooleanSupplier cancelled
+        @Nullable Supplier<CacheDataRow> rowsSupplier,
+        BooleanSupplier cancelled
     ) throws IgniteCheckedException {
         if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-            return new PartitionHashRecord(partKey,
+            return new PartitionHashRecord(
+                partKey,
                 isPrimary,
                 consId,
                 updCntr,
-                state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
-                state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
+                state == GridDhtPartitionState.MOVING ? PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
+                state == GridDhtPartitionState.MOVING
+                    ? PartitionHashRecord.PartitionState.MOVING
+                    : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
             );
         }
@@ -308,17 +309,19 @@ public class IdleVerifyUtility {
 
         VerifyPartitionContext ctx = new VerifyPartitionContext();
 
-        while (it.hasNextX()) {
-            if (cancelled != null && cancelled.getAsBoolean())
-                throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
+        if (rowsSupplier != null) {
+            CacheDataRow row;
 
-            CacheDataRow row = it.nextX();
+            while (!cancelled.getAsBoolean() && (row = rowsSupplier.get()) != null) {
+                if (row.expireTime() > 0)
+                    continue;
 
-            if (row.expireTime() > 0)
-                continue;
-
-            ctx.update(row.key(), row.value(), row.version());
+                ctx.update(row.key(), row.value(), row.version());
+            }
         }
+
+        if (cancelled.getAsBoolean())
+            throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
 
         return new PartitionHashRecord(
             partKey,
