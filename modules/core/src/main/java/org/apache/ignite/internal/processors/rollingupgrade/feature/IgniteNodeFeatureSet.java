@@ -53,9 +53,6 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
     /** */
     @Nullable private volatile Map<String, IgniteComponentFeatureSet> featuresByComponent;
 
-    /** Core features cache, to avoid hash-map lookup for hot code paths. */
-    @Nullable private volatile IgniteComponentFeatureSet coreFeatures;
-
     /** */
     public IgniteNodeFeatureSet() {
         // No-op.
@@ -66,8 +63,7 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
         assert features != null;
 
         this.features = features;
-        featuresByComponent = indexByComponentName(features);
-        coreFeatures = featuresByComponent.get(IgniteCoreFeature.COMPONENT_NAME);
+        this.featuresByComponent = indexByComponentName(features);
     }
 
     /** */
@@ -100,13 +96,6 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
 
     /** */
     public boolean contains(IgniteFeature feature) {
-        // Safe to use == because IgniteCoreFeature.componentName() always returns the same
-        // static final String constant. For non-core features this check will fail gracefully
-        // and fall through to the map lookup below.
-        //noinspection StringEquality
-        if (feature.componentName() == IgniteCoreFeature.COMPONENT_NAME && coreFeatures != null)
-            return coreFeatures.contains(feature.id());
-
         IgniteComponentFeatureSet cmpFeatures = featuresByComponent().get(feature.componentName());
 
         return cmpFeatures != null && cmpFeatures.contains(feature.id());
@@ -120,8 +109,6 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
             return featuresByComponent;
 
         featuresByComponent = indexByComponentName(features);
-
-        coreFeatures = featuresByComponent.get(IgniteCoreFeature.COMPONENT_NAME);
 
         this.featuresByComponent = featuresByComponent;
 

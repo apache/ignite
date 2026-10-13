@@ -43,7 +43,6 @@ public interface FreeList<T extends Storable> {
     /**
      * @param oldRow Old row data.
      * @param newRow New row data.
-     * @param allowFragmented Allow fragmented pages.
      * @param statHolder Statistics holder to track IO operations.
      * @return {@code True} if was able to update the row.
      * @throws IgniteCheckedException If failed.
@@ -51,7 +50,6 @@ public interface FreeList<T extends Storable> {
     public boolean updateDataRow(
         T oldRow,
         T newRow,
-        boolean allowFragmented,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException;
 

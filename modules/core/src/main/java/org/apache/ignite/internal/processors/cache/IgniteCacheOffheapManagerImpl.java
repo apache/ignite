@@ -95,7 +95,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
 
 /**
  *
@@ -1235,12 +1234,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY
         );
 
-        /**
-         * Threshold for row size when it's not safe to use milti-page in-place updates, but safe to use single-page
-         * in-place update.
-         */
-        private final int updateValSizeThreshold;
-
         /** */
         private volatile GridQueryRowCacheCleaner rowCacheCleaner;
 
@@ -1273,9 +1266,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             pCntr = grp.shared().logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : new PartitionUpdateCounterErrorWrapper(partId, delegate);
-
-            // When the size does not exceed 3/4 of the page size, row is guaranteed to fit into a single page.
-            updateValSizeThreshold = grp.shared().database().pageSize() * 3 / 4;
 
             if (cleaner == null)
                 rowStore.setRowCacheCleaner(() -> rowCacheCleaner);
@@ -1483,12 +1473,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 return false;
 
             int oldLen = oldRow.size();
-
-            // Multi-page in-place row update introduces changes to applying WAL delta records, disable it until
-            // feature is activated across all the cluster.
-            if (oldLen > updateValSizeThreshold
-                && !grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE))
-                return false;
 
             // Paths that read the row by link hold different locks: KV API - the data tree leaf page lock, TTL
             // cleanup - the pending tree leaf page lock, page eviction - the read lock of the evicted data page,

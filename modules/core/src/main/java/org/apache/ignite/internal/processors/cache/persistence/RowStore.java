@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE;
-
 /**
  * Data store for H2 rows.
  */
@@ -155,10 +153,7 @@ public class RowStore {
         if (rowCacheCleaner0 != null)
             rowCacheCleaner0.remove(oldRow.link());
 
-        boolean allowFragmented =
-            grp.shared().kernalContext().rollingUpgrade().features().isActive(MULTI_PAGE_IN_PLACE_ROW_UPDATE_FEATURE);
-
-        return freeList.updateDataRow(oldRow, newRow, allowFragmented, statHolder);
+        return freeList.updateDataRow(oldRow, newRow, statHolder);
     }
 
     /**

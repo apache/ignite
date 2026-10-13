@@ -794,7 +794,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public boolean updateDataRow(
         T oldRow,
         T newRow,
-        boolean allowFragmented,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
         long link = oldRow.link();
@@ -808,15 +807,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageId = PageIdUtils.pageId(link);
             int itemId = PageIdUtils.itemId(link);
 
-            if (!allowFragmented || size <= pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD) {
+            if (size <= pageSize() - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD) {
                 Boolean updated = write(pageId, updateSinglePageRow, newRow, itemId, null, statHolder);
 
                 assert updated != null; // Can't fail here.
 
-                if (updated || !allowFragmented)
-                    return updated;
+                if (updated)
+                    return true;
 
-                // Fallback if row is fragmented and allow fragmented.
+                // Fallback if row is fragmented.
             }
 
             PartiallyWritten updateRes = updateFragmentedRow(link, newRow, statHolder);
