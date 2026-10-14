@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
@@ -58,7 +59,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, SnapshotStatus status, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, @Nullable SnapshotStatus status, Consumer<String> printer) {
         if (status == null) {
             printer.accept("There is no create or restore snapshot operation in progress.");
 

@@ -62,7 +62,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     private final List<BlockedMessageDescriptor> blockedMsgs = new ArrayList<>();
 
     /** */
-    private Map<Class<?>, Set<String>> blockCls = new HashMap<>();
+    private final Map<Class<?>, Set<String>> blockCls = new HashMap<>();
 
     /** */
     private IgniteBiPredicate<ClusterNode, Message> blockP;
