@@ -3,7 +3,7 @@ Apache Ignite Calcite Module
 
 Apache Ignite Calcite module provides Apache Calcite based query engine.
 
-Calcite based engine is the default query engine.
+Calcite based engine is default.
 If legacy mode required then `IndexingQueryEngineConfiguration` must be set as default.
 Config example:
 

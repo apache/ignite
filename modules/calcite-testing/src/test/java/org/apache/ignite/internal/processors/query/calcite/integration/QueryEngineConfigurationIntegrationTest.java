@@ -157,15 +157,11 @@ public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractW
             IgniteCache<?, ?> cache = ignite.createCache("test");
 
             checkEngine(cache, CALCITE_ENGINE, "SELECT QUERY_ENGINE()");
-
             checkEngine(cache, INDEXING_ENGINE, "SELECT /*+ QUERY_ENGINE('" + INDEXING_ENGINE + "') */ QUERY_ENGINE()");
-
             checkEngine(cache, CALCITE_ENGINE, "SELECT /*+ QUERY_ENGINE('" + CALCITE_ENGINE + "') */ QUERY_ENGINE()");
 
             checkJdbcEngine(CALCITE_ENGINE, jdbcUrl, "SELECT QUERY_ENGINE()");
-
             checkJdbcEngine(INDEXING_ENGINE, jdbcUrl + "?queryEngine=" + INDEXING_ENGINE, "SELECT QUERY_ENGINE()");
-
             checkJdbcEngine(CALCITE_ENGINE, jdbcUrl + "?queryEngine=" + CALCITE_ENGINE, "SELECT QUERY_ENGINE()");
 
             // Unknown engine.
