@@ -31,7 +31,7 @@ import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
 /**
- * Tests that require both SQL engines, Calcite and H2, on the classpath.
+ * Tests that require both SQL engines on the classpath: Calcite and H2 ('indexing').
  */
 @Suite
 @SelectClasses({
