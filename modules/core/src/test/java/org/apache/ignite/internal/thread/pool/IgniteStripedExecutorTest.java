@@ -19,6 +19,7 @@ package org.apache.ignite.internal.thread.pool;
 
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -165,7 +166,7 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testStarvationDetectedMetric() throws Exception {
+    public void testStarvationEventsCountMetric() throws Exception {
         MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
 
         stripedExecSvc.registerMetrics(mreg);
@@ -174,9 +175,10 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
 
         assertNotNull("Metric is not registered", metric);
         assertEquals(0L, metric.value());
-        assertEquals(0L, stripedExecSvc.lastStarvationTime());
 
-        stripedExecSvc.execute(0, new TestRunnable(true));
+        CountDownLatch latch1 = new CountDownLatch(1);
+
+        stripedExecSvc.execute(0, () -> U.awaitQuiet(latch1));
 
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
 
@@ -185,48 +187,21 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
         stripedExecSvc.detectStarvation();
         stripedExecSvc.detectStarvation();
 
-        assertEquals("Metric is incremented on repeated detection", 1L, metric.value());
+        assertEquals("Metric is incremented on repeated detection of the same episode", 1L, metric.value());
 
-        long[] starvationCnts = stripedExecSvc.stripesStarvationCounts();
-
-        assertEquals(1, starvationCnts[0]);
-        assertEquals(0, starvationCnts[1]);
-        assertEquals(0, starvationCnts[2]);
-
-        assertTrue(stripedExecSvc.lastStarvationTime() > 0);
-    }
-
-    /** */
-    @Test
-    public void testStarvationMetricNewEpisode() throws Exception {
-        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
-
-        stripedExecSvc.registerMetrics(mreg);
-
-        LongMetric metric = mreg.findMetric(STARVATION_EVENTS_CNT);
-
-        TestLatchRunnable task1 = new TestLatchRunnable();
-
-        stripedExecSvc.execute(0, task1);
-
-        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
-
-        assertEquals(1L, metric.value());
-
-        task1.release();
+        latch1.countDown();
 
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 10_000));
 
-        TestLatchRunnable task2 = new TestLatchRunnable();
+        CountDownLatch latch2 = new CountDownLatch(1);
 
-        stripedExecSvc.execute(0, task2);
+        stripedExecSvc.execute(0, () -> U.awaitQuiet(latch2));
 
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
 
-        assertEquals(2L, metric.value());
-        assertEquals(2L, stripedExecSvc.stripesStarvationCounts()[0]);
+        assertEquals("Metric is not incremented for a new episode", 2L, metric.value());
 
-        task2.release();
+        latch2.countDown();
     }
 
     /**
@@ -255,27 +230,6 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
             try {
                 while (infinitely)
                     sleepASec();
-            }
-            catch (InterruptedException e) {
-                info("Got interrupted exception while sleeping: " + e);
-            }
-        }
-    }
-
-    /** */
-    private final class TestLatchRunnable implements Runnable {
-        /** */
-        private final CountDownLatch latch = new CountDownLatch(1);
-
-        /** Releases the task. */
-        public void release() {
-            latch.countDown();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                latch.await();
             }
             catch (InterruptedException e) {
                 info("Got interrupted exception while sleeping: " + e);

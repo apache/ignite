@@ -302,21 +302,19 @@ Striped executors (`StripedExecutor`, `GridDataStreamExecutor`) expose a differe
 |Name | Type | Description
 |ActiveCount | integer | Number of active tasks of all stripes.
 |DetectStarvation | boolean | True if possible starvation in striped pool is detected.
-|LastStarvationTime | long | Time of the last detected possible starvation event, in milliseconds since epoch, `0` if none.
 |Shutdown | boolean | True if this executor has been shut down.
 |StarvationEventsCount | long | Number of possible starvation events detected in striped pool since node start.
 |StripesActiveStatuses | boolean[] | Active status of each stripe.
 |StripesCompletedTasksCounts | long[] | Number of completed tasks per stripe.
 |StripesCount | integer | Stripes count.
 |StripesQueueSizes | int[] | Size of queue per stripe.
-|StripesStarvationCounts | long[] | Number of possible starvation events per stripe.
 |TaskExecutionTime | histogram | Tasks execution times as histogram (milliseconds).
 |Terminated | boolean | True if all tasks have completed following shut down.
 |TotalCompletedTasksCount | long | Completed tasks count of all stripes.
 |TotalQueueSize | integer | Total queue size of all stripes.
 |===
 
-NOTE: `LastStarvationTime`, `StarvationEventsCount` and `StripesStarvationCounts` count starvation episodes, not detection passes: a task that keeps a stripe thread busy longer than `failureDetectionTimeout` is counted once until it completes. A starvation event usually indicates a long GC pause, a deadlock, or a slow or hung task occupying the stripe thread.
+NOTE: `StarvationEventsCount` is updated by the periodic starvation check (`IGNITE_STARVATION_CHECK_INTERVAL`, 30 seconds by default, `0` disables it). A task occupying a stripe longer than `failureDetectionTimeout` is counted at most once, and only if a check finds it still running past that timeout.
 
 == Cache Group IO
 
