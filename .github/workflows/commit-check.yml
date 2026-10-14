@@ -131,11 +131,11 @@ jobs:
 
       - name: Check javadocs.
         run : |
-          ./mvnw prepare-package -Pjavadoc -DskipTests -B -V
+          ./mvnw prepare-package -Pjavadoc -DskipTests -B -V -Dmaven.compiler.useIncrementalCompilation=false
 
       - name: Documentation code snippets compilation check
         run: |
-          ./mvnw test-compile -Pdocs -pl :code-snippets -am -B -V
+          ./mvnw test-compile -Pdocs -pl :code-snippets -am -B -V -Dmaven.compiler.useIncrementalCompilation=false
 
   check-dotnet:
     name: Сheck .NET code
