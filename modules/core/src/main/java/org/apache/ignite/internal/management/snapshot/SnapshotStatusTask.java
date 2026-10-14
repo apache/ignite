@@ -29,13 +29,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcess;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.SupportedFeatureRegistry;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
@@ -71,6 +69,9 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<NoArg> arg) {
+        if (!ignite.context().rollingUpgrade().features().isActive(CoreFeatureRegistry.ROLLING_UPGRADE_FEATURE))
+            throw new IgniteException("The snapshot lists feature isn't active yet on the current cluster.");
+
         return nodeIds(ignite.cluster().forServers().nodes());
     }
 
@@ -166,22 +167,6 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         @LoggerResource
         private transient IgniteLogger log;
 
-        /** */
-        private boolean clusterSupportsSnapshotCheckStatus() {
-            var feature = new IgniteCoreFeature(SupportedFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE.id());
-
-            for (var n : ignite.cluster().forServers().nodes()) {
-                if (!(n instanceof IgniteClusterNode cn) || !cn.features().contains(feature)) {
-                    log.warning(String.format("Node %s doesn't support the snapshot check status feature. The status " +
-                        "is available only for snapshot creation and restoration.", n.id()));
-
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         /**
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
@@ -247,9 +232,6 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                     );
                 }
             }
-
-            if (!clusterSupportsSnapshotCheckStatus())
-                return res;
 
             List<SnapshotStatus> checkStatuses = null;
 
