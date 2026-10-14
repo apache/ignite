@@ -194,6 +194,8 @@ Put the new files in place before the window, and only files you are ready to us
 The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
 If the factory serves discovery or communication, the node's own trust store must also accept the new certificate.
 A changed trust store alone is not picked up.
+Renewal supports one private key and its chain per key store; the trust store may hold any number of trusted CAs.
+With several private keys, for example an EC and an RSA one, the node watches only one of the chains and may miss a new certificate for the other key.
 To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
 
 Until the files hold a newer certificate, the node keeps the one in use and reads the files again with a growing pause, from 1 minute to 1 hour.
