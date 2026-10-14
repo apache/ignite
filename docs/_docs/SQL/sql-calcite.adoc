@@ -1320,7 +1320,8 @@ When only the `ignite-indexing` module is on the classpath (for example, when th
 The following features require the `ignite-indexing` module on every server node and the H2 engine selected for the query or configured as the default:
 
 * The deprecated `SqlQuery` and the `TextQuery` cache API queries. Use `SqlFieldsQuery` instead of `SqlQuery`. Without the H2 engine both queries fail with `... is supported by the H2 query engine only`.
-* The link:sql-reference/operational-commands#copy[COPY] and link:sql-reference/operational-commands#set-streaming[SET STREAMING] commands. Use the link:data-streaming[data streamer] or JDBC batch statements instead. The Calcite-based engine rejects these commands with a parse error.
+* The link:sql-reference/operational-commands#copy[COPY] command.
+* The link:sql-reference/operational-commands#set-streaming[SET STREAMING] command.
 * The `USE INDEX` syntax. The Calcite-based engine provides the `FORCE_INDEX` and `NO_INDEX` <<hints,hints>>.
 * The query flags `distributedJoins`, `collocated`, `replicatedOnly` and `skipReducerOnUpdate` of `SqlFieldsQuery`, of the JDBC connection string and of the ODBC connection string. The Calcite-based engine accepts and ignores them; it plans distributed joins and aggregations on its own.
 * `CacheConfiguration.queryParallelism` and the SQL on-heap row cache (`CacheConfiguration.sqlOnheapCacheEnabled`). The Calcite-based engine does not use them.

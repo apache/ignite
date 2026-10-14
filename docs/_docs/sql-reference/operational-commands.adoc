@@ -21,8 +21,6 @@ Ignite supports the following operational commands:
 
 Copy data from a CSV file into a SQL table.
 
-NOTE: `COPY` is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only. It requires the `ignite-indexing` module on the server nodes and the H2 engine selected for the JDBC connection (`queryEngine=h2`) or configured as the default engine. With the Calcite-based engine the command fails with a parse error. Use the link:data-streaming[data streamer] to load data in bulk instead.
-
 [source,sql]
 ----
 COPY FROM '/path/to/local/file.csv'
@@ -55,8 +53,6 @@ You can find it in your `{IGNITE_HOME}/examples/src/main/resources/sql/` directo
 == SET STREAMING
 
 Stream data in bulk from a file into a SQL table.
-
-NOTE: `SET STREAMING` is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only. It requires the `ignite-indexing` module on the server nodes and the H2 engine selected for the JDBC connection (`queryEngine=h2`) or configured as the default engine. With the Calcite-based engine the command fails with a parse error. Use the link:data-streaming[data streamer] or JDBC batch statements to load data in bulk instead.
 
 [source,sql]
 ----
