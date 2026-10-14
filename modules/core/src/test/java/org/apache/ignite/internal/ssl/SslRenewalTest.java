@@ -201,7 +201,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertRenewalRejected(p, "The new certificate chain is not valid now");
     }
 
-    /** A renewal planned before a reload must give way to it rather than replace the certificate the reload has put in use. */
+    /**
+     * A renewal planned before a reload must give way to it rather than replace the certificate the reload has put in use. The reload
+     * must leave the factory's {@code create()} returning the first context.
+     */
     @Test
     public void testRenewalPlannedBeforeReloadSuperseded() throws Exception {
         Issuer issuer = new Issuer().then(fresh(HOUR));
@@ -217,6 +220,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(SslContextProvider.RenewalResult.SUPERSEDED, p.renew(planned));
         assertSame(reloaded, p.context());
         assertEquals("The renewal must not ask for another certificate", 2, issuer.calls.size());
+        assertSame(planned, issuer.create());
     }
 
     /** A successful reload by the command must cancel the planned retry and plan the next renewal by the new certificate. */

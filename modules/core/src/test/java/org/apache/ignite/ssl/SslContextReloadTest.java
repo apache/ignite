@@ -160,7 +160,10 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", metric(g1, "CertificateSubject"));
     }
 
-    /** A factory that hands back the context in use leaves nothing to read again, which fails the reload with that reason. */
+    /**
+     * A factory that is not an {@link AbstractSslContextFactory} and hands back the context in use leaves nothing to read again, which
+     * fails the reload with that reason.
+     */
     @Test
     public void testCachingFactoryNotReloaded() throws Exception {
         IgniteEx g = startGrid(0, cfg -> {

@@ -184,7 +184,7 @@ public class SslContextProvider {
         return RenewalResult.RENEWED;
     }
 
-    /** @return Context built from the stores as they are now. */
+    /** @return Context built anew, or the one in use if the factory caches it. */
     private SSLContext build() {
         return factory instanceof AbstractSslContextFactory f ? f.createNew() : factory.create();
     }

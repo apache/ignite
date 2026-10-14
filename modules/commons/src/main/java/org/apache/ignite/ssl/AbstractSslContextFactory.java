@@ -238,7 +238,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Builds a new SSL context from the stores as they are now, unlike {@link #create()}, which keeps returning the first one.
+     * Builds a new SSL context, unlike {@link #create()}, which keeps returning the first one.
      *
      * @return SSL context.
      */
