@@ -170,7 +170,7 @@ You can use any supported SQL tool to view the metrics:
 | cache.myCache.QueryFailed         | 0                              |
 | cache.myCache.EstimatedRebalancingKeys | 0                         |
 | cache.myCache.CacheEvictions      | 0                              |
-| cache.myCache.CommitTime          | [J@2eb66498                    |
+| cache.myCache.CommitTime          | [0, 0, 0, 0, 0, 0]             |
 ....
 ----
 

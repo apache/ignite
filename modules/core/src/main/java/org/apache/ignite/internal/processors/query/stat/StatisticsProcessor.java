@@ -28,8 +28,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.task.GatherPartitionStatistics;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 
@@ -86,7 +84,7 @@ public class StatisticsProcessor {
      * 2) If byObsolescence and no table awailable - clean obsolescence and partition statistics for the given key.
      * 3) Submit tasks for each specified partition.
      * 4) after last task finish gathering - it starts aggregation.
-     * 5) read all partitions & obsolescence from repo and
+     * 5) read all partitions and obsolescence from repo and
      * if byObsolescence = {@code true} - remove unnecessary one and aggregate by specified list
      * if byObsolescence = {@code false} - aggregate all presented in store (because it should contains only actual ones)
      * 5) save aggregated local statistics
@@ -304,31 +302,6 @@ public class StatisticsProcessor {
             else
                 log.warning("Unexpected error on statistic gathering", t);
         }
-    }
-
-    /**
-     * Check if specified object stistic fully meet specified statistics object configuration.
-     *
-     * @param stat Object statistics to test.
-     * @param cfg Statistics object configuration to compare with.
-     * @return {@code true} if specified statistics fully meet to specified configuration requiremenrs,
-     *         {@code false} - otherwise.
-     */
-    private boolean partStatSuitToConfiguration(ObjectStatisticsImpl stat, StatisticsObjectConfiguration cfg) {
-        if (stat == null)
-            return false;
-
-        if (stat.columnsStatistics().size() != cfg.columns().size())
-            return false;
-
-        for (StatisticsColumnConfiguration colCfg : cfg.columns().values()) {
-            ColumnStatistics colStat = stat.columnStatistics(colCfg.name());
-
-            if (colStat == null || colCfg.version() > colStat.version())
-                return false;
-        }
-
-        return true;
     }
 
     /**

@@ -1506,20 +1506,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param reqs Cache requests to start.
-     * @param fut Completable future.
-     */
-    public void registrateProxyRestart(Map<String, DynamicCacheChangeRequest> reqs, GridFutureAdapter<?> fut) {
-        for (IgniteCacheProxyImpl<?, ?> proxy : jCacheProxies.values()) {
-            if (reqs.containsKey(proxy.getName()) &&
-                proxy.isRestarting() &&
-                !reqs.get(proxy.getName()).disabledAfterStart()
-            )
-                proxy.registrateFutureRestart(fut);
-        }
-    }
-
-    /**
-     * @param reqs Cache requests to start.
      * @param initVer Init exchange version.
      * @param doneVer Finish excahnge vertison.
      */
@@ -1626,26 +1612,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             new IgnitePredicate<DynamicCacheDescriptor>() {
                 @Override public boolean apply(DynamicCacheDescriptor desc) {
                     return desc.cacheType().userCache();
-                }
-            }
-        );
-    }
-
-    /**
-     * Gets a collection of currently started public cache names.
-     *
-     * @return Collection of currently started public cache names
-     */
-    public Collection<String> publicAndDsCacheNames() {
-        return F.viewReadOnly(cacheDescriptors().values(),
-            new IgniteClosure<DynamicCacheDescriptor, String>() {
-                @Override public String apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheConfiguration().getName();
-                }
-            },
-            new IgnitePredicate<DynamicCacheDescriptor>() {
-                @Override public boolean apply(DynamicCacheDescriptor desc) {
-                    return desc.cacheType().userCache() || desc.cacheType() == CacheType.DATA_STRUCTURES;
                 }
             }
         );
@@ -2407,38 +2373,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Complete stopping of caches if they were marked as restarting but it failed.
-     * @return Cache names of proxies which were restarted.
-     */
-    public List<String> resetRestartingProxies() {
-        List<String> res = new ArrayList<>();
-
-        for (Map.Entry<String, IgniteCacheProxyImpl<?, ?>> e : jCacheProxies.entrySet()) {
-            IgniteCacheProxyImpl<?, ?> proxy = e.getValue();
-
-            if (proxy == null)
-                continue;
-
-            if (proxy.isRestarting()) {
-                String cacheName = e.getKey();
-
-                res.add(cacheName);
-
-                jCacheProxies.remove(cacheName);
-
-                proxy.onRestarted(null, null);
-
-                if (DataStructuresProcessor.isDataStructureCache(cacheName))
-                    ctx.dataStructures().restart(cacheName, null);
-            }
-        }
-
-        cachesInfo.removeRestartingCaches();
-
-        return res;
-    }
-
-    /**
      * @param desc Group descriptor.
      * @param cacheType Cache type.
      * @param affNode Affinity node flag.
@@ -2876,32 +2810,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (exchActions.deactivate())
             sharedCtx.deactivate();
-    }
-
-    /**
-     * @param rmtNode Remote node to check.
-     * @return Data storage configuration
-     */
-    private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
-        return GridCacheUtils.extractDataStorage(
-            rmtNode,
-            ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())
-        );
-    }
-
-    /**
-     * @param dataStorageCfg User-defined data regions.
-     */
-    private Map<String, DataRegionConfiguration> dataRegionCfgs(DataStorageConfiguration dataStorageCfg) {
-        if (dataStorageCfg != null) {
-            return Optional.ofNullable(dataStorageCfg.getDataRegionConfigurations())
-                .map(Stream::of)
-                .orElseGet(Stream::empty)
-                .collect(Collectors.toMap(DataRegionConfiguration::getName, e -> e));
-        }
-
-        return Collections.emptyMap();
     }
 
     /**
@@ -3560,40 +3468,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         catch (Exception e) {
             return new GridFinishedFuture<>(e);
         }
-    }
-
-    /**
-     * Checks that cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
-     *
-     * @param opName Operation name.
-     * @param cfgs Stored cache configurations.
-     * @throws CacheException If cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.
-     */
-    private void checkReadOnlyState(String opName, Collection<StoredCacheData> cfgs) {
-        IgniteOutClosure<String> cacheNameClo = null;
-        IgniteOutClosure<String> cacheGrpNameClo = null;
-
-        if (!F.isEmpty(cfgs)) {
-            if (cfgs.size() == 1) {
-                CacheConfiguration cfg = cfgs.iterator().next().config();
-
-                cacheNameClo = cfg::getName;
-                cacheGrpNameClo = cfg::getGroupName;
-            }
-            else {
-                cacheNameClo = () -> cfgs.stream()
-                    .map(StoredCacheData::config)
-                    .map(CacheConfiguration::getName)
-                    .collect(toList()).toString();
-
-                cacheGrpNameClo = () -> cfgs.stream()
-                    .map(StoredCacheData::config)
-                    .map(CacheConfiguration::getGroupName)
-                    .collect(toList()).toString();
-            }
-        }
-
-        checkReadOnlyState(opName, cacheGrpNameClo, cacheNameClo);
     }
 
     /**

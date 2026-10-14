@@ -834,8 +834,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return qryReg;
     }
 
-    /** */
-    public CalciteQueryEngineConfiguration config() {
+    /** {@inheritDoc} */
+    @Override public CalciteQueryEngineConfiguration config() {
         return cfg;
     }
 
