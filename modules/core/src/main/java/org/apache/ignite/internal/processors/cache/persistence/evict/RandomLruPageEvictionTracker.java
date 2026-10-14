@@ -141,10 +141,9 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
-                        // The walk may start from a stale pointer: fragment-chain pages are continuously recycled
-                        // and their tracking slots re-linked by newer rows, which recreates identical link values
-                        // across slot generations (ABA). Every recycling generation deepens the chain indirection,
-                        // so two hops can legitimately land on a link slot of a newer chain. Skip the slot and keep sampling.
+                        // The link read above may be stale: a concurrent row deletion nulls the head slot first, and the freed
+                        // head page can be re-used as an intermediate fragment of a new row, so its slot holds a link again
+                        // and the two-hop walk can end on a link. This is a legal state: skip and resample.
                         if (compactTs < 0) {
                             sampleSpinCnt++;
 
@@ -156,8 +155,6 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                             continue;
                         }
-
-                        assert compactTs >= 0 : "[compactTs=" + compactTs + "]";
                     }
                 }
 
