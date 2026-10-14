@@ -56,7 +56,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
         assertEquals(2L, long0.get().longValue());
         assertEquals(2L, long1.get().longValue());
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         ignite0 = startGrid(0);
         ignite1 = startGrid(1);
@@ -90,7 +90,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
 
         assertTrue(long0.propagate(2L));
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         ignite0 = startGrid(0);
 
@@ -133,7 +133,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
 
         long0.propagate(2L);
 
-        stopAllGrids();
+        stopAllGrids(false);
 
         AtomicReference<DistributedProperty<Long>> holder = new AtomicReference<>();
 
