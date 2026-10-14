@@ -667,7 +667,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 @Override public QueryEngineConfiguration setDefault(boolean isDflt) {
                     throw new UnsupportedOperationException("Implicit query engine configuration is read-only.");
                 }
-            }};
+            } };
         }
         else {
             qryEngines = new QueryEngine[] {qryEngine};
