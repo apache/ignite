@@ -19,6 +19,7 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -28,7 +29,11 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-/** Represents abstract implementation of SSL Context Factory that builds a new {@link SSLContext} on every {@link #create()}. */
+/**
+ * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
+ * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
+ * {@link AbstractSslContextFactory#create()}} method.
+ */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -47,6 +52,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Enabled protocols. */
     protected String[] protocols;
+
+    /** Cached instance of an {@link SSLContext}. */
+    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /** Whether a node renews the certificate by itself before it expires. */
     private boolean renewalEnabled;
@@ -212,6 +220,29 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** {@inheritDoc} */
     @Override public SSLContext create() {
+        SSLContext ctx = sslCtx.get();
+
+        if (ctx == null) {
+            try {
+                ctx = createSslContext();
+
+                if (!sslCtx.compareAndSet(null, ctx))
+                    ctx = sslCtx.get();
+            }
+            catch (SSLException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return ctx;
+    }
+
+    /**
+     * Builds a new SSL context from the stores as they are now, unlike {@link #create()}, which keeps returning the first one.
+     *
+     * @return SSL context.
+     */
+    public SSLContext createNew() {
         try {
             return createSslContext();
         }

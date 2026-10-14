@@ -26,6 +26,7 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
@@ -119,7 +120,7 @@ public class SslContextProvider {
      */
     public synchronized void reload() throws IgniteCheckedException {
         try {
-            SSLContext rebuilt = factory.create();
+            SSLContext rebuilt = build();
 
             if (rebuilt == ctx)
                 throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
@@ -154,7 +155,7 @@ public class SslContextProvider {
             return RenewalResult.SUPERSEDED;
 
         try {
-            SSLContext rebuilt = factory.create();
+            SSLContext rebuilt = build();
 
             X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
@@ -181,6 +182,11 @@ public class SslContextProvider {
         onSuccess();
 
         return RenewalResult.RENEWED;
+    }
+
+    /** @return Context built from the stores as they are now. */
+    private SSLContext build() {
+        return factory instanceof AbstractSslContextFactory f ? f.createNew() : factory.create();
     }
 
     /**
