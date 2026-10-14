@@ -103,9 +103,13 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessageSeri
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForPeers;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECOVERY_DESC_META_KEY;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_SER_CTX;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
@@ -525,7 +529,8 @@ public class GridNioServerWrapper {
 
                         meta.put(CONSISTENT_ID_META, node.consistentId());
                         meta.put(CONN_IDX_META, connKey);
-                        meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
+                        meta.put(RECOVERY_DESC_META_KEY, recoveryDesc);
+                        meta.put(MSG_SER_CTX.ordinal(), buildForPeers(stateProvider.ignite(), node));
 
                         ses = nioSrv.createSession(ch, meta, false, null).get();
                     }
@@ -574,7 +579,7 @@ public class GridNioServerWrapper {
                         break;
                     }
                 }
-                catch (ClusterTopologyCheckedException e) {
+                catch (ClusterTopologyCheckedException | UnsupportedNodeVersionException e) {
                     throw e;
                 }
                 catch (Exception e) {

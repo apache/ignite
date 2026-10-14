@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.immutables.value.Value;
 
@@ -100,7 +100,7 @@ public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
         if (hintedIndexes.get2())
             cluster.getPlanner().prune(scan);
 
-        Map<RelNode, RelNode> equivMap = new HashMap<>(indexes.size());
+        Map<RelNode, RelNode> equivMap = U.newLinkedHashMap(indexes.size());
         for (int i = 1; i < indexes.size(); i++)
             equivMap.put(indexes.get(i), scan);
 

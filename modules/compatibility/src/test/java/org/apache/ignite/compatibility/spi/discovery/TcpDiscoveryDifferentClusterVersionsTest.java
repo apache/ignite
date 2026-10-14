@@ -85,7 +85,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
         GridTestUtils.assertThrows(
             log,
-            () -> startGrid("old-node", OLD_VERSION.toString(), new ConfigurationClosure()),
+            () -> startGrid("old-node", OLD_VERSION.toString(), new ConfigurationClosure(client)),
             AssertionError.class,
             null
         );
@@ -94,7 +94,15 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
     }
 
     /** Setup node closure. */
-    private class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** */
+        private final boolean client;
+
+        /** @param client Client mode flag. */
+        ConfigurationClosure(boolean client) {
+            this.client = client;
+        }
+
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
             cfg.setClientMode(client);

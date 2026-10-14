@@ -45,6 +45,10 @@ import org.apache.ignite.resources.SessionContextProviderResource;
  *     cache.query(new SqlFieldsQuery("select sqr(2) where sqr(1) = 1"));
  * </pre>
  * <p>
+ * Only Calcite supports function overloading by SQL parameter types or their order. Java types mapped to the same SQL
+ * type cannot define separate overloads; for example, {@code int} and {@link Integer} both correspond to SQL
+ * {@code INTEGER}.
+ * <p>
  * SQL functions can use attributes set on client side:
  * <pre name="code" class="java">
  *     public class MyFunctions {

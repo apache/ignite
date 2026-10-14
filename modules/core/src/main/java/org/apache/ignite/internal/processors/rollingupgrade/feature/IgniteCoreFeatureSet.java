@@ -31,7 +31,7 @@ public class IgniteCoreFeatureSet extends IgniteComponentFeatureSet {
     /** */
     static IgniteCoreFeatureSet INSTANCE = new IgniteCoreFeatureSet(
         IgniteVersionUtils.VER,
-        IgniteFeatureSet.buildFrom(SupportedFeatureRegistry.class)
+        IgniteFeatureSet.buildFrom(CoreFeatureRegistry.class)
     );
 
     /** */

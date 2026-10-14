@@ -254,20 +254,6 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
             this.key2 = key2;
         }
 
-        /**
-         * @param ignite Ignite.
-         * @param key1 key 1.
-         * @param key2 key 2.
-         */
-        private TxThread(final Ignite ignite, final int key1, final int key2) {
-            commitAllowLatch = new CountDownLatch(0);
-            transactionStartLatch = new CountDownLatch(1);
-
-            this.ignite = ignite;
-            this.key1 = key1;
-            this.key2 = key2;
-        }
-
         /** {@inheritDoc} */
         @Override public void run() {
             try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

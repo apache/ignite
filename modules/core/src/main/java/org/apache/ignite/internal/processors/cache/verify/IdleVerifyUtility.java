@@ -55,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -421,7 +420,7 @@ public class IdleVerifyUtility {
             if (key.cacheObjectType() == TYPE_BINARY) {
                 binary++;
 
-                if (((BinaryObjectEx)key).isFlagSet(FLAG_COMPACT_FOOTER))
+                if (((BinaryObjectEx)key).isCompactFooter())
                     cf++;
                 else
                     noCf++;

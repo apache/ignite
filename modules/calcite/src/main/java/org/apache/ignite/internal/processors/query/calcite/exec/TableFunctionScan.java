@@ -17,16 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Supplier;
+import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
+import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
+    /** */
+    private final ExecutionContext<Row> ctx;
+
     /** */
     private final RelDataType rowType;
 
@@ -37,14 +47,21 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
     private final RowFactory<Row> rowFactory;
 
     /** */
+    private final boolean hasConvertableFields;
+
+    /** */
     public TableFunctionScan(
+        ExecutionContext<Row> ctx,
         RelDataType rowType,
-        Supplier<Iterable<?>> dataSupplier,
-        RowFactory<Row> rowFactory
+        Supplier<Iterable<?>> dataSupplier
     ) {
+        this.ctx = ctx;
         this.rowType = rowType;
         this.dataSupplier = dataSupplier;
-        this.rowFactory = rowFactory;
+
+        rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
+
+        hasConvertableFields = hasConvertableFields(ctx, rowType);
     }
 
     /** {@inheritDoc} */
@@ -66,6 +83,42 @@ public class TableFunctionScan<Row> implements Iterable<Row> {
                 + "] doesn't match defined columns number [" + rowType.getFieldCount() + "].");
         }
 
+        if (hasConvertableFields) {
+            if (rowContainer.getClass() == Object[].class)
+                rowArr = rowArr.clone();
+
+            for (int i = 0; i < rowArr.length; i++)
+                rowArr[i] = convertToInternal(rowArr[i], rowType.getFieldList().get(i).getType());
+        }
+
         return rowFactory.create(rowArr);
+    }
+
+    /** */
+    private @Nullable Object convertToInternal(@Nullable Object val, RelDataType type) {
+        // Preserve objects for both Ignite's custom OTHER type and Calcite's SQL OTHER type.
+        if (val == null || type instanceof OtherType || type.getSqlTypeName() == SqlTypeName.OTHER)
+            return val;
+
+        Type storageType = ctx.getTypeFactory().getResultClass(type);
+
+        if (!TypeUtils.isConvertableType(storageType))
+            return val;
+
+        // SQL table functions can already return values in the internal representation.
+        if (Types.isAssignableFrom(Primitive.box(ctx.getTypeFactory().getJavaClass(type)), val.getClass()))
+            return val;
+
+        return TypeUtils.toInternal(ctx, val, storageType);
+    }
+
+    /** */
+    private static boolean hasConvertableFields(ExecutionContext<?> ctx, RelDataType rowType) {
+        return rowType.getFieldList().stream().anyMatch(field -> {
+            RelDataType type = field.getType();
+
+            return !(type instanceof OtherType) && type.getSqlTypeName() != SqlTypeName.OTHER
+                && TypeUtils.isConvertableType(ctx.getTypeFactory().getResultClass(type));
+        });
     }
 }

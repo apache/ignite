@@ -102,7 +102,7 @@ IgniteConfiguration cfg = new IgniteConfiguration()
         .setLocalHost("my-server1-hostname");
 ----
 
-== Partition Awareness [partition_awareness]
+== Partition Awareness [[partition_awareness]]
 
 include::includes/partition-awareness.adoc[]
 

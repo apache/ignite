@@ -50,6 +50,8 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexContext;
 import org.apache.calcite.sql2rel.SqlRexConvertlet;
@@ -57,7 +59,10 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Optionality;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -73,14 +78,30 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Tests SQL engine extension with plugin.
  */
 public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationTest {
+    /** */
+    private static final SqlConformance TEST_CONFORMANCE = new SqlDelegatingConformance(
+        CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig().conformance()) {
+        /** {@inheritDoc} */
+        @Override public boolean isSupportedDualTable() {
+            return true;
+        }
+    };
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return getConfiguration(igniteInstanceName, TEST_CONFORMANCE);
+    }
+
+    /** */
+    private IgniteConfiguration getConfiguration(String igniteInstanceName, SqlConformance conformance) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new AbstractTestPluginProvider() {
                 @Override public String name() {
@@ -90,12 +111,15 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
                     if (FrameworkConfig.class.equals(cls)) {
                         FrameworkConfig cfg = Frameworks.newConfigBuilder(CalciteQueryProcessor.FRAMEWORK_CONFIG)
+                            .parserConfig(CalciteQueryProcessor.FRAMEWORK_CONFIG.getParserConfig()
+                                .withConformance(conformance))
                             .convertletTable(new ConvertletTable())
                             .operatorTable(SqlOperatorTables.chain(
                                 new OperatorTable().init(), CalciteQueryProcessor.FRAMEWORK_CONFIG.getOperatorTable()))
                             .sqlValidatorConfig(
                                 ((IgniteSqlValidator.Config)CalciteQueryProcessor.FRAMEWORK_CONFIG.getSqlValidatorConfig())
-                                    .withSqlNodeRewriter(new SqlRewriter()))
+                                    .withSqlNodeRewriter(new SqlRewriter())
+                                    .withConformance(conformance))
                             .context(Contexts.chain(
                                 CalciteQueryProcessor.FRAMEWORK_CONFIG.getContext(),
                                 Contexts.of(IgniteSqlSemantics.builder()
@@ -118,6 +142,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             OperatorsExtensionIntegrationTest.class.getMethod("toNumber", String.class),
                             NullPolicy.STRICT
                         );
+
+                        RexImpTable.INSTANCE.defineReflective(
+                            OperatorTable.REFLECTIVE_BINARY_LENGTH,
+                            OperatorsExtensionIntegrationTest.class.getMethod("binaryLength", byte[].class)
+                        );
+
+                        RexImpTable.INSTANCE.defineReflective(
+                            OperatorTable.REFLECTIVE_BINARY_VALUE,
+                            OperatorsExtensionIntegrationTest.class.getMethod("binaryValue")
+                        );
                     }
                     catch (NoSuchMethodException e) {
                         throw new RuntimeException(e);
@@ -134,6 +168,11 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                             RexImpTable.FALSE_EXPR
                         ), NullPolicy.ARG0, false
                     ));
+
+                    // A plugin can declare a Java return type while its implementor returns an internal SQL value.
+                    RexImpTable.INSTANCE.define(OperatorTable.JAVA_BINARY_IDENTITY, RexImpTable.createRexCallImplementor(
+                        (translator, call, translatedOperands) -> translatedOperands.get(0), NullPolicy.ARG0, false
+                    ));
                 }
             });
     }
@@ -147,6 +186,54 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         assertQuery("SELECT rtrim('aabcda', 'ad')").returns("aabc").check();
         assertQuery("SELECT trunc(TIMESTAMP '2021-01-01 01:02:03')")
             .returns(Timestamp.valueOf("2021-01-01 00:00:00")).check();
+    }
+
+    /** */
+    @Test
+    public void testByteArrayFunctions() {
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(x'010203')").returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(?)").withParams((Object)new byte[] {1, 2, 3}).returns(3).check();
+        assertQuery("SELECT REFLECTIVE_BINARY_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
+
+        assertQuery("SELECT OCTET_LENGTH(REFLECTIVE_BINARY_VALUE())").returns(3).check();
+
+        assertQuery("SELECT REFLECTIVE_BINARY_VALUE()")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(1, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnType() {
+        assertQuery("SELECT JAVA_BINARY_IDENTITY(x'010203'), JAVA_BINARY_IDENTITY(x''), "
+            + "JAVA_BINARY_IDENTITY(CAST(NULL AS VARBINARY))")
+            .withResultChecker(rows -> {
+                assertEquals(1, rows.size());
+                assertEquals(3, rows.get(0).size());
+                assertArrayEquals(new byte[] {1, 2, 3}, (byte[])rows.get(0).get(0));
+                assertArrayEquals(new byte[0], (byte[])rows.get(0).get(1));
+                assertNull(rows.get(0).get(2));
+            })
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testBinaryFunctionWithJavaReturnTypeDynamicParameters() {
+        for (byte[] bytes : new byte[][] {new byte[] {1, 2, 3}, new byte[0], null}) {
+            assertQuery("SELECT JAVA_BINARY_IDENTITY(?)")
+                .withParams((Object)bytes)
+                .withResultChecker(rows -> {
+                    assertEquals(1, rows.size());
+                    assertEquals(1, rows.get(0).size());
+                    assertArrayEquals(bytes, (byte[])rows.get(0).get(0));
+                })
+                .check();
+        }
     }
 
     /** */
@@ -238,6 +325,74 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             .check();
     }
 
+    /** */
+    @Test
+    public void testDualTable() {
+        assertQuery("SELECT 1 + 1 FROM dual").returns(2).check();
+
+        assertQuery("SELECT * FROM DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+
+        assertQuery("SELECT DUMMY FROM DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+
+        assertQuery("SELECT LAG(rate, 1, rate) OVER (ORDER BY period) FROM "
+            + "(SELECT 1 AS rate, 1 AS period FROM dual)")
+            .returns(1)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testDualWithisFromRequired() throws Exception {
+        SqlConformance conformance = new SqlDelegatingConformance(TEST_CONFORMANCE) {
+            /** {@inheritDoc} */
+            @Override public boolean isFromRequired() {
+                return true;
+            }
+        };
+
+        try (IgniteEx c = startClientGrid(getConfiguration("from-required-client", conformance))) {
+            assertThrows(c, "SELECT 1", IgniteSQLException.class, "SELECT must have a FROM clause");
+
+            assertQuery(c, "SELECT 1 + 1 FROM dual").returns(2).check();
+        }
+    }
+
+    /** */
+    @Test
+    public void testDualTableInNewSchema() {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("CUSTOM_SCHEMA_MARKER")
+            .setSqlSchema("CUSTOM_SCHEMA")
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        assertQuery("SELECT DUMMY FROM CUSTOM_SCHEMA.DUAL")
+            .columnNames("DUMMY")
+            .returns("X")
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testUserDefinedDualView() {
+        sql("CREATE VIEW PUBLIC.DUAL AS SELECT 'USER' AS DUMMY");
+
+        try {
+            assertQuery("SELECT DUMMY FROM PUBLIC.DUAL")
+                .columnNames("DUMMY")
+                .returns("USER")
+                .check();
+        }
+        finally {
+            sql("DROP VIEW IF EXISTS PUBLIC.DUAL");
+        }
+    }
+
     /** Rewrites LTRIM with 2 parameters. */
     public static SqlCall rewriteLtrim(SqlValidator validator, SqlCall call) {
         if (call.operandCount() != 2)
@@ -254,6 +409,16 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
     /** Implementor for {@code TO_NUMBER} function. */
     public static BigDecimal toNumber(String s) {
         return new BigDecimal(s);
+    }
+
+    /** Implementor for {@code REFLECTIVE_BINARY_LENGTH} function. */
+    public static int binaryLength(byte[] bytes) {
+        return bytes.length;
+    }
+
+    /** Implementor for {@code REFLECTIVE_BINARY_VALUE} function. */
+    public static byte[] binaryValue() {
+        return new byte[] {1, 2, 3};
     }
 
     /** Extended operator table. */
@@ -303,6 +468,36 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
 
         /** */
         public static final SqlAggFunction TEST_COUNT_PAIRS = new SqlTestCountPairsAggFunction();
+
+        /** */
+        public static final SqlFunction REFLECTIVE_BINARY_LENGTH = new SqlFunction(
+            "REFLECTIVE_BINARY_LENGTH",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.INTEGER_NULLABLE,
+            null,
+            OperandTypes.BINARY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction REFLECTIVE_BINARY_VALUE = new SqlFunction(
+            "REFLECTIVE_BINARY_VALUE",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createSqlType(SqlTypeName.VARBINARY),
+            null,
+            OperandTypes.NILADIC,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
+
+        /** */
+        public static final SqlFunction JAVA_BINARY_IDENTITY = new SqlFunction(
+            "JAVA_BINARY_IDENTITY",
+            SqlKind.OTHER_FUNCTION,
+            opBinding -> opBinding.getTypeFactory().createJavaType(byte[].class),
+            null,
+            OperandTypes.BINARY,
+            SqlFunctionCategory.USER_DEFINED_FUNCTION
+        );
     }
 
     /** Extended convertlet table. */

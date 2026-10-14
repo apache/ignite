@@ -39,9 +39,11 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Before;
-import org.junit.Test;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
@@ -51,12 +53,13 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.A
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest {
+public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionParametrizedTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -451,7 +454,6 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
         assertEquals(1400, root.next()[0]);
         assertFalse(root.hasNext());
     }
-
 
     /** */
     @Test

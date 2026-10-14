@@ -581,8 +581,7 @@ public class SnapshotCheckProcess {
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
 
-            if (U.isLocalNodeCoordinator(kctx.discovery()))
-                phase2PartsHashes.start(reqId, ctx.req);
+            phase2PartsHashes.startByCoordinator(reqId, ctx.req);
         }
         catch (Throwable th) {
             if (ctx != null) {
@@ -729,7 +728,9 @@ public class SnapshotCheckProcess {
         assert !mreg.iterator().hasNext();
         assert ctx.req.requestId() != null;
 
-        mreg.register("startTime", U::currentTimeMillis,
+        long startTime = U.currentTimeMillis();
+
+        mreg.register("startTime", () -> startTime,
             "The system time of the start of the cluster snapshot check operation on current node.");
 
         if (ctx.req.incrementalIndex() > 0) {

@@ -165,7 +165,7 @@ Ignite Release Instructions
 
    3.1) Deploy Ignite to maven repository, prepares sources and binaries.
 
-                ./mvnw deploy -Papache-release,gpg,all-java,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
+                ./mvnw deploy -Papache-release,gpg,all-java,licenses -Dignite.edition=apache-ignite -DskipTests
 
    3.2) Javadoc generation:
 

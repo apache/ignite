@@ -82,10 +82,12 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         if (!encryption) {
             mxBean.createIncrementalSnapshot(SNAPSHOT_NAME, "");
 
-            assertTrue(
-                "Waiting for incremental snapshot failed",
-                GridTestUtils.waitForCondition(() -> checkIncremental(ignite, SNAPSHOT_NAME, null, 1), TIMEOUT)
-            );
+            DynamicMBean incSnpMBean = metricRegistry(ignite.name(), SNAPSHOT_METRICS, "incremental");
+
+            assertTrue("Waiting for incremental snapshot failed",
+                GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", incSnpMBean) > 0, TIMEOUT));
+
+            assertTrue(checkIncremental(ignite, SNAPSHOT_NAME, null, 1));
         }
 
         stopAllGrids();

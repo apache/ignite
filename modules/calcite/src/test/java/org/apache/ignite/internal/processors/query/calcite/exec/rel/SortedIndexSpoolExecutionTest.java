@@ -35,21 +35,24 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple4;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
+public class SortedIndexSpoolExecutionTest extends AbstractExecutionParametrizedTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();

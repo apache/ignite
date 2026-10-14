@@ -179,14 +179,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Closes caches.
-     */
-    private void destroyCaches() {
-        cache1.destroy();
-        cache2.destroy();
-    }
-
-    /**
      * @param cache Cache.
      * @param cnt Count.
      */

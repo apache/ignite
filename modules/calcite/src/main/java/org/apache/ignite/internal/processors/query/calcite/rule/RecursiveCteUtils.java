@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -36,7 +35,6 @@ import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -53,15 +51,6 @@ final class RecursiveCteUtils {
     /** Returns whether the table is Calcite's query-local transient table. */
     static boolean isTransient(RelOptTable table) {
         return table != null && table.unwrap(TransientTable.class) != null;
-    }
-
-    /** Stable identifier preserved in the serialized physical plan. */
-    static String stateId(RelOptPlanner planner, RelOptTable table) {
-        PlanningContext ctx = planner.getContext().unwrap(PlanningContext.class);
-
-        assert ctx != null;
-
-        return ctx.recursiveCteStateId(table);
     }
 
     /** Counts scans of the recursive transient table. */

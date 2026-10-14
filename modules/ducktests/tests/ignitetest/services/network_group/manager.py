@@ -297,6 +297,29 @@ class NetworkGroupManager:
         """
         self.logger.debug(f"Network State Overview: [START][{log_tag}]")
 
+        # The per-node SSH probes flood the debug log with their own command output. Collect
+        # first, print contiguously after: the overview must stay readable as one block.
+        for node_status in self._probe_network():
+            self.logger.debug(node_status)
+
+        self.logger.debug(f"Network State Overview: [END][{log_tag}]")
+
+    def describe(self):
+        """
+        Describes the live network state for a demo breakpoint banner
+        (see :meth:`ignitetest.utils.ignite_test.IgniteTest.pause`).
+
+        :return: Section lines, the first one being the section title.
+        """
+        return ["NETWORK"] + [f"  {status}" for status in self._probe_network()]
+
+    def _probe_network(self):
+        """
+        Probes the actual network state of every node - the applied netem constraints, what
+        they are filtered onto, and the partition drops - rather than what was asked for.
+
+        :return: One line per node, grouped by network group.
+        """
         entries = [(group, svc, node)
                    for group, services in self.network_group_registry.items()
                    for svc in services
@@ -314,7 +337,7 @@ class NetworkGroupManager:
             constraints = self._parse_qdisc_constraints(qdisc_lines)
 
             targets_str = f" -> to [{', '.join(dst_ips)}]" if dst_ips and constraints != "noqueue" else ""
-            node_ip = socket.gethostbyname(node.account.externally_routable_ip)
+            node_ip = node.account.externally_routable_ip
 
             partition_str = self._format_partition_drops(
                 self._parse_partition_drops(iptables_lines))
@@ -322,12 +345,7 @@ class NetworkGroupManager:
             node_statuses.append(f"[{group:<4}] {svc.who_am_i(node):<45}[{node_ip}] : "
                                  f"{constraints}{targets_str}{partition_str}")
 
-        # The per-node SSH probes above flood the debug log with their own command output.
-        # Collect first, print contiguously after: the overview must stay readable as one block.
-        for node_status in node_statuses:
-            self.logger.debug(node_status)
-
-        self.logger.debug(f"Network State Overview: [END][{log_tag}]")
+        return node_statuses
 
     def _to_network_probe_cmd(self, node) -> str:
         """

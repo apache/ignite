@@ -21,9 +21,9 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 
-import static org.apache.ignite.internal.binary.BinaryUtils.dataStartRelative;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.dataStartRelative;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.rawOffsetAbsolute;
 import static org.apache.ignite.internal.binary.BinaryUtils.length;
-import static org.apache.ignite.internal.binary.BinaryUtils.rawOffsetAbsolute;
 
 /** */
 class ObjectDetachHelper {

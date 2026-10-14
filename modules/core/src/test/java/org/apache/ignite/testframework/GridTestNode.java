@@ -17,15 +17,19 @@
 
 package org.apache.ignite.testframework;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -34,7 +38,7 @@ import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 /**
  * Test node.
  */
-public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNode {
+public class GridTestNode extends GridMetadataAwareAdapter implements IgniteClusterNode {
     /** */
     private static final IgniteProductVersion VERSION = fromString("99.99.99");
 
@@ -101,13 +105,6 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
         assert id != null;
 
         return id;
-    }
-
-    /**
-     * @param consistentId Consistent ID.
-     */
-    public void consistentId(Object consistentId) {
-        this.consistentId = consistentId;
     }
 
     /** {@inheritDoc} */
@@ -213,6 +210,16 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
         return VERSION;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteNodeFeatureSet features() {
+        return IgniteNodeFeatureSet.LOCAL_CORE_FEATURES;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setConsistentId(Serializable consistentId) {
+        this.consistentId = consistentId;
+    }
+
     /**
      * Sets node metrics.
      *
@@ -220,6 +227,16 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
      */
     public void setMetrics(ClusterMetrics metrics) {
         this.metrics = metrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, CacheMetrics> cacheMetrics() {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

@@ -26,24 +26,17 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.type.RelDataType;
 
-import static java.util.Objects.requireNonNull;
-
 /** Scan of the current delta of a query-local recursive CTE. */
 public class IgniteRecursiveTableScan extends AbstractRelNode implements IgniteRel {
-    /** Query-local recursive state identifier. */
-    private final String stateId;
-
     /** */
     public IgniteRecursiveTableScan(
         RelOptCluster cluster,
         RelTraitSet traits,
-        RelDataType rowType,
-        String stateId
+        RelDataType rowType
     ) {
         super(cluster, traits);
 
         this.rowType = rowType;
-        this.stateId = stateId;
     }
 
     /** Constructor used for deserialization. */
@@ -51,21 +44,15 @@ public class IgniteRecursiveTableScan extends AbstractRelNode implements IgniteR
         this(
             input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
-            input.getRowType("rowType"),
-            requireNonNull(input.getString("stateId"), "stateId")
+            input.getRowType("rowType")
         );
-    }
-
-    /** Query-local recursive state identifier. */
-    public String stateId() {
-        return stateId;
     }
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
         assert inputs.isEmpty();
 
-        return new IgniteRecursiveTableScan(getCluster(), traitSet, rowType, stateId);
+        return new IgniteRecursiveTableScan(getCluster(), traitSet, rowType);
     }
 
     /** {@inheritDoc} */
@@ -77,13 +64,12 @@ public class IgniteRecursiveTableScan extends AbstractRelNode implements IgniteR
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         assert inputs.isEmpty();
 
-        return new IgniteRecursiveTableScan(cluster, getTraitSet(), rowType, stateId);
+        return new IgniteRecursiveTableScan(cluster, getTraitSet(), rowType);
     }
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .item("stateId", stateId)
             .item("rowType", rowType);
     }
 }

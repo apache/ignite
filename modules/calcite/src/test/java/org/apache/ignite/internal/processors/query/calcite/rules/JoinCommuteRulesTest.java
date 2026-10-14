@@ -21,19 +21,21 @@ import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsTableScan;
 
 /** Tests correctness applying of JOIN_COMMUTE* rules. */
-public class JoinCommuteRulesTest extends GridCommonAbstractTest {
+public class JoinCommuteRulesTest extends GridCommonAbstractWrapperTest {
     /** */
     private static QueryEngine qryEngine;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 

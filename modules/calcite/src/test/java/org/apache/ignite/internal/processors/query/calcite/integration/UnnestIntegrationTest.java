@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.Collections;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration test for UNNEST operator.

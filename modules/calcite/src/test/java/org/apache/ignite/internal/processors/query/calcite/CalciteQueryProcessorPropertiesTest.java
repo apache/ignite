@@ -34,8 +34,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE;
 import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_RECURSIVE_CTE_ITERATION_LIMIT;

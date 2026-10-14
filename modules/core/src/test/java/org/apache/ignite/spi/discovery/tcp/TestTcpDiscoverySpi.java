@@ -21,24 +21,23 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,15 +56,75 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
 
-    /** */
-    private MessageFactory msgFactory;
+    /** Latch released on {@link #unfreeze()}, {@code null} if the discovery I/O is not frozen. */
+    private volatile CountDownLatch freezeLatch;
 
-    /** */
-    private MessageFactoryProvider provider;
+    /**
+     * Freezes the discovery I/O of this node: every socket read and write blocks until {@link #unfreeze()} is called.
+     * The node keeps accepting TCP connections. Emulates a node whose threads hang, e.g. at a long GC pause.
+     */
+    public synchronized void freeze() {
+        if (freezeLatch == null)
+            freezeLatch = new CountDownLatch(1);
+    }
+
+    /** Releases the discovery I/O frozen by {@link #freeze()}. */
+    public synchronized void unfreeze() {
+        if (freezeLatch != null) {
+            freezeLatch.countDown();
+
+            freezeLatch = null;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void write(TcpDiscoveryIoSession ses, byte[] data, long timeout) throws IOException, IgniteCheckedException {
+        awaitUnfrozen();
+
+        super.write(ses, data, timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeReceipt(TcpDiscoveryIoSession ses, int res, long timeout) throws IOException, IgniteCheckedException {
+        awaitUnfrozen();
+
+        super.writeReceipt(ses, res, timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected <T extends Message> T readMessage(
+        TcpDiscoveryIoSession ses,
+        long timeout
+    ) throws IOException, IgniteCheckedException {
+        awaitUnfrozen();
+
+        try {
+            return super.readMessage(ses, timeout);
+        }
+        finally {
+            // A reader may have been blocked on the socket before the freeze, so hold the result (a message or
+            // a failure) until unfreeze.
+            awaitUnfrozen();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int readReceipt(TcpDiscoveryIoSession ses, long timeout) throws IOException {
+        awaitUnfrozen();
+
+        try {
+            return super.readReceipt(ses, timeout);
+        }
+        finally {
+            awaitUnfrozen();
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
+        awaitUnfrozen();
+
         if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
             return;
 
@@ -119,42 +178,8 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         this.discoHook = discoHook;
     }
 
-    /**
-     * Sets test discovery messages factory provider. Note that {@link MessageFactoryProvider} must be set before SPI start.
-     * Otherwise, this method call will take no effect.
-     *
-     * @param msgFactoryProvider Discovery messages factory provider.
-     */
-    public void messageFactory(MessageFactoryProvider msgFactoryProvider) {
-        provider = msgFactoryProvider;
-        assert !started();
-
-        msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(),
-            msgFactoryProvider
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageFactoryProvider messageFactoryProvider() {
-        return provider;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
-        if (msgFactory != null)
-            GridTestUtils.setFieldValue(this, TcpDiscoverySpi.class, "msgFactory", msgFactory);
-
-        super.initLocalNode(srvPort, addExtAddrAttr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public MessageFactory messageFactory() {
-        return msgFactory != null ? msgFactory : super.messageFactory();
-    }
-
     /** */
-    public static @Nullable TcpDiscoveryAbstractMessage decodeMessage(TcpDiscoverySpi spi, byte[] data) {
+    public static @Nullable TcpDiscoveryAbstractMessage decodeMessage(GridKernalContext ctx, byte[] data) {
         if (Arrays.equals(U.IGNITE_HEADER, data))
             return null;
 
@@ -169,10 +194,31 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
         };
 
         try (dataSock) {
-            return new TcpDiscoveryIoSession(dataSock, spi).readMessage();
+            return new TcpDiscoveryIoSession(ctx, dataSock).readMessage();
         }
         catch (Exception e) {
             throw new IgniteException("Failed to decode a message", e);
+        }
+    }
+
+    /**
+     * Blocks while the discovery I/O is frozen.
+     *
+     * @throws InterruptedIOException If interrupted.
+     */
+    private void awaitUnfrozen() throws InterruptedIOException {
+        CountDownLatch latch = freezeLatch;
+
+        if (latch == null)
+            return;
+
+        try {
+            latch.await();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new InterruptedIOException("Interrupted while discovery I/O is frozen.");
         }
     }
 }

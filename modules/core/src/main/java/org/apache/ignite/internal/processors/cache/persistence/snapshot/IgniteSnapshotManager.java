@@ -544,7 +544,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The name of full snapshot for which the last incremental snapshot created on this node.");
         incSnpMReg.register("incrementIndex",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.incIdx).orElse(0),
-            "Ihe index of the last incremental snapshot created on this node.");
+            "The index of the last incremental snapshot created on this node.");
         incSnpMReg.register("startTime",
             () -> Optional.ofNullable(lastSeenIncSnpFut).map(f -> f.startTime).orElse(0L),
             "The system time of the last incremental snapshot creation start time on this node.");

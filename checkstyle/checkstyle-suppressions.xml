@@ -39,14 +39,8 @@
     <suppress checks="(?&lt;!Missing)JavadocMethod"
               files="[\\/]tests[\\/]"/>
 
-    <suppress checks="(?&lt;!Missing)JavadocMethod"
-              files="[\\/]yardstick[\\/]"/>
-
     <suppress checks="Javadoc"
               files="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
-
-    <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
-              files="[\\/]yardstick[\\/]"/>
 
     <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
               files="[\\/]internal[\\/]thread[\\/]"/>

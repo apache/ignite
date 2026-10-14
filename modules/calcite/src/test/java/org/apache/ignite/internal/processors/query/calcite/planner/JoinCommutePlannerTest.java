@@ -42,7 +42,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMu
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /** Tests correctness applying of JOIN_COMMUTE* and {@link IgniteMultiJoinOptimizeRule} rules. */
 public class JoinCommutePlannerTest extends AbstractPlannerTest {
@@ -50,6 +51,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
     private static IgniteSchema publicSchema;
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

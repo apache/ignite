@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -40,5 +44,43 @@ public class BinaryContextPredefinedTypesTest extends GridCommonAbstractTest {
             assertTrue("Missing default constructor for predifined type " + desc.describedClass().getName(),
                 desc.describedClass() == desc.ctor().getDeclaringClass());
         }
+    }
+
+    /** Tests that binarylizable system classes registered by {@link BinaryContext} itself are cached in the registered state. */
+    @Test
+    public void testBinarilizableSystemClassesRegistered() {
+        BinaryContext ctx = U.binaryContext(null);
+
+        assertRegisteredSystemClass(ctx, TreeMap.class);
+        assertRegisteredSystemClass(ctx, TreeSet.class);
+        assertRegisteredSystemClass(ctx, BinaryTreeMap.class);
+    }
+
+    /** Tests that binarylizable system classes registered by processors on node start are cached in the registered state. */
+    @Test
+    public void testProcessorBinarilizableSystemClassesRegistered() throws Exception {
+        try (IgniteEx ignite = startGrid(0)) {
+            BinaryContext ctx = ignite.context().cacheObjects().binaryContext();
+
+            assertRegisteredSystemClass(ctx, TreeMap.class);
+            assertRegisteredSystemClass(ctx, TreeSet.class);
+            assertRegisteredSystemClass(ctx, BinaryTreeMap.class);
+
+            assertRegisteredSystemClass(ctx, GridClosureProcessor.C1.class);
+            assertRegisteredSystemClass(ctx, GridClosureProcessor.C1MLA.class);
+            assertRegisteredSystemClass(ctx, GridClosureProcessor.C2.class);
+            assertRegisteredSystemClass(ctx, GridClosureProcessor.C2MLA.class);
+            assertRegisteredSystemClass(ctx, GridClosureProcessor.C4.class);
+            assertRegisteredSystemClass(ctx, GridClosureProcessor.C4MLA.class);
+        }
+    }
+
+    /** */
+    private static void assertRegisteredSystemClass(BinaryContext ctx, Class<?> cls) {
+        BinaryClassDescriptor desc = ctx.descriptorForClass(cls);
+
+        assertFalse(cls.getName(), desc.userType());
+        assertTrue("Cached descriptor must be registered: " + cls.getName(), desc.registered());
+        assertTrue("Write path must reuse cached descriptor: " + cls.getName(), desc == ctx.registerClass(cls, true, false));
     }
 }

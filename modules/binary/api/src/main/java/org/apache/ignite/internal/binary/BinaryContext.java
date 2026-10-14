@@ -615,7 +615,7 @@ public class BinaryContext {
     public void registerBinarilizableSystemClass(Class<?> cls) {
         String clsName = cls.getName();
 
-        descByCls.put(cls, systemClassDescriptor(cls, clsName, new BinaryReflectiveSerializer()));
+        descByCls.put(cls, systemClassDescriptor(cls, clsName, new BinaryReflectiveSerializer()).makeRegistered());
     }
 
     /**

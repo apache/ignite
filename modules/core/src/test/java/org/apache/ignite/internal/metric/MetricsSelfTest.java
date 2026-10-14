@@ -237,6 +237,26 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testArrayMetricAsString() {
+        mreg.register("intArr", () -> new int[] {1, 2, 3}, int[].class, "test");
+        mreg.register("longArr", () -> new long[] {4L, 5L}, long[].class, "test");
+        mreg.register("boolArr", () -> new boolean[] {true, false}, boolean[].class, "test");
+        mreg.register("strArr", () -> new String[] {"a", null}, String[].class, "test");
+        mreg.register("nestedArr", () -> new int[][] {{1}, {2, 3}}, int[][].class, "test");
+        mreg.register("emptyArr", () -> new int[0], int[].class, "test");
+        mreg.register("nullArr", () -> null, int[].class, "test");
+
+        assertEquals("[1, 2, 3]", mreg.findMetric("intArr").getAsString());
+        assertEquals("[4, 5]", mreg.findMetric("longArr").getAsString());
+        assertEquals("[true, false]", mreg.findMetric("boolArr").getAsString());
+        assertEquals("[a, null]", mreg.findMetric("strArr").getAsString());
+        assertEquals("[[1], [2, 3]]", mreg.findMetric("nestedArr").getAsString());
+        assertEquals("[]", mreg.findMetric("emptyArr").getAsString());
+        assertNull(mreg.findMetric("nullArr").getAsString());
+    }
+
+    /** */
+    @Test
     public void testBooleanGauges() throws Exception {
         BooleanMetricImpl bg = mreg.booleanMetric("bg", "test");
 

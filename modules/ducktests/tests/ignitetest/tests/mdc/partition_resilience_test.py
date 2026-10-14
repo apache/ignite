@@ -63,16 +63,22 @@ class MdcPartitionResilienceTest(IgniteTest):
         with cross_dc_network(self.logger, mdc, delay_ms=cross_dc_latency_ms) as net:
             mdc.start_servers()
 
+            self.pause("cluster-up", mdc, net)
+
             mdc.generate_data(DC_1, CACHE_NAME, 0, 100, backups=BACKUPS)
             mdc.generate_data(DC_2, CACHE_NAME, 100, 200, backups=BACKUPS)
 
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
+
+            self.pause("data-loaded", mdc, net)
 
             net.enable_network_partition(DC_1, DC_2)
 
             sleep(SPLIT_SETTLE_SECS)
 
             mdc.verify_split_brain()
+
+            self.pause("split-brain", mdc, net)
 
             # All data written before the split is readable in both halves.
             mdc.check_data(DC_1, CACHE_NAME, 0, 200)
@@ -81,6 +87,8 @@ class MdcPartitionResilienceTest(IgniteTest):
             # The half-ring holding the main DC accepts writes, the other one is read-only.
             mdc.check_put_admissibility(DC_1, CACHE_NAME, True)
             mdc.check_put_admissibility(DC_2, CACHE_NAME, False)
+
+            self.pause("secondary-read-only", mdc, net)
 
             net.disable_network_partition(DC_1, DC_2)
 
@@ -93,6 +101,8 @@ class MdcPartitionResilienceTest(IgniteTest):
             mdc.verify_cache_distribution(CACHE_NAME, copies_per_dc=1)
 
             mdc.control(DC_1).idle_verify(CACHE_NAME)
+
+            self.pause("healed", mdc, net)
 
             mdc.verify_servers_log_clean()
 

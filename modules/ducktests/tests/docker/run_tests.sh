@@ -25,10 +25,13 @@ IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
 JDK_VERSION="${JDK_VERSION:-17}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.11}"
 IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 
 ###
 # DuckerTest parameters are specified with options to the script
+
+NO_CACHE_FLAG=""
 
 # Path to ducktests
 TC_PATHS="./ignitetest/"
@@ -81,8 +84,18 @@ The options are as follows:
 --jdk
     Set jdk version to build, default is 17
 
+--python
+    Set python version to build, default is 3.11
+
+--no-cache
+    Rebuild the Docker image from scratch without using cached layers.
+
 --image
     Set custom docker image to run tests on.
+
+--test-runner-timeout
+    Milliseconds ducktape waits for a sign of life from a running test before killing the
+    session, 1800000 by default.
 
 EOF
     exit 0
@@ -130,15 +143,18 @@ while [[ $# -ge 1 ]]; do
         -r|--repeat) REPEAT="$2"; shift 2;;
         --subnet) SUBNET="--subnet $2"; shift 2;;
         --jdk) JDK_VERSION="$2"; shift 2;;
+        --python) PYTHON_VERSION="$2"; shift 2;;
+        --no-cache) NO_CACHE_FLAG="--no-cache"; shift;;
         --image) IMAGE_NAME="$2"; shift 2;;
+        --test-runner-timeout) TEST_RUNNER_TIMEOUT="$2"; shift 2;;
         -f|--force) FORCE=$1; shift;;
         *) break;;
     esac
 done
 
 if [ -z "$IMAGE_NAME" ]; then
-    IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+    IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION-py$PYTHON_VERSION"
+    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" -p "$PYTHON_VERSION" $NO_CACHE_FLAG $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"
@@ -167,6 +183,10 @@ fi
 
 if [[ -n "$REPEAT" ]]; then
   DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --repeat $REPEAT"
+fi
+
+if [[ -n "$TEST_RUNNER_TIMEOUT" ]]; then
+  DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --test-runner-timeout $TEST_RUNNER_TIMEOUT"
 fi
 
 "$SCRIPT_DIR"/ducker-ignite test $TC_PATHS "$DUCKTAPE_OPTIONS" \

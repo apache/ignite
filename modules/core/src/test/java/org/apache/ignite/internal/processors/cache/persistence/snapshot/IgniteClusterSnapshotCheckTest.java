@@ -725,7 +725,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             discoSpi(grid(coordId)).block(msg -> msg instanceof FullMessage
                 && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_METAS.ordinal());
 
-            long mills = System.currentTimeMillis();
+            long mills = U.currentTimeMillis();
 
             if (restore) {
                 fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, incremental ? 1 : 0,
@@ -742,6 +742,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             discoSpi(grid(coordId)).waitBlocked(getTestTimeout());
 
+            long blockedMills = U.currentTimeMillis();
+
+            assertTrue(waitForCondition(() -> U.currentTimeMillis() > blockedMills, getTestTimeout()));
+
             for (int i = 0; i < G.allGrids().size(); ++i) {
                 if (stoppedNodes0.contains(i))
                     continue;
@@ -757,7 +761,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 assertTrue(mreg.iterator().hasNext());
 
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() > mills);
+                long startTime = mreg.<LongMetric>findMetric("startTime").value();
+
+                assertTrue(startTime >= mills && startTime <= blockedMills);
 
                 if (incremental) {
                     assertEquals(1, mreg.<IntMetric>findMetric("incrementIndex").value());

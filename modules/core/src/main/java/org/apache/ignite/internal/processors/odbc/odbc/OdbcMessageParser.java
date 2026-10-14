@@ -273,13 +273,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
-            return new ClientMessage(writer.array());
+            return new ClientMessage(writer.out().arrayCopy());
         }
 
         Object res0 = msg.response();
 
         if (res0 == null)
-            return new ClientMessage(writer.array());
+            return new ClientMessage(writer.out().arrayCopy());
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult)res0;
 
@@ -338,7 +338,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                     writer.writeInt(row.size());
 
                     for (Object obj : row)
-                        SqlListenerUtils.writeObject(writer, obj, true);
+                        writer.writeJdbcObject(obj, true);
                 }
             }
         }
@@ -365,7 +365,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                     writer.writeInt(row.size());
 
                     for (Object obj : row)
-                        SqlListenerUtils.writeObject(writer, obj, true);
+                        writer.writeJdbcObject(obj, true);
                 }
             }
         }
@@ -401,7 +401,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
 
             byte[] typeIds = res.typeIds();
 
-            SqlListenerUtils.writeObject(writer, typeIds, true);
+            writer.writeJdbcObject(typeIds, true);
         }
         else if (res0 instanceof OdbcQueryGetResultsetMetaResult) {
             OdbcQueryGetResultsetMetaResult res = (OdbcQueryGetResultsetMetaResult)res0;
@@ -411,7 +411,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         else
             assert false : "Should not reach here.";
 
-        return new ClientMessage(writer.array());
+        return new ClientMessage(writer.out().arrayCopy());
     }
 
     /**

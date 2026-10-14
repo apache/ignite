@@ -52,6 +52,7 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
+import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlCase;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -153,6 +154,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             validateInsertTargets(insert);
 
         super.validateInsert(insert);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateWithItem(SqlWithItem withItem) {
+        super.validateWithItem(withItem);
+
+        RecursiveCteValidator.validate(this, withItem);
     }
 
     /**
@@ -468,6 +476,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node instanceof SqlWithItem)
+            RecursiveCteRewriter.rewriteOrderBy((SqlWithItem)node);
+
         if (node instanceof SqlOrderBy) {
             SqlOrderBy orderBy = (SqlOrderBy)node;
 
@@ -501,6 +512,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         node = super.performUnconditionalRewrites(node, underFrom);
+
+        if (node instanceof SqlWithItem)
+            RecursiveCteRewriter.inferRecursion((SqlWithItem)node);
 
         if (config() instanceof Config && ((Config)config()).sqlNodeRewriter() != null)
             node = ((Config)config()).sqlNodeRewriter().rewrite(this, node);

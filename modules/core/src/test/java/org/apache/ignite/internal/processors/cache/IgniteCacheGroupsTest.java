@@ -3710,9 +3710,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     public void testRestartsAndCacheCreateDestroy() throws Exception {
         final int SRVS = 5;
 
-        startGrids(SRVS);
+        startGrid(0);
 
-        final Ignite clientNode = startClientGrid(SRVS);
+        final Ignite clientNode = startClientGrid(1);
+
+        startGridsMultiThreaded(2, SRVS - 1);
 
         final int CACHES = SF.applyLB(10, 2);
 
@@ -3744,7 +3746,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                             while (!stop.get()) {
-                                int node = rnd.nextInt(SRVS);
+                                // 0 - server node, 1 - client node.
+                                int node = rnd.nextInt(2, SRVS + 1);
 
                                 log.info("Stop node: " + node);
 
@@ -3879,17 +3882,22 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                     assertTrue(cacheIds.add(CU.cacheId(cache.getName())));
                 }
 
-                for (int n = 0; n < SRVS; n++) {
-                    CacheGroupContext grp = cacheGroup(ignite(n), GROUP1);
+                for (int n = 0; n <= SRVS; n++) {
+                    for (String grpName : Arrays.asList(GROUP1, GROUP2)) {
+                        CacheGroupContext grp = cacheGroup(ignite(n), grpName);
 
-                    assertNotNull(grp);
+                        // Group may be absent on a node if all its caches were
+                        // re-created under another group during this iteration.
+                        if (grp == null)
+                            continue;
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                        IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
+                        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                            IntMap<Object> cachesMap = GridTestUtils.getFieldValue(part, "cacheMaps");
 
-                        assertTrue(cachesMap.size() <= cacheIds.size());
+                            assertTrue(cachesMap.size() <= cacheIds.size());
 
-                        cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                            cachesMap.forEach((cacheId, v) -> assertTrue(cachesMap.containsKey(cacheId)));
+                        }
                     }
                 }
             }

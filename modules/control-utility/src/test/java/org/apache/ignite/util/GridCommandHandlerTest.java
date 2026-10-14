@@ -1768,7 +1768,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     if (id != 0)
                         U.awaitQuiet(lockLatch);
 
-                    cache.invoke(0L, new IncrementClosure(), null);
+                    cache.invoke(0L, new IncrementClosure());
 
                     if (id == 0) {
                         lockLatch.countDown();

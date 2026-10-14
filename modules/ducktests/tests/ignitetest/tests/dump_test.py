@@ -115,8 +115,8 @@ class DumpTest(IgniteTest):
         data_region_size = {}
 
         for node in ignite.nodes:
-            mbean = node.jmx_client().find_mbean('.*group=io.*name="dataregion.default"')
-            data_region_size[node.consistent_id] = int(next(mbean.TotalUsedSize))
+            mbean = node.metric_registry_mbean('io.dataregion.default')
+            data_region_size[node.consistent_id] = int(mbean.value("TotalUsedSize"))
 
         return {
             "data_region_size": data_region_size

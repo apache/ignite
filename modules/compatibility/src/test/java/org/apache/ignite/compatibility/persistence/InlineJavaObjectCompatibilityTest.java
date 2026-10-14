@@ -42,6 +42,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_16_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
@@ -83,7 +84,11 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     public void testQueryOldInlinedIndex() throws Exception {
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVer > 11) {
+        if (majorJavaVer >= 21) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                VER_2_16_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) <= 0);
+        }
+        else if (majorJavaVer > 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                 VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
         }

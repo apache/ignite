@@ -754,18 +754,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /**
-     * Checks that local stores contains primary and backup entries.
-     *  @param ignite Ignite.
-     * @param store Store.
-     * @param name Cache name.
-     * @param keys keys.
-     */
-    private void checkLocalStore(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store, String name,
-        Set<Integer> keys) {
-        checkLocalStore(ignite, store, name, keys, true);
-    }
-
-    /**
      * Checks that local stores contains primary and backup or only primary entries.
      *
      * @param ignite Ignite.
