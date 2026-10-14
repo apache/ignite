@@ -524,8 +524,8 @@ public class ConnectorConfiguration {
      * reported and renewed the same way as those of the other transports of the node.
      * <p>
      * A Jetty configuration set with {@link #setJettyPath(String)} must then have an SSL connection factory without a key store,
-     * trust store, SSL context or SSL session settings of its own. Settings such as client authentication stay in the Jetty
-     * configuration, while those that build an SSL context, such as {@code crlPath}, are not used.
+     * trust store, SSL context, SSL session settings or certificate revocation settings of its own. Settings such as client
+     * authentication stay in the Jetty configuration.
      *
      * @param httpSslFactory SSL context factory.
      * @return {@code this} for chaining.

@@ -213,7 +213,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         if (jettySsl.getKeyStorePath() != null || jettySsl.getKeyStore() != null || jettySsl.getTrustStorePath() != null ||
             jettySsl.getTrustStore() != null || jettySsl.getSslContext() != null || jettySsl.getSslSessionCacheSize() > -1 ||
-            jettySsl.getSslSessionTimeout() > -1) {
+            jettySsl.getSslSessionTimeout() > -1 || jettySsl.getCrlPath() != null || jettySsl.isEnableCRLDP() || jettySsl.isEnableOCSP() ||
+            jettySsl.isValidatePeerCerts()) {
             throw new IgniteCheckedException("HTTP REST takes its SSL context either from the Jetty configuration or from " +
                 "ConnectorConfiguration.httpSslFactory, not from both [jettyPath=" + config().getJettyPath() + ']');
         }
