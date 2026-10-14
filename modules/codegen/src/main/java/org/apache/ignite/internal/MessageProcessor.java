@@ -235,7 +235,7 @@ public class MessageProcessor extends AbstractProcessor {
                 printError(
                     processingEnv,
                     field,
-                    "A message with an immutable schema must not have fields gated by features [cls=" + clazz + ']');
+                    "A message with an immutable schema must not have fields gated by features [cls=" + clazz + ", field=" + field + ']');
 
                 return false;
             }
