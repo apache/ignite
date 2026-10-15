@@ -29,7 +29,6 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean abstract="true" id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- The tests insert keys with nanosecond timestamps through SQL: the H2-based engine keeps the precision. -->
         <property name="sqlConfiguration">
             <bean class="org.apache.ignite.configuration.SqlConfiguration">
                 <property name="queryEnginesConfiguration">

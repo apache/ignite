@@ -17,10 +17,6 @@
   limitations under the License.
 -->
 
-<!--
-    Makes the H2-based SQL engine the default one. The LINQ provider generates SQL in the H2 dialect, so the tests
-    that use it run on the H2 engine even when the Calcite-based engine is on the classpath.
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="

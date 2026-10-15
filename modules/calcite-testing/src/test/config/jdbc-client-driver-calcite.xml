@@ -17,10 +17,6 @@
   limitations under the License.
 -->
 
-<!--
-    Configuration of the client node started by the JDBC Client Driver: no engine configuration, so the Calcite-based
-    engine is the default one.
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="

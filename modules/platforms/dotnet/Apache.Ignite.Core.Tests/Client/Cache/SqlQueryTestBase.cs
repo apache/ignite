@@ -58,8 +58,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cfg = base.GetIgniteConfiguration();
 
-            // The tests check the H2 semantics of the distributed joins flag, and the LINQ provider generates SQL
-            // in the H2 dialect: run the server nodes on the H2 engine.
             cfg.SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml");
 
             return cfg;

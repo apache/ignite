@@ -47,7 +47,6 @@
             <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
         </property>
 
-        <!-- The tests check the behaviour of the H2-based engine (distributed joins flag, timeouts, metadata). -->
         <property name="sqlConfiguration">
             <bean class="org.apache.ignite.configuration.SqlConfiguration">
                 <property name="queryEnginesConfiguration">
