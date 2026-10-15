@@ -64,7 +64,6 @@ tab:C++[unsupported]
 
 The keystore must contain the node's certificate, including its private key.
 The trust store must contain the trusted certificates for all cluster nodes, including the node itself.
-If a client node trusts only the certificate authority of the server nodes, `control.sh --ssl reload` and automatic renewal refuse its certificate.
 `control.sh --ssl reload` and automatic renewal refuse a new discovery or communication certificate that the node's own trust store does not accept.
 With self-signed certificates, import each node's certificate into its own trust store as well.
 
