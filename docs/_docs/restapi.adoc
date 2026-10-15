@@ -87,16 +87,21 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 
 |`setHttpSslFactory(Factory<SSLContext>)`
 |Factory of the SSL context for HTTPS.
-When it is set, HTTP REST serves HTTPS with the certificates of this factory: Ignite puts TLS in front of the Jetty connector, the built-in one or the one from the Jetty configuration file.
-The file then describes the connector without TLS; a connector with an SSL connection factory of its own does not start.
-Protocols and cipher suites come from the factory, client authentication from `setHttpSslClientAuth`.
-`control.sh --ssl reload` and `--ssl status`, the `ssl.http.rest` metrics and automatic renewal cover HTTP REST like the other transports of the node.
-Jetty answers `400 Invalid SNI` to a request for a host name that the certificate does not name.
+When it is set, HTTP REST serves HTTPS with the certificates of this factory.
+Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty configuration file.
+When `httpSslFactory` is set and the connector in the Jetty configuration file sets up TLS itself, the node does not start.
+HTTP REST uses the protocols and cipher suites set in the factory.
+To check client certificates, use `setHttpSslClientAuth`.
+`control.sh --ssl reload` reloads the HTTP REST certificates together with the other certificates of the node.
+`control.sh --ssl status` and the `ssl.http.rest` metrics show the certificate that HTTP REST serves.
+If `renewalEnabled` is set on this factory, the node renews the HTTP REST certificate link:security/ssl-tls#renewing-certificates-automatically[automatically].
+Clients must send requests to a host name that the certificate names, or Jetty answers `400 Invalid SNI`.
 |Yes
 |`null`
 
 |`setHttpSslClientAuth(boolean)`
-|Whether HTTP REST asks clients for a certificate and checks it against the trust store of `httpSslFactory`.
+|Whether HTTP REST requires a client certificate.
+When it is `true`, a client can connect only if the trust store of `httpSslFactory` trusts its certificate.
 |Yes
 |`false`
 

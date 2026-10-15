@@ -1758,30 +1758,32 @@ control.sh|bat --ssl reload [--yes]
 ----
 
 Every server and client node in the topology reads its key and trust stores again.
-This covers communication, discovery, the client connector, binary REST, and HTTP REST when its certificates come from `ConnectorConfiguration.httpSslFactory`.
-A key store set in the Jetty configuration is not reloaded.
+The reload covers communication, discovery, the client connector and binary REST.
+For HTTP REST, the node reloads only certificates from `ConnectorConfiguration.httpSslFactory`, not a key store from the Jetty configuration.
 New connections use the new certificates.
 Established connections keep the old ones, even with a peer that the new trust store no longer accepts.
 
-The command does not reach thin clients or JDBC and ODBC drivers.
-ODBC reads its stores on every new connection, and so does JDBC with its own store settings.
-A Java or C++ thin client reads them only when it starts, and so does JDBC with the default JVM stores (`javax.net.ssl.*`).
+The command does not make thin clients or JDBC and ODBC drivers read their stores again.
+An ODBC driver reads its key and trust stores on every new connection.
+A JDBC driver reads its stores on every new connection if the connection properties set them.
+Java and C++ thin clients read their stores only when they start.
+A JDBC application that uses the default JVM stores (`javax.net.ssl.*`) reads them only when it starts.
 
 A node keeps its old certificate if a certificate in the new chain is not valid now.
-It also keeps the old one if clients get no certificate from the new key store, for example because the key store has no private key.
-If the SSL context factory serves discovery or communication, the node also keeps the old certificate if its own trust store does not accept the new one.
+It also keeps the old one if it cannot present any certificate from the new key store.
+This happens, for example, when the new key store has no private key.
+For discovery and communication, the node also keeps the old certificate if its own trust store does not accept the new one.
 The node does not check whether other nodes accept the new certificate.
-If any of these checks fails, all transports of that factory keep the old certificate.
+All transports that use the same SSL context factory keep or change their certificate together.
 
-A reload fails if a custom SSL context factory does not extend `AbstractSslContextFactory` and its `create()` returns a cached context: the node gets no new certificates from it.
-A reload asks an `AbstractSslContextFactory` for a new context with `createNew()`, because its `create()` keeps returning the first one.
-A subclass that builds its context in its own `create()` must override `createNew()` too, otherwise reloads and renewals skip that code.
-The checks and `--ssl status` look at the certificate chain that a client with default settings gets.
+A reload fails if a custom SSL context factory returns the same SSL context every time the node asks for one.
+The node gets no new certificates from such a factory and keeps its old certificate.
 
-Keep one private key and its chain per key store or other certificate source; the trust store may hold any number of trusted CAs.
-With several private keys, for example an EC and an RSA one, the checks and the status cover only one of the chains.
+Keep one private key and its chain in each key store or other certificate source.
+The trust store may hold any number of trusted certificate authorities.
+The reload checks and `--ssl status` look at the certificate chain that a client with default settings gets.
+With several private keys, for example an EC and an RSA one, they cover only one of the chains.
 
-Nodes reload independently.
 For each node, the command prints one line per SSL context factory, with all transports that use it.
 If some nodes fail, the others keep the new certificates.
 The command then lists the failed nodes first, in a separate block, and ends with an error:
@@ -1796,7 +1798,9 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: reloaded client connector, communication, 
 ----
 
 Fix the cause on the failed nodes and run the command again.
-Every node logs the certificate it put in use and who ran the command, or why the reload failed.
+Every node logs the certificate it put in use, or why the reload failed.
+The log line also names the node the command came through.
+With security enabled, it also names the login and network address of the user who ran the command.
 
 === Checking Certificates
 
@@ -1806,7 +1810,7 @@ control.sh|bat --ssl status
 ----
 
 For every node, the command shows the transports that share an SSL context factory, the certificate they serve and the result of the last reload.
-If renewal is enabled for the factory, the command also shows the time of the next renewal:
+If the factory has `renewalEnabled` set, the command also shows the time of the next automatic renewal:
 
 [source,text]
 ----
@@ -1816,8 +1820,10 @@ e1e18f84-0fb5-484d-a623-15ffe3800000: client connector, communication, discovery
     next automatic renewal at 2027-08-11T15:00:00Z
 ----
 
-If a certificate authority in the chain expires before the certificate, the `serving` line also shows `chainNotAfter`: peers refuse the chain from that time.
-After a failed reload, the node still serves its old certificate.
-The status then shows `last reload failed N time(s) in a row` with the time and reason of the last failure.
+If a certificate authority in the chain expires before the certificate, the `serving` line also shows when that authority expires, as `chainNotAfter`.
+From the `chainNotAfter` time, peers refuse the chain.
+After a failed reload, the status shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
+The `serving` line keeps showing the old certificate until a reload succeeds.
 The command ends with an error only if a certificate in the chain a node serves is not valid now.
-The command marks such a node `PROBLEM: the certificate is not valid now, peers refuse it` and lists it first, under `Failed on N node(s)`.
+The command marks such a node `PROBLEM: the certificate is not valid now, peers refuse it`.
+The command lists these nodes first, under `Failed on N node(s)`.

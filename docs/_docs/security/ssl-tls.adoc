@@ -166,48 +166,65 @@ This step may not be necessary if your trusted stores contain the root certifica
 +
 --
 Import the new certificate to the trusted store of every node, server or client, then run `control.sh --ssl reload`.
-Also import it to the trusted stores of applications that connect to the cluster with SSL, including `control.sh` itself (`--truststore`).
-`--ssl reload` does not reach applications.
-Java and C++ thin clients read their trusted store only when they start, and so do JDBC applications that use the default JVM stores (`javax.net.ssl.*`).
-Restart them if they are running.
+Also import the new certificate to the trusted stores of applications that connect to the cluster with SSL.
+An application that does not trust the new certificate cannot connect to a node that serves it.
+For `control.sh`, this is the trusted store that you pass with `--truststore`.
+`control.sh --ssl reload` does not make applications read their stores again.
+A Java or C++ thin client reads its trusted store only when it starts.
+A JDBC application that takes its stores from the `javax.net.ssl.*` system properties also reads them only when it starts.
+Restart running thin clients and JDBC applications that use `javax.net.ssl.*`, so that they read the new trusted store.
 
 Now all nodes trust the new certificates.
 --
 
 . Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Repeat this for all certificates you want to update, then run `control.sh --ssl reload`.
 Check with `control.sh --ssl status` that every node serves the new certificate.
-HTTP REST with stores set in the Jetty configuration is not reloaded: restart the node to put the new stores in use there.
+`control.sh --ssl reload` does not cover HTTP REST if you set its stores in the Jetty configuration file.
+In that case, restart the node so that HTTP REST serves the new certificate.
 
-If a private key has been compromised, make sure the trusted stores no longer accept its certificate, for example by moving to a new certificate authority.
-Then run `control.sh --ssl reload` and restart the nodes one at a time: a reload does not close the connections that are already open.
+If a private key has been compromised, make sure that the trusted stores no longer accept its certificate.
+For example, move to a new certificate authority.
+Then run `control.sh --ssl reload`.
+A reload does not close open connections, even with peers that the new trusted stores no longer accept.
+To close such connections, restart the nodes one at a time.
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
 
 == Renewing Certificates Automatically
 
-A node can pick up a new certificate from its key store file by itself before the current one expires.
+A node can renew its certificate from its key store file without a command, before the current certificate expires.
 Renewal is off by default.
-To turn it on, set the `renewalEnabled` property of the SSL context factory and restart the nodes one at a time.
-If `renewBeforeFraction` is out of range, the node does not start.
+To turn it on, set `renewalEnabled` to `true` and restart the nodes one at a time.
+A node renews certificates only for the SSL context factories that have `renewalEnabled` set to `true`.
 
-The node then reads the key store and trust store files again in the renewal window.
-By default, the window is the last 15% of the certificate lifetime: a certificate valid for 30 days is renewed 4.5 days before it expires.
-Put the new files in place before the window, and only files you are ready to use: the node picks them up by itself.
-The node puts the new certificate in use only if every certificate in its chain is valid now and the chain expires later than the one in use.
-If the factory serves discovery or communication, the node's own trust store must also accept the new certificate.
-A changed trust store alone is not picked up.
-Renewal supports one private key and its chain per key store; the trust store may hold any number of trusted CAs.
-With several private keys, for example an EC and an RSA one, the node watches only one of the chains and may miss a new certificate for the other key.
-To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload` before you put certificates from it in place.
+With renewal on, the node reads its key store and trust store files again in the renewal window.
+The renewal window is the last part of the certificate lifetime, 15% by default.
+For a certificate valid for 30 days, the window starts 4.5 days before the certificate expires.
+The `renewBeforeFraction` property sets the size of the window as a share of the lifetime.
+Replace the old files with the new ones before the renewal window starts.
+Replace them only with files you are ready to use, because the node starts to use them without a command.
+The node puts the new certificate in use only if every certificate in its chain is valid now.
+The new chain must also expire later than the chain in use.
+If the SSL context factory serves discovery or communication, the node's own trust store must also accept the new certificate.
+Renewal supports one private key and its chain per key store.
+The trust store may hold any number of trusted CAs.
+If a key store holds several private keys, for example an EC and an RSA one, renewal checks only one chain.
+The node may then keep the old certificate for the other key.
+Renewal puts a changed trust store in use only together with a new certificate.
+To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload`.
+Do this before you put certificates from the new authority in the key stores.
+Otherwise, nodes that do not trust the new authority yet reject its certificates.
 
-Until the files hold a newer certificate, the node keeps the one in use and reads the files again after a pause.
+If the key store file has no newer certificate yet, the node keeps the certificate in use.
+The node then reads the key store and trust store files again after a pause.
 The pause starts at 1 minute and doubles after each attempt, up to 1 hour.
-Each pause also gets a random part of up to half its length.
-While the node waits, it logs a warning once a day.
-Once less than half of the window is left, or the certificate would expire before the next attempt, it logs an error instead.
+To each pause, the node adds a random extra wait of up to half that pause.
+While the files still hold the certificate in use, the node logs a warning once a day.
+When less than half of the renewal window is left, the node logs an error instead of the warning.
+If the certificate would expire before the next attempt, the node also logs an error instead of the warning.
 If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
 `control.sh --ssl status` and the `NextRenewalTime` metric show when the next renewal is due.
-HTTP REST is renewed only when its certificates come from `ConnectorConfiguration.httpSslFactory`.
+The node renews the HTTP REST certificates only if they come from `ConnectorConfiguration.httpSslFactory`.
 
 == SslContextFactory Properties
 
@@ -242,7 +259,7 @@ HTTP REST is renewed only when its certificates come from `ConnectorConfiguratio
 |`false`
 
 |`renewBeforeFraction`
-|Share of the certificate lifetime left when a node starts to renew the certificate. The lifetime runs from the time the certificate becomes valid to the earliest expiry in its chain. Greater than `0` and less than `1`.
+|Share of the certificate lifetime left when a node starts to renew the certificate. The lifetime runs from the time the certificate becomes valid to the earliest expiry in its chain. The value must be greater than `0` and less than `1`, otherwise the node does not start.
 |`0.15`
 
 |`trustStoreFilePath`

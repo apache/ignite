@@ -119,7 +119,7 @@ public class ConnectorConfiguration {
     /** SSL context factory for HTTP REST. */
     private Factory<SSLContext> httpSslFactory;
 
-    /** Whether HTTP REST asks clients for a certificate. */
+    /** Whether HTTP REST requires a certificate from clients. */
     private boolean httpSslClientAuth;
 
     /** Port range */
@@ -515,7 +515,7 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Gets the factory of the SSL context HTTP REST serves.
+     * Gets the SSL context factory for HTTP REST.
      *
      * @return SSL context factory, or {@code null} if HTTP REST takes its TLS settings from the Jetty configuration only.
      */
@@ -524,14 +524,14 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Sets the factory of the SSL context HTTP REST serves. HTTP REST then serves HTTPS, and {@code control.sh --ssl reload},
-     * {@code --ssl status}, the {@code ssl.http.rest} metrics and automatic renewal cover its certificates like those of the other
-     * transports of the node. Protocols and cipher suites come from the factory, client authentication from
-     * {@link #setHttpSslClientAuth(boolean)}.
+     * Sets the SSL context factory for HTTP REST. HTTP REST then serves HTTPS with the certificates of this factory.
+     * {@code control.sh --ssl reload}, {@code --ssl status}, the {@code ssl.http.rest} metrics and automatic renewal cover these
+     * certificates like those of the other transports of the node. Protocols and cipher suites come from the factory. Client
+     * authentication comes from {@link #setHttpSslClientAuth(boolean)}.
      * <p>
-     * Ignite puts TLS in front of the Jetty connector: the built-in one, or the one a Jetty configuration set with
-     * {@link #setJettyPath(String)} describes. That connector must have no SSL connection factory of its own, otherwise the node
-     * does not start.
+     * Ignite adds TLS to the Jetty connector. The connector is the built-in one, or the one from the Jetty XML configuration
+     * file that {@link #setJettyPath(String)} points to. The Jetty connector must have no SSL connection factory of its own,
+     * otherwise the node does not start.
      *
      * @param httpSslFactory SSL context factory.
      * @return {@code this} for chaining.
@@ -543,19 +543,20 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Gets whether HTTP REST asks clients for a certificate.
+     * Gets whether HTTP REST requires a certificate from clients.
      *
-     * @return Whether HTTP REST asks clients for a certificate.
+     * @return Whether HTTP REST requires a certificate from clients.
      */
     public boolean isHttpSslClientAuth() {
         return httpSslClientAuth;
     }
 
     /**
-     * Sets whether HTTP REST served with {@link #setHttpSslFactory(Factory)} asks clients for a certificate and checks it against
-     * the trust store of that factory. Off by default.
+     * Sets whether HTTP REST served with {@link #setHttpSslFactory(Factory)} requires a certificate from clients.
+     * HTTP REST then refuses a client if the trust store of that factory does not accept its certificate.
+     * Off by default.
      *
-     * @param httpSslClientAuth Whether HTTP REST asks clients for a certificate.
+     * @param httpSslClientAuth Whether HTTP REST requires a certificate from clients.
      * @return {@code this} for chaining.
      */
     public ConnectorConfiguration setHttpSslClientAuth(boolean httpSslClientAuth) {

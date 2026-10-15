@@ -124,9 +124,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets whether a node builds its SSL context again before the certificate expires, to pick up a new certificate from wherever
-     * the factory takes certificates. A file-based factory reads its files again, so put new ones in place yourself. Disabled by
-     * default.
+     * Sets whether a node builds its SSL context again before the certificate expires. This lets the node pick up a new certificate
+     * from wherever the factory takes certificates. A file-based factory reads its files again, so put new ones in place yourself.
+     * Disabled by default.
      *
      * @param renewalEnabled Whether renewal is enabled.
      */
@@ -242,7 +242,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Builds a new SSL context, unlike {@link #create()}, which keeps returning the first one. A subclass that builds its context in
-     * its own {@link #create()} must override this method too and build the context from the same sources.
+     * its own {@link #create()} must override this method too and build the context from the same sources. Otherwise this method
+     * builds the context without the code in that {@link #create()}.
      *
      * @return SSL context.
      */
