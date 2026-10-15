@@ -35,7 +35,7 @@ import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** Checks that the JDBC Client Driver ({@code jdbc:ignite:cfg://}) works with any default SQL engine of the client node it starts. */
-@ParameterizedClass(name = "Engine={0}")
+@ParameterizedClass(name = "engine={0}")
 @ValueSource(strings = {IndexingQueryEngineConfiguration.ENGINE_NAME, CalciteQueryEngineConfiguration.ENGINE_NAME})
 public class JdbcClientDriverDefaultEngineTest extends AbstractJdbcTest {
     /** Directory with the Spring XML configurations of the client node started by the driver. */
