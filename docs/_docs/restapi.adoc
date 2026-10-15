@@ -89,17 +89,11 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Factory of the SSL context for HTTPS.
 When it is set, HTTP REST serves HTTPS with the certificates of this factory.
 Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty configuration file.
-When `httpSslFactory` is set, the node does not start if the connector in the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
-HTTP REST uses the protocols and cipher suites of the factory.
-Jetty turns off some of the factory cipher suites, for example `TLS_RSA_*` suites and suites that end in `_SHA`, `_SHA1` or `_MD5`.
-If none of the factory suites is left, Jetty logs `No supported Cipher Suite` and HTTPS clients cannot connect.
-To check client certificates, use `setHttpSslClientAuth`.
-`control.sh --ssl reload` reloads the HTTP REST certificates together with the other certificates of the node.
-`control.sh --ssl status` and the `ssl.http.rest` metrics show the certificate that HTTP REST serves.
-If `renewalEnabled` is set on this factory, the node renews the HTTP REST certificate link:security/ssl-tls#renewing-certificates-automatically[automatically].
-HTTP REST does not check that the host name in a request matches the certificate it serves.
-So it accepts requests to any host name or IP address, Kubernetes probes included.
-If the Jetty configuration file sets a `SecureRequestCustomizer`, Ignite does not change the settings of that customizer, such as `sniHostCheck`.
+The node does not start if the connector from the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
+With this factory, `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] put new HTTP REST certificates in use without a restart.
+HTTP REST does not use the weak cipher suites that Jetty turns off by default, even if the factory enables them.
+Unless the Jetty configuration file sets a `SecureRequestCustomizer` of its own, HTTP REST answers requests to a host name or IP address that the certificate does not name, such as a Kubernetes pod IP.
+To require client certificates, use `setHttpSslClientAuth`.
 |Yes
 |`null`
 
