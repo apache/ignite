@@ -96,7 +96,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             ignite.context().rollingUpgrade().features().isActive(SNAPSHOT_CHECK_STATUS_FEATURE);
 
         // Try to find check statuses.
-        Map<String, SnapshotStatus> chkStatuses = null;
+        Map<String, SnapshotOperationStatus> chkStatuses = null;
 
         // Not empty results.
         Collection<SnapshotStatus> statuses = new ArrayList<>(results.size());
@@ -121,7 +121,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
             statuses.add(s);
 
-            List<SnapshotStatus> checkStatuses = s instanceof SnapshotOperationStatus s2 ? s2.checkStatuses() : null;
+            List<SnapshotOperationStatus> checkStatuses = s instanceof SnapshotOperationStatus s2 ? s2.checkStatuses() : null;
 
             if (checkStatuses == null) {
                 assert s.op != SnapshotOperation.CHECK;
@@ -132,7 +132,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
             if (chkStatuses == null)
                 chkStatuses = U.newHashMap(results.size());
 
-            for (SnapshotStatus s0 : checkStatuses) {
+            for (SnapshotOperationStatus s0 : checkStatuses) {
                 var prev = chkStatuses.putIfAbsent(s0.name(), s0);
 
                 if (prev == null)
@@ -431,7 +431,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         private static final long serialVersionUID = 0L;
 
         /** Nodes' statuses of all snapshot check operations. */
-        private @Nullable List<SnapshotStatus> checkStatuses;
+        private @Nullable List<SnapshotOperationStatus> checkStatuses;
 
         /** */
         SnapshotOperationStatus(
@@ -445,7 +445,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
 
         /** Constructor only for {@link SnapshotOperation#CHECK}. */
-        SnapshotOperationStatus(List<SnapshotStatus> checkStatuses) {
+        SnapshotOperationStatus(List<SnapshotOperationStatus> checkStatuses) {
             // Holds first check status.
             this(
                 SnapshotOperation.CHECK,
@@ -460,7 +460,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         }
 
         /** @return Statuses of parallel check. */
-        public @Nullable List<SnapshotStatus> checkStatuses() {
+        public @Nullable List<SnapshotOperationStatus> checkStatuses() {
             return checkStatuses;
         }
     }
