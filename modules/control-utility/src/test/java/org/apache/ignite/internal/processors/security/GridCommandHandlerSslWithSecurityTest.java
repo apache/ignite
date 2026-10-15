@@ -30,6 +30,8 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
@@ -51,6 +53,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** Password. */
     private final String pwd = "testPwd";
+
+    /** */
+    private final ListeningTestLogger nodeLog = new ListeningTestLogger(log);
 
     /** System out. */
     protected static PrintStream sysOut;
@@ -99,7 +104,8 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+            .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
+            .setGridLogger(nodeLog);
 
         if (commandHandler.equals(CLI_CMD_HND)) {
             cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
@@ -199,6 +205,24 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         assertContains(log, testOutput, "--password *****");
         assertContains(log, testOutput, "--keystore-password *****");
         assertContains(log, testOutput, "--truststore-password *****");
+    }
+
+    /** The node logs the login of whoever ran the reload. */
+    @Test
+    public void testReloadLogsLogin() throws Exception {
+        IgniteEx crd = startGrid();
+
+        LogListener logged = LogListener.matches("initiator=management command, originNodeId=" + crd.localNode().id() +
+            ", login=" + login + ", address=").build();
+
+        nodeLog.registerListener(logged);
+
+        assertEquals(EXIT_CODE_OK, newCommandHandler().execute(Arrays.asList("--ssl", "reload", "--yes",
+            "--user", login, "--password", pwd,
+            "--keystore", keyStorePath("thinClient"), "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath("trusttwo"), "--truststore-password", keyStorePassword())));
+
+        assertTrue(logged.check());
     }
 
     /**

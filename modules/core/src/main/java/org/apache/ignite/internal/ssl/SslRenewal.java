@@ -59,7 +59,7 @@ class SslRenewal {
     /** */
     private final IgniteLogger log;
 
-    /** The one thread all renewals of the node run in, so that a request to the issuer holds up no other thread; created when needed. */
+    /** The one thread all renewals of the node run in, so that a slow factory holds up no other thread; created when needed. */
     private volatile ScheduledExecutorService exec;
 
     /** */

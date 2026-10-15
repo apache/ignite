@@ -47,6 +47,9 @@ import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 
 /** Tests HTTP REST served on the certificates of {@link ConnectorConfiguration#setHttpSslFactory}. */
 public class JettySslContextReloadTest extends GridCommonAbstractTest {
+    /** Jetty configuration serving plain HTTP. */
+    private static final String JETTY_PLAIN = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
+
     /** System property the Jetty configuration with stores of its own reads the key store path from. */
     private static final String KEY_STORE_PROP = "IGNITE_TEST_JETTY_KEY_STORE";
 
@@ -155,18 +158,25 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** A node does not start when its Jetty configuration has stores or revocation settings of its own next to the factory. */
+    /**
+     * A node does not start when its Jetty configuration serves no TLS, or has stores or revocation settings of its own next to
+     * the factory.
+     */
     @Test
-    public void testJettyStoresWithFactoryRefused() {
+    public void testJettySslSettingsWithFactoryRefused() {
+        jettyPath = JETTY_PLAIN;
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "serves no TLS");
+
         jettyPath = JETTY_OWN_STORES;
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "not from both");
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "must have no key store");
 
         jettyPath = JETTY_CLIENT_AUTH;
 
         System.setProperty(OCSP_PROP, "true");
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "not from both");
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "must have no key store");
     }
 
     /** Client authentication set in the Jetty configuration checks clients against the trust store of the factory. */

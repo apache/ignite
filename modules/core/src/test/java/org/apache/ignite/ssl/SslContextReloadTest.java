@@ -25,12 +25,17 @@ import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -99,7 +104,10 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         U.delete(dir);
     }
 
-    /** A rotation on a running cluster reaches new connections, the report, the node log, status and metrics. */
+    /**
+     * A rotation on a running cluster reaches new connections, the report, the node log, status and metrics, and leaves established
+     * connections working.
+     */
     @Test
     public void testReloadOnRunningCluster() throws Exception {
         IgniteEx g0 = startGrid(0);
@@ -110,16 +118,24 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         nodeLog.registerListener(logged);
 
-        placeKeys("node02");
+        // Trusts oneca only: it cannot connect again once the node serves node02.
+        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + g0.context().clientListener().port())
+            .setSslMode(SslMode.REQUIRED).setSslContextFactory(GridTestUtils.sslTrustedFactory("node01", "trustone"))
+            .setPartitionAwarenessEnabled(false).setClusterDiscoveryEnabled(false))) {
+            placeKeys("node02");
 
-        String res = reload(g0, g1);
+            String res = reload(g0, g1);
 
-        assertReloaded(res, g0, ALL_TRANSPORTS);
-        assertReloaded(res, g1, ALL_TRANSPORTS);
-        assertTrue(logged.check());
+            cli.cacheNames();
+
+            assertReloaded(res, g0, ALL_TRANSPORTS);
+            assertReloaded(res, g1, ALL_TRANSPORTS);
+            assertTrue(logged.check());
+        }
 
         assertEquals("CN=node02", servedSubject(g0.context().clientListener().port()));
-
+        assertEquals("CN=node02", servedSubject(((TcpCommunicationSpi)g0.configuration().getCommunicationSpi()).boundPort()));
         assertEquals("CN=node02", servedSubject(discoveryPort(g0)));
 
         assertEquals("CN=node02", metric(g0, "CertificateSubject"));
@@ -180,6 +196,19 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, res, "hands back the context in use");
 
         assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
+    }
+
+    /** A factory that is not an {@link AbstractSslContextFactory} and builds a new context on every call is reloaded. */
+    @Test
+    public void testCustomFactoryReloaded() throws Exception {
+        IgniteEx g = startGrid(0, cfg -> {
+            cfg.setSslContextFactory(() -> storeFactory(cfg.getIgniteInstanceName()).create());
+        });
+
+        placeKeys("node02");
+
+        assertReloaded(reload(g), g, ALL_TRANSPORTS);
+        assertEquals("CN=node02", servedSubject(discoveryPort(g)));
     }
 
     /** Neither a certificate the node's own trust store rejects nor an expired one is put in use; the report, log and status say why. */

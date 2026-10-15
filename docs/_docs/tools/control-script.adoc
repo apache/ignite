@@ -1772,6 +1772,8 @@ It also keeps the old one if clients get no certificate from the new key store, 
 If the SSL context factory serves discovery or communication, the node also keeps the old certificate if its own trust store does not accept the new one.
 This applies to all transports of that factory, and other nodes are not asked.
 A custom SSL context factory that does not extend `AbstractSslContextFactory` and whose `create()` returns a cached context has nothing to read again, so its reload fails.
+A reload asks an `AbstractSslContextFactory` for a new context with `createNew()`, because its `create()` keeps returning the first one.
+A subclass that builds its context in its own `create()` must override `createNew()` too, otherwise reloads and renewals skip that code.
 The checks and `--ssl status` look at the certificate chain that a client with default settings gets.
 Keep one private key and its chain per key store or other certificate source; the trust store may hold any number of trusted CAs.
 With several private keys, for example an EC and an RSA one, the checks and the status cover only one of the chains.

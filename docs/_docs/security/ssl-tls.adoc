@@ -167,7 +167,8 @@ This step may not be necessary if your trusted stores contain the root certifica
 --
 Import the new certificate to the trusted store of every node, server or client, then run `control.sh --ssl reload`.
 Also import it to the trusted stores of applications that connect to the cluster with SSL, including `control.sh` itself (`--truststore`).
-`--ssl reload` does not reach applications, so restart a running Java or C++ thin client: it reads its trusted store only when it starts.
+`--ssl reload` does not reach applications.
+Restart a running Java or C++ thin client, and a JDBC application that uses the default JVM stores (`javax.net.ssl.*`): they read their trusted store only when they start.
 
 Now all nodes trust the new certificates.
 --

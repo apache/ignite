@@ -118,7 +118,7 @@ public class SslContextRegistry extends GridProcessorAdapter {
         reg.register("LastReloadSuccessTime", provider::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
 
         reg.register("LastReloadFailureReason", provider::lastFailureReason, String.class,
-            "Reason of the last failed reload since the last success.");
+            "Reason of the last failed reload since the last successful one.");
 
         reg.register("ConsecutiveReloadFailures", provider::failures, "Failed reloads in a row since the last successful one.");
 
