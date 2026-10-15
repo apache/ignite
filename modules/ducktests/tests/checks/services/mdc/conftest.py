@@ -20,7 +20,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from checks.support.ducktape_doubles import FakeLogger, FakeTestContext
+from checks.support.ducktape_doubles import FakeTestContext
 from ignitetest.services.mdc.mdc_cluster import MdcCluster
 
 
@@ -29,6 +29,8 @@ def new_mdc():
     """
     :return: A factory of MdcCluster over fake nodes.
     """
-    test = SimpleNamespace(test_context=FakeTestContext(), logger=FakeLogger())
+    context = FakeTestContext()
+
+    test = SimpleNamespace(test_context=context, logger=context.logger)
 
     return lambda **kwargs: MdcCluster(test, "dev", **kwargs)

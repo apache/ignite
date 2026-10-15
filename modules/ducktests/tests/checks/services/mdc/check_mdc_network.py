@@ -17,7 +17,6 @@
 Checks the network between the DCs of an MDC cluster.
 """
 from itertools import combinations
-from types import SimpleNamespace
 
 from ignitetest.services.mdc.mdc_cluster import cross_dc_network, DCS_3
 
@@ -26,11 +25,9 @@ class CheckMdcNetwork:
     """
     Checks the cross-DC impairments.
     """
-    def check_the_delay_reaches_every_dc_pair(self):
+    def check_the_delay_reaches_every_dc_pair(self, new_mdc):
         """Every pair of DCs gets the delay."""
-        mdc = SimpleNamespace(dcs=DCS_3, network_registry=lambda: {dc: [] for dc in DCS_3})
-
-        store = cross_dc_network(None, mdc, delay_ms=100).network_group_store
+        store = cross_dc_network(None, new_mdc(dcs=DCS_3), delay_ms=100).network_group_store
 
         for dc_a, dc_b in combinations(DCS_3, 2):
             assert store.get_config(dc_a, dc_b).delay == "100ms"

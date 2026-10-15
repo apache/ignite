@@ -28,7 +28,9 @@ class CheckMdcTimeouts:
         """The node timeout leaves discovery alone."""
         mdc = new_mdc(network_timeout=20_000)
 
-        assert mdc.ignite_config.network_timeout == 20_000
+        assert mdc.servers[DC_1].config.network_timeout == 20_000
+
+        assert mdc.runners[DC_1][0].config.network_timeout == 20_000
 
         assert mdc.servers[DC_1].config.discovery_spi.network_timeout is None
 
@@ -36,7 +38,7 @@ class CheckMdcTimeouts:
         """The discovery timeout leaves the node timeout alone."""
         mdc = new_mdc(discovery_network_timeout=20_000)
 
-        assert mdc.ignite_config.network_timeout == IgniteConfiguration().network_timeout
+        assert mdc.servers[DC_1].config.network_timeout == IgniteConfiguration().network_timeout
 
         assert mdc.servers[DC_1].config.discovery_spi.network_timeout == 20_000
 

@@ -15,8 +15,7 @@
 
 """
 Stand-ins for the ducktape objects a test is handed - a logger, nodes, services, the
-registry they are collected in and the test context - for checks of framework code that only
-reads them.
+registry they are collected in and the test context - for checks of framework code.
 
 Each double is as poor as the real thing is at the point of use, so that a check fails on
 code reaching for more than a test actually offers it.
@@ -67,7 +66,7 @@ class FakeCluster:
 
 class FakeTestContext:
     """
-    Stands in for ducktape's TestContext: services built with it run their own constructors.
+    Stands in for ducktape's TestContext, with a cluster of fake nodes.
     """
     def __init__(self):
         self.cluster = FakeCluster()
