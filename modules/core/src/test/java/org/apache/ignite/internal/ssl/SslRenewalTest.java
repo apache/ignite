@@ -110,11 +110,15 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        appender.removeSelfFrom(SslRenewal.class);
+        try {
+            stopAllGrids();
+        }
+        finally {
+            appender.removeSelfFrom(SslRenewal.class);
+            appender.stop();
 
-        stopAllGrids();
-
-        pauses(MINUTE, HOUR);
+            pauses(MINUTE, HOUR);
+        }
     }
 
     /** A node must renew in the window and not before, serve and plan by the new certificate, and stop renewing on stop. */
