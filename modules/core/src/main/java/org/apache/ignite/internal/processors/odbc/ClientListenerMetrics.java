@@ -20,11 +20,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
@@ -45,18 +42,6 @@ public class ClientListenerMetrics {
 
     /** Number of successfully established sessions. */
     public static final String METRIC_ACEPTED = "AcceptedSessions";
-
-    /**
-     * Maximum number of active compute tasks per thin client connection during the last time interval. System tasks are
-     * not counted.
-     */
-    public static final String METRIC_PEAK_ACTIVE_COMPUTE_TASKS = "PeakActiveComputeTasksPerConnection";
-
-    /**
-     * Default time interval of the {@link #METRIC_PEAK_ACTIVE_COMPUTE_TASKS} metric in milliseconds. It is longer than the
-     * typical 1 minute polling period of monitoring systems to not miss peaks between polls.
-     */
-    public static final long DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL = 90_000L;
 
     /** */
     public static final String AFF_KEY_HITS = "AffinityKeyRequestsHits";
@@ -94,9 +79,6 @@ public class ClientListenerMetrics {
     /** */
     private final AtomicLongMetric affQryMisses;
 
-    /** Maximum number of active compute tasks per thin client connection. */
-    private final MaxValueMetric peakActiveComputeTasks;
-
     /**
      * @param mreg Metrics registry.
      */
@@ -122,16 +104,6 @@ public class ClientListenerMetrics {
 
         affQryMisses = mreg.longMetric(AFF_QRY_MISSES,
             "The number of affinity-aware query requests that were sent not to the primary node");
-
-        peakActiveComputeTasks = mreg.maxValueMetric(
-            METRIC_PEAK_ACTIVE_COMPUTE_TASKS,
-            "Maximum number of active compute tasks per thin client connection during the last time interval " +
-                "(" + MILLISECONDS.toSeconds(DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL) + " seconds by default). " +
-                "The value is updated when a task is started. System tasks are not counted. A task rejected because " +
-                "of the limit is counted as the limit.",
-            DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL,
-            DFLT_SIZE
-        );
 
         for (byte clientType : CLI_TYPES) {
             String clientLbl = clientTypeLabel(clientType);
@@ -172,16 +144,6 @@ public class ClientListenerMetrics {
      */
     public void onHandshakeAccept(byte clientType) {
         accepted[clientType].increment();
-    }
-
-    /**
-     * Callback invoked when a compute task is attempted to start by a thin client.
-     *
-     * @param activeTasksCnt Number of active compute tasks of the connection, including the invoked task, capped by
-     *      the limit.
-     */
-    public void onComputeTaskCountUpdate(int activeTasksCnt) {
-        peakActiveComputeTasks.update(activeTasksCnt);
     }
 
     /** */

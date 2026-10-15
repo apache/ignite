@@ -121,8 +121,8 @@ public class ClientConnectionView {
     }
 
     /**
-     * @return Number of active compute tasks for the thin client connection, system tasks are not counted.
-     * {@code null} for other connection types.
+     * @return Number of active user compute tasks of the thin client connection. {@code null} for other connection
+     *      types.
      */
     @Order(7)
     @Nullable public Integer activeComputeTasks() {
