@@ -66,21 +66,25 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        assert status.checkStatuses() != null || status.operation() != SnapshotStatusTask.SnapshotOperation.CHECK
-            : "No create or restore snapshot operation found but the check statuses are also empty.";
+        // Status with the support of the sanpshot check operations.
+        SnapshotStatusTask.SnapshotOperationStatus s2 = status instanceof SnapshotStatusTask.SnapshotOperationStatus
+            ? (SnapshotStatusTask.SnapshotOperationStatus)status
+            : null;
 
         // The check operation can be run in parallel for different snapshots.
         List<SnapshotStatus> multipleOpsView;
 
         if (status.operation() == SnapshotStatusTask.SnapshotOperation.CHECK) {
+            assert s2 != null;
+
             // Check operation always has itself in its aggregated check statuses.
-            multipleOpsView = status.checkStatuses();
+            multipleOpsView = s2.checkStatuses();
         }
         else {
             // If the operation is not check, attach possible parallel checks after.
-            multipleOpsView = status.checkStatuses() == null
+            multipleOpsView = s2 == null || s2.checkStatuses() == null
                 ? Collections.singletonList(status)
-                : Stream.concat(Stream.of(status), status.checkStatuses().stream()).collect(Collectors.toList());
+                : Stream.concat(Stream.of(status), s2.checkStatuses().stream()).collect(Collectors.toList());
         }
 
         boolean first = true;
