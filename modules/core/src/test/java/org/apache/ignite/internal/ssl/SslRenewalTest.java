@@ -102,6 +102,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         ca = new TestCertificateAuthority("renewalca");
 
+        appender.start();
         appender.installSelfOn(SslRenewal.class);
 
         pauses(100, 1_000);
