@@ -177,9 +177,10 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
                 assert chkStatuses == null;
             }
-        } else {
+        }
+        else {
             assert checkStatusSupport;
-            assert mergerRes instanceof  SnapshotOperationStatus;
+            assert mergerRes instanceof SnapshotOperationStatus;
 
             ((SnapshotOperationStatus)mergerRes).checkStatuses = new ArrayList<>(chkStatuses.values());
         }
