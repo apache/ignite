@@ -30,7 +30,7 @@ import org.junit.Test;
  *
  */
 public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbstractTest {
-    /** Number of entries, sized to fill the data region past the headroom gate in {@code ensureFreeSpace}. */
+    /** Number of entries, sized to fill the data region past the eviction threshold. */
     private static final int MULTINODE_ENTRIES = 16_000;
 
     /** Cache modes. */

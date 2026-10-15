@@ -38,10 +38,14 @@ import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolic
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDisabledEvictionReadThroughOomSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionEnsureFreeSpaceThresholdTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionGuardOomTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMetricTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionPagesRecyclingAndReusingTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughReservedPagesSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionRowSizeBinaryObjectTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionConcurrentWritesTest;
@@ -126,6 +130,14 @@ public class IgniteCacheEvictionSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, DhtAndNearEvictionTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, FreeListReservedPagesSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionReadThroughReservedPagesSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionRowSizeBinaryObjectTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionEnsureFreeSpaceThresholdTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionDisabledEvictionReadThroughOomSelfTest.class, ignoredTests);
 
         return suite;
     }

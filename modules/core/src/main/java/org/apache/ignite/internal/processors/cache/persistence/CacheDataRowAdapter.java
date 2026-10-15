@@ -890,11 +890,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
-        int len = key().valueBytesLength(null);
-
-        len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
-
-        return len + (cacheId() != 0 ? 4 : 0);
+        return RowStore.rowSize(key(), value(), CacheVersionIO.size(version(), false), null, cacheId());
     }
 
     /**

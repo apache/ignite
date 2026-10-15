@@ -100,7 +100,6 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
-import static org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl.SEG_CNT;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
 
@@ -1157,31 +1156,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Computes the effective headroom (unallocated pages that can actually be allocated), accounting for per-segment
-     * allocation overhead (up to one page per segment).
-     *
-     * @param totalPages Total pages in the region (maxSize / systemPageSize).
-     * @param loadedPages Currently loaded pages.
-     * @return Effective headroom, never negative.
-     */
-    private static long effectiveHeadroom(long totalPages, long loadedPages) {
-        long effectiveTotal = totalPages > SEG_CNT ? totalPages - SEG_CNT : 0;
-
-        return Math.max(0, effectiveTotal - loadedPages);
-    }
-
-    /**
-     * See {@code GridCacheMapEntry#ensureFreeSpace()}
+     * Evicts data pages from the given region until the configured eviction threshold is no longer exceeded or the
+     * empty-pages pool is refilled. This is the coarse, size-agnostic admission gate called at the batch level (before
+     * per-entry locks are acquired); size-aware per-row admission is handled separately by
+     * {@link org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList#reserve(int)}.
      *
      * @param memPlc data region.
      */
     public void ensureFreeSpace(DataRegion memPlc) throws IgniteCheckedException {
         if (memPlc == null)
-            return;
-
-        long totalPages = memPlc.config().getMaxSize() / memPlc.pageMemory().systemPageSize();
-
-        if (effectiveHeadroom(totalPages, memPlc.pageMemory().loadedPages()) > memPlc.config().getEmptyPagesPoolSize())
             return;
 
         while (memPlc.evictionTracker().evictionRequired()) {
@@ -1194,6 +1177,35 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             memPlc.metrics().updateEvictionRate();
         }
+    }
+
+    /**
+     * Reserves free-list pages in the given data region for a row (or a batch of rows totaling {@code rowSize} bytes)
+     * about to be inserted. See {@link FreeList#reserve(int)} for the caller contract (no entry/page locks held).
+     *
+     * @param memPlc Data region ({@code null} is tolerated).
+     * @param rowSize Size of the row, or the total size of all rows of a batch.
+     * @return Number of reserved pages to be passed to {@link FreeList#insertDataRow} and released via
+     *      {@link #releaseInRegion(DataRegion, long)}, or {@code 0} if the reservation is not engaged for this region
+     *      (persistent data region or disabled page eviction).
+     * @throws IgniteCheckedException If failed.
+     */
+    public long reserveInRegion(DataRegion memPlc, int rowSize) throws IgniteCheckedException {
+        if (memPlc == null || memPlc.config().isPersistenceEnabled())
+            return 0;
+
+        return freeList(memPlc.config().getName()).reserve(rowSize);
+    }
+
+    /**
+     * Releases the unconsumed portion of a reservation made by {@link #reserveInRegion(DataRegion, int)}.
+     *
+     * @param memPlc Data region the reservation was made in ({@code null} is tolerated).
+     * @param pages Number of pages to release.
+     */
+    public void releaseInRegion(DataRegion memPlc, long pages) {
+        if (memPlc != null && pages != 0)
+            freeList(memPlc.config().getName()).releaseReserved(pages);
     }
 
     /**

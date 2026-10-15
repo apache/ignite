@@ -202,30 +202,6 @@ public interface GridCacheEntryEx {
         boolean evictOffheap) throws IgniteCheckedException;
 
     /**
-     * Same as {@link #evictInternal(GridCacheVersion, CacheEntryPredicate[], boolean)}, but when {@code tryLock} is
-     * {@code true} the entry lock is acquired non-blockingly: the entry is skipped (this method returns {@code false})
-     * whenever its lock is contended or already held by the current thread (the self-hold case), instead of blocking.
-     * Used by size-aware page eviction which may run while the current thread already holds other entry locks, to
-     * avoid a lock-ordering deadlock. The default implementation ignores {@code tryLock} and uses the blocking
-     * variant.
-     *
-     * @param obsoleteVer Version for eviction.
-     * @param filter Optional filter.
-     * @param evictOffheap Evict offheap value flag.
-     * @param tryLock {@code true} to acquire the entry lock non-blockingly (skip contended or self-held entries).
-     * @return {@code True} if entry could be evicted.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public default boolean evictInternal(
-        GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter,
-        boolean evictOffheap,
-        boolean tryLock
-    ) throws IgniteCheckedException {
-        return evictInternal(obsoleteVer, filter, evictOffheap);
-    }
-
-    /**
      * This method should be called each time entry is marked obsolete
      * other than by calling {@link #markObsolete(GridCacheVersion)}.
      */
@@ -689,6 +665,10 @@ public interface GridCacheEntryEx {
      * Sets new value if passed in version matches the current version
      * (used for read-through only).
      *
+     * <p>This overload reserves page space internally (before acquiring the entry lock). Use
+     * {@link #versionedValue(CacheObject, GridCacheVersion, GridCacheVersion, IgniteCacheExpiryPolicy,
+     * ReaderArguments, long)} when the caller has already reserved (or the entry is already locked).
+     *
      * @param val New value.
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.
@@ -704,6 +684,29 @@ public interface GridCacheEntryEx {
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
         @Nullable ReaderArguments readerArgs)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Sets new value if passed in version matches the current version (used for read-through only).
+     *
+     * @param val New value.
+     * @param curVer Version to match or {@code null} if match is not required.
+     * @param newVer Version to set.
+     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
+     * @param readerArgs Reader will be added if not null.
+     * @param reserved Number of pages reserved by a prior call to {@code reserveEntrySpace} (before acquiring the
+     *     entry lock), or {@code 0} if no reservation was made.
+     * @return Current version and value.
+     * @throws IgniteCheckedException If index could not be updated.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public EntryGetResult versionedValue(
+        CacheObject val,
+        @Nullable GridCacheVersion curVer,
+        @Nullable GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
+        @Nullable ReaderArguments readerArgs,
+        long reserved
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Checks if the candidate is either owner or pending.

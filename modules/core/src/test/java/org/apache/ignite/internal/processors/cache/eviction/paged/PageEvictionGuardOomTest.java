@@ -44,8 +44,8 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
     }
 
     /**
-     * Filling the region with locked entries and then writing a row that needs more free pages than remain must fail
-     * with OOM (bounded time), not hang: eviction cannot free any page because every candidate entry is locked.
+     * With every candidate entry locked, eviction cannot free any page, so a row needing more free pages than remain
+     * must fail with OOM (bounded time), not hang.
      *
      * @throws Exception If failed.
      */
@@ -55,7 +55,7 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, 0, true);
 
-        // Fill to ~85% of total pages, below the 0.9 eviction threshold. Each entry is ~one page.
+        // Fill to ~85% of total pages (below the 0.9 threshold), ~1 page per entry.
         int fillEntries = (int)(totalPages(ignite) * 0.85);
 
         byte[] fillVal = new byte[pageSize(ignite) - 200];
@@ -72,7 +72,7 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
 
         CountDownLatch release = new CountDownLatch(1);
 
-        // Hold entry locks on every resident key from a background thread so that eviction has no evictable page.
+        // Hold entry locks on every resident key from a background thread so eviction has no evictable page.
         IgniteInternalFuture<?> lockerFut = GridTestUtils.runAsync(() -> {
             Lock lock = cache.lockAll(keys);
 
@@ -91,7 +91,7 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
         try {
             assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
 
-            // Large row that needs more free pages than remain — eviction cannot free any page (all locked) → OOM.
+            // All pages locked → eviction cannot free anything → OOM.
             GridTestUtils.assertThrowsWithCause(
                 () -> cache.put(fillEntries + 1, new byte[4 * 1024 * 1024]),
                 IgniteOutOfMemoryException.class

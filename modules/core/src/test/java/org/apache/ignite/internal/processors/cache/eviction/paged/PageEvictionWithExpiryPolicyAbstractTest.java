@@ -41,10 +41,8 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
     }
 
     /**
-     * Concurrent page eviction and TTL cleanup on the same data region must not deadlock.
-     * Multiple threads insert large records into a plain cache (triggering eviction) while page-sized
-     * entries in a separate TTL cache (sharing the same data region) expire and are cleaned up
-     * by the eager-TTL background worker, freeing real pages that the eviction machinery may race with.
+     * Concurrent page eviction and TTL cleanup on the same data region must not deadlock: large inserts trigger
+     * eviction while page-sized TTL entries expire and free real pages concurrently.
      *
      * @throws Exception If failed.
      */
@@ -62,7 +60,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         assertFalse("Eviction must not have started during pre-fill", isEvictionsStarted(ignite));
 
-        // Page-sized TTL entries so their cleanup frees real pages concurrently with eviction.
+        // Page-sized TTL entries: their cleanup frees real pages concurrently with eviction.
         int ttlEntries = 100;
         byte[] ttlVal = new byte[pageSize(ignite) - 200];
 
@@ -102,8 +100,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
     }
 
     /**
-     * After short-TTL entries expire and free their pages, putting the same amount of data to a non-expiring cache
-     * must succeed, and the new data must be readable.
+     * After short-TTL entries expire and free their pages, putting the same data to a non-expiring cache must succeed.
      *
      * @throws Exception If failed.
      */
@@ -114,12 +111,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache");
         IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL, false);
 
-        int smallEntries = (int)(totalPages(ignite) * 0.80);
-
-        byte[] small = new byte[pageSize(ignite) - 200];
-
-        for (int i = 0; i < smallEntries; i++)
-            plainCache.put(i, small);
+        int smallEntries = fillRegion(ignite, plainCache, 0.80);
 
         assertFalse("Eviction must not start during pre-fill", isEvictionsStarted(ignite));
 

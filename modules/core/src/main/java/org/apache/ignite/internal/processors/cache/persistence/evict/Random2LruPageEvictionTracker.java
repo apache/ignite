@@ -123,7 +123,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictDataPage(boolean tryLock) throws IgniteCheckedException {
+    @Override public boolean evictDataPage() throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -161,9 +161,8 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         firstTs = first(trackingData);
 
-                        // The link read above may be stale: a concurrent row deletion nulls the head slot first, and the freed
-                        // head page can be re-used as an intermediate fragment of a new row, so its slot holds a link again
-                        // and the two-hop walk can end on a link. This is a legal state: skip and resample.
+                        // The link read above may be stale: a concurrently deleted row frees the head page, which can be
+                        // re-used as an intermediate fragment holding a link again. Legal state: skip and resample.
                         if (firstTs < 0) {
                             sampleSpinCnt++;
 
@@ -204,7 +203,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 }
             }
 
-            if (evictDataPage(pageIdx(lruTrackingIdx), tryLock))
+            if (evictDataPage(pageIdx(lruTrackingIdx)))
                 return true;
 
             evictAttemptsCnt++;

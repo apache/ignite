@@ -59,6 +59,16 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /** Default policy name. */
     private static final String DEFAULT_POLICY_NAME = "dfltPlc";
 
+    /** @return Deterministic per-key value content. */
+    public static byte[] valueFor(int key, int size) {
+        byte[] val = new byte[size];
+
+        for (int i = 0; i < size; i++)
+            val[i] = (byte)(key * 31 + i);
+
+        return val;
+    }
+
     /**
      * @param mode Eviction mode.
      * @param configuration Configuration.
@@ -139,20 +149,14 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         return cacheConfiguration;
     }
 
-    /**
-     * @param ignite Ignite node.
-     * @param cacheName Cache name.
-     * @return Cache with a small partition count.
-     */
+    /** @param cacheName Cache name. */
     protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName) {
         return createCache(ignite, cacheName, 0, false);
     }
 
     /**
-     * @param ignite Ignite node.
-     * @param cacheName Cache name.
      * @param ttl TTL in milliseconds ({@code 0} for no expiry).
-     * @return Cache with a small partition count and, if {@code ttl > 0}, eager TTL expiry.
+     * @return Cache with eager TTL expiry if {@code ttl > 0}.
      */
     protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName, long ttl, boolean transactional) {
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(cacheName)
@@ -190,5 +194,27 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /** @return {@code true} if page eviction has started in the default data region. */
     protected static boolean isEvictionsStarted(IgniteEx ignite) throws IgniteCheckedException {
         return defaultRegion(ignite).metrics().isEvictionsStarted();
+    }
+
+    /**
+     * Pre-fills the cache with page-sized entries until the loaded page count reaches {@code fraction} of the total
+     * pages in the default data region. Entries are written with zero-filled {@code pageSize - 200} byte values at
+     * consecutive keys starting from {@code 0}.
+     *
+     * @param ignite Node.
+     * @param cache Cache.
+     * @param fraction Target fraction of total pages to load (e.g. {@code 0.85}).
+     * @return Number of entries written.
+     * @throws Exception If failed.
+     */
+    protected static int fillRegion(IgniteEx ignite, IgniteCache<Integer, Object> cache, double fraction) throws Exception {
+        int entries = (int)(totalPages(ignite) * fraction);
+
+        byte[] small = new byte[pageSize(ignite) - 200];
+
+        for (int i = 0; i < entries; i++)
+            cache.put(i, small);
+
+        return entries;
     }
 }

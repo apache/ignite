@@ -24,10 +24,15 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
-/**
- */
+/** */
 public interface FreeList<T extends Storable> {
     /**
+     * Inserts a data page by page. When the caller reserved space via {@link #reserve(int)} before acquiring the
+     * entry lock, the whole reservation is released by the caller via {@link #releaseReserved(long)} once the
+     * insert completes (normally or not): pages taken here are not individually accounted against it, so an
+     * exception in the middle of the insert cannot drift the reservation counter. Does not run eviction or acquire
+     * space.
+     *
      * @param row Row.
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
@@ -58,16 +63,37 @@ public interface FreeList<T extends Storable> {
     public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
-     * Ensures the data region backing this free list can accommodate a row of the given size.
-     *
-     * @param rowSize Size of the row to be inserted.
-     * @throws IgniteOutOfMemoryException If the row cannot be accommodated even after eviction.
-     * @throws IgniteCheckedException If failed to evict data pages.
-     */
-    public void ensureFreeSpace(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException;
-
-    /**
      * @param log Logger.
      */
     public void dumpStatistics(IgniteLogger log);
+
+    /**
+     * Reserves pages for a row of the given size before the entry lock is acquired. Runs blocking eviction when
+     * necessary (the caller must not hold any entry or page locks).
+     *
+     * @param rowSize Size of the row to be inserted.
+     * @return Number of reserved pages to be released via {@link #releaseReserved(long)} once the row insert
+     * completes, or {@code 0} if the reservation is not engaged for this free list (persistent
+     * data region or disabled page eviction).
+     * @throws IgniteOutOfMemoryException If the row cannot fit into the region, or eviction makes no progress.
+     * @throws IgniteCheckedException If failed to evict data pages.
+     */
+    public long reserve(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException;
+
+    /**
+     * Releases the unconsumed portion of a reservation made by {@link #reserve(int)}.
+     *
+     * @param pages Number of pages to release (must not be negative).
+     */
+    public void releaseReserved(long pages);
+
+    /**
+     * Early out-of-memory check for an in-memory data region with disabled page eviction: verifies that the region
+     * still has room for a row of the given size with a safety margin for free-list bookkeeping pages. No-op for
+     * persistent regions or regions with eviction enabled.
+     *
+     * @param rowSize Row size in bytes.
+     * @throws IgniteOutOfMemoryException If the region is near exhaustion.
+     */
+    public void checkFitsForInsert(int rowSize) throws IgniteOutOfMemoryException;
 }

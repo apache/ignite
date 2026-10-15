@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
@@ -90,7 +91,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -161,6 +165,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** Deferred update response timeout. */
     private static final int DEFERRED_UPDATE_RESPONSE_TIMEOUT =
         Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT, DFLT_ATOMIC_DEFERRED_ACK_TIMEOUT);
+
+    /**
+     * Upper bound of a single batch reservation in bytes: caps the sum of row sizes passed to
+     * {@code FreeList.reserve} to keep its page arithmetic within {@code int}. Batches above the cap are silently
+     * under-reserved (they are pathological — default per-request size limits are far below it).
+     */
+    private static final int MAX_RESERVE_BATCH_BYTES = 1_000_000_000;
 
     /** */
     private final ThreadLocal<Map<UUID, GridDhtAtomicDeferredUpdateResponse>> defRes =
@@ -1806,8 +1817,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.shared().database().checkpointReadLock();
 
+        long batchReserved = 0;
+
         try {
             ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
+
+            batchReserved = reserveBatchSpace(req);
 
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -1949,6 +1964,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
         finally {
+            releaseBatchSpace(batchReserved);
+
             ctx.shared().database().checkpointReadUnlock();
         }
 
@@ -2489,7 +2506,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         try {
                             GridCacheVersion ver = entry.version();
 
-                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null, null);
+                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null, null, 0L);
                         }
                         catch (GridCacheEntryRemovedException e) {
                             assert false : "Entry should not get obsolete while holding lock [entry=" + entry +
@@ -2976,6 +2993,62 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             res.addFailedKeys(failed, storeErr.getCause());
         }
+    }
+
+    /**
+     * Reserves free-list pages for the <b>total</b> size of all rows in the batch: size-aware admission control for
+     * the primary atomic path, which acquires entry locks via {@link #lockEntries} before {@code innerUpdate} and so
+     * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} guarantees every row of a
+     * batch with known value sizes can be inserted without an out-of-memory in {@code FreeList.insertDataRow}.
+     *
+     * <p>Best-effort only: {@code TRANSFORM} rows reserve the key sizes (processor results are unknown), and batches
+     * above {@link #MAX_RESERVE_BATCH_BYTES} are reserved for the capped size.
+     *
+     * @param req Update request.
+     * @return Reserved pages to release via {@link #releaseBatchSpace}, or {@code 0} if reservation is not engaged.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long reserveBatchSpace(GridNearAtomicAbstractUpdateRequest req) throws IgniteCheckedException {
+        DataRegion dataRegion = ctx.dataRegion();
+
+        if (dataRegion == null || dataRegion.config().isPersistenceEnabled())
+            return 0;
+
+        CacheObjectValueContext coctx = ctx.cacheObjectContext();
+
+        int cacheId = ctx.group().storeCacheIdInDataPage() ? ctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+        long sumRowSize = 0;
+
+        for (int i = 0; i < req.size(); i++) {
+            KeyCacheObject key = req.key(i);
+
+            CacheObject val = req.writeValue(i);
+
+            if (val == null && req.operation() == GridCacheOperation.UPDATE)
+                val = req.value(i);
+
+            // CacheVersionIO.SIZE_V2 is the maximum of both version protocols (V1 is smaller), so this is an upper
+            // bound: the actual rows can not be larger than estimated.
+            sumRowSize += RowStore.rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, cacheId);
+        }
+
+        if (sumRowSize == 0)
+            return 0;
+
+        int reserveSize = sumRowSize > MAX_RESERVE_BATCH_BYTES ? MAX_RESERVE_BATCH_BYTES : (int)sumRowSize;
+
+        return ctx.shared().database().reserveInRegion(dataRegion, reserveSize);
+    }
+
+    /**
+     * Releases the batch-level reservation made by {@link #reserveBatchSpace}.
+     *
+     * @param reserved Reserved pages.
+     */
+    private void releaseBatchSpace(long reserved) {
+        if (reserved != 0)
+            ctx.shared().database().releaseInRegion(ctx.dataRegion(), reserved);
     }
 
     /**

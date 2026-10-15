@@ -50,8 +50,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     }
 
     /**
-     * Regression test: ordinary small records that keep the region below the eviction threshold must not trigger page
-     * eviction at all (eviction is not started, eviction rate stays zero).
+     * Small records below the eviction threshold must not trigger page eviction.
      *
      * @throws Exception If failed.
      */
@@ -68,7 +67,6 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cfg);
 
-        // A small number of records far below the eviction threshold and empty-pages pool pressure.
         for (int i = 1; i <= 500; i++)
             cache.put(i, new TestObject(PAGE_SIZE / 6));
 

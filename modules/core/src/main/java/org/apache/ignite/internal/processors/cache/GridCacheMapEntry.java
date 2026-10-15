@@ -55,9 +55,10 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -903,8 +904,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean touch = false;
 
+        long reserved;
+
         try {
-            ensureFreeSpace();
+            reserved = reserveEntrySpace(rowSize(ret, ver));
 
             lockEntry();
 
@@ -950,6 +953,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             finally {
                 unlockEntry();
+
+                releaseReserved(reserved);
             }
 
             touch = true;
@@ -1006,7 +1011,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         long updateCntr0;
 
-        ensureFreeSpace();
+        long reserved = reserveEntrySpace(rowSize(val, ver));
 
         lockListenerReadLock();
         lockEntry();
@@ -1159,6 +1164,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         finally {
             unlockEntry();
             unlockListenerReadLock();
+
+            releaseReserved(reserved);
         }
 
         onUpdateFinished(updateCntr0);
@@ -1463,8 +1470,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         AtomicCacheUpdateClosure c;
 
+        long reserved = 0;
+
         if (!primary && !isNear())
-            ensureFreeSpace();
+            reserved = reserveEntrySpace(rowSize(
+                op == GridCacheOperation.UPDATE && writeObj instanceof CacheObject ? (CacheObject)writeObj : null,
+                newVer));
 
         lockListenerReadLock();
         lockEntry();
@@ -1724,6 +1735,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         finally {
             unlockEntry();
             unlockListenerReadLock();
+
+            releaseReserved(reserved);
         }
 
         onUpdateFinished(c.updateRes.updateCounter());
@@ -2473,7 +2486,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !primary || !(preload || fromStore);
 
-        ensureFreeSpace();
+        long reserved = reserveEntrySpace(rowSize(val, ver));
 
         boolean deferred = false;
         boolean obsolete = false;
@@ -2615,6 +2628,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             unlockEntry();
             unlockListenerReadLock();
 
+            releaseReserved(reserved);
+
             // It is necessary to execute these callbacks outside of lock to avoid deadlocks.
 
             if (obsolete) {
@@ -2705,11 +2720,26 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public EntryGetResult versionedValue(CacheObject val,
+    @Override public EntryGetResult versionedValue(
+        CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
         @Nullable ReaderArguments readerArgs
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        long reserved = reserveEntrySpace(rowSize(val, newVer != null ? newVer : ver));
+
+        return versionedValue(val, curVer, newVer, loadExpiryPlc, readerArgs, reserved);
+    }
+
+    /** {@inheritDoc} */
+    @Override public EntryGetResult versionedValue(
+        CacheObject val,
+        GridCacheVersion curVer,
+        GridCacheVersion newVer,
+        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
+        @Nullable ReaderArguments readerArgs,
+        long reserved
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         lockEntry();
 
@@ -2765,6 +2795,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             unlockEntry();
+
+            releaseReserved(reserved);
         }
     }
 
@@ -3619,16 +3651,49 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Evicts necessary number of data pages if per-page eviction is configured in current {@link DataRegion}.
+     * Reserves pages for the row about to be inserted. Must be called before {@link #lockEntry()} — eviction may
+     * block on other entries' locks.
+     *
+     * @param rowSize Size of the row to be inserted.
+     * @return Number of reserved pages, or {@code 0} if reservation is not engaged.
+     * @throws IgniteCheckedException If failed.
      */
-    private void ensureFreeSpace() throws IgniteCheckedException {
-        // Deadlock alert: evicting a data page removes (and locks) all entries on the page one by one, so this must
-        // only run while NOT holding this entry's lock (all call sites run before lockEntry()). The size-aware path
-        // (RowStore.addRow -> FreeList.ensureFreeSpace) runs under the lock and instead uses the non-blocking
-        // tryLockEntry(0) inside evictInternal.
+    private long reserveEntrySpace(int rowSize) throws IgniteCheckedException {
+        // Deadlock alert: evicting a data page locks all entries on it.
         assert !lock.isHeldByCurrentThread();
 
-        cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
+        // Near entries keep values on heap and never write rows to the free list (storeValue is a no-op for them).
+        if (isNear())
+            return 0;
+
+        return cctx.shared().database().reserveInRegion(cctx.dataRegion(), rowSize);
+    }
+
+    /**
+     * Releases a reservation made by {@link #reserveEntrySpace(int)}. The whole claim is released as a unit:
+     * the insert does not consume the reservation page by page, so the release is exact on any outcome
+     * (including an exception in the middle of the row insert).
+     *
+     * @param reserved Number of reserved pages.
+     */
+    private void releaseReserved(long reserved) {
+        if (reserved > 0)
+            cctx.shared().database().releaseInRegion(cctx.dataRegion(), reserved);
+    }
+
+    /**
+     * Computes the data row size for the given value and version (see {@link RowStore#rowSize}).
+     * Used to reserve pages before the entry lock is acquired.
+     *
+     * @param val Value (maybe {@code null} if unknown — under-reserves safely).
+     * @param ver Version.
+     * @return Estimated row size in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int rowSize(@Nullable CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+        int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+        return RowStore.rowSize(key, val, CacheVersionIO.size(ver, false), cctx.cacheObjectContext(), cacheId);
     }
 
     /**
@@ -3651,32 +3716,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public boolean evictInternal(
         GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
-        boolean evictOffheap
-    ) throws IgniteCheckedException {
-        return evictInternal(obsoleteVer, filter, evictOffheap, false);
-    }
+        boolean evictOffheap)
+        throws IgniteCheckedException {
 
-    /** {@inheritDoc} */
-    @Override public boolean evictInternal(
-        GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter,
-        boolean evictOffheap,
-        boolean tryLock
-    ) throws IgniteCheckedException {
         boolean marked = false;
 
         try {
             if (F.isEmptyOrNulls(filter)) {
-                // With tryLock=true the lock is taken non-blockingly and a contended entry is skipped
-                // (returns false) to avoid a lock-ordering deadlock; the tracker then picks another page.
-                // Reentry is forbidden here to prevent self-eviction: if the current thread already holds
-                // the entry lock (e.g. during a row insert that triggers size-aware eviction), evicting
-                // the entry from under itself would corrupt in-flight operations.
-                if (tryLock && lockedByCurrentThread())
-                    return false;
-
-                if (!lockEntry(tryLock))
-                    return false;
+                lockEntry();
 
                 try {
                     if (evictionDisabled()) {
@@ -3710,15 +3757,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else {
                 // For optimistic check.
-                // Reentry is forbidden when tryLock=true to prevent self-eviction (see the comment above).
-                if (tryLock && lockedByCurrentThread())
-                    return false;
-
                 while (true) {
                     GridCacheVersion v;
 
-                    if (!lockEntry(tryLock))
-                        return false;
+                    lockEntry();
 
                     try {
                         v = ver;
@@ -3730,8 +3772,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!cctx.isAll(/*version needed for sync evicts*/this, filter))
                         return false;
 
-                    if (!lockEntry(tryLock))
-                        return false;
+                    lockEntry();
 
                     try {
                         if (evictionDisabled()) {
@@ -4171,23 +4212,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public void lockEntry() {
         lock.lock();
-    }
-
-    /**
-     * Acquires the entry lock either blocking ({@code tryLock == false}) or non-blockingly with an immediate
-     * {@code tryLock(0)} ({@code tryLock == true}). Used by {@link #evictInternal} to let size-aware
-     * eviction skip contended entries instead of blocking, avoiding a lock-ordering deadlock.
-     *
-     * @param tryLock {@code true} to acquire the lock non-blockingly.
-     * @return {@code true} if the lock was acquired (always {@code true} when {@code tryLock == false}).
-     */
-    private boolean lockEntry(boolean tryLock) {
-        if (tryLock)
-            return tryLockEntry(0);
-
-        lockEntry();
-
-        return true;
     }
 
     /** {@inheritDoc} */

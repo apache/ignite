@@ -65,10 +65,10 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean evictDataPage(boolean tryLock) throws IgniteCheckedException {
+    @Override public synchronized boolean evictDataPage() throws IgniteCheckedException {
         Integer pageIdx = pageUsageList.pollFirst();
 
-        return pageIdx != null && evictDataPage(pageIdx, tryLock);
+        return pageIdx != null && evictDataPage(pageIdx);
     }
 
     /** {@inheritDoc} */
