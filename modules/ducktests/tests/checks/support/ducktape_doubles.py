@@ -14,13 +14,15 @@
 # limitations under the License.
 
 """
-Stand-ins for the ducktape objects a test is handed - a logger, nodes, services and the
-registry they are collected in - for checks of framework code that only reads them.
+Stand-ins for the ducktape objects a test is handed - a logger, nodes, services, the
+registry they are collected in and the test context - for checks of framework code that only
+reads them.
 
 Each double is as poor as the real thing is at the point of use, so that a check fails on
 code reaching for more than a test actually offers it.
 """
 
+from itertools import count
 from types import SimpleNamespace
 
 from ignitetest.services.utils.path import IgnitePathAware
@@ -49,8 +51,31 @@ def fake_nodes(*hostnames):
     """
     :return: Nodes carrying the account attributes that ducktape's do.
     """
-    return [SimpleNamespace(account=SimpleNamespace(hostname=host, externally_routable_ip=host))
+    return [SimpleNamespace(account=SimpleNamespace(hostname=host, externally_routable_ip=host, _logger=None))
             for host in hostnames]
+
+
+class FakeCluster:
+    """
+    Hands out nodes named ducker01, ducker02, ... in the order services ask for them.
+    """
+    def __init__(self):
+        self._hosts = count(1)
+
+    def alloc(self, cluster_spec):
+        """Allocates as many nodes as the spec asks for."""
+        return fake_nodes(*(f"ducker{next(self._hosts):02}" for _ in range(cluster_spec.size())))
+
+
+class FakeTestContext:
+    """
+    Stands in for ducktape's TestContext: services built with it run their own constructors.
+    """
+    def __init__(self):
+        self.cluster = FakeCluster()
+        self.services = []
+        self.globals = {}
+        self.logger = FakeLogger()
 
 
 class FakeService:

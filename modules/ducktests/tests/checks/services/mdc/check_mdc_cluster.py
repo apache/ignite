@@ -16,49 +16,22 @@
 """
 Checks the MDC fixture without a cluster.
 """
-import logging
-from itertools import combinations, count
+from itertools import combinations
 from types import SimpleNamespace
 
 import pytest
 
-from checks.support.ducktape_doubles import fake_nodes
-from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.mdc import mdc_cluster
+from checks.support.ducktape_doubles import FakeLogger, FakeTestContext
 from ignitetest.services.mdc.mdc_cluster import MdcCluster, cross_dc_network, DCS_3, DC_1, DC_2
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 
-_HOSTS = count(1)
-
-
-class FakeIgniteService(IgniteService):
-    """
-    A server service on nodes of its own, built without ducktape.
-    """
-    def __init__(self, context, config, num_nodes=1, **kwargs):
-        self.config = config
-        self.nodes = fake_nodes(*(f"ducker{next(_HOSTS)}" for _ in range(num_nodes)))
-
-
-class FakeAppService(IgniteApplicationService):
-    """
-    An application service on a node of its own, built without ducktape.
-    """
-    def __init__(self, context, config, **kwargs):
-        self.config = config
-        self.nodes = fake_nodes(f"ducker{next(_HOSTS)}")
-
 
 @pytest.fixture
-def new_mdc(monkeypatch):
+def new_mdc():
     """
-    :return: A factory of MdcCluster over fake services.
+    :return: A factory of MdcCluster over fake nodes.
     """
-    monkeypatch.setattr(mdc_cluster, "IgniteService", FakeIgniteService)
-    monkeypatch.setattr(mdc_cluster, "IgniteApplicationService", FakeAppService)
-
-    test = SimpleNamespace(test_context=SimpleNamespace(globals={}), logger=logging.getLogger(__name__))
+    test = SimpleNamespace(test_context=FakeTestContext(), logger=FakeLogger())
 
     return lambda **kwargs: MdcCluster(test, "dev", **kwargs)
 
