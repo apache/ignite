@@ -22,12 +22,16 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Thin-client load for the disk-full tests. Puts values of {@code valueSize} bytes under increasing keys, so the
- * partitions and the WAL keep growing, and every {@code binaryTypeEvery}-th put stores a value of a new binary type,
- * so the server keeps writing binary metadata. A failed put is counted and retried after a pause, so the load
- * outlives a server node that stops. Once a second it records its counters as {@code progress-><puts> <errors><-}.
+ * Puts values under growing keys, with a new binary type every 1000 puts, so the partitions, the WAL and the binary
+ * metadata keep growing. Retries failed puts and records {@code progress-><puts> <errors><-} once a second.
  */
 public class DiskFullLoadApplication extends IgniteAwareApplication {
+    /** Value size, in bytes. */
+    private static final int VALUE_SIZE = 1024;
+
+    /** Puts per new binary type. */
+    private static final int BINARY_TYPE_EVERY = 1000;
+
     /** Successful puts after which the application reports it is initialized. */
     private static final int WARM_UP_PUTS = 1000;
 
@@ -36,11 +40,9 @@ public class DiskFullLoadApplication extends IgniteAwareApplication {
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
-        String cacheName = jsonNode.get("cacheName").asText();
-        int binaryTypeEvery = jsonNode.get("binaryTypeEvery").asInt();
-        byte[] val = new byte[jsonNode.get("valueSize").asInt()];
+        ClientCache<Long, Object> cache = client.getOrCreateCache(jsonNode.get("cacheName").asText());
 
-        ClientCache<Long, Object> cache = client.getOrCreateCache(cacheName);
+        byte[] val = new byte[VALUE_SIZE];
 
         long key = 0;
         long puts = 0;
@@ -49,7 +51,7 @@ public class DiskFullLoadApplication extends IgniteAwareApplication {
 
         while (active()) {
             try {
-                if (key % binaryTypeEvery == 0)
+                if (key % BINARY_TYPE_EVERY == 0)
                     cache.put(key, client.binary().builder("DiskFullType" + key).setField("val", val).build());
                 else
                     cache.put(key, val);
