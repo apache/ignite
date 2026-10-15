@@ -44,10 +44,9 @@ public interface FreeList<T extends Storable> {
      * @param oldRow Old row data.
      * @param newRow New row data.
      * @param statHolder Statistics holder to track IO operations.
-     * @return {@code True} if was able to update the row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateDataRow(
+    public void updateDataRow(
         T oldRow,
         T newRow,
         IoStatisticsHolder statHolder

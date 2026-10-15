@@ -142,10 +142,9 @@ public class RowStore {
     /**
      * @param oldRow Old row data.
      * @param newRow New row data.
-     * @return {@code True} if was able to update row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateRow(CacheDataRow oldRow, CacheDataRow newRow, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void updateRow(CacheDataRow oldRow, CacheDataRow newRow, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
         GridQueryRowCacheCleaner rowCacheCleaner0 = rowCacheCleaner.get();
@@ -153,7 +152,7 @@ public class RowStore {
         if (rowCacheCleaner0 != null)
             rowCacheCleaner0.remove(oldRow.link());
 
-        return freeList.updateDataRow(oldRow, newRow, statHolder);
+        freeList.updateDataRow(oldRow, newRow, statHolder);
     }
 
     /**

@@ -791,7 +791,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(
+    @Override public void updateDataRow(
         T oldRow,
         T newRow,
         IoStatisticsHolder statHolder
@@ -813,7 +813,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 assert updated != null; // Can't fail here.
 
                 if (updated)
-                    return true;
+                    return;
 
                 // Fallback if row is fragmented.
             }
@@ -828,8 +828,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             assert updateRes.nextLink == 0 :
                 "Unexpected next page link [nextLink=" + Long.toHexString(updateRes.nextLink) + ']';
-
-            return true;
         }
         catch (AssertionError e) {
             throw corruptedFreeListException(e);

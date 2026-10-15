@@ -1578,8 +1578,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
-            if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow, dataRow, grp.statisticsHolderData()))
+            if (canUpdateOldRow(cctx, oldRow, dataRow)) {
+                rowStore.updateRow(oldRow, dataRow, grp.statisticsHolderData());
+
                 dataRow.link(oldRow.link());
+            }
             else {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
