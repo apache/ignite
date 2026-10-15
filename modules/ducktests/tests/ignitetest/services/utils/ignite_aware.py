@@ -208,9 +208,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         Mounts the volumes registered by mount_tmpfs, unless they are still mounted from the node's previous start.
         """
         for path, size_mb in self.tmpfs_volumes.items():
-            node.account.ssh(f"mountpoint -q {path} || (mkdir -p {path} && sudo mount -t tmpfs "
-                             f"-o size={size_mb}m,uid=$(id -u),gid=$(id -g) {self.TMPFS_SOURCE} {path})",
-                             allow_fail=False)
+            node.account.ssh(f"findmnt -rn -S {self.TMPFS_SOURCE} -M {path} > /dev/null || (mkdir -p {path} && "
+                             f"sudo mount -t tmpfs -o size={size_mb}m,uid=$(id -u),gid=$(id -g) {self.TMPFS_SOURCE} "
+                             f"{path})", allow_fail=False)
 
     def __unmount_tmpfs_volumes(self, node):
         """
