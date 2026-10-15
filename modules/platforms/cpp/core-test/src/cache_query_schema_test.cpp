@@ -275,10 +275,10 @@ BOOST_AUTO_TEST_CASE(TestBasicOpsDiffSchemas)
     Sql("SELECT * FROM " + Q_SCHEMA_NAME_3 + '.' + TABLE_NAME);
     Sql("SELECT * FROM " + SCHEMA_NAME_4 + '.' + TABLE_NAME);
 
-    Sql("SELECT * FROM " + SCHEMA_NAME_1 + '.' + TABLE_NAME + " t1"
-      + " JOIN " + SCHEMA_NAME_2 + '.' + TABLE_NAME + " t2 ON t1.s1_key = t2.s2_key"
-      + " JOIN " + Q_SCHEMA_NAME_3 + '.' + TABLE_NAME + " t3 ON t2.s2_key = t3.s3_key"
-      + " JOIN " + SCHEMA_NAME_4 + '.' + TABLE_NAME + " t4 ON t3.s3_key = t4.s4_key");
+    Sql("SELECT * FROM " + SCHEMA_NAME_1 + '.' + TABLE_NAME
+      + " JOIN " + SCHEMA_NAME_2 + '.' + TABLE_NAME
+      + " JOIN " + Q_SCHEMA_NAME_3 + '.' + TABLE_NAME
+      + " JOIN " + SCHEMA_NAME_4 + '.' + TABLE_NAME);
 
     QueryFieldsCursor cursor = Sql("SELECT SCHEMA_NAME, KEY_ALIAS FROM SYS.TABLES ORDER BY SCHEMA_NAME");
 
