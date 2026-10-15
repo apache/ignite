@@ -56,9 +56,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.S
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
-/**
- * Task to get the status of the current snapshot operation in the cluster.
- */
+/** Task to get the statuses of the current snapshot operations in the cluster. */
 @GridInternal
 public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus, SnapshotStatus> {
     /** */
@@ -90,7 +88,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         if (error != null)
             throw new IgniteException("Failed to get the snapshot status.", error);
 
-        assert cmdInitiatorFeatures != null : "Failed to create job: command initiator features isn't set";
+        assert cmdInitiatorFeatures != null : "Command initiator features isn't set";
 
         boolean checkStatusSupport = cmdInitiatorFeatures.features().contains(SNAPSHOT_CHECK_STATUS_FEATURE.id()) &&
             ignite.context().rollingUpgrade().features().isActive(SNAPSHOT_CHECK_STATUS_FEATURE);
@@ -133,7 +131,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                 chkStatuses = U.newHashMap(results.size());
 
             for (SnapshotOperationStatus s0 : checkStatuses) {
-                var prev = chkStatuses.putIfAbsent(s0.name(), s0);
+                SnapshotOperationStatus prev = chkStatuses.putIfAbsent(s0.name(), s0);
 
                 if (prev == null)
                     continue;
@@ -312,7 +310,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
                     );
                 }
 
-                var status = new SnapshotOperationStatus(
+                SnapshotOperationStatus status = new SnapshotOperationStatus(
                     SnapshotOperation.CHECK,
                     MetricUtils.fromFullName(snpCheckMReg.name()).get2(),
                     incIdx,
@@ -359,10 +357,10 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         private final long startTime;
 
         /** Progress of operation on nodes. */
-        private final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
+        protected final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
 
         /** */
-        SnapshotStatus(
+        private SnapshotStatus(
             SnapshotOperation op,
             String name,
             int incIdx,
@@ -426,26 +424,27 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
         CHECK
     }
 
-    /** Snapshot operation status with the support {@link SnapshotOperation#CHECK}. */
+    /** Snapshot operation status with the support {@link SnapshotOperation#CHECK} and statuses of several shapshots checks. */
     public static class SnapshotOperationStatus extends SnapshotStatus {
         private static final long serialVersionUID = 0L;
 
-        /** Nodes' statuses of all snapshot check operations. */
+        /** Nodes' statuses of all snapshot checks operations. */
         private @Nullable List<SnapshotOperationStatus> checkStatuses;
 
         /** */
-        SnapshotOperationStatus(
+        private SnapshotOperationStatus(
             SnapshotOperation op,
             String name,
-            int incIdx, String requestId,
+            int incIdx,
+            String reqId,
             long startTime,
             Map<UUID, T5<Long, Long, Long, Long, Long>> progress
         ) {
-            super(null, name, incIdx, requestId, startTime, progress);
+            super(op, name, incIdx, reqId, startTime, progress);
         }
 
         /** Constructor only for {@link SnapshotOperation#CHECK}. */
-        SnapshotOperationStatus(List<SnapshotOperationStatus> checkStatuses) {
+        private SnapshotOperationStatus(List<SnapshotOperationStatus> checkStatuses) {
             // Holds first check status.
             this(
                 SnapshotOperation.CHECK,

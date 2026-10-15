@@ -66,13 +66,13 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
             return;
         }
 
-        // Status with the support of the sanpshot check operations.
+        // Status with the support of the sanpshot checks operations.
         SnapshotStatusTask.SnapshotOperationStatus s2 = status instanceof SnapshotStatusTask.SnapshotOperationStatus
             ? (SnapshotStatusTask.SnapshotOperationStatus)status
             : null;
 
         // The check operation can be run in parallel for different snapshots.
-        List<SnapshotStatus> multipleOpsView;
+        List<? extends SnapshotStatusTask.SnapshotStatus> multipleOpsView;
 
         if (status.operation() == SnapshotStatusTask.SnapshotOperation.CHECK) {
             assert s2 != null;
@@ -90,8 +90,11 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
         boolean first = true;
 
         for (SnapshotStatus s0 : multipleOpsView) {
-            if (!first)
+            if (!first) {
                 printer.accept(U.nl());
+
+                first = false;
+            }
 
             if (s0.operation() == SnapshotStatusTask.SnapshotOperation.CREATE)
                 printer.accept("Create snapshot operation is in progress.");
@@ -134,8 +137,6 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
                 .collect(Collectors.toList());
 
             SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
-
-            first = false;
         }
     }
 

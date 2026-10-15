@@ -245,7 +245,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         assertTrue(waitForCondition(() -> spi(grid(blockNodeIdx)).hasBlockedMessages(), getTestTimeout()));
 
-        SnapshotStatusTask.SnapshotStatus snpStatus;
+        SnapshotStatusTask.SnapshotOperationStatus snpStatus;
 
         if (clientArg != null) {
             snpStatus = snapshotStatusCli(clientArg);
@@ -290,18 +290,20 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private static SnapshotStatusTask.SnapshotStatus snapshotStatusTask(Ignite grid) throws Exception {
+    private static <T> T snapshotStatusTask(Ignite grid) throws Exception {
         Collection<UUID> nodes = grid.cluster().nodes().stream().map(ClusterNode::id).toList();
 
         VisorTaskArgument<NoArg> vtArg = new VisorTaskArgument<>(nodes, new NoArg(), false);
 
-        return grid.compute().execute(SnapshotStatusTask.class, vtArg).result();
+        return (T)grid.compute().execute(SnapshotStatusTask.class, vtArg).result();
     }
 
     /** */
-    private SnapshotStatusTask.SnapshotStatus snapshotStatusCli(VisorTaskArgument<NoArg> vtArg) throws Exception {
+    private <T> T snapshotStatusCli(VisorTaskArgument<NoArg> vtArg) throws Exception {
+        String taskName = SnapshotStatusTask.class.getName();
+
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-            VisorTaskResult<SnapshotStatusTask.SnapshotStatus> vtRes = cli.compute().execute(SnapshotStatusTask.class.getName(), vtArg);
+            VisorTaskResult<T> vtRes = cli.compute().execute(taskName, vtArg);
 
             return vtRes.result();
         }
