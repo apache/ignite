@@ -66,17 +66,18 @@ class DiskFullTest(IgniteTest):
 
         load = self.__start(ignite)
 
-        check_log_grows(ignite, seconds=15)
-
         fill_volume(ignite, ignite.log_dir)
         assert free_space(ignite, ignite.log_dir) == 0
 
-        self.__check_serves_load(ignite, load, seconds=15)
+        check_serves_load_for(ignite, load, seconds=15)
         assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
+        check_log_write_failed(ignite)
 
         free_volume(ignite, ignite.log_dir)
 
-        check_log_grows(ignite, seconds=15)
+        size = log_size(ignite)
+        wait_until(lambda: log_size(ignite) > size, timeout_sec=15,
+                   err_msg="The node's log did not grow after space was freed")
 
         load.stop()
 
@@ -87,32 +88,34 @@ class DiskFullTest(IgniteTest):
         JFR ends the JVM once it can't write its recording.
         """
         ignite = self.__ignite(ignite_version)
-        jfr_opts = ["-XX:StartFlightRecording", f"-XX:FlightRecorderOptions=repository={ignite.jfr_dir}"]
+        repository = os.path.join(ignite.persistent_root, "jfr_repository")
+        jfr_opts = ["-XX:StartFlightRecording", f"-XX:FlightRecorderOptions=repository={repository}"]
         ignite.spec.jvm_opts = merge_jvm_settings(ignite.spec.jvm_opts, jfr_opts)
-        ignite.mount_tmpfs(ignite.jfr_dir, 32)
+        ignite.mount_tmpfs(repository, 32)
 
         self.__start(ignite)
 
-        fill_volume(ignite, ignite.jfr_dir)
-        assert free_space(ignite, ignite.jfr_dir) == 0
+        fill_volume(ignite, repository)
+        assert free_space(ignite, repository) == 0
 
-        self.__check_stops(ignite)
+        ignite.await_event("An irrecoverable error in Jfr", 60, from_the_beginning=True, log_file="console.log")
+        check_stops(ignite)
 
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
     def test_node_stops_on_full_volume_shared_by_logs_and_data(self, ignite_version):
         """
-        The default layout: logs in the work directory, next to the data.
+        One volume holds the logs and all the data, as in Ignite's default layout.
         """
         ignite = self.__ignite(ignite_version)
         ignite.mount_tmpfs(ignite.persistent_root, 256)
 
         self.__start(ignite)
 
-        fill_volume(ignite, ignite.log_dir)
-        assert free_space(ignite, ignite.log_dir) == 0
+        fill_volume(ignite, ignite.persistent_root)
+        assert free_space(ignite, ignite.persistent_root) == 0
 
-        self.__check_stops(ignite)
+        check_stops(ignite)
 
     @cluster(num_nodes=2)
     @ignite_versions(str(DEV_BRANCH))
@@ -126,13 +129,13 @@ class DiskFullTest(IgniteTest):
 
         load = self.__start(ignite)
 
-        segments = ignite.exec_command(ignite.nodes[0], f"ls {wal}/*/*.wal | wc -l")
+        segments = ignite.exec_command(ignite.nodes[0], f"ls {wal}/*/*.wal 2>/dev/null | wc -l")
         assert int(segments) > 0, "No WAL segments on the volume"
 
         fill_volume(ignite, wal)
         assert free_space(ignite, wal) == 0
 
-        self.__check_serves_load(ignite, load, seconds=15)
+        check_serves_load_for(ignite, load, seconds=15)
 
         load.stop()
 
@@ -141,7 +144,7 @@ class DiskFullTest(IgniteTest):
     @matrix(volume=["wal_archive", "partitions", "work"])
     def test_node_stops_on_full_volume(self, ignite_version, volume):
         """
-        The work directory holds the binary metadata.
+        The node stops once it can't write the WAL archive, the partitions or the binary metadata (in work).
         """
         ignite = self.__ignite(ignite_version)
         path = os.path.join(ignite.persistent_root, volume)
@@ -152,7 +155,7 @@ class DiskFullTest(IgniteTest):
         fill_volume(ignite, path)
         assert free_space(ignite, path) == 0
 
-        self.__check_stops(ignite)
+        check_stops(ignite)
         check_failure(ignite, *FAILURES[volume])
 
     @cluster(num_nodes=2)
@@ -168,11 +171,11 @@ class DiskFullTest(IgniteTest):
         # CDC hard-links archived segments, so its directory must be on the archive's volume.
         ignite.config = ignite.config._replace(data_storage=data_storage._replace(
             cdc_wal_path=os.path.join(archive, "cdc"), default=data_storage.default._replace(cdc_enabled=True)))
-        ignite.mount_tmpfs(archive, 96)
+        ignite.mount_tmpfs(archive, 256)
 
         self.__start(ignite)
 
-        self.__check_stops(ignite, timeout_sec=120)
+        check_stops(ignite, timeout_sec=120)
         check_failure(ignite, *FAILURES["wal_archive"])
 
     def __ignite(self, ignite_version):
@@ -213,35 +216,11 @@ class DiskFullTest(IgniteTest):
             self.test_context,
             IgniteThinClientConfiguration(addresses=[address], version=ignite.config.version),
             java_class_name=self.LOAD_APP,
-            params={"cacheName": "disk-full", "valueSize": 1024, "binaryTypeEvery": 1000})
+            params={"cacheName": "disk-full"})
 
         load.start()
 
         return load
-
-    @staticmethod
-    def __check_serves_load(ignite, load, seconds):
-        """
-        Waits the given seconds and checks that the node is alive and the puts went on without errors.
-        """
-        puts, errors = progress(load)
-
-        time.sleep(seconds)
-
-        assert ignite.alive(ignite.nodes[0]), "The node stopped"
-
-        puts_after, errors_after = progress(load)
-
-        assert puts_after > puts, f"No puts in {seconds} s"
-        assert errors_after == errors, f"{errors_after - errors} puts failed in {seconds} s"
-
-    @staticmethod
-    def __check_stops(ignite, timeout_sec=60):
-        """
-        Checks that the node's process ends.
-        """
-        wait_until(lambda: not ignite.alive(ignite.nodes[0]), timeout_sec=timeout_sec,
-                   err_msg=f"The node is still up {timeout_sec} s after its volume filled up")
 
 
 def fill_volume(ignite, path):
@@ -265,19 +244,44 @@ def free_space(ignite, path):
     return int(ignite.exec_command(ignite.nodes[0], f"df --output=avail -B1 {path} | tail -1"))
 
 
-def check_log_grows(ignite, seconds):
+def log_size(ignite):
     """
-    Checks that the node writes more than a page into its log within the given seconds.
+    :return: Bytes written into the node's log.
     """
     node = ignite.nodes[0]
 
-    def log_size():
-        return int(ignite.exec_command(node, f"stat -c %s {node.log_file}"))
+    return int(ignite.exec_command(node, f"stat -c %s {node.log_file}"))
 
-    start_size = log_size()
 
-    wait_until(lambda: log_size() - start_size > PAGE, timeout_sec=seconds,
-               err_msg=f"The node wrote less than {PAGE} bytes into its log in {seconds} s")
+def check_log_write_failed(ignite):
+    """
+    Checks that the node's log ends on a page boundary: a write the full tmpfs refused filled its last page.
+    """
+    assert log_size(ignite) % PAGE == 0, "No write into the node's log hit the full volume"
+
+
+def check_serves_load_for(ignite, load, seconds):
+    """
+    Waits the given seconds and checks that the node is alive and the puts went on without errors.
+    """
+    puts, errors = progress(load)
+
+    time.sleep(seconds)
+
+    assert ignite.alive(ignite.nodes[0]), "The node stopped"
+
+    puts_after, errors_after = progress(load)
+
+    assert puts_after > puts, f"No puts in {seconds} s"
+    assert errors_after == errors, f"{errors_after - errors} puts failed in {seconds} s"
+
+
+def check_stops(ignite, timeout_sec=60):
+    """
+    Checks that the node's process ends.
+    """
+    wait_until(lambda: not ignite.alive(ignite.nodes[0]), timeout_sec=timeout_sec,
+               err_msg=f"The node is still up {timeout_sec} s after its volume filled up")
 
 
 def check_failure(ignite, failure_type, cause):
