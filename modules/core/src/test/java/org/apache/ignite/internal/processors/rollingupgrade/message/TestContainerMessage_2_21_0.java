@@ -58,18 +58,27 @@ public class TestContainerMessage_2_21_0 extends TestDiscoveryMessage {
     Map<Integer, TestCoreMessage_2_21_0> compressedMap;
 
     /** */
+    @Compress
     @Order(value = 6, introducedBy = "VER_2_21_0_ID_6_FEATURE")
-    TestCoreMessage_2_21_0 newMsg;
+    TestContainerMessage_2_21_0 compressedContainer;
 
     /** {@inheritDoc} */
     @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
+        fillNestedMessages(featureStatusProvider);
+
+        compressedContainer = new TestContainerMessage_2_21_0();
+
+        compressedContainer.fillNestedMessages(featureStatusProvider);
+    }
+
+    /** */
+    private void fillNestedMessages(Predicate<IgniteFeature> featureStatusProvider) {
         msg = nestedMessage(featureStatusProvider);
         list = List.of(nestedMessage(featureStatusProvider));
         map = Map.of(0, nestedMessage(featureStatusProvider));
         arr = new TestCoreMessage_2_21_0[] {nestedMessage(featureStatusProvider)};
         compressedMsg = nestedMessage(featureStatusProvider);
         compressedMap = Map.of(0, nestedMessage(featureStatusProvider));
-        newMsg = nestedMessage(featureStatusProvider);
     }
 
     /** {@inheritDoc} */

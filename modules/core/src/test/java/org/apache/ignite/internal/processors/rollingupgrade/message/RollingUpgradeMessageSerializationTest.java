@@ -512,7 +512,11 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         for (TestMessage nestedMsg : onNew.nestedMessages())
             assertFields(A, null, null, null, E, F, nestedMsg);
 
-        assertFields(A, null, null, null, E, F, onNew.newMsg);
+        for (TestMessage nestedMsg : onNew.compressedContainer.nestedMessages())
+            assertFields(A, null, null, null, E, F, nestedMsg);
+
+        assertNull(onNew.compressedContainer.compressedContainer);
+        assertNull(onNew.compressedContainer.rawFields());
 
         TestContainerMessage_2_20_0 onOld = (TestContainerMessage_2_20_0)rcvd.get(grid(2).name());
 
