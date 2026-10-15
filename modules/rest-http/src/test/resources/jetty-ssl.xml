@@ -26,8 +26,6 @@
                 <Arg><Ref refid="Server"/></Arg>
                 <Arg>
                     <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-                        <Set name="needClientAuth">true</Set>
-                        <Set name="enableOCSP"><SystemProperty name="IGNITE_TEST_JETTY_OCSP" default="false"/></Set>
                     </New>
                 </Arg>
                 <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>

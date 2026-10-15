@@ -161,7 +161,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         AbstractNetworkConnector connector = getJettyConnector();
 
         if (config().getHttpSslFactory() != null)
-            useHttpSslFactory(connector);
+            addTls(connector);
 
         try {
             host = InetAddress.getByName(connector.getHost());
@@ -196,32 +196,24 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Sets the SSL context of {@code httpSslFactory} on the connector: each new connection gets the certificates in use at that moment.
+     * Puts TLS on the certificates of {@code httpSslFactory} in front of the connector: each new connection gets the certificates in
+     * use at that moment.
      *
      * @param connector Jetty connector.
-     * @throws IgniteCheckedException If the connector has no SSL connection factory, or that factory has settings of its own that
-     *      {@code httpSslFactory} replaces.
+     * @throws IgniteCheckedException If the connector has an SSL connection factory of its own.
      */
-    private void useHttpSslFactory(AbstractNetworkConnector connector) throws IgniteCheckedException {
-        SslConnectionFactory ssl = connector.getConnectionFactory(SslConnectionFactory.class);
-
-        if (ssl == null) {
-            throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory is set, but the Jetty connector has no SSL " +
-                "connection factory [jettyPath=" + config().getJettyPath() + ']');
+    private void addTls(AbstractNetworkConnector connector) throws IgniteCheckedException {
+        if (connector.getConnectionFactory(SslConnectionFactory.class) != null) {
+            throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory sets up TLS for HTTP REST, so the Jetty connector " +
+                "must have no SSL connection factory of its own [jettyPath=" + config().getJettyPath() + ']');
         }
 
-        SslContextFactory.Server jettySsl = ssl.getSslContextFactory();
+        SslContextFactory.Server ssl = new SslContextFactory.Server();
 
-        if (jettySsl.getKeyStorePath() != null || jettySsl.getKeyStore() != null || jettySsl.getTrustStorePath() != null ||
-            jettySsl.getTrustStore() != null || jettySsl.getSslContext() != null || jettySsl.getSslSessionCacheSize() > -1 ||
-            jettySsl.getSslSessionTimeout() > -1 || jettySsl.getCrlPath() != null || jettySsl.isEnableCRLDP() || jettySsl.isEnableOCSP() ||
-            jettySsl.isValidatePeerCerts()) {
-            throw new IgniteCheckedException("With ConnectorConfiguration.httpSslFactory set, the Jetty SSL connection factory " +
-                "must have no key store, trust store, SSL context, SSL session settings or certificate revocation settings of its own " +
-                "[jettyPath=" + config().getJettyPath() + ']');
-        }
+        ssl.setSslContext(ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST));
+        ssl.setNeedClientAuth(config().isHttpSslClientAuth());
 
-        jettySsl.setSslContext(ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST));
+        connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, connector.getDefaultProtocol()));
     }
 
     /**
@@ -317,8 +309,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             httpSrv = new Server(new QueuedThreadPool(200, 20));
 
-            ServerConnector srvConn = new ServerConnector(httpSrv,
-                config().getHttpSslFactory() == null ? null : new SslContextFactory.Server(), new HttpConnectionFactory(httpCfg));
+            ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);

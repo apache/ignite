@@ -119,6 +119,9 @@ public class ConnectorConfiguration {
     /** SSL context factory for HTTP REST. */
     private Factory<SSLContext> httpSslFactory;
 
+    /** Whether HTTP REST asks clients for a certificate. */
+    private boolean httpSslClientAuth;
+
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
 
@@ -162,6 +165,7 @@ public class ConnectorConfiguration {
         sslEnabled = cfg.isSslEnabled();
         sslFactory = cfg.getSslFactory();
         httpSslFactory = cfg.getHttpSslFactory();
+        httpSslClientAuth = cfg.isHttpSslClientAuth();
         idleQryCurTimeout = cfg.getIdleQueryCursorTimeout();
         idleQryCurCheckFreq = cfg.getIdleQueryCursorCheckFrequency();
     }
@@ -522,18 +526,40 @@ public class ConnectorConfiguration {
     /**
      * Sets the factory of the SSL context HTTP REST serves. HTTP REST then serves HTTPS, and {@code control.sh --ssl reload},
      * {@code --ssl status}, the {@code ssl.http.rest} metrics and automatic renewal cover its certificates like those of the other
-     * transports of the node.
+     * transports of the node. Protocols and cipher suites come from the factory, client authentication from
+     * {@link #setHttpSslClientAuth(boolean)}.
      * <p>
-     * If a Jetty configuration is set with {@link #setJettyPath(String)}, it must have an SSL connection factory with no key store,
-     * trust store, SSL context, SSL session settings or certificate revocation settings of its own, otherwise the node does not
-     * start: Jetty would apply the session settings to the first SSL context only and ignore the rest. Settings such as client
-     * authentication stay in the Jetty configuration.
+     * Ignite puts TLS in front of the Jetty connector: the built-in one, or the one a Jetty configuration set with
+     * {@link #setJettyPath(String)} describes. That connector must have no SSL connection factory of its own, otherwise the node
+     * does not start.
      *
      * @param httpSslFactory SSL context factory.
      * @return {@code this} for chaining.
      */
     public ConnectorConfiguration setHttpSslFactory(Factory<SSLContext> httpSslFactory) {
         this.httpSslFactory = httpSslFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets whether HTTP REST asks clients for a certificate.
+     *
+     * @return Whether HTTP REST asks clients for a certificate.
+     */
+    public boolean isHttpSslClientAuth() {
+        return httpSslClientAuth;
+    }
+
+    /**
+     * Sets whether HTTP REST served with {@link #setHttpSslFactory(Factory)} asks clients for a certificate and checks it against
+     * the trust store of that factory. Off by default.
+     *
+     * @param httpSslClientAuth Whether HTTP REST asks clients for a certificate.
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setHttpSslClientAuth(boolean httpSslClientAuth) {
+        this.httpSslClientAuth = httpSslClientAuth;
 
         return this;
     }

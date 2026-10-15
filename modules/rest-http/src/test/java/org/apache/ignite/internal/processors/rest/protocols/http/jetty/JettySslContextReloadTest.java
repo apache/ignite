@@ -47,20 +47,11 @@ import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 
 /** Tests HTTP REST served on the certificates of {@link ConnectorConfiguration#setHttpSslFactory}. */
 public class JettySslContextReloadTest extends GridCommonAbstractTest {
-    /** Jetty configuration serving plain HTTP. */
+    /** Jetty configuration with a connector without TLS. */
     private static final String JETTY_PLAIN = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
 
-    /** System property the Jetty configuration with stores of its own reads the key store path from. */
-    private static final String KEY_STORE_PROP = "IGNITE_TEST_JETTY_KEY_STORE";
-
-    /** Jetty configuration serving TLS from the key store at {@link #KEY_STORE_PROP}. */
-    private static final String JETTY_OWN_STORES = "modules/rest-http/src/test/resources/jetty-ssl-own-stores.xml";
-
-    /** System property the Jetty configuration asking clients for a certificate reads {@code enableOCSP} from. */
-    private static final String OCSP_PROP = "IGNITE_TEST_JETTY_OCSP";
-
-    /** Jetty configuration asking clients for a certificate, with no stores of its own. */
-    private static final String JETTY_CLIENT_AUTH = "modules/rest-http/src/test/resources/jetty-ssl-client-auth.xml";
+    /** Jetty configuration with a connector that has an SSL connection factory of its own. */
+    private static final String JETTY_SSL = "modules/rest-http/src/test/resources/jetty-ssl.xml";
 
     /** Key store HTTP REST runs on; replaced on disk to rotate the certificate. */
     private Path keyStore;
@@ -70,6 +61,9 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
     /** Protocols of the factory, {@code null} for the defaults. */
     private String[] protocols;
+
+    /** Whether HTTP REST asks clients for a certificate. */
+    private boolean clientAuth;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -84,7 +78,8 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             factory.setProtocols(protocols);
 
         return super.getConfiguration(igniteInstanceName)
-            .setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(jettyPath).setHttpSslFactory(factory));
+            .setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(jettyPath).setHttpSslFactory(factory)
+                .setHttpSslClientAuth(clientAuth));
     }
 
     /** {@inheritDoc} */
@@ -92,16 +87,11 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         keyStore = Files.createTempFile("ignite-jetty-ssl-reload-", ".jks");
 
         place("node01", keyStore);
-
-        System.setProperty(KEY_STORE_PROP, keyStore.toString());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        System.clearProperty(KEY_STORE_PROP);
-        System.clearProperty(OCSP_PROP);
 
         if (keyStore != null)
             Files.deleteIfExists(keyStore);
@@ -153,31 +143,32 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * A node does not start when its Jetty configuration has no SSL connection factory, or has stores or revocation settings of its
-     * own next to the factory.
-     */
+    /** A connector from a Jetty configuration file gets TLS in front of it. */
     @Test
-    public void testJettySslSettingsWithFactoryRefused() {
+    public void testJettyConnectorFromFileGetsTls() throws Exception {
         jettyPath = JETTY_PLAIN;
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "has no SSL connection factory");
+        IgniteEx g = startGrid(0);
 
-        jettyPath = JETTY_OWN_STORES;
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "must have no key store");
-
-        jettyPath = JETTY_CLIENT_AUTH;
-
-        System.setProperty(OCSP_PROP, "true");
-
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "must have no key store");
+        try (SSLSocket sock = socket(GridTestUtils.sslTrustedFactory("node01", "trustboth").create(), port(g))) {
+            assertEquals("CN=node01", subject(sock));
+            assertTrue(get(sock, "node01").startsWith("HTTP/1.1 200"));
+        }
     }
 
-    /** Client authentication set in the Jetty configuration checks clients against the trust store of the factory. */
+    /** A node does not start when the connector in its Jetty configuration has an SSL connection factory of its own. */
     @Test
-    public void testClientAuthFromJetty() throws Exception {
-        jettyPath = JETTY_CLIENT_AUTH;
+    public void testJettySslConnectionFactoryRefused() {
+        jettyPath = JETTY_SSL;
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class,
+            "must have no SSL connection factory of its own");
+    }
+
+    /** With client authentication on, HTTP REST refuses a client whose certificate the trust store of the factory does not accept. */
+    @Test
+    public void testClientAuth() throws Exception {
+        clientAuth = true;
 
         int port = port(startGrid(0));
 

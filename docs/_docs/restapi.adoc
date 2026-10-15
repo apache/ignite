@@ -87,18 +87,18 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 
 |`setHttpSslFactory(Factory<SSLContext>)`
 |Factory of the SSL context for HTTPS.
-When it is set, HTTP REST serves HTTPS.
-`control.sh --ssl reload` and `--ssl status`, the `ssl.http.rest` metrics and automatic renewal then cover HTTP REST like the other transports of the node.
-Without a Jetty configuration file, Ignite starts an HTTPS connector instead of the HTTP one.
-When a Jetty configuration file is also set, it must have an SSL connection factory.
-That SSL connection factory must have no key store, trust store, SSL context or SSL session settings of its own.
-It must not set the certificate revocation settings `crlPath`, `enableCRLDP`, `enableOCSP` or `validatePeerCerts` either: Jetty does not apply them when it gets the SSL context from `httpSslFactory`.
-If the Jetty configuration file breaks these rules, the node does not start.
-Settings such as `needClientAuth` stay in the Jetty configuration file.
-Jetty checks client certificates against the trust store of `httpSslFactory`.
+When it is set, HTTP REST serves HTTPS with the certificates of this factory: Ignite puts TLS in front of the Jetty connector, the built-in one or the one from the Jetty configuration file.
+The file then describes the connector without TLS; a connector with an SSL connection factory of its own does not start.
+Protocols and cipher suites come from the factory, client authentication from `setHttpSslClientAuth`.
+`control.sh --ssl reload` and `--ssl status`, the `ssl.http.rest` metrics and automatic renewal cover HTTP REST like the other transports of the node.
 Jetty answers `400 Invalid SNI` to a request for a host name that the certificate does not name.
 |Yes
 |`null`
+
+|`setHttpSslClientAuth(boolean)`
+|Whether HTTP REST asks clients for a certificate and checks it against the trust store of `httpSslFactory`.
+|Yes
+|`false`
 
 |`setMessageInterceptor(...)`
 |The interceptor transforms all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
