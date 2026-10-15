@@ -64,6 +64,7 @@ tab:C++[unsupported]
 
 The keystore must contain the node's certificate, including its private key.
 The trust store must contain the trusted certificates for all cluster nodes, including the node itself.
+If a client node trusts only the certificate authority of the server nodes, `control.sh --ssl reload` and automatic renewal refuse its certificate.
 `control.sh --ssl reload` and automatic renewal refuse a new discovery or communication certificate that the node's own trust store does not accept.
 With self-signed certificates, import each node's certificate into its own trust store as well.
 
@@ -176,11 +177,15 @@ A Java or C++ thin client reads its trusted store only when it starts.
 A JDBC application that takes its stores from the `javax.net.ssl.*` system properties also reads them only when it starts.
 Restart running thin clients and JDBC applications that use `javax.net.ssl.*`, so that they read the new trusted store.
 
-Go to the next step only after `control.sh --ssl status` shows the new authority in the `trusts` line of every server and client node.
-A reload succeeds even if the trusted store has not changed. The `trusts` line, not the reload result, shows whether a node trusts the new authority.
-The `trusts` line shows one name for each trusted certificate.
-If the new and old authorities have the same name, check that the `trusts` line shows this name once more than before the import.
-If a node shows `trusts: unknown`, the `trusts` line cannot confirm the import on that node. Check instead that the trusted store of that node contains the new certificate.
+Go to the next step only after every server and client node trusts the new certificate authority.
+Check with `control.sh --ssl status` that every node names the new authority in its `trusts` line.
+A successful reload alone does not show that a node trusts the new authority.
+A reload succeeds even if the trusted store of the node has not changed.
+The `trusts` line shows names, not certificates, see link:tools/control-script#checking-certificates[Checking Certificates].
+If the new authority has the same name as the old one, the `trusts` line cannot show which one a node trusts.
+In that case, check the trusted store file of every node.
+If a node shows `trusts: unknown`, check the trusted store file of that node.
+If a node uses a trust manager of your own, check what that trust manager reads instead of the file.
 --
 
 . Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Before you change the key store, make a copy of it.
@@ -236,7 +241,7 @@ The node may then keep the old certificate for the other key.
 Renewal puts a changed trust store in use only together with a new certificate.
 To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload`.
 Do this before you put certificates from the new authority in the key stores.
-The node does not use a certificate from a new authority until a reload puts that authority in the trust store in use.
+Renewal refuses a certificate from a new authority until a reload adds that authority to the trust store in use. This applies only if the SSL context factory serves discovery or communication, and only while the certificate in use is valid.
 
 If the key store file has no newer certificate yet, the node keeps the certificate in use.
 The node then reads the key store and trust store files again after a pause.
@@ -245,11 +250,12 @@ To each pause, the node adds a random extra wait of up to half that pause.
 While the files still hold the certificate in use, the node logs a warning once a day.
 When less than half of the renewal window is left, the node logs an error instead of the warning.
 If the certificate would expire before the next attempt, the node also logs an error instead of the warning.
+At the first renewal attempt after the certificate expires, the node logs an error saying the certificate has expired.
 If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
 `control.sh --ssl status` and the link:monitoring-metrics/new-metrics#ssl[`NextRenewalTime` metric] show when the next renewal is due.
 If the node cannot tell which certificate a factory serves, it does not renew the certificates of that factory.
 For example, the node cannot tell which certificate is served when the key store has no private key.
-The node then logs a warning at start and after every reload.
+If the node cannot tell which certificate a factory serves, it logs a warning at start and after every successful reload.
 For that factory, `control.sh --ssl status` shows `cannot tell which certificate is served`.
 The `ChainNotAfter` and `NextRenewalTime` metrics of its transports are `0`.
 

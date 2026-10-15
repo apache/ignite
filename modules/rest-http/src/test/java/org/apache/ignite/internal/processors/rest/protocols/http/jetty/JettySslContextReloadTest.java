@@ -21,13 +21,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedKeyManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,6 +63,9 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
     /** Jetty configuration with a connector that has an SSL connection factory of its own. */
     private static final String JETTY_SSL = "modules/rest-http/src/test/resources/jetty-ssl.xml";
+
+    /** Jetty configuration with a connector that expects the PROXY protocol before HTTP. */
+    private static final String JETTY_PROXY = "modules/rest-http/src/test/resources/jetty-proxy.xml";
 
     /** Key store HTTP REST runs on; replaced on disk to rotate the certificate. */
     private Path keyStore;
@@ -105,7 +116,8 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
     /**
      * HTTP REST answers on the rotated certificate, a connection opened before the reload keeps answering, a client does not resume
-     * a session of the old certificate, and a key store HTTP REST cannot read leaves it on the last good one.
+     * a session of the old certificate, a client without a certificate passes while client authentication is off, and a key store
+     * HTTP REST cannot read leaves it on the last good one.
      */
     @Test
     public void testReload() throws Exception {
@@ -130,6 +142,11 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         try (SSLSocket byIp = socket(client, port(g))) {
             assertTrue("A request by IP address must pass, whatever host the certificate names",
                 get(byIp, "127.0.0.1").startsWith("HTTP/1.1 200"));
+        }
+
+        try (SSLSocket anon = socket(trustingOnly("trustboth"), port(g))) {
+            assertTrue("A client without a certificate must pass while client authentication is off",
+                get(anon, "node02").startsWith("HTTP/1.1 200"));
         }
 
         assertEquals("CN=node02", g.context().metric().registry("ssl.http.rest").findMetric("CertificateSubject").getAsString());
@@ -181,6 +198,14 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             "must have no SSL connection factory of its own");
     }
 
+    /** A node does not start when the connector in its Jetty configuration expects the PROXY protocol: TLS in front would break it. */
+    @Test
+    public void testJettyProxyProtocolRefused() {
+        jettyPath = JETTY_PROXY;
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "with no PROXY protocol in front");
+    }
+
     /** A node does not start with client authentication on but no factory: the setting would do nothing. */
     @Test
     public void testClientAuthWithoutFactoryRefused() {
@@ -205,7 +230,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             sock.startHandshake();
         }
 
-        assertHandshakeRefused(GridTestUtils.sslTrustedFactory("connectorClient", "trustboth").create(), port);
+        assertHandshakeRefused(presentingAlways("connectorClient", "trustboth"), port);
         assertHandshakeRefused(trustingOnly("trustboth"), port);
     }
 
@@ -228,21 +253,84 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
      * @return Context that trusts the store and presents no certificate.
      */
     private static SSLContext trustingOnly(String trustStore) throws Exception {
-        KeyStore trust = KeyStore.getInstance(KeyStore.getDefaultType());
+        SSLContext ctx = SSLContext.getInstance("TLS");
 
-        try (InputStream in = Files.newInputStream(Path.of(keyStorePath(trustStore)))) {
-            trust.load(in, keyStorePassword().toCharArray());
-        }
+        ctx.init(null, trustManagers(trustStore), null);
 
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        return ctx;
+    }
 
-        tmf.init(trust);
+    /**
+     * @param keyStore Test key store.
+     * @param trustStore Test trust store.
+     * @return Context that presents the key of the store whatever authorities the server names, so that the server has to refuse
+     *      it, and trusts the trust store.
+     */
+    private static SSLContext presentingAlways(String keyStore, String trustStore) throws Exception {
+        KeyStore keys = store(keyStore);
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+
+        kmf.init(keys, keyStorePassword().toCharArray());
+
+        X509ExtendedKeyManager km = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
+        String alias = keys.aliases().nextElement();
+
+        X509ExtendedKeyManager always = new X509ExtendedKeyManager() {
+            @Override public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
+                return alias;
+            }
+
+            @Override public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket sock) {
+                return alias;
+            }
+
+            @Override public String[] getClientAliases(String keyType, Principal[] issuers) {
+                return new String[] {alias};
+            }
+
+            @Override public String[] getServerAliases(String keyType, Principal[] issuers) {
+                return km.getServerAliases(keyType, issuers);
+            }
+
+            @Override public String chooseServerAlias(String keyType, Principal[] issuers, Socket sock) {
+                return km.chooseServerAlias(keyType, issuers, sock);
+            }
+
+            @Override public X509Certificate[] getCertificateChain(String alias) {
+                return km.getCertificateChain(alias);
+            }
+
+            @Override public PrivateKey getPrivateKey(String alias) {
+                return km.getPrivateKey(alias);
+            }
+        };
 
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        ctx.init(null, tmf.getTrustManagers(), null);
+        ctx.init(new KeyManager[] {always}, trustManagers(trustStore), null);
 
         return ctx;
+    }
+
+    /** @param name Test store. */
+    private static KeyStore store(String name) throws Exception {
+        KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
+
+        try (InputStream in = Files.newInputStream(Path.of(keyStorePath(name)))) {
+            store.load(in, keyStorePassword().toCharArray());
+        }
+
+        return store;
+    }
+
+    /** @param trustStore Test trust store. */
+    private static TrustManager[] trustManagers(String trustStore) throws Exception {
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+        tmf.init(store(trustStore));
+
+        return tmf.getTrustManagers();
     }
 
     /** @return HTTP REST port of the node. */

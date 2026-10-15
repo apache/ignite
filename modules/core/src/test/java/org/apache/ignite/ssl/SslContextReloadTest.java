@@ -34,6 +34,7 @@ import org.apache.ignite.client.SslMode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -49,6 +51,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
@@ -266,22 +270,30 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(discoveryPort(g)));
     }
 
-    /** A client connector with its own factory reloads separately and skips the handshake check: nodes do not use its trust store. */
+    /**
+     * A client connector and binary REST with factories of their own reload separately and skip the handshake check: nodes do not use
+     * their trust stores.
+     */
     @Test
     public void testOwnClientConnectorFactoryReloadedApart() throws Exception {
         initTrustStore = "trustone";
         ownClientConnectorFactory = true;
 
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startGrid(0, cfg -> {
+            cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(true)
+                .setSslFactory(storeFactory(cfg.getIgniteInstanceName())));
+        });
 
         placeKeys("node02");
 
         String res = reloadFailure(g);
 
         assertReloaded(res, g, CLIENT_CONNECTOR);
+        assertReloaded(res, g, BINARY_REST);
         assertFailed(res, g, COMMUNICATION + ", " + DISCOVERY);
 
         assertEquals("CN=node02", servedSubject(g.context().clientListener().port()));
+        assertEquals("CN=node02", servedSubject(g.localNode().attribute(ATTR_REST_TCP_PORT)));
         assertEquals("CN=node01", servedSubject(discoveryPort(g)));
     }
 
@@ -301,8 +313,9 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one; a node of the new one joins.
-     * Status shows which authorities every node trusts after each step.
+     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one; then the nodes open new
+     * connections to each other, and a node of the new one joins. Status shows which authorities every node trusts before the change
+     * and after each change of the trust store.
      */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
@@ -328,7 +341,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         placeTrust("trusttwo");
         reload(g0, g1);
 
-        assertNotContains(log, status(g0, g1), "CN=oneca");
+        String trustsTwo = status(g0, g1);
+
+        assertNotContains(log, trustsTwo, "CN=oneca");
+        assertContains(log, trustsTwo, "trusts: C=RU, ST=SPb, L=SPb, O=Ignite, OU=Dev, CN=twoca");
+
+        ConnectionClientPool pool = U.field(g0.configuration().getCommunicationSpi(), "clientPool");
+
+        pool.forceCloseConnection(g1.localNode().id());
+
+        assertEquals((Integer)1, g0.compute(g0.cluster().forNodeId(g1.localNode().id())).call(() -> 1));
 
         place("node03", keyStore(getTestIgniteInstanceName(2)));
         place("trusttwo", trustStore(getTestIgniteInstanceName(2)));

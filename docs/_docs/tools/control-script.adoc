@@ -1835,13 +1835,16 @@ If the factory has `renewalEnabled` set and a renewal is planned, the command al
 e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: client connector, communication, discovery
     serving subject=CN=node01, issuer=CN=ca, serial=2c41d7a09b, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
     trusts: CN=ca; CN=newca
-    last reload succeeded at 2026-10-05T09:00:02Z
+    last reload succeeded at 2026-10-05T09:00:02.347Z
     next automatic renewal at 2027-08-11T15:00:00Z
 ----
 
 The `trusts` line lists the certificate authorities that the node names when it asks a peer for a certificate.
-The line shows one name for each trusted certificate, so two authorities with the same name appear twice.
-`trusts: unknown` means the node does not name any certificate authority when it asks a peer for a certificate.
+The `trusts` line shows names, not certificates.
+The line can show the name of the new authority while the node trusts only another authority with the same name.
+With a trust manager of your own, the `trusts` line may name authorities that differ from the ones the node accepts.
+`trusts: unknown` means the node names no certificate authority when it asks a peer for a certificate.
+A trust manager of your own may name none, so `trusts: unknown` is not always an error.
 If the node cannot tell which certificate a factory serves, the status shows `cannot tell which certificate is served`.
 The node then does not renew the certificate of that factory automatically.
 A node without an SSL context factory prints `no SSL context factory is configured`.
@@ -1851,8 +1854,9 @@ If a certificate authority in the chain expires before the certificate, the `ser
 From the `chainNotAfter` time, peers refuse the chain.
 After a failed reload, the status shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
 The `serving` line keeps showing the old certificate until a reload succeeds.
-The command ends with an error only if a certificate in the chain a node serves is not valid now.
-The command marks such a node `PROBLEM: the certificate is not valid now, peers refuse it`.
+The command ends with an error if it cannot run on a node, for example because the node left.
+Otherwise, it ends with an error only if a certificate in the chain a node serves is not valid now.
+If a certificate in the chain a node serves is not valid now, the command prints `PROBLEM: the certificate is not valid now, peers refuse it` for that node.
 The command lists these nodes first, under `Failed on N node(s)`.
 The `last reload` line also shows automatic renewals that put a new certificate in use or fail.
 A renewal attempt that gets the certificates already in use does not change the `last reload` line.

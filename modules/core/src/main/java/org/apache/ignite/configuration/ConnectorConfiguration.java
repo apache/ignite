@@ -530,8 +530,8 @@ public class ConnectorConfiguration {
      * cipher suites Jetty turns off by default. Client authentication comes from {@link #setHttpSslClientAuth(boolean)}.
      * <p>
      * Ignite adds TLS to the Jetty connector. The connector is the built-in one, or the one from the Jetty XML configuration
-     * file that {@link #setJettyPath(String)} points to. The Jetty connector must have no SSL connection factory of its own,
-     * otherwise the node does not start.
+     * file that {@link #setJettyPath(String)} points to. The Jetty connector must have no SSL connection factory of its own and
+     * must pass connections to HTTP first, with no PROXY protocol in front, otherwise the node does not start.
      *
      * @param httpSslFactory SSL context factory.
      * @return {@code this} for chaining.

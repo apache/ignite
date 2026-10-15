@@ -50,23 +50,11 @@ public class SslContextProvider {
     /** Chain the context in use presents, {@code null} if it is unknown. */
     private volatile X509Certificate[] chain;
 
-    /** Authorities the context in use announces to a client it asks for a certificate; empty if it announces none. */
-    private volatile List<X500Principal> trustedAuthorities;
-
     /** Told about every new context once it is recorded. */
     private volatile Runnable reloadLsnr = () -> {};
 
-    /** Time of the last successful reload, {@code 0} if there was none. */
-    private volatile long lastSuccessTime;
-
-    /** Time of the last failed reload since the last successful one, {@code 0} if there was none. */
-    private volatile long lastFailureTime;
-
-    /** Reason of the last failed reload since the last successful one. */
-    private volatile String lastFailureReason;
-
-    /** Failed reloads in a row since the last successful one. */
-    private volatile int failures;
+    /** Outcome of the reloads: the last success and the failures since it. */
+    private volatile ReloadOutcome outcome = new ReloadOutcome(0, 0, null, 0);
 
     /** Time of the next automatic renewal, {@code 0} if none is planned. */
     private volatile long nextRenewalTime;
@@ -77,7 +65,6 @@ public class SslContextProvider {
 
         ctx = factory.create();
         chain = SslCertificates.servedChain(ctx);
-        trustedAuthorities = SslCertificates.trustedAuthorities(ctx);
     }
 
     /** @return Factory the context is built with. */
@@ -114,7 +101,7 @@ public class SslContextProvider {
 
     /** @return Authorities the context in use announces to a client it asks for a certificate; empty if it announces none. */
     public List<X500Principal> trustedAuthorities() {
-        return trustedAuthorities;
+        return SslCertificates.trustedAuthorities(ctx);
     }
 
     /** @param lsnr Told about every new context once it is recorded; must not block. */
@@ -127,8 +114,8 @@ public class SslContextProvider {
      * only if it presents a certificate when the one in use does, every certificate of its chain is valid now and, if nodes connect on
      * it, this node's own trust store accepts it.
      *
-     * @throws IgniteCheckedException If the new context cannot be built or fails a check, or the factory returns the context in use.
-     *      The context in use stays.
+     * @throws IgniteCheckedException If the new context fails a check or the factory returns the context in use. The context in use
+     *      stays, as it does when the factory itself throws.
      */
     public synchronized void reload() throws IgniteCheckedException {
         try {
@@ -157,8 +144,8 @@ public class SslContextProvider {
      * Puts in use a context built anew, provided its chain expires later than the one in use. A renewal that does not move the expiry gains
      * nothing and would be due again at once. A context that presents the chain in use leaves nothing to renew yet and is not checked.
      * If nodes connect on the context and the chain in use is valid now, the trust store in use must also accept the new certificate,
-     * and the new trust store the certificate in use: a renewal runs on each node at its own time, so the two trust stores stand for
-     * the peers that have not renewed yet and for this node once they do. Peers refuse an expired chain anyway, so it is not compared.
+     * or peers that have not renewed yet would refuse it, and the new trust store must accept the certificate in use, or the node
+     * would refuse those peers: each node renews at its own time. Peers refuse an expired chain anyway, so it is not compared.
      *
      * @param expected Context the renewal was planned for.
      * @return What the renewal did.
@@ -180,7 +167,8 @@ public class SslContextProvider {
             check(rebuilt, next);
 
             if (chain != null && chainNotAfter(next) <= chainNotAfter(chain)) {
-                throw new IgniteCheckedException("The new certificate chain expires no later than the one in use [" + describe(next[0]) +
+                throw new IgniteCheckedException("The new certificate chain expires no later than the one in use; if a certificate " +
+                    "authority in the chain expires first, renew it [" + describe(next[0]) +
                     ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(next)) +
                     ", inUseChainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(chain)) + ']');
             }
@@ -223,7 +211,6 @@ public class SslContextProvider {
      * @param next Chain it presents, {@code null} if it is unknown.
      */
     private void putInUse(SSLContext rebuilt, @Nullable X509Certificate[] next) {
-        trustedAuthorities = SslCertificates.trustedAuthorities(rebuilt);
         chain = next;
         ctx = rebuilt;
     }
@@ -266,39 +253,33 @@ public class SslContextProvider {
 
     /** Records a successful reload. */
     private void onSuccess() {
-        lastSuccessTime = System.currentTimeMillis();
-        lastFailureTime = 0;
-        lastFailureReason = null;
-        failures = 0;
+        outcome = new ReloadOutcome(System.currentTimeMillis(), 0, null, 0);
 
         reloadLsnr.run();
     }
 
     /** @param e Why the reload failed. */
     private void onFailure(Throwable e) {
-        lastFailureTime = System.currentTimeMillis();
-        lastFailureReason = SslCertificates.reason(e);
-        failures++;
+        ReloadOutcome o = outcome;
+
+        outcome = new ReloadOutcome(o.successTime(), System.currentTimeMillis(), SslCertificates.reason(e), o.failures() + 1);
     }
 
-    /** @return Time of the last successful reload, {@code 0} if there was none. */
-    public long lastSuccessTime() {
-        return lastSuccessTime;
+    /** @return Outcome of the reloads, as one snapshot. */
+    public ReloadOutcome reloadOutcome() {
+        return outcome;
     }
 
-    /** @return Time of the last failed reload since the last successful one, {@code 0} if there was none. */
-    public long lastFailureTime() {
-        return lastFailureTime;
-    }
-
-    /** @return Reason of the last failed reload since the last successful one, {@code null} if there was none. */
-    public @Nullable String lastFailureReason() {
-        return lastFailureReason;
-    }
-
-    /** @return Failed reloads in a row since the last successful one. */
-    public int failures() {
-        return failures;
+    /**
+     * Outcome of the reloads, as one snapshot.
+     *
+     * @param successTime Time of the last successful reload, {@code 0} if there was none.
+     * @param failureTime Time of the last failed reload since the last successful one, {@code 0} if there was none.
+     * @param failureReason Reason of the last failed reload since the last successful one, {@code null} if there was none.
+     * @param failures Failed reloads in a row since the last successful one.
+     */
+    public record ReloadOutcome(long successTime, long failureTime, @Nullable String failureReason, int failures) {
+        // No-op.
     }
 
     /** @return Time of the next automatic renewal, {@code 0} if none is planned. */

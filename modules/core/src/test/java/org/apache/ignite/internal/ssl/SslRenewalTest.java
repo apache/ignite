@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -182,15 +183,17 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /** A certificate the other nodes would refuse must not be put in use. */
     @Test
     public void testRenewalRefusedBetweenNodesRejected() throws Exception {
-        long now = System.currentTimeMillis();
+        for (String transport : new String[] {COMMUNICATION, DISCOVERY}) {
+            long now = System.currentTimeMillis();
 
-        TestCertificateAuthority other = new TestCertificateAuthority("otherca");
+            TestCertificateAuthority other = new TestCertificateAuthority("otherca");
 
-        SslContextProvider p = new SslContextProvider(new Issuer(fresh(HOUR), () -> other.issue("node", now, now + HOUR)));
+            SslContextProvider p = new SslContextProvider(new Issuer(fresh(HOUR), () -> other.issue("node", now, now + HOUR)));
 
-        p.addTransport(COMMUNICATION);
+            p.addTransport(transport);
 
-        assertRenewalRejected(p, "The new certificate fails a test handshake with this node's own trust store");
+            assertRenewalRejected(p, "The new certificate fails a test handshake with this node's own trust store");
+        }
     }
 
     /** A renewal to an authority that the trust store in use does not accept yet must be refused, until a reload puts it there. */
@@ -285,7 +288,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             SslCertificates.trustedAuthorities(ctx).stream().map(X500Principal::getName).collect(Collectors.toList()));
     }
 
-    /** A trust manager that names no authorities must leave the node to start, with the authorities unknown. */
+    /** A trust manager that names no authorities must leave them unknown rather than fail. */
     @Test
     public void testTrustManagerNamingNoAuthorities() throws Exception {
         long now = System.currentTimeMillis();
@@ -378,7 +381,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         long retry = nextRenewalTime(g);
 
         assertTrue("A retry must be planned after the pause",
-            retry >= provider(g).lastFailureTime() + MINUTE - CLOCK_SLACK);
+            retry >= provider(g).reloadOutcome().failureTime() + MINUTE - CLOCK_SLACK);
 
         reload(g);
 
@@ -584,7 +587,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue("The pause must be the shortest one again, not 800 ms or more", plannedPause(afterReload) < 400);
     }
 
-    /** A wait logged as a warning must be logged as an error at once when less than half of the window is left, and then not again. */
+    /**
+     * A wait logged as a warning must be logged as an error at once when less than half of the window is left, once more when the
+     * certificates expire, and then not again.
+     */
     @Test
     public void testWaitTurningLateLoggedAsErrorAtOnce() throws Exception {
         AtomicReference<KeyStore> inUse = new AtomicReference<>();
@@ -612,6 +618,39 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertEquals(1, logged(Level.WARN, WAITING));
         assertEquals(1, logged(Level.ERROR, WAITING));
+
+        assertTrue(waitForCondition(() -> logged(Level.ERROR, WAITING + ", though they have expired") == 1, 30_000));
+
+        int expiredCalls = issuer.calls.size();
+
+        assertTrue(waitForCondition(() -> issuer.calls.size() >= expiredCalls + 2, 30_000));
+
+        assertEquals(1, logged(Level.WARN, WAITING));
+        assertEquals(2, logged(Level.ERROR, WAITING));
+    }
+
+    /** A node that stops in the middle of a renewal attempt must interrupt it and log no failure. */
+    @Test
+    public void testStopDuringRenewalLogsNoFailure() throws Exception {
+        long now = System.currentTimeMillis();
+
+        CountDownLatch entered = new CountDownLatch(1);
+
+        Issuer issuer = new Issuer(valid(now - HOUR, now + 9 * MINUTE), () -> {
+            entered.countDown();
+
+            Thread.sleep(Long.MAX_VALUE);
+
+            return null;
+        });
+
+        startNode(issuer);
+
+        assertTrue(entered.await(30, TimeUnit.SECONDS));
+
+        stopGrid(0);
+
+        assertTrue(appender.events().stream().noneMatch(e -> e.getLevel().isMoreSpecificThan(Level.WARN)));
     }
 
     /** A factory that returns the certificates in use, as the very same context or as an expired chain, must leave nothing to renew. */
@@ -664,7 +703,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
     }
 
-    /** If the node cannot tell when the certificate expires, here with no key in the key store, it must not renew or count a failure. */
+    /**
+     * If the node cannot tell when the certificate expires, here with no key in the key store, it must not renew or count a failure;
+     * the status must say it cannot tell the certificate, and a reload must still succeed.
+     */
     @Test
     public void testUnknownCertificateNotRenewed() throws Exception {
         Issuer issuer = new Issuer(() -> {
@@ -686,6 +728,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(0, reg.<IntMetric>findMetric("ConsecutiveReloadFailures").value());
         assertEquals(0, reg.<LongMetric>findMetric("NextRenewalTime").value());
         assertEquals("Nothing must be renewed", 1, issuer.calls.size());
+
+        assertContains(log, status(g), "cannot tell which certificate is served");
+        assertContains(log, reload(g), ": reloaded " + CLIENT_CONNECTOR);
     }
 
     /**

@@ -37,13 +37,16 @@ import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.UN
 
 /**
  * Renews the certificate of one context built by a factory with {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal
- * enabled}, before it expires. Everything but {@link #replan()} runs in the renewal thread.
+ * enabled}, before it expires. Everything but {@link #start()} and {@link #replan()} runs in the renewal thread.
  */
 class SslRenewal {
     /** How the node log names an automatic renewal in {@code initiator=}. */
     private static final String INITIATOR = "automatic renewal";
 
-    /** How often the node repeats that the factory has no newer certificates; it also logs at once when the ones in use expire soon. */
+    /**
+     * How often the node repeats that the factory has no newer certificates; it also logs at once when the ones in use come to expire
+     * soon and when they expire.
+     */
     private static final long WAIT_LOG_INTERVAL = TimeUnit.DAYS.toMillis(1);
 
     /** Pause after the first attempt that puts nothing in use, in milliseconds, and the shortest time between two attempts. */
@@ -73,17 +76,14 @@ class SslRenewal {
     /** How long before {@link #chainNotAfter} the renewal window opens. */
     private long window;
 
-    /** Time of the last attempt, {@code 0} if there was none. */
-    private long lastAttemptTime;
-
     /** Pause after the last attempt that put nothing in use, without the random part; {@link #plan()} resets it to {@code 0}. */
     private long pause;
 
     /** When the node last logged that the factory has no newer certificates; {@link #plan()} resets it to {@code 0}. */
     private long waitLogTime;
 
-    /** Whether that was logged as an error. */
-    private boolean waitLoggedSoon;
+    /** How late the certificates in use were when that was logged: {@code 0} in time, {@code 1} expiring soon, {@code 2} expired. */
+    private int waitLoggedLateness;
 
     /**
      * @param provider Provider whose context the factory builds.
@@ -113,7 +113,6 @@ class SslRenewal {
     /** Plans the next renewal by the certificate in use. */
     private void plan() {
         pause = waitLogTime = 0;
-        waitLoggedSoon = false;
 
         X509Certificate[] chain = provider.servedChain();
 
@@ -130,7 +129,7 @@ class SslRenewal {
 
         window = (long)(lifetime * renewBeforeFraction);
 
-        long at = Math.max(chainNotAfter - window, Math.max(lastAttemptTime + minPause, U.currentTimeMillis()));
+        long at = Math.max(chainNotAfter - window, Math.max(provider.reloadOutcome().successTime() + minPause, U.currentTimeMillis()));
 
         schedule(at);
 
@@ -144,8 +143,6 @@ class SslRenewal {
      * @param planned Context in use when the attempt was planned.
      */
     private void attempt(SSLContext planned) {
-        lastAttemptTime = U.currentTimeMillis();
-
         try {
             SslContextProvider.RenewalResult res = provider.renew(planned);
 
@@ -164,8 +161,8 @@ class SslRenewal {
     /**
      * Plans another attempt after a pause that doubles with every attempt that puts nothing in use, and logs why. A failure is logged
      * every time. The factory returning the certificates in use, as when their files are not replaced yet, is no failure. It is logged
-     * once a day, and at once when the certificates in use expire soon. Once the node stops, nothing is planned or logged: the stop
-     * interrupts the attempt in progress, and that is no failure.
+     * once a day, and at once when the certificates in use come to expire soon and when they expire. Once the node stops, nothing is
+     * planned or logged: the stop interrupts the attempt in progress, and that is no failure.
      *
      * @param e Why the attempt failed, {@code null} if the factory returned the certificates in use.
      */
@@ -182,18 +179,19 @@ class SslRenewal {
         schedule(at);
 
         boolean soon = now >= chainNotAfter - window / 2 || at >= chainNotAfter;
+        int lateness = now >= chainNotAfter ? 2 : soon ? 1 : 0;
 
         if (e == null) {
-            if (now - waitLogTime < WAIT_LOG_INTERVAL && (waitLoggedSoon || !soon))
+            if (now - waitLogTime < WAIT_LOG_INTERVAL && lateness <= waitLoggedLateness)
                 return;
 
             waitLogTime = now;
-            waitLoggedSoon = soon;
+            waitLoggedLateness = lateness;
         }
 
         String msg = (e == null ? "The SSL context factory has no newer TLS certificates yet, the ones in use stay" :
             "Failed to reload TLS certificates, the ones in use stay") +
-            (now >= chainNotAfter ? ", though they have expired" : soon ? " and expire soon" : "") +
+            (lateness == 2 ? ", though they have expired" : lateness == 1 ? " and expire soon" : "") +
             " [transports=" + provider.transports() +
             (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + SslCertificates.reason(e)) +
             ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ", nextRenewal=" + Instant.ofEpochMilli(at) + ']';

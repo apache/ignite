@@ -163,7 +163,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         if (config().isHttpSslClientAuth() && config().getHttpSslFactory() == null) {
             throw new IgniteCheckedException("ConnectorConfiguration.httpSslClientAuth applies only to TLS set up with httpSslFactory: " +
-                "set httpSslFactory, or set needClientAuth in the Jetty configuration");
+                "set httpSslFactory, or turn httpSslClientAuth off and set needClientAuth in the Jetty configuration");
         }
 
         if (config().getHttpSslFactory() != null)
@@ -206,12 +206,15 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * use at that moment.
      *
      * @param connector Jetty connector.
-     * @throws IgniteCheckedException If the connector has an SSL connection factory of its own.
+     * @throws IgniteCheckedException If the connector has an SSL connection factory of its own, or passes connections to something
+     *      other than HTTP first, such as the PROXY protocol, which TLS in front of it would break.
      */
     private void addTls(AbstractNetworkConnector connector) throws IgniteCheckedException {
-        if (connector.getConnectionFactory(SslConnectionFactory.class) != null) {
+        if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory http)
+            || connector.getConnectionFactory(SslConnectionFactory.class) != null) {
             throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory sets up TLS for HTTP REST, so the Jetty connector " +
-                "must have no SSL connection factory of its own [jettyPath=" + config().getJettyPath() + ']');
+                "must have no SSL connection factory of its own and must pass connections to HTTP first, with no PROXY protocol in " +
+                "front [jettyPath=" + config().getJettyPath() + ", protocols=" + connector.getProtocols() + ']');
         }
 
         SslContextFactory.Server ssl = new SslContextFactory.Server();
@@ -219,13 +222,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         ssl.setSslContext(ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST));
         ssl.setNeedClientAuth(config().isHttpSslClientAuth());
 
-        connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, connector.getDefaultProtocol()));
+        connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, http.getProtocol()));
 
-        HttpConnectionFactory http = connector.getConnectionFactory(HttpConnectionFactory.class);
-
-        // REST serves one certificate whatever the Host header says, so the SNI host check of Jetty would only turn away requests
-        // by IP address or localhost, such as Kubernetes probes.
-        if (http != null && http.getHttpConfiguration().getCustomizer(SecureRequestCustomizer.class) == null)
+        // REST serves one certificate whatever the Host header says, so the SNI host check of Jetty would only refuse requests by
+        // a host name or IP address the certificate does not name, such as a load balancer name or a Kubernetes probe by pod IP.
+        if (http.getHttpConfiguration().getCustomizer(SecureRequestCustomizer.class) == null)
             http.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer(false));
     }
 

@@ -94,14 +94,14 @@ public class SslStatusTask extends AbstractSslTask {
                 lines.add(trusted.isEmpty() ? "    trusts: unknown" : "    trusts: " +
                     trusted.stream().map(X500Principal::toString).collect(Collectors.joining("; ")));
 
-                int failures = provider.failures();
+                SslContextProvider.ReloadOutcome outcome = provider.reloadOutcome();
 
-                if (failures > 0) {
-                    lines.add("    last reload failed " + failures + " time(s) in a row, the last at " +
-                        Instant.ofEpochMilli(provider.lastFailureTime()) + ": " + provider.lastFailureReason());
+                if (outcome.failures() > 0) {
+                    lines.add("    last reload failed " + outcome.failures() + " time(s) in a row, the last at " +
+                        Instant.ofEpochMilli(outcome.failureTime()) + ": " + outcome.failureReason());
                 }
-                else if (provider.lastSuccessTime() > 0)
-                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(provider.lastSuccessTime()));
+                else if (outcome.successTime() > 0)
+                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(outcome.successTime()));
 
                 if (provider.nextRenewalTime() > 0)
                     lines.add("    next automatic renewal at " + Instant.ofEpochMilli(provider.nextRenewalTime()));

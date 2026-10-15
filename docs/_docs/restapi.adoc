@@ -89,7 +89,7 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Factory of the SSL context for HTTPS.
 When it is set, HTTP REST serves HTTPS with the certificates of this factory.
 Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty configuration file.
-When `httpSslFactory` is set and the connector in the Jetty configuration file sets up TLS itself, the node does not start.
+When `httpSslFactory` is set, the node does not start if the connector in the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
 HTTP REST uses the protocols and cipher suites of the factory.
 Jetty turns off some of the factory cipher suites, for example `TLS_RSA_*` suites and suites that end in `_SHA`, `_SHA1` or `_MD5`.
 If none of the factory suites is left, Jetty logs `No supported Cipher Suite` and HTTPS clients cannot connect.

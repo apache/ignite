@@ -54,8 +54,8 @@ public class SslContextRegistry extends GridProcessorAdapter {
     private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
 
     /**
-     * The one thread all renewals of the node run in, so that a slow factory holds up no other thread. It starts with the first
-     * renewal.
+     * The one thread all renewals of the node run in, so that a renewal waiting for a slow factory takes no thread from a shared pool.
+     * It starts with the first renewal.
      */
     private final ScheduledExecutorService renewalExec;
 
@@ -128,12 +128,14 @@ public class SslContextRegistry extends GridProcessorAdapter {
         reg.register("ChainNotAfter", () -> Optional.ofNullable(provider.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
             "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
 
-        reg.register("LastReloadSuccessTime", provider::lastSuccessTime, "Time of the last successful reload, in milliseconds; 0 if none.");
+        reg.register("LastReloadSuccessTime", () -> provider.reloadOutcome().successTime(),
+            "Time of the last successful reload, in milliseconds; 0 if none.");
 
-        reg.register("LastReloadFailureReason", provider::lastFailureReason, String.class,
+        reg.register("LastReloadFailureReason", () -> provider.reloadOutcome().failureReason(), String.class,
             "Reason for the last failed reload; a successful reload clears it.");
 
-        reg.register("ConsecutiveReloadFailures", provider::failures, "Failed reloads in a row since the last successful one.");
+        reg.register("ConsecutiveReloadFailures", () -> provider.reloadOutcome().failures(),
+            "Failed reloads in a row since the last successful one.");
 
         reg.register("NextRenewalTime", () -> provider.nextRenewalTime(),
             "Time of the next automatic renewal, in milliseconds; 0 if none.");

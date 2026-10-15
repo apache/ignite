@@ -57,9 +57,11 @@ public class SslCertificates {
     }
 
     /**
-     * Checks the context the way an inter-node transport uses it. Both ends run the same configuration, so a context that cannot handshake
-     * with itself cannot serve new connections between nodes. Only a refused handshake counts. An exchange that cannot be driven to the end
-     * for another reason lets the context through, so that the check never blocks a rotation by itself.
+     * Checks the context the way an inter-node transport uses it, with the context at both ends: the node's own trust store must accept
+     * the node's own certificate. Peers on the same trust store then accept it too. A node whose trust store does not hold the authority
+     * of its own certificate, as a client node that trusts only the authority of the server nodes, fails this check although peers
+     * accept it. Only a refused handshake counts. An exchange that cannot be driven to the end for another reason lets the context
+     * through, so that the check never blocks a rotation by itself.
      *
      * @param ctx SSL context to check.
      * @throws SSLException If the handshake was refused.
@@ -96,7 +98,7 @@ public class SslCertificates {
         }
         catch (GeneralSecurityException | IOException | RuntimeException announcedAlready) {
             // The context refuses the probe, which presents no certificate, only after naming the authorities it accepts. A trust
-            // manager that names none, with null accepted issuers, fails the JDK itself before that.
+            // manager whose getAcceptedIssuers() returns null makes the JDK throw NullPointerException before that.
         }
 
         recorder.authorities.sort(Comparator.comparing(X500Principal::getName));
