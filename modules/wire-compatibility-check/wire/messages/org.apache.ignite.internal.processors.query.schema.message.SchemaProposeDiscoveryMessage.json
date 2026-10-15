@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation", "name": "op"},
+    {"order": 2, "type": "java.lang.String", "name": "errMsg"},
+    {"order": 3, "type": "int", "name": "errCode"},
+    {"order": 4, "type": "org.apache.ignite.lang.IgniteUuid", "name": "depId"}
+  ]
+}

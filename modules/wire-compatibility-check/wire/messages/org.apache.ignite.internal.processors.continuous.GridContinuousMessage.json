@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.GridContinuousMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.continuous.GridContinuousMessageType", "name": "type"},
+    {"order": 1, "type": "java.util.UUID", "name": "routineId"},
+    {"order": 2, "type": "java.util.Collection<org.apache.ignite.plugin.extensions.communication.Message>", "name": "msgs"},
+    {"order": 3, "type": "byte[]", "name": "dataBytes"},
+    {"order": 4, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"}
+  ]
+}

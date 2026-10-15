@@ -124,6 +124,16 @@ jobs:
           fi
           exit "$rc"
 
+      - name: Check message wire format descriptions
+        run: |
+          git add -A modules/wire-compatibility-check/wire
+          if ! git diff --cached --quiet -- modules/wire-compatibility-check/wire; then
+            echo "::error title=Outdated wire format descriptions::modules/wire-compatibility-check/wire differs from the compiled messages. Run './mvnw clean process-classes -pl modules/wire-compatibility-check -am' and commit the changes."
+            git diff --cached --color=always -- modules/wire-compatibility-check/wire
+            { echo '```diff'; git diff --cached -- modules/wire-compatibility-check/wire; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Run abandoned tests checks.
         # Reuse classes from the previous step; the differing profiles otherwise trigger a full reactor recompile.
         run : |

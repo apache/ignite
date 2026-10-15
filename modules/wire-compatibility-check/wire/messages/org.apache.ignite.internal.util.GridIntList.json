@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.util.GridIntList",
+  "fields": [
+    {"order": 0, "type": "int[]", "name": "arr"},
+    {"order": 1, "type": "int", "name": "idx"}
+  ]
+}

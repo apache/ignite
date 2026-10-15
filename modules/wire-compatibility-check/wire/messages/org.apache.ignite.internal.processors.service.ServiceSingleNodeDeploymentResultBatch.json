@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId", "name": "depId"},
+    {"order": 1, "type": "java.util.Map<org.apache.ignite.lang.IgniteUuid,org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult>", "name": "results"}
+  ]
+}

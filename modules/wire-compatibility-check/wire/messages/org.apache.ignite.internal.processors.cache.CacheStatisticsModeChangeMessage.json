@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 2, "type": "java.util.Collection<java.lang.String>", "name": "caches"},
+    {"order": 3, "type": "byte", "name": "flags"}
+  ]
+}

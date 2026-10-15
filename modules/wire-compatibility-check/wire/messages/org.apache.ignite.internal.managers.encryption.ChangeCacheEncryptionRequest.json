@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.managers.encryption.ChangeCacheEncryptionRequest",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 1, "type": "int[]", "name": "grpIds"},
+    {"order": 2, "type": "byte[][]", "name": "keys"},
+    {"order": 3, "type": "byte[]", "name": "keyIds"},
+    {"order": 4, "type": "byte[]", "name": "masterKeyDigest"}
+  ]
+}

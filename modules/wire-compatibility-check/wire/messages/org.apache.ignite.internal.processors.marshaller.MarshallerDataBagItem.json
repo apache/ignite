@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.marshaller.MarshallerDataBagItem",
+  "fields": [
+    {"order": 0, "type": "java.util.List<java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.marshaller.MappedName>>", "name": "mappings"}
+  ]
+}

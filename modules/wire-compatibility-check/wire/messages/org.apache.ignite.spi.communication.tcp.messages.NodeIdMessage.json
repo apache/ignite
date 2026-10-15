@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"}
+  ]
+}

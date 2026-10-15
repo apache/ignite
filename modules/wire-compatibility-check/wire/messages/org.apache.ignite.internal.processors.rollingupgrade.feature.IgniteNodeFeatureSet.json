@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet[]", "name": "features"}
+  ]
+}

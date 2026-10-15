@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheData",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "cacheCfgBytes"},
+    {"order": 1, "type": "int", "name": "grpId"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "cacheType"},
+    {"order": 3, "type": "org.apache.ignite.lang.IgniteUuid", "name": "deploymentId"},
+    {"order": 4, "type": "java.util.Collection<org.apache.ignite.internal.processors.query.schema.message.QueryEntityMessage>", "name": "entitiesMsgs"},
+    {"order": 5, "type": "java.util.UUID", "name": "rcvdFrom"},
+    {"order": 6, "type": "boolean", "name": "staticCfg"},
+    {"order": 7, "type": "boolean", "name": "sql"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment", "name": "cacheCfgEnrichment"},
+    {"type": "org.apache.ignite.configuration.CacheConfiguration", "name": "cacheCfg", "annotations": ["@org.apache.ignite.internal.Marshalled(\"cacheCfgBytes\")"]}
+  ]
+}

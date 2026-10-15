@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.util.distributed.SingleNodeMessage",
+  "annotations": ["@org.apache.ignite.internal.JdkMarshalled"],
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "processId"},
+    {"order": 1, "type": "int", "name": "type"},
+    {"order": 2, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "resp"},
+    {"order": 3, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}
