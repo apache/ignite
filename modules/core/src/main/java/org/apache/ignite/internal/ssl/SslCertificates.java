@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.ssl;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -26,10 +28,10 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static javax.net.ssl.SSLEngineResult.HandshakeStatus.FINISHED;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 
 /** Tells what an SSL context presents and whether nodes accept it, by TLS handshakes run in memory, and describes certificates. */
@@ -60,6 +62,7 @@ public class SslCertificates {
     /**
      * @param ctx SSL context.
      * @return Chain the context presents to a client that trusts anything, own certificate first, or {@code null} if it is unknown.
+     * @throws IllegalArgumentException If the JVM rejects a parameter of the context, such as an unknown protocol or cipher suite.
      */
     static @Nullable X509Certificate[] servedChain(SSLContext ctx) {
         try {
@@ -76,7 +79,7 @@ public class SslCertificates {
 
             return Arrays.copyOf(certs, certs.length, X509Certificate[].class);
         }
-        catch (Exception cannotTell) {
+        catch (GeneralSecurityException | IOException cannotTell) {
             return null;
         }
     }
@@ -126,9 +129,7 @@ public class SslCertificates {
     public static String reason(Throwable e) {
         StringBuilder sb = new StringBuilder();
 
-        int depth = 0;
-
-        for (Throwable t = e; t != null && depth < 10; t = t.getCause(), depth++) {
+        for (Throwable t : X.getThrowableList(e)) {
             String msg = t.getMessage();
 
             boolean wrapsCauseOnly = t.getCause() != null && t.getCause().toString().equals(msg);
@@ -172,7 +173,7 @@ public class SslCertificates {
         for (int i = 0; i < MAX_STEPS; i++) {
             boolean progress = step(cli, cliNet, srvNet, app) | step(srv, srvNet, cliNet, app);
 
-            if (done(cli) && done(srv))
+            if (cli.getHandshakeStatus() == NOT_HANDSHAKING && srv.getHandshakeStatus() == NOT_HANDSHAKING)
                 return cli.getSession();
 
             if (!progress)
@@ -215,7 +216,6 @@ public class SslCertificates {
                 return true;
 
             case NEED_UNWRAP:
-            case NEED_UNWRAP_AGAIN:
                 if (!in.hasRemaining())
                     return false;
 
@@ -228,10 +228,5 @@ public class SslCertificates {
             default:
                 return false;
         }
-    }
-
-    /** */
-    private static boolean done(SSLEngine engine) {
-        return engine.getHandshakeStatus() == NOT_HANDSHAKING || engine.getHandshakeStatus() == FINISHED;
     }
 }

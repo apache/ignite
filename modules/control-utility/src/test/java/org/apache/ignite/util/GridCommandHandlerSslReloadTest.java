@@ -82,7 +82,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
             Files.deleteIfExists(keyStore);
     }
 
-    /** One command reloads every node, client ones included, status shows the new certificate, a broken store fails the command. */
+    /** One command reloads every node, client ones included. Status shows the new certificate. A broken store fails the command. */
     @Test
     public void testReloadAndStatus() throws Exception {
         assertNotNull("The reload must ask for confirmation", new SslReloadCommand().confirmationPrompt(new NoArg()));

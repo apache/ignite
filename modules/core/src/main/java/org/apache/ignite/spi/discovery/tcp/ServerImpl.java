@@ -6344,7 +6344,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         sock = spi.acceptedSocket(sock);
                     }
                     catch (IOException | IllegalArgumentException e) {
-                        U.warn(log, "Failed to set TLS up on an accepted connection [rmtAddr=" + sock.getInetAddress() +
+                        U.warn(log, "Failed to set up TLS on an accepted connection [rmtAddr=" + sock.getInetAddress() +
                             ", err=" + e + ']');
 
                         U.closeQuiet(sock);

@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /** SSL contexts of a node: one provider per configured factory, with the metrics of every transport and the automatic renewals. */
 public class SslContextRegistry extends GridProcessorAdapter {
@@ -50,14 +53,17 @@ public class SslContextRegistry extends GridProcessorAdapter {
     /** */
     private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
 
-    /** */
-    private final SslRenewal renewal;
+    /**
+     * The one thread all renewals of the node run in, so that a slow factory holds up no other thread. It starts with the first
+     * renewal.
+     */
+    private final ScheduledExecutorService renewalExec;
 
     /** @param ctx Kernal context. */
     public SslContextRegistry(GridKernalContext ctx) {
         super(ctx);
 
-        renewal = new SslRenewal(ctx.igniteInstanceName(), ctx.log(SslRenewal.class));
+        renewalExec = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
     }
 
     /**
@@ -77,7 +83,7 @@ public class SslContextRegistry extends GridProcessorAdapter {
             providers.add(provider);
 
             if (factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled())
-                renewal.start(provider, f.getRenewBeforeFraction());
+                new SslRenewal(provider, f.getRenewBeforeFraction(), renewalExec, ctx.log(SslRenewal.class)).start();
         }
         else
             provider.addTransport(transport);
@@ -92,9 +98,16 @@ public class SslContextRegistry extends GridProcessorAdapter {
         return Collections.unmodifiableCollection(providers);
     }
 
-    /** {@inheritDoc} */
+    /** Interrupts a renewal attempt in progress and waits for it to end. */
     @Override public void onKernalStop(boolean cancel) {
-        renewal.stop();
+        renewalExec.shutdownNow();
+
+        try {
+            renewalExec.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**

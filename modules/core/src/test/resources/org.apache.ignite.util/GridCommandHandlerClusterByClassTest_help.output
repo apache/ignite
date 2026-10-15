@@ -473,7 +473,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Reload TLS certificates on all cluster nodes from the configured key and trust stores:
     control.(sh|bat) --ssl reload
 
-  Show the TLS certificates of all cluster nodes and how their reloads went:
+  Show the TLS certificates of all cluster nodes and the results of their last reloads:
     control.(sh|bat) --ssl status
 
 By default commands affecting the cluster require interactive confirmation.

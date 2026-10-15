@@ -73,7 +73,7 @@ public class SslStatusTask extends AbstractSslTask {
                 X509Certificate[] chain = provider.servedChain();
 
                 if (chain == null)
-                    lines.add("    serving unknown");
+                    lines.add("    cannot tell which certificate is served");
                 else {
                     long chainNotAfter = chainNotAfter(chain);
 

@@ -1685,7 +1685,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (!isSslEnabled())
             return sock;
 
-        // An address rather than null: with jdk.tls.trustNameService the JDK would look up the name of every accepted peer.
+        // Pass the address, not null: with jdk.tls.trustNameService=true the JDK would do a reverse DNS lookup of each accepted
+        // peer right here, in the accept loop, so a slow DNS would hold up all incoming connections.
         SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory()
             .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
 

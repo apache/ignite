@@ -22,15 +22,14 @@ import java.nio.file.Path;
 import java.security.KeyStore;
 import java.time.Instant;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -38,7 +37,6 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
@@ -82,10 +80,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /** Failure of an issuer that cannot be reached. */
     private static final String ISSUER_DOWN = "Issuer is unavailable";
 
-    /** What the node logs while the factory hands back the certificates in use. */
+    /** What the node logs while the factory returns the certificates in use. */
     private static final String WAITING = "The SSL context factory has no newer TLS certificates yet, the ones in use stay";
 
-    /** Transports a node with SSL configured for the whole node serves on one context, as the log names them. */
+    /** Transports that share the node-wide SSL context, as the log lists them. */
     private static final String NODE_TRANSPORTS = "transports=communication, discovery";
 
     /** Operation context attribute standing for whoever runs a reload. */
@@ -94,16 +92,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /** Authority behind every certificate the nodes get. */
     private TestCertificateAuthority ca;
 
-    /** Issuer of the node under test, {@code null} for a test that does not script one. */
-    private Issuer nodeIssuer;
-
     /** What the renewals log, with the levels. */
     private final MemorizingAppender appender = new MemorizingAppender();
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName).setSslContextFactory(nodeIssuer);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -138,9 +128,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertTrue("The window must open seconds after the node starts, well before expiry", due - now > 3_000 && notAfter - due > 30_000);
 
-        issuer().then(valid(notBefore, notAfter)).then(fresh(HOUR));
-
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(new Issuer(valid(notBefore, notAfter), fresh(HOUR)));
 
         assertTrue(waitForCondition(() -> automaticRenewals("transports=" + COMMUNICATION) == 1, 30_000));
 
@@ -161,14 +149,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue("The renewal thread must stop with the node", waitForCondition(() -> !renewalThreadAlive(g.name()), 10_000));
     }
 
-    /** Failures once less than half of the window remains must be logged as errors and counted, the status must show the next attempt. */
+    /** With less than half of the window left, failures must be logged as errors and counted, and the status must show the next attempt. */
     @Test
     public void testLateFailureLoggedAsError() throws Exception {
         long now = System.currentTimeMillis();
 
-        issuer().then(valid(now - HOUR, now + 2 * MINUTE)).then(failure());
-
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(new Issuer(valid(now - HOUR, now + 2 * MINUTE), failure()));
 
         String late = "Failed to reload TLS certificates, the ones in use stay and expire soon [" + NODE_TRANSPORTS +
             ", initiator=automatic renewal, reason=" + ISSUER_DOWN;
@@ -184,7 +170,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testRenewalNotMovingExpiryRejected() throws Exception {
         long now = System.currentTimeMillis();
 
-        SslContextProvider p = new SslContextProvider(new Issuer().then(valid(now - HOUR, now + 5 * MINUTE)));
+        SslContextProvider p = new SslContextProvider(new Issuer(valid(now - HOUR, now + 5 * MINUTE)));
 
         assertRenewalRejected(p, "The new certificate chain expires no later than the one in use");
     }
@@ -196,11 +182,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         TestCertificateAuthority other = new TestCertificateAuthority("otherca");
 
-        SslContextProvider p = new SslContextProvider(new Issuer().then(fresh(HOUR)).then(() -> other.issue("node", now, now + HOUR)));
+        SslContextProvider p = new SslContextProvider(new Issuer(fresh(HOUR), () -> other.issue("node", now, now + HOUR)));
 
         p.addTransport(COMMUNICATION);
 
-        assertRenewalRejected(p, "A handshake between nodes on the new certificate was refused");
+        assertRenewalRejected(p, "The new certificate fails a test handshake with this node's own trust store");
     }
 
     /** A certificate that is not valid yet must not be put in use, even where no handshake would catch it. */
@@ -208,18 +194,18 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testRenewalNotValidYetRejected() throws Exception {
         long now = System.currentTimeMillis();
 
-        SslContextProvider p = new SslContextProvider(new Issuer().then(fresh(HOUR)).then(valid(now + 10 * MINUTE, now + 2 * HOUR)));
+        SslContextProvider p = new SslContextProvider(new Issuer(fresh(HOUR), valid(now + 10 * MINUTE, now + 2 * HOUR)));
 
         assertRenewalRejected(p, "The new certificate chain is not valid now");
     }
 
     /**
-     * A renewal planned before a reload must give way to it rather than replace the certificate the reload has put in use. The reload
+     * A renewal planned before a reload must not ask for a certificate or replace the one the reload has put in use. The reload
      * must leave the factory's {@code create()} returning the first context.
      */
     @Test
     public void testRenewalPlannedBeforeReloadSuperseded() throws Exception {
-        Issuer issuer = new Issuer().then(fresh(HOUR));
+        Issuer issuer = new Issuer(fresh(HOUR));
 
         SslContextProvider p = new SslContextProvider(issuer);
 
@@ -240,11 +226,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testReloadByCommandReplans() throws Exception {
         long now = System.currentTimeMillis();
 
-        Issuer issuer = issuer().then(valid(now - HOUR, now + 9 * MINUTE)).then(failure()).then(fresh(2 * HOUR)).then(fresh(HOUR));
-
         pauses(MINUTE, MINUTE);
 
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(new Issuer(valid(now - HOUR, now + 9 * MINUTE), failure(), fresh(2 * HOUR), fresh(HOUR)));
 
         assertTrue(waitForCondition(() -> logged(Level.WARN, ISSUER_DOWN) == 1, 30_000));
 
@@ -261,7 +245,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertTrue("The next renewal must follow the new certificate", due > now + HOUR);
 
-        ScheduledThreadPoolExecutor exec = GridTestUtils.getFieldValue(g.context().sslContexts(), "renewal", "exec", "delegate");
+        ScheduledThreadPoolExecutor exec = GridTestUtils.getFieldValue(g.context().sslContexts(), "renewalExec", "delegate");
 
         assertTrue("The cancelled retry must not stay planned", exec.getQueue().stream().map(t -> (RunnableScheduledFuture<?>)t)
             .filter(f -> !f.isCancelled()).allMatch(f -> f.getDelay(TimeUnit.MILLISECONDS) > HOUR));
@@ -272,9 +256,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testReloadContextNotCarriedIntoRenewals() throws Exception {
         long now = System.currentTimeMillis();
 
-        Issuer issuer = issuer().then(fresh(HOUR)).then(valid(now - HOUR, now + 9 * MINUTE)).then(fresh(HOUR));
+        Issuer issuer = new Issuer(fresh(HOUR), valid(now - HOUR, now + 9 * MINUTE), fresh(HOUR));
 
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(issuer);
 
         try (Scope ignored = OperationContext.set(OPERATOR, "operator")) {
             provider(g).reload();
@@ -287,23 +271,19 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A failed renewal must be retried until it succeeds, each pause doubling from the shortest to the longest one, each failure logged
-     * as a warning while more than half of the window is left, and the count of failures cleared by the success.
+     * A failed renewal must be retried until it succeeds. Each pause must double, from the shortest to the longest one. While more
+     * than half of the window is left, each failure must be logged as a warning. The success must clear the count of failures.
      */
     @Test
     public void testFailedRenewalRetried() throws Exception {
         long now = System.currentTimeMillis();
 
-        Issuer issuer = issuer().then(valid(now - HOUR, now + 9 * MINUTE));
-
-        for (int i = 0; i < 6; i++)
-            issuer.then(failure());
-
-        issuer.then(fresh(HOUR));
+        Issuer issuer = new Issuer(valid(now - HOUR, now + 9 * MINUTE),
+            failure(), failure(), failure(), failure(), failure(), failure(), fresh(HOUR));
 
         pauses(100, 400);
 
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(issuer);
 
         assertTrue(waitForCondition(() -> automaticRenewals("transports=" + COMMUNICATION) == 1, 30_000));
 
@@ -315,9 +295,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             assertTrue("Pause " + (i + 1) + " must last at least " + pauses[i] + " ms: " + pause, pause >= pauses[i] - CLOCK_SLACK);
         }
 
-        LogEvent fifth = appender.events().stream()
-            .filter(e -> e.getLevel() == Level.WARN && e.getMessage().getFormattedMessage().contains(ISSUER_DOWN))
-            .skip(4).findFirst().get();
+        LogEvent fifth = events(Level.WARN, ISSUER_DOWN).get(4);
 
         assertTrue("The longest pause must hold, a doubling one would be 1600 ms by now", plannedPause(fifth) <= 600);
 
@@ -333,12 +311,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testFailureBeforeExpiringRetryLoggedAsError() throws Exception {
         long now = System.currentTimeMillis();
 
-        Issuer issuer = issuer().then(valid(now - HOUR, now + 2 * MINUTE)).then(failure());
+        Issuer issuer = new Issuer(valid(now - HOUR, now + 2 * MINUTE), failure());
 
         issuer.setRenewBeforeFraction(0.05);
         pauses(5 * MINUTE, 5 * MINUTE);
 
-        startGrid(0);
+        startNode(issuer);
 
         assertTrue(waitForCondition(() -> logged(Level.ERROR, "initiator=automatic renewal, reason=" + ISSUER_DOWN) == 1, 30_000));
     }
@@ -355,11 +333,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             return ca.issue("node", t - HOUR, t + 5 * MINUTE + issued.incrementAndGet() * 1_000L);
         };
 
-        Issuer issuer = issuer().then(dueOnIssue);
+        Issuer issuer = new Issuer(dueOnIssue);
 
         pauses(300, 300);
 
-        startGrid(0);
+        startNode(issuer);
 
         assertTrue(waitForCondition(() -> issuer.calls.size() >= 5, 30_000));
 
@@ -370,7 +348,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Renewal settings out of range must be refused at once. */
+    /** A {@code renewBeforeFraction} out of range must be refused at once. */
     @Test
     public void testInvalidSettingsRefused() {
         SslContextFactory factory = new SslContextFactory();
@@ -384,9 +362,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testClientConnectorRenewed() throws Exception {
         long now = System.currentTimeMillis();
 
-        Issuer issuer = issuer().then(valid(now - HOUR, now + 5 * MINUTE)).then(fresh(HOUR));
+        Issuer issuer = new Issuer(valid(now - HOUR, now + 5 * MINUTE), fresh(HOUR));
 
-        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(null)
+        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
                 .setUseIgniteSslContextFactory(false).setSslContextFactory(issuer)));
 
@@ -410,25 +388,23 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         long now = System.currentTimeMillis();
 
-        Issuer issuer = issuer().then(valid(now - HOUR, now + 5 * MINUTE));
+        Issuer issuer = new Issuer(valid(now - HOUR, now + 5 * MINUTE));
 
         issuer.setRenewalEnabled(false);
 
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(issuer);
 
-        int calls = issuer.calls.size();
-
-        assertFalse("A certificate in the window must stay", waitForCondition(() -> issuer.calls.size() > calls, 2_000));
+        assertEquals("A certificate in the window must stay", 1, issuer.calls.size());
         assertEquals(0, nextRenewalTime(g));
         assertFalse(renewalThreadAlive(g.name()));
         assertTrue(appender.events().isEmpty());
     }
 
     /**
-     * While the factory hands back the certificate in use, as a file-based one does until the files are replaced, the node must wait
-     * rather than fail: no failures counted, one warning without a stack trace for many attempts, the wait started afresh by a reload
-     * (logged again, naming every transport of the started node, the shortest pause again). The first warning may come before discovery
-     * is registered, so it is not checked for the transports.
+     * While the factory returns the certificate in use, as a file-based one does until the files are replaced, the node must wait
+     * rather than fail. It must count no failures and log one warning without a stack trace for many attempts. A reload must start
+     * the wait over: the warning comes again and names every transport of the node, and the pause is the shortest one again. The
+     * first warning may come before discovery is registered, so only the warning after the reload must name the transports.
      */
     @Test
     public void testWaitsForNewerCertificate() throws Exception {
@@ -436,9 +412,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         KeyStore inUse = ca.issue("node", now - HOUR, now + 9 * MINUTE);
 
-        Issuer issuer = issuer().then(() -> inUse);
+        Issuer issuer = new Issuer(() -> inUse);
 
-        IgniteEx g = startGrid(0);
+        IgniteEx g = startNode(issuer);
 
         assertTrue(waitForCondition(() -> issuer.calls.size() >= 6, 30_000));
 
@@ -458,11 +434,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         reload(g);
 
         assertTrue(waitForCondition(() -> logged(Level.WARN, WAITING) == 2, 30_000));
-        assertTrue(logged(Level.WARN, WAITING + " [" + NODE_TRANSPORTS) >= 1);
 
-        LogEvent afterReload = appender.events().stream()
-            .filter(e -> e.getLevel() == Level.WARN && e.getMessage().getFormattedMessage().contains(WAITING)).skip(1).findFirst().get();
+        LogEvent afterReload = events(Level.WARN, WAITING).get(1);
 
+        assertContains(log, afterReload.getMessage().getFormattedMessage(), WAITING + " [" + NODE_TRANSPORTS);
         assertTrue("The pause must be the shortest one again, not 800 ms or more", plannedPause(afterReload) < 400);
     }
 
@@ -472,7 +447,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AtomicReference<KeyStore> inUse = new AtomicReference<>();
 
         // Issued on the first request, so that the time left does not depend on how long the node takes to start.
-        Issuer issuer = issuer().then(() -> {
+        Issuer issuer = new Issuer(() -> {
             if (inUse.get() == null) {
                 long t = System.currentTimeMillis();
 
@@ -484,7 +459,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         issuer.setRenewBeforeFraction(0.22);
 
-        startGrid(0);
+        startNode(issuer);
 
         assertTrue(waitForCondition(() -> logged(Level.ERROR, WAITING + " and expire soon") == 1, 30_000));
 
@@ -496,7 +471,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(1, logged(Level.ERROR, WAITING));
     }
 
-    /** Certificates handed back as they are in use, even the very same context or an expired chain, must leave nothing to renew yet. */
+    /** A factory that returns the certificates in use, as the very same context or as an expired chain, must leave nothing to renew. */
     @Test
     public void testSameCertificatesUnchanged() throws Exception {
         long now = System.currentTimeMillis();
@@ -509,7 +484,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         KeyStore expired = ca.issue("node", now - 2 * HOUR, now - HOUR);
 
-        SslContextProvider expiredProvider = new SslContextProvider(new Issuer().then(() -> expired));
+        SslContextProvider expiredProvider = new SslContextProvider(new Issuer(() -> expired));
 
         assertEquals(SslContextProvider.RenewalResult.UNCHANGED, expiredProvider.renew(expiredProvider.context()));
     }
@@ -532,7 +507,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             factory.setTrustManagers(TestCertificateAuthority.trustManagers(ca.trustStore()));
             factory.setRenewalEnabled(true);
 
-            IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(factory));
+            IgniteEx g = startNode(factory);
 
             assertTrue(waitForCondition(() -> logged(Level.WARN, WAITING) == 1, 30_000));
 
@@ -546,10 +521,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
     }
 
-    /** A factory whose certificate cannot be told, here one without a key, is not renewed and gets no failed reload counted. */
+    /** If the node cannot tell when the certificate expires, here with no key in the key store, it must not renew or count a failure. */
     @Test
     public void testUnknownCertificateNotRenewed() throws Exception {
-        Issuer issuer = issuer().then(() -> {
+        Issuer issuer = new Issuer(() -> {
             KeyStore noKey = KeyStore.getInstance(KeyStore.getDefaultType());
 
             noKey.load(null, null);
@@ -557,7 +532,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             return noKey;
         });
 
-        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(null)
+        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
                 .setUseIgniteSslContextFactory(false).setSslContextFactory(issuer)));
 
@@ -570,11 +545,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals("Nothing must be renewed", 1, issuer.calls.size());
     }
 
-    /** @return Issuer of the node under test, created empty. */
-    private Issuer issuer() {
-        nodeIssuer = new Issuer();
-
-        return nodeIssuer;
+    /**
+     * @param factory SSL context factory of the node.
+     * @return Started node.
+     */
+    private IgniteEx startNode(AbstractSslContextFactory factory) throws Exception {
+        return startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(factory));
     }
 
     /**
@@ -639,7 +615,17 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      * @return How many messages with the text the renewals logged at the level.
      */
     private long logged(Level level, String text) {
-        return appender.events().stream().filter(e -> e.getLevel() == level && e.getMessage().getFormattedMessage().contains(text)).count();
+        return events(level, text).size();
+    }
+
+    /**
+     * @param level Level.
+     * @param text Text the message contains.
+     * @return Messages with the text the renewals logged at the level, in the order logged.
+     */
+    private List<LogEvent> events(Level level, String text) {
+        return appender.events().stream().filter(e -> e.getLevel() == level && e.getMessage().getFormattedMessage().contains(text))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -731,28 +717,18 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Steps not taken yet. */
-        private final Queue<Callable<KeyStore>> steps = new ConcurrentLinkedQueue<>();
+        /** Answers to the requests in order, the last one repeated for the rest. */
+        private final List<Callable<KeyStore>> steps;
 
         /** Requests so far. */
         private final List<Call> calls = new CopyOnWriteArrayList<>();
 
-        /** Step taken last. */
-        private volatile Callable<KeyStore> last;
+        /** @param steps Answers to the requests in order, the last one repeated for the rest. */
+        @SafeVarargs
+        private Issuer(Callable<KeyStore>... steps) {
+            this.steps = List.of(steps);
 
-        /** */
-        private Issuer() {
             setRenewalEnabled(true);
-        }
-
-        /**
-         * @param step Step to take on the next request not scripted yet.
-         * @return {@code this} for chaining.
-         */
-        private Issuer then(Callable<KeyStore> step) {
-            steps.add(step);
-
-            return this;
         }
 
         /** {@inheritDoc} */
@@ -762,15 +738,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected KeyManager[] createKeyManagers() throws SSLException {
+            Callable<KeyStore> step = steps.get(Math.min(calls.size(), steps.size() - 1));
+
             calls.add(new Call());
 
-            Callable<KeyStore> step = steps.poll();
-
-            if (step != null)
-                last = step;
-
             try {
-                return TestCertificateAuthority.keyManagers(last.call());
+                return TestCertificateAuthority.keyManagers(step.call());
             }
             catch (IgniteException e) {
                 throw e;

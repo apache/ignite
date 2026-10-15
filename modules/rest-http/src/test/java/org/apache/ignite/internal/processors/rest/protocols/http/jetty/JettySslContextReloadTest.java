@@ -117,13 +117,8 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
         SSLContext client = GridTestUtils.sslTrustedFactory("node01", "trustboth").create();
 
-        try (SSLSocket before = socket(client, port(g))) {
-            assertEquals("CN=node01", subject(before));
-            assertTrue(get(before, "node01").startsWith("HTTP/1.1 200"));
-        }
-
         try (SSLSocket open = socket(client, port(g))) {
-            open.startHandshake();
+            assertEquals("CN=node01", subject(open));
 
             place("node02", keyStore);
 
@@ -159,14 +154,14 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A node does not start when its Jetty configuration serves no TLS, or has stores or revocation settings of its own next to
-     * the factory.
+     * A node does not start when its Jetty configuration has no SSL connection factory, or has stores or revocation settings of its
+     * own next to the factory.
      */
     @Test
     public void testJettySslSettingsWithFactoryRefused() {
         jettyPath = JETTY_PLAIN;
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "serves no TLS");
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, "has no SSL connection factory");
 
         jettyPath = JETTY_OWN_STORES;
 

@@ -21,7 +21,7 @@ package org.apache.ignite.internal.management.ssl;
 public class SslStatusCommand extends AbstractSslCommand {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Show the TLS certificates of all cluster nodes and how their reloads went";
+        return "Show the TLS certificates of all cluster nodes and the results of their last reloads";
     }
 
     /** {@inheritDoc} */

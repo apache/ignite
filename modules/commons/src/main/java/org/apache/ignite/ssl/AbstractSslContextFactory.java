@@ -41,7 +41,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
-    /** Default share of the certificate lifetime left when a node renews it. */
+    /** Default share of the certificate lifetime left when a node starts to renew it. */
     public static final double DFLT_RENEW_BEFORE_FRACTION = 0.15;
 
     /** SSL protocol. */
@@ -56,10 +56,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Cached instance of an {@link SSLContext}. */
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
-    /** Whether a node renews the certificate by itself before it expires. */
+    /** Whether a node builds its SSL context again before the certificate expires, to pick up a new certificate. */
     private boolean renewalEnabled;
 
-    /** Share of the certificate lifetime left when a node renews it. */
+    /** Share of the certificate lifetime left when a node starts to renew it. */
     private double renewBeforeFraction = DFLT_RENEW_BEFORE_FRACTION;
 
     /**
@@ -118,13 +118,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.protocols = protocols;
     }
 
-    /** @return Whether a node renews the certificate by itself before it expires. */
+    /** @return Whether a node builds its SSL context again before the certificate expires, to pick up a new certificate. */
     public boolean isRenewalEnabled() {
         return renewalEnabled;
     }
 
     /**
-     * Sets whether a node renews the certificate by itself before it expires. Disabled by default.
+     * Sets whether a node builds its SSL context again before the certificate expires, to pick up a new certificate. The node does
+     * not obtain certificates: put them in place yourself. Disabled by default.
      *
      * @param renewalEnabled Whether renewal is enabled.
      */
@@ -132,14 +133,15 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         this.renewalEnabled = renewalEnabled;
     }
 
-    /** @return Share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it. */
+    /** @return Share of the certificate lifetime left when a node starts to renew the certificate. */
     public double getRenewBeforeFraction() {
         return renewBeforeFraction;
     }
 
     /**
-     * Sets the share of the certificate lifetime, from its start to the earliest expiry in its chain, left when a node renews it;
-     * greater than {@code 0} and less than {@code 1}. If not specified, {@link #DFLT_RENEW_BEFORE_FRACTION} is used.
+     * Sets the share of the certificate lifetime left when a node starts to renew the certificate. The lifetime runs from the time
+     * the certificate becomes valid to the earliest expiry in its chain. Must be greater than {@code 0} and less than {@code 1}.
+     * If not specified, {@link #DFLT_RENEW_BEFORE_FRACTION} is used.
      *
      * @param renewBeforeFraction Share of the lifetime.
      */

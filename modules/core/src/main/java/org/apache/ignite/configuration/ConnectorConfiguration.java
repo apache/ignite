@@ -520,11 +520,13 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Sets the factory of the SSL context HTTP REST serves. HTTP REST then serves HTTPS, and its certificates are reloaded, checked,
-     * reported and renewed the same way as those of the other transports of the node.
+     * Sets the factory of the SSL context HTTP REST serves. HTTP REST then serves HTTPS, and {@code control.sh --ssl reload},
+     * {@code --ssl status}, the {@code ssl.http.rest} metrics and automatic renewal cover its certificates like those of the other
+     * transports of the node.
      * <p>
-     * A Jetty configuration set with {@link #setJettyPath(String)} must then have an SSL connection factory without a key store,
-     * trust store, SSL context, SSL session settings or certificate revocation settings of its own. Settings such as client
+     * If a Jetty configuration is set with {@link #setJettyPath(String)}, it must have an SSL connection factory with no key store,
+     * trust store, SSL context, SSL session settings or certificate revocation settings of its own, otherwise the node does not
+     * start: Jetty would apply the session settings to the first SSL context only and ignore the rest. Settings such as client
      * authentication stay in the Jetty configuration.
      *
      * @param httpSslFactory SSL context factory.

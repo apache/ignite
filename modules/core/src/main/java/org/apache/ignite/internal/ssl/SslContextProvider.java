@@ -112,18 +112,20 @@ public class SslContextProvider {
     }
 
     /**
-     * Builds the certificates the configuration points at now, puts them in use for new connections and records the outcome. The new
-     * context goes in use only if it presents a certificate when the one in use does, every certificate of its chain is valid now and,
-     * if nodes connect on it, this node's own trust store accepts it.
+     * Builds a new context from the factory, puts it in use for new connections and records the outcome. The new context goes in use
+     * only if it presents a certificate when the one in use does, every certificate of its chain is valid now and, if nodes connect on
+     * it, this node's own trust store accepts it.
      *
-     * @throws IgniteCheckedException If they cannot be built or would be refused, or there is nothing to read again. The ones in use stay.
+     * @throws IgniteCheckedException If the new context cannot be built or fails a check, or the factory returns the context in use.
+     *      The context in use stays.
      */
     public synchronized void reload() throws IgniteCheckedException {
         try {
             SSLContext rebuilt = build();
 
             if (rebuilt == ctx)
-                throw new IgniteCheckedException("The SSL context factory hands back the context in use, there is nothing to read again");
+                throw new IgniteCheckedException("The SSL context factory returns the context in use, so the node gets no new " +
+                    "certificates from it");
 
             X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
@@ -192,8 +194,7 @@ public class SslContextProvider {
     /**
      * @param rebuilt Context built anew.
      * @param next Chain it presents, {@code null} if it is unknown.
-     * @throws IgniteCheckedException If it presents no certificate while the context in use does, a certificate it presents is not valid
-     *      now, or nodes refuse it.
+     * @throws IgniteCheckedException If it fails a check {@link #reload()} lists.
      */
     private void check(SSLContext rebuilt, @Nullable X509Certificate[] next) throws IgniteCheckedException {
         if (next == null && chain != null) {
@@ -215,8 +216,8 @@ public class SslContextProvider {
                 SslCertificates.checkInterNodeHandshake(rebuilt);
             }
             catch (SSLException e) {
-                throw new IgniteCheckedException("A handshake between nodes on the new certificate was refused, checked against this " +
-                    "node's own trust store [" + describe(next == null ? null : next[0]) + ']', e);
+                throw new IgniteCheckedException("The new certificate fails a test handshake with this node's own trust store [" +
+                    describe(next == null ? null : next[0]) + ']', e);
             }
         }
     }
@@ -276,7 +277,7 @@ public class SslContextProvider {
         /** Nothing: another context was put in use since the renewal was planned. */
         SUPERSEDED,
 
-        /** Nothing: the factory hands back the certificates in use, there is no newer one yet. */
+        /** Nothing: the factory returns the certificates in use, there is no newer one yet. */
         UNCHANGED
     }
 }

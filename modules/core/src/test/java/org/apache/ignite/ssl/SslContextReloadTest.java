@@ -147,7 +147,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, status(g0), "chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter));
     }
 
-    /** A node that fails holds the others back neither from the new certificate nor from the report, and the command fails. */
+    /** One node fails: the others still take the new certificate and appear in the report; the command fails. */
     @Test
     public void testPartialFailureAcrossNodes() throws Exception {
         IgniteEx g0 = startGrid(0);
@@ -165,7 +165,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         String failed = "Failed on 1 node(s):\n" + g1.localNode().id() + ": failed on ";
         String succeeded = "\n\nSucceeded on 1 node(s):\n" + g0.localNode().id() + ": reloaded ";
 
-        assertTrue("The failed node must be listed first, apart from the other one: " + res,
+        assertTrue("The failed node must be listed first, in a separate block: " + res,
             res.contains(failed) && res.indexOf(succeeded) > res.indexOf(failed));
 
         assertEquals("CN=node02", servedSubject(g0.context().clientListener().port()));
@@ -177,8 +177,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A factory that is not an {@link AbstractSslContextFactory} and hands back the context in use leaves nothing to read again, which
-     * fails the reload with that reason.
+     * A factory that is not an {@link AbstractSslContextFactory} and returns the context in use fails the reload: the node gets no
+     * new certificates from it.
      */
     @Test
     public void testCachingFactoryNotReloaded() throws Exception {
@@ -193,7 +193,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         String res = reloadFailure(g);
 
         assertFailed(res, g, ALL_TRANSPORTS);
-        assertContains(log, res, "hands back the context in use");
+        assertContains(log, res, "returns the context in use");
 
         assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
     }
@@ -217,8 +217,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         initTrustStore = "trustone";
 
         LogListener untrusted = LogListener.matches(Pattern.compile("Failed to reload TLS certificates, the ones in use stay " +
-            "\\[transports=" + ALL_TRANSPORTS + ", initiator=management command, .*reason=A handshake between nodes on the new " +
-            "certificate was refused.*subject=CN=node02,")).build();
+            "\\[transports=" + ALL_TRANSPORTS + ", initiator=management command, .*reason=The new certificate fails a test handshake " +
+            "with this node's own trust store.*subject=CN=node02,")).build();
 
         LogListener expired = LogListener.matches(Pattern.compile("Failed to reload TLS certificates, the ones in use stay .*" +
             "reason=The new certificate chain is not valid now \\[subject=CN=node02old,")).build();
@@ -233,7 +233,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         String res = reloadFailure(g);
 
         assertFailed(res, g, ALL_TRANSPORTS);
-        assertContains(log, res, "A handshake between nodes on the new certificate was refused");
+        assertContains(log, res, "The new certificate fails a test handshake with this node's own trust store");
         assertContains(log, res, "subject=CN=node02,");
         assertTrue(untrusted.check());
 
@@ -243,7 +243,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         assertContains(log, status, "serving subject=CN=node01, issuer=");
         assertContains(log, status, "last reload failed 1 time(s) in a row");
-        assertContains(log, status, "A handshake between nodes on the new certificate was refused");
+        assertContains(log, status, "The new certificate fails a test handshake with this node's own trust store");
 
         placeTrust("trustboth");
         placeKeys("node02old");
@@ -257,7 +257,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(discoveryPort(g)));
     }
 
-    /** A client connector on a factory of its own reloads apart, with no handshake check between nodes: they do not use its trust store. */
+    /** A client connector with its own factory reloads separately and skips the handshake check: nodes do not use its trust store. */
     @Test
     public void testOwnClientConnectorFactoryReloadedApart() throws Exception {
         initTrustStore = "trustone";
@@ -291,7 +291,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
     }
 
-    /** The authority is replaced by steps: trust the new one, present its certificates, drop the old one; a node of the new one joins. */
+    /** The authority is replaced in steps: trust the new one, present its certificates, drop the old one; a node of the new one joins. */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
         initTrustStore = "trustone";
