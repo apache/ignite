@@ -419,8 +419,8 @@ The metrics belong to the `snapshot` register, see link:monitoring-metrics/new-m
 Metrics related to JDBC/ODBC or thin client connections.
 
 * `ActiveSessionsCount`, `thin.ActiveSessions`, `jdbc.ActiveSessions`, `odbc.ActiveSessions` - The number of active connections, total and per client type (`client.connector` register, see link:monitoring-metrics/new-metrics#ignite-thin-client-connector[Ignite Thin Client Connector]).
-* `thin.ActiveComputeTasksOnBusiestConnection` - The maximum number of active compute tasks per connection among open thin client connections; system tasks are not counted (`client.connector` register, see link:monitoring-metrics/new-metrics#ignite-thin-client-connector[Ignite Thin Client Connector]).
-* The link:monitoring-metrics/system-views#client_connections[CLIENT_CONNECTIONS] system view lists every connection with its user and addresses.
+* `PeakActiveComputeTasksPerConnection` - The maximum number of active compute tasks per thin client connection during the last time interval (90 seconds by default, can be changed with `control.sh --metric --configure-max-value`). The value is updated when a task is started; system tasks are not counted, a task rejected because of the limit is counted as the limit. To not miss peaks between polls, set the interval longer than the polling period of your monitoring system (`client.connector` register, see link:monitoring-metrics/new-metrics#ignite-thin-client-connector[Ignite Thin Client Connector]).
+* The link:monitoring-metrics/system-views#client_connections[CLIENT_CONNECTIONS] system view lists every connection with its user, addresses and the current number of active compute tasks.
 * `Connections` - Attribute of the `ClientProcessorMXBean` MBean, not available in the metric registers. A list of strings, each string containing information about a connection:
 
 ....
