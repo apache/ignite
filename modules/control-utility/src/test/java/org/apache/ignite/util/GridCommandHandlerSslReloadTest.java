@@ -33,6 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.ssl.SslTestUtils.node;
 import static org.apache.ignite.ssl.SslTestUtils.place;
 import static org.apache.ignite.ssl.SslTestUtils.servedSubject;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -94,14 +95,16 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         String out = executeCommand(EXIT_CODE_OK, "--ssl", "reload");
 
         for (IgniteEx node : nodes)
-            assertContains(log, out, node.localNode().id() + ": reloaded " + transports(node) + "; serving subject=CN=node02");
+            assertContains(log, out, node(node) + ": reloaded " + transports(node) + "; serving subject=CN=node02");
 
         assertEquals("CN=node02", servedSubject(nodes.get(0).localNode().attribute(ATTR_REST_TCP_PORT)));
 
         out = executeCommand(EXIT_CODE_OK, "--ssl", "status");
 
+        assertContains(log, out, "    trusts: unknown");
+
         for (IgniteEx node : nodes)
-            assertContains(log, out, node.localNode().id() + ": " + transports(node));
+            assertContains(log, out, node(node) + ": " + transports(node));
 
         assertContains(log, out, "serving subject=CN=node02");
         assertNotContains(log, out, "subject=CN=node01");

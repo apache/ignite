@@ -66,7 +66,7 @@ public class SslReloadTask extends AbstractSslTask {
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
-            String id = ignite.localNode().id().toString();
+            String id = node(ignite.localNode());
 
             Collection<SslContextProvider> providers = ignite.context().sslContexts().providers();
 

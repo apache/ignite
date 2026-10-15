@@ -18,13 +18,16 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -62,8 +65,11 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** Protocols of the factory, {@code null} for the defaults. */
     private String[] protocols;
 
-    /** Whether HTTP REST asks clients for a certificate. */
+    /** Whether HTTP REST requires a certificate from clients. */
     private boolean clientAuth;
+
+    /** Whether the node starts without {@code httpSslFactory}. */
+    private boolean noFactory;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -78,7 +84,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             factory.setProtocols(protocols);
 
         return super.getConfiguration(igniteInstanceName)
-            .setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(jettyPath).setHttpSslFactory(factory)
+            .setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(jettyPath).setHttpSslFactory(noFactory ? null : factory)
                 .setHttpSslClientAuth(clientAuth));
     }
 
@@ -121,6 +127,11 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             assertTrue(get(after, "node02").startsWith("HTTP/1.1 200"));
         }
 
+        try (SSLSocket byIp = socket(client, port(g))) {
+            assertTrue("A request by IP address must pass, whatever host the certificate names",
+                get(byIp, "127.0.0.1").startsWith("HTTP/1.1 200"));
+        }
+
         assertEquals("CN=node02", g.context().metric().registry("ssl.http.rest").findMetric("CertificateSubject").getAsString());
 
         Files.write(keyStore, "not a key store".getBytes());
@@ -154,6 +165,11 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             assertEquals("CN=node01", subject(sock));
             assertTrue(get(sock, "node01").startsWith("HTTP/1.1 200"));
         }
+
+        try (SSLSocket byIp = socket(GridTestUtils.sslTrustedFactory("node01", "trustboth").create(), port(g))) {
+            assertTrue("A request by IP address must pass, whatever host the certificate names",
+                get(byIp, "127.0.0.1").startsWith("HTTP/1.1 200"));
+        }
     }
 
     /** A node does not start when the connector in its Jetty configuration has an SSL connection factory of its own. */
@@ -165,7 +181,20 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             "must have no SSL connection factory of its own");
     }
 
-    /** With client authentication on, HTTP REST refuses a client whose certificate the trust store of the factory does not accept. */
+    /** A node does not start with client authentication on but no factory: the setting would do nothing. */
+    @Test
+    public void testClientAuthWithoutFactoryRefused() {
+        clientAuth = true;
+        noFactory = true;
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class,
+            "applies only to TLS set up with httpSslFactory");
+    }
+
+    /**
+     * With client authentication on, HTTP REST refuses a client whose certificate the trust store of the factory does not accept, and
+     * a client that presents no certificate at all.
+     */
     @Test
     public void testClientAuth() throws Exception {
         clientAuth = true;
@@ -176,13 +205,44 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             sock.startHandshake();
         }
 
-        try (SSLSocket sock = tls12Socket(GridTestUtils.sslTrustedFactory("connectorClient", "trustboth").create(), port)) {
+        assertHandshakeRefused(GridTestUtils.sslTrustedFactory("connectorClient", "trustboth").create(), port);
+        assertHandshakeRefused(trustingOnly("trustboth"), port);
+    }
+
+    /**
+     * @param cli Context to connect with.
+     * @param port Port to connect to.
+     */
+    private static void assertHandshakeRefused(SSLContext cli, int port) throws Exception {
+        try (SSLSocket sock = tls12Socket(cli, port)) {
             GridTestUtils.assertThrows(log, () -> {
                 sock.startHandshake();
 
                 return null;
             }, IOException.class, null);
         }
+    }
+
+    /**
+     * @param trustStore Test trust store.
+     * @return Context that trusts the store and presents no certificate.
+     */
+    private static SSLContext trustingOnly(String trustStore) throws Exception {
+        KeyStore trust = KeyStore.getInstance(KeyStore.getDefaultType());
+
+        try (InputStream in = Files.newInputStream(Path.of(keyStorePath(trustStore)))) {
+            trust.load(in, keyStorePassword().toCharArray());
+        }
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+        tmf.init(trust);
+
+        SSLContext ctx = SSLContext.getInstance("TLS");
+
+        ctx.init(null, tmf.getTrustManagers(), null);
+
+        return ctx;
     }
 
     /** @return HTTP REST port of the node. */
@@ -219,7 +279,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
     /**
      * @param sock Connection.
-     * @param host Host to ask for: Jetty refuses a host that the certificate does not name.
+     * @param host Host to ask for.
      * @return Status line of the answer to a REST command.
      */
     private static String get(SSLSocket sock, String host) throws IOException {

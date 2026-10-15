@@ -22,6 +22,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -56,7 +58,7 @@ public class SslStatusTask extends AbstractSslTask {
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
-            String id = ignite.localNode().id().toString();
+            String id = node(ignite.localNode());
 
             Collection<SslContextProvider> providers = ignite.context().sslContexts().providers();
 
@@ -86,6 +88,11 @@ public class SslStatusTask extends AbstractSslTask {
                         lines.add("    PROBLEM: the certificate is not valid now, peers refuse it");
                     }
                 }
+
+                List<X500Principal> trusted = provider.trustedAuthorities();
+
+                lines.add(trusted.isEmpty() ? "    trusts: unknown" : "    trusts: " +
+                    trusted.stream().map(X500Principal::toString).collect(Collectors.joining("; ")));
 
                 int failures = provider.failures();
 

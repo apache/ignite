@@ -21,37 +21,46 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.ssl.SslReloadTask;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
+import static org.apache.ignite.ssl.SslTestUtils.node;
 import static org.apache.ignite.ssl.SslTestUtils.place;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
 import static org.apache.ignite.ssl.SslTestUtils.reloadFailure;
 import static org.apache.ignite.ssl.SslTestUtils.servedSubject;
 import static org.apache.ignite.ssl.SslTestUtils.status;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
  * Tests {@code --ssl reload} and {@code --ssl status} on running nodes. Every node runs on a key store and a trust store of its own, so
@@ -162,8 +171,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertFailed(res, g1, ALL_TRANSPORTS);
         assertContains(log, res, "Failed to initialize key store");
 
-        String failed = "Failed on 1 node(s):\n" + g1.localNode().id() + ": failed on ";
-        String succeeded = "\n\nSucceeded on 1 node(s):\n" + g0.localNode().id() + ": reloaded ";
+        String failed = "Failed on 1 node(s):\n" + node(g1) + ": failed on ";
+        String succeeded = "\n\nSucceeded on 1 node(s):\n" + node(g0) + ": reloaded ";
 
         assertTrue("The failed node must be listed first, in a separate block: " + res,
             res.contains(failed) && res.indexOf(succeeded) > res.indexOf(failed));
@@ -285,13 +294,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         placeKeys("trustboth");
 
-        assertContains(log, reloadFailure(g), g.localNode().id() + ": failed on " + CLIENT_CONNECTOR +
+        assertContains(log, reloadFailure(g), node(g) + ": failed on " + CLIENT_CONNECTOR +
             " (The new SSL context presents no certificate to a client");
 
         assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
     }
 
-    /** The authority is replaced in steps: trust the new one, present its certificates, drop the old one; a node of the new one joins. */
+    /**
+     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one; a node of the new one joins.
+     * Status shows which authorities every node trusts after each step.
+     */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
         initTrustStore = "trustone";
@@ -299,14 +311,24 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         IgniteEx g0 = startGrid(0);
         IgniteEx g1 = startGrid(1);
 
+        assertNotContains(log, status(g0, g1), "CN=twoca");
+
         placeTrust("trustboth");
         reload(g0, g1);
+
+        String trustsBoth = status(g0, g1);
+
+        assertEquals(2, trustsBoth.split("    trusts: ", -1).length - 1);
+        assertContains(log, trustsBoth, "CN=oneca, EMAILADDRESS=oneca@ignite.apache.org; ");
+        assertContains(log, trustsBoth, "CN=twoca, EMAILADDRESS=twoca@ignite.apache.org");
 
         placeKeys("node02");
         reload(g0, g1);
 
         placeTrust("trusttwo");
         reload(g0, g1);
+
+        assertNotContains(log, status(g0, g1), "CN=oneca");
 
         place("node03", keyStore(getTestIgniteInstanceName(2)));
         place("trusttwo", trustStore(getTestIgniteInstanceName(2)));
@@ -330,12 +352,34 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         IgniteEx g = startGrid(0);
 
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> status(g), Exception.class, null));
-        String id = g.localNode().id().toString();
+        String id = node(g);
 
         assertContains(log, res, id + ": " + CLIENT_CONNECTOR + "\n    serving subject=CN=node02old, issuer=");
         assertContains(log, res, id + ": " + COMMUNICATION + ", " + DISCOVERY + "\n    serving subject=CN=node02old, issuer=");
         assertContains(log, res, "CN=twoca");
         assertContains(log, res, "PROBLEM: the certificate is not valid now, peers refuse it");
+
+        String trusts = res.substring(res.indexOf("    trusts: "), res.indexOf('\n', res.indexOf("    trusts: ")));
+
+        assertContains(log, trusts, "CN=oneca");
+        assertContains(log, trusts, "CN=twoca");
+    }
+
+    /** A node whose job did not finish is named in the report like the others. */
+    @Test
+    public void testFailedJobNamesNode() {
+        GridTestNode n = new GridTestNode(UUID.randomUUID());
+
+        n.setConsistentId("cid");
+
+        ComputeJobResult res = Mockito.mock(ComputeJobResult.class);
+
+        Mockito.when(res.getNode()).thenReturn(n);
+        Mockito.when(res.getException()).thenReturn(new IgniteException("node left"));
+
+        Throwable e = GridTestUtils.assertThrows(log, () -> new SslReloadTask().reduce(List.of(res)).result(), IgniteException.class, null);
+
+        assertContains(log, e.getMessage(), "Failed on 1 node(s):\n" + n.id() + " [consistentId=cid]: node left");
     }
 
     /** Both commands say so on a node without SSL. */
@@ -344,8 +388,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(null)
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()));
 
-        assertContains(log, reload(g), g.localNode().id() + ": no SSL context factory is configured");
-        assertContains(log, status(g), g.localNode().id() + ": no SSL context factory is configured");
+        assertContains(log, reload(g), node(g) + ": no SSL context factory is configured");
+        assertContains(log, status(g), node(g) + ": no SSL context factory is configured");
     }
 
     /** @return Factory reading the stores of the node. */
@@ -389,11 +433,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
     /** */
     private void assertReloaded(String res, IgniteEx node, String transports) {
-        assertContains(log, res, node.localNode().id() + ": reloaded " + transports + "; serving ");
+        assertContains(log, res, node(node) + ": reloaded " + transports + "; serving ");
     }
 
     /** */
     private void assertFailed(String res, IgniteEx node, String transports) {
-        assertContains(log, res, node.localNode().id() + ": failed on " + transports + " (");
+        assertContains(log, res, node(node) + ": failed on " + transports + " (");
     }
 }

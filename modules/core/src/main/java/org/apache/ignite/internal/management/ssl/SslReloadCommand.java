@@ -23,7 +23,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 public class SslReloadCommand extends AbstractSslCommand {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Reload TLS certificates on all cluster nodes from the configured key and trust stores";
+        return "Reload TLS certificates on all cluster nodes from their SSL context factories";
     }
 
     /** {@inheritDoc} */

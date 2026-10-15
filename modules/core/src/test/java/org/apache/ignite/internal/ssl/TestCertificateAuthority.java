@@ -104,9 +104,18 @@ class TestCertificateAuthority {
 
     /** @return Trust store with this authority alone. */
     KeyStore trustStore() throws Exception {
+        return trustStore(this);
+    }
+
+    /**
+     * @param authorities Authorities to trust.
+     * @return Trust store with them.
+     */
+    static KeyStore trustStore(TestCertificateAuthority... authorities) throws Exception {
         KeyStore store = emptyStore();
 
-        store.setCertificateEntry(name.getName(), cert);
+        for (TestCertificateAuthority a : authorities)
+            store.setCertificateEntry(a.name.getName(), a.cert);
 
         return store;
     }

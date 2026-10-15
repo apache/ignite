@@ -20,6 +20,7 @@ package org.apache.ignite.internal.ssl;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -34,6 +35,8 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -57,6 +60,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_RENEW_BEFORE_FRACTION;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
@@ -187,6 +191,145 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         p.addTransport(COMMUNICATION);
 
         assertRenewalRejected(p, "The new certificate fails a test handshake with this node's own trust store");
+    }
+
+    /** A renewal to an authority that the trust store in use does not accept yet must be refused, until a reload puts it there. */
+    @Test
+    public void testRenewalToAuthorityNotTrustedYetRejected() throws Exception {
+        for (String transport : new String[] {COMMUNICATION, DISCOVERY}) {
+            long now = System.currentTimeMillis();
+
+            TestCertificateAuthority other = new TestCertificateAuthority("otherca");
+
+            Issuer issuer = new Issuer(fresh(HOUR), () -> other.issue("node", now, now + 2 * HOUR));
+
+            SslContextProvider p = new SslContextProvider(issuer);
+
+            p.addTransport(transport);
+
+            issuer.trust = TestCertificateAuthority.trustStore(ca, other);
+
+            assertRenewalRejected(p, "The trust store in use does not accept the new certificate");
+        }
+    }
+
+    /** A renewal of a transport nodes do not connect on must not be checked against the trust store in use. */
+    @Test
+    public void testClientConnectorRenewalNotCheckedAgainstTrustInUse() throws Exception {
+        long now = System.currentTimeMillis();
+
+        TestCertificateAuthority other = new TestCertificateAuthority("otherca");
+
+        Issuer issuer = new Issuer(fresh(HOUR), () -> other.issue("node", now, now + 2 * HOUR));
+
+        SslContextProvider p = new SslContextProvider(issuer);
+
+        p.addTransport(CLIENT_CONNECTOR);
+
+        issuer.trust = TestCertificateAuthority.trustStore(ca, other);
+
+        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+    }
+
+    /** A renewal that drops the authority of the certificate in use must be refused: peers that have not renewed yet still present it. */
+    @Test
+    public void testRenewalDroppingAuthorityInUseRejected() throws Exception {
+        long now = System.currentTimeMillis();
+
+        TestCertificateAuthority other = new TestCertificateAuthority("otherca");
+
+        Issuer issuer = new Issuer(fresh(HOUR), () -> other.issue("node", now, now + 2 * HOUR));
+
+        issuer.trust = TestCertificateAuthority.trustStore(ca, other);
+
+        SslContextProvider p = new SslContextProvider(issuer);
+
+        p.addTransport(COMMUNICATION);
+
+        issuer.trust = other.trustStore();
+
+        assertRenewalRejected(p, "The new trust store does not accept the certificate in use");
+    }
+
+    /** Once the certificate in use has expired, peers refuse it anyway, so a renewal must not be checked against it. */
+    @Test
+    public void testExpiredCertificateInUseNotCheckedAgainst() throws Exception {
+        long now = System.currentTimeMillis();
+
+        TestCertificateAuthority other = new TestCertificateAuthority("otherca");
+
+        Issuer issuer = new Issuer(valid(now - 2 * HOUR, now - HOUR), () -> other.issue("node", now, now + HOUR));
+
+        SslContextProvider p = new SslContextProvider(issuer);
+
+        p.addTransport(COMMUNICATION);
+
+        issuer.trust = other.trustStore();
+
+        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+        assertEquals("CN=otherca", p.servedCertificate().getIssuerX500Principal().getName());
+    }
+
+    /** The authorities a context announces must come sorted by name, whatever order the trust store holds them in. */
+    @Test
+    public void testTrustedAuthoritiesSorted() throws Exception {
+        long now = System.currentTimeMillis();
+
+        TestCertificateAuthority[] cas = {ca, new TestCertificateAuthority("eca"), new TestCertificateAuthority("bca"),
+            new TestCertificateAuthority("dca"), new TestCertificateAuthority("aca")};
+
+        SSLContext ctx = TestCertificateAuthority.context(ca.issue("node", now - HOUR, now + HOUR),
+            TestCertificateAuthority.trustStore(cas));
+
+        assertEquals(List.of("CN=aca", "CN=bca", "CN=dca", "CN=eca", "CN=renewalca"),
+            SslCertificates.trustedAuthorities(ctx).stream().map(X500Principal::getName).collect(Collectors.toList()));
+    }
+
+    /** A trust manager that names no authorities must leave the node to start, with the authorities unknown. */
+    @Test
+    public void testTrustManagerNamingNoAuthorities() throws Exception {
+        long now = System.currentTimeMillis();
+
+        X509TrustManager namingNone = new X509TrustManager() {
+            @Override public void checkClientTrusted(X509Certificate[] chain, String authType) {
+                // No-op.
+            }
+
+            @Override public void checkServerTrusted(X509Certificate[] chain, String authType) {
+                // No-op.
+            }
+
+            @Override public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        };
+
+        SSLContext ctx = SSLContext.getInstance("TLS");
+
+        ctx.init(TestCertificateAuthority.keyManagers(ca.issue("node", now - HOUR, now + HOUR)), new TrustManager[] {namingNone}, null);
+
+        assertTrue(new SslContextProvider(() -> ctx).trustedAuthorities().isEmpty());
+    }
+
+    /** Once a reload has put a new authority in the trust store in use, a renewal to that authority must go through. */
+    @Test
+    public void testRenewalToTrustedAuthorityAccepted() throws Exception {
+        long now = System.currentTimeMillis();
+
+        TestCertificateAuthority other = new TestCertificateAuthority("otherca");
+
+        Issuer issuer = new Issuer(fresh(HOUR), fresh(HOUR), () -> other.issue("node", now, now + 2 * HOUR));
+
+        SslContextProvider p = new SslContextProvider(issuer);
+
+        p.addTransport(COMMUNICATION);
+
+        issuer.trust = TestCertificateAuthority.trustStore(ca, other);
+
+        p.reload();
+
+        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+        assertEquals("CN=otherca", p.servedCertificate().getIssuerX500Principal().getName());
     }
 
     /** A certificate that is not valid yet must not be put in use, even where no handshake would catch it. */
@@ -723,6 +866,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         /** Requests so far. */
         private final List<Call> calls = new CopyOnWriteArrayList<>();
 
+        /** Trust store of the contexts built from now on, {@code null} for the one of the test authority alone. */
+        private volatile KeyStore trust;
+
         /** @param steps Answers to the requests in order, the last one repeated for the rest. */
         @SafeVarargs
         private Issuer(Callable<KeyStore>... steps) {
@@ -756,7 +902,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected TrustManager[] createTrustManagers() throws SSLException {
             try {
-                return TestCertificateAuthority.trustManagers(ca.trustStore());
+                return TestCertificateAuthority.trustManagers(trust != null ? trust : ca.trustStore());
             }
             catch (Exception e) {
                 throw new SSLException(e);

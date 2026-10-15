@@ -125,7 +125,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Sets whether a node builds its SSL context again before the certificate expires. This lets the node pick up a new certificate
-     * from wherever the factory takes certificates. A file-based factory reads its files again, so put new ones in place yourself.
+     * from wherever the factory takes certificates. A file-based factory reads its files again, so replace the files yourself.
+     * Until you do, the node keeps using its current certificate.
      * Disabled by default.
      *
      * @param renewalEnabled Whether renewal is enabled.
@@ -141,7 +142,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Sets the share of the certificate lifetime left when a node starts to renew the certificate. The lifetime runs from the time
-     * the certificate becomes valid to the earliest expiry in its chain. Must be greater than {@code 0} and less than {@code 1}.
+     * the certificate becomes valid to the earliest expiry in its chain. The value must be greater than {@code 0} and less than
+     * {@code 1}, otherwise this method throws {@link IllegalArgumentException}.
      * If not specified, {@link #DFLT_RENEW_BEFORE_FRACTION} is used.
      *
      * @param renewBeforeFraction Share of the lifetime.
@@ -241,9 +243,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Builds a new SSL context, unlike {@link #create()}, which keeps returning the first one. A subclass that builds its context in
-     * its own {@link #create()} must override this method too and build the context from the same sources. Otherwise this method
-     * builds the context without the code in that {@link #create()}.
+     * Builds a new SSL context, unlike {@link #create()}, which keeps returning the first one. The node calls this method on every
+     * {@code control.sh --ssl reload} and on every attempt to renew the certificate automatically. A subclass that builds its
+     * context in its own {@link #create()} must override this method too and build the context from the same sources. Otherwise
+     * this method builds the context without the code in that {@link #create()}.
+     * <p>
+     * Calls on one node never overlap: while one runs, other reloads and renewals on the node wait. A subclass that fetches
+     * certificates from a remote source must limit how long a call takes. The call must also stop when its thread is interrupted:
+     * a node that stops interrupts the call and waits for it to end.
      *
      * @return SSL context.
      */

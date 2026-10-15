@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.ssl;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -37,6 +38,14 @@ public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, 
     /** */
     private static final long serialVersionUID = 0L;
 
+    /**
+     * @param node Node.
+     * @return Node as the report names it.
+     */
+    static String node(ClusterNode node) {
+        return node.id() + " [consistentId=" + node.consistentId() + ']';
+    }
+
     /** {@inheritDoc} */
     @Override protected String reduce0(List<ComputeJobResult> results) throws IgniteException {
         List<String> failed = new ArrayList<>();
@@ -46,7 +55,7 @@ public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, 
             IgniteException e = jobRes.getException();
 
             if (e != null)
-                failed.add(jobRes.getNode().id() + ": " + reason(e));
+                failed.add(node(jobRes.getNode()) + ": " + reason(e));
             else {
                 IgniteBiTuple<Boolean, String> rep = jobRes.getData();
 

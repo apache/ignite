@@ -92,6 +92,11 @@ public class SslTestUtils {
         return servedCertificate(GridTestUtils.sslTrustedFactory("node01", "trustboth").create(), port).getSubjectX500Principal().getName();
     }
 
+    /** @return Node as the reports of the commands name it. */
+    public static String node(IgniteEx node) {
+        return node.localNode().id() + " [consistentId=" + node.localNode().consistentId() + ']';
+    }
+
     /** @return Discovery port of the node. */
     public static int discoveryPort(IgniteEx node) {
         return ((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).getLocalPort();

@@ -18,16 +18,25 @@
 package org.apache.ignite.internal.ssl;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
+import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedKeyManager;
+import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +69,42 @@ public class SslCertificates {
     }
 
     /**
+     * Checks that the trust store of one context accepts the certificate of another, by a TLS handshake in memory with the first as the
+     * client.
+     *
+     * @param truster Context whose trust store decides.
+     * @param presenter Context whose certificate is checked.
+     * @throws SSLException If the handshake was refused.
+     */
+    static void checkAccepts(SSLContext truster, SSLContext presenter) throws SSLException {
+        handshake(truster, presenter, false);
+    }
+
+    /**
+     * @param ctx SSL context.
+     * @return Names of the authorities the context announces to a client it asks for a certificate, sorted; empty if it announces none.
+     */
+    static List<X500Principal> trustedAuthorities(SSLContext ctx) {
+        AuthorityRecorder recorder = new AuthorityRecorder();
+
+        try {
+            SSLContext probe = SSLContext.getInstance("TLS");
+
+            probe.init(new KeyManager[] {recorder}, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
+
+            handshake(probe, ctx, true);
+        }
+        catch (GeneralSecurityException | IOException | RuntimeException announcedAlready) {
+            // The context refuses the probe, which presents no certificate, only after naming the authorities it accepts. A trust
+            // manager that names none, with null accepted issuers, fails the JDK itself before that.
+        }
+
+        recorder.authorities.sort(Comparator.comparing(X500Principal::getName));
+
+        return recorder.authorities;
+    }
+
+    /**
      * @param ctx SSL context.
      * @return Chain the context presents to a client that trusts anything, own certificate first, or {@code null} if it is unknown.
      * @throws IllegalArgumentException If the JVM rejects a parameter of the context, such as an unknown protocol or cipher suite.
@@ -80,6 +125,52 @@ public class SslCertificates {
             return Arrays.copyOf(certs, certs.length, X509Certificate[].class);
         }
         catch (GeneralSecurityException | IOException cannotTell) {
+            return null;
+        }
+    }
+
+    /** Key manager of a probe client that presents nothing and records the authorities the server asks a certificate from. */
+    private static class AuthorityRecorder extends X509ExtendedKeyManager {
+        /** */
+        private final List<X500Principal> authorities = new ArrayList<>();
+
+        /** {@inheritDoc} */
+        @Override public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
+            if (issuers != null) {
+                for (Principal issuer : issuers)
+                    authorities.add(issuer instanceof X500Principal p ? p : new X500Principal(issuer.getName()));
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket sock) {
+            return chooseEngineClientAlias(keyType, issuers, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getClientAliases(String keyType, Principal[] issuers) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getServerAliases(String keyType, Principal[] issuers) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String chooseServerAlias(String keyType, Principal[] issuers, Socket sock) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public X509Certificate[] getCertificateChain(String alias) {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public PrivateKey getPrivateKey(String alias) {
             return null;
         }
     }

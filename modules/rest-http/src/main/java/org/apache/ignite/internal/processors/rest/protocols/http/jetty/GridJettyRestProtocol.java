@@ -52,6 +52,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
@@ -160,6 +161,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         AbstractNetworkConnector connector = getJettyConnector();
 
+        if (config().isHttpSslClientAuth() && config().getHttpSslFactory() == null) {
+            throw new IgniteCheckedException("ConnectorConfiguration.httpSslClientAuth applies only to TLS set up with httpSslFactory: " +
+                "set httpSslFactory, or set needClientAuth in the Jetty configuration");
+        }
+
         if (config().getHttpSslFactory() != null)
             addTls(connector);
 
@@ -214,6 +220,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         ssl.setNeedClientAuth(config().isHttpSslClientAuth());
 
         connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, connector.getDefaultProtocol()));
+
+        HttpConnectionFactory http = connector.getConnectionFactory(HttpConnectionFactory.class);
+
+        // REST serves one certificate whatever the Host header says, so the SNI host check of Jetty would only turn away requests
+        // by IP address or localhost, such as Kubernetes probes.
+        if (http != null && http.getHttpConfiguration().getCustomizer(SecureRequestCustomizer.class) == null)
+            http.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer(false));
     }
 
     /**

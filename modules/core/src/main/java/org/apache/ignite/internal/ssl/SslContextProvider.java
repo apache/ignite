@@ -20,11 +20,13 @@ package org.apache.ignite.internal.ssl;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -47,6 +49,9 @@ public class SslContextProvider {
 
     /** Chain the context in use presents, {@code null} if it is unknown. */
     private volatile X509Certificate[] chain;
+
+    /** Authorities the context in use announces to a client it asks for a certificate; empty if it announces none. */
+    private volatile List<X500Principal> trustedAuthorities;
 
     /** Told about every new context once it is recorded. */
     private volatile Runnable reloadLsnr = () -> {};
@@ -72,6 +77,7 @@ public class SslContextProvider {
 
         ctx = factory.create();
         chain = SslCertificates.servedChain(ctx);
+        trustedAuthorities = SslCertificates.trustedAuthorities(ctx);
     }
 
     /** @return Factory the context is built with. */
@@ -106,6 +112,11 @@ public class SslContextProvider {
         return chain == null ? null : chain[0];
     }
 
+    /** @return Authorities the context in use announces to a client it asks for a certificate; empty if it announces none. */
+    public List<X500Principal> trustedAuthorities() {
+        return trustedAuthorities;
+    }
+
     /** @param lsnr Told about every new context once it is recorded; must not block. */
     void onReload(Runnable lsnr) {
         reloadLsnr = lsnr;
@@ -131,8 +142,7 @@ public class SslContextProvider {
 
             check(rebuilt, next);
 
-            chain = next;
-            ctx = rebuilt;
+            putInUse(rebuilt, next);
         }
         catch (Throwable e) {
             onFailure(e);
@@ -146,11 +156,14 @@ public class SslContextProvider {
     /**
      * Puts in use a context built anew, provided its chain expires later than the one in use. A renewal that does not move the expiry gains
      * nothing and would be due again at once. A context that presents the chain in use leaves nothing to renew yet and is not checked.
+     * If nodes connect on the context and the chain in use is valid now, the trust store in use must also accept the new certificate,
+     * and the new trust store the certificate in use: a renewal runs on each node at its own time, so the two trust stores stand for
+     * the peers that have not renewed yet and for this node once they do. Peers refuse an expired chain anyway, so it is not compared.
      *
      * @param expected Context the renewal was planned for.
      * @return What the renewal did.
-     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, or does not
-     *      expire later.
+     * @throws IgniteCheckedException If the new context presents another chain that fails the checks of {@link #reload()}, does not
+     *      expire later, is refused by the trust store in use or refuses the certificate in use.
      */
     synchronized RenewalResult renew(SSLContext expected) throws IgniteCheckedException {
         if (ctx != expected)
@@ -172,8 +185,27 @@ public class SslContextProvider {
                     ", inUseChainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(chain)) + ']');
             }
 
-            chain = next;
-            ctx = rebuilt;
+            if (chain != null && SslCertificates.invalidAt(chain, System.currentTimeMillis()) == null &&
+                (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY))) {
+                try {
+                    SslCertificates.checkAccepts(ctx, rebuilt);
+                }
+                catch (SSLException e) {
+                    throw new IgniteCheckedException("The trust store in use does not accept the new certificate; make sure the trust " +
+                        "store of every node holds its issuer, then run control.sh --ssl reload [" + describe(next[0]) + ']', e);
+                }
+
+                try {
+                    SslCertificates.checkAccepts(rebuilt, ctx);
+                }
+                catch (SSLException e) {
+                    throw new IgniteCheckedException("The new trust store does not accept the certificate in use, so it would refuse " +
+                        "peers that have not renewed yet; remove the old authority only after every node serves a certificate from " +
+                        "the new one [" + describe(chain[0]) + ']', e);
+                }
+            }
+
+            putInUse(rebuilt, next);
         }
         catch (Throwable e) {
             onFailure(e);
@@ -184,6 +216,16 @@ public class SslContextProvider {
         onSuccess();
 
         return RenewalResult.RENEWED;
+    }
+
+    /**
+     * @param rebuilt Context that passed the checks.
+     * @param next Chain it presents, {@code null} if it is unknown.
+     */
+    private void putInUse(SSLContext rebuilt, @Nullable X509Certificate[] next) {
+        trustedAuthorities = SslCertificates.trustedAuthorities(rebuilt);
+        chain = next;
+        ctx = rebuilt;
     }
 
     /** @return Context built anew, or the one in use if the factory caches it. */
