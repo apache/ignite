@@ -545,12 +545,14 @@ Register name: `io.discovery`
 |Next | UUID | Next in the ring node ID.
 |PendingMessagesRegistered | integer | Pending messages registered count.
 |RejectedSslConnectionsCount | integer | TCP discovery connections count that were rejected due to SSL errors.
+|SocketReadTimeoutsCount | integer | TCP discovery socket read operations count that timed out.
+|SocketWriteTimeoutsCount | integer | TCP discovery socket write operations count that timed out.
 |SslEnabled | boolean | Whether SSL is enabled.
 |TotalProcessedMessages | integer | Total processed messages count.
 |TotalReceivedMessages | integer | Total received messages count.
 |===
 
-NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
+NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only. `SocketReadTimeoutsCount` indicates the remote node is not sending data (not responding to pings or not sending delivery receipts) — likely a long GC pause on the remote node, a network issue in the receive direction, or the remote node is down. `SocketWriteTimeoutsCount` indicates the remote node is not accepting data (TCP send buffer full) — likely a network issue in the send direction, or the remote node is not reading the socket (GC pause, overloaded, or down).
 
 == Data Region IO
 

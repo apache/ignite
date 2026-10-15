@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.TestMarshalledObjectsMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.Collection<byte[]>", "name": "dataBytes"},
+    {"type": "java.util.Collection<java.lang.Object>", "name": "data", "annotations": ["@org.apache.ignite.internal.Marshalled(\"dataBytes\")"]}
+  ]
+}
