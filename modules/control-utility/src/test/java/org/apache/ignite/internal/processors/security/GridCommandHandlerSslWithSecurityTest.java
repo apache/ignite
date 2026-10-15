@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -53,6 +55,9 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
     /** Password. */
     private final String pwd = "testPwd";
+
+    /** Login of an operator other than the node, so that the log names the operator and not the node. */
+    private static final String OPERATOR = "sslOperator";
 
     /** */
     private final ListeningTestLogger nodeLog = new ListeningTestLogger(log);
@@ -103,7 +108,8 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
+            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false,
+                new TestSecurityData(OPERATOR, pwd, ALL_PERMISSIONS, new Permissions())))
             .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
             .setGridLogger(nodeLog);
 
@@ -213,12 +219,12 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         IgniteEx crd = startGrid();
 
         LogListener logged = LogListener.matches("initiator=management command, originNodeId=" + crd.localNode().id() +
-            ", login=" + login + ", address=").build();
+            ", login=" + OPERATOR + ", address=").build();
 
         nodeLog.registerListener(logged);
 
         assertEquals(EXIT_CODE_OK, newCommandHandler().execute(Arrays.asList("--ssl", "reload", "--yes",
-            "--user", login, "--password", pwd,
+            "--user", OPERATOR, "--password", pwd,
             "--keystore", keyStorePath("thinClient"), "--keystore-password", keyStorePassword(),
             "--truststore", keyStorePath("trusttwo"), "--truststore-password", keyStorePassword())));
 

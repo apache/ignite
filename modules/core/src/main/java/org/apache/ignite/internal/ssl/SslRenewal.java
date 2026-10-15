@@ -94,12 +94,21 @@ class SslRenewal {
         renewal.replan();
     }
 
-    /** Stops the renewals, interrupting an attempt in progress. */
+    /** Stops the renewals, interrupting an attempt in progress and waiting for it to end. */
     synchronized void stop() {
         stopped = true;
 
-        if (exec != null)
-            exec.shutdownNow();
+        if (exec == null)
+            return;
+
+        exec.shutdownNow();
+
+        try {
+            exec.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /** Renewal of one context. Everything but {@link #replan()} runs in the renewal thread. */
