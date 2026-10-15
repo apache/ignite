@@ -25,8 +25,6 @@ code reaching for more than a test actually offers it.
 from itertools import count
 from types import SimpleNamespace
 
-from ignitetest.services.utils.path import IgnitePathAware
-
 
 class FakeLogger:
     """
@@ -93,26 +91,6 @@ class FakeService:
     def who_am_i(self, node):
         """Names the node the way a ducktape service does."""
         return f"{self.__class__.__name__}-{node.account.hostname}"
-
-
-class FakeIgniteService(IgnitePathAware):
-    """
-    Stands in for an Ignite service, with the real path layout behind it.
-    """
-    def __init__(self, *hostnames):
-        self.nodes = fake_nodes(*hostnames)
-
-    def who_am_i(self, node):
-        """Names the node the way a ducktape service does."""
-        return f"{self.__class__.__name__}-{node.account.hostname}"
-
-    @property
-    def product(self):
-        return "ignite-dev"
-
-    @property
-    def globals(self):
-        return {}
 
 
 class FakeBrokenService:
