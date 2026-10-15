@@ -661,7 +661,6 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
                         }
                         finally {
                             active = false;
-
                             completedCnt++;
 
                             execTime.value(U.currentTimeMillis() - lastStartedTs);
