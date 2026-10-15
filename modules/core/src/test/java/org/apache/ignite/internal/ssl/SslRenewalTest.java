@@ -409,7 +409,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /**
      * While the factory hands back the certificate in use, as a file-based one does until the files are replaced, the node must wait
      * rather than fail: no failures counted, one warning without a stack trace for many attempts, the wait started afresh by a reload
-     * (logged again, the shortest pause again).
+     * (logged again, naming every transport of the started node, the shortest pause again). The first warning may come before discovery
+     * is registered, so it is not checked for the transports.
      */
     @Test
     public void testWaitsForNewerCertificate() throws Exception {
@@ -427,7 +428,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertTrue("The pause must double while waiting, up to 800 ms by the fifth one: " + grown, grown >= 800 - CLOCK_SLACK);
 
-        assertEquals(1, logged(Level.WARN, WAITING + " [" + NODE_TRANSPORTS));
+        assertEquals(1, logged(Level.WARN, WAITING));
         assertEquals(0, logged(Level.ERROR, WAITING));
         assertTrue("The wait must be logged without a stack trace", appender.events().stream().allMatch(e -> e.getThrown() == null));
 
@@ -441,6 +442,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         int reloaded = issuer.calls.size();
 
         assertTrue(waitForCondition(() -> logged(Level.WARN, WAITING) == 2, 30_000));
+        assertTrue(logged(Level.WARN, WAITING + " [" + NODE_TRANSPORTS) >= 1);
         assertTrue(waitForCondition(() -> issuer.calls.size() >= reloaded + 2, 30_000));
 
         long pause = issuer.calls.get(reloaded + 1).time - issuer.calls.get(reloaded).time;
