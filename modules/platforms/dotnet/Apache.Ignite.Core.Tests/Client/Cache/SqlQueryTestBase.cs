@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
 
@@ -50,6 +51,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             InitCache(CacheName);
             InitCache(CacheName2);
+        }
+
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            var cfg = base.GetIgniteConfiguration();
+
+            // The tests check the H2 semantics of the distributed joins flag, and the LINQ provider generates SQL
+            // in the H2 dialect: run the server nodes on the H2 engine.
+            cfg.SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml");
+
+            return cfg;
         }
 
         /// <summary>
