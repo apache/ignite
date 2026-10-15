@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -100,13 +99,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** */
     public static final String METRIC_ACTIVE = "ActiveSessions";
-
-    /**
-     * Name suffix of the metric of the maximum number of active compute tasks per connection among open thin client
-     * connections. System tasks are not counted. The full metric name is prefixed with the client type label,
-     * see {@link ClientListenerMetrics#clientTypeLabel(byte)}.
-     */
-    public static final String METRIC_ACTIVE_COMPUTE_TASKS = "ActiveComputeTasksOnBusiestConnection";
 
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
@@ -358,24 +350,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 "Number of active sessions for the " + cliTypeName + " client."
             );
         }
-
-        mreg.register(
-            metricName(clientTypeLabel(THIN_CLIENT), METRIC_ACTIVE_COMPUTE_TASKS),
-            () -> {
-                int res = 0;
-
-                for (GridNioSession ses : srv.sessions()) {
-                    ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
-
-                    if (connCtx instanceof ClientConnectionContext)
-                        res = Math.max(res, ((ClientConnectionContext)connCtx).activeTasksCount());
-                }
-
-                return res;
-            },
-            "Maximum number of active compute tasks per connection among open thin client connections. " +
-                "System tasks are not counted."
-        );
     }
 
     /**
