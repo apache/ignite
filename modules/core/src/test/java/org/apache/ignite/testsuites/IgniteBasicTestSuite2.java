@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMapTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.collection.IntHashMapTest;
 import org.apache.ignite.internal.util.collection.IntRWHashMapTest;
@@ -140,6 +141,7 @@ import org.junit.runners.Suite;
     MetricConfigurationTest.class,
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
+    CopyOnWriteIntMapTest.class,
     ImmutableIntSetTest.class,
     IntHashMapTest.class,
     IntRWHashMapTest.class,
