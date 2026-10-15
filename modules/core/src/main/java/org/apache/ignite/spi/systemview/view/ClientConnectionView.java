@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.net.InetSocketAddress;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -121,8 +122,9 @@ public class ClientConnectionView {
     }
 
     /**
-     * @return Number of active compute tasks for the thin client connection, system tasks are not counted.
-     * {@code null} for other connection types.
+     * @return Number of active user compute tasks of the thin client connection, not greater than
+     * {@link ThinClientConfiguration#getMaxActiveComputeTasksPerConnection()}; {@code null} for other connection
+     * types.
      */
     @Order(7)
     @Nullable public Integer activeComputeTasks() {

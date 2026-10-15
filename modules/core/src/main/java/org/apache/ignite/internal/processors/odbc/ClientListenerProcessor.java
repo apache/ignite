@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
@@ -40,13 +41,16 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedThinClientConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -62,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerPool;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -73,6 +76,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.clientTypeLabel;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.CLI_TYPES;
@@ -100,6 +104,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
     public static final String METRIC_ACTIVE = "ActiveSessions";
 
+    /** Peak number of active user compute tasks per thin client connection. */
+    public static final String METRIC_PEAK_ACTIVE_COMPUTE_TASKS = "PeakActiveComputeTasksPerConnection";
+
+    /** Default time interval of the {@link #METRIC_PEAK_ACTIVE_COMPUTE_TASKS} metric in milliseconds. */
+    public static final long DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL = 90_000L;
+
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -120,6 +130,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Metrics. */
     private ClientListenerMetrics metrics;
+
+    /** Peak of active user compute tasks per thin client connection. */
+    private PeakWithCurrentMetric peakActiveComputeTasks;
 
     /** Executor service. */
     private ExecutorService execSvc;
@@ -327,7 +340,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /** @param mreg Metric registry. */
-    private void registerClientMetrics(MetricRegistry mreg) {
+    private void registerClientMetrics(MetricRegistryImpl mreg) {
         for (int i = 0; i < CLI_TYPES.length; i++) {
             byte cliType = CLI_TYPES[i];
 
@@ -350,6 +363,41 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 "Number of active sessions for the " + cliTypeName + " client."
             );
         }
+
+        ThinClientConfiguration thinCfg = cliConnCfg.getThinClientConfiguration();
+
+        int maxActiveComputeTasks = thinCfg == null
+            ? ThinClientConfiguration.DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION
+            : thinCfg.getMaxActiveComputeTasksPerConnection();
+
+        // Registered before the server is started, since connections update it.
+        peakActiveComputeTasks = new PeakWithCurrentMetric(
+            metricName(mreg.name(), METRIC_PEAK_ACTIVE_COMPUTE_TASKS),
+            "Maximum number of active user compute tasks per thin client connection over the configured time " +
+                "interval, but not less than the current value. The upper limit is the " +
+                "ThinClientConfiguration.maxActiveComputeTasksPerConnection configuration parameter.",
+            DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL,
+            DFLT_SIZE,
+            maxActiveComputeTasks,
+            this::peakActiveComputeTasks
+        );
+
+        mreg.register(peakActiveComputeTasks);
+    }
+
+    /** @return Current peak number of active user compute tasks across thin client connections. */
+    private long peakActiveComputeTasks() {
+        long max = 0;
+
+        for (GridNioSession ses : srv.sessions()) {
+            ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+            // Context is null before the handshake. JDBC and ODBC connections are skipped.
+            if (connCtx instanceof ClientConnectionContext)
+                max = Math.max(max, ((ClientConnectionContext)connCtx).activeTasksCount());
+        }
+
+        return max;
     }
 
     /**
@@ -616,6 +664,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Updates the peak of active user compute tasks per thin client connection.
+     *
+     * @param activeTasksCnt Number of active user compute tasks of the connection, capped by the limit.
+     */
+    public void updatePeakActiveComputeTasks(int activeTasksCnt) {
+        peakActiveComputeTasks.update(activeTasksCnt);
+    }
+
+    /**
      * Prepare connector configuration.
      *
      * @param cfg Ignite configuration.
@@ -851,6 +908,38 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /** Maximum value over the time interval, but not less than the current value. */
+    private static class PeakWithCurrentMetric extends MaxValueMetric {
+        /** Upper limit of the value. */
+        private final long limit;
+
+        /** Current value supplier. */
+        private final LongSupplier cur;
+
+        /**
+         * @param name Name.
+         * @param desc Description.
+         * @param timeInterval Time interval in milliseconds.
+         * @param size Number of buckets.
+         * @param limit Upper limit of the value.
+         * @param cur Current value supplier.
+         */
+        PeakWithCurrentMetric(String name, String desc, long timeInterval, int size, long limit, LongSupplier cur) {
+            super(name, desc, timeInterval, size);
+
+            this.limit = limit;
+            this.cur = cur;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long value() {
+            long peak = super.value();
+
+            // The current value can not exceed the limit, so there is no need to calculate it.
+            return peak >= limit ? peak : Math.max(peak, cur.getAsLong());
         }
     }
 }

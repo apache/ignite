@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
-import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthenticationException;
@@ -48,7 +47,6 @@ import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.management.api.CommandMBean;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -62,17 +60,16 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_ACEPTED;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_PEAK_ACTIVE_COMPUTE_TASKS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_AUTHENTICATION;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TIMEOUT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TOTAL;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.METRIC_ACTIVE;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.METRIC_PEAK_ACTIVE_COMPUTE_TASKS;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -83,11 +80,11 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     /** Maximum active tasks. */
     private static final int MAX_TASKS = 3;
 
-    /** Time interval of the active compute tasks metric, so the peaks do not expire during the test. */
+    /** Metric time interval long enough for the peak not to expire during a test. Expiration is emulated by a reset. */
     private static final long LONG_INTERVAL = 10 * 60_000L;
 
-    /** Time interval of the active compute tasks metric to check that the peak expires, long enough to check the peak. */
-    private static final long SHORT_INTERVAL = 10_000L;
+    /** Metric time interval to check the peak expiration without a long wait. */
+    private static final long SHORT_INTERVAL = 2_000L;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -208,9 +205,8 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that the active compute tasks metric reports the peak of the busiest connection (not the sum) and keeps it
-     * during the time interval, while the {@link ClientListenerProcessor#CLI_CONN_VIEW} system view reports current
-     * values.
+     * Check that the active compute tasks metric reports the peak of the busiest connection (not the sum), keeps it
+     * during the time interval and drops it after the time interval.
      */
     @Test
     public void testComputeTasksMetrics() throws Exception {
@@ -222,48 +218,54 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             IgniteClient client1 = Ignition.startClient(getClientConfiguration());
             IgniteClient client2 = Ignition.startClient(getClientConfiguration())
         ) {
-            checkComputeTasks(0, 0, 0);
+            checkPeakComputeTasks(0);
+            assertEquals(0, activeComputeTasksCount());
 
             // Tasks 0, 1.
             futs.addAll(startTasks(client1, 2));
-            checkComputeTasks(2, 2, 0);
+            checkPeakComputeTasks(2);
+            assertEquals(2, activeComputeTasksCount());
 
-            // Tasks 2, 3. The sum of the connections (4) exceeds even the limit, the metric reports the busiest one.
+            // Run tasks 2, 3. Metric should not change.
             futs.addAll(startTasks(client2, 2));
-            checkComputeTasks(2, 2, 2);
+            checkPeakComputeTasks(2);
+            assertEquals(4, activeComputeTasksCount());
 
-            // Task 4.
+            // Task 4. Metric should increase.
             futs.addAll(startTasks(client2, 1));
-            checkComputeTasks(MAX_TASKS, 2, MAX_TASKS);
+            checkPeakComputeTasks(MAX_TASKS);
+            assertEquals(5, activeComputeTasksCount());
 
             assertComputeTaskRejected(client2);
 
-            // Rejected task is not counted in the view.
-            checkComputeTasks(MAX_TASKS, 2, MAX_TASKS);
+            // A rejected task counts as the 'MaxActiveComputeTasksPerConnection' limit.
+            checkPeakComputeTasks(MAX_TASKS);
+            assertEquals(5, activeComputeTasksCount());
 
-            // Finished tasks are not counted in the view, but the metric keeps the peak during the time interval.
-            TestComputeTask.finish(2);
-            checkComputeTasks(MAX_TASKS, 2, MAX_TASKS - 1);
+            // Finished tasks are released by the connections, but the metric keeps the peak during the time interval.
+            finishTasks(2);
+            checkPeakComputeTasks(MAX_TASKS);
 
-            TestComputeTask.finish(0);
-            TestComputeTask.finish(1);
-            checkComputeTasks(MAX_TASKS, 0, MAX_TASKS - 1);
+            finishTasks(0, 1);
+            checkPeakComputeTasks(MAX_TASKS);
 
-            TestComputeTask.finish(3);
-            TestComputeTask.finish(4);
-            checkComputeTasks(MAX_TASKS, 0, 0);
+            finishTasks(3, 4);
+            checkPeakComputeTasks(MAX_TASKS);
 
-            // Shorten the time interval to check that the peak expires. Reconfiguration also clears the peak.
-            configureComputeTasksInterval(SHORT_INTERVAL);
-            checkComputeTasks(0, 0, 0);
+            // Clear the peak, as if it expired. No tasks are active, so the metric reports zero.
+            computeTasksMetric().reset();
+            assertEquals(0, computeTasksMetric().value());
+
+            // Shorten the time interval to check the peak expiration without a long wait.
+            computeTasksMetric().reset(SHORT_INTERVAL);
 
             // Task 5.
             futs.addAll(startTasks(client1, 1));
-            checkComputeTasks(1, 1, 0);
+            checkPeakComputeTasks(1);
 
             // The peak expires after the time interval.
-            TestComputeTask.finish(5);
-            checkComputeTasks(0, 0, 0);
+            finishTasks(5);
+            checkPeakComputeTasks(0);
 
             // Wait for all results before clients are closed.
             for (IgniteInternalFuture<Object> fut : futs)
@@ -272,8 +274,36 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that a task rejected because of the limit updates the metric, so it reports the saturated connection even
-     * if its tasks were started before the current time interval.
+     * Check that the metric is not less than the current value, so it reports long-running tasks after their peak has
+     * expired.
+     */
+    @Test
+    public void testComputeTasksMetricOnLongRunningTasks() throws Exception {
+        startGridWithCompute();
+
+        try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
+            List<IgniteInternalFuture<Object>> futs = startTasks(client, MAX_TASKS);
+
+            checkPeakComputeTasks(MAX_TASKS);
+
+            // Clear the peak, as if it expired while the tasks are active. The metric reports the current value.
+            computeTasksMetric().reset();
+            assertEquals(MAX_TASKS, computeTasksMetric().value());
+
+            finishTasks(IntStream.range(0, MAX_TASKS).toArray());
+
+            // Finished tasks do not update the peak, so the metric drops to the current value at once.
+            assertEquals(0, computeTasksMetric().value());
+
+            // Wait for all results before the client is closed.
+            for (IgniteInternalFuture<Object> fut : futs)
+                fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * Check that a task rejected by the limit updates the metric with the limit, even if the active tasks were started
+     * before the time interval.
      */
     @Test
     public void testComputeTasksMetricOnRejectedTask() throws Exception {
@@ -282,18 +312,18 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
             List<IgniteInternalFuture<Object>> futs = startTasks(client, MAX_TASKS);
 
-            checkComputeTasks(MAX_TASKS, MAX_TASKS);
+            checkPeakComputeTasks(MAX_TASKS);
 
-            // Clear the accumulated peak, as if it expired while the tasks are still active.
+            // Clear the peak, as if it expired while the tasks are active.
             computeTasksMetric().reset();
-            checkComputeTasks(0, MAX_TASKS);
 
             assertComputeTaskRejected(client);
 
-            checkComputeTasks(MAX_TASKS, MAX_TASKS);
+            // The metric keeps the limit from the rejected task, though the current value is less.
+            finishTasks(0);
+            checkPeakComputeTasks(MAX_TASKS);
 
-            for (int i = 0; i < MAX_TASKS; i++)
-                TestComputeTask.finish(i);
+            finishTasks(IntStream.range(1, MAX_TASKS).toArray());
 
             // Wait for all results before the client is closed.
             for (IgniteInternalFuture<Object> fut : futs)
@@ -316,25 +346,30 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             try (IgniteClient client2 = Ignition.startClient(getClientConfiguration())) {
                 futs2 = startTasks(client2, 2);
 
-                checkComputeTasks(2, 1, 2);
+                checkPeakComputeTasks(2);
 
-                connView2 = thinConnections().stream().filter(v -> v.activeComputeTasks() == 2).findFirst().orElseThrow();
+                connView2 = thinConnections().stream().filter(v -> v.activeComputeTasks() == 2)
+                    .findFirst().orElseThrow();
             }
 
-            // Task resources are released on disconnect, so the counter of the closed connection is decremented.
+            // Tasks of the closed connection are released on disconnect.
             assertTrue(waitForCondition(() -> connView2.activeComputeTasks() == 0, getTestTimeout()));
 
-            // Closed connection is not shown, the metric keeps the peak during the time interval.
-            checkComputeTasks(2, 1);
+            // Cancellation does not interrupt 'reduce()', so unblock the tasks of 'client2'.
+            TestComputeTask.finish(1);
+            TestComputeTask.finish(2);
 
-            // Unfinished task execution fails on the client side, since the connection is closed. The error depends on
-            // whether the client has received the execute response before the close.
+            // The metric keeps the peak during the time interval.
+            checkPeakComputeTasks(2);
+
+            // Unfinished tasks fail on the client side. The error depends on whether the client received the execute
+            // response before the close.
             for (IgniteInternalFuture<Object> fut : futs2)
-                GridTestUtils.assertThrowsWithCause(() -> fut.get(getTestTimeout(), TimeUnit.MILLISECONDS), ClientException.class);
+                assertThrowsWithCause(() -> fut.get(getTestTimeout(), TimeUnit.MILLISECONDS), ClientException.class);
 
             // Last task of 'client1'.
-            TestComputeTask.finish(0);
-            checkComputeTasks(2, 0);
+            finishTasks(0);
+            checkPeakComputeTasks(2);
 
             // Wait for the result before the client is closed.
             for (IgniteInternalFuture<Object> fut : futs1)
@@ -342,13 +377,13 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Check the active compute tasks metric and system view when compute is disabled for thin clients. */
+    /** Check the active compute tasks metric when compute is disabled for thin clients. */
     @Test
     public void testComputeTasksMetricsComputeDisabled() throws Exception {
         startGrid(0);
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
-            checkComputeTasks(0, 0);
+            checkPeakComputeTasks(0);
 
             GridTestUtils.assertThrowsAnyCause(
                 log,
@@ -357,13 +392,12 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 "Compute grid functionality is disabled for thin clients"
             );
 
-            checkComputeTasks(0, 0);
+            checkPeakComputeTasks(0);
         }
     }
 
     /**
-     * Starts a node with enabled compute for thin clients. The time interval of the active compute tasks metric is
-     * changed to {@link #LONG_INTERVAL}, so the peaks do not expire during the test.
+     * Starts a node with compute enabled for thin clients and sets the metric time interval to {@link #LONG_INTERVAL}.
      */
     private void startGridWithCompute() throws Exception {
         startGrid(getConfiguration(getTestIgniteInstanceName(0))
@@ -371,29 +405,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 .setThinClientConfiguration(new ThinClientConfiguration()
                     .setMaxActiveComputeTasksPerConnection(MAX_TASKS))));
 
-        assertEquals(DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL, computeTasksMetric().timeInterval());
-
-        configureComputeTasksInterval(LONG_INTERVAL);
-    }
-
-    /**
-     * Changes the time interval of the active compute tasks metric the same way as
-     * {@code control.sh --metric --configure-max-value} does.
-     *
-     * @param interval Time interval in milliseconds.
-     */
-    private void configureComputeTasksInterval(long interval) throws Exception {
-        DynamicMBean mbean = getMxBean(grid(0).name(), "management", singletonList("Metric"), "ConfigureMaxValue",
-            DynamicMBean.class);
-
-        mbean.invoke(
-            CommandMBean.INVOKE,
-            new Object[] {MetricUtils.metricName(CLIENT_CONNECTOR_METRICS, METRIC_PEAK_ACTIVE_COMPUTE_TASKS),
-                Long.toString(interval), null},
-            new String[] {String.class.getName(), String.class.getName(), String.class.getName()}
-        );
-
-        assertTrue(waitForCondition(() -> computeTasksMetric().timeInterval() == interval, getTestTimeout()));
+        computeTasksMetric().reset(LONG_INTERVAL);
     }
 
     /**
@@ -424,50 +436,44 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             .mapToObj(i -> runAsync(() -> client.compute().execute(TestComputeTask.class.getName(), null)))
             .toList();
 
-        // Task instances are created after the active tasks counter is incremented, so wait for them to keep the order.
+        // A task instance is created after the counter is incremented. Wait for instances to keep the task order.
         assertTrue(waitForCondition(() -> TestComputeTask.TASKS.size() == expTasks, getTestTimeout()));
 
         return futs;
     }
 
     /**
-     * Checks the active compute tasks metric via the metric registry and JMX, and the current active compute tasks of
-     * the thin client connections via the system view.
+     * Finishes tasks and waits for them to be released by the connections.
+     *
+     * @param idxs Indexes of the tasks.
+     */
+    private void finishTasks(int... idxs) throws Exception {
+        int expTasks = activeComputeTasksCount() - idxs.length;
+
+        for (int idx : idxs)
+            TestComputeTask.finish(idx);
+
+        // Counter is decremented after the result is sent to the client.
+        assertTrue(waitForCondition(() -> activeComputeTasksCount() == expTasks, getTestTimeout()));
+    }
+
+    /** @return Total active compute tasks of the thin client connections from the system view. */
+    private int activeComputeTasksCount() {
+        return thinConnections().stream().mapToInt(ClientConnectionView::activeComputeTasks).sum();
+    }
+
+    /**
+     * Waits for the expected value of the active compute tasks metric.
      *
      * @param expMetric Expected value of the metric.
-     * @param expConnTasks Expected active compute tasks of the thin client connections, in any order.
      */
-    private void checkComputeTasks(long expMetric, int... expConnTasks) throws Exception {
-        List<Integer> exp = IntStream.of(expConnTasks).sorted().boxed().toList();
-
-        // Counter is decremented after the result is sent to the client, so wait for the values.
-        assertTrue(waitForCondition(() -> exp.equals(thinConnectionsComputeTasks()), getTestTimeout()));
-
+    private void checkPeakComputeTasks(long expMetric) throws Exception {
         assertTrue(waitForCondition(() -> computeTasksMetric().value() == expMetric, getTestTimeout()));
-
-        assertTrue(waitForCondition(() -> jmxComputeTasksMetric() == expMetric, getTestTimeout()));
     }
 
     /** @return Active compute tasks metric. */
     private MaxValueMetric computeTasksMetric() {
         return grid(0).context().metric().registry(CLIENT_CONNECTOR_METRICS).findMetric(METRIC_PEAK_ACTIVE_COMPUTE_TASKS);
-    }
-
-    /** @return Active compute tasks metric value read via JMX. */
-    private long jmxComputeTasksMetric() {
-        DynamicMBean mbean = metricRegistry(grid(0).name(), "client", "connector");
-
-        try {
-            return (Long)mbean.getAttribute(METRIC_PEAK_ACTIVE_COMPUTE_TASKS);
-        }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /** @return Sorted active compute tasks of the thin client connections from the system view. */
-    private List<Integer> thinConnectionsComputeTasks() {
-        return thinConnections().stream().map(ClientConnectionView::activeComputeTasks).sorted().toList();
     }
 
     /** @return Thin client connections from the system view. */
@@ -574,7 +580,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             TASKS.get(idx).finishLatch.countDown();
         }
 
-        /** Clears static state. */
+        /** Finishes all tasks and clears the task list. */
         public static void reset() {
             TASKS.forEach(t -> t.finishLatch.countDown());
 
