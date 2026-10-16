@@ -174,6 +174,34 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryObjectEx binaryArray(BinaryContext ctx, Class<?> compCls, Object[] arr) {
+        boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
+
+        String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+        // In case of interface or multidimensional array rely on class name.
+        // Interfaces and array not registered as binary types.
+        BinaryClassDescriptor desc = ctx.descriptorForClass(compCls);
+
+        if (compCls.isEnum() || compCls == BinaryUtils.binariesFactory.binaryEnumClass()) {
+            return new BinaryEnumArray(
+                ctx,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                arr
+            );
+        }
+        else {
+            return new BinaryArray(
+                ctx,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                arr
+            );
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Class<?> binaryEnumClass() {
         return BinaryEnumObjectImpl.class;
     }
@@ -184,12 +212,24 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public Class<?> binaryArrayClass() {
+        return BinaryArray.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> binaryEnumArrayClass() {
+        return BinaryEnumArray.class;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Class<?>, Integer> predefinedTypes() {
         Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
 
         predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
         predefinedTypes.put(BinaryObjectOffheapImpl.class, 0);
         predefinedTypes.put(BinaryObjectImpl.class, 0);
+        predefinedTypes.put(BinaryArray.class, 0);
+        predefinedTypes.put(BinaryEnumArray.class, 0);
 
         return predefinedTypes;
     }
