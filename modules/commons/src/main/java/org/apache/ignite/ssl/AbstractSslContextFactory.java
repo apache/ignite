@@ -126,8 +126,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /**
      * Sets whether a node builds its SSL context again before the certificate expires. This lets the node pick up a new certificate
      * from wherever the factory takes certificates. A file-based factory reads its files again, so replace the files yourself.
-     * Until you do, the node keeps using its current certificate.
-     * Disabled by default.
+     * If the node cannot tell which certificate the factory serves, the node does not start. Disabled by default.
      *
      * @param renewalEnabled Whether renewal is enabled.
      */

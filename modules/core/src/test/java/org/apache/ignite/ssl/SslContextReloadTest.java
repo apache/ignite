@@ -387,6 +387,20 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, trusts, "CN=twoca");
     }
 
+    /** A node whose own trust store does not accept its certificate starts, but warns that reloads and renewals will refuse it. */
+    @Test
+    public void testOwnTrustStoreRefusingOwnCertificateWarned() throws Exception {
+        initTrustStore = "trusttwo";
+
+        LogListener warned = LogListener.matches("The node's own trust store does not accept its certificate").build();
+
+        nodeLog.registerListener(warned);
+
+        startGrid(0);
+
+        assertTrue(warned.check());
+    }
+
     /** A node whose job did not finish is named in the report like the others. */
     @Test
     public void testFailedJobNamesNode() {

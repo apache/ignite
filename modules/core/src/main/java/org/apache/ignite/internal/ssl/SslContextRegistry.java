@@ -25,9 +25,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -75,22 +78,45 @@ public class SslContextRegistry extends GridProcessorAdapter {
     public synchronized SSLContext register(Factory<SSLContext> factory, String transport) {
         SslContextProvider provider = providers.stream().filter(p -> p.factory() == factory).findFirst().orElse(null);
 
-        if (provider == null) {
+        boolean fresh = provider == null;
+
+        if (fresh) {
             provider = new SslContextProvider(factory);
 
-            provider.addTransport(transport);
-
             providers.add(provider);
-
-            if (factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled())
-                new SslRenewal(provider, f.getRenewBeforeFraction(), renewalExec, ctx.log(SslRenewal.class)).start();
         }
-        else
-            provider.addTransport(transport);
+
+        boolean nodesConnectedAlready = provider.nodesConnect();
+
+        provider.addTransport(transport);
+
+        if (fresh && factory instanceof AbstractSslContextFactory f && f.isRenewalEnabled()) {
+            if (provider.servedChain() == null) {
+                throw new IgniteException("Cannot tell which TLS certificate the SSL context factory serves, so it cannot be renewed " +
+                    "automatically; for example, its key store has no private key [transports=" + transport + ']');
+            }
+
+            new SslRenewal(provider, f.getRenewBeforeFraction(), renewalExec, ctx.log(SslRenewal.class)).start();
+        }
+
+        if (provider.nodesConnect() && !nodesConnectedAlready && provider.servedChain() != null)
+            warnIfOwnTrustStoreRefuses(provider);
 
         registerMetrics(transport, provider);
 
         return new CurrentSslContext(provider::context);
+    }
+
+    /** @param provider Provider that serves discovery or communication from now on. */
+    private void warnIfOwnTrustStoreRefuses(SslContextProvider provider) {
+        try {
+            SslCertificates.checkInterNodeHandshake(provider.context());
+        }
+        catch (SSLException e) {
+            U.warn(log, "The node's own trust store does not accept its certificate, so control.sh --ssl reload and automatic " +
+                "renewal will refuse every new certificate for " + provider.transports() + "; add the issuer of the node's " +
+                "certificate to its trust store [" + SslCertificates.describe(provider.servedCertificate()) + ']', e);
+        }
     }
 
     /** @return Providers in the order they were registered. */

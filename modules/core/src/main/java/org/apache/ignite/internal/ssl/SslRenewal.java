@@ -116,13 +116,6 @@ class SslRenewal {
 
         X509Certificate[] chain = provider.servedChain();
 
-        if (chain == null) {
-            U.warn(log, "Cannot tell when the TLS certificate expires, so it is not renewed automatically [transports=" +
-                provider.transports() + ']');
-
-            return;
-        }
-
         chainNotAfter = SslCertificates.chainNotAfter(chain);
 
         long lifetime = Math.max(0, chainNotAfter - chain[0].getNotBefore().getTime());

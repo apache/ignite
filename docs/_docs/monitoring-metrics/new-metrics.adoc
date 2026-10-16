@@ -507,11 +507,10 @@ NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registe
 
 Metrics of each SSL-enabled transport: the certificate it serves and the results of its reloads.
 In the register name `ssl.{transport}`, `{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
-`ssl.http.rest` exists only when HTTP REST takes its certificates from `ConnectorConfiguration.httpSslFactory`, not from the Jetty configuration file.
+`ssl.http.rest` exists only when `ConnectorConfiguration.httpSslFactory` is set.
 Times are in milliseconds since the epoch.
-The reload metrics show the results of link:tools/control-script#reloading-certificates[`control.sh --ssl reload`].
-An link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] also updates the reload metrics when it puts a new certificate in use or fails.
-A renewal that finds only the certificate already in use is not a failure: `ConsecutiveReloadFailures` does not grow, and only `NextRenewalTime` changes.
+The reload metrics show the results of link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] and of link:security/ssl-tls#renewing-certificates-automatically[automatic renewals].
+A renewal attempt that finds only the certificate already in use changes only `NextRenewalTime`.
 To catch a certificate that is about to expire, alert on `ChainNotAfter`.
 
 Register name: `ssl.{transport}`

@@ -100,8 +100,7 @@ To require client certificates, use `setHttpSslClientAuth`.
 |`setHttpSslClientAuth(boolean)`
 |Whether HTTP REST requires a client certificate.
 When it is `true`, a client can connect only if the trust store of `httpSslFactory` trusts its certificate.
-If `httpSslClientAuth` is `true` and `httpSslFactory` is not set, the node does not start.
-For TLS set up in the Jetty configuration file, set client authentication in that file.
+Without `httpSslFactory`, the node does not start with this property set to `true`. For TLS set up in the Jetty configuration file, set `needClientAuth` in that file instead.
 |Yes
 |`false`
 
@@ -111,9 +110,10 @@ For TLS set up in the Jetty configuration file, set client authentication in tha
 |`null`
 |=======
 
-To move the TLS setup of HTTP REST from the Jetty configuration file to `httpSslFactory`, remove the `SslConnectionFactory` from the connector in that file.
-Put the HTTP REST key store and trust store into Ignite's `SslContextFactory` and set this factory as `httpSslFactory`.
-`org.apache.ignite.ssl.SslContextFactory` cannot pick a key by alias, so keep only one private key in the HTTP REST key store.
+To move the TLS setup of HTTP REST from the Jetty configuration file to `httpSslFactory`, remove the `SslConnectionFactory` from that file. Remove the `SecureRequestCustomizer` too, or HTTP REST may refuse requests to a host name or IP address not in the certificate.
+Put the HTTP REST key store and trust store into an `org.apache.ignite.ssl.SslContextFactory` and set it as `httpSslFactory`.
+If the Jetty configuration file sets `needClientAuth`, also set `httpSslClientAuth` to `true`, or clients without a certificate can connect.
+Ignite's `SslContextFactory` cannot pick a key by alias, so keep only one private key in the HTTP REST key store.
 The private key must have the same password as the key store, because the factory has one password for both.
 Then restart the nodes one at a time.
 

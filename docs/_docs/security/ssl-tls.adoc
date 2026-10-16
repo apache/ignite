@@ -63,6 +63,10 @@ tab:C++[unsupported]
 --
 
 The keystore must contain the node's certificate, including its private key.
+Keep one private key and its chain in each key store or other certificate source.
+With several keys, for example an EC and an RSA one, `control.sh --ssl reload` and automatic renewal check only one chain.
+`control.sh --ssl status` shows only that chain.
+Automatic renewal may then keep the old certificate for the other key.
 The trust store must contain the trusted certificates for all cluster nodes, including the node itself.
 `control.sh --ssl reload` and automatic renewal refuse a new discovery or communication certificate that the node's own trust store does not accept.
 With self-signed certificates, import each node's certificate into its own trust store as well.
@@ -171,92 +175,66 @@ Import the new certificate to the trusted store of every node, server or client,
 Also import the new certificate to the trusted stores of applications that connect to the cluster with SSL.
 An application that does not trust the new certificate cannot connect to a node that serves it.
 For `control.sh`, import the new certificate to the trusted store that you pass with `--truststore`.
-`control.sh --ssl reload` does not make applications read their stores again.
-A Java or C++ thin client reads its trusted store only when it starts.
-A JDBC application that takes its stores from the `javax.net.ssl.*` system properties also reads them only when it starts.
-Restart running thin clients and JDBC applications that use `javax.net.ssl.*`, so that they read the new trusted store.
+Java and C++ thin clients read their stores only when they start, so restart those that are running.
+Also restart running JDBC applications that take their stores from the `javax.net.ssl.*` system properties.
+ODBC drivers, and JDBC drivers that set their stores in the connection properties, read them on every new connection.
 
 Go to the next step only after every server and client node trusts the new certificate authority.
-Check with `control.sh --ssl status` that every node names the new authority in its `trusts` line.
-A successful reload alone does not show that a node trusts the new authority.
+Check with `control.sh --ssl status` that every node names the new authority in its link:tools/control-script#checking-certificates[`trusts` line].
 A reload succeeds even if the trusted store of the node has not changed.
-The `trusts` line shows names, not certificates, see link:tools/control-script#checking-certificates[Checking Certificates].
-If the new authority has the same name as the old one, the `trusts` line cannot show which one a node trusts.
-In that case, check the trusted store file of every node.
-If a node shows `trusts: unknown`, check the trusted store file of that node.
+If the new authority has the same name as the old one, or a node shows `trusts: unknown`, check the trusted store files instead.
 If a node uses a trust manager of your own, check what that trust manager reads instead of the file.
 --
 
 . Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Before you change the key store, make a copy of it.
 Put the new key store on one node first and run `control.sh --ssl reload`. Once `control.sh --diagnostic connectivity` shows that the other nodes connect to that node, do the same on the remaining nodes.
 Check with `control.sh --ssl status` that every node serves the new certificate.
-If other nodes or applications refuse the new certificate, put the copy back and run `control.sh --ssl reload` again. Unlike an automatic renewal, a reload accepts a certificate that expires earlier than the one in use. The old certificate must still be valid, and the node's own trust store must accept it.
-`control.sh --ssl reload` does not cover HTTP REST if you set its stores in the Jetty configuration file.
-In that case, restart the node so that HTTP REST serves the new certificate.
-To reload these certificates without a restart next time, set them in `ConnectorConfiguration.httpSslFactory`, see link:restapi#configuration[REST API configuration].
+If other nodes or applications refuse the new certificate, put the copy back and run `control.sh --ssl reload` again. This works while every certificate in the old chain is still valid.
+If HTTP REST takes its key store from the Jetty configuration file, restart the node so that HTTP REST serves the new certificate.
+To avoid the restart next time, move the TLS setup of HTTP REST to `ConnectorConfiguration.httpSslFactory`, see link:restapi#configuration[REST API configuration].
 
-. Do this step if you moved to a new certificate authority and the nodes must stop trusting the old one. Remove the old authority only after no node or application presents a certificate from it.
+. Do this step if you moved to a new certificate authority and the nodes must stop trusting the old one.
 Check with `control.sh --ssl status` that every server and client node serves a certificate from the new authority.
-Also make sure that every application that presents its own certificate has one from the new authority.
-Thin clients and JDBC applications present a certificate when the client connector requires client certificates.
-`control.sh` presents a certificate when you pass `--keystore`.
+Also make sure that every application with a client certificate presents one from the new authority.
+This includes `control.sh` started with `--keystore`.
 Then remove the old authority from the trusted stores of the nodes and run `control.sh --ssl reload`.
 If you remove it earlier, nodes reject new connections from nodes and applications that still use certificates from the old authority.
 
 If a private key has been compromised, follow steps 1 to 3 with a new certificate authority.
-A reload does not close open connections, even with peers that the new trusted stores no longer accept.
-To close such connections, restart the nodes one at a time.
+Then restart the nodes one at a time to close connections opened with certificates from the old authority.
 
 == Renewing Certificates Automatically
 
 A node can pick up a new certificate without a command, before the current certificate expires.
 Renewal is off by default.
-To turn it on, set `renewalEnabled` to `true` and restart the nodes one at a time.
-A node renews certificates only for the SSL context factories that have `renewalEnabled` set to `true`.
-Transports configured with the same factory object get the new certificate together, in one renewal.
-Some transports can have an SSL context factory of their own, such as `ClientConnectorConfiguration.sslContextFactory` with `useIgniteSslContextFactory=false`, or `ConnectorConfiguration.httpSslFactory`.
-Set `renewalEnabled` in such a factory, or the node does not renew the certificates of that transport.
+To turn it on, set `renewalEnabled` to `true` in every SSL context factory the node uses, then restart the nodes one at a time.
+Besides `IgniteConfiguration.sslContextFactory`, a node may use `ClientConnectorConfiguration.sslContextFactory` with `useIgniteSslContextFactory=false`, `ConnectorConfiguration.sslFactory` and `ConnectorConfiguration.httpSslFactory`.
+The node does not renew the certificates of a factory without `renewalEnabled`.
+Transports configured with the same factory object get the new certificate together.
 The node does not renew HTTP REST certificates that you set in the Jetty configuration file.
 
-With renewal on, the node builds the SSL context again with its SSL context factory in the last part of the certificate lifetime.
-`SslContextFactory` reads its key store and trust store files again. The rest of this section describes renewal with `SslContextFactory`.
-A factory of your own that extends `AbstractSslContextFactory` takes the new certificate from its own source, for example a PKI service, see <<Custom SSL Context Factories>>.
-The renewal window is the last part of the certificate lifetime, 15% by default.
+With renewal on, `SslContextFactory` reads its key store and trust store files again in the renewal window, the last part of the certificate lifetime.
+A factory of your own that extends `AbstractSslContextFactory` takes the new certificate from its own source, see <<Custom SSL Context Factories>>.
+The `renewBeforeFraction` property sets the size of the window as a share of the lifetime, 15% by default.
 For a certificate valid for 30 days, the window starts 4.5 days before the certificate expires.
-The `renewBeforeFraction` property sets the size of the window as a share of the lifetime.
+If a certificate authority in the chain expires before the certificate, the lifetime ends when the authority expires.
 Replace the old files with the new ones before the renewal window starts.
 Replace them only with files you are ready to use, because the node starts to use them without a command.
-The node puts the new certificate in use only if every certificate in its chain is valid now.
-The new chain must also expire later than the chain in use.
-If the SSL context factory serves discovery or communication, the node's own trust store must also accept the new certificate.
-The trust store in use must also accept the new certificate, or peers that have not renewed yet would refuse it.
-The new trust store must also accept the certificate in use, or the node would refuse peers that have not renewed yet.
-The node runs these two checks only if the SSL context factory serves discovery or communication. It also skips them while the certificate in use is not valid, because peers refuse it anyway.
-If a trust store check fails, the node keeps the certificate in use and logs why. To put the new certificate in use, fix the trust stores and run `control.sh --ssl reload`.
-Renewal supports one private key and its chain per key store or other certificate source.
-The trust store may hold any number of trusted CAs.
-If a key store holds several private keys, for example an EC and an RSA one, renewal checks only one chain.
-The node may then keep the old certificate for the other key.
+Before it puts the new certificate in use, the node runs the same checks as link:tools/control-script#reloading-certificates[`control.sh --ssl reload`].
+The new chain must also expire later than the chain in use. If a certificate authority in the chain expires first, renew it too.
+For discovery and communication, while the certificate in use is valid, renewal also checks the trust stores.
+The trust store in use must accept the new certificate, or peers that have not renewed yet would refuse it.
+The new trust store must accept the certificate in use, or the node would refuse peers that have not renewed yet.
 Renewal puts a changed trust store in use only together with a new certificate.
-To trust a new certificate authority, add it to the trust store of every node and run `control.sh --ssl reload`.
-Do this before you put certificates from the new authority in the key stores.
-Renewal refuses a certificate from a new authority until a reload adds that authority to the trust store in use. This applies only if the SSL context factory serves discovery or communication, and only while the certificate in use is valid.
+To move to a new certificate authority, follow <<Upgrading Certificates>>.
 
-If the key store file has no newer certificate yet, the node keeps the certificate in use.
-The node then reads the key store and trust store files again after a pause.
-The pause starts at 1 minute and doubles after each attempt, up to 1 hour.
-To each pause, the node adds a random extra wait of up to half that pause.
-While the files still hold the certificate in use, the node logs a warning once a day.
-When less than half of the renewal window is left, the node logs an error instead of the warning.
-If the certificate would expire before the next attempt, the node also logs an error instead of the warning.
-At the first renewal attempt after the certificate expires, the node logs an error saying the certificate has expired.
+If the files still hold the certificate in use, the node reads them again after a pause.
+The pauses grow from 1 minute to at most 1.5 hours.
+While the node waits for a new certificate, it logs a warning once a day.
+Once less than half of the renewal window is left, or the certificate expires before the next attempt, the node logs an error instead of the warning.
 If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
 `control.sh --ssl status` and the link:monitoring-metrics/new-metrics#ssl[`NextRenewalTime` metric] show when the next renewal is due.
-If the node cannot tell which certificate a factory serves, it does not renew the certificates of that factory.
-For example, the node cannot tell which certificate is served when the key store has no private key.
-If the node cannot tell which certificate a factory serves, it logs a warning at start and after every successful reload.
-For that factory, `control.sh --ssl status` shows `cannot tell which certificate is served`.
-The `ChainNotAfter` and `NextRenewalTime` metrics of its transports are `0`.
+If the node cannot tell which certificate a factory with `renewalEnabled` serves, for example because its key store has no private key, the node does not start.
 
 == SslContextFactory Properties
 
@@ -291,7 +269,7 @@ The `ChainNotAfter` and `NextRenewalTime` metrics of its transports are `0`.
 |`false`
 
 |`renewBeforeFraction`
-|Share of the certificate lifetime left when a node starts to renew the certificate. The lifetime runs from the time the certificate becomes valid to the earliest expiry in its chain. The value must be greater than `0` and less than `1`, otherwise the node does not start.
+|Share of the certificate lifetime left when a node starts to renew the certificate, greater than `0` and less than `1`.
 |`0.15`
 
 |`trustStoreFilePath`
@@ -314,19 +292,16 @@ The `ChainNotAfter` and `NextRenewalTime` metrics of its transports are `0`.
 == Custom SSL Context Factories
 
 To take certificates from a source of your own, for example a PKI service, extend `AbstractSslContextFactory` and implement `checkParameters()`, `createKeyManagers()` and `createTrustManagers()`.
-Both `create()` and `createNew()` call these methods, so `control.sh --ssl reload` and automatic renewal get a new certificate from your source without further code.
-`create()` builds a context on the first call and returns that same context on every later call. `createNew()` builds a new context on every call. The node calls `create()` when it starts, and `createNew()` on every reload and renewal.
-A subclass that builds its context in its own `create()` must also override `createNew()` and build the context there from the same source. Otherwise a reload builds the context without the code in `create()`.
-A subclass of `SslContextFactory` that builds its context in its own `create()` must override `createNew()` the same way. In `SslContextFactory`, `createKeyManagers()` and `createTrustManagers()` are final.
+`control.sh --ssl reload` and automatic renewal then get a new certificate from your source without further code.
+A subclass that builds its context in its own `create()` must also override `createNew()` and build the context there from the same source. Otherwise a reload or a renewal builds the context without the code in `create()`.
 
 If the source has no newer certificate yet, return the certificates in use. The node treats this as waiting, not as a failure, and tries again after a pause.
 If the factory throws an exception, the node logs it as a failure and keeps the certificates in use.
-The node calls the factory only when it starts, on a reload and on a renewal, never for a connection.
+The node calls the factory only when it starts, on a reload and on a renewal.
 On one node, two calls to the factory never run at the same time.
-A call that fetches certificates from a remote service must limit how long it takes.
-The call must also stop when its thread is interrupted.
-A node that stops interrupts this call and does not stop until the call ends.
+A call that fetches certificates from a remote service must limit how long it takes and stop when its thread is interrupted.
+When the node stops, it interrupts a running call to the factory and waits for the call to end.
 Use a new factory object for every node start. With the same factory object, a node started again in the same JVM gets the context that `create()` built at the first start.
 
-A `Factory<SSLContext>` that does not extend `AbstractSslContextFactory` works too. The node calls its `create()` when it starts and on every reload. This `create()` must return a new context on every call, or `control.sh --ssl reload` fails.
-The node does not renew the certificates of such a factory automatically.
+A `Factory<SSLContext>` that does not extend `AbstractSslContextFactory` works with `control.sh --ssl reload`, but not with automatic renewal.
+Its `create()` must return a new context on every call, or `control.sh --ssl reload` fails.

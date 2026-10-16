@@ -82,6 +82,11 @@ public class SslContextProvider {
         transports.add(transport);
     }
 
+    /** @return Whether nodes connect on the context: it serves discovery or communication. */
+    boolean nodesConnect() {
+        return transports.contains(COMMUNICATION) || transports.contains(DISCOVERY);
+    }
+
     /** @return Transports served, comma-separated, as the commands and the node log name them. */
     public String transports() {
         return String.join(", ", transports);
@@ -173,8 +178,7 @@ public class SslContextProvider {
                     ", inUseChainNotAfter=" + Instant.ofEpochMilli(chainNotAfter(chain)) + ']');
             }
 
-            if (chain != null && SslCertificates.invalidAt(chain, System.currentTimeMillis()) == null &&
-                (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY))) {
+            if (chain != null && SslCertificates.invalidAt(chain, System.currentTimeMillis()) == null && nodesConnect()) {
                 try {
                     SslCertificates.checkAccepts(ctx, rebuilt);
                 }
@@ -240,7 +244,7 @@ public class SslContextProvider {
                 Instant.ofEpochMilli(now) + ']');
         }
 
-        if (transports.contains(COMMUNICATION) || transports.contains(DISCOVERY)) {
+        if (nodesConnect()) {
             try {
                 SslCertificates.checkInterNodeHandshake(rebuilt);
             }

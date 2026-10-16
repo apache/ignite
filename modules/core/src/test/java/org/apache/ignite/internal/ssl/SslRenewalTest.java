@@ -704,33 +704,52 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * If the node cannot tell when the certificate expires, here with no key in the key store, it must not renew or count a failure;
-     * the status must say it cannot tell the certificate, and a reload must still succeed.
+     * A factory with renewal on whose certificate the node cannot tell, here with no key in the key store, must stop the node from
+     * starting.
      */
     @Test
-    public void testUnknownCertificateNotRenewed() throws Exception {
-        Issuer issuer = new Issuer(() -> {
-            KeyStore noKey = KeyStore.getInstance(KeyStore.getDefaultType());
+    public void testUnknownCertificateRefusedAtStart() {
+        Issuer issuer = new Issuer(SslRenewalTest::noKey);
 
-            noKey.load(null, null);
+        GridTestUtils.assertThrowsAnyCause(log, () -> startClientConnectorOn(issuer), IgniteException.class,
+            "Cannot tell which TLS certificate the SSL context factory serves");
+    }
 
-            return noKey;
-        });
+    /** Without renewal, a factory whose certificate the node cannot tell works: the status says so, and a reload still succeeds. */
+    @Test
+    public void testUnknownCertificateWithoutRenewal() throws Exception {
+        Issuer issuer = new Issuer(SslRenewalTest::noKey);
 
-        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg
-            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
-                .setUseIgniteSslContextFactory(false).setSslContextFactory(issuer)));
+        issuer.setRenewalEnabled(false);
 
-        assertTrue(waitForCondition(() -> logged(Level.WARN, "Cannot tell when the TLS certificate expires") == 1, 30_000));
+        IgniteEx g = startClientConnectorOn(issuer);
 
         MetricRegistryImpl reg = metrics(g, "ssl.client.connector");
 
-        assertEquals(0, reg.<IntMetric>findMetric("ConsecutiveReloadFailures").value());
+        assertEquals(0, reg.<LongMetric>findMetric("ChainNotAfter").value());
         assertEquals(0, reg.<LongMetric>findMetric("NextRenewalTime").value());
-        assertEquals("Nothing must be renewed", 1, issuer.calls.size());
-
         assertContains(log, status(g), "cannot tell which certificate is served");
         assertContains(log, reload(g), ": reloaded " + CLIENT_CONNECTOR);
+        assertTrue(appender.events().isEmpty());
+    }
+
+    /** @return Key store with no private key. */
+    private static KeyStore noKey() throws Exception {
+        KeyStore noKey = KeyStore.getInstance(KeyStore.getDefaultType());
+
+        noKey.load(null, null);
+
+        return noKey;
+    }
+
+    /**
+     * @param factory SSL context factory of the client connector.
+     * @return Started node whose client connector runs on the factory and whose other transports run without SSL.
+     */
+    private IgniteEx startClientConnectorOn(AbstractSslContextFactory factory) throws Exception {
+        return startGrid(getTestIgniteInstanceName(0), cfg -> cfg
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
+                .setUseIgniteSslContextFactory(false).setSslContextFactory(factory)));
     }
 
     /**
