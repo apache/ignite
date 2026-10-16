@@ -123,7 +123,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         if (startTime != 0)
             offset = (int)((startTime - TOP_VER_BASE_TIME) / 1000);
 
-        last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
+        last = new GridCacheVersion((int)topVer + offset, order.get(), (int)cctx.localNode().order(), dataCenterId);
 
         lastDataVer.value(last.order());
 
