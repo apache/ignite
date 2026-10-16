@@ -17,17 +17,31 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
- * Holder for handles.
+ * Simple holder for handles.
  */
-interface BinaryReaderHandlesHolder {
+class BinaryReaderHandlesHolder {
+    /** Reader context which is constantly passed between objects. */
+    BinaryReaderHandles hnds;
+
+    /**
+     * @param hnds Handles.
+     */
+    BinaryReaderHandlesHolder(@Nullable BinaryReaderHandles hnds) {
+        this.hnds = hnds;
+    }
+
     /**
      * Set handle.
      *
      * @param obj Object.
      * @param pos Position.
      */
-    public void setHandle(Object obj, int pos);
+    final void setHandle(Object obj, int pos) {
+        handles().put(pos, obj);
+    }
 
     /**
      * Get handle.
@@ -35,15 +49,24 @@ interface BinaryReaderHandlesHolder {
      * @param pos Position.
      * @return Handle.
      */
-    public Object getHandle(int pos);
+    final Object getHandle(int pos) {
+        return hnds != null ? hnds.get(pos) : null;
+    }
 
     /**
      * Get all handles.
      *
      * @return Handles.
      */
-    public BinaryReaderHandles handles();
+    public final BinaryReaderHandles handles() {
+        if (hnds == null)
+            hnds = new BinaryReaderHandles();
 
-    /** */
-    public boolean isEmpty();
+        return hnds;
+    }
+
+    /** @return {@code True} if no handles were registered. */
+    final boolean isEmpty() {
+        return hnds == null || hnds.isEmpty();
+    }
 }
