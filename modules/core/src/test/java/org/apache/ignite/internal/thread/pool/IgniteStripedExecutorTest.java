@@ -161,7 +161,7 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));
 
-        assertTrue(stripedExecSvc.detectStarvation());
+        assertTrue(stripedExecSvc.starvationDetected());
     }
 
     /** */
@@ -180,12 +180,12 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
 
         stripedExecSvc.execute(0, () -> U.awaitQuiet(latch1));
 
-        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.starvationDetected(), 10_000));
 
         assertEquals("Metric is not incremented", 1L, metric.value());
 
-        stripedExecSvc.detectStarvation();
-        stripedExecSvc.detectStarvation();
+        stripedExecSvc.starvationDetected();
+        stripedExecSvc.starvationDetected();
 
         assertEquals("Metric is incremented on repeated detection of the same episode", 1L, metric.value());
 
@@ -197,7 +197,7 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
 
         stripedExecSvc.execute(0, () -> U.awaitQuiet(latch2));
 
-        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.detectStarvation(), 10_000));
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.starvationDetected(), 10_000));
 
         assertEquals("Metric is not incremented for a new episode", 2L, metric.value());
 

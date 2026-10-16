@@ -169,12 +169,26 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
     }
 
     /**
-     * Checks starvation in striped pool. Maybe too verbose
-     * but this is needed to faster debug possible issues.
+     * Checks for possible starvation in the striped pool.
      *
      * @return Flag representing presence of possible starvation in striped pool.
      */
-    public boolean detectStarvation() {
+    boolean starvationDetected() {
+        return checkStarvation(false);
+    }
+
+    /** Checks for possible starvation in the striped pool and logs diagnostic details for every starved stripe. */
+    public void detectStarvation() {
+        checkStarvation(true);
+    }
+
+    /**
+     * Single pass over stripes: counts starvation episodes and optionally logs diagnostic details.
+     *
+     * @param print {@code true} to log a warning for every starved stripe.
+     * @return {@code true} if any stripe is starved.
+     */
+    private boolean checkStarvation(boolean print) {
         boolean starvationDetected = false;
 
         for (Stripe stripe : stripes) {
@@ -190,25 +204,24 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
                 if (lastStartedTs > prev && stripe.countedStartTs.compareAndSet(prev, lastStartedTs))
                     starvationCnt.incrementAndGet();
 
-                boolean deadlockPresent = U.deadlockPresent();
+                if (print) {
+                    boolean deadlockPresent = U.deadlockPresent();
 
-                GridStringBuilder sb = new GridStringBuilder();
+                    GridStringBuilder sb = new GridStringBuilder();
 
-                sb.a(">>> Possible starvation in striped pool.").a(U.nl())
-                    .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
-                    .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
-                    .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
-                    .a("    Completed: ").a(stripe.completedCnt).a(U.nl());
+                    sb.a(">>> Possible starvation in striped pool.").a(U.nl())
+                        .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
+                        .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
+                        .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
+                        .a("    Completed: ").a(stripe.completedCnt).a(U.nl());
 
-                U.printStackTrace(
-                    stripe.thread.getId(),
-                    sb);
+                    U.printStackTrace(stripe.thread.getId(), sb);
 
-                String msg = sb.toString();
-
-                U.warn(log, msg);
+                    U.warn(log, sb.toString());
+                }
             }
         }
+
         return starvationDetected;
     }
 
@@ -509,7 +522,7 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
         mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
 
         mreg.register("DetectStarvation",
-            this::detectStarvation,
+            this::starvationDetected,
             "True if possible starvation in striped pool is detected.");
 
         mreg.register("TotalQueueSize",
