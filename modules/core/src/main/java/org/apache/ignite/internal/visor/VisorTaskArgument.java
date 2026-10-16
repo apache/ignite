@@ -137,6 +137,11 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
         return debug;
     }
 
+    /** */
+    public IgniteCoreFeatureSet initiatorFeatures() {
+        return cmdInitiatorFeatures;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
