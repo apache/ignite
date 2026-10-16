@@ -581,8 +581,7 @@ public class SnapshotCheckProcess {
             if (clusterOpFut != null)
                 ctx.clusterMetas = metas;
 
-            if (U.isLocalNodeCoordinator(kctx.discovery()))
-                phase2PartsHashes.start(reqId, ctx.req);
+            phase2PartsHashes.startByCoordinator(reqId, ctx.req);
         }
         catch (Throwable th) {
             if (ctx != null) {

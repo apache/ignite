@@ -60,7 +60,7 @@ final class X {
         Method causeMtd;
 
         try {
-            causeMtd = Throwable.class.getMethod("getCause", null);
+            causeMtd = Throwable.class.getMethod("getCause");
         }
         catch (Exception ignored) {
             causeMtd = null;
@@ -101,7 +101,7 @@ final class X {
         Method mtd = null;
 
         try {
-            mtd = throwable.getClass().getMethod(mtdName, null);
+            mtd = throwable.getClass().getMethod(mtdName);
         }
         catch (NoSuchMethodException | SecurityException ignored) {
             // exception ignored
@@ -180,7 +180,7 @@ final class X {
         Class<?> cls = throwable.getClass();
         for (String CAUSE_MTD_NAME : CAUSE_MTD_NAMES) {
             try {
-                Method mtd = cls.getMethod(CAUSE_MTD_NAME, null);
+                Method mtd = cls.getMethod(CAUSE_MTD_NAME);
 
                 if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType()))
                     return true;

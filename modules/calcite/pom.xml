@@ -69,12 +69,10 @@
             <artifactId>ignite-core</artifactId>
         </dependency>
 
-        <!--
-            Indexing is required for cross-engines tests.
-        -->
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-indexing</artifactId>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>${xstream.version}</version>
             <scope>test</scope>
         </dependency>
 

@@ -140,7 +140,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     /**
      * The maximum capacity, used if a higher value is implicitly
      * specified by either of the constructors with arguments.  MUST
-     * be a power of two <= 1<<30 to ensure that entries are indexable
+     * be a power of two {@code <= 1<<30} to ensure that entries are indexable
      * using ints.
      */
     public static final int MAX_CAP_LIMIT = 1 << 30;

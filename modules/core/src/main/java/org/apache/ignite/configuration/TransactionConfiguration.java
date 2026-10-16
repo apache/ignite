@@ -59,6 +59,7 @@ public class TransactionConfiguration implements Serializable {
       * Default size of pessimistic transactions log.
       * @deprecated Pessimistic tx log linger property has no effect.
       */
+    @Deprecated
     public static final int DFLT_PESSIMISTIC_TX_LOG_LINGER = 10_000;
 
     /** Default transaction serializable flag. */

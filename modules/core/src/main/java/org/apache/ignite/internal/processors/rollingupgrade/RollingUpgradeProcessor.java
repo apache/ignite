@@ -535,8 +535,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
                 finishProcess(reqId, firstError(errors));
             }
-            else if (reqId.equals(curFinalizeProcId) && U.isLocalNodeCoordinator(ctx.discovery()))
-                completePhase.start(reqId, null);
+            else if (reqId.equals(curFinalizeProcId))
+                completePhase.startByCoordinator(reqId, null);
         }
 
         /** */
