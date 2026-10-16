@@ -865,8 +865,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.cfgs = globalCfgs;
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            preloadProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        preloadProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1254,14 +1253,12 @@ public class SnapshotRestoreProcess {
         opCtx0.errHnd.accept(failure);
 
         if (failure != null) {
-            if (U.isLocalNodeCoordinator(ctx.discovery()))
-                rollbackRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+            rollbackRestoreProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
 
             return;
         }
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStartProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        cacheStartProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1317,8 +1314,7 @@ public class SnapshotRestoreProcess {
 
         if (failure == null) {
             if (opCtx0.incIdx > 0) {
-                if (U.isLocalNodeCoordinator(ctx.discovery()))
-                    incSnpRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+                incSnpRestoreProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
 
                 return;
             }
@@ -1330,8 +1326,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, failure);
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStopProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        cacheStopProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1342,7 +1337,7 @@ public class SnapshotRestoreProcess {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
-        assert opCtx.reqId == req.requestId();
+        assert opCtx.reqId.equals(req.requestId());
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
@@ -1379,8 +1374,7 @@ public class SnapshotRestoreProcess {
             log.error("Failed to stop caches during a snapshot rollback routine [reqId=" + opCtx0.reqId + ", err=" + errs + ']');
         }
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            rollbackRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        rollbackRestoreProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1581,8 +1575,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, failure);
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStopProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        cacheStopProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**

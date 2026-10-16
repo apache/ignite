@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.TestWildcardFieldsMessage",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "entryBytes"},
+    {"order": 1, "type": "byte[]", "name": "sorterBytes"},
+    {"type": "java.util.Comparator<? super java.lang.String>", "name": "sorter", "annotations": ["@org.apache.ignite.internal.Marshalled(\"sorterBytes\")"]},
+    {"type": "java.util.Map$Entry<?,? extends java.io.Serializable>", "name": "entry", "annotations": ["@org.apache.ignite.internal.Marshalled(\"entryBytes\")"]}
+  ]
+}
