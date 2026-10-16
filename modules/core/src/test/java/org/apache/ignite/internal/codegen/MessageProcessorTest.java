@@ -124,6 +124,17 @@ public class MessageProcessorTest {
 
     /** */
     @Test
+    public void testFeatureGatingFieldsOfDifferentMessagesAllowed() {
+        Compilation compilation = compile(
+            "TestFeatureRegistry.java",
+            "TestRollingUpgradeAwareMessage.java",
+            "TestSharedFeaturesMessage.java");
+
+        assertThat(compilation).succeeded();
+    }
+
+    /** */
+    @Test
     public void testUnknownFeatureConstantRejected() {
         Compilation compilation = compile("TestUnknownFeatureMessage.java");
 
