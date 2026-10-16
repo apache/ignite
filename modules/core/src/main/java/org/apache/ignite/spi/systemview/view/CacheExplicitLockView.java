@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.systemview.Order;
 import org.apache.ignite.internal.systemview.SystemViewDescriptor;
@@ -30,12 +31,17 @@ import org.apache.ignite.lang.IgniteUuid;
 @SystemViewDescriptor
 public class CacheExplicitLockView {
     /** */
+    private final GridCacheExplicitLockSpan span;
+
+    /** */
     private final GridCacheMvccCandidate cand;
 
     /**
-     * @param cand Lock candidate
+     * @param span Lock span of the candidate.
+     * @param cand Lock candidate.
      */
-    public CacheExplicitLockView(GridCacheMvccCandidate cand) {
+    public CacheExplicitLockView(GridCacheExplicitLockSpan span, GridCacheMvccCandidate cand) {
+        this.span = span;
         this.cand = cand;
     }
 
@@ -69,5 +75,11 @@ public class CacheExplicitLockView {
     @Order(3)
     public IgniteUuid xid() {
         return BinaryUtils.asIgniteUuid(cand.version());
+    }
+
+    /** @return Hold duration in milliseconds, 0 until the lock is acquired. */
+    @Order(4)
+    public long duration() {
+        return span.holdTime(cand.key());
     }
 }
