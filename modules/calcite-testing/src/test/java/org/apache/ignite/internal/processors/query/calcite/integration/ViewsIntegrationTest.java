@@ -25,10 +25,13 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
@@ -401,16 +404,32 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
     }
 
     /** */
-    private void assertViewsCount(String schemaName, String viewName, int cnt) {
-        for (Ignite ignite : G.allGrids()) {
-            try {
-                assertEquals(cnt, sql((IgniteEx)ignite, "SELECT * FROM sys.views WHERE schema = ? AND name = ?",
-                    schemaName, viewName).size());
+    private void assertViewsCount(String schemaName, String viewName, int cnt) throws IgniteInterruptedCheckedException {
+        String[] err = {null};
+
+        boolean ok = waitForCondition(() -> {
+            for (Ignite ignite : G.allGrids()) {
+                try {
+                    if (sql((IgniteEx)ignite, "SELECT * FROM sys.views WHERE schema = ? AND name = ?",
+                        schemaName, viewName).size() != cnt) {
+                        err[0] = "Unexpected views count [grid=" + ignite.name() + ", schemaName=" + schemaName +
+                            ", viewName=" + viewName + ", cnt=" + cnt + ']';
+
+                        return false;
+                    }
+                }
+                catch (Throwable e) {
+                    err[0] = "Failed to get views count [grid=" + ignite.name() + ", schemaName=" + schemaName +
+                        ", viewName=" + viewName + ", cnt=" + cnt + "]: " + e.getMessage();
+
+                    return false;
+                }
             }
-            catch (Throwable e) {
-                throw new AssertionError("Unexpected views count [grid=" + ignite.name() + ", schemaName=" +
-                    schemaName + ", viewName=" + viewName + ']', e);
-            }
-        }
+
+            return true;
+        }, 10_000L);
+
+        if (!ok)
+            fail(err[0]);
     }
 }
