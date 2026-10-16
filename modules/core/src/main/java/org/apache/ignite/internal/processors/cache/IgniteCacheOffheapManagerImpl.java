@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
-import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridLongList;
@@ -198,6 +197,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             removeCacheData(cacheId);
     }
 
+    /** {@inheritDoc} */
     @Override public GridSpinBusyLock busyLock() {
         return busyLock;
     }
