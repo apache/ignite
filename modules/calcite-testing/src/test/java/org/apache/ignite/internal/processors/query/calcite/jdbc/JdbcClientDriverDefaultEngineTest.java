@@ -34,6 +34,8 @@ import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest.checkEngine;
+
 /** Checks that the JDBC Client Driver ({@code jdbc:ignite:cfg://}) works with any default SQL engine of the client node it starts. */
 @ParameterizedClass(name = "engine={0}")
 @ValueSource(strings = {IndexingQueryEngineConfiguration.ENGINE_NAME, CalciteQueryEngineConfiguration.ENGINE_NAME})
@@ -85,6 +87,8 @@ public class JdbcClientDriverDefaultEngineTest extends AbstractJdbcTest {
     /** */
     @Test
     public void testSelect() throws Exception {
+        checkEngine(grid(0).getOrCreateCache(DEFAULT_CACHE_NAME), dfltEngine, "SELECT QUERY_ENGINE()");
+
         List<List<Object>> res = executeQuery(conn, "SELECT id, val FROM test ORDER BY id");
 
         assertEquals(2, res.size());
