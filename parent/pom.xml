@@ -888,7 +888,6 @@
                                         <inputExclude>**/.gitignore</inputExclude>
                                         <inputExclude>**/.git</inputExclude>
                                         <inputExclude>**/.asf.yaml</inputExclude>
-                                        <inputExclude>.travis.yml</inputExclude>
                                         <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>
                                         <inputExclude>idea/ignite_codeStyle.xml</inputExclude>
                                         <inputExclude>**/DEVNOTES*.txt</inputExclude>
