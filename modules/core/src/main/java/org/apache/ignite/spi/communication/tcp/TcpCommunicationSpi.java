@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -842,7 +843,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         if (conStateHnd != null) {
             conStateHnd.stop();
             U.cancel(conStateHnd);
-            U.join(conStateHnd, log);
+            U.join(conStateHnd, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
         }
 
         if (srvLsnr != null)
