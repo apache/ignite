@@ -20,9 +20,7 @@ package org.apache.ignite.internal.binary;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Holder of the handles shared between a reader and the objects it unmarshals.
- * Base class of {@link BinaryReaderExImpl}; on its own it is the cheapest object that can carry handles
- * through the static read helpers, used where bytes are only wrapped into a binary object.
+ * Simple holder for handles.
  */
 class BinaryReaderHandlesHolder {
     /** Reader context which is constantly passed between objects. */
@@ -41,7 +39,7 @@ class BinaryReaderHandlesHolder {
      * @param obj Object.
      * @param pos Position.
      */
-    void setHandle(Object obj, int pos) {
+    final void setHandle(Object obj, int pos) {
         handles().put(pos, obj);
     }
 
@@ -51,7 +49,7 @@ class BinaryReaderHandlesHolder {
      * @param pos Position.
      * @return Handle.
      */
-    Object getHandle(int pos) {
+    final Object getHandle(int pos) {
         return hnds != null ? hnds.get(pos) : null;
     }
 
@@ -60,7 +58,7 @@ class BinaryReaderHandlesHolder {
      *
      * @return Handles.
      */
-    public BinaryReaderHandles handles() {
+    public final BinaryReaderHandles handles() {
         if (hnds == null)
             hnds = new BinaryReaderHandles();
 
@@ -68,7 +66,7 @@ class BinaryReaderHandlesHolder {
     }
 
     /** @return {@code True} if no handles were registered. */
-    boolean isEmpty() {
+    final boolean isEmpty() {
         return hnds == null || hnds.isEmpty();
     }
 }
