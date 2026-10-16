@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -66,11 +67,13 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
  */
 public class IdleVerifyUtility {
     /** Cluster not idle message. */
-    public static final String GRID_NOT_IDLE_MSG =
-        "Cluster not idle. Modifications found in caches or groups: ";
+    public static final String GRID_NOT_IDLE_MSG = "Cluster not idle. Modifications found in caches or groups: ";
 
     /** */
     public static final String CRC_CHECK_ERR_MSG = "CRC check of partition failed";
+
+    /** */
+    private static final String CANCELED_MSG = "Partition hash calculation has been cancelled.";
 
     /**
      * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
@@ -135,7 +138,7 @@ public class IdleVerifyUtility {
         catch (Throwable e) {
             String msg0 = CRC_CHECK_ERR_MSG + " [partId=" + partId +
                 ", grpName=" + (pageStore == null ? "" : cacheName(new File(pageStore.getFileAbsolutePath()).getParentFile())) +
-                ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ']';
+                ", part=" + (pageStore == null ? "" : pageStore.getFileAbsolutePath()) + ", cause=" + e.getMessage() + ']';
 
             throw new IgniteException(msg0, e);
         }
@@ -288,17 +291,18 @@ public class IdleVerifyUtility {
         boolean isPrimary,
         long partSize,
         GridIterator<CacheDataRow> it,
-        @Nullable BooleanSupplier cancelled
+        BooleanSupplier cancelled
     ) throws IgniteCheckedException {
         if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-            return new PartitionHashRecord(partKey,
+            return new PartitionHashRecord(
+                partKey,
                 isPrimary,
                 consId,
                 updCntr,
-                state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
-                state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
+                state == GridDhtPartitionState.MOVING ? PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
+                state == GridDhtPartitionState.MOVING
+                    ? PartitionHashRecord.PartitionState.MOVING
+                    : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
             );
         }
@@ -308,10 +312,7 @@ public class IdleVerifyUtility {
 
         VerifyPartitionContext ctx = new VerifyPartitionContext();
 
-        while (it.hasNextX()) {
-            if (cancelled != null && cancelled.getAsBoolean())
-                throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
-
+        while (!cancelled.getAsBoolean() && it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
             if (row.expireTime() > 0)
@@ -319,6 +320,9 @@ public class IdleVerifyUtility {
 
             ctx.update(row.key(), row.value(), row.version());
         }
+
+        if (cancelled.getAsBoolean())
+            throw cancelledException();
 
         return new PartitionHashRecord(
             partKey,
@@ -329,6 +333,11 @@ public class IdleVerifyUtility {
             PartitionHashRecord.PartitionState.OWNING,
             ctx
         );
+    }
+
+    /** */
+    public static IgniteCheckedException cancelledException() {
+        return new NodeStoppingException(CANCELED_MSG);
     }
 
     /**

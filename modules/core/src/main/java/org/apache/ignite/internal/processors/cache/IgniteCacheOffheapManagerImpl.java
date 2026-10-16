@@ -198,6 +198,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public GridSpinBusyLock busyLock() {
+        return busyLock;
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop() {
         GridKernalContext kctx = ctx.kernalContext();
 
@@ -514,11 +519,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        boolean keepBinary,
-        Boolean dataPageScanEnabled
+        boolean keepBinary
     ) {
-        Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup,
-            topVer, dataPageScanEnabled);
+        Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
             /** */
@@ -601,21 +604,19 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         int cacheId,
         boolean primary,
         boolean backups,
-        AffinityTopologyVersion topVer,
-        Boolean dataPageScanEnabled
+        AffinityTopologyVersion topVer
     ) {
-        return iterator(cacheId, cacheData(primary, backups, topVer), dataPageScanEnabled);
+        return iterator(cacheId, cacheData(primary, backups, topVer));
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part,
-        Boolean dataPageScanEnabled) {
+    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part) {
         CacheDataStore data = dataStore(part, true);
 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(cacheId, singletonIterator(data), dataPageScanEnabled);
+        return iterator(cacheId, singletonIterator(data));
     }
 
     /** {@inheritDoc} */
@@ -625,20 +626,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null);
+        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data));
     }
 
     /**
      *
      * @param cacheId Cache ID.
      * @param dataIt Data store iterator.
-     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator
      */
-    private GridCloseableIterator<CacheDataRow> iterator(int cacheId,
-        Iterator<CacheDataStore> dataIt,
-        Boolean dataPageScanEnabled
-    ) {
+    private GridCloseableIterator<CacheDataRow> iterator(int cacheId, Iterator<CacheDataStore> dataIt) {
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
             private GridCursor<? extends CacheDataRow> cur;

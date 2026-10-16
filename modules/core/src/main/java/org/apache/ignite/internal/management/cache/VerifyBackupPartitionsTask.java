@@ -217,8 +217,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts =
-                calcPartitionHashAsync(grpIds);
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
@@ -227,11 +226,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             long lastProgressLogTs = U.currentTimeMillis();
 
             for (int i = 0; i < partHashCalcFuts.size(); ) {
-                if (isCancelled()) {
-                    cancelFuts(i, partHashCalcFuts);
-
+                if (isCancelled())
                     throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-                }
 
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
@@ -251,10 +247,14 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         continue;
                     }
 
-                    cancelFuts(i, partHashCalcFuts);
+                    // Propagate the cancellation to the async partition hash calculations.
+                    cancel();
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
+                    // Avoid excessive wrapping.
+                    else if (e.getCause() instanceof IgniteException ie)
+                        throw ie;
                     else
                         throw new IgniteException(e.getCause());
                 }
@@ -278,28 +278,17 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /**
-         * Cancels futures from given index.
-         *
-         * @param start Index to start from.
-         * @param partHashCalcFuts Partitions hash calculation futures to cancel.
-         */
-        private void cancelFuts(int start, List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts) {
-            for (int i = start; i < partHashCalcFuts.size(); i++)
-                partHashCalcFuts.get(i).cancel(false);
-        }
-
-        /**
          * Class that processes cache filtering chain.
          */
         private class CachesFiltering {
             /**
              * Initially all cache descriptors are included.
              */
-            private final Set<CacheGroupContext> filteredCacheGroups;
+            private final Set<CacheGroupContext> filteredCacheGrps;
 
             /** */
             public CachesFiltering(Collection<CacheGroupContext> cacheGroups) {
-                filteredCacheGroups = new HashSet<>(cacheGroups);
+                filteredCacheGrps = new HashSet<>(cacheGroups);
             }
 
             /**
@@ -309,7 +298,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
              * @return this
              */
             public CachesFiltering filter(IgniteInClosure<Set<CacheGroupContext>> closure) {
-                closure.apply(filteredCacheGroups);
+                closure.apply(filteredCacheGrps);
 
                 return this;
             }
@@ -322,7 +311,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             public Set<Integer> result() {
                 Set<Integer> res = new HashSet<>();
 
-                for (CacheGroupContext cacheGrp : filteredCacheGroups)
+                for (CacheGroupContext cacheGrp : filteredCacheGrps)
                     res.add(cacheGrp.groupId());
 
                 return res;
@@ -494,32 +483,42 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
+                if (!gctx.offheap().busyLock().enterBusy()) {
+                    part.release();
+                    return res;
+                }
+
+                boolean gwLocked = false;
+
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
+                    ignite.context().gateway().readLock();
+                    gwLocked = true;
+
                     if (arg.checkCrc() && gctx.persistenceEnabled()) {
-                        FilePageStoreManager pageStoreMgr =
-                            (FilePageStoreManager)ignite.context().cache().context().pageStore();
+                        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
                         checkPartitionsPageCrcSum(
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            cancelled
+                            () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                         );
                     }
 
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
-                    PartitionHashRecord hash = calculatePartitionHash(key,
+                    PartitionHashRecord hash = calculatePartitionHash(
+                        key,
                         updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
                         ignite.context().discovery().localNode().consistentId(),
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
                         gctx.offheap().partitionIterator(part.id()),
-                        cancelled
+                        () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                     );
 
                     if (hash != null)
@@ -534,13 +533,18 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
+                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
+                        ", cause=" + e.getMessage() + ']';
 
                     U.error(log, msg, e);
 
                     throw new IgniteException(msg, e);
                 }
                 finally {
+                    if (gwLocked)
+                        ignite.context().gateway().readUnlock();
+
+                    gctx.offheap().busyLock().leaveBusy();
                     part.release();
                 }
 
