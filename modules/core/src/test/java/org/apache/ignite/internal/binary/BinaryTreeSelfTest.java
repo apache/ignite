@@ -428,7 +428,7 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500"));
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(ipFinder);
 
