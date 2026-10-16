@@ -225,7 +225,9 @@ Register name: `tx`
 |===
 |Name | Type | Description
 |AllOwnerTransactions | Map<String, String> | Map of local node owning transactions.
+|ExplicitLockHoldTimeHistogram | histogram | Explicit locks hold times on node represented as histogram, in milliseconds.
 |LockedKeysNumber | long | The number of keys locked on the node.
+|MaxExplicitLockHoldTime | long | Maximum hold time of explicit locks currently held on the node, in milliseconds.
 |OwnerTransactionsNumber | long | The number of active transactions for which this node is the initiator.
 |TransactionsHoldingLockNumber | long | The number of active transactions holding at least one key lock.
 |commitTime | long | Last commit time.
@@ -801,7 +803,7 @@ Register name: `Services.{service_name}`
 
 == Failure Handling
 
-Counters of the failures suppressed by the configured failure handler. One counter is registered per failure type the handler ignores, see link:perf-and-troubleshooting/handling-exceptions#critical-workers-health-check[Critical Workers Health Check].
+Counters of the failures suppressed by the configured failure handler. One counter is registered per failure type the handler ignores, see link:perf-and-troubleshooting/handling-exceptions#failures-handling[Failures Handling].
 
 Register name: `failure.ignored`
 

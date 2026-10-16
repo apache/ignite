@@ -20,6 +20,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -44,7 +45,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 BinaryConfiguration = new BinaryConfiguration(typeof(Foo), typeof(Key), typeof(Key2), typeof(KeyAll))
                 {
                     NameMapper = GetNameMapper()
-                }
+                },
+                SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
             };
 
             Ignition.Start(cfg);
