@@ -34,7 +34,8 @@ from time import sleep
 from ducktape.mark import parametrize
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.mdc.mdc_cluster import MdcCluster, dc_jvm_opts, DC_1, DC_2, cross_dc_network, THIN_LOAD_APP
+from ignitetest.services.mdc.mdc_cluster import MdcCluster, DC_1, DC_2, cross_dc_network, THIN_LOAD_APP
+from ignitetest.services.mdc.mdc_utils import dc_jvm_opts
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -68,7 +69,8 @@ class MdcThinClientTest(IgniteTest):
         but rejects writes, and writes resume after the heal.
         """
         mdc = MdcCluster(self, ignite_version, srv_per_dc=2, runners_per_dc={DC_1: 1},
-                         client_connector=True)
+                         client_connector=True, network_timeout=20_000,
+                         discovery_network_timeout=20_000)
 
         # All thin clients get the full address list of both DCs: DC preference must come
         # from routing, not from the address list.
