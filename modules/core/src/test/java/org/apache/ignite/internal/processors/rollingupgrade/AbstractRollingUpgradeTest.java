@@ -91,6 +91,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * 2.19.1  0-1
  * 2.19.2  0-2
  * 2.19.3  0-2,6
+ * 2.19.4  0
+ * 2.19.5  0-1
  * 2.20.0  2-5
  * 2.20.1  2-6
  * 2.21.0  6
