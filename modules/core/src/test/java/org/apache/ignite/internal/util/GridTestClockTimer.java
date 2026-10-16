@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import java.util.function.LongSupplier;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Clock timer for tests.
@@ -36,24 +37,28 @@ public class GridTestClockTimer implements Runnable {
      * Constructor.
      */
     public GridTestClockTimer() {
-        try {
-            // Stops the internal clock timer of nodes that may be left running by previous tests
-            // and prevents it from being started on subsequent grid starts.
-            IgniteUtils.useExternalClock();
-        }
-        catch (InterruptedException ignored) {
-            // The internal clock timer is already interrupted and will stop shortly. Do not throw: this constructor
-            // is called from GridAbstractTest static initializer, and a failure there breaks all subsequent tests.
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * @return {@code True} if need start test time.
-     */
-    public static boolean startTestTimer() {
         synchronized (IgniteUtils.mux) {
-            return !IgniteUtils.extClock;
+            // Nodes left running by a test that does not extend GridAbstractTest may have already started
+            // the internal clock timer. The test clock replaces it.
+            Thread timer = GridTestUtils.getFieldValue(CommonUtils.class, "timer");
+
+            if (timer != null) {
+                GridTestUtils.setFieldValue(CommonUtils.class, "timer", null);
+
+                timer.interrupt();
+
+                try {
+                    timer.join();
+                }
+                catch (InterruptedException ignored) {
+                    // The internal clock timer is already interrupted and will stop shortly. Do not throw:
+                    // this constructor is called from GridAbstractTest static initializer, and a failure there
+                    // breaks all subsequent tests.
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            IgniteUtils.gridCnt++; // To prevent one more timer thread start from IgniteUtils.onGridStart.
         }
     }
 

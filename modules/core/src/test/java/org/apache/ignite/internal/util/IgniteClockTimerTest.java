@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,7 +42,7 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInternalClockNotStartedWithTestClock() throws Exception {
-        assertTrue(IgniteUtils.extClock);
+        assertFalse(internalClockRunning());
 
         startGrid(0);
 
@@ -53,17 +54,22 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Emulates a node left running by a previous test before the test clock was started
-     * (see IGNITE-29084): such a node must neither override the mocked time while it is alive
-     * nor leave {@link U#currentTimeMillis()} frozen after it is stopped.
+     * Emulates a node left running by a test that does not extend {@link GridCommonAbstractTest}
+     * before the test clock was started (see IGNITE-29084): such a node must neither override the mocked time
+     * while it is alive nor leave {@link U#currentTimeMillis()} frozen after it is stopped.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testLeakedNodeDoesNotFreezeClock() throws Exception {
+        assertTrue(G.allGrids().isEmpty());
+
         synchronized (IgniteUtils.mux) {
-            IgniteUtils.extClock = false;
+            // As if the test clock has not been started yet (no nodes are running, so only the test clock is counted).
+            IgniteUtils.gridCnt = 0;
         }
+
+        boolean testClockStarted = false;
 
         try {
             // Node "leaked" by a previous test: it starts the internal clock timer.
@@ -71,10 +77,10 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
 
             assertTrue(internalClockRunning());
 
-            // GridAbstractTest starts the test clock on class initialization regardless of running nodes.
-            assertTrue(GridTestClockTimer.startTestTimer());
+            // GridAbstractTest creates the test clock on class initialization regardless of running nodes.
+            new GridTestClockTimer();
 
-            IgniteUtils.useExternalClock();
+            testClockStarted = true;
 
             assertFalse(internalClockRunning());
 
@@ -104,9 +110,9 @@ public class IgniteClockTimerTest extends GridCommonAbstractTest {
             assertFalse(internalClockRunning());
         }
         finally {
-            synchronized (IgniteUtils.mux) {
-                IgniteUtils.extClock = true;
-            }
+            // Restores the test clock counter and stops the internal clock timer if the test failed in between.
+            if (!testClockStarted)
+                new GridTestClockTimer();
         }
     }
 
