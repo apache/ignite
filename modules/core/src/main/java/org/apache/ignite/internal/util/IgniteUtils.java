@@ -7591,6 +7591,27 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteConfiguration cfg,
         IgniteLogger log
     ) {
+        return binaryContext(metaHnd, marsh, cfg, log, null);
+    }
+
+    /**
+     * Creates a binary context from explicit values.
+     *
+     * @param metaHnd Binary metadata handler.
+     * @param marsh Binary marshaller.
+     * @param cfg Ignite configuration.
+     * @param log Logger.
+     * @param missingMetadataListener Listener invoked when binary metadata for a type is missing during
+     * object reading, or {@code null} if not needed.
+     * @return Binary context instance.
+     */
+    public static BinaryContext binaryContext(
+        BinaryMetadataHandler metaHnd,
+        BinaryMarshaller marsh,
+        IgniteConfiguration cfg,
+        IgniteLogger log,
+        Runnable missingMetadataListener
+    ) {
         BinaryConfiguration bcfg = cfg.getBinaryConfiguration() == null ? new BinaryConfiguration() : cfg.getBinaryConfiguration();
 
         return BinaryUtils.binaryContext(
@@ -7601,7 +7622,8 @@ public abstract class IgniteUtils extends CommonUtils {
             bcfg,
             CU.affinityFields(cfg),
             BinaryUtils::affinityFieldName,
-            log
+            log,
+            missingMetadataListener
         );
     }
 
