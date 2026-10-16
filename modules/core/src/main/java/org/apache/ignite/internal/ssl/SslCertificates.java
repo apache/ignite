@@ -67,7 +67,7 @@ public class SslCertificates {
      * @throws SSLException If the handshake was refused.
      */
     static void checkInterNodeHandshake(SSLContext ctx) throws SSLException {
-        handshake(ctx, ctx, true);
+        handshake(ctx.createSSLEngine(), ctx.createSSLEngine(), true);
     }
 
     /**
@@ -79,7 +79,7 @@ public class SslCertificates {
      * @throws SSLException If the handshake was refused.
      */
     static void checkAccepts(SSLContext truster, SSLContext presenter) throws SSLException {
-        handshake(truster, presenter, false);
+        handshake(truster.createSSLEngine(), presenter.createSSLEngine(), false);
     }
 
     /**
@@ -90,11 +90,7 @@ public class SslCertificates {
         AuthorityRecorder recorder = new AuthorityRecorder();
 
         try {
-            SSLContext probe = SSLContext.getInstance("TLS");
-
-            probe.init(new KeyManager[] {recorder}, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
-
-            handshake(probe, ctx, true);
+            probe(ctx, new KeyManager[] {recorder}, true);
         }
         catch (GeneralSecurityException | IOException | RuntimeException announcedAlready) {
             // The context refuses the probe, which presents no certificate, only after naming the authorities it accepts. A trust
@@ -113,11 +109,7 @@ public class SslCertificates {
      */
     static @Nullable X509Certificate[] servedChain(SSLContext ctx) {
         try {
-            SSLContext probe = SSLContext.getInstance("TLS");
-
-            probe.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
-
-            SSLSession ses = handshake(probe, ctx, false);
+            SSLSession ses = probe(ctx, null, false);
 
             if (ses == null)
                 return null;
@@ -129,6 +121,40 @@ public class SslCertificates {
         catch (GeneralSecurityException | IOException cannotTell) {
             return null;
         }
+    }
+
+    /**
+     * Probes the context with a client that trusts anything and uses the context's protocols and cipher suites. The JVM may support
+     * a suite that the factory enables explicitly without enabling it in a default client.
+     *
+     * @param ctx Context to probe as a server.
+     * @param keyMgrs Key managers of the probe client, if needed to record a certificate request.
+     * @param needClientAuth Whether the server should ask the probe for a certificate.
+     * @return Session of the probe, or {@code null} if the exchange could not be driven to the end.
+     * @throws GeneralSecurityException If the probe cannot be initialized.
+     * @throws SSLException If the handshake was refused.
+     */
+    private static @Nullable SSLSession probe(SSLContext ctx, @Nullable KeyManager[] keyMgrs, boolean needClientAuth)
+        throws GeneralSecurityException, SSLException {
+        SSLContext probe = SSLContext.getInstance("TLS");
+
+        probe.init(keyMgrs, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
+
+        SSLEngine cli = probe.createSSLEngine();
+        SSLEngine srv = ctx.createSSLEngine();
+
+        cli.setUseClientMode(true);
+        srv.setUseClientMode(false);
+
+        cli.setEnabledProtocols(supported(srv.getEnabledProtocols(), cli.getSupportedProtocols()));
+        cli.setEnabledCipherSuites(supported(srv.getEnabledCipherSuites(), cli.getSupportedCipherSuites()));
+
+        return handshake(cli, srv, needClientAuth);
+    }
+
+    /** @return Values enabled by the factory that the probe's provider supports. */
+    private static String[] supported(String[] enabled, String[] supported) {
+        return Arrays.stream(enabled).filter(Arrays.asList(supported)::contains).toArray(String[]::new);
     }
 
     /** Key manager of a probe client that presents nothing and records the authorities the server asks a certificate from. */
@@ -240,16 +266,13 @@ public class SslCertificates {
     }
 
     /**
-     * @param cliCtx Context of the client end.
-     * @param srvCtx Context of the server end.
+     * @param cli Engine of the client end.
+     * @param srv Engine of the server end.
      * @param needClientAuth Whether the server end demands a client certificate.
      * @return Session of the client end if the handshake completed, {@code null} if it could not be driven to the end.
      * @throws SSLException If either side refused the handshake.
      */
-    private static @Nullable SSLSession handshake(SSLContext cliCtx, SSLContext srvCtx, boolean needClientAuth) throws SSLException {
-        SSLEngine cli = cliCtx.createSSLEngine();
-        SSLEngine srv = srvCtx.createSSLEngine();
-
+    private static @Nullable SSLSession handshake(SSLEngine cli, SSLEngine srv, boolean needClientAuth) throws SSLException {
         cli.setUseClientMode(true);
         srv.setUseClientMode(false);
         srv.setNeedClientAuth(needClientAuth);

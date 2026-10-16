@@ -20,8 +20,10 @@ package org.apache.ignite.internal.ssl;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
@@ -46,6 +49,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -57,6 +61,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
@@ -733,6 +738,22 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue(appender.events().isEmpty());
     }
 
+    /** A probe must use factory settings even when the default client does not enable its cipher suite. */
+    @Test
+    public void testProbesWithNonDefaultCipher() throws Exception {
+        GridJavaProcess proc = GridJavaProcess.exec(NonDefaultCipherProbe.class.getName(), null, log, log::info, null,
+            null, List.of(), null);
+
+        try {
+            assertTrue("The SSL probe test process did not finish", proc.getProcess().waitFor(60, TimeUnit.SECONDS));
+            assertEquals("The SSL probe test process failed", 0, proc.getProcess().exitValue());
+        }
+        finally {
+            proc.getProcess().destroyForcibly();
+            proc.killProcess();
+        }
+    }
+
     /** @return Key store with no private key. */
     private static KeyStore noKey() throws Exception {
         KeyStore noKey = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -908,6 +929,53 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
 
         return false;
+    }
+
+    /** Permits the test's NULL and RSA suites only in this process, before JSSE caches its algorithm constraints. */
+    public static class NonDefaultCipherProbe {
+        /** @param args Unused. */
+        public static void main(String[] args) throws Exception {
+            Security.setProperty("jdk.tls.disabledAlgorithms", Arrays.stream(Security.getProperty("jdk.tls.disabledAlgorithms").split(","))
+                .map(String::trim).filter(algorithm -> !"NULL".equals(algorithm) && !"TLS_RSA_*".equals(algorithm))
+                .collect(Collectors.joining(",")));
+
+            String cipher = "TLS_RSA_WITH_NULL_SHA256";
+            String proto = "TLSv1.2";
+            SSLEngine dflt = SSLContext.getDefault().createSSLEngine();
+
+            Assert.assertTrue(Arrays.asList(dflt.getSupportedCipherSuites()).contains(cipher));
+            Assert.assertFalse(Arrays.asList(dflt.getEnabledCipherSuites()).contains(cipher));
+
+            SslContextFactory factory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
+
+            factory.setProtocols(proto);
+            factory.setCipherSuites(cipher);
+
+            SSLContext ctx = factory.create();
+            X509Certificate[] chain = SslCertificates.servedChain(ctx);
+
+            Assert.assertNotNull("The probe must recognize the configured RSA certificate", chain);
+            Assert.assertEquals("RSA", chain[0].getPublicKey().getAlgorithm());
+            Assert.assertTrue(SslCertificates.trustedAuthorities(ctx).contains(chain[0].getIssuerX500Principal()));
+
+            SslCertificates.checkAccepts(ctx, ctx);
+
+            Assert.assertArrayEquals(new String[] {proto}, ctx.createSSLEngine().getEnabledProtocols());
+            Assert.assertArrayEquals(new String[] {cipher}, ctx.createSSLEngine().getEnabledCipherSuites());
+
+            factory.setCipherSuites("TLS_RSA_WITH_AES_128_GCM_SHA256");
+
+            SSLContext otherCipher = factory.createNew();
+
+            Assert.assertThrows(SSLException.class, () -> SslCertificates.checkAccepts(otherCipher, ctx));
+
+            factory.setProtocols("TLSv1.3");
+            factory.setCipherSuites("TLS_AES_128_GCM_SHA256");
+
+            SSLContext otherProto = factory.createNew();
+
+            Assert.assertThrows(SSLException.class, () -> SslCertificates.checkAccepts(otherProto, ctx));
+        }
     }
 
     /** One request to an issuer. */
