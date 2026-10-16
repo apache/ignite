@@ -24,6 +24,8 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -35,6 +37,7 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -111,6 +114,14 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        IgniteTable tbl = table.unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(idxName);
+
+        return adjustRowCountByUniqueBoundsScan(super.estimateRowCount(mq), idx.collation(), searchBounds);
+    }
+
+    /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         double rows = table.getRowCount();
 
@@ -133,12 +144,14 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
             if (searchBounds != null) {
                 selectivity = mq.getSelectivity(this, RexUtil.composeConjunction(builder,
-                        Commons.transform(searchBounds, b -> b == null ? null : b.condition())));
+                    Commons.transform(searchBounds, b -> b == null ? null : b.condition())));
 
                 cost = Math.log(rows) * IgniteCost.ROW_COMPARISON_COST;
-            }
 
-            rows *= selectivity;
+                rows *= selectivity;
+
+                rows = adjustRowCountByUniqueBoundsScan(rows, idx.collation(), searchBounds);
+            }
 
             if (rows <= 0)
                 rows = 1;
@@ -148,6 +161,30 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
         // additional tiny cost for preventing equality with table scan.
         return planner.getCostFactory().makeCost(rows, cost, 0).plus(planner.getCostFactory().makeTinyCost());
+    }
+
+    /** Rows count can't exceed count of exact bounds on unique index. */
+    private static double adjustRowCountByUniqueBoundsScan(double rows, RelCollation collation, List<SearchBounds> bounds) {
+        if (bounds == null)
+            return rows;
+
+        long exactBounds = 1L;
+
+        for (RelFieldCollation fldCol : collation.getFieldCollations()) {
+            SearchBounds bound = bounds.get(fldCol.getFieldIndex());
+
+            if (bound == null || bound.type() == SearchBounds.Type.RANGE)
+                return rows;
+
+            if (bound.type() == SearchBounds.Type.MULTI) {
+                if (((MultiBounds)bound).bounds().stream().anyMatch(b -> b.type() != SearchBounds.Type.EXACT))
+                    return rows;
+                else
+                    exactBounds *= ((MultiBounds)bound).bounds().size();
+            }
+        }
+
+        return Math.min(rows, exactBounds);
     }
 
     /** */
