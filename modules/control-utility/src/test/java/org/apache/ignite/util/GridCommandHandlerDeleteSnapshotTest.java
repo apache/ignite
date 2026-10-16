@@ -233,7 +233,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF) || out.contains(SnapshotDeleteCommand.UNSURE_DELETION_PREF));
         }
 
-        assertFalse(out.contains("Snapshot not found on current server nodes"));
+        assertFalse(out.contains(SnapshotDeleteCommand.NOT_FOUND));
 
         assertTrue(waitForCondition(() -> !snpDir.exists(), getTestTimeout()));
     }
