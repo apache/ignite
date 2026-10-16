@@ -344,7 +344,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
         if (onCancelled()) {
-            cancelQuery(new IgniteCheckedException("Query was cancelled."));
+            cancelQuery(new QueryCancelledException());
 
             return true;
         }
