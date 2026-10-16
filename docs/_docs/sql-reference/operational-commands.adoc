@@ -424,3 +424,36 @@ control.bat --kill CLIENT connection_id [--node-id node_id]
 Value differs on nodes for the same client. You can always find parameter values with the link:monitoring-metrics/system-views#client_connections[CLIENT_CONNECTIONS] view.
 
 * `node_id` - corresponds to the node_id to drop connection from.
+
+== KILL LOCK
+
+The `KILL LOCK` command allows you to cancel an explicit cache lock acquired via the `Cache.lock(key)` API.
+
+Note that killing a lock may affect the execution of the application code that relies on the lock, so the command must be used with caution.
+
+The command releases the lock on all its keys. If the lock is not acquired yet (the thread is still waiting for it), the lock request is
+cancelled and the waiting `Lock.lock()` call fails with `CacheException`. Other threads holding or waiting for the same keys are not affected.
+The subsequent `Lock.unlock()` call of the thread that has acquired the killed lock fails with `IllegalStateException`.
+
+[tabs]
+--
+
+tab:Unix[]
+[source,bash]
+----
+./control.sh --kill LOCK xid [--node-id node_id]
+----
+
+tab:Windows[]
+[source,bash]
+----
+control.bat --kill LOCK xid [--node-id node_id]
+----
+
+--
+
+=== Parameters
+
+* `xid` - the lock id (mandatory) that can be retrieved via the link:monitoring-metrics/system-views#cache_explicit_locks[CACHE_EXPLICIT_LOCKS] view.
+* `node_id` - the node id (optional). The id of the node where the lock is acquired. If specified, the request is sent only to this node. Otherwise, all nodes are checked.
+

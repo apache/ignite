@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.job;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,7 +50,9 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -584,6 +587,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 else {
                     res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
                         @Nullable @Override public Object call() {
+                            // The job can be executed by a thread that already holds explicit locks.
+                            Set<GridCacheVersion> locksBefore = locksManager().explicitLockVersions(
+                                Thread.currentThread().getId());
+
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(true);
@@ -593,6 +600,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             finally {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(false);
+
+                                releaseLeftExplicitLocks(locksBefore);
                             }
                         }
                     });
@@ -670,6 +679,35 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             if (partsReservation != null)
                 partsReservation.release();
+        }
+    }
+
+    /** @return Locks manager. */
+    private GridCacheMvccManager locksManager() {
+        return ctx.cache().context().mvcc();
+    }
+
+    /**
+     * Releases explicit locks acquired but not released by the job. Locks are bound to the thread, so locks left
+     * unreleased would be inherited by the next job executed by the thread or never released if the thread is
+     * terminated. A held job (see {@link org.apache.ignite.compute.ComputeJobContinuation#holdcc()}) may be continued
+     * by another thread, so locks can't be held across continuation calls either.
+     *
+     * @param locksBefore Versions of explicit locks held by the thread before the job execution.
+     */
+    private void releaseLeftExplicitLocks(Set<GridCacheVersion> locksBefore) {
+        try {
+            Collection<GridCacheVersion> released = locksManager().releaseExplicitLocks(
+                Thread.currentThread().getId(), locksBefore);
+
+            if (!released.isEmpty()) {
+                U.warn(log, "Job finished without releasing explicit locks, the locks have been released forcibly " +
+                    "[taskName=" + ses.getTaskName() + ", jobId=" + ses.getJobId() + ", lockVers=" + released + ']');
+            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to release explicit locks left by job [taskName=" + ses.getTaskName() +
+                ", jobId=" + ses.getJobId() + ']', e);
         }
     }
 

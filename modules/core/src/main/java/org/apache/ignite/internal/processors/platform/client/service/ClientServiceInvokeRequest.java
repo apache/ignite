@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientObjectResponse;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 
@@ -198,6 +201,34 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         }
         catch (Throwable e) {
             throw new IgniteException(e);
+        }
+        finally {
+            releaseLeftExplicitLocks(ctx);
+        }
+    }
+
+    /**
+     * Releases explicit locks acquired but not released by the service method invoked locally (a service deployed
+     * on the local node is invoked in the client connector thread). Locks are bound to the thread, so locks left
+     * unreleased would be inherited by the next request processed by the thread. The client connector thread can't
+     * acquire explicit locks outside of service invocations, so all locks held by the thread are released.
+     *
+     * @param ctx Connection context.
+     */
+    private void releaseLeftExplicitLocks(ClientConnectionContext ctx) {
+        try {
+            Collection<GridCacheVersion> released = ctx.kernalContext().cache().context().mvcc()
+                .releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
+
+            if (!released.isEmpty()) {
+                U.warn(ctx.kernalContext().log(getClass()), "Service method invocation finished without releasing " +
+                    "explicit locks, the locks have been released forcibly [name=" + name + ", method=" + methodName +
+                    ", lockVers=" + released + ']');
+            }
+        }
+        catch (Exception e) {
+            U.error(ctx.kernalContext().log(getClass()), "Failed to release explicit locks left by service method " +
+                "[name=" + name + ", method=" + methodName + ']', e);
         }
     }
 

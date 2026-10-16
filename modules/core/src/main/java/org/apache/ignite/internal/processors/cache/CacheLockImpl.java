@@ -34,6 +34,10 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 class CacheLockImpl<K, V> implements Lock {
+    /** */
+    private static final String LOCK_CANCELLED_MSG = "Failed to acquire lock, the lock request has been cancelled " +
+        "(was the lock killed?).";
+
     /** Gateway. */
     private final GridCacheGateway<K, V> gate;
 
@@ -76,7 +80,8 @@ class CacheLockImpl<K, V> implements Lock {
         try {
             checkTx();
 
-            delegate.lockAll(keys, 0);
+            if (!delegate.lockAll(keys, 0))
+                throw new CacheException(LOCK_CANCELLED_MSG);
 
             incrementLockCounter();
         }
@@ -104,7 +109,9 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void lockInterruptibly() throws InterruptedException {
-        tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        // The lock can't be timed out, so it is not acquired only if it is cancelled.
+        if (!tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS))
+            throw new CacheException(LOCK_CANCELLED_MSG);
     }
 
     /** {@inheritDoc} */
@@ -192,6 +199,8 @@ class CacheLockImpl<K, V> implements Lock {
 
             assert cntr > 0;
 
+            boolean held = lockedByCurrentThread();
+
             cntr--;
 
             if (cntr == 0) {
@@ -213,6 +222,12 @@ class CacheLockImpl<K, V> implements Lock {
             }
 
             delegate.unlockAll(keys);
+
+            // The lock state of the instance is reset above, so it stays usable after the exception.
+            if (!held) {
+                throw new IllegalStateException("Failed to unlock keys, the lock has been released externally " +
+                    "(was the lock killed?).");
+            }
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
@@ -220,6 +235,23 @@ class CacheLockImpl<K, V> implements Lock {
         finally {
             gate.leave(prev);
         }
+    }
+
+    /**
+     * @return {@code True} if all the keys are still locked by the current thread, {@code false} if the lock
+     *      has been released externally.
+     */
+    private boolean lockedByCurrentThread() {
+        GridCacheContext<K, V> cctx = delegate.context();
+
+        long threadId = Thread.currentThread().getId();
+
+        for (K key : keys) {
+            if (cctx.mvcc().explicitLock(threadId, cctx.txKey(cctx.toCacheKeyObject(key))) == null)
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

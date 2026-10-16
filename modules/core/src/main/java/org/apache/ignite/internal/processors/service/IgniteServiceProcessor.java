@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -1381,11 +1382,36 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                             throw (Error)e;
                     }
                     finally {
+                        releaseLeftExplicitLocks(srvcCtx);
+
                         // Suicide.
                         exe.shutdownNow();
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * Releases explicit locks acquired but not released by the service execution. Locks are bound to the thread,
+     * so locks left unreleased by the terminating service thread would never be released.
+     *
+     * @param srvcCtx Service context.
+     */
+    private void releaseLeftExplicitLocks(ServiceContextImpl srvcCtx) {
+        try {
+            Collection<GridCacheVersion> released = ctx.cache().context().mvcc()
+                .releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
+
+            if (!released.isEmpty()) {
+                U.warn(log, "Service execution finished without releasing explicit locks, the locks have been " +
+                    "released forcibly [name=" + srvcCtx.name() + ", execId=" + srvcCtx.executionId() +
+                    ", lockVers=" + released + ']');
+            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to release explicit locks left by service [name=" + srvcCtx.name() +
+                ", execId=" + srvcCtx.executionId() + ']', e);
         }
     }
 
