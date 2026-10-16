@@ -17,19 +17,16 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public abstract class AbstractMessage implements Message {
+/** */
+@FeatureGated(registry = TestFeatureRegistry.class)
+public class TestGatedFieldInitializerMessage extends AbstractMessage {
+    /** */
     @Order(0)
-    int id;
+    int plain = -1;
 
-    @Order(1)
-    byte flags;
-
-    public short directType() {
-        return 0;
-    }
+    /** */
+    @Order(value = 1, deprecatedBy = "FIRST_FEATURE")
+    int oldCnt = -1;
 }

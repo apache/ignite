@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class NioFieldNeedsCtxMessage implements Message {
+public class NioFieldNeedsCtxMessage extends AbstractMessage {
     @NioField
     @Order(0)
     NestedCacheMessage nested;
@@ -29,7 +29,7 @@ public class NioFieldNeedsCtxMessage implements Message {
         return 0;
     }
 
-    public static class NestedCacheMessage implements Message {
+    public static class NestedCacheMessage extends AbstractMessage {
         @Order(0)
         CacheObject val;
 

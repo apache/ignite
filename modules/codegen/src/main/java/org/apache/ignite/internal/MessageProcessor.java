@@ -46,6 +46,9 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
+import com.sun.source.util.Trees;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -115,10 +118,14 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
 
-    /** Messages with no fields. A serializer generation intentionally skipped. */
+    /** */
+    static final String OP_CTX_SNAPSHOT_MESSAGE_CLASS = "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage";
+
+    /** Messages with no fields, or with a hand-written serializer. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
+        OP_CTX_SNAPSHOT_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage",
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };
@@ -184,7 +191,7 @@ public class MessageProcessor extends AbstractProcessor {
                     clazz);
             }
 
-            if (!checkConstructors(clazz))
+            if (!checkConstructors(clazz) || !checkFeatureGatedFields(processingEnv, clazz, fields))
                 continue;
 
             msgFields.put(clazz, fields);
@@ -214,6 +221,96 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return true;
+    }
+
+    /** */
+    public static boolean checkFeatureGatedFields(
+        ProcessingEnvironment env,
+        TypeElement clazz,
+        Collection<VariableElement> fields
+    ) {
+        boolean isSchemaImmutable = isSchemaImmutable(env, clazz);
+        String reg = null;
+        Map<String, VariableElement> gatedFields = new HashMap<>();
+
+        for (VariableElement field : fields) {
+            Order order = field.getAnnotation(Order.class);
+
+            if (order.introducedBy().isEmpty() && order.deprecatedBy().isEmpty())
+                continue;
+
+            if (isSchemaImmutable) {
+                printError(
+                    env,
+                    field,
+                    "A class with an immutable schema must not have fields gated by features [cls=" + clazz + ']');
+
+                return false;
+            }
+
+            String fieldReg = resolveFeatureRegistry(field.getEnclosingElement());
+
+            if (reg == null)
+                reg = fieldReg;
+            else if (!reg.equals(fieldReg)) {
+                printError(
+                    env,
+                    field,
+                    "All fields gated by features in one class hierarchy must resolve to the same feature registry" +
+                        " [expected=" + reg + ", actual=" + fieldReg + ']');
+
+                return false;
+            }
+
+            if (!order.introducedBy().isEmpty() && !order.deprecatedBy().isEmpty()) {
+                printError(
+                    env,
+                    field,
+                    "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it" +
+                        " is retired" +
+                        " [cls=" + clazz +
+                        ", field=" + field +
+                        ", introducedBy=" + order.introducedBy() +
+                        ", deprecatedBy=" + order.deprecatedBy() + ']');
+
+                return false;
+            }
+
+            String feature = order.introducedBy().isEmpty() ? order.deprecatedBy() : order.introducedBy();
+
+            VariableElement otherField = gatedFields.put(feature, field);
+
+            if (otherField != null) {
+                printError(
+                    env,
+                    field,
+                    "A feature can gate only one field of a class hierarchy" +
+                        " [cls=" + clazz +
+                        ", feature=" + feature +
+                        ", field=" + field +
+                        ", otherField=" + otherField + ']');
+
+                return false;
+            }
+
+            if (hasInitializer(env, field)) {
+                printError(
+                    env,
+                    field,
+                    "A field gated by a feature must not have an initializer [cls=" + clazz + ", field=" + field + ']');
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** */
+    private static boolean hasInitializer(ProcessingEnvironment env, VariableElement field) {
+        Tree tree = Trees.instance(env).getTree(field);
+
+        return tree instanceof VariableTree && ((VariableTree)tree).getInitializer() != null;
     }
 
     /** */
@@ -455,31 +552,19 @@ public class MessageProcessor extends AbstractProcessor {
         if (introducingFeature.isEmpty() && deprecatingFeature.isEmpty())
             return null;
 
-        if (introducingFeature.equals(deprecatingFeature)) {
-            printError(env, field, "Elements introducedBy and deprecatedBy of the @Order annotation must not reference the same feature.");
-
-            return null;
-        }
-
         String regCls = resolveFeatureRegistry(field.getEnclosingElement());
 
         String regName = regCls.substring(regCls.lastIndexOf('.') + 1);
 
-        List<String> conditions = new ArrayList<>();
+        boolean introduced = !introducingFeature.isEmpty();
 
-        if (!introducingFeature.isEmpty()) {
-            validateFeature(env, field, introducingFeature, regCls);
+        String feature = introduced ? introducingFeature : deprecatingFeature;
 
-            conditions.add("ctx.includeFieldIntroducedBy(" + regName + '.' + introducingFeature + ")");
-        }
+        validateFeature(env, field, feature, regCls);
 
-        if (!deprecatingFeature.isEmpty()) {
-            validateFeature(env, field, deprecatingFeature, regCls);
-
-            conditions.add("ctx.includeFieldDeprecatedBy(" + regName + '.' + deprecatingFeature + ")");
-        }
-
-        return new FieldFeatureGate(regCls, String.join(" && ", conditions));
+        return new FieldFeatureGate(
+            regCls,
+            (introduced ? "ctx.includeFieldIntroducedBy(" : "ctx.includeFieldDeprecatedBy(") + regName + '.' + feature + ')');
     }
 
     /** */
@@ -522,7 +607,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    private static String resolveFeatureRegistry(Element cls) {
+    static String resolveFeatureRegistry(Element cls) {
         FeatureGated ann = cls.getAnnotation(FeatureGated.class);
 
         if (ann == null)
@@ -538,6 +623,12 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return Void.class.getName().equals(regCls) ? DFLT_FEATURE_REG_CLS : regCls;
+    }
+
+    /** @return {@code true} if {@code clazz} or any of its superclasses is annotated with {@link ImmutableSchema}. */
+    public static boolean isSchemaImmutable(ProcessingEnvironment env, TypeElement clazz) {
+        return SystemViewRowAttributeWalkerProcessor.superclasses(env, clazz)
+            .anyMatch(t -> t.getAnnotation(ImmutableSchema.class) != null);
     }
 
     /** */

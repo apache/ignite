@@ -29,22 +29,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a set of {@link IgniteFeature}s supported by an Ignite node. Ignite is divided into independent components.
  * Each component is associated with its version and a set of {@link IgniteFeature}s.
  */
-public class IgniteNodeFeatureSet implements Message, Externalizable {
+@ImmutableSchema
+public class IgniteNodeFeatureSet extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteNodeFeatureSet LOCAL_CORE_FEATURES = new IgniteNodeFeatureSet(new IgniteComponentFeatureSet[] {
-        IgniteCoreFeatureSet.local()
-    });
+    public static final IgniteNodeFeatureSet LOCAL_CORE_FEATURES = new IgniteNodeFeatureSet(IgniteCoreFeatureSet.local());
 
     /** */
     @Order(0)
@@ -59,7 +59,7 @@ public class IgniteNodeFeatureSet implements Message, Externalizable {
     }
 
     /** */
-    public IgniteNodeFeatureSet(IgniteComponentFeatureSet[] features) {
+    public IgniteNodeFeatureSet(IgniteComponentFeatureSet... features) {
         assert features != null;
 
         this.features = features;

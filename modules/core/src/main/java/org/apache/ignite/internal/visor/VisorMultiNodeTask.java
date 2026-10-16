@@ -28,6 +28,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
@@ -55,6 +56,9 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     /** Task argument. */
     protected A taskArg;
 
+    /** */
+    private transient IgniteNodeFeatureSet cmdInitiatorFeatures;
+
     /** Task start time. */
     protected long start;
 
@@ -65,7 +69,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     protected abstract VisorJob<A, J> job(A arg);
 
     /** {@inheritDoc} */
-    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
+    @NotNull @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
         assert arg != null;
 
         start = U.currentTimeMillis();
@@ -73,6 +77,8 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
         debug = arg.isDebug();
 
         taskArg = arg.getArgument();
+
+        cmdInitiatorFeatures = arg.cmdInitiatorFeatures;
 
         if (debug)
             logStart(ignite.log(), getClass(), start);
@@ -137,10 +143,10 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     /** {@inheritDoc} */
     @Nullable @Override public final VisorTaskResult<R> reduce(List<ComputeJobResult> results) {
         try {
-            return new VisorTaskResult<>(reduce0(results), null);
+            return new VisorTaskResult<>(reduce0(results), null, cmdInitiatorFeatures);
         }
         catch (Exception e) {
-            return new VisorTaskResult<>(null, e);
+            return new VisorTaskResult<>(null, e, cmdInitiatorFeatures);
         }
         finally {
             if (debug)

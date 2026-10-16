@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class WrongClassUseOrder implements Message {
+public class WrongClassUseOrder extends AbstractMessage {
     @Order(0)
     private int id;
 }

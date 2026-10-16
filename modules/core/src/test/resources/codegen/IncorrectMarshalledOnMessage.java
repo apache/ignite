@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class IncorrectMarshalledOnMessage implements Message {
+public class IncorrectMarshalledOnMessage extends AbstractMessage {
     /** */
     @Marshalled("msgBytes")
     TestMessage msg;

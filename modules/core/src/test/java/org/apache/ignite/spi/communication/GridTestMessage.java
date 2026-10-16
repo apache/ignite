@@ -20,13 +20,13 @@ package org.apache.ignite.spi.communication;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /**
  * Test message for communication SPI tests.
  */
-public class GridTestMessage implements Message {
+public class GridTestMessage extends AbstractMessage {
     /** */
     public static final short DIRECT_TYPE = 200;
 

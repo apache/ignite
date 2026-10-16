@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class DataStreamerUpdatesHandlerResult implements Message {
+public class DataStreamerUpdatesHandlerResult extends AbstractMessage {
     /** */
     @Order(0)
     boolean streamerWarning;

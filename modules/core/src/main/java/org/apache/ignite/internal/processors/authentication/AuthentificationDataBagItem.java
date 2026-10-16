@@ -22,10 +22,10 @@ import java.util.Collection;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Initial data is collected on coordinator to send to join node. */
-public class AuthentificationDataBagItem implements Message {
+public class AuthentificationDataBagItem extends AbstractMessage {
     /** Users. */
     @GridToStringInclude
     @Order(0)

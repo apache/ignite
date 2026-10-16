@@ -34,6 +34,12 @@ public interface MessageSerializationContext {
     boolean includeFieldIntroducedBy(IgniteFeature feature);
 
     /**
+     * @return {@code true} if messages serialized under this context carry the raw-field suffix, a count of raw fields and
+     *      the raw fields themselves, written after the positional fields of every message.
+     */
+    boolean includeRawFields();
+
+    /**
      * {@link MessageSerializationContext} implementation that instructs the serialization framework to always
      * serialize the latest message fields schema: all newly introduced fields are included, and all deprecated fields are
      * excluded.
@@ -46,6 +52,11 @@ public interface MessageSerializationContext {
 
         /** {@inheritDoc} */
         @Override public boolean includeFieldIntroducedBy(IgniteFeature feature) {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean includeRawFields() {
             return true;
         }
 
@@ -76,6 +87,12 @@ public interface MessageSerializationContext {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean includeRawFields() {
+            throw new IllegalStateException(
+                "Raw fields cannot be serialized under the immutable-schema serialization context");
+        }
+
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "MessageSerializationContext [IMMUTABLE_SCHEMA]";
         }
@@ -83,7 +100,7 @@ public interface MessageSerializationContext {
         /** */
         private IllegalStateException buildError(IgniteFeature feature) {
             return new IllegalStateException(
-                "A feature-gated field was serialized before the peer's features were negotiated [feature=" + feature + ']'
+                "A feature-gated field cannot be serialized under the immutable-schema serialization context [feature=" + feature + ']'
             );
         }
     };

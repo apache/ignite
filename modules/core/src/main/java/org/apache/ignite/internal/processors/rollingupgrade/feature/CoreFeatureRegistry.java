@@ -93,4 +93,16 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
 public class CoreFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
+
+    /**
+     * Feature that introduces the raw-field suffix, a count of raw fields and the raw fields themselves written after the
+     * positional fields of every message.
+     */
+    public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
+
+    /** */
+    public static final IgniteFeature RU_AWARE_DISTRIBUTED_ATTRIBUTE_FEATURE = new IgniteCoreFeature(2);
+
+    /** */
+    public static final IgniteFeature OP_FEATURES_PROPAGATION_FEATURE = new IgniteCoreFeature(3);
 }

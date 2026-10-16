@@ -20,6 +20,7 @@ package org.apache.ignite.internal.dto;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.MessageSerializationContext;
 
 /**
  * @param <T> Type of specific IgniteDataTransferObject this serializer works with.
@@ -29,17 +30,19 @@ public interface IgniteDataTransferObjectSerializer<T> {
      *
      * @param instance Instance of IgniteDataTransferObject to serialize.
      * @param out Output stream to write object to.
+     * @param ctx Serialization context.
      * @throws IOException If write operation failed.
      */
-    void writeExternal(T instance, ObjectOutput out) throws IOException;
+    void writeExternal(T instance, ObjectOutput out, MessageSerializationContext ctx) throws IOException;
 
     /**
      *
      * @param instance Instance of an IgniteDataTransferObject to read data to.
      * @param in Input stream to read object from.
+     * @param ctx Serialization context.
      * @return
      * @throws IOException If read operation failed.
      * @throws ClassNotFoundException If class not found.
      */
-    void readExternal(T instance, ObjectInput in) throws IOException, ClassNotFoundException;
+    void readExternal(T instance, ObjectInput in, MessageSerializationContext ctx) throws IOException, ClassNotFoundException;
 }

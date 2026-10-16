@@ -23,13 +23,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CLASSLOAD;
 
 /** Deployment request. */
-public class GridDeploymentRequest implements Message {
+public class GridDeploymentRequest extends AbstractMessage {
     /** ID of the node waiting for the response. */
     @Order(0)
     @Nullable IgniteUuid resTopicId;

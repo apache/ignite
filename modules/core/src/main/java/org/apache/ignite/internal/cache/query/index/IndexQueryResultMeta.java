@@ -26,13 +26,13 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
  * Thick client nodes may have irrelevant information about index structure, {@link MetaPageInfo}.
  */
-public class IndexQueryResultMeta implements Message {
+public class IndexQueryResultMeta extends AbstractMessage {
     /** Index key settings. */
     @Order(0)
     IndexKeyTypeSettings keyTypeSettings;
