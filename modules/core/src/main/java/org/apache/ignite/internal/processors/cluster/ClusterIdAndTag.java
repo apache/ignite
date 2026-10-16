@@ -22,12 +22,12 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Container class to send cluster ID and tag in disco data and to write them atomically to metastorage.
  */
-public class ClusterIdAndTag implements Serializable, Message {
+public class ClusterIdAndTag extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

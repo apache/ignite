@@ -20,9 +20,9 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestMarshalledMapMessage implements Message {
+public class TestMarshalledMapMessage extends AbstractMessage {
     @Marshalled(keys = "mapKeys", values = "mapVals")
     Map<GridCacheVersion, GridCacheVersion> theMap;
 

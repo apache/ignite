@@ -27,4 +27,10 @@ public class TestFeatureRegistry {
 
     /** */
     public static final IgniteFeature SECOND_FEATURE = new IgniteCoreFeature(1);
+
+    /** */
+    public static final IgniteFeature THIRD_FEATURE = new IgniteCoreFeature(2);
+
+    /** */
+    public static final IgniteFeature FOURTH_FEATURE = new IgniteCoreFeature(3);
 }

@@ -32,17 +32,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -71,8 +68,7 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
         "id", 42);
 
     /** */
-    private final MessageFactory<?> msgFactory = new IgniteMessageFactoryImpl<>(
-        new MessageFactoryProvider[] {new CoreMessagesProvider()});
+    private final MessageFactory<?> msgFactory = createExtendedMessageFactory();
 
     /** */
     @Test
@@ -176,7 +172,8 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA));
         assertEquals("Writes" + ERROR_SUFFIX,
-            expReadsWritesCnt, writer.state());
+            expReadsWritesCnt + 1, // Raw fields included.
+            writer.state());
 
         buf.flip();
 
@@ -187,7 +184,8 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader, LATEST_SCHEMA));
         assertEquals("Reads" + ERROR_SUFFIX,
-            expReadsWritesCnt, reader.state());
+            expReadsWritesCnt + 1, // Raw fields included.
+            reader.state());
 
         DiscoveryMarshalling.unmarshal(res, kctx);
 

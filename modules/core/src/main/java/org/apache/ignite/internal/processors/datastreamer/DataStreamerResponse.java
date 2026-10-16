@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.datastreamer;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class DataStreamerResponse implements Message {
+public class DataStreamerResponse extends AbstractMessage {
     /** */
     @Order(0)
     long reqId;

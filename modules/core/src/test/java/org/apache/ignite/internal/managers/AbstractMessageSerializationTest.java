@@ -20,17 +20,22 @@ package org.apache.ignite.internal.managers;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -43,6 +48,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -106,6 +112,10 @@ public abstract class AbstractMessageSerializationTest {
 
         Message msg = msgFactory.create(msgType);
 
+        // OperationContextSnapshotMessage uses custom serialization that is incompatible with test reader and writer implementation.
+        if (msg instanceof OperationContextSnapshotMessage)
+            return;
+
         initializeMessage(msg);
 
         while (!MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA)) {
@@ -144,6 +154,16 @@ public abstract class AbstractMessageSerializationTest {
         /** */
         protected AbstractTestMessageWriter(int capacity) {
             this.capacity = capacity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addPendingRawField(int tag, Consumer<MessageWriter> valueWriter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeRawFields(@Nullable List<RawField> rawFields) {
+            return true;
         }
 
         /** */
@@ -382,6 +402,16 @@ public abstract class AbstractMessageSerializationTest {
         /** */
         protected AbstractTestMessageReader(int capacity) {
             this.capacity = capacity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RawField> readRawFields() {
+            return Collections.emptyList();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T deserializeRawField(RawField f, Function<MessageReader, T> valueReader) {
+            throw new UnsupportedOperationException();
         }
 
         /** */

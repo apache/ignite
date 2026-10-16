@@ -83,6 +83,7 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,7 +97,7 @@ import static org.apache.ignite.internal.processors.cache.query.continuous.Cache
 /**
  * Continuous query handler.
  */
-public final class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler, MarshallableMessage {
+public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage implements GridContinuousHandler, MarshallableMessage {
     /** @see #IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD */
     public static final int DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = 100;
 

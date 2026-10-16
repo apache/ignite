@@ -23,10 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.Compress;
+import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_21_0;
 
 /** */
+@FeatureGated(registry = TestIgniteReleaseFeatures_2_21_0.class)
 public class TestContainerMessage_2_21_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
@@ -54,6 +57,10 @@ public class TestContainerMessage_2_21_0 extends TestDiscoveryMessage {
     @Order(5)
     Map<Integer, TestCoreMessage_2_21_0> compressedMap;
 
+    /** */
+    @Order(value = 6, introducedBy = "VER_2_21_0_ID_6_FEATURE")
+    TestCoreMessage_2_21_0 newMsg;
+
     /** {@inheritDoc} */
     @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
         msg = nestedMessage(featureStatusProvider);
@@ -62,6 +69,7 @@ public class TestContainerMessage_2_21_0 extends TestDiscoveryMessage {
         arr = new TestCoreMessage_2_21_0[] {nestedMessage(featureStatusProvider)};
         compressedMsg = nestedMessage(featureStatusProvider);
         compressedMap = Map.of(0, nestedMessage(featureStatusProvider));
+        newMsg = nestedMessage(featureStatusProvider);
     }
 
     /** {@inheritDoc} */

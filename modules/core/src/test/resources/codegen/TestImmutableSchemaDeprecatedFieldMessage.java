@@ -15,15 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
-
-/**
- * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
- * all nodes in the cluster.
- */
-public class DistributedAttributeIdRegistry {
-    /** ID Reserved for {@link SecurityContext} propagation. */
-    public static final byte SECURITY = 0;
+/** */
+public class TestImmutableSchemaDeprecatedFieldMessage extends TestImmutableSchemaMessage {
+    /** */
+    @Order(value = 2, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
+    int fld;
 }
