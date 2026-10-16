@@ -288,6 +288,7 @@ ducker_build_image() {
 
     # Save docker image id to the file. Then could use this file to find version of docker image built last time.
     # It could be useful if we don't confident about necessity of stoping the cluster.
+    mkdir -p "${ducker_dir}/build"
     get_image_id "${image_name}" > "${ducker_dir}/build/image_${image_name}.build"
 
     echo "** Successfully built ${what} image in $((duration / 60))m $((duration % 60))s."
@@ -426,7 +427,7 @@ attempting to start new ones."
     exec 3<> "${ducker_dir}/build/node_hosts"
     for n in $(seq -f %02g 1 ${num_nodes}); do
         local node="ducker${n}"
-        docker exec --user=root "${node}" grep "${node}" /etc/hosts >&3
+        docker exec --user=root "${node}" grep "${node}" //etc/hosts >&3
         [[ $? -ne 0 ]] && die "failed to find the /etc/hosts entry for ${node}"
     done
     exec 3>&-

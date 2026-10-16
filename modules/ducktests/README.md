@@ -21,6 +21,7 @@ Docker is used to emulate a distributed multi-node cluster environment where eac
 ### 1. Prerequisites
 * **Docker** installed and running on your host system.
 * **Python >= 3.8** installed on your host system (required only for local environment scripts and development).
+* **On Windows:** the checkout must live inside a WSL2 distro, not on a Windows drive. Read [Running on Windows](#running-on-windows) before you start.
 
 ### 2. Prepare the Environment & Code
 Execute these preparation steps from the root directory of your project:
@@ -98,6 +99,100 @@ Always clean up and tear down active background nodes after your test runs finis
 # Stop and remove all currently active ducker-ignite cluster nodes
 ./docker/clean_up.sh
 ```
+
+---
+
+## Running on Windows
+
+Ducktests run on Windows through Docker Desktop and WSL2. One rule decides whether tests pass:
+
+> **Keep the Ignite checkout inside the WSL2 filesystem (for example `~/ignite`), not on a Windows drive (`C:\...`, seen from WSL2 as `/mnt/c/...`).**
+
+Every container mounts your checkout as `/opt/ignite-dev` and builds the node classpath from it, so starting a node reads thousands of files. Across the boundary between Windows and Linux those reads are slow.
+
+### Step 1. Install WSL2 and Docker Desktop
+
+1. Open PowerShell as Administrator and run `wsl --install -d Ubuntu`. Reboot if asked, then open Ubuntu from the Start menu and create your Linux user.
+2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). In its settings:
+   * General: enable **Use the WSL 2 based engine**.
+   * Resources -> WSL Integration: enable integration for your Ubuntu distro.
+   * Resources: give Docker at least 6 GB of memory for small runs such as the smoke test. Running the default 13 containers needs much more.
+
+### Step 2. Prepare the distro
+
+Run these commands in the Ubuntu shell:
+
+```bash
+# Tools for building Ignite and running the test scripts
+sudo apt update && sudo apt install -y openjdk-17-jdk maven git python3 python3-venv python-is-python3
+
+# Let your user run docker without sudo
+sudo usermod -aG docker $USER
+```
+
+Close the Ubuntu window, run `wsl --shutdown` in PowerShell, and open Ubuntu again so the group change takes effect. Then check the setup:
+
+```bash
+docker ps           # must print a (possibly empty) container list, without sudo
+python --version    # must print Python 3.8 or newer; the scripts call `python`, not `python3`
+```
+
+### Step 3. Get the code and build it
+
+Clone into your Linux home directory, not into `/mnt/c`:
+
+```bash
+cd ~
+git clone https://github.com/apache/ignite.git
+cd ignite
+mvn clean install -DskipTests
+./scripts/build-module.sh ducktests
+```
+
+If you run tests that need `ignite-extensions`, clone it next to `ignite` in the same directory (see [Testing with Ignite Extensions](#testing-with-ignite-extensions)).
+
+### Step 4. Run the smoke test
+
+From here, follow [Quick Start](#quick-start-local-docker-run) steps 3–6 in the Ubuntu shell. In short:
+
+```bash
+cd ~/ignite/modules/ducktests/tests
+python -m venv ~/.virtualenvs/ignite-ducktests-dev
+source ~/.virtualenvs/ignite-ducktests-dev/bin/activate
+pip install -r docker/requirements-dev.txt
+pip install -e .
+
+./docker/run_tests.sh -t ./ignitetest/tests/smoke_test.py::SmokeServicesTest.test_ignite_start_stop -n 3 --global-json '{"cluster_size": 2}'
+```
+
+The first run builds the Docker image, which takes several minutes. Later runs reuse it.
+
+Run every command from the Ubuntu shell. The scripts also start from Git Bash, but Git Bash works with a checkout on a Windows drive, which is too slow for tests to pass.
+
+### Keeping your IDE on Windows
+
+If you prefer to edit and build in a Windows checkout, keep it as your working copy and copy it into the distro before each test run:
+
+```bash
+rsync -a --delete --exclude .git --exclude results --exclude .ducktape --exclude '*/src/' \
+  /mnt/c/path/to/ignite/ ~/ignite/
+```
+
+Keep the trailing `/` on the source path, so rsync copies the contents of the directory rather than the directory itself. Java sources (`src/`) are skipped because the tests only need the compiled classes. Most of the time goes into scanning the Windows drive, so a sync takes about as long whether you changed one file or many.
+
+Two rules apply in this setup:
+
+* **Build the Docker image from the Ubuntu shell, not from Git Bash.** The image records the uid of the user who builds it. An image built from Git Bash gets a Windows uid and cannot write to the checkout in your Linux home directory.
+* **After rebuilding the image, run `./docker/ducker-ignite down -f`.** `run_tests.sh` reuses containers that are already running, so without this they keep running the old image.
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `$'\r': command not found` | The shell scripts have Windows (CRLF) line endings. This happens in a clone checked out on Windows before the repository added its `.gitattributes`. | Commit or stash your changes first, because the next command discards uncommitted work. Then run `git rm --cached -r -q . && git reset --hard` in the repository root to check the files out again with the correct line endings. |
+| `PermissionError: [Errno 13] Permission denied: '.ducktape/metadata/session_id'` | The Docker image was built from Git Bash and has the wrong uid. | Rebuild the image from the Ubuntu shell with `./docker/ducker-ignite build`, then run `./docker/ducker-ignite down -f`. |
+| Tests fail with a timeout while waiting for a node to start | The checkout is on a Windows drive. | Move the checkout into the WSL2 filesystem ([Step 3](#step-3-get-the-code-and-build-it)). |
+| Changes to the Docker image have no effect | Containers from the old image are still running. | Run `./docker/ducker-ignite down -f` and start the tests again. |
 
 ---
 
