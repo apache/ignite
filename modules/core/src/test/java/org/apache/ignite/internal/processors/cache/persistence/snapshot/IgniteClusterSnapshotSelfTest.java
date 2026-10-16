@@ -616,8 +616,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /**
-     * Tests that snapshot create detects concurrent deletion, or detects still existing snapshot or successfully
-     * proceeds if snapshot already deleted.
+     * Tests that snapshot delete operation detects concurrent deletion of the same sanpshot.
      */
     @Test
     public void testConcurrentSnapshotDeleteOperation() throws Exception {
@@ -629,8 +628,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
                 snp(grid(2)).createSnapshot(snapshotName).get();
             },
-            () -> snp(grid(2)).createSnapshot(snapshotName).get(),
-            e -> e.getMessage().contains("Snapshot with given name already exists"),
+            () -> snp(grid(2)).deleteSnapshot(snapshotName, null).get(),
+            e -> e.getMessage().contains("Deletion of the snapshot has already started"),
             false
         );
     }
