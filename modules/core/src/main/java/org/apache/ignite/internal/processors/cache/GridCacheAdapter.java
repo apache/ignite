@@ -742,7 +742,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(), null));
+                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary()));
             }
         }
         else if (modes.heap) {
@@ -2617,8 +2617,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
 
         do {
-            Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),
-                true, true, null, null);
+            Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),true, true, null);
 
             while (it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH)
                 keys.add((K)it.next().key());
