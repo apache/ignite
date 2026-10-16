@@ -503,6 +503,25 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
     /** */
     @Test
+    public void testRawFieldsOfNestedMessagesResent() throws Exception {
+        startServerNodes("2.20.0", "2.21.0", "2.21.0");
+
+        TestMessage onOld = send(grid(1), grid(0), CONTAINER_MSG);
+
+        TestContainerMessage_2_21_0 resent = (TestContainerMessage_2_21_0)send(grid(0), grid(2), onOld);
+
+        for (TestMessage nestedMsg : resent.nestedMessages())
+            assertFields(A, null, null, null, E, F, nestedMsg);
+
+        for (TestMessage nestedMsg : resent.compressedContainer.nestedMessages())
+            assertFields(A, null, null, null, E, F, nestedMsg);
+
+        assertNull(resent.rawFields());
+        assertNull(resent.compressedContainer.rawFields());
+    }
+
+    /** */
+    @Test
     public void testFeatureGatingFieldsOfDifferentMessages() throws Exception {
         startServerNodes("2.20.0", "2.21.0", "2.21.0");
 
