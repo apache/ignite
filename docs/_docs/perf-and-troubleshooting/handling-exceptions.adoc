@@ -188,6 +188,10 @@ Ignite support following failure handlers:
 
 |=======================================================================
 
+Failures of the types listed in the `ignoredFailureTypes` property of the handler (`SYSTEM_WORKER_BLOCKED` and
+`SYSTEM_CRITICAL_OPERATION_TIMEOUT` by default) are not handled: Ignite only prints a message to the log file and
+increments the `failure.ignored.{failure_type}` metric, see link:monitoring-metrics/new-metrics#failure-handling[Failure Handling].
+
 === Critical Workers Health Check
 
 Ignite has a number of internal workers that are essential for the cluster to function correctly. If one of them is
@@ -209,8 +213,6 @@ The following system workers are considered mission critical:
 Ignite has an internal mechanism for verifying that critical workers are operational.
 Each worker is regularly checked to confirm that it is alive and updating its heartbeat timestamp.
 If a worker is not alive and updating, the worker is regarded as blocked and Ignite will print a message to the log file.
-Each detection is also counted by the `failure.ignored.SYSTEM_WORKER_BLOCKED` metric, see
-link:monitoring-metrics/new-metrics#failure-handling[Failure Handling].
 You can set the period of inactivity via the `IgniteConfiguration.systemWorkerBlockedTimeout` property.
 
 Even though Ignite considers an unresponsive system worker to be a critical error, it doesn't handle this situation automatically,
