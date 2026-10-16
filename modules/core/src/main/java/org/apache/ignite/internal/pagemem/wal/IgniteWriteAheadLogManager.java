@@ -241,4 +241,9 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param idx Segment index.
      */
     void awaitCompacted(long idx) throws IgniteInterruptedCheckedException;
+
+    /** @return {@code True} if CDC is disabled by the {@code cdc.disabled} distributed property. */
+    default boolean cdcForceDisabled() {
+        return false;
+    }
 }
