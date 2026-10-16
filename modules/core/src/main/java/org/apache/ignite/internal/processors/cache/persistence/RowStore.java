@@ -105,7 +105,7 @@ public class RowStore {
      */
     public void addRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled) {
-            ctx.database().ensureFreeSpaceForInsert(grp.dataRegion(), row.size());
+            freeList.ensureFreeSpace(row.size());
 
             freeList.insertDataRow(row, statHolder);
         }
@@ -132,8 +132,7 @@ public class RowStore {
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRows(Collection<? extends CacheDataRow> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
 
         freeList.insertDataRows(rows, statHolder);

@@ -70,6 +70,6 @@ public abstract class PageEvictionPutLargeObjectsAbstractTest extends GridCommon
         for (Integer key : primaryKeys(grid(1).cache(DEFAULT_CACHE_NAME), ENTRIES))
             cache.put(key, val);
 
-        assertTrue(cache.size() < ENTRIES);
+        assertTrue(cache.size() > 0 && cache.size() < ENTRIES);
     }
 }

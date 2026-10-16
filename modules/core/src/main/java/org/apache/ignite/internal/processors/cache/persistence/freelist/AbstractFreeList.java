@@ -19,11 +19,18 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -52,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl.SEG_CNT;
 
 /**
  */
@@ -73,6 +81,24 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private static final int MIN_PAGE_FREE_SPACE = 8;
+
+    /** Initial backoff (nanoseconds) between consecutive no-progress eviction attempts. */
+    private static final long EVICTION_BACKOFF_START_NANOS = 50_000L;
+
+    /** Upper bound (nanoseconds) for the backoff between no-progress eviction attempts. */
+    private static final long EVICTION_BACKOFF_MAX_NANOS = 1_000_000L;
+
+    /**
+     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without either an eviction or a
+     * new highest empty-pages count before failing with an out-of-memory.
+     */
+    private static final long EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = 1_000L;
+
+    /**
+     * Hard upper bound (milliseconds) on the total duration of one size-aware eviction cycle, regardless of
+     * per-iteration progress.
+     */
+    private static final long EVICTION_MAX_CYCLE_TIME_MILLIS = 5 * EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 
     /**
      * Step between buckets in free list, measured in powers of two.
@@ -97,6 +123,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** Whether the page reservation is engaged for this free list: only for in-memory regions with enabled page eviction. */
+    private final boolean reserveEnabled;
+
+    /** Data region this free list belongs to. */
+    private final DataRegion dataRegion;
+
+    /** Kernal context. */
+    private final GridKernalContext ctx;
+
+    /** Pages reserved by in-flight inserts (see {@link #acquireSpace(int)}). */
+    private final AtomicLong reservedPages = new AtomicLong();
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -319,8 +357,37 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
+    /**
+     * Per-call write context of {@link #insertDataRows}: the rows cursor plus the reservation accounting of the row
+     * that is currently being written. The context is shared with {@link WriteRowsHandler}, which may consume the
+     * following rows from the cursor to fill up the page being written (acquiring their reservations itself), and
+     * with the outer loop of {@link #insertDataRows}, which continues a row left unfinished by the handler.
+     */
+    private static final class RowsWriteContext<T extends Storable> {
+        /** Rows cursor. */
+        private GridCursor<T> cur;
+
+        /** Reservation made by {@link #acquireSpace(int)} for the current row. */
+        private long reserved;
+
+        /** Number of the current row's pages that have already consumed the reservation. */
+        private int consumed;
+
+        /**
+         * Set by {@link #reserveAndWriteWholePages} when it could not claim the space without the guarded eviction
+         * while the caller holds a page write lock: the row is left to the outer loop of {@link #insertDataRows}.
+         */
+        private boolean deferred;
+
+        /**
+         * Set when a row was deferred by the page fill-up handler: the cursor stays positioned on it, so the outer
+         * loop of {@link #insertDataRows} must process it without advancing the cursor.
+         */
+        private boolean pending;
+    }
+
     /** */
-    private final class WriteRowsHandler extends PageHandler<GridCursor<T>, Integer> {
+    private final class WriteRowsHandler extends PageHandler<RowsWriteContext<T>, Integer> {
         /** {@inheritDoc} */
         @Override public Integer run(
             int cacheId,
@@ -329,19 +396,30 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            GridCursor<T> cur,
+            RowsWriteContext<T> ctx,
             int written,
             IoStatisticsHolder statHolder
         ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             // Fill the page up to the end.
-            while (written != COMPLETE || (!evictionTracker.evictionRequired() && cur.next())) {
-                T row = cur.get();
+            while (written != COMPLETE || (!evictionTracker.evictionRequired() && ctx.cur.next())) {
+                T row = ctx.cur.get();
 
                 if (written == COMPLETE) {
+                    int rowWritten = reserveAndWriteWholePages(ctx, row, statHolder, true);
+
+                    if (ctx.deferred) {
+                        ctx.deferred = false;
+                        ctx.pending = true;
+
+                        break;
+                    }
+
+                    written = rowWritten;
+
                     // If the data row was completely written without remainder, proceed to the next.
-                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                    if (written == COMPLETE)
                         continue;
 
                     if (io.getFreeSpace(pageAddr) < row.size() - written)
@@ -461,7 +539,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         rmvRow = new RemoveRowHandler(cacheGrpId == 0);
 
-        this.evictionTracker = dataRegion.evictionTracker();
+        evictionTracker = dataRegion.evictionTracker();
+
+        reserveEnabled = !dataRegion.config().isPersistenceEnabled() &&
+            dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+
+        this.dataRegion = dataRegion;
+        this.ctx = ctx;
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -482,7 +566,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.shift = shift;
 
-        this.memMetrics = dataRegion.metrics();
+        memMetrics = dataRegion.metrics();
 
         this.pageListCacheLimit = pageListCacheLimit;
 
@@ -580,20 +664,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return freeSpace > MIN_PAGE_FREE_SPACE ? bucket(freeSpace, false) : -1;
     }
 
-    /**
-     * @param part Partition.
-     * @return Page ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    private long allocateDataPage(int part) throws IgniteCheckedException {
-        assert part <= PageIdAllocator.MAX_PARTITION_ID;
-
-        return pageMem.allocatePage(grpId, part, FLAG_DATA);
-    }
-
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int written = 0;
+
+        long reserved = acquireSpace(row.size());
+
+        int consumed = 0;
 
         try {
             do {
@@ -601,14 +678,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     memMetrics.incrementLargeEntriesPages();
 
                 written = writeSinglePage(row, written, statHolder);
+
+                consumed++;
             }
             while (written != COMPLETE);
         }
-        catch (IgniteCheckedException | Error e) {
+        catch (IgniteCheckedException | Error | IgniteOutOfMemoryException e) {
             throw e;
         }
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to insert data row", t, grpId);
+        }
+        finally {
+            releaseSpace(reserved - consumed);
         }
     }
 
@@ -623,47 +705,115 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void insertDataRows(Collection<T> rows,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    @Override public void insertDataRows(Collection<T> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
-            GridCursor<T> cur = new GridCursorIteratorWrapper<>(rows.iterator());
+            RowsWriteContext<T> ctx = new RowsWriteContext<>();
+
+            ctx.cur = new GridCursorIteratorWrapper<>(rows.iterator());
 
             int written = COMPLETE;
 
-            while (written != COMPLETE || cur.next()) {
-                T row = cur.get();
+            try {
+                while (written != COMPLETE || ctx.pending || ctx.cur.next()) {
+                    ctx.pending = false;
 
-                // If eviction is required - free up memory before locking the next page.
-                while (evictionTracker.evictionRequired()) {
-                    evictionTracker.evictDataPage();
+                    T row = ctx.cur.get();
 
-                    memMetrics.updateEvictionRate();
+                    // If eviction is required - free up memory before locking the next page.
+                    while (evictionTracker.evictionRequired()) {
+                        if (memMetrics.onPageEvictionsStarted()) {
+                            U.warn(log, "Page-based evictions started." +
+                                " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
+                        }
+
+                        evictionTracker.evictDataPage();
+
+                        memMetrics.updateEvictionRate();
+                    }
+
+                    if (written == COMPLETE) {
+                        written = reserveAndWriteWholePages(ctx, row, statHolder, false);
+
+                        continue;
+                    }
+
+                    AbstractDataPageIO initIo = null;
+
+                    long pageId = takePage(row.size() - written, row, statHolder);
+
+                    if (pageId == 0L) {
+                        pageId = allocateDataPage(row.partition());
+
+                        initIo = row.ioVersions().latest();
+                    }
+
+                    if (reserveEnabled)
+                        reservedPages.decrementAndGet();
+
+                    ctx.consumed++;
+
+                    written = write(pageId, writeRowsHnd, initIo, ctx, written, FAIL_I, statHolder);
+
+                    assert written != FAIL_I; // We can't fail here.
                 }
-
-                if (written == COMPLETE) {
-                    written = writeWholePages(row, statHolder);
-
-                    continue;
-                }
-
-                AbstractDataPageIO initIo = null;
-
-                long pageId = takePage(row.size() - written, row, statHolder);
-
-                if (pageId == 0L) {
-                    pageId = allocateDataPage(row.partition());
-
-                    initIo = row.ioVersions().latest();
-                }
-
-                written = write(pageId, writeRowsHnd, initIo, cur, written, FAIL_I, statHolder);
-
-                assert written != FAIL_I; // We can't fail here.
             }
+            finally {
+                releaseSpace(ctx.reserved - ctx.consumed);
+            }
+        }
+        catch (IgniteOutOfMemoryException e) {
+            throw e;
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
         }
+    }
+
+    /**
+     * Reserves the space for the next row and writes its fragments, which occupy the whole memory page. Every
+     * obtained page consumes the reservation made here. Releases the leftover reservation of the previous row (the
+     * personal empty-pages margin it was holding) before making a new one.
+     *
+     * @param ctx Write context holding the reservation accounting of the current row.
+     * @param row Row to process.
+     * @param statHolder Statistics holder to track IO operations.
+     * @param underPageLock {@code true} when the caller holds a page write lock: the guarded eviction is never run in
+     * this case — if the claim cannot be made without it, the row is deferred to the outer loop of
+     * {@link #insertDataRows} ({@code ctx.deferred} is set and {@code 0} is returned, the return value is to be
+     * ignored by the caller).
+     * @return Number of bytes written, {@link #COMPLETE} if the row was fully written by whole-page fragments.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int reserveAndWriteWholePages(
+        RowsWriteContext<T> ctx,
+        T row,
+        IoStatisticsHolder statHolder,
+        boolean underPageLock
+    ) throws IgniteCheckedException {
+        releaseSpace(ctx.reserved - ctx.consumed);
+
+        ctx.reserved = 0;
+        ctx.consumed = 0;
+
+        ctx.reserved = underPageLock ? tryAcquireSpace(row.size()) : acquireSpace(row.size());
+
+        if (ctx.reserved < 0) {
+            ctx.deferred = true;
+
+            return 0;
+        }
+
+        int written = writeWholePages(row, statHolder);
+
+        // Each whole-page fragment consumes exactly MIN_SIZE_FOR_DATA_PAGE bytes, and writeSinglePage has already
+        // decremented reservedPages for each of them: account the fragments in the local counter. If writeWholePages
+        // fails midway, the fragments it has already written are over-consumed here - bounded by the row size and
+        // acceptable for a failing insert.
+        ctx.consumed = written != COMPLETE
+            ? written / MIN_SIZE_FOR_DATA_PAGE
+            : (row.size() + MIN_SIZE_FOR_DATA_PAGE - 1) / MIN_SIZE_FOR_DATA_PAGE;
+
+        return written;
     }
 
     /**
@@ -692,7 +842,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Take a page and write row on it.
+     * Take a page and write row on it. Every obtained page consumes the reservation made by {@link #acquireSpace(int)}.
      *
      * @param row Row to write.
      * @param written Written size.
@@ -710,6 +860,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             initIo = row.ioVersions().latest();
         }
+
+        if (reserveEnabled)
+            reservedPages.decrementAndGet();
 
         written = write(pageId, writeRowHnd, initIo, row, written, FAIL_I, statHolder);
 
@@ -923,7 +1076,207 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
+    @Override public void ensureFreeSpace(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException {
+        if (dataRegion.config().isPersistenceEnabled())
+            return;
+
+        if (dataRegion.config().getPageEvictionMode() == DataPageEvictionMode.DISABLED) {
+            long nonEmptyPages = pageMem.loadedPages() - emptyDataPages();
+
+            // The maximum number of pages that can be allocated (maxSize / systemPageSize)
+            // should be greater or equal to pages required for inserting a new entry plus
+            // the number of currently non-empty data pages. Also we account for pages that hold pages-list metadata:
+            // 8 bytes per each row on average, considering that maybe not all list pages are full, multiply by 1.5.
+            // Plus, add one page for each bucket in the worst case.
+            // Note that not the whole page can be used to storing links,
+            // see PagesListNodeIO and PagesListMetaIO#getCapacity(), so we pessimistically multiply the result on 1.5,
+            // in any way, the number of required pages is less than 1 percent.
+            boolean oomThreshold = (dataRegion.config().getMaxSize() / pageMem.systemPageSize()) <
+                ((double)rowSize / pageMem.pageSize() + nonEmptyPages * (8.0 * 1.5 / pageMem.pageSize() + 1) + 256 /*one page per bucket*/);
+
+            if (oomThreshold)
+                throw outOfMemory(dataRegion.config());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "FreeList [name=" + name() + ']';
+    }
+
+    /**
+     * @param part Partition.
+     * @return Page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long allocateDataPage(int part) throws IgniteCheckedException {
+        assert part <= PageIdAllocator.MAX_PARTITION_ID;
+
+        return pageMem.allocatePage(grpId, part, FLAG_DATA);
+    }
+
+    /**
+     * Reserves the space for a row of the given size in an in-memory region with enabled page eviction: runs eviction
+     * until {@code freePages - reservedPages} covers the whole demand of the writer — {@code requiredPages} for the row
+     * itself plus a personal copy of the {@code emptyPagesPoolSize} margin — then atomically adds the demand to
+     * {@code reservedPages}.
+     *
+     * @param rowSize Size of the row to be inserted.
+     * @return Number of reserved pages (the row's pages plus the claimed margin) to be released via
+     * {@link #releaseSpace(long)}, or {@code 0} if the reservation is not engaged for this free list (persistent data
+     * region or disabled page eviction — see {@link #reserveEnabled}).
+     * @throws IgniteOutOfMemoryException If the row cannot fit into the region, or eviction makes no progress.
+     * @throws IgniteCheckedException If failed to evict data pages.
+     */
+    private long acquireSpace(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException {
+        if (!reserveEnabled)
+            return 0;
+
+        DataRegionConfiguration cfg = dataRegion.config();
+
+        long totalPages = cfg.getMaxSize() / pageMem.systemPageSize();
+
+        long requiredPages = (rowSize + MIN_SIZE_FOR_DATA_PAGE - 1) / MIN_SIZE_FOR_DATA_PAGE;
+
+        if (requiredPages > totalPages)
+            throw outOfMemory(cfg);
+
+        long claimPages = Math.min(requiredPages + cfg.getEmptyPagesPoolSize(), totalPages);
+
+        long backoffNanos = EVICTION_BACKOFF_START_NANOS;
+
+        long lastProgressNanos = System.nanoTime();
+
+        long cycleDeadlineNanos = lastProgressNanos + TimeUnit.MILLISECONDS.toNanos(EVICTION_MAX_CYCLE_TIME_MILLIS);
+
+        while (true) {
+            long deficit = claimPages - (freePages(totalPages) - reservedPages.get());
+
+            if (deficit <= 0) {
+                long reserved = reservedPages.get();
+
+                if (reservedPages.compareAndSet(reserved, reserved + claimPages))
+                    return claimPages;
+
+                continue;
+            }
+
+            if (memMetrics.onPageEvictionsStarted()) {
+                U.warn(log, "Page-based evictions started." +
+                    " Consider increasing 'maxSize' on Data Region configuration: " + cfg.getName());
+            }
+
+            boolean evicted = evictionTracker.evictDataPage(true);
+
+            memMetrics.updateEvictionRate();
+
+            long curDeficit = claimPages - (freePages(totalPages) - reservedPages.get());
+
+            if (evicted || curDeficit < deficit) {
+                lastProgressNanos = System.nanoTime();
+
+                backoffNanos = EVICTION_BACKOFF_START_NANOS;
+            }
+            else {
+                LockSupport.parkNanos(backoffNanos);
+
+                backoffNanos = Math.min(backoffNanos << 1, EVICTION_BACKOFF_MAX_NANOS);
+            }
+
+            long nowNanos = System.nanoTime();
+
+            if (nowNanos - lastProgressNanos > TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS) ||
+                nowNanos > cycleDeadlineNanos)
+                throw outOfMemory(cfg);
+        }
+    }
+
+    /**
+     * Non-blocking flavor of {@link #acquireSpace(int)} for callers holding a page write lock: claims the space only
+     * if it is instantly available; never runs the guarded eviction and never parks.
+     *
+     * @param rowSize Size of the row to be inserted.
+     * @return Number of reserved pages to be released via {@link #releaseSpace(long)}, {@code 0} if the reservation is
+     * not engaged for this free list (see {@link #reserveEnabled}), or {@code -1} if the claim cannot be made without
+     * the guarded eviction or raced with a concurrent one.
+     */
+    private long tryAcquireSpace(int rowSize) {
+        if (!reserveEnabled)
+            return 0;
+
+        DataRegionConfiguration cfg = dataRegion.config();
+
+        long totalPages = cfg.getMaxSize() / pageMem.systemPageSize();
+
+        long requiredPages = (rowSize + MIN_SIZE_FOR_DATA_PAGE - 1) / MIN_SIZE_FOR_DATA_PAGE;
+
+        if (requiredPages > totalPages)
+            return -1;
+
+        long claimPages = Math.min(requiredPages + cfg.getEmptyPagesPoolSize(), totalPages);
+
+        long reserved = reservedPages.get();
+
+        if (claimPages - (freePages(totalPages) - reserved) > 0 || !reservedPages.compareAndSet(reserved, reserved + claimPages))
+            return -1;
+
+        return claimPages;
+    }
+
+    /**
+     * Releases the reservation made by {@link #acquireSpace(int)}: consumed pages were already decremented
+     * {@code reservedPages} by {@link #writeSinglePage} and the continuation path of {@link #insertDataRows}, so
+     * only the unconsumed remainder (the row's personal empty-pages margin) is subtracted here.
+     *
+     * @param pages Number of pages to release.
+     */
+    private void releaseSpace(long pages) {
+        if (reserveEnabled && pages != 0)
+            reservedPages.addAndGet(-pages);
+    }
+
+    /**
+     * @param totalPages Total pages in the region (maxSize / systemPageSize).
+     * @return Free pages of the region: empty pages in this free list plus unallocated headroom. Effective headroom
+     * accounts for per-segment allocation overhead (up to one page per segment), so it does not trust headroom
+     * that cannot actually be allocated.
+     */
+    private long freePages(long totalPages) {
+        return emptyDataPages() + effectiveHeadroom(totalPages, pageMem.loadedPages());
+    }
+
+    /**
+     * Computes the effective headroom (unallocated pages that can actually be allocated), accounting for per-segment
+     * allocation overhead (up to one page per segment). Mirrors the same-named helper in
+     * IgniteCacheDatabaseSharedManager.
+     *
+     * @param totalPages Total pages in the region (maxSize / systemPageSize).
+     * @param loadedPages Currently loaded pages.
+     * @return Effective headroom, never negative.
+     */
+    private static long effectiveHeadroom(long totalPages, long loadedPages) {
+        long effectiveTotal = totalPages > SEG_CNT ? totalPages - SEG_CNT : 0;
+
+        return Math.max(0, effectiveTotal - loadedPages);
+    }
+
+    /**
+     * @param cfg Data region configuration.
+     * @return New {@link IgniteOutOfMemoryException} (also reported as a critical failure) for the given region.
+     */
+    private IgniteOutOfMemoryException outOfMemory(DataRegionConfiguration cfg) {
+        IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
+            "name=" + cfg.getName() +
+            ", initSize=" + U.readableSize(cfg.getInitialSize(), false) +
+            ", maxSize=" + U.readableSize(cfg.getMaxSize(), false) +
+            ", persistenceEnabled=" + cfg.isPersistenceEnabled() + "] Try the following:" + U.nl() +
+            "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
+            "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
+            "  ^-- Enable eviction or expiration policies"
+        );
+
+        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+        return oom;
     }
 }

@@ -109,7 +109,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage() throws IgniteCheckedException {
+    @Override public boolean evictDataPage(boolean tryLock) throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -141,7 +141,20 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
-                        assert compactTs >= 0 : "[compactTs=" + compactTs + "]";
+                        // The link read above may be stale: a concurrent row deletion nulls the head slot first, and the freed
+                        // head page can be re-used as an intermediate fragment of a new row, so its slot holds a link again
+                        // and the two-hop walk can end on a link. This is a legal state: skip and resample.
+                        if (compactTs < 0) {
+                            sampleSpinCnt++;
+
+                            if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
+                                LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
+
+                                return false;
+                            }
+
+                            continue;
+                        }
                     }
                 }
 
@@ -161,17 +174,19 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
                     LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
 
-                    return;
+                    return false;
                 }
             }
 
-            if (evictDataPage(pageIdx(lruTrackingIdx)))
-                return;
+            if (evictDataPage(pageIdx(lruTrackingIdx), tryLock))
+                return true;
 
             evictAttemptsCnt++;
         }
 
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+
+        return false;
     }
 
     /** {@inheritDoc} */
