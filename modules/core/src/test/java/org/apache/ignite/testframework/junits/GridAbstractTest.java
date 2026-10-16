@@ -295,15 +295,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
 
-        if (GridTestClockTimer.startTestTimer()) {
-            Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
+        Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
 
-            timer.setDaemon(true);
+        timer.setDaemon(true);
 
-            timer.setPriority(10);
+        timer.setPriority(10);
 
-            timer.start();
-        }
+        timer.start();
     }
 
     /** */
