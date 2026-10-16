@@ -118,8 +118,7 @@ public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTes
             .setSqlSchema(POI_SCHEMA_NAME)
             .setQueryEntities(Collections.singletonList(queryEntity()))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setCacheMode(CacheMode.PARTITIONED)
-            .setIndexedTypes(Integer.class, Integer.class));
+            .setCacheMode(CacheMode.PARTITIONED));
 
         cfg.setClusterStateOnStart(ClusterState.ACTIVE);
 
