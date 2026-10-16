@@ -39,6 +39,8 @@ public class TaskNameResolutionTest extends AbstractSecurityTest {
 
         ignite.cluster().state(ClusterState.INACTIVE);
 
+        ignite.compute().withName(TASK_NAME).run(() -> {});
+
         assertNull(grid(1).context().task().resolveTaskName(TASK_NAME.hashCode()));
 
         ignite.cluster().state(ClusterState.ACTIVE);
