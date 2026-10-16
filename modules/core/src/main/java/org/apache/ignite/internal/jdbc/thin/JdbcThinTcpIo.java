@@ -344,7 +344,7 @@ public class JdbcThinTcpIo {
 
         send(writer);
 
-        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, false);
+        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), false);
 
         boolean accepted = reader.readBoolean();
 
@@ -449,7 +449,7 @@ public class JdbcThinTcpIo {
 
         send(writer);
 
-        BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), null, false);
+        BinaryReaderEx reader = BinaryUtils.reader(null, BinaryStreams.inputStream(read()), false);
 
         boolean accepted = reader.readBoolean();
 
@@ -538,7 +538,7 @@ public class JdbcThinTcpIo {
      * @throws IOException In case of IO error.
      */
     JdbcResponse readResponse() throws IOException {
-        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), null, true);
+        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(read()), true);
 
         JdbcResponse res = new JdbcResponse();
 

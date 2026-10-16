@@ -60,7 +60,6 @@ import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -72,7 +71,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -347,10 +345,10 @@ public class BinaryUtils {
             return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ?
                 GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
 
-        if (cls == BinaryArray.class)
+        if (cls == binariesFactory.binaryArrayClass())
             return GridBinaryMarshaller.OBJ_ARR;
 
-        if (cls == BinaryEnumArray.class)
+        if (cls == binariesFactory.binaryEnumArrayClass())
             return GridBinaryMarshaller.ENUM_ARR;
 
         if (isSpecialCollection(cls))
@@ -692,9 +690,9 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
-        else if (cls == BinaryArray.class)
+        else if (cls == binariesFactory.binaryArrayClass())
             return BinaryWriteMode.OBJECT_ARR;
-        else if (cls == BinaryEnumArray.class)
+        else if (cls == binariesFactory.binaryEnumArrayClass())
             return BinaryWriteMode.ENUM_ARR;
         else if (cls == binariesFactory.binaryObjectImplClass())
             return BinaryWriteMode.BINARY_OBJ;
@@ -801,38 +799,6 @@ public class BinaryUtils {
         }
 
         return arr;
-    }
-
-    /**
-     * Resolve the class.
-     *
-     * @param ctx Binary context.
-     * @param typeId Type ID.
-     * @param clsName Class name.
-     * @param ldr Class loaded.
-     * @return Resovled class.
-     */
-    static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
-        @Nullable ClassLoader ldr, boolean registerMeta) {
-        Class cls;
-
-        if (ldr == null)
-            ldr = ctx.classLoader();
-
-        if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
-        else {
-            try {
-                cls = ClassLoaderUtils.forName(clsName, ldr);
-            }
-            catch (ClassNotFoundException e) {
-                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
-            }
-
-            ctx.registerType(cls, false, false);
-        }
-
-        return cls;
     }
 
     /**
@@ -1249,7 +1215,7 @@ public class BinaryUtils {
     }
 
     /**
-     * @param obj {@link BinaryArray} or {@code Object[]}.
+     * @param obj {@code BinaryArray} or {@code Object[]}.
      * @return Objects array.
      */
     public static Object[] rawArrayFromBinary(Object obj) {
@@ -1264,7 +1230,7 @@ public class BinaryUtils {
 
     /** */
     public static boolean isObjectArray(Class<?> cls) {
-        return Object[].class == cls || BinaryArray.class == cls || BinaryEnumArray.class == cls;
+        return Object[].class == cls || binariesFactory.binaryArrayClass() == cls || binariesFactory.binaryEnumArrayClass() == cls;
     }
 
     /** @return Type name of the specified object. If {@link BinaryObject} was specified its type will be returned. */
@@ -1312,8 +1278,8 @@ public class BinaryUtils {
      */
     public static Map<Class<?>, Function<Object, Object>> unwrapFuncForSizeCalc() {
         return Map.of(
-            BinaryArray.class, bo -> ((BinaryArray)bo).array(),
-            BinaryEnumArray.class, bo -> ((BinaryArray)bo).array()
+            binariesFactory.binaryArrayClass(), bo -> ((BinaryObjectEx)bo).array(),
+            binariesFactory.binaryEnumArrayClass(), bo -> ((BinaryObjectEx)bo).array()
         );
     }
 
@@ -1326,15 +1292,14 @@ public class BinaryUtils {
     }
 
     /**
-     * Creates reader instance.
+     * Creates reader instance that resolves classes with {@link BinaryContext#classLoader()}.
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
-    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
-        return binariesFactory.reader(ctx, in, ldr, forUnmarshal);
+    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, boolean forUnmarshal) {
+        return binariesFactory.reader(ctx, in, null, null, false, forUnmarshal);
     }
 
     /**
@@ -1342,52 +1307,29 @@ public class BinaryUtils {
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Class loader.
-     * @param hnds Context.
+     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
+     * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        @Nullable BinaryReaderHandles hnds,
-                                        boolean forUnmarshal) {
-        return binariesFactory.reader(ctx, in, ldr, hnds, forUnmarshal);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Context.
-     * @param in Input stream.
-     * @param ldr Class loader.
-     * @param skipHdrCheck Whether to skip header check.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
-     */
-    public static BinaryReaderEx reader(BinaryContext ctx,
+    static BinaryReaderEx reader(
+        BinaryContext ctx,
         BinaryInputStream in,
-        ClassLoader ldr,
-        boolean skipHdrCheck,
-        boolean forUnmarshal) {
-        return reader(ctx, in, ldr, null, skipHdrCheck, forUnmarshal);
+        @Nullable ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean forUnmarshal
+    ) {
+        return binariesFactory.reader(ctx, in, ldr, hnds, false, forUnmarshal);
     }
 
     /**
-     * Constructor.
+     * Creates reader instance for a stream that is not positioned at a binary object header (header check is skipped).
+     * Classes are resolved with {@link BinaryContext#classLoader()}.
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Class loader.
-     * @param hnds Context.
-     * @param skipHdrCheck Whether to skip header check.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    static BinaryReaderEx reader(BinaryContext ctx,
-                                        BinaryInputStream in,
-                                        ClassLoader ldr,
-                                        @Nullable BinaryReaderHandles hnds,
-                                        boolean skipHdrCheck,
-                                        boolean forUnmarshal) {
-        return binariesFactory.reader(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in) {
+        return binariesFactory.reader(ctx, in, null, null, true, true);
     }
 
     /**
@@ -1436,10 +1378,10 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@link BinaryArray}.
+     * @return {@code True} if {@code val} instance of {@code BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {
-        return val instanceof BinaryArray;
+        return val instanceof BinaryObjectEx && ((BinaryObjectEx)val).isArray();
     }
 
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */

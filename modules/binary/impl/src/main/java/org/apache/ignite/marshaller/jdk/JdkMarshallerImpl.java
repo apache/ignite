@@ -116,9 +116,6 @@ public class JdkMarshallerImpl extends AbstractNodeNameAwareMarshaller implement
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
-        if (clsLdr == null)
-            clsLdr = getClass().getClassLoader();
-
         try (ObjectInputStream objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr)) {
             return (T)objIn.readObject();
         }

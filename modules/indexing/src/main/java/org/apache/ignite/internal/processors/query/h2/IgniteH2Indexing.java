@@ -414,10 +414,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     // Convert parameters into BinaryObjects.
                     BinaryMarshaller m = ctx.marshaller();
                     byte[] paramsBytes = U.marshal(m, qryParams.arguments());
-                    final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-                    Object[] params = BinaryUtils.rawArrayFromBinary(m.binaryMarshaller()
-                        .unmarshal(paramsBytes, ldr));
+                    Object[] params = BinaryUtils.rawArrayFromBinary(m.binaryMarshaller().unmarshal(paramsBytes, null));
 
                     H2Utils.bindParameters(stmt, F.asList(params));
 
