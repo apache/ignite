@@ -171,7 +171,8 @@ The following is a procedure for updating certificate.
 This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
 +
 --
-Import the new certificate to the trusted store of every node, server or client, then run link:tools/control-script#reloading-certificates[`control.sh --ssl reload`].
+Import the certificate of the new authority to the trusted store of every node, server or client. Then run link:tools/control-script#reloading-certificates[`control.sh --ssl reload`].
+With self-signed certificates, import the new certificate of every node instead of an authority certificate.
 Also import the new certificate to the trusted stores of applications that connect to the cluster with SSL.
 An application that does not trust the new certificate cannot connect to a node that serves it.
 For `control.sh`, import the new certificate to the trusted store that you pass with `--truststore`.
@@ -181,13 +182,15 @@ ODBC drivers, and JDBC drivers that set their stores in the connection propertie
 
 Go to the next step only after every server and client node trusts the new certificate authority.
 Check with `control.sh --ssl status` that every node names the new authority in its link:tools/control-script#checking-certificates[`trusts` line].
+With self-signed certificates, the `trusts` line lists the subjects of the node certificates.
 A reload succeeds even if the trusted store of the node has not changed.
 If the new authority has the same name as the old one, or a node shows `trusts: unknown`, check the trusted store files instead.
 If a node uses a trust manager of your own, check what that trust manager reads instead of the file.
 --
 
 . Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Before you change the key store, make a copy of it.
-Put the new key store on one node first and run `control.sh --ssl reload`. Once `control.sh --diagnostic connectivity` shows that the other nodes connect to that node, do the same on the remaining nodes.
+Put the new key store on one node first and run `control.sh --ssl reload`. Check with `control.sh --diagnostic connectivity` that the other nodes open new connections to that node. If they do, repeat this on the remaining nodes.
+`control.sh --diagnostic connectivity` checks only communication between nodes. Check the client connector and HTTP REST with a new connection from your application.
 Check with `control.sh --ssl status` that every node serves the new certificate.
 If other nodes or applications refuse the new certificate, put the copy back and run `control.sh --ssl reload` again. This works while every certificate in the old chain is still valid.
 If HTTP REST takes its key store from the Jetty configuration file, restart the node so that HTTP REST serves the new certificate.

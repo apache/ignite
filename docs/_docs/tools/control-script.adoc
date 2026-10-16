@@ -1759,6 +1759,7 @@ control.sh|bat --ssl reload [--yes]
 
 The command makes every server and client node in the topology ask its SSL context factories for new certificates.
 See link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] for the order of steps when you replace certificates or a certificate authority.
+With security enabled, `--ssl reload` and `--ssl status` need the `ADMIN_OPS` system permission.
 
 The built-in `SslContextFactory` reads its key and trust stores again, with the settings the node started with.
 To change a path, a password, a store type, protocols or cipher suites, restart the node.
