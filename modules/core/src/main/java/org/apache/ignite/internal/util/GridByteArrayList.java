@@ -27,12 +27,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
  */
-public class GridByteArrayList implements Message, Externalizable {
+public class GridByteArrayList extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

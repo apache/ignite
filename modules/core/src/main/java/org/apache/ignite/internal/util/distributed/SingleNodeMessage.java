@@ -22,6 +22,7 @@ import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +39,7 @@ import org.jetbrains.annotations.Nullable;
  * @see InitMessage
  */
 @JdkMarshalled
-public class SingleNodeMessage<R extends Message> implements Message {
+public class SingleNodeMessage<R extends Message> extends AbstractMessage {
     /** Process id. */
     @Order(0)
     UUID processId;

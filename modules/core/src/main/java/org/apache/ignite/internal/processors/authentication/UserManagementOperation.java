@@ -21,12 +21,12 @@ import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
-public class UserManagementOperation implements Message {
+public class UserManagementOperation extends AbstractMessage {
     /** User. */
     @Order(0)
     User usr;

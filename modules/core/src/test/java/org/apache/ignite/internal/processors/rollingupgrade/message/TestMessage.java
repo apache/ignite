@@ -20,9 +20,10 @@ package org.apache.ignite.internal.processors.rollingupgrade.message;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public interface TestMessage {
+public interface TestMessage extends Message {
     /** */
     String A = "A";
 

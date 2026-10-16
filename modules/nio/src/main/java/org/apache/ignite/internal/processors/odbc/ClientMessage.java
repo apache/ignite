@@ -24,10 +24,10 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class ClientMessage implements Message, Externalizable {
+public class ClientMessage extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = -4609408156037304495L;
 
