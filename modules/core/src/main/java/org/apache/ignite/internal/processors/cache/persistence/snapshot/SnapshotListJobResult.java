@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-/** Per-node result of the snapshot lists command. Contains information of the snapshots found on current node. */
+/** Per-node result of the snapshot list command. Contains information of the snapshots found on the current node. */
 public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -78,12 +78,12 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
 
         /** Creates snapshot main description. */
         public SnapshotInfo(
-            long size,
+            long mainSize,
             long date,
             @Nullable SnapshotInfo extStors,
             @Nullable SnapshotInfo incs
         ) {
-            this.size = size + (extStors == null ? 0L : extStors.size());
+            size = mainSize + (extStors == null ? 0L : extStors.size());
             this.date = date;
             this.extStors = extStors;
             this.incs = incs;
@@ -115,17 +115,23 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             return date;
         }
 
-        /** @return Snapshot external storages description if exists. Is always {@code null} for not the main snapshot description. */
+        /**
+         * @return Snapshot external storages description if exists. Is always {@code null} for anything other than
+         * the main snapshot description.
+         */
         public @Nullable SnapshotInfo externalStorages() {
             return extStors;
         }
 
-        /** @return Snapshot incremental parts description if exists. Is always {@code null} for not the main snapshot description. */
+        /**
+         * @return Snapshot incremental parts description if exists. Is always {@code null} for anything other than
+         * the main snapshot description.
+         */
         public @Nullable SnapshotInfo incrementals() {
             return incs;
         }
 
-        /** @return Number of snapshot external storages or incremental parts. Or {@code null} for the main snapshot data.*/
+        /** @return Number of snapshot external storages or incremental parts. Or {@code null} for the main snapshot data. */
         public @Nullable Integer number() {
             return cnt;
         }

@@ -289,7 +289,7 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 
 == Listing Snapshots
 
-To list snapshots created on cluster, use the following command.
+To list snapshots created on the cluster, use the following command.
 
 [tabs]
 --
@@ -318,8 +318,8 @@ control.bat --snapshot list --src C:\\tmp\\ignite\\snapshots
 
 * The list operation is read-only and does not modify any snapshot data.
 * If a snapshot is being modified (created or deleted), its size might not be reported.
-* Snapshot is being detected by its metadata. If metadata is missing or cannot be read, snapshot is ignored.
-* When snapshot listing and size calculating, no additional snapshot validation, checksums calculation are done.
+* A snapshot is being detected by its metadata. If metadata is missing or cannot be read, snapshot is ignored.
+* When listing snapshots and calculating size, no additional snapshot validation or checksum calculation is performed.
 
 == Getting Snapshot Operation Status
 

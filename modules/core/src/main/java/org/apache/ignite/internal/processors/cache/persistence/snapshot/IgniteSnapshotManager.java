@@ -1871,9 +1871,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
             catch (Exception e) {
                 if (failIfCantRead)
-                    throw new IgniteException("Fail to read snapshot metadata [meta=" + smf + ']', e);
+                    throw new IgniteException("Failed to read snapshot metadata [meta=" + smf + ']', e);
                 else
-                    log.warning("Fail to read snapshot metadata, snapshot skipped [meta=" + smf + ']', e);
+                    log.warning("Failed to read snapshot metadata, snapshot skipped [meta=" + smf + ']', e);
             }
         }
 

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -216,7 +218,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     catch (Exception e) {
                         failedSnps.add(snpName);
 
-                        log.warning("Failed to read snapshot's extra storages, snapshot ignored [snpName=" + snpName + ']', e);
+                        log.warning("Failed to read snapshot's external storages, snapshot ignored [snpName=" + snpName + ']', e);
                     }
                 });
 
@@ -251,9 +253,17 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 try {
                     fut.get();
                 }
-                catch (Throwable t) {
+                catch (ExecutionException e) {
+                    if (X.hasCause(e, NodeStoppingException.class))
+                        throw new IgniteException("Won't search for local snapshots.", e.getCause());
+
                     // All the futures have internal exceptions being logged. No errors expected.
-                    throw new IgniteException("Failed to read local nodes snapshots.", t);
+                    throw new IgniteException("Failed to read local nodes' snapshots.", e);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    throw new IgniteException("Interrupted while reading local snapshots.", e);
                 }
             }
 
@@ -305,7 +315,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     extStoragesSize += calculateDirectorySize(extraStorage);
                 }
                 catch (IOException e) {
-                    log.warning("Failed to calculate snapshot's extra storage size, storage ignored [extraStorage=" +
+                    log.warning("Failed to calculate snapshot's external storage size, storage ignored [extraStorage=" +
                         extraStorage + ']', e);
 
                     continue;
@@ -345,8 +355,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         return null;
 
                     // Get the last-created time snapshot metadata.
-                    SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime))
-                        .orElse(new SnapshotMetadata());
+                    SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime)).get();
 
                     // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
                     sft = new SnapshotFileTree(
@@ -373,8 +382,16 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     if (snpDirRes != null)
                         res.add(snpDirRes);
                 }
-                catch (Exception e) {
+                catch (ExecutionException e) {
+                    if (X.hasCause(e, NodeStoppingException.class))
+                        throw new IgniteException("Won't search for local snapshots.", e.getCause());
+
                     log.warning("Failed to read snapshot, snapshot ignored [path=" + snpPath + ']', e);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    throw new IgniteException("Interrupted while reading local snapshots.", e);
                 }
             });
 
@@ -397,6 +414,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             int incIdx;
 
             for (File incDir : incs) {
+                if (!SnapshotFileTree.incrementSnapshotDir(incDir) || !incDir.exists())
+                    continue;
+
                 try {
                     incIdx = Integer.parseInt(incDir.getName());
 
