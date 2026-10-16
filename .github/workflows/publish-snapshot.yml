@@ -24,6 +24,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     if: github.repository == 'apache/ignite'
