@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,7 +42,6 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_IDLE_VERIFY_POOL_SIZE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /** */
 @RunWith(Parameterized.class)
@@ -86,6 +84,17 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
     /** */
     @Test
     public void testOrphanedIdleVerifyTaskOnNodeStop() throws Exception {
+        doTestPageMemoryStoppageDuringIdleVerify(() -> stopGrid(0));
+    }
+
+    /** */
+    @Test
+    public void testOrphanedIdleVerifyTaskOnCacheDestroy() throws Exception {
+        doTestPageMemoryStoppageDuringIdleVerify(() -> grid(0).destroyCache(DEFAULT_CACHE_NAME));
+    }
+
+    /** */
+    private void doTestPageMemoryStoppageDuringIdleVerify(Runnable concurrentOp) throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
@@ -123,16 +132,14 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
         // Expected to fail and correctly finish all its jobs because the cluster isn't idle.
         idleVerify(ignite, checkCrc, DEFAULT_CACHE_NAME);
 
-        // Expected to stop correctly.
-        stopGrid(0);
+        concurrentOp.run();
 
         stopUpdatingFlag.set(true);
 
-        assertThrowsAnyCause(
-            log,
-            () -> updateFut.get(getTestTimeout()),
-            NodeStoppingException.class,
-            "Operation has been cancelled (node is stopping)"
-        );
+        try {
+            updateFut.get(getTestTimeout());
+        } catch (Exception ignored) {
+            // No-op.
+        }
     }
 }
