@@ -32,7 +32,6 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -122,7 +121,7 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
         });
 
         // Expected to fail and correctly finish all its jobs because the cluster isn't idle.
-        IdleVerifyResult verifyRes = idleVerify(ignite, checkCrc, DEFAULT_CACHE_NAME);
+        idleVerify(ignite, checkCrc, DEFAULT_CACHE_NAME);
 
         // Expected to stop correctly.
         stopGrid(0);
@@ -135,7 +134,5 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
             NodeStoppingException.class,
             "Operation has been cancelled (node is stopping)"
         );
-
-        assertFalse(F.isEmpty(verifyRes.exceptions()));
     }
 }

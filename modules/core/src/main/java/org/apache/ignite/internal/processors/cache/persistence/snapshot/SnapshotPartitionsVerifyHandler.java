@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
@@ -68,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -315,8 +312,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                             false,
                             size,
                             skipHash()
-                                ? null
-                                : wrapPageIterator(snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore), cctx.kernalContext()),
+                                ? F.emptyIterator()
+                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
                             () -> cctx.kernalContext().isStopping()
                         );
 
@@ -521,28 +518,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
         }
 
         return false;
-    }
-
-    /**
-     * Protects B-Tree reading from concurrent node stop. Uses single gateway lock for {@link GridIterator#hasNext()}
-     * and {@link GridIterator#next()}.
-     */
-    public static Supplier<CacheDataRow> wrapPageIterator(
-        GridIterator<CacheDataRow> origIt,
-        GridKernalContext kctx
-    ) {
-        return new Supplier<>() {
-            @Override public @Nullable CacheDataRow get() {
-                kctx.gateway().readLock();
-
-                try {
-                    return !kctx.isStopping() && origIt.hasNext() ? origIt.next() : null;
-                }
-                finally {
-                    kctx.gateway().readUnlock();
-                }
-            }
-        };
     }
 
     /**

@@ -66,7 +66,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandler.wrapPageIterator;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.calculatePartitionHash;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.checkPartitionsPageCrcSum;
@@ -253,6 +252,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
+                    // Avoid excessive wrapping.
                     else if (e.getCause() instanceof IgniteException ie)
                         throw ie;
                     else
@@ -330,16 +330,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 ExecutorService execSrvs = ignite.context().pools().getIdleVerifyExecutorService();
 
-                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions()) {
-                    Future<Map<PartitionKey, PartitionHashRecord>> partitionFut = calculatePartitionHashAsync(
-                        execSrvs,
-                        grpCtx,
-                        part,
-                        () -> isCancelled() || ignite.context().isStopping()
-                    );
-
-                    partHashCalcFutures.add(partitionFut);
-                }
+                for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
+                    partHashCalcFutures.add(calculatePartitionHashAsync(execSrvs, grpCtx, part, this::isCancelled));
             }
 
             return partHashCalcFutures;
@@ -491,19 +483,23 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
+                boolean gwLocked = false;
+
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
+                    ignite.context().gateway().readLock();
+                    gwLocked = true;
+
                     if (arg.checkCrc() && gctx.persistenceEnabled()) {
-                        FilePageStoreManager pageStoreMgr =
-                            (FilePageStoreManager)ignite.context().cache().context().pageStore();
+                        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
                         checkPartitionsPageCrcSum(
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            cancelled
+                            () -> cancelled.getAsBoolean() || ignite.context().isStopping()
                         );
                     }
 
@@ -516,8 +512,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
-                        wrapPageIterator(gctx.offheap().partitionIterator(part.id()), ignite.context()),
-                        cancelled
+                        gctx.offheap().partitionIterator(part.id()),
+                        () -> cancelled.getAsBoolean() || ignite.context().isStopping()
                     );
 
                     if (hash != null)
@@ -532,13 +528,17 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
+                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
+                        ", cause=" + e.getMessage() + ']';
 
                     U.error(log, msg, e);
 
                     throw new IgniteException(msg, e);
                 }
                 finally {
+                    if (gwLocked)
+                        ignite.context().gateway().readUnlock();
+
                     part.release();
                 }
 
