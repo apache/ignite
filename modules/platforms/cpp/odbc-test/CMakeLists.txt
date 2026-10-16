@@ -38,6 +38,7 @@ set(SOURCES
         src/connection_info_test.cpp
         src/connection_test.cpp
         src/application_data_buffer_test.cpp
+        src/parameter_test.cpp
         src/column_test.cpp
         src/configuration_test.cpp
         src/row_test.cpp
@@ -79,6 +80,7 @@ set(SOURCES
         ../odbc/src/config/connection_info.cpp
         ../odbc/src/config/connection_string_parser.cpp
         ../odbc/src/app/application_data_buffer.cpp
+        ../odbc/src/app/parameter.cpp
         ../odbc/src/ssl_mode.cpp
         ../odbc/src/sql/sql_parser.cpp
         ../odbc/src/sql/sql_lexer.cpp
