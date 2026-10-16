@@ -234,6 +234,11 @@ You can also track link:monitoring-metrics/new-metrics#cache-groups[node-local c
 * `LocalNodeRentingPartitionsCount`
 * `LocalNodeRentingEntriesCount`
 
+When partition eviction finishes for a cache group, Ignite writes an `Eviction completed` message to the node log.
+`Eviction completed successfully` means that the listed `evictedParts` were removed.
+`Eviction completed with failures` includes `nonEvictedParts`; check these partitions together with the `RENTING` rows and the `LocalNodeRenting*` metrics.
+The message also includes the cache group name in `grp` and the eviction reason.
+
 Use the link:monitoring-metrics/system-views#partition_states[PARTITION_STATES] system view to check partition states:
 
 * `OWNING`: the node is the current primary or backup owner.
