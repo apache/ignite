@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -52,6 +54,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.processors.platform.client.cache.ClientDirectCacheGetRequest.DIRECT_WRITER;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -544,10 +547,27 @@ public class CacheDataRowAdapter implements CacheDataRow {
         byte type = PageUtils.getByte(addr, off);
         off++;
 
-        byte[] bytes = PageUtils.getBytes(addr, off, len);
-        off += len;
+        BinaryWriterEx writer = OperationContext.get(DIRECT_WRITER);
 
-        val = sharedCtx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+        if (writer != null && writer.out().hasArray()) {
+            byte[] data = writer.out().array();
+
+            writer.out().writeByte((byte)12);
+            writer.out().writeInt(len);
+
+            int pos = writer.out().position();
+
+            GridUnsafe.copyMemory(null, addr + off, data, GridUnsafe.BYTE_ARR_OFF + pos, len);
+
+            writer.out().position(pos + len);
+        }
+        else {
+            byte[] bytes = PageUtils.getBytes(addr, off, len);
+
+            val = sharedCtx.kernalContext().cacheObjects().toCacheObject(coctx, type, bytes);
+        }
+
+        off += len;
 
         int verLen;
 
