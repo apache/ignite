@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -33,8 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.ValueSource;
-
-import static org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest.checkEngine;
 
 /** Checks that the JDBC Client Driver ({@code jdbc:ignite:cfg://}) works with any default SQL engine of the client node it starts. */
 @ParameterizedClass(name = "engine={0}")
@@ -87,7 +86,7 @@ public class JdbcClientDriverDefaultEngineTest extends AbstractJdbcTest {
     /** */
     @Test
     public void testSelect() throws Exception {
-        checkEngine(grid(0).getOrCreateCache(DEFAULT_CACHE_NAME), dfltEngine, "SELECT QUERY_ENGINE()");
+        checkEngine();
 
         List<List<Object>> res = executeQuery(conn, "SELECT id, val FROM test ORDER BY id");
 
@@ -111,5 +110,13 @@ public class JdbcClientDriverDefaultEngineTest extends AbstractJdbcTest {
     /** Executes a query on the server node with its default engine. */
     private List<List<?>> serverSql(String sql) {
         return grid(0).context().query().querySqlFields(new SqlFieldsQuery(sql), false).getAll();
+    }
+
+    /** */
+    private void checkEngine() throws SQLException {
+        List<List<Object>> res = executeQuery(conn, "SELECT QUERY_ENGINE()");
+
+        assertEquals(1, res.size());
+        assertEquals(dfltEngine, res.get(0).get(0));
     }
 }

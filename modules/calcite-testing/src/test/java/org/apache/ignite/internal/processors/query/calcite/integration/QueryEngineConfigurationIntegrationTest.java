@@ -49,7 +49,7 @@ public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractW
     private static final String INDEXING_ENGINE = IndexingQueryEngineConfiguration.ENGINE_NAME;
 
     /** */
-    public static final String CALCITE_ENGINE = CalciteQueryEngineConfiguration.ENGINE_NAME;
+    private static final String CALCITE_ENGINE = CalciteQueryEngineConfiguration.ENGINE_NAME;
 
     /** */
     @Test
@@ -229,7 +229,7 @@ public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractW
     }
 
     /** */
-    public static void checkEngine(IgniteCache<?, ?> cache, String engineName, String sql) throws Exception {
+    private void checkEngine(IgniteCache<?, ?> cache, String engineName, String sql) throws Exception {
         // Check by cache API.
         List<List<?>> res = cache.query(new SqlFieldsQuery(sql)).getAll();
 
@@ -242,7 +242,7 @@ public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractW
     }
 
     /** */
-    private static void checkJdbcEngine(String engineName, String url, String sql) throws Exception {
+    private void checkJdbcEngine(String engineName, String url, String sql) throws Exception {
         try (Connection conn = DriverManager.getConnection(url)) {
             conn.setSchema("PUBLIC");
             try (Statement stmt = conn.createStatement()) {
