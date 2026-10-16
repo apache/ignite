@@ -83,13 +83,13 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
 
     /** */
     @Test
-    public void testOrphanedIdleVerifyTaskOnNodeStop() throws Exception {
+    public void testOrphanedIdleVerifyTaskOnNodeStoppage() throws Exception {
         doTestPageMemoryStoppageDuringIdleVerify(() -> stopGrid(0));
     }
 
     /** */
     @Test
-    public void testOrphanedIdleVerifyTaskOnCacheDestroy() throws Exception {
+    public void testOrphanedIdleVerifyTaskOnCacheDestruction() throws Exception {
         doTestPageMemoryStoppageDuringIdleVerify(() -> grid(0).destroyCache(DEFAULT_CACHE_NAME));
     }
 
@@ -138,7 +138,8 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
 
         try {
             updateFut.get(getTestTimeout());
-        } catch (Exception ignored) {
+        }
+        catch (Exception ignored) {
             // No-op.
         }
     }

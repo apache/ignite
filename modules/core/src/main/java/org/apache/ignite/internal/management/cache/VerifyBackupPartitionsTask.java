@@ -483,6 +483,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
+                if (!gctx.offheap().busyLock().enterBusy()) {
+                    part.release();
+                    return res;
+                }
+
                 boolean gwLocked = false;
 
                 try {
@@ -499,7 +504,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            () -> cancelled.getAsBoolean() || ignite.context().isStopping()
+                            () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                         );
                     }
 
@@ -513,7 +518,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
                         gctx.offheap().partitionIterator(part.id()),
-                        () -> cancelled.getAsBoolean() || ignite.context().isStopping() || gctx.isPreparedToStop()
+                        () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                     );
 
                     if (hash != null)
@@ -539,6 +544,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (gwLocked)
                         ignite.context().gateway().readUnlock();
 
+                    gctx.offheap().busyLock().leaveBusy();
                     part.release();
                 }
 
