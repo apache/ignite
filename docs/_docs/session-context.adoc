@@ -38,7 +38,7 @@ User-defined SQL functions, like `QuerySqlFunction`, can utilize application att
 include::{javaFile}[tags=sql-function,indent=0]
 ----
 
-NOTE: Attribute access is only available in the link:SQL/sql-calcite[Calcite] query engine. In such cases, the class must have a public zero-argument constructor.
+NOTE: Attribute access is not available in the link:SQL/sql-calcite#legacy-h2-engine[legacy H2] query engine. In such cases, the class must have a public zero-argument constructor.
 
 == Application Attributes in CacheInterceptor
 
