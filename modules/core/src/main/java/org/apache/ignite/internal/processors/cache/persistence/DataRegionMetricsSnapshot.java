@@ -95,6 +95,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private final boolean evictionsStarted;
 
+    /** */
+    private final boolean persistenceEnabled;
+
     /**
      * @param metrics Metrics instance to take a copy.
      */
@@ -123,6 +126,7 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         offHeapSize = metrics.getOffHeapSize();
         offHeapUsedSize = metrics.getOffheapUsedSize();
         evictionsStarted = metrics.isEvictionsStarted();
+        persistenceEnabled = metrics.isPersistenceEnabled();
     }
 
     /** {@inheritDoc} */
@@ -243,5 +247,10 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public boolean isEvictionsStarted() {
         return evictionsStarted;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
     }
 }

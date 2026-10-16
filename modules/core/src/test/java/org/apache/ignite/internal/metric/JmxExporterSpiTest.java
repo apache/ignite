@@ -240,12 +240,37 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(GC_CPU_LOAD_DESCRIPTION, gcCpuLoad.get().getDescription());
     }
 
-    /** */
+    /**
+     * Checks data region metrics of a persistent (default) and an in-memory data region. Both regions have metrics
+     * disabled, so the test also verifies that the checked metrics do not depend on
+     * {@link DataRegionConfiguration#isMetricsEnabled()}.
+     */
     @Test
     public void testDataRegionJmxMetrics() throws Exception {
-        IgniteEx ignite = prepareCluster(1);
-        
-        DynamicMBean dataRegionMBean = metricRegistry(ignite.name(), "io", "dataregion.default");
+        String instanceName = getTestIgniteInstanceName(0);
+
+        IgniteConfiguration cfg = getConfiguration(instanceName);
+
+        DataRegionConfiguration inMemoryRegionCfg = new DataRegionConfiguration()
+            .setName("in-memory-region")
+            .setPersistenceEnabled(false);
+
+        cfg.getDataStorageConfiguration().setDataRegionConfigurations(inMemoryRegionCfg);
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        checkDataRegionMetrics(instanceName, cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration());
+        checkDataRegionMetrics(instanceName, inMemoryRegionCfg);
+    }
+
+    /**
+     * @param instanceName Ignite instance name.
+     * @param cfg Data region configuration.
+     */
+    private void checkDataRegionMetrics(String instanceName, DataRegionConfiguration cfg) throws Exception {
+        DynamicMBean dataRegionMBean = metricRegistry(instanceName, "io", "dataregion." + cfg.getName());
 
         Set<String> res = stream(dataRegionMBean.getMBeanInfo().getAttributes())
             .map(MBeanFeatureInfo::getName)
@@ -256,11 +281,9 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         for (String metricName : res)
             assertNotNull(metricName, dataRegionMBean.getAttribute(metricName));
 
-        DataRegionConfiguration cfg =
-            ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration();
-
         assertEquals(cfg.getInitialSize(), dataRegionMBean.getAttribute("InitialSize"));
         assertEquals(cfg.getMaxSize(), dataRegionMBean.getAttribute("MaxSize"));
+        assertEquals(cfg.isPersistenceEnabled(), dataRegionMBean.getAttribute("PersistenceEnabled"));
     }
 
     /** */

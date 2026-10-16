@@ -189,12 +189,20 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
                 assertEquals(Long.toString(cfg.getInitialSize()), val);
             else if ("MaxSize".equals(name))
                 assertEquals(Long.toString(cfg.getMaxSize()), val);
+            else if ("PersistenceEnabled".equals(name))
+                assertEquals(Boolean.toString(cfg.isPersistenceEnabled()), val);
 
             assertNotNull("Metric value must be not null [name=" + name + ']', val);
         }
 
         for (String attr : EXPECTED_ATTRIBUTES)
             assertTrue(attr + " should be exported via SQL view", names.contains(attr));
+
+        List<List<?>> inMemoryRes = execute(ignite0, "SELECT value FROM SYS.METRICS WHERE name = ?",
+            "io.dataregion.in-memory.PersistenceEnabled");
+
+        assertEquals(1, inMemoryRes.size());
+        assertEquals(Boolean.FALSE.toString(), inMemoryRes.get(0).get(0));
     }
 
     /** */
