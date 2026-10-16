@@ -138,7 +138,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
         byte ver = reader.readBytePositioned(start + GridBinaryMarshaller.PROTO_VER_POS);
 
-        BinaryUtils.checkProtocolVersion(ver);
+        BinaryImplUtils.checkProtocolVersion(ver);
 
         int typeId = reader.readIntPositioned(start + GridBinaryMarshaller.TYPE_ID_POS);
         ctx = reader.binaryContext();
@@ -333,7 +333,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                 }
 
                 // Shift reader to the end of the object.
-                reader.position(start + BinaryUtils.length(reader, start));
+                reader.position(start + BinaryImplUtils.length(reader, start));
             }
 
             writer.postWrite(true, registeredType);
