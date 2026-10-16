@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -410,6 +411,20 @@ public class GridLocalConfigManager {
             for (File file : NodeFileTree.existingCacheConfigFiles(cfgDir)) {
                 if (!U.delete(file))
                     throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx);
+            }
+        }
+
+        // Remove leftover (now empty) cache storage directories so that PDS is not cluttered with empty
+        // directories after cache group destroy, see IGNITE-13989. Non-empty directories are left untouched.
+        for (File dir : ft.cacheStorages(ctx.config())) {
+            try {
+                Files.deleteIfExists(dir.toPath());
+            }
+            catch (DirectoryNotEmptyException e) {
+                log.warning("Cache storage directory is not empty and cannot be removed: " + dir.getAbsolutePath());
+            }
+            catch (IOException e) {
+                log.warning("Failed to remove cache storage directory [dir=" + dir.getAbsolutePath() + ']', e);
             }
         }
     }
