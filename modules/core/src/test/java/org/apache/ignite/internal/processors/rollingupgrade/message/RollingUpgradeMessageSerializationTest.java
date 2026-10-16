@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_1.VER_2_20_1_ID_6_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_21_0.VER_2_21_0_ID_6_FEATURE;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.A;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.B;
 import static org.apache.ignite.internal.processors.rollingupgrade.message.TestMessage.C;
@@ -498,6 +499,29 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertEquals(1, rcvd.get(grid(0).name()).rawFields().size());
         assertEquals(1, rcvd.get(grid(2).name()).rawFields().size());
+    }
+
+    /** */
+    @Test
+    public void testFeatureGatingFieldsOfDifferentMessages() throws Exception {
+        startServerNodes("2.20.0", "2.21.0", "2.21.0");
+
+        assertFields(A, null, null, null, E, F, send(grid(1), grid(2), CORE_MSG));
+
+        TestContainerMessage_2_21_0 container = (TestContainerMessage_2_21_0)send(grid(1), grid(2), CONTAINER_MSG);
+
+        assertFields(A, null, null, null, E, F, container.compressedContainer.msg);
+
+        TestMessage coreOnOld = send(grid(1), grid(0), CORE_MSG);
+
+        assertFields(A, null, null, null, E, null, coreOnOld);
+        assertEquals(1, coreOnOld.rawFields().size());
+        assertEquals(VER_2_21_0_ID_6_FEATURE.id(), coreOnOld.rawFields().get(0).tag());
+
+        TestMessage containerOnOld = send(grid(1), grid(0), CONTAINER_MSG);
+
+        assertEquals(1, containerOnOld.rawFields().size());
+        assertEquals(VER_2_21_0_ID_6_FEATURE.id(), containerOnOld.rawFields().get(0).tag());
     }
 
     /** */
