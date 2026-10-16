@@ -26,7 +26,8 @@ import java.lang.annotation.Target;
  * Marks a message whose schema must not change. No field of it, the inherited ones included, may be added, removed or
  * gated by {@link Order#introducedBy()} or {@link Order#deprecatedBy()}. The processor rejects a gated field on such
  * a message, and the generated serializer has no raw-fields state, so the message looks the same on the wire whatever
- * the serialization context. Subclasses of a marked class are immutable as well.
+ * the serialization context. Subclasses of a marked class are immutable as well. Using this annotation implies that all
+ * nested field types also have an "immutable schema".
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
