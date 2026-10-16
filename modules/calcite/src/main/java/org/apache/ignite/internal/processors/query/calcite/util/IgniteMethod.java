@@ -77,6 +77,9 @@ public enum IgniteMethod {
     /** See {@link IgniteSqlFunctions#systemRange(Object, Object, Object)} */
     SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class),
 
+    /** See {@link IgniteSqlFunctions#xmlTable(Object, Object, Object...)} */
+    XML_TABLE(IgniteSqlFunctions.class, "xmlTable", Object.class, Object.class, Object[].class),
+
     /** See {@link SqlParserUtil#intervalToMonths(String, SqlIntervalQualifier)} */
     PARSE_INTERVAL_YEAR_MONTH(SqlParserUtil.class, "intervalToMonths", String.class, SqlIntervalQualifier.class),
 
