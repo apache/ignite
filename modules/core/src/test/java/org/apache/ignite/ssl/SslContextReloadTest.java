@@ -401,6 +401,23 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertTrue(warned.check());
     }
 
+    /** A node that starts on an expired certificate warns that peers refuse it, not that its own trust store does. */
+    @Test
+    public void testExpiredCertificateWarnedAtStart() throws Exception {
+        place("node02old", keyStore(getTestIgniteInstanceName(0)));
+
+        LogListener expired = LogListener.matches("The TLS certificate chain in use is not valid now").build();
+        LogListener untrusted = LogListener.matches("The node's own trust store does not accept its certificate").build();
+
+        nodeLog.registerListener(expired);
+        nodeLog.registerListener(untrusted);
+
+        startGrid(0);
+
+        assertTrue(expired.check());
+        assertFalse(untrusted.check());
+    }
+
     /** A node whose job did not finish is named in the report like the others. */
     @Test
     public void testFailedJobNamesNode() {

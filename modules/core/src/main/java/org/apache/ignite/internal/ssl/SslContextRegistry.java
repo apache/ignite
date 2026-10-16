@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.ssl;
 
+import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -100,7 +101,7 @@ public class SslContextRegistry extends GridProcessorAdapter {
         }
 
         if (provider.nodesConnect() && !nodesConnectedAlready && provider.servedChain() != null)
-            warnIfOwnTrustStoreRefuses(provider);
+            warnIfPeersRefuse(provider);
 
         registerMetrics(transport, provider);
 
@@ -108,7 +109,17 @@ public class SslContextRegistry extends GridProcessorAdapter {
     }
 
     /** @param provider Provider that serves discovery or communication from now on. */
-    private void warnIfOwnTrustStoreRefuses(SslContextProvider provider) {
+    private void warnIfPeersRefuse(SslContextProvider provider) {
+        X509Certificate invalid = SslCertificates.invalidAt(provider.servedChain(), System.currentTimeMillis());
+
+        if (invalid != null) {
+            U.warn(log, "The TLS certificate chain in use is not valid now, so peers refuse new connections on " +
+                provider.transports() + "; put a valid certificate in place and run control.sh --ssl reload [" +
+                SslCertificates.describe(invalid) + ']');
+
+            return;
+        }
+
         try {
             SslCertificates.checkInterNodeHandshake(provider.context());
         }
