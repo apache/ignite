@@ -925,8 +925,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (cctx.snapshotMgr().isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
-            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Snapshot " +
-                "'%s' is being deleted.".formatted(req.snapshotName())));
+            return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Delete " +
+                "operation of snapshot '%s' is in progress.".formatted(req.snapshotName())));
         }
 
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));

@@ -498,8 +498,8 @@ public class SnapshotCheckProcess {
         }
 
         if (kctx.cache().context().snapshotMgr().isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
-            return new GridFinishedFuture<>(new IgniteIllegalStateException("Snapshot '" + req.snapshotName()
-                + "' is being deleted [req=" + req + ']'));
+            return new GridFinishedFuture<>(new IgniteIllegalStateException("Delete operation of snapshot '" + req.snapshotName() +
+                "' is in progress [req=" + req + ']'));
         }
 
         // Excludes non-baseline initiator.

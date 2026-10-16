@@ -37,6 +37,7 @@ import com.google.common.base.Throwables;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryObject;
@@ -341,7 +342,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE),
             () -> snp(grid(2)).restoreSnapshot(snapshotName, null).get(),
-            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(snapshotName)),
+            e -> e.getMessage().contains("Delete operation of snapshot '%s' is in progress".formatted(snapshotName)),
             true
         );
     }
@@ -357,7 +358,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
                 grid(0).createCache(DEFAULT_CACHE_NAME);
 
-                try (var ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                     for (int i = 0; i < CACHE_KEYS_RANGE; ++i)
                         ds.addData(i, i);
                 }

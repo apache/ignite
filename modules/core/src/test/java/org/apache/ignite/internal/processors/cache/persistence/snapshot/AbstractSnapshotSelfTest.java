@@ -184,9 +184,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** */
     protected @Nullable AbstractTestPluginProvider pluginProvider;
 
-    /** */
-    protected boolean removeAllWorkingDirectories = true;
-
     /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
     @Parameterized.Parameter
     public boolean encryption;
@@ -316,19 +313,11 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Override protected void cleanPersistenceDir() throws Exception {
         super.cleanPersistenceDir();
 
-        if (!removeAllWorkingDirectories())
-            return;
-
         // Clean all: also separated snapshot working directories and custom snapshot paths.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);
         }
-    }
-
-    /** @return Whether a test removes all content of the working directory in {@link #cleanPersistenceDir()}. */
-    protected boolean removeAllWorkingDirectories() {
-        return removeAllWorkingDirectories;
     }
 
     /**

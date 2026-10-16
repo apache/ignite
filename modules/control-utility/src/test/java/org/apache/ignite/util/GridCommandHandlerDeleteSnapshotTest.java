@@ -63,15 +63,15 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
     public boolean separatedWorkDir;
 
     /** */
-    @Parameters(name = "client={0},useExtraNode={1},inc={2},chBaseln={3},cstSnpPath={4},ownWorkDir={5}")
+    @Parameters(name = "client={0}, useExtraNode={1}, inc={2}, chBaseln={3}, cstSnpPath={4}, separatedWorkDirs={5}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(false, true), // Use or not extra server node after the cluster start and the snapshot creation;
-            F.asList(false, true), // Add incremental snapshot;
-            F.asList(false, true), // Change baseline;
-            F.asList(false, true), // Use custom snapshot path;
-            F.asList(false, true) // Separated (own) work directory.
+            F.asList(false, true), // Use or not extra server node after the cluster start and the snapshot creation.
+            F.asList(false, true), // Add incremental snapshot;.
+            F.asList(false, true), // Change baseline;.
+            F.asList(false, true), // Use custom snapshot path.
+            F.asList(false, true) // Separated nodes work directories.
         );
     }
 
@@ -146,7 +146,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             .get(getTestTimeout());
 
         if (incremental) {
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < initNodes; ++i) {
                 int dataIdx = entriesCnt + entriesCnt / 4 * i;
 
                 try (IgniteDataStreamer<Object, Object> streamer = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
@@ -220,7 +220,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
             assertTrue(out.contains(SnapshotDeleteCommand.MISSING_BASELINES + baselineGone));
 
         if (separatedWorkDir) {
-            // When the nodes use own separated work directory, we expect a strict result.
+            // When the nodes use separated work directory, we expect a strict result.
             assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF));
             assertFalse(out.contains(SnapshotDeleteCommand.UNSURE_DELETION_PREF));
 
@@ -229,7 +229,7 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         }
         else {
             // When nodes use a shared work directory, there is a race for the delete operation. One node can get faster
-            // than others and remove snapshot completely quickly. The others might not find snapshot files.
+            // than others and remove snapshot or some its parts before the rest finds it.
             assertTrue(out.contains(SnapshotDeleteCommand.REMOVED_PREF) || out.contains(SnapshotDeleteCommand.UNSURE_DELETION_PREF));
         }
 

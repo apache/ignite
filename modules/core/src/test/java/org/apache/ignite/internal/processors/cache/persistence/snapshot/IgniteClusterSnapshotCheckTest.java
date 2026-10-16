@@ -1217,7 +1217,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         doConcurrentSnapshotOperationWhenDeletionIsActive(
             () -> prepareGridsAndSnapshot(4, 3, 1, false),
             () -> snp(grid(2)).checkSnapshot(snapshotName, null).get(),
-            e -> e.getMessage().contains("Snapshot '%s' is being deleted".formatted(snapshotName)),
+            e -> e.getMessage().contains("Delete operation of snapshot '%s' is in progress".formatted(snapshotName)),
             true
         );
     }

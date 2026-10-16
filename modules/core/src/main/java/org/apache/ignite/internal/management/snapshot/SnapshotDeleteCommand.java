@@ -52,7 +52,7 @@ public class SnapshotDeleteCommand extends AbstractSnapshotCommand<SnapshotDelet
 
     /** */
     public static final String MISSING_BASELINES = "WARNING: the snapshot's baseline nodes with the following consistent " +
-        "ids are missing in current cluster: ";
+        "IDs are missing in current cluster: ";
 
     /**
      * {@inheritDoc}
