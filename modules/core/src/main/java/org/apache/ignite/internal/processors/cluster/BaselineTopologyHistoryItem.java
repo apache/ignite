@@ -20,11 +20,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class BaselineTopologyHistoryItem implements Serializable, Message {
+public class BaselineTopologyHistoryItem extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

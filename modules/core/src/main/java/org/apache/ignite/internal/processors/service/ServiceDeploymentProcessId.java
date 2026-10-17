@@ -23,14 +23,14 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Service deployment process' identifier.
  */
-public class ServiceDeploymentProcessId implements Message, Serializable {
+public class ServiceDeploymentProcessId extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

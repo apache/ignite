@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 import java.lang.String;
 import java.nio.ByteBuffer;
 
-public class ChildMessage extends AbstractMessage {
+public class ChildMessage extends AbstractTestMessage {
     @Order(0)
     String str;
 

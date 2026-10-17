@@ -24,7 +24,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * <p/>
  * Contains count of deployed service instances on single node and deployment errors if exist.
  */
-public class ServiceSingleNodeDeploymentResult implements Message, Serializable {
+public class ServiceSingleNodeDeploymentResult extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
