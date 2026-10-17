@@ -93,4 +93,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
 public class CoreFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
+
+    /** Primary-side data version validation for transactional locks. */
+    public static final IgniteFeature VERSIONED_TX_LOCK_FEATURE = new IgniteCoreFeature(1);
 }

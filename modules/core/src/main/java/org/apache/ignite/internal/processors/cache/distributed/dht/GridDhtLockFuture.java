@@ -169,6 +169,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Pending locks. */
     private final Collection<KeyCacheObject> pendingLocks;
 
+    /** Entries enlisted by a conditional lock, including an entry rejected before candidate creation. */
+    private final Map<GridDhtCacheEntry, GridCacheVersion> versionedEntries = new LinkedHashMap<>();
+
     /** TTL for create operation. */
     private final long createTtl;
 
@@ -348,7 +351,24 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @return Entries.
      */
     public Collection<GridDhtCacheEntry> entries() {
-        return F.view(entries, F.notNull());
+        return F.view(entries, entry -> entry != null && !rejected(entry));
+    }
+
+    /** @return Whether this entry was rejected by the current conditional batch. */
+    private boolean rejected(GridCacheEntryEx entry) {
+        IgniteTxEntry txEntry = tx == null ? null : tx.entry(entry.txKey());
+
+        return versionedEntries.containsKey(entry) && txEntry != null
+            && Boolean.FALSE.equals(txEntry.versionedLockResult());
+    }
+
+    /** Rejects only this entry, preserving the other locks and the transaction. */
+    private synchronized void rejectEntry(GridDhtCacheEntry entry) throws GridCacheEntryRemovedException {
+        tx.entry(entry.txKey()).versionedLockResult(false);
+        pendingLocks.remove(entry.key());
+
+        if (entry.candidate(lockVer) != null)
+            entry.removeLock(lockVer);
     }
 
     /**
@@ -427,6 +447,13 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (timedOut)
             return null;
 
+        if (tx != null) {
+            IgniteTxEntry txEntry = tx.entry(entry.txKey());
+
+            if (txEntry != null && txEntry.versionedLockPending())
+                versionedEntries.put(entry, txEntry.expectedLockVersion());
+        }
+
         // Add local lock first, as it may throw GridCacheEntryRemovedException.
         GridCacheMvccCandidate c = entry.addDhtLocal(
             nearNodeId,
@@ -446,7 +473,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             if (log.isDebugEnabled())
                 log.debug("Failed to acquire lock with negative timeout: " + entry);
 
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+            if (versionedEntries.containsKey(entry))
+                rejectEntry(entry);
+            else if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                 onComplete(false, false, false, false);
             else
                 onFailed();
@@ -631,11 +660,20 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 if (entry == null)
                     break; // While.
 
+                if (rejected(entry))
+                    break;
+
                 try {
                     CacheLockCandidates owners = entry.readyLock(lockVer);
 
                     if (lockTimeout() < 0) {
                         if (owners == null || !owners.hasCandidate(lockVer)) {
+                            if (versionedEntries.containsKey(entry)) {
+                                rejectEntry((GridDhtCacheEntry)entry);
+
+                                break;
+                            }
+
                             // We did not send any requests yet.
                             if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                                 onComplete(false, false, false, false);
@@ -803,7 +841,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         try {
-            if (err == null && !stopping)
+            if (err == null && !stopping && (success || versionedEntries.isEmpty()))
                 loadMissingFromStore();
         }
         finally {
@@ -839,6 +877,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         readyLocks();
 
+        // Removing rejected candidates does not notify this future of a new owner.
+        if (!versionedEntries.isEmpty() && checkLocks())
+            map(entries());
+
         if (lockTimeout() > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
             timeoutObj = new LockTimeoutObject();
 
@@ -870,6 +912,31 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 return;
 
             mapped = true;
+        }
+
+        // All local candidates are owners now. Validate on the primary before sending any backup requests.
+        // Ownership remains held across the comparison and replication, so another transaction cannot write
+        // between this check and the successful reply, including when this future previously waited for a lock.
+        for (Map.Entry<GridDhtCacheEntry, GridCacheVersion> entry : versionedEntries.entrySet()) {
+            if (rejected(entry.getKey()))
+                continue;
+
+            try {
+                entry.getKey().unswap(false);
+
+                if (entry.getKey().checkLockVersion(lockVer, entry.getValue()))
+                    tx.entry(entry.getKey().txKey()).versionedLockResult(true);
+                else
+                    rejectEntry(entry.getKey());
+            }
+            catch (GridCacheEntryRemovedException e) {
+                tx.entry(entry.getKey().txKey()).versionedLockResult(false);
+            }
+            catch (IgniteCheckedException e) {
+                onError(e);
+
+                return;
+            }
         }
 
         try {
@@ -1110,7 +1177,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
             final GridCacheVersion ver = version();
 
-            for (GridDhtCacheEntry entry : entries) {
+            for (GridDhtCacheEntry entry : entries()) {
                 try {
                     entry.unswap(false);
 
@@ -1202,6 +1269,34 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             long longOpsDumpTimeout = cctx.tm().longOperationsDumpTimeout();
 
             synchronized (GridDhtLockFuture.this) {
+                // A conditional wait limit applies to acquiring primary ownership. Once mapping starts we
+                // already own every entry; replication is governed by the transaction deadline. Rejecting here
+                // would race with outgoing backup requests and require a distributed partial-lock cancellation.
+                if (!versionedEntries.isEmpty() && mapped && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+                    return;
+
+                if (!versionedEntries.isEmpty() && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+                    for (GridDhtCacheEntry entry : versionedEntries.keySet()) {
+                        if (!pendingLocks.contains(entry.key()))
+                            continue;
+
+                        try {
+                            if (entry.lockedBy(lockVer))
+                                pendingLocks.remove(entry.key());
+                            else
+                                rejectEntry(entry);
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            tx.entry(entry.txKey()).versionedLockResult(false);
+                            pendingLocks.remove(entry.key());
+                        }
+                    }
+
+                    map(entries());
+
+                    return;
+                }
+
                 if (log.isDebugEnabled() || timeout >= longOpsDumpTimeout) {
                     String msg = dumpPendingLocks();
 
