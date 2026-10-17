@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -25,6 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
@@ -135,15 +137,22 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     }
 
     /**
-     * Writes every key twice, which brings each partition's update counter past 127, as in a cluster that has run for
-     * a while. Ignite boxes these counters, and {@code Long.valueOf} returns cached objects up to 127, so with fewer
-     * updates an operation allocates less, and its allocation grows during the run.
+     * Writes the keys until every partition that holds one has had more than 127 updates (README, "Writing a benchmark").
      *
      * @param keys Keys.
      * @param vals Values.
      */
-    protected void preload(Object[] keys, Object[] vals) {
-        for (int pass = 0; pass < 2; pass++) {
+    protected void populate(Object[] keys, Object[] vals) {
+        Affinity<Object> aff = node.affinity(cache.getName());
+
+        int[] keysPerPart = new int[aff.partitions()];
+
+        for (Object key : keys)
+            keysPerPart[aff.partition(key)]++;
+
+        int min = Arrays.stream(keysPerPart).filter(n -> n > 0).min().orElse(1);
+
+        for (int pass = 0; pass < (128 + min - 1) / min; pass++) {
             try (IgniteDataStreamer<Object, Object> streamer = node.dataStreamer(cache.getName())) {
                 streamer.allowOverwrite(pass > 0);
 

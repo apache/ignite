@@ -95,7 +95,7 @@ operation shows up, on the node that allocates it.
 java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
     -f 1 -wi 5 -w 3s -i 5 -r 3s \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler:dir=alloc' \
-    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-DoEscapeAnalysis"
+    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-DoEscapeAnalysis"
 ```
 
 `JmhCacheAllocationBenchmark.main()` runs put and get on an atomic and a transactional cache with
@@ -143,7 +143,7 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
     -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 5 -r 3s -foe true \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc' \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
-    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-UseTLAB -XX:-DoEscapeAnalysis \
+    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-UseTLAB -XX:-DoEscapeAnalysis \
     -XX:FlightRecorderOptions:memorysize=256m"
 ```
 
@@ -175,32 +175,37 @@ files of earlier runs stay there. The file's columns, separated by tabs:
 | Column | What it holds |
 |---|---|
 | `group` | The group, named as in `alloc.norm` |
-| `class` | The class as Java writes it: `byte[]`, `java.lang.Object[]`. A lambda's class name carries a number that differs from one JVM to the next |
-| `size` | For arrays, the range of their size in bytes, header included, by powers of two: `<=16`, `<=32`, ..., `>1048576`. Empty for other classes |
+| `class` | The class as Java writes it: `byte[]`, `java.lang.Object[]` |
+| `size` | For arrays, the range of their size in bytes, header included, by powers of two: `<=16`, `<=32`, `<=64`, ... Empty for other classes |
 | `frames` | Only with `site`, see below: where the objects were allocated |
 | `iteration` | `warmup-1`, `warmup-2`, ... for warmup iterations, then `1`, `2`, ... |
 | `objects/op`, `bytes/op` | Objects and bytes per operation |
 
-To see where objects are allocated, add `site=<n>` to the profiler's options. In measurement
-iterations the profiler then records the stack of each allocation, and the `frames` column holds its
-top `n` frames, from the allocating method outwards: `Class.method:line < Class.method:line`. A class
-allocated in several places has a row per place. Warmup iterations record no stacks, since they also
-start the nodes, and their `frames` are empty.
+A lambda's class name, in `class` and in `frames`, carries a number that differs from one JVM to the
+next.
+
+To see where objects are allocated, add `site=<n>` to the profiler's options, separated by `;`. In
+measurement iterations the profiler then records the stack of each allocation, and the `frames`
+column holds its top `n` frames, from the allocating method outwards:
+`Class.method:line < Class.method:line`. A class allocated in several places has a row per place.
+The first warmup iteration also starts the nodes, which is too much to record with stacks, so no
+warmup iteration records them, and their `frames` are empty.
 
 ```bash
 java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
     -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 3 -r 3s -foe true \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc;site=12' \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
-    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-UseTLAB -XX:-DoEscapeAnalysis \
+    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-UseTLAB -XX:-DoEscapeAnalysis \
     -XX:FlightRecorderOptions:memorysize=1g,stackdepth=12"
 ```
 
-- Recording stacks makes the benchmark several times slower and JFR's data larger. `memorysize=1g`
-  gives JFR room for it, and `stackdepth` keeps only the frames the profiler writes (JFR records 64
-  by default).
-- Use `site` to find where objects come from, not to compare totals between runs: with fewer
-  operations per second, threads that allocate on a timer weigh more per operation.
+- With stacks, the benchmark runs far fewer operations per second and JFR's data grows.
+  `memorysize=1g` gives JFR room for it, and `stackdepth` keeps only the frames the profiler writes
+  (JFR records 64 by default).
+- Use `site` to find where objects come from, not to compare totals between runs: at a different
+  speed, the parts that follow time differ per operation (see [To compare two
+  builds](#measuring-allocation)).
 
 ## Writing a benchmark
 
@@ -215,7 +220,7 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
 - Bring the cache to the state of a cluster that has run for a while before measuring. Ignite boxes
   partition update counters, and `Long.valueOf` returns cached objects up to 127, so in a freshly
   loaded cache an update allocates less, and its allocation grows during the run.
-  `JmhCacheAbstractBenchmark#preload` writes every key twice for this.
+  `JmhCacheAbstractBenchmark#populate` writes the keys as many times as that takes.
 - Add a `main()` that runs the benchmark through `JmhIdeBenchmarkRunner`. The runner passes the JVM
   flags Ignite needs, so the benchmark runs from the IDE and from the command line.
 

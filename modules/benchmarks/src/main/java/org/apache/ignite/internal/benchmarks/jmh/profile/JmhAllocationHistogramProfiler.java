@@ -63,20 +63,15 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** JFR event of lost recording data. */
     private static final String DATA_LOSS_EVENT = "jdk.DataLoss";
 
-    /** Upper bound of the largest array size range, in bytes; larger arrays fall in one range above it. */
-    private static final long MAX_SIZE_RANGE = 1 << 20;
-
-    /** Descriptor codes of primitive array elements, in the order of {@link #PRIMITIVES}. */
-    private static final String PRIMITIVE_CODES = "ZBCSIJFD";
-
-    /** Primitive types by their descriptor code. */
-    private static final String[] PRIMITIVES = {"boolean", "byte", "char", "short", "int", "long", "float", "double"};
+    /** Primitive array element types by their descriptor code. */
+    private static final Map<Character, String> PRIMITIVES = Map.of('Z', "boolean", 'B', "byte", 'C', "char", 'S',
+        "short", 'I', "int", 'J', "long", 'F', "float", 'D', "double");
 
     /** Output directory. */
     private final Path dir;
 
-    /** Stack frames per allocation, or 0 for none. */
-    private final int site;
+    /** Stack frames written per allocation, or 0 for none. */
+    private final int frameCnt;
 
     /** Per-class file of this benchmark, parameter set and fork. */
     private Path file;
@@ -105,14 +100,20 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
      */
     public JmhAllocationHistogramProfiler(String initLine) throws ProfilerException {
         Path dir = null;
-        int site = 0;
+        int frameCnt = 0;
 
         for (String opt : initLine.split(";")) {
             if (opt.startsWith("dir="))
                 dir = Paths.get(opt.substring("dir=".length()));
-            else if (opt.startsWith("site="))
-                site = Integer.parseInt(opt.substring("site=".length()));
-            else
+            else if (opt.startsWith("site=")) {
+                try {
+                    frameCnt = Integer.parseInt(opt.substring("site=".length()));
+                }
+                catch (NumberFormatException e) {
+                    throw new ProfilerException("Expected site=<frames>: " + opt);
+                }
+            }
+            else if (!opt.isEmpty())
                 throw new ProfilerException("Unknown option, expected dir=<path>;site=<frames>: " + opt);
         }
 
@@ -120,7 +121,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
             throw new ProfilerException("Expected dir=<path>: " + initLine);
 
         this.dir = dir;
-        this.site = site;
+        this.frameCnt = frameCnt;
 
         JmhAllocationProfiler.writeRunDescription(dir);
 
@@ -149,8 +150,9 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
         rec = new Recording();
 
-        // Stacks in warmup iterations, which also start the nodes, make JFR drop events or run the fork out of heap.
-        stacks = site > 0 && iterParams.getType() == IterationType.MEASUREMENT;
+        // The first warmup iteration also starts the nodes, and stacks then make JFR drop events or run the fork out of
+        // heap; no warmup iteration records them.
+        stacks = frameCnt > 0 && iterParams.getType() == IterationType.MEASUREMENT;
 
         if (stacks)
             rec.enable(ALLOC_EVENT).withStackTrace();
@@ -212,7 +214,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         // The first iteration of a fork replaces a file left by an earlier run with the same process ID.
         try (Writer w = first ? Files.newBufferedWriter(file) : Files.newBufferedWriter(file, APPEND)) {
             if (first)
-                w.write("group\tclass\tsize\t" + (site > 0 ? "frames\t" : "") + "iteration\tobjects/op\tbytes/op\n");
+                w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "") + "iteration\tobjects/op\tbytes/op\n");
 
             for (Map.Entry<String, Map<String, long[]>> grp : hist.entrySet()) {
                 long objs = 0;
@@ -276,7 +278,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         Map<Long, String> grps = new HashMap<>();
 
         // Events with the same stack share its object within a recording chunk, so each stack is formatted once.
-        Map<RecordedStackTrace, String> frames = new HashMap<>();
+        Map<RecordedStackTrace, String> stackTexts = new HashMap<>();
 
         try (RecordingFile f = new RecordingFile(jfr)) {
             while (f.hasMoreEvents()) {
@@ -308,8 +310,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                 String row = javaName(name) + '\t' + (name.startsWith("[") ? sizeRange(size) : "");
 
                 if (stacks)
-                    row += '\t' + frames.computeIfAbsent(ev.getStackTrace(), this::frames);
-                else if (site > 0)
+                    row += '\t' + stackTexts.computeIfAbsent(ev.getStackTrace(), this::frames);
+                else if (frameCnt > 0)
                     row += '\t';
 
                 long[] cnt = hist.computeIfAbsent(grp, g -> new TreeMap<>()).computeIfAbsent(row, r -> new long[2]);
@@ -332,7 +334,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
         List<RecordedFrame> all = st.getFrames();
 
-        for (RecordedFrame f : all.subList(0, Math.min(site, all.size()))) {
+        for (RecordedFrame f : all.subList(0, Math.min(frameCnt, all.size()))) {
             if (sb.length() > 0)
                 sb.append(" < ");
 
@@ -358,24 +360,24 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         if (dims == 0)
             return name;
 
-        int prim = PRIMITIVE_CODES.indexOf(name.charAt(dims));
+        String prim = PRIMITIVES.get(name.charAt(dims));
 
-        String elem = prim >= 0 ? PRIMITIVES[prim] : name.substring(dims + 1, name.length() - 1);
+        String elem = prim != null ? prim : name.substring(dims + 1, name.length() - 1);
 
         return elem + "[]".repeat(dims);
     }
 
     /**
      * @param size Array size in bytes, header included.
-     * @return Power-of-two range of the size: {@code <=16}, {@code <=32}, ..., {@code >1048576}.
+     * @return Power-of-two range of the size: {@code <=16}, {@code <=32}, {@code <=64}, ...
      */
     private static String sizeRange(long size) {
-        for (long bound = 16; bound <= MAX_SIZE_RANGE; bound <<= 1) {
-            if (size <= bound)
-                return "<=" + bound;
-        }
+        long bound = 16;
 
-        return ">" + MAX_SIZE_RANGE;
+        while (bound < size)
+            bound <<= 1;
+
+        return "<=" + bound;
     }
 
     /**

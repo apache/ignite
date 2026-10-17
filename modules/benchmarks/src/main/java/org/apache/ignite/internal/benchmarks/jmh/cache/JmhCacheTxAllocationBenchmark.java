@@ -58,7 +58,7 @@ public class JmhCacheTxAllocationBenchmark extends JmhCacheAbstractBenchmark {
             vals[i] = new IntValue(i);
         }
 
-        preload(keys, vals);
+        populate(keys, vals);
     }
 
     /** {@inheritDoc} */
