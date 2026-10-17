@@ -41,6 +41,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
+    /** Default share of the certificate lifetime left when a node starts to renew it. */
+    public static final double DFLT_RENEW_BEFORE_FRACTION = 0.15;
+
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
 
@@ -52,6 +55,12 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Cached instance of an {@link SSLContext}. */
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
+
+    /** Whether a node builds its SSL context again before the certificate expires, to pick up a new certificate. */
+    private boolean renewalEnabled;
+
+    /** Share of the certificate lifetime left when a node starts to renew it. */
+    private double renewBeforeFraction = DFLT_RENEW_BEFORE_FRACTION;
 
     /**
      * Gets protocol for secure transport.
@@ -107,6 +116,41 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     public void setProtocols(String... protocols) {
         this.protocols = protocols;
+    }
+
+    /** @return Whether a node builds its SSL context again before the certificate expires, to pick up a new certificate. */
+    public boolean isRenewalEnabled() {
+        return renewalEnabled;
+    }
+
+    /**
+     * Sets whether a node builds its SSL context again before the certificate expires. This lets the node pick up a new certificate
+     * from wherever the factory takes certificates. A file-based factory reads its files again, so replace the files yourself.
+     * If the node cannot tell which certificate the factory serves, the node does not start. Disabled by default.
+     *
+     * @param renewalEnabled Whether renewal is enabled.
+     */
+    public void setRenewalEnabled(boolean renewalEnabled) {
+        this.renewalEnabled = renewalEnabled;
+    }
+
+    /** @return Share of the certificate lifetime left when a node starts to renew the certificate. */
+    public double getRenewBeforeFraction() {
+        return renewBeforeFraction;
+    }
+
+    /**
+     * Sets the share of the certificate lifetime left when a node starts to renew the certificate. The lifetime runs from the time
+     * the certificate becomes valid to the earliest expiry in its chain. The value must be greater than {@code 0} and less than
+     * {@code 1}, otherwise this method throws {@link IllegalArgumentException}.
+     * If not specified, {@link #DFLT_RENEW_BEFORE_FRACTION} is used.
+     *
+     * @param renewBeforeFraction Share of the lifetime.
+     */
+    public void setRenewBeforeFraction(double renewBeforeFraction) {
+        A.ensure(renewBeforeFraction > 0 && renewBeforeFraction < 1, "renewBeforeFraction must be greater than 0 and less than 1");
+
+        this.renewBeforeFraction = renewBeforeFraction;
     }
 
     /**
@@ -195,5 +239,27 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
 
         return ctx;
+    }
+
+    /**
+     * Builds a new SSL context, unlike {@link #create()}, which keeps returning the first one. The node calls this method on every
+     * {@code control.sh --ssl reload} and on every attempt to renew the certificate automatically. A subclass that builds its
+     * context in its own {@link #create()} must override this method too and build the context from the same sources. Otherwise
+     * this method builds the context without the code in that {@link #create()}.
+     * <p>
+     * Calls to this method of one factory on one node never overlap: while one runs, other reloads and renewals of this factory
+     * wait. Calls to different factories may run at the same time. A subclass that fetches certificates from a remote source must
+     * limit how long a call takes. The call must also stop when its thread is interrupted: a node that stops interrupts the call
+     * and waits for it to end.
+     *
+     * @return SSL context.
+     */
+    public SSLContext createNew() {
+        try {
+            return createSslContext();
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
     }
 }

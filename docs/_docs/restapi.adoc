@@ -85,11 +85,39 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Yes
 |`null`
 
+|`setHttpSslFactory(Factory<SSLContext>)`
+|Factory of the SSL context for HTTPS.
+When it is set, HTTP REST serves HTTPS with the certificates of this factory.
+Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty configuration file.
+The node does not start if the connector from the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
+With this factory, `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] put new HTTP REST certificates in use without a restart.
+HTTP REST does not use the weak cipher suites that Jetty turns off by default, even if the factory enables them.
+Unless the Jetty configuration file sets a `SecureRequestCustomizer` of its own, HTTP REST answers requests to a host name or IP address that the certificate does not name, such as a Kubernetes pod IP.
+To require client certificates, use `setHttpSslClientAuth`.
+|Yes
+|`null`
+
+|`setHttpSslClientAuth(boolean)`
+|Whether HTTP REST requires a client certificate.
+When it is `true`, a client can connect only if the trust store of `httpSslFactory` trusts its certificate.
+Without `httpSslFactory`, the node does not start with this property set to `true`. For TLS set up in the Jetty configuration file, set `needClientAuth` in that file instead.
+|Yes
+|`false`
+
 |`setMessageInterceptor(...)`
 |The interceptor transforms all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
 |Yes
 |`null`
 |=======
+
+To move the TLS setup of HTTP REST to `httpSslFactory`, remove the `SslConnectionFactory` from the Jetty configuration file. Otherwise, the node does not start.
+Put the HTTP REST key store and trust store into an `org.apache.ignite.ssl.SslContextFactory` and set it as `httpSslFactory`.
+Set `protocols` and `cipherSuites` of Ignite's `SslContextFactory` to the protocols and cipher suites that the Jetty SSL context factory enables. Otherwise, HTTP REST uses the defaults of the JVM.
+If the Jetty configuration file sets `needClientAuth` to `true`, set `httpSslClientAuth` to `true` too. Otherwise, clients without a certificate can connect.
+Ignite keeps the `SecureRequestCustomizer` from the Jetty configuration file, with its settings. Set its `sniHostCheck` to `false` only if clients send requests to a host name or IP address not in the certificate.
+Ignite's `SslContextFactory` cannot pick a key by alias, so keep only one private key in the HTTP REST key store.
+The private key must have the same password as the key store, because the factory has one password for both.
+Then restart the nodes one at a time.
 
 ==== Example Jetty XML Configuration
 

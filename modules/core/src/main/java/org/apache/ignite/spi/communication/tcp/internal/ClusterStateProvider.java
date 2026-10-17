@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
@@ -29,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 
 /**
  * The role of this is aggregate logic of cluster states.
@@ -57,6 +61,9 @@ public class ClusterStateProvider {
     /** Ignite ex supplier. */
     private final Supplier<Ignite> igniteExSupplier;
 
+    /** SSL context of the connections, {@code null} if SSL is disabled. */
+    private final @Nullable SSLContext sslCtx;
+
     /**
      * @param ignite Ignite.
      * @param locNodeSupplier Local node supplier.
@@ -82,6 +89,9 @@ public class ClusterStateProvider {
         this.spiCtxWithoutLatchSupplier = spiCtxWithoutLatchSupplier;
         this.log = log;
         this.igniteExSupplier = igniteExSupplier;
+
+        sslCtx = isSslEnabled() ? ((IgniteEx)ignite).context().sslContexts()
+            .register(ignite.configuration().getSslContextFactory(), COMMUNICATION) : null;
     }
 
     /**
@@ -112,7 +122,12 @@ public class ClusterStateProvider {
      * @return {@link SSLEngine} for ssl connections.
      */
     public SSLEngine createSSLEngine() {
-        return ignite.configuration().getSslContextFactory().create().createSSLEngine();
+        return sslCtx.createSSLEngine();
+    }
+
+    /** @return SSL context of the connections, {@code null} if SSL is disabled. */
+    public @Nullable SSLContext sslContext() {
+        return sslCtx;
     }
 
     /**

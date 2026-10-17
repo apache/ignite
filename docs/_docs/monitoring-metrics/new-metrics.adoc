@@ -508,6 +508,30 @@ Register name: `rest.client`
 
 NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registered only when SSL is enabled.
 
+== SSL
+
+Metrics of each SSL-enabled transport: the certificate it serves and the results of its reloads.
+In the register name `ssl.{transport}`, `{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
+`ssl.http.rest` exists only when `ConnectorConfiguration.httpSslFactory` is set.
+Times are in milliseconds since the epoch.
+The reload metrics show the results of link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] and of link:security/ssl-tls#renewing-certificates-automatically[automatic renewals].
+A renewal attempt that finds only the certificate already in use changes only `NextRenewalTime`.
+To catch a certificate that is about to expire, alert on `ChainNotAfter`.
+
+Register name: `ssl.{transport}`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|CertificateIssuer | string | Issuer DN of the certificate presented on new connections.
+|CertificateSubject | string | Subject DN of the certificate presented on new connections.
+|ChainNotAfter | long | Earliest expiry time in the chain presented on new connections, `0` if unknown.
+|ConsecutiveReloadFailures | integer | Failed reloads in a row since the last successful one.
+|LastReloadFailureReason | string | Reason for the last failed reload. A successful reload clears it.
+|LastReloadSuccessTime | long | Time of the last successful reload, `0` if no reload has succeeded since the node started.
+|NextRenewalTime | long | Time of the next automatic renewal, `0` if no renewal is planned.
+|===
+
 == Discovery IO
 
 Register name: `io.discovery`

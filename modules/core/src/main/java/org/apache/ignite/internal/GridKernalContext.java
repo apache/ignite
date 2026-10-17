@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -625,6 +626,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
+
+    /**
+     * @return SSL contexts of the node transports.
+     */
+    public SslContextRegistry sslContexts();
 
     /**
      * @return Default uncaught exception handler used by thread pools.

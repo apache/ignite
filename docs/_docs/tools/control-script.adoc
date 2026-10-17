@@ -1747,3 +1747,97 @@ Examples:
 ----
 control.sh|bat --event list --enabled
 ----
+
+== TLS Certificates
+
+=== Reloading Certificates
+
+[source, shell]
+----
+control.sh|bat --ssl reload [--yes]
+----
+
+The command makes every server and client node in the topology ask its SSL context factories for new certificates.
+See link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] for the order of steps when you replace certificates or a certificate authority.
+With security enabled, `--ssl reload` and `--ssl status` need the `ADMIN_OPS` system permission.
+
+The built-in `SslContextFactory` reads its key and trust stores again, with the settings the node started with.
+To change a path, a password, a store type, protocols or cipher suites, restart the node.
+If the factory has `trustManagers` set, the node keeps them and reads no trust store.
+A node that is not in the topology when the command runs, such as a reconnecting client node, keeps the stores it read before.
+The command output does not list nodes that are not in the topology.
+Run the command again when the node is back in the topology, or restart the node if it cannot reconnect.
+The reload covers communication, discovery, the client connector, binary REST, and HTTP REST if it takes its certificates from `ConnectorConfiguration.httpSslFactory`.
+New connections use the new certificates.
+Established connections stay open and keep the old certificates.
+
+The command does not make thin clients or JDBC and ODBC drivers read their stores again, see link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
+
+A reload fails for an SSL context factory, and all transports that use it keep the old certificate, if:
+
+* a certificate in the new chain is not valid now
+* the new key store presents no certificate while the old one does, for example because the new one has no private key
+* the factory serves discovery or communication, and the node's own new trust store does not accept the new certificate
+* the factory is a custom one that returns the same SSL context on every call, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories]
+* the factory fails, for example because it cannot read a store
+
+The node does not check whether other nodes accept the new certificate.
+Run `control.sh --diagnostic connectivity` after the reload to see which pairs of nodes fail to open a new connection.
+
+For each node, the command prints one line per SSL context factory, with all transports that use it.
+If some nodes fail, the others keep the new certificates.
+The command then lists the failed nodes first, in a separate block, and ends with an error:
+
+[source,text]
+----
+Failed on 1 node(s):
+46db5416-d199-48d6-a807-88b7f1300000 [consistentId=node02]: failed on client connector, communication, discovery (The new certificate fails a test handshake with this node's own trust store [subject=CN=node02, issuer=CN=newca, serial=5f3a91c2e8, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z]: No trusted certificate found)
+
+Succeeded on 1 node(s):
+e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: reloaded client connector, communication, discovery; serving subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
+----
+
+In this example, node02 does not trust the new certificate authority, but node01 already serves a certificate from it.
+New connections between them fail, so node02 may leave the topology once the open connections close.
+Fix the trust store of node02 without delay.
+Then run the command again, or restart node02 if the command cannot reach it.
+Every node logs the certificate it put in use, or why the reload failed.
+The log line also names the node the command came through.
+With security enabled, it also names the login and network address of the user who ran the command.
+
+=== Checking Certificates
+
+[source, shell]
+----
+control.sh|bat --ssl status
+----
+
+For every node, the command prints one block per SSL context factory.
+Each block shows the transports that use the factory and the certificate they serve.
+The block also shows the certificate authorities these transports accept and the result of the last reload.
+If the factory has `renewalEnabled` set and a renewal is planned, the command also shows the time of the next link:security/ssl-tls#renewing-certificates-automatically[automatic renewal]:
+
+[source,text]
+----
+e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: client connector, communication, discovery
+    serving subject=CN=node01, issuer=CN=ca, serial=2c41d7a09b, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
+    trusts: CN=ca; CN=newca
+    last reload succeeded at 2026-10-05T09:00:02.347Z
+    next automatic renewal at 2027-08-11T15:00:00Z
+----
+
+The `trusts` line lists the certificate authorities that the node names when it asks a peer for a certificate.
+`trusts: unknown` means the node names no certificate authority.
+The line shows names, not certificates, so it cannot tell apart two authorities with the same name.
+A trust manager of your own may name authorities other than the ones it accepts, or none.
+If the node cannot tell which certificate a factory serves, the status shows `cannot tell which certificate is served`.
+A node without an SSL context factory prints `no SSL context factory is configured`.
+Such a node does not make `--ssl reload` or `--ssl status` end with an error.
+
+If a certificate authority in the chain expires before the certificate, the `serving` line also shows when that authority expires, as `chainNotAfter`.
+From the `chainNotAfter` time, peers refuse the chain.
+After a failed reload, the `last reload` line shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
+Automatic renewals also update this line, except attempts that find only the certificate already in use.
+If a certificate in the chain a node serves is not valid now, the block shows `PROBLEM: the certificate is not valid now, peers refuse it`.
+The command ends with an error only if it finds such a node or cannot run on a node, for example because the node left.
+The command lists these nodes first, under `Failed on N node(s)`.

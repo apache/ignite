@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
@@ -393,6 +394,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
+    /** */
+    private SslContextRegistry sslCtxs;
+
     /** Failure processor. */
     private FailureProcessor failureProc;
 
@@ -576,6 +580,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
+        else if (comp instanceof SslContextRegistry)
+            sslCtxs = (SslContextRegistry)comp;
         else if (comp instanceof IgniteSecurity)
             security = (IgniteSecurity)comp;
         else if (comp instanceof CompressionProcessor)
@@ -1028,6 +1034,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
         return internalSubscriptionProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SslContextRegistry sslContexts() {
+        return sslCtxs;
     }
 
     /**
