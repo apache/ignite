@@ -591,9 +591,11 @@ public class CdcMain implements Runnable {
         else
             consumeSegmentActively(builder);
 
-        Iterator<Integer> destroyedIter = walSegmentsDestroyedCaches.remove(segmentIdx).iterator();
+        Set<Integer> destroyed = walSegmentsDestroyedCaches.remove(segmentIdx);
 
-        if (destroyedIter != null) {
+        if (destroyed != null) {
+            Iterator<Integer> destroyedIter = destroyed.iterator();
+
             consumer.onCacheDestroyEvents(destroyedIter);
 
             if (destroyedIter.hasNext())
