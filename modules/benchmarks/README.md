@@ -87,6 +87,9 @@ operation shows up, on the node that allocates it.
 - `JmhAllocationProfiler` splits the bytes per operation by node and thread pool. It also reports
   communication messages and bytes sent, and discovery messages processed, per operation and node.
   Use it to see on which node and in which pool a change adds or removes allocation.
+- `JmhAllocationHistogramProfiler` counts objects and bytes per operation for each class, by node and
+  thread pool. Use it to see which objects a change adds or removes. It is slower, see
+  [Objects per class](#objects-per-class).
 
 ```bash
 java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
@@ -114,8 +117,8 @@ The profiler's results, per operation:
 The threads of one pool on one node add up to one result. With `dir=<path>`, the profiler also writes
 the JDK and OS of the run to `<path>/run.properties`.
 
-The profiler works with the benchmarks that extend `JmhCacheAbstractBenchmark` and keep its teardown.
-To use it with another benchmark, see [Writing a benchmark](#writing-a-benchmark).
+Both allocation profilers work with the benchmarks that extend `JmhCacheAbstractBenchmark` and keep
+its teardown. To use them with another benchmark, see [Writing a benchmark](#writing-a-benchmark).
 
 To compare two builds:
 
@@ -125,11 +128,69 @@ To compare two builds:
 - Compare forks, not iterations: iterations of one fork share its JIT decisions. With escape analysis
   on, run at least four forks.
 
+### Objects per class
+
+`JmhAllocationHistogramProfiler` records allocations with JDK Flight Recorder (JFR) and counts objects
+and bytes per operation for each class, in the same groups as `JmhAllocationProfiler`. It counts the
+JFR event `jdk.ObjectAllocationOutsideTLAB`, which covers every allocation only when TLABs
+(thread-local allocation buffers) are off: `-XX:-UseTLAB`. Without it, the benchmark fails.
+
+```bash
+java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
+    -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 5 -r 3s -foe true \
+    -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc' \
+    -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
+    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-UseTLAB -XX:-DoEscapeAnalysis \
+    -XX:FlightRecorderOptions:memorysize=256m"
+```
+
+`JmhCacheTxAllocationBenchmark.main()` runs a transaction of two puts with both profilers and these
+flags. It writes the results to `JmhCacheTxAllocationBenchmark.json` and the per-class tables to the
+`JmhCacheTxAllocationBenchmark` directory.
+
+- `-XX:FlightRecorderOptions:memorysize=256m` gives JFR room for the events it hasn't written to disk
+  yet. With the default 10 MB, JFR drops events when disk writes slow down, and the benchmark fails:
+  run it again with a larger value. With `-foe true`, the run stops with an error and writes no
+  results; without it, JMH prints `<failure>`, keeps the iterations before it and goes on.
+- When you run both profilers, list the histogram profiler first. JMH stops profilers in reverse
+  order, so the time the histogram profiler spends reading its recording stays out of `alloc.norm`.
+- With TLABs off, the benchmark runs fewer operations per second, and after each iteration the
+  profiler reads the whole recording, so the run takes much longer.
+
+The histogram profiler's results:
+
+| Result | What it counts |
+|---|---|
+| `jfr.objs.norm:<group>`, `jfr.bytes.norm:<group>` | Objects and bytes per operation allocated by a group, named as in `alloc.norm` |
+| `jfr.objs.norm:total`, `jfr.bytes.norm:total` | All groups |
+
+The profiler needs `dir=<path>`. It writes the JDK and OS of the run to `<path>/run.properties`, and
+the table per class to a file there, one per benchmark, parameter set and fork:
+`<full benchmark name>-<param>=<value>-<process ID>.tsv`. Use a new `dir` for each run, since the
+files of earlier runs stay there. The file's columns, separated by tabs, are `group`, `class`,
+`iteration` (`warmup-1`, `warmup-2`, ... for warmup iterations, then `1`, `2`, ...), `objects/op` and
+`bytes/op`.
+Classes have their JVM names: `[B` is `byte[]`, `[Ljava.lang.Object;` is `Object[]`. A lambda's class
+name carries a number that differs from one JVM to the next.
+
+To find where objects of a class are allocated, record allocations with their stack traces through
+JMH's own JFR profiler. Keep the run short, since every allocation is recorded with its stack trace.
+At the end of the run, JMH prints the path of the recording under `JFR profiler results`.
+
+```bash
+jfr configure --input none +jdk.ObjectAllocationOutsideTLAB#enabled=true \
+    +jdk.ObjectAllocationOutsideTLAB#stackTrace=true --output alloc.jfc
+java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
+    -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 1 -r 1s -prof "jfr:configName=$(pwd)/alloc.jfc" \
+    -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-UseTLAB -XX:-DoEscapeAnalysis"
+jfr print --events jdk.ObjectAllocationOutsideTLAB --stack-depth 20 <recording> > alloc.txt
+```
+
 ## Writing a benchmark
 
 - Extend the base class of the area: `JmhCacheAbstractBenchmark`, `JmhSqlAbstractBenchmark`,
   `JmhThinClientAbstractBenchmark`, or `JmhAbstractBenchmark` for the rest.
-- Start nodes in the benchmark JVM and give each one a name: the allocation profiler finds a node's
+- Start nodes in the benchmark JVM and give each one a name: the allocation profilers find a node's
   threads by its name.
 - Call `JmhNodeStopHook.run()` first in the teardown that stops the nodes. JMH runs this teardown
   before profilers read the last iteration, and the hook lets them read it while the nodes still run.

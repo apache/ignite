@@ -172,7 +172,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
      * @param clients Client flag per node name.
      * @return Group label.
      */
-    private static String group(String name, Map<String, Boolean> clients) {
+    static String group(String name, Map<String, Boolean> clients) {
         int last = name.lastIndexOf('%');
         int prev = last > 0 ? name.lastIndexOf('%', last - 1) : -1;
 
@@ -208,15 +208,27 @@ public class JmhAllocationProfiler implements InternalProfiler {
     }
 
     /** */
-    private static ScalarResult result(String lbl, long val, long ops, String unit) {
+    static ScalarResult result(String lbl, long val, long ops, String unit) {
         return new ScalarResult(lbl, (double)val / ops, unit, AggregationPolicy.AVG);
+    }
+
+    /** @return Client flag per node name, for the named nodes of this JVM. */
+    static Map<String, Boolean> clients() {
+        Map<String, Boolean> clients = new HashMap<>();
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            if (ignite.name() != null)
+                clients.put(ignite.name(), ignite.cluster().localNode().isClient());
+        }
+
+        return clients;
     }
 
     /**
      * @param dir Directory.
      * @throws ProfilerException If the file can't be written.
      */
-    private static void writeRunDescription(Path dir) throws ProfilerException {
+    static void writeRunDescription(Path dir) throws ProfilerException {
         Properties props = new Properties();
 
         for (String key : RUN_PROPS)
@@ -246,7 +258,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
         final Map<String, Long> counters = new HashMap<>();
 
         /** Node name to client flag. */
-        final Map<String, Boolean> clients = new HashMap<>();
+        final Map<String, Boolean> clients = JmhAllocationProfiler.clients();
 
         /** @return Snapshot of the current state. */
         static Snapshot take() {
@@ -277,8 +289,6 @@ public class JmhAllocationProfiler implements InternalProfiler {
                 s.put("comm.msgs.norm:" + node, comm.findMetric(SENT_MESSAGES_METRIC_NAME));
                 s.put("comm.bytes.norm:" + node, comm.findMetric(GridNioServer.SENT_BYTES_METRIC_NAME));
                 s.put("disco.msgs.norm:" + node, mmgr.registry(DISCO_METRICS).findMetric(DISCO_PROCESSED_MESSAGES));
-
-                s.clients.put(node, ignite.cluster().localNode().isClient());
             }
 
             return s;
