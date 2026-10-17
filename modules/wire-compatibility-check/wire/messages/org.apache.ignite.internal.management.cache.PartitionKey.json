@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.PartitionKey",
+  "fields": [
+    {"order": 0, "type": "int", "name": "grpId"},
+    {"order": 1, "type": "java.lang.String", "name": "grpName"},
+    {"order": 2, "type": "int", "name": "partId"}
+  ]
+}

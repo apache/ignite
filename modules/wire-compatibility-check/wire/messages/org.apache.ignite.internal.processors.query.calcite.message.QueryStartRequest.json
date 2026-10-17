@@ -1,0 +1,18 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "schema"},
+    {"order": 1, "type": "java.util.UUID", "name": "qryId"},
+    {"order": 2, "type": "long", "name": "originatingQryId"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "ver"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription", "name": "fragmentDesc"},
+    {"order": 5, "type": "java.lang.String", "name": "root"},
+    {"order": 6, "type": "int", "name": "totalFragmentsCnt"},
+    {"order": 7, "type": "byte[]", "name": "paramsBytes"},
+    {"order": 8, "type": "long", "name": "timeout"},
+    {"order": 9, "type": "java.util.Collection<org.apache.ignite.internal.processors.query.calcite.message.QueryTxEntry>", "name": "qryTxEntries"},
+    {"order": 10, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "appAttrs"},
+    {"order": 11, "type": "boolean", "name": "keepBinaryMode"},
+    {"type": "java.lang.Object[]", "name": "params", "annotations": ["@org.apache.ignite.internal.Marshalled(\"paramsBytes\")"]}
+  ]
+}

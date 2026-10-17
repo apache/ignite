@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage",
+  "fields": [
+    {"order": 0, "type": "long", "name": "rcvCnt"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.spi.discovery.zk.internal.ZkForceNodeFailMessage",
+  "fields": [
+    {"order": 0, "type": "long", "name": "nodeInternalId"},
+    {"order": 1, "type": "java.lang.String", "name": "warning"}
+  ]
+}

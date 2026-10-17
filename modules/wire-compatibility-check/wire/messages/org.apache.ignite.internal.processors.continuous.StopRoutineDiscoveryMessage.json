@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "routineId"}
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
+  "fields": []
+}
