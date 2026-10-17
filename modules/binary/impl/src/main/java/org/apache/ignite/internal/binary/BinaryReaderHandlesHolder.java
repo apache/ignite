@@ -20,10 +20,7 @@ package org.apache.ignite.internal.binary;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Reader that unmarshals a binary stream without parsing an object header.
- * Holds only the state the {@link #unmarshal()} family needs, so it can be allocated
- * cheaply on the paths that merely wrap bytes into a {@link org.apache.ignite.binary.BinaryObject}.
- * {@link BinaryReaderExImpl} extends it with full header, schema and field access.
+ * Simple holder for handles.
  */
 class BinaryReaderHandlesHolder {
     /** Reader context which is constantly passed between objects. */
@@ -72,5 +69,4 @@ class BinaryReaderHandlesHolder {
     final boolean isEmpty() {
         return hnds == null || hnds.isEmpty();
     }
-
 }
