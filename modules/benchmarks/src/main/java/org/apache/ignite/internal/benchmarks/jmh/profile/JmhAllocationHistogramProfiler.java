@@ -35,6 +35,8 @@ import jdk.jfr.Recording;
 import jdk.jfr.RecordingState;
 import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
+import jdk.jfr.consumer.RecordedFrame;
+import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordingFile;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -50,7 +52,9 @@ import static java.nio.file.StandardOpenOption.APPEND;
 /**
  * Objects and bytes allocated per operation for each class, by node and thread pool as in
  * {@link JmhAllocationProfiler}, recorded with JFR. Needs {@code -XX:-UseTLAB}: the profiler counts only allocations
- * outside TLABs. Writes the totals per group to the JMH results and the per-class table to {@code dir=<path>}.
+ * outside TLABs. Writes the totals per group to the JMH results and the per-class table to {@code dir=<path>}. With
+ * {@code site=<n>}, the table also has the top {@code n} stack frames of each allocation, recorded in measurement
+ * iterations.
  */
 public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** JFR event of an allocation outside a TLAB: with TLABs off, of every allocation. */
@@ -59,14 +63,29 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** JFR event of lost recording data. */
     private static final String DATA_LOSS_EVENT = "jdk.DataLoss";
 
+    /** Upper bound of the largest array size range, in bytes; larger arrays fall in one range above it. */
+    private static final long MAX_SIZE_RANGE = 1 << 20;
+
+    /** Descriptor codes of primitive array elements, in the order of {@link #PRIMITIVES}. */
+    private static final String PRIMITIVE_CODES = "ZBCSIJFD";
+
+    /** Primitive types by their descriptor code. */
+    private static final String[] PRIMITIVES = {"boolean", "byte", "char", "short", "int", "long", "float", "double"};
+
     /** Output directory. */
     private final Path dir;
+
+    /** Stack frames per allocation, or 0 for none. */
+    private final int site;
 
     /** Per-class file of this benchmark, parameter set and fork. */
     private Path file;
 
     /** Recording of the current iteration. */
     private Recording rec;
+
+    /** Whether the current recording has stack traces. */
+    private boolean stacks;
 
     /** Client flag per node name, read when the recording stops. */
     private volatile Map<String, Boolean> clients;
@@ -85,10 +104,23 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
      * @throws ProfilerException If the options are wrong.
      */
     public JmhAllocationHistogramProfiler(String initLine) throws ProfilerException {
-        if (!initLine.startsWith("dir="))
+        Path dir = null;
+        int site = 0;
+
+        for (String opt : initLine.split(";")) {
+            if (opt.startsWith("dir="))
+                dir = Paths.get(opt.substring("dir=".length()));
+            else if (opt.startsWith("site="))
+                site = Integer.parseInt(opt.substring("site=".length()));
+            else
+                throw new ProfilerException("Unknown option, expected dir=<path>;site=<frames>: " + opt);
+        }
+
+        if (dir == null)
             throw new ProfilerException("Expected dir=<path>: " + initLine);
 
-        dir = Paths.get(initLine.substring("dir=".length()));
+        this.dir = dir;
+        this.site = site;
 
         JmhAllocationProfiler.writeRunDescription(dir);
 
@@ -117,7 +149,14 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
         rec = new Recording();
 
-        rec.enable(ALLOC_EVENT).withoutStackTrace();
+        // Stacks in warmup iterations, which also start the nodes, make JFR drop events or run the fork out of heap.
+        stacks = site > 0 && iterParams.getType() == IterationType.MEASUREMENT;
+
+        if (stacks)
+            rec.enable(ALLOC_EVENT).withStackTrace();
+        else
+            rec.enable(ALLOC_EVENT).withoutStackTrace();
+
         rec.enable(DATA_LOSS_EVENT);
 
         rec.start();
@@ -131,7 +170,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     ) {
         stop();
 
-        // Group to class to objects and bytes; a group of a live thread without allocations reports zeros.
+        // Group to row (the class, size and frames columns) to objects and bytes; a group of a live thread without
+        // allocations reports zeros.
         Map<String, Map<String, long[]>> hist = new TreeMap<>();
 
         for (String name : liveThreads)
@@ -172,19 +212,19 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         // The first iteration of a fork replaces a file left by an earlier run with the same process ID.
         try (Writer w = first ? Files.newBufferedWriter(file) : Files.newBufferedWriter(file, APPEND)) {
             if (first)
-                w.write("group\tclass\titeration\tobjects/op\tbytes/op\n");
+                w.write("group\tclass\tsize\t" + (site > 0 ? "frames\t" : "") + "iteration\tobjects/op\tbytes/op\n");
 
             for (Map.Entry<String, Map<String, long[]>> grp : hist.entrySet()) {
                 long objs = 0;
                 long bytes = 0;
 
-                for (Map.Entry<String, long[]> cls : grp.getValue().entrySet()) {
-                    long[] cnt = cls.getValue();
+                for (Map.Entry<String, long[]> row : grp.getValue().entrySet()) {
+                    long[] cnt = row.getValue();
 
                     objs += cnt[0];
                     bytes += cnt[1];
 
-                    w.write(grp.getKey() + '\t' + cls.getKey() + '\t' + iter + '\t' + (double)cnt[0] / ops + '\t' +
+                    w.write(grp.getKey() + '\t' + row.getKey() + '\t' + iter + '\t' + (double)cnt[0] / ops + '\t' +
                         (double)cnt[1] / ops + '\n');
                 }
 
@@ -226,7 +266,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
      * Adds the allocations of a recording to a histogram, except those of the profiler's own thread.
      *
      * @param jfr Recording file.
-     * @param hist Group to class to objects and bytes.
+     * @param hist Group to row to objects and bytes.
      * @throws IOException If the file can't be read.
      * @throws IllegalStateException If JFR dropped events.
      */
@@ -234,6 +274,9 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         long self = Thread.currentThread().getId();
 
         Map<Long, String> grps = new HashMap<>();
+
+        // Events with the same stack share its object within a recording chunk, so each stack is formatted once.
+        Map<RecordedStackTrace, String> frames = new HashMap<>();
 
         try (RecordingFile f = new RecordingFile(jfr)) {
             while (f.hasMoreEvents()) {
@@ -259,13 +302,80 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                 String grp = t == null ? "other.unknown" : grps.computeIfAbsent(t.getJavaThreadId(),
                     id -> JmhAllocationProfiler.group(t.getJavaName(), clients));
 
-                long[] cnt = hist.computeIfAbsent(grp, g -> new TreeMap<>())
-                    .computeIfAbsent(cls == null ? "<unknown>" : cls.getName(), c -> new long[2]);
+                long size = ev.getLong("allocationSize");
+                String name = cls == null ? "<unknown>" : cls.getName();
+
+                String row = javaName(name) + '\t' + (name.startsWith("[") ? sizeRange(size) : "");
+
+                if (stacks)
+                    row += '\t' + frames.computeIfAbsent(ev.getStackTrace(), this::frames);
+                else if (site > 0)
+                    row += '\t';
+
+                long[] cnt = hist.computeIfAbsent(grp, g -> new TreeMap<>()).computeIfAbsent(row, r -> new long[2]);
 
                 cnt[0]++;
-                cnt[1] += ev.getLong("allocationSize");
+                cnt[1] += size;
             }
         }
+    }
+
+    /**
+     * @param st Stack trace, {@code null} if JFR has none.
+     * @return The top frames, from the allocating method outwards, as {@code Class.method:line < Class.method:line}.
+     */
+    private String frames(RecordedStackTrace st) {
+        if (st == null)
+            return "";
+
+        StringBuilder sb = new StringBuilder();
+
+        List<RecordedFrame> all = st.getFrames();
+
+        for (RecordedFrame f : all.subList(0, Math.min(site, all.size()))) {
+            if (sb.length() > 0)
+                sb.append(" < ");
+
+            sb.append(f.getMethod().getType().getName()).append('.').append(f.getMethod().getName());
+
+            if (f.getLineNumber() >= 0)
+                sb.append(':').append(f.getLineNumber());
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * @param name Class name as JFR gives it, with arrays as descriptors: {@code [B}, {@code [Ljava.lang.Object;}.
+     * @return Class name as Java writes it: {@code byte[]}, {@code java.lang.Object[]}.
+     */
+    private static String javaName(String name) {
+        int dims = 0;
+
+        while (dims < name.length() && name.charAt(dims) == '[')
+            dims++;
+
+        if (dims == 0)
+            return name;
+
+        int prim = PRIMITIVE_CODES.indexOf(name.charAt(dims));
+
+        String elem = prim >= 0 ? PRIMITIVES[prim] : name.substring(dims + 1, name.length() - 1);
+
+        return elem + "[]".repeat(dims);
+    }
+
+    /**
+     * @param size Array size in bytes, header included.
+     * @return Power-of-two range of the size: {@code <=16}, {@code <=32}, ..., {@code >1048576}.
+     */
+    private static String sizeRange(long size) {
+        for (long bound = 16; bound <= MAX_SIZE_RANGE; bound <<= 1) {
+            if (size <= bound)
+                return "<=" + bound;
+        }
+
+        return ">" + MAX_SIZE_RANGE;
     }
 
     /**

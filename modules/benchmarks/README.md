@@ -170,24 +170,37 @@ The histogram profiler's results:
 The profiler needs `dir=<path>`. It writes the JDK and OS of the run to `<path>/run.properties`, and
 the table per class to a file there, one per benchmark, parameter set and fork:
 `<full benchmark name>-<param>=<value>-<process ID>.tsv`. Use a new `dir` for each run, since the
-files of earlier runs stay there. The file's columns, separated by tabs, are `group`, `class`,
-`iteration` (`warmup-1`, `warmup-2`, ... for warmup iterations, then `1`, `2`, ...), `objects/op` and
-`bytes/op`.
-Classes have their JVM names: `[B` is `byte[]`, `[Ljava.lang.Object;` is `Object[]`. A lambda's class
-name carries a number that differs from one JVM to the next.
+files of earlier runs stay there. The file's columns, separated by tabs:
 
-To find where objects of a class are allocated, record allocations with their stack traces through
-JMH's own JFR profiler. Keep the run short, since every allocation is recorded with its stack trace.
-At the end of the run, JMH prints the path of the recording under `JFR profiler results`.
+| Column | What it holds |
+|---|---|
+| `group` | The group, named as in `alloc.norm` |
+| `class` | The class as Java writes it: `byte[]`, `java.lang.Object[]`. A lambda's class name carries a number that differs from one JVM to the next |
+| `size` | For arrays, the range of their size in bytes, header included, by powers of two: `<=16`, `<=32`, ..., `>1048576`. Empty for other classes |
+| `frames` | Only with `site`, see below: where the objects were allocated |
+| `iteration` | `warmup-1`, `warmup-2`, ... for warmup iterations, then `1`, `2`, ... |
+| `objects/op`, `bytes/op` | Objects and bytes per operation |
+
+To see where objects are allocated, add `site=<n>` to the profiler's options. In measurement
+iterations the profiler then records the stack of each allocation, and the `frames` column holds its
+top `n` frames, from the allocating method outwards: `Class.method:line < Class.method:line`. A class
+allocated in several places has a row per place. Warmup iterations record no stacks, since they also
+start the nodes, and their `frames` are empty.
 
 ```bash
-jfr configure --input none +jdk.ObjectAllocationOutsideTLAB#enabled=true \
-    +jdk.ObjectAllocationOutsideTLAB#stackTrace=true --output alloc.jfc
 java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
-    -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 1 -r 1s -prof "jfr:configName=$(pwd)/alloc.jfc" \
-    -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-UseTLAB -XX:-DoEscapeAnalysis"
-jfr print --events jdk.ObjectAllocationOutsideTLAB --stack-depth 20 <recording> > alloc.txt
+    -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 3 -r 3s -foe true \
+    -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc;site=12' \
+    -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
+    -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -XX:-UseTLAB -XX:-DoEscapeAnalysis \
+    -XX:FlightRecorderOptions:memorysize=1g,stackdepth=12"
 ```
+
+- Recording stacks makes the benchmark several times slower and JFR's data larger. `memorysize=1g`
+  gives JFR room for it, and `stackdepth` keeps only the frames the profiler writes (JFR records 64
+  by default).
+- Use `site` to find where objects come from, not to compare totals between runs: with fewer
+  operations per second, threads that allocate on a timer weigh more per operation.
 
 ## Writing a benchmark
 
