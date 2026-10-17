@@ -19,6 +19,7 @@ package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -131,6 +132,25 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         JmhNodeStopHook.run();
 
         Ignition.stopAll(true);
+    }
+
+    /**
+     * Writes every key twice, which brings each partition's update counter past 127, as in a cluster that has run for
+     * a while. Ignite boxes these counters, and {@code Long.valueOf} returns cached objects up to 127, so with fewer
+     * updates an operation allocates less, and its allocation grows during the run.
+     *
+     * @param keys Keys.
+     * @param vals Values.
+     */
+    protected void preload(Object[] keys, Object[] vals) {
+        for (int pass = 0; pass < 2; pass++) {
+            try (IgniteDataStreamer<Object, Object> streamer = node.dataStreamer(cache.getName())) {
+                streamer.allowOverwrite(pass > 0);
+
+                for (int i = 0; i < keys.length; i++)
+                    streamer.addData(keys[i], vals[i]);
+            }
+        }
     }
 
     /** @return Number of server nodes. */

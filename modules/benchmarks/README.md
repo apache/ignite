@@ -127,6 +127,9 @@ To compare two builds:
   off, every allocation in the code counts and forks agree.
 - Compare forks, not iterations: iterations of one fork share its JIT decisions. With escape analysis
   on, run at least four forks.
+- Some allocation follows time rather than operations: threads such as discovery and timeout workers
+  allocate on a timer, and atomic caches send deferred update responses on a timer too. When two
+  runs differ much in operations per second, these parts differ per operation as well.
 
 ### Objects per class
 
@@ -196,6 +199,10 @@ jfr print --events jdk.ObjectAllocationOutsideTLAB --stack-depth 20 <recording> 
   before profilers read the last iteration, and the hook lets them read it while the nodes still run.
 - Create keys and values outside the measured method when they aren't part of the operation.
   Otherwise their cost and allocation count as Ignite's.
+- Bring the cache to the state of a cluster that has run for a while before measuring. Ignite boxes
+  partition update counters, and `Long.valueOf` returns cached objects up to 127, so in a freshly
+  loaded cache an update allocates less, and its allocation grows during the run.
+  `JmhCacheAbstractBenchmark#preload` writes every key twice for this.
 - Add a `main()` that runs the benchmark through `JmhIdeBenchmarkRunner`. The runner passes the JVM
   flags Ignite needs, so the benchmark runs from the IDE and from the command line.
 

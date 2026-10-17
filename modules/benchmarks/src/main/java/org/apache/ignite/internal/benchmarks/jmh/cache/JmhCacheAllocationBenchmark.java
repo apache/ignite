@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler;
@@ -57,14 +56,12 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAbstractBenchmark {
         keys = new Integer[CNT];
         vals = new IntValue[CNT];
 
-        try (IgniteDataStreamer<Integer, IntValue> streamer = node.dataStreamer(cache.getName())) {
-            for (int i = 0; i < CNT; i++) {
-                keys[i] = i;
-                vals[i] = new IntValue(i);
-
-                streamer.addData(keys[i], vals[i]);
-            }
+        for (int i = 0; i < CNT; i++) {
+            keys[i] = i;
+            vals[i] = new IntValue(i);
         }
+
+        preload(keys, vals);
     }
 
     /** {@inheritDoc} */
