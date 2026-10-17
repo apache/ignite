@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -674,6 +676,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         GridKernalContext ctx = ignite.context();
         IgniteConfiguration cfg = ignite.configuration();
+        MaintenanceProcessor mntcProc = (MaintenanceProcessor)ctx.maintenanceRegistry();
 
         ExecutorService execSvc = ctx.pools().getExecutorService();
         ExecutorService sysExecSvc = ctx.pools().getSystemExecutorService();
@@ -734,6 +737,30 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
 
         SB msg = new SB();
+
+        if (mntcProc.isMaintenanceMode()) {
+            List<List<String>> statesList = mntcProc.tasksStates();
+
+            msg.nl()
+                .a("!!! ATTENTION! NODE IS IN MAINTENANCE MODE !!!").nl()
+                .a(statesList.size() == 1 ? "    MaintenanceTask " : "    MaintenanceTasks");
+
+            for (List<String> states : statesList) {
+                SB sb = new SB();
+
+                sb.a("    ^-- (")
+                    .a(states.get(0)).a(") ")
+                    .a("name=").a(states.get(1));
+
+                if (!states.get(2).isBlank()) sb.a(", description=").a(states.get(2));
+
+                if (!states.get(3).isBlank()) sb.a(", params=[").a(states.get(3)).a("]");
+
+                if (!states.get(4).isBlank()) sb.a(", currentAction=").a(states.get(4));
+
+                msg.nl().a(sb);
+            }
+        }
 
         msg.nl()
             .a("Metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()
