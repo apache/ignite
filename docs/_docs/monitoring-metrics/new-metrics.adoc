@@ -305,6 +305,7 @@ Striped executors (`StripedExecutor`, `GridDataStreamExecutor`) expose a differe
 |ActiveCount | integer | Number of active tasks of all stripes.
 |DetectStarvation | boolean | True if possible starvation in striped pool is detected.
 |Shutdown | boolean | True if this executor has been shut down.
+|StarvationEventsCount | long | Number of possible starvation events detected in striped pool since node start.
 |StripesActiveStatuses | boolean[] | Active status of each stripe.
 |StripesCompletedTasksCounts | long[] | Number of completed tasks per stripe.
 |StripesCount | integer | Stripes count.
@@ -314,6 +315,8 @@ Striped executors (`StripedExecutor`, `GridDataStreamExecutor`) expose a differe
 |TotalCompletedTasksCount | long | Completed tasks count of all stripes.
 |TotalQueueSize | integer | Total queue size of all stripes.
 |===
+
+NOTE: `StarvationEventsCount` is updated by the periodic starvation check (`IGNITE_STARVATION_CHECK_INTERVAL`, 30 seconds by default, `0` disables it). A task occupying a stripe longer than `failureDetectionTimeout` is counted at most once, and only if a check finds it still running past that timeout.
 
 == Cache Group IO
 
