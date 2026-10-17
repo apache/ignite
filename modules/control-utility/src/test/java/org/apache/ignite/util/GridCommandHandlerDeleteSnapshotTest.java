@@ -68,8 +68,8 @@ public class GridCommandHandlerDeleteSnapshotTest extends GridCommandHandlerAbst
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
             F.asList(false, true), // Use or not extra server node after the cluster start and the snapshot creation.
-            F.asList(false, true), // Add incremental snapshot;.
-            F.asList(false, true), // Change baseline;.
+            F.asList(false, true), // Add incremental snapshot.
+            F.asList(false, true), // Change baseline.
             F.asList(false, true), // Use custom snapshot path.
             F.asList(false, true) // Separated nodes work directories.
         );
