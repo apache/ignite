@@ -504,6 +504,15 @@ public abstract class GridCacheMessage implements DeferredUnmarshalMessage, Stri
     }
 
     /**
+     * @param ctx Context.
+     * @return Descriptor of the cache or cache group this message relates to, or {@code null} if the message
+     *      is not related to a particular cache or cache group.
+     */
+    @Nullable public Object descriptor(GridCacheSharedContext<?, ?> ctx) {
+        return null;
+    }
+
+    /**
      * @param str Bulder.
      * @param name Flag name.
      */
