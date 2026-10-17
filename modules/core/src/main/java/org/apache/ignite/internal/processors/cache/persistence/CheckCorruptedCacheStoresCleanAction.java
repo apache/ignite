@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.ACTIVE;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.COMPLETED;
 
 /** */
 public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<Boolean> {
@@ -32,20 +36,30 @@ public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<B
     private final File[] cacheStoreDirs;
 
     /** */
+    private volatile MaintenanceTaskState state;
+
+    /** */
     public CheckCorruptedCacheStoresCleanAction(File[] cacheStoreDirs) {
         this.cacheStoreDirs = cacheStoreDirs;
     }
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
+        state.currAction(name()).state(ACTIVE);
+
         for (File cacheStoreDir : cacheStoreDirs) {
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File f : cacheStoreDir.listFiles()) {
-                    if (!NodeFileTree.cacheConfigFile(f))
+                    if (!NodeFileTree.cacheConfigFile(f)) {
+                        state.state(COMPLETED);
+
                         return Boolean.FALSE;
+                    }
                 }
             }
         }
+
+        state.state(COMPLETED);
 
         return Boolean.TRUE;
     }
@@ -58,5 +72,10 @@ public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<B
     /** {@inheritDoc} */
     @Override public @Nullable String description() {
         return "Checks if all corrupted data files are cleaned from cache store directories";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(@NotNull MaintenanceTaskState state) {
+        this.state = state;
     }
 }

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.maintenance;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,21 +31,19 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
-import org.apache.ignite.maintenance.MaintenanceTaskState;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.ACTIVE;
-import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.CALLED;
-import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.COMPLETE;
-import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.FAILED;
-import static org.apache.ignite.maintenance.MaintenanceTaskState.Status.REGISTERED;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.ACTIVE;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.FAILED;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.NOT_REGISTERED;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.REGISTERED;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.UNREGISTERED;
 
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
@@ -261,21 +261,17 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             if (mntcAct != null) {
                 try {
-                    tasksStates.get(cbE.getKey())
-                            .setCurrentAction(mntcAct.name())
-                            .setStatus(ACTIVE);
+                    if (tasksStates.containsKey(cbE.getKey())) mntcAct.state(tasksStates.get(cbE.getKey()));
 
                     mntcAct.execute();
-
-                    tasksStates.get(cbE.getKey())
-                            .setStatus(COMPLETE);
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance task: " +
                         activeTasks.get(cbE.getKey()), t);
 
-                    tasksStates.get(cbE.getKey())
-                            .setStatus(FAILED);
+                    List<MaintenanceTaskState.State> states = tasksStates.get(cbE.getKey()).state();
+
+                    if (states.get(states.size() - 1) != FAILED) tasksStates.get(cbE.getKey()).state(FAILED);
 
                     throw t;
                 }
@@ -300,8 +296,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
         boolean deleted;
 
-        if (isMaintenanceMode())
+        if (isMaintenanceMode()) {
             deleted = activeTasks.remove(maintenanceTaskName) != null;
+
+            if (deleted) tasksStates.get(maintenanceTaskName).state(UNREGISTERED);
+        }
         else
             deleted = requestedTasks.remove(maintenanceTaskName) != null;
 
@@ -348,6 +347,14 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
                 "All actions' names should contain only alphanumeric and underscore symbols: "
                     + wrongActionName.get());
 
+        MaintenanceTaskState taskState = tasksStates.containsKey(maintenanceTaskName)
+            ? tasksStates.get(maintenanceTaskName)
+            : new MaintenanceTaskState(new MaintenanceTask(maintenanceTaskName, "", null), NOT_REGISTERED);
+
+        actions.forEach(action -> action.state(taskState));
+
+        if (!tasksStates.containsKey(maintenanceTaskName)) tasksStates.put(maintenanceTaskName, taskState);
+
         workflowCallbacks.put(maintenanceTaskName, cb);
     }
 
@@ -360,10 +367,8 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             throw new IgniteException("Maintenance workflow callback for given task name not found, " +
                 "cannot retrieve maintenance actions for it: " + maintenanceTaskName);
 
-        tasksStates.get(maintenanceTaskName)
-                .setStatus(CALLED);
-
-        return workflowCallbacks.get(maintenanceTaskName).allActions();
+        return workflowCallbacks.get(maintenanceTaskName).allActions().stream()
+            .peek(a -> a.state(tasksStates.get(maintenanceTaskName))).toList();
     }
 
     /** {@inheritDoc} */
@@ -371,30 +376,23 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
         return requestedTasks.get(maintenanceTaskName);
     }
 
-    /** {@inheritDoc} */
-    @Override public String tasksStatuses() {
-        if (tasksStates.isEmpty()) {
-            return "    No maintenance tasks registered";
-        }
-
-        SB sb = new SB();
-
-        sb.a(tasksStates.size() == 1 ? "    MaintenanceTask " : "    MaintenanceTasks");
+    /** @return Current state of {@link MaintenanceTask maintenance tasks} pending logging. */
+    public List<List<String>> tasksStates() {
+        List<List<String>> statesList = new ArrayList<>();
 
         tasksStates.values().forEach(state -> {
-            MaintenanceTask task = state.getTask();
+            MaintenanceTask task = state.task();
+            List<String> states = state.state().stream().map(Enum::name).toList();
 
-            sb.nl().a("    ^-- (").a(state.getStatus().val());
-
-            sb.a(") ");
-
-            sb.a("name=").a(task.name()).a(", description=").a(task.description()).a(", params=").a(task.parameters());
-
-            if (state.getStatus() == ACTIVE) {
-                sb.a(", currentAction=").a(state.getCurrentAction());
-            }
+            statesList.add(Arrays.asList(
+                String.join("->", states),
+                task.name(),
+                !task.description().isBlank() ? task.description() : "",
+                (task.parameters() != null && !task.parameters().isBlank()) ? task.parameters() : "",
+                (state.currAction() != null && state.state().get(states.size() - 1) == ACTIVE) ? state.currAction() : ""
+            ));
         });
 
-        return sb.toString();
+        return statesList;
     }
 }

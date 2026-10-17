@@ -1028,12 +1028,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             if (mntcProc.isMaintenanceMode()) {
                 if (log.isInfoEnabled()) {
                     log.info(NL + NL +
-                            ">>> +----------------------------------------------------------------+" + NL +
-                            ">>> ATTENTION! MAINTENANCE MODE ENABLED!" + NL +
-                            ">>> " + NL +
-                            ">>> Node is being started in maintenance mode." + NL +
-                            ">>> Starting IsolatedDiscoverySpi instead of configured discovery SPI." + NL +
-                            ">>> +----------------------------------------------------------------+" + NL
+                        ">>> +----------------------------------------------------------------+" + NL +
+                        ">>> ATTENTION! MAINTENANCE MODE ENABLED!" + NL +
+                        ">>> " + NL +
+                        ">>> Node is being started in maintenance mode." + NL +
+                        ">>> Starting IsolatedDiscoverySpi instead of configured discovery SPI." + NL +
+                        ">>> +----------------------------------------------------------------+" + NL
                     );
                 }
 

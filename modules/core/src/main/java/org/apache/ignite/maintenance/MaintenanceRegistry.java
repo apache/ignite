@@ -195,9 +195,4 @@ public interface MaintenanceRegistry {
      * @return Requested maintenance task or {@code null}.
      */
     @Nullable public MaintenanceTask requestedTask(String maintenanceTaskName);
-
-    /**
-     * @return Current status of {@link MaintenanceTask maintenance tasks} pending logging.
-     */
-    public String tasksStatuses();
 }
