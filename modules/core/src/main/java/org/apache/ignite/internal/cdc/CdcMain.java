@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -256,6 +257,8 @@ public class CdcMain implements Runnable {
 
     /** Already processed segments. */
     private final Set<Path> processedSegments = new HashSet<>();
+
+    private final Map<Long, Set<Integer>> walSegmentsDestroyedCaches = new HashMap<>();
 
     /**
      * @param cfg Ignite configuration.
@@ -588,6 +591,15 @@ public class CdcMain implements Runnable {
         else
             consumeSegmentActively(builder);
 
+        Iterator<Integer> destroyedIter = walSegmentsDestroyedCaches.remove(segmentIdx).iterator();
+
+        if (destroyedIter != null) {
+            consumer.onCacheDestroyEvents(destroyedIter);
+
+            if (destroyedIter.hasNext())
+                throw new IllegalStateException("Consumer should handle all cache destroy events");
+        }
+
         segmentConsumingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
@@ -764,6 +776,7 @@ public class CdcMain implements Runnable {
             if (ft.allStorages().noneMatch(File::exists))
                 return;
 
+            //TODO: Need to remove destroyed caches from cachesState
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
@@ -796,12 +809,9 @@ public class CdcMain implements Runnable {
                 throw new IllegalStateException("Consumer should handle all cache change events");
 
             if (!destroyed.isEmpty()) {
-                Iterator<Integer> destroyedIter = destroyed.iterator();
+                long segment = kctx.cache().context().wal(true).currentSegment();
 
-                consumer.onCacheDestroyEvents(destroyedIter);
-
-                if (destroyedIter.hasNext())
-                    throw new IllegalStateException("Consumer should handle all cache destroy events");
+                walSegmentsDestroyedCaches.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
             }
 
             state.saveCaches(cachesState);
