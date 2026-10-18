@@ -79,14 +79,14 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     public int incCnt;
 
     /** */
-    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3},incCnt={4}")
+    @Parameters(name = "cmdHnd={0}, customPath={1}, ownWorkDir={2}, addExtraSrvr={3}, incCnt={4}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(false, true), // Custom snapshot path
-            F.asList(false, true), // Separated (own) work directories
-            F.asList(false, true), // Add a server node after the snapshot creation
-            F.asList(0, 2) // Number of incremental snapshots
+            F.asList(false, true), // Custom snapshot path.
+            F.asList(false, true), // Separated (own) work directories.
+            F.asList(false, true), // Add a server node after the snapshot creation.
+            F.asList(0, 2) // Number of incremental snapshots.
         );
     }
 
@@ -109,8 +109,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
-        super.cleanPersistenceDir();
-
         // Also cleans separated snapshot working directories and custom snapshot paths.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
