@@ -66,13 +66,12 @@
                         </goals>
                         <configuration>
                             <target>
-                                <delete dir="${basedir}/wire"/>
-                                <copy todir="${basedir}/wire">
+                                <sync todir="${basedir}/wire" overwrite="true">
                                     <fileset dir="${basedir}/../core/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../indexing/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../calcite/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../zookeeper/target/classes/META-INF/ignite-wire"/>
-                                </copy>
+                                </sync>
                             </target>
                         </configuration>
                     </execution>
