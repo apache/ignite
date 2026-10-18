@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,6 +60,8 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+
 /** */
 @GridInternal
 public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg, SnapshotListTaskResult, SnapshotListJobResult> {
@@ -81,8 +82,8 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         if (!ignite.context().rollingUpgrade().features().isActive(CoreFeatureRegistry.SNAPSHOT_LIST_FEATURE))
             throw new IgniteException(FEATURE_NOT_ACTIVE_ERR_MSG);
 
-        /** Allows {@link #map0(List, VisorTaskArgument)} to use the entire subgrid. */
-        return ignite.cluster().forServers().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
+        /** Allows {@link #map0(List, VisorTaskArgument)} to use the entire grid. */
+        return nodeIds(ignite.cluster().forServers().nodes());
     }
 
     /** {@inheritDoc} */
@@ -90,11 +91,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         String[] cstIds = new String[nodesJobsResults.size()];
         UUID[] nodesIds = new UUID[nodesJobsResults.size()];
         SnapshotListJobResult[] nodesResults = new SnapshotListJobResult[nodesJobsResults.size()];
-
-        // Sorting the results by consistent id for better reading.
-        nodesJobsResults = nodesJobsResults.stream()
-            .sorted((jr0, jr1) -> nodeConsistentId(jr0.getNode()).compareTo(nodeConsistentId(jr1.getNode())))
-            .toList();
 
         for (int i = 0; i < nodesJobsResults.size(); i++) {
             ComputeJobResult nodeJobRes = nodesJobsResults.get(i);
@@ -344,7 +340,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
         private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
-            // The tree is used only to extract the snapshots root directory. The snapshot name isn't used.
+            // The tree is used only to extract the snapshots root directory. Such snapshot name is actually unallowed.
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
@@ -401,7 +397,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     if (X.hasCause(e, NodeStoppingException.class))
                         throw new IgniteException("Won't search for local snapshots.", e.getCause());
 
-                    log.warning("Failed to read snapshot, snapshot ignored [path='" + snpPath + "']", e);
+                    log.warning("Failed to read snapshot, snapshot ignored.", e);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

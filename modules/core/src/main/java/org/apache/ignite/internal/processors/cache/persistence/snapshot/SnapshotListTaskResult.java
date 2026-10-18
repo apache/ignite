@@ -20,9 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
 
-/** Accumulated result of {@link SnapshotListTask}. */
+/** Accumulated result of the snapshot list task. */
 public final class SnapshotListTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -44,9 +43,9 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
         // No-op.
     }
 
-    /**  */
+    /** */
     public SnapshotListTaskResult(String[] consistentIds, UUID[] nodesIds, SnapshotListJobResult[] nodesSnapshots) {
-        this.cstIds = consistentIds;
+        cstIds = consistentIds;
         this.nodesIds = nodesIds;
         this.nodesSnapshots = nodesSnapshots;
     }

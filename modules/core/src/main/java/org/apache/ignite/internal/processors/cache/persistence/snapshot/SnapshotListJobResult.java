@@ -46,7 +46,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         return snapshots;
     }
 
-    /** Holds information a snapshot or its parts: size, creation time, number of incremental parts or external storages. */
+    /** Holds information about a snapshot or its parts: size, creation time, number of incremental parts or external storages. */
     public static class SnapshotInfo extends IgniteDataTransferObject {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
