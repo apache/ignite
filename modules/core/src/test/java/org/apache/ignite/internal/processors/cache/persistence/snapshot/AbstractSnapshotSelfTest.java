@@ -306,18 +306,33 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
 
-        cleanPersistenceDir();
+        cleanPersistenceDir(false);
     }
 
     /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
-        super.cleanPersistenceDir();
+        if (cleanWorkDirectoryFully())
+            return;
 
-        // Clean all: also separated snapshot working directories and custom snapshot paths.
+        super.cleanPersistenceDir();
+    }
+
+    /**
+     * Cleans everything in the persistent directory, including the snapshot working directory,
+     * custom snapshot paths, and so on.
+     * <p>
+     * If full cleanup is not required, this method might be overridden to return {@code false},
+     * so that the default {@link #cleanPersistenceDir()} will be used.
+     *
+     * @return {@code True} if the cleanup is done, {@code False} if the default cleanup is required.
+     */
+    protected boolean cleanWorkDirectoryFully() throws Exception {
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);
         }
+
+        return true;
     }
 
     /**
