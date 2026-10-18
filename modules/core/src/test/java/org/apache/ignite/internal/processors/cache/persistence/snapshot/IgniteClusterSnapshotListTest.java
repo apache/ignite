@@ -798,7 +798,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testSnapshotListsSizesExternalStorages() throws Exception {
-         int grids = 3;
+        int grids = 3;
 
         extStorages = true;
 
