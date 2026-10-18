@@ -46,7 +46,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         return snapshots;
     }
 
-    /** Holds combined snapshot data information: size, creation time, number of incremental parts or external storages. */
+    /** Holds information a snapshot or its parts: size, creation time, number of incremental parts or external storages. */
     public static class SnapshotInfo extends IgniteDataTransferObject {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
@@ -55,19 +55,19 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         @Order(0)
         long size;
 
-        /** Creation date of snapshot or of its incremental parts. Is {@code null} for snapshot external storages description. */
+        /** Creation date of snapshot or of its incremental parts. */
         @Order(1)
         @Nullable Long date;
 
-        /** Snapshot external storages description if exists. Is always {@code null} for not the main snapshot description. */
+        /** Snapshot external storages description if exists. */
         @Order(2)
         @Nullable SnapshotInfo extStors;
 
-        /** Snapshot incremental parts description if exists. Is always {@code null} for not the main snapshot description. */
+        /** Snapshot incremental parts description if exists. */
         @Order(3)
         @Nullable SnapshotInfo incs;
 
-        /** Number of snapshot external storages or incremental parts. Is {@code null} for the main snapshot description. */
+        /** Number of snapshot external storages or incremental parts. */
         @Order(4)
         @Nullable Integer cnt;
 
@@ -89,16 +89,16 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             this.incs = incs;
         }
 
-        /** Creates external storages description. */
+        /** Creates description of snapshot external storages. */
         public SnapshotInfo(int cnt, long size) {
             this.cnt = cnt;
             this.size = size;
         }
 
-        /** Creates incremental parts description. */
+        /** Creates description of incremental snapshot parts. */
         public SnapshotInfo(int cnt, long size, long date) {
-            this.cnt = cnt;
-            this.size = size;
+            this(cnt, size);
+
             this.date = date;
         }
 

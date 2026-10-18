@@ -278,6 +278,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 if (failedSnps.contains(snpName))
                     continue;
 
+                // Size of the snapshot and its incremental parts.
                 long size;
 
                 try {
