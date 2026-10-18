@@ -167,6 +167,12 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
 
     /** {@inheritDoc} */
     @Override public final TestRollingUpgradeAwareMessage createMessage() {
-        return new TestRollingUpgradeAwareMessage();
+        TestRollingUpgradeAwareMessage msg = new TestRollingUpgradeAwareMessage();
+
+        assert msg.oldFld == null : "A field gated by a feature must have no initial value [field=oldFld]";
+        assert msg.newFld == null : "A field gated by a feature must have no initial value [field=newFld]";
+        assert msg.newCnt == 0 : "A field gated by a feature must have no initial value [field=newCnt]";
+
+        return msg;
     }
 }

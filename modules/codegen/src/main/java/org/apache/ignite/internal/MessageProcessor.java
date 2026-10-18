@@ -46,9 +46,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
-import com.sun.source.tree.Tree;
-import com.sun.source.tree.VariableTree;
-import com.sun.source.util.Trees;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -284,25 +281,9 @@ public class MessageProcessor extends AbstractProcessor {
 
                 return false;
             }
-
-            if (hasInitializer(field)) {
-                printError(
-                    processingEnv,
-                    field,
-                    "A field gated by a feature must not have an initializer [cls=" + clazz + ", field=" + field + ']');
-
-                return false;
-            }
         }
 
         return true;
-    }
-
-    /** */
-    private boolean hasInitializer(VariableElement field) {
-        Tree tree = Trees.instance(processingEnv).getTree(field);
-
-        return tree instanceof VariableTree && ((VariableTree)tree).getInitializer() != null;
     }
 
     /** */

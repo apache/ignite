@@ -232,12 +232,20 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testInitializerOnGatedFieldRejected() {
+    public void testGatedFieldInitialValueAssertedOnCreate() {
         Compilation compilation = compile("TestFeatureRegistry.java", "TestGatedFieldInitializerMessage.java");
 
-        assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("A field gated by a feature must not have an initializer [cls=");
-        assertThat(compilation).hadErrorContaining(", field=oldCnt]");
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestGatedFieldInitializerMessageSerializer")
+            .contentsAsUtf8String()
+            .contains("assert msg.oldCnt == 0 : \"A field gated by a feature must have no initial value [field=oldCnt]\";");
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestGatedFieldInitializerMessageSerializer")
+            .contentsAsUtf8String()
+            .doesNotContain("msg.plain == 0");
     }
 
     /** */

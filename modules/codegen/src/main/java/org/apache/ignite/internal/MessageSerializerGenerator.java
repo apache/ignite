@@ -131,6 +131,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     /** */
     private final List<String> rawFieldsConsumerCode = new ArrayList<>();
 
+    /** */
+    private final List<VariableElement> gatedFields = new ArrayList<>();
+
     /** Static class fields, which should come before ordinary class fields. */
     private final Set<String> headingClsFields = new TreeSet<>();
 
@@ -281,8 +284,22 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         if (type.getQualifiedName().contentEquals(GRID_H2_NULL))
             writer.write(TAB + TAB + "return GridH2Null.INSTANCE;");
-        else
+        else if (gatedFields.isEmpty())
             writer.write(TAB + TAB + "return new " + type.getSimpleName() + "();");
+        else {
+            writer.write(TAB + TAB + type.getSimpleName() + " msg = new " + type.getSimpleName() + "();");
+            writer.write(NL);
+            writer.write(NL);
+
+            for (VariableElement field : gatedFields) {
+                writer.write(TAB + TAB + "assert " + javaDefaultCondition(field) +
+                    " : \"A field gated by a feature must have no initial value [field=" + field.getSimpleName() + "]\";");
+                writer.write(NL);
+            }
+
+            writer.write(NL);
+            writer.write(TAB + TAB + "return msg;");
+        }
 
         writer.write(NL);
         writer.write(TAB + "}");
@@ -438,6 +455,19 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** */
+    private String javaDefaultCondition(VariableElement field) {
+        TypeMirror type = field.asType();
+
+        if (type.getKind() == TypeKind.BOOLEAN)
+            return '!' + fieldRef(field);
+
+        if (type.getKind().isPrimitive())
+            return fieldRef(field) + " == 0";
+
+        return fieldRef(field) + " == null";
+    }
+
+    /** */
     private static String tagExpression(VariableElement field) {
         Order order = field.getAnnotation(Order.class);
 
@@ -482,6 +512,8 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         FieldFeatureGate gate = buildFieldFeatureGate(env, field);
 
         if (gate != null) {
+            gatedFields.add(field);
+
             imports.add(gate.registry());
 
             write.add(indentedLine("if (%s) {", gate.expression()));
