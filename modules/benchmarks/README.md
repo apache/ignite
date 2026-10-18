@@ -85,7 +85,7 @@ operation shows up, on the node that allocates it.
 - `-prof gc`, built into JMH, reports bytes per operation for the whole JVM (`gc.alloc.rate.norm`).
   When a benchmark runs client and server nodes in its JVM, this one number covers all of them.
 - `JmhAllocationProfiler` splits the bytes per operation by node and thread pool. Per operation and
-  node, it also counts communication messages sent, in total and by message class, and received,
+  node, it also counts communication messages sent (in total and by message class) and received,
   tasks completed by each thread pool, and discovery messages processed. Use it to see on which node
   and in which pool a change adds or removes allocation, and whether it changes the messages and
   tasks of an operation.
@@ -116,14 +116,16 @@ The profiler's results, per operation:
 | `comm.msgs.norm:<node>`, `comm.bytes.norm:<node>` | Communication messages and bytes sent |
 | `comm.type.norm:<node>:<class>` | Communication messages sent, by message class, e.g. `comm.type.norm:client:GridNearAtomicSingleUpdateRequest` |
 | `comm.rcvd.norm:<node>` | Communication messages received |
-| `pool.tasks.norm:<node>.<pool>` | Tasks completed by a thread pool, e.g. `pool.tasks.norm:node0.StripedExecutor` |
+| `pool.tasks.norm:<node>.<registry>` | Tasks completed by a thread pool, named by its metric registry, e.g. `pool.tasks.norm:node0.StripedExecutor` |
 | `disco.msgs.norm:<node>` | Discovery messages processed |
 
 The threads of one pool on one node add up to one result. A node knows hundreds of message classes
 and about 20 pools, so `comm.type.norm` and `pool.tasks.norm` list only those that moved: each
-appears from the first iteration in which the node sent such a message or the pool completed a
-task, and stays in every iteration after it. `pool.tasks.norm` names a pool as Ignite's metrics do,
-not as its threads: `StripedExecutor` runs the `sys-stripe` threads, `GridSystemExecutor` the `sys`
+appears from the first iteration, warmup included, in which the node sent such a message or the
+pool completed a task, and stays in every iteration after it. JMH counts the measurement iterations
+before that as 0 in the result, and leaves them out of `rawData` in the JSON. The registry names a
+pool as Ignite's metrics do (`threadPools.<registry>`), not as its threads: `StripedExecutor` runs
+the `sys-stripe` threads, `GridSystemExecutor` the `sys`
 threads, `GridExecutionExecutor` `pub`, `GridServicesExecutor` `svc`, `GridQueryExecutor` `query`
 and `GridThinClientExecutor` `client-connector`. With `dir=<path>`, the profiler also writes
 the JDK and OS of the run to `<path>/run.properties`.
@@ -168,11 +170,11 @@ flags. It writes the results to `JmhCacheTxAllocationBenchmark.json` and the per
   yet. With the default 10 MB, JFR drops events when disk writes slow down, and the benchmark fails:
   run it again with a larger value. With `-foe true`, the run stops with an error and writes no
   results; without it, JMH prints `<failure>`, keeps the iterations before it and goes on.
-- When you run both profilers, list the histogram profiler first, so neither counts the other's
-  work. JMH stops profilers in reverse order, so the time the histogram profiler spends reading its
-  recording stays out of `alloc.norm`. Before the benchmark stops its nodes, the profilers act in
-  the order listed, so the histogram profiler stops recording before the counter profiler reads the
-  nodes' metrics.
+- When you run both profilers, list the histogram profiler first. JMH stops profilers in reverse
+  order, so the time the histogram profiler spends reading its recording stays out of `alloc.norm`.
+  Before the benchmark stops its nodes, the profilers act in the order listed, so the histogram
+  profiler stops recording before the counter profiler reads the nodes' metrics, and that reading
+  stays out of the histogram's last iteration.
 - With TLABs off, the benchmark runs fewer operations per second, and after each iteration the
   profiler reads the whole recording, so the run takes much longer.
 

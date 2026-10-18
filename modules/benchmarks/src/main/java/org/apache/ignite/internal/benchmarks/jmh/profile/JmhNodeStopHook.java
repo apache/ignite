@@ -29,8 +29,8 @@ import java.util.Map;
  */
 public final class JmhNodeStopHook {
     /**
-     * Action per owner, in the order the profilers were created, which is their order in JMH's options; a new
-     * profiler instance replaces the action of the previous one.
+     * Action per owner, in the order the owners first set one, which is the profilers' order in JMH's options; a new
+     * profiler instance replaces its class's action in place.
      */
     private static final Map<Class<?>, Runnable> ACTIONS = Collections.synchronizedMap(new LinkedHashMap<>());
 

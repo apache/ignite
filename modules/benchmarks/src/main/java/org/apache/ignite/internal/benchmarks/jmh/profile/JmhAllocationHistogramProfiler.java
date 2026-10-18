@@ -214,7 +214,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         // The first iteration of a fork replaces a file left by an earlier run with the same process ID.
         try (Writer w = first ? Files.newBufferedWriter(file) : Files.newBufferedWriter(file, APPEND)) {
             if (first)
-                w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "") + "iteration\tobjects/op\tbytes/op\n");
+                w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "")
+                    + "iteration\tobjects/op\tbytes/op\n");
 
             for (Map.Entry<String, Map<String, long[]>> grp : hist.entrySet()) {
                 long objs = 0;
