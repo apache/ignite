@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,12 +85,9 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
                     return new AffinityPojoKey(i, i / 10);
 
                 case BYTES:
-                    byte[] key = new byte[16];
-
-                    for (int b = 0; b < 4; b++)
-                        key[b] = (byte)(i >>> (b * 8));
-
-                    return key;
+                    // Ignite hashes a byte[] key with Arrays.hashCode(), which spreads the keys over the partitions
+                    // evenly when the index is in the last bytes, big-endian.
+                    return ByteBuffer.allocate(16).putInt(12, i).array();
 
                 default:
                     throw new IllegalStateException(name());
