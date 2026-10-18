@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
@@ -38,6 +39,8 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 
 /**
  * Base class for cache benchmarks.
@@ -108,10 +111,16 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         A.ensure(nodesCnt >= 1, "nodesCnt >= 1");
 
+        // The update notifier allocates megabytes at a random moment of the run.
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
+
         node = Ignition.start(configuration("node0"));
 
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
+
+        // A cluster with persistence starts inactive.
+        node.cluster().state(ClusterState.ACTIVE);
 
         if (clientMode()) {
             IgniteConfiguration clientCfg = configuration("client");
@@ -142,8 +151,9 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      *
      * @param keys Keys.
      * @param vals Values.
+     * @throws Exception If failed.
      */
-    protected void populate(Object[] keys, Object[] vals) {
+    protected void populate(Object[] keys, Object[] vals) throws Exception {
         Affinity<Object> aff = node.affinity(cache.getName());
 
         int[] keysPerPart = new int[aff.partitions()];

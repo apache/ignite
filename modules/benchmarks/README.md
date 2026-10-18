@@ -73,8 +73,9 @@ Benchmark settings:
 - JMH parameters (`@Param`), such as the SQL engine, are set with `-p <name>=<value>`.
 - `JmhCacheAbstractBenchmark` reads the cache setup from system properties with the
   `ignite.jmh.cache.` prefix: `backups`, `atomicityMode`, `writeSynchronizationMode`, `dataNodes` and
-  `clientMode`. Pass them as `-D` options in `-jvmArgs`. A subclass can fix the setup in code instead,
-  as `JmhCacheAllocationBenchmark` does.
+  `clientMode`. Pass them as `-D` options in `-jvmArgs`. The benchmarks that extend
+  `JmhCacheAllocationAbstractBenchmark` take their setup as JMH parameters instead, see [Allocation
+  benchmarks](#allocation-benchmarks).
 
 ## Measuring allocation
 
@@ -155,7 +156,7 @@ JFR event `jdk.ObjectAllocationOutsideTLAB`, which covers every allocation only 
 
 ```bash
 java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
-    -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 5 -r 3s -foe true \
+    -f 1 -wi 5 -w 3s -i 5 -r 3s -foe true \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc' \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
     -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-UseTLAB -XX:-DoEscapeAnalysis \
@@ -187,8 +188,9 @@ The histogram profiler's results:
 
 The profiler needs `dir=<path>`. It writes the JDK and OS of the run to `<path>/run.properties`, and
 the table per class to a file there, one per benchmark, parameter set and fork:
-`<full benchmark name>-<param>=<value>-<process ID>.tsv`. Use a new `dir` for each run, since the
-files of earlier runs stay there. The file's columns, separated by tabs:
+`<full benchmark name>-<param>=<value>-<process ID>.tsv`, with the parameters whose value differs
+from the default. Use a new `dir` for each run, since the files of earlier runs stay there. The
+file's columns, separated by tabs:
 
 | Column | What it holds |
 |---|---|
@@ -211,7 +213,7 @@ warmup iteration records them, and their `frames` are empty.
 
 ```bash
 java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
-    -p atomicity=ATOMIC -f 1 -wi 5 -w 3s -i 3 -r 3s -foe true \
+    -f 1 -wi 5 -w 3s -i 3 -r 3s -foe true \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc;site=12' \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
     -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-UseTLAB -XX:-DoEscapeAnalysis \
@@ -225,10 +227,57 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
   speed, the parts that follow time differ per operation (see [To compare two
   builds](#measuring-allocation)).
 
+### Allocation benchmarks
+
+These benchmarks in `jmh.cache` are made for the allocation profilers. Each starts two server nodes
+and, unless it calls the cache through a server, a client node. It creates its keys and values and
+writes every key before measuring, so the operations work on existing entries.
+
+| Class | Methods | What it measures |
+|---|---|---|
+| `JmhCacheAllocationBenchmark` | `put`, `get`, `getAndPut`, `putIfAbsent`, `replace`, `putRemove`, `invoke`, `putAsync`, `getAsync` | Single-key operations. `putIfAbsent` finds the key and writes nothing; `putRemove` inserts a key the setup didn't write and removes it; `invoke` runs an entry processor that writes the value back |
+| `JmhCacheBatchAllocationBenchmark` | `putAll`, `getAll` | Operations on a batch of keys |
+| `JmhCacheTypesAllocationBenchmark` | `put`, `get` | Put and get by key type, value type and value size. With the histogram profiler, the copies of a `byte[]` value show as rows of its size range |
+| `JmhCacheTxAllocationBenchmark` | `twoPuts` | An explicit transaction of two puts |
+
+Each parameter has one default value, and a run without `-p` uses it. `-p <name>=<value>` sets
+another value, `-p <name>=<value>,<value>` runs several. The parameters of
+`JmhCacheAllocationAbstractBenchmark` apply to every class that extends it: the first three above.
+
+| Parameter | Classes | Default | Other values | What it changes |
+|---|---|---|---|---|
+| `client` | `JmhCacheAllocationAbstractBenchmark` | `THICK` | `SERVER`, `NEAR` | The node that calls the cache: a client node, a server node, or a client node with a near cache |
+| `atomicity` | `JmhCacheAllocationAbstractBenchmark` | `ATOMIC` | `TRANSACTIONAL` | Atomicity mode |
+| `backups` | `JmhCacheAllocationAbstractBenchmark` | `1` | `0` | Backups |
+| `writeSync` | `JmhCacheAllocationAbstractBenchmark` | `PRIMARY_SYNC` | `FULL_SYNC`, `FULL_ASYNC` | Write synchronization mode |
+| `cacheMode` | `JmhCacheAllocationAbstractBenchmark` | `PARTITIONED` | `REPLICATED` | Cache mode. With two servers and `backups=1`, both modes keep every key on both servers |
+| `copyOnRead` | `JmhCacheAllocationAbstractBenchmark` | `true` | `false` | Whether reads copy a value kept on heap, used with `onHeap=true` |
+| `onHeap` | `JmhCacheAllocationAbstractBenchmark` | `false` | `true` | On-heap cache |
+| `storage` | `JmhCacheAllocationAbstractBenchmark` | `IN_MEMORY` | `PERSISTENT` | Ignite Persistence on the servers |
+| `walMode` | `JmhCacheAllocationAbstractBenchmark` | `LOG_ONLY` | `FSYNC`, `BACKGROUND` | WAL mode, used with `storage=PERSISTENT` or `cdc=true` |
+| `cdc` | `JmhCacheAllocationAbstractBenchmark` | `false` | `true` | Change data capture on the data region |
+| `sqlIdx` | `JmhCacheAllocationBenchmark` | `false` | `true` | An SQL index on the value's field |
+| `batch` | `JmhCacheBatchAllocationBenchmark` | `10` | `1`, `100`, `1000` | Keys in a batch |
+| `keyType` | `JmhCacheTypesAllocationBenchmark` | `INT` | `STRING`, `UUID`, `AFFINITY_POJO`, `BYTES` | Key class: `Integer`, `String`, `UUID`, a class with an affinity key field, `byte[16]` |
+| `valType` | `JmhCacheTypesAllocationBenchmark` | `POJO` | `BYTE`, `SHORT`, `INT`, `LONG`, `FLOAT`, `DOUBLE`, `CHAR`, `BOOLEAN`, `STRING`, `STRING_CYRILLIC`, `UUID`, `BIG_DECIMAL`, `DATE`, `TIMESTAMP`, `BYTES`, `INTS`, `LONGS`, `OBJECTS`, `LIST`, `MAP`, `POJO8`, `NESTED_POJO`, `BINARYLIZABLE`, `EXTERNALIZABLE`, `ENUM`, `BINARY_OBJECT` | Value class, see `JmhCacheTypesAllocationBenchmark.ValueType` |
+| `valSize` | `JmhCacheTypesAllocationBenchmark` | `100` | `10`, `1000`, `10000`, `100000` | Length of string, array and collection values. For every value type, it also sets how many keys the setup writes |
+
+- With `storage=PERSISTENT` or `cdc=true`, the servers write a WAL; each node preallocates several
+  hundred megabytes of WAL segments. The nodes keep their data, WAL and change data capture files in
+  a new temporary directory, `ignite-jmh-*`, which the benchmark deletes when it stops the nodes,
+  so a persistent run never starts on the data of an earlier one. A run that fails before its nodes
+  stop leaves the directory: delete it by hand. Binary type metadata, a few hundred bytes per node,
+  stays in the nodes' work directory with their logs.
+- `JmhCacheTypesAllocationBenchmark` writes fewer keys when `valSize` is large, so the data the
+  setup writes stays about the same size.
+
 ## Writing a benchmark
 
 - Extend the base class of the area: `JmhCacheAbstractBenchmark`, `JmhSqlAbstractBenchmark`,
-  `JmhThinClientAbstractBenchmark`, or `JmhAbstractBenchmark` for the rest.
+  `JmhThinClientAbstractBenchmark`, or `JmhAbstractBenchmark` for the rest. A cache benchmark for
+  the allocation profilers extends `JmhCacheAllocationAbstractBenchmark`, which brings the
+  parameters above. Give each new parameter one default value in `@Param` and list the others in
+  this README.
 - Start nodes in the benchmark JVM and give each one a name: the allocation profilers find a node's
   threads by its name.
 - Call `JmhNodeStopHook.run()` first in the teardown that stops the nodes. JMH runs this teardown
@@ -239,8 +288,8 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
   partition update counters, and `Long.valueOf` returns cached objects up to 127, so in a freshly
   loaded cache an update allocates less, and its allocation grows during the run.
   `JmhCacheAbstractBenchmark#populate` writes the keys as many times as that takes.
-- Add a `main()` that runs the benchmark through `JmhIdeBenchmarkRunner`. The runner passes the JVM
-  flags Ignite needs, so the benchmark runs from the IDE and from the command line.
+- To run a benchmark from the IDE, give it a `main()` that runs it through `JmhIdeBenchmarkRunner`,
+  which passes the JVM flags Ignite needs.
 
 For writing JMH benchmarks in general, start with the
 [JMH samples](https://github.com/openjdk/jmh/tree/master/jmh-samples/src/main/java/org/openjdk/jmh/samples).

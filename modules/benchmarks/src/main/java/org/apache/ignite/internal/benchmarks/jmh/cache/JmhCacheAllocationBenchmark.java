@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.cache.CacheAtomicityMode;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
@@ -30,21 +34,28 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-
 /**
- * Cache put and get through a client node with two servers, one backup and {@code PRIMARY_SYNC}, for allocation runs
- * with {@link JmhAllocationProfiler}. Keys and values are created up front, so the benchmark thread allocates only what
- * Ignite does.
+ * Single-key cache operations, for allocation runs with {@link JmhAllocationProfiler}. Keys and values are created up
+ * front, so the benchmark thread allocates only what Ignite does. Every operation but {@link #putRemove()} works on a
+ * random key the setup wrote.
  */
 @SuppressWarnings("unchecked")
-public class JmhCacheAllocationBenchmark extends JmhCacheAbstractBenchmark {
-    /** Atomicity mode. */
-    @Param({"ATOMIC", "TRANSACTIONAL"})
-    private CacheAtomicityMode atomicity;
+public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
+    /** Entry processor of {@link #invoke()}. */
+    private static final CacheEntryProcessor<Integer, IntValue, Object> SAME_VALUE = new SameValueProcessor();
 
-    /** Keys. */
+    /** SQL index on the value's field. */
+    @Param("false")
+    private boolean sqlIdx;
+
+    /** Keys the setup writes. */
     private Integer[] keys;
+
+    /** Keys the setup doesn't write. */
+    private Integer[] newKeys;
+
+    /** Index of the next key in {@link #newKeys}. */
+    private int newKeyIdx;
 
     /** Values. */
     private IntValue[] vals;
@@ -54,10 +65,12 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAbstractBenchmark {
         super.setup();
 
         keys = new Integer[CNT];
+        newKeys = new Integer[CNT];
         vals = new IntValue[CNT];
 
         for (int i = 0; i < CNT; i++) {
             keys[i] = i;
+            newKeys[i] = CNT + i;
             vals[i] = new IntValue(i);
         }
 
@@ -65,24 +78,19 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /** {@inheritDoc} */
-    @Override protected int dataNodes() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean clientMode() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
-        return super.cacheConfiguration()
-            .setAtomicityMode(atomicity)
-            .setBackups(1)
-            .setWriteSynchronizationMode(PRIMARY_SYNC);
+        CacheConfiguration cfg = super.cacheConfiguration();
+
+        if (sqlIdx) {
+            cfg.setQueryEntities(List.of(new QueryEntity(Integer.class.getName(), IntValue.class.getName())
+                .addQueryField("id", Integer.class.getName(), null)
+                .setIndexes(List.of(new QueryIndex("id")))));
+        }
+
+        return cfg;
     }
 
-    /** Replaces the value of a random preloaded key with the same value: an update, not an insert. */
+    /** Replaces the value of a key with the same value: an update, not an insert. */
     @Benchmark
     public void put() {
         int i = ThreadLocalRandom.current().nextInt(CNT);
@@ -90,15 +98,74 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAbstractBenchmark {
         cache.put(keys[i], vals[i]);
     }
 
-    /** @return Value of a random key. */
+    /** @return Value of a key. */
     @Benchmark
     public Object get() {
         return cache.get(keys[ThreadLocalRandom.current().nextInt(CNT)]);
     }
 
+    /** @return Previous value of a key, replaced with the same value. */
+    @Benchmark
+    public Object getAndPut() {
+        int i = ThreadLocalRandom.current().nextInt(CNT);
+
+        return cache.getAndPut(keys[i], vals[i]);
+    }
+
+    /** @return {@code false}: the key exists, so the cache only checks it. */
+    @Benchmark
+    public boolean putIfAbsent() {
+        int i = ThreadLocalRandom.current().nextInt(CNT);
+
+        return cache.putIfAbsent(keys[i], vals[i]);
+    }
+
+    /** @return {@code true}: the key exists, and its value is replaced with the same value. */
+    @Benchmark
+    public boolean replace() {
+        int i = ThreadLocalRandom.current().nextInt(CNT);
+
+        return cache.replace(keys[i], vals[i]);
+    }
+
     /**
-     * Runs the benchmarks with the allocation profiler and escape analysis off, so that runs repeat, and writes the
-     * results to {@code JmhCacheAllocationBenchmark.json}.
+     * Inserts a key the setup didn't write, then removes it. The keys go in order: an atomic cache keeps a removed
+     * entry in memory for a while, and a random key could land on it.
+     */
+    @Benchmark
+    public void putRemove() {
+        int i = newKeyIdx++ % CNT;
+
+        cache.put(newKeys[i], vals[i]);
+        cache.remove(newKeys[i]);
+    }
+
+    /**
+     * Runs an entry processor that writes the value back. The call creates an empty array for the processor's
+     * arguments, as a user's call does.
+     */
+    @Benchmark
+    public void invoke() {
+        cache.invoke(keys[ThreadLocalRandom.current().nextInt(CNT)], SAME_VALUE);
+    }
+
+    /** Replaces the value of a key with the same value, asynchronously, and waits for it. */
+    @Benchmark
+    public void putAsync() {
+        int i = ThreadLocalRandom.current().nextInt(CNT);
+
+        cache.putAsync(keys[i], vals[i]).get();
+    }
+
+    /** @return Value of a key, read asynchronously. */
+    @Benchmark
+    public Object getAsync() {
+        return cache.getAsync(keys[ThreadLocalRandom.current().nextInt(CNT)]).get();
+    }
+
+    /**
+     * Runs put and get on an atomic and a transactional cache with the allocation profiler and escape analysis off, so
+     * that runs repeat, and writes the results to {@code JmhCacheAllocationBenchmark.json}.
      *
      * @param args Arguments.
      * @throws Exception If failed.
@@ -111,14 +178,28 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAbstractBenchmark {
             .warmupTime(TimeValue.seconds(3))
             .measurementIterations(5)
             .measurementTime(TimeValue.seconds(3))
-            .benchmarks(JmhCacheAllocationBenchmark.class.getSimpleName())
+            .benchmarks(JmhCacheAllocationBenchmark.class.getSimpleName() + ".(put|get)$")
             .profilers(JmhAllocationProfiler.class)
             .jvmArguments("-Xms2g", "-Xmx2g", "-XX:-DoEscapeAnalysis")
             .optionsBuilder()
+            .param("atomicity", "ATOMIC", "TRANSACTIONAL")
             .resultFormat(ResultFormatType.JSON)
             .result(JmhCacheAllocationBenchmark.class.getSimpleName() + ".json")
             .build();
 
         new Runner(opts).run();
+    }
+
+    /** Writes the entry's value back, so the entry changes as with a put of the same value. */
+    private static class SameValueProcessor implements CacheEntryProcessor<Integer, IntValue, Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Integer, IntValue> entry, Object... args) {
+            entry.setValue(entry.getValue());
+
+            return null;
+        }
     }
 }

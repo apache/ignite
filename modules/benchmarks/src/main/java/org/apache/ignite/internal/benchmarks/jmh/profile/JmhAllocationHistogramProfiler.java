@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,7 @@ import jdk.jfr.consumer.RecordedFrame;
 import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordingFile;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.IterationParams;
 import org.openjdk.jmh.profile.InternalProfiler;
@@ -382,14 +384,37 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     }
 
     /**
+     * A benchmark with many parameters would get a name longer than a file system allows, so the name keeps only the
+     * parameters that differ from their default, the single value of their {@code @Param}.
+     *
      * @param benchParams Benchmark parameters.
-     * @return File name with the benchmark, its parameters and the process ID of the fork.
+     * @return File name with the benchmark, its parameters other than the defaults and the process ID of the fork.
      */
     private static String fileName(BenchmarkParams benchParams) {
-        StringBuilder sb = new StringBuilder(benchParams.getBenchmark());
+        String bench = benchParams.getBenchmark();
+        String cls = bench.substring(0, bench.lastIndexOf('.'));
+        Map<String, String> dflts = new HashMap<>();
 
-        for (String key : benchParams.getParamsKeys())
-            sb.append('-').append(key).append('=').append(benchParams.getParam(key));
+        try {
+            for (Class<?> c = Class.forName(cls); c != null; c = c.getSuperclass()) {
+                for (Field f : c.getDeclaredFields()) {
+                    Param p = f.getAnnotation(Param.class);
+
+                    if (p != null && p.value().length == 1)
+                        dflts.putIfAbsent(f.getName(), p.value()[0]);
+                }
+            }
+        }
+        catch (ClassNotFoundException ignored) {
+            // A nested benchmark class: its name keeps every parameter.
+        }
+
+        StringBuilder sb = new StringBuilder(bench);
+
+        for (String key : benchParams.getParamsKeys()) {
+            if (!benchParams.getParam(key).equals(dflts.get(key)))
+                sb.append('-').append(key).append('=').append(benchParams.getParam(key));
+        }
 
         return sb.toString().replaceAll("[^A-Za-z0-9._=-]", "_") + '-' + ProcessHandle.current().pid() + ".tsv";
     }
