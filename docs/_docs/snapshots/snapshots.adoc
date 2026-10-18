@@ -319,7 +319,12 @@ control.bat --snapshot list --src C:\tmp\ignite\snapshots
 * The list operation is read-only and does not modify any snapshot data.
 * If a snapshot is being modified (created or deleted), it might be ignored.
 * A snapshot is detected by its metadata. If the metadata is missing or cannot be read, the snapshot is ignored.
+[NOTE]
+====
 * When listing snapshots and calculating size, no additional snapshot validation or checksum calculation is performed.
+* If snapshot or some of its parts cannot be read due to a filesystem or access error, snapshot is ignored.
+====
+
 
 == Getting Snapshot Operation Status
 

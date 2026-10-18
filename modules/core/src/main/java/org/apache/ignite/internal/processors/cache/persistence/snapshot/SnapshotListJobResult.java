@@ -83,6 +83,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             @Nullable SnapshotInfo extStors,
             @Nullable SnapshotInfo incs
         ) {
+            // The incrementals snapshots are included into the main snapshot so that their sizes are already calculated.
             size = mainSize + (extStors == null ? 0L : extStors.size());
             this.date = date;
             this.extStors = extStors;
