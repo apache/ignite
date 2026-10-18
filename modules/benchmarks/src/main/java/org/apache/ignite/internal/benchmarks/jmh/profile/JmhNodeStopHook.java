@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.profile;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Actions that profilers run right before a benchmark stops its Ignite nodes.
@@ -27,8 +28,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * profiler would see the nodes already stopped.
  */
 public final class JmhNodeStopHook {
-    /** Action per owner; a new profiler instance replaces the action of the previous one. */
-    private static final Map<Class<?>, Runnable> ACTIONS = new ConcurrentHashMap<>();
+    /**
+     * Action per owner, in the order the profilers were created, which is their order in JMH's options; a new
+     * profiler instance replaces the action of the previous one.
+     */
+    private static final Map<Class<?>, Runnable> ACTIONS = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** */
     private JmhNodeStopHook() {
@@ -45,6 +49,8 @@ public final class JmhNodeStopHook {
 
     /** Runs the actions; benchmarks call it first thing in their teardown. */
     public static void run() {
-        ACTIONS.values().forEach(Runnable::run);
+        synchronized (ACTIONS) {
+            ACTIONS.values().forEach(Runnable::run);
+        }
     }
 }

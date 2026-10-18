@@ -27,13 +27,16 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeMap;
 import com.sun.management.ThreadMXBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.nio.GridNioServer;
@@ -51,13 +54,18 @@ import org.openjdk.jmh.results.Result;
 import org.openjdk.jmh.results.ScalarResult;
 
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIVED_MESSAGES_METRIC_NAME;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_TYPE_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_METRIC_NAME;
 
 /**
  * Bytes allocated per operation by the benchmark threads, the thin client and each thread pool of the Ignite nodes
- * running in the benchmark JVM, plus communication messages and bytes and discovery messages per operation of each
- * node. With {@code dir=<path>} the profiler also writes the JDK and OS of the run to {@code <path>/run.properties}.
+ * running in the benchmark JVM. Per operation of each node, also communication messages and bytes sent, messages
+ * sent by message class, messages received, tasks completed by each thread pool and discovery messages processed.
+ * With {@code dir=<path>} the profiler also writes the JDK and OS of the run to {@code <path>/run.properties}.
  */
 public class JmhAllocationProfiler implements InternalProfiler {
     /** Group of the benchmark threads, which call the Ignite API. */
@@ -65,6 +73,12 @@ public class JmhAllocationProfiler implements InternalProfiler {
 
     /** Processed discovery messages. */
     private static final String DISCO_PROCESSED_MESSAGES = "TotalProcessedMessages";
+
+    /** Result prefix of messages sent by message class. */
+    private static final String MSG_TYPE = "comm.type.norm:";
+
+    /** Result prefix of tasks completed by a thread pool. */
+    private static final String POOL_TASKS = "pool.tasks.norm:";
 
     /** System properties written to the run description. */
     private static final String[] RUN_PROPS = {"java.vendor", "java.vm.vendor", "java.runtime.version", "os.name",
@@ -78,6 +92,9 @@ public class JmhAllocationProfiler implements InternalProfiler {
 
     /** Snapshot taken before the benchmark stopped its nodes, if it did in this iteration. */
     private volatile Snapshot beforeStop;
+
+    /** Counter results that have moved in an iteration of this run. */
+    private final Set<String> moved = new HashSet<>();
 
     /**
      * @param initLine Profiler options.
@@ -139,11 +156,23 @@ public class JmhAllocationProfiler implements InternalProfiler {
         out.add(result("alloc.norm:total", total, ops, "B/op"));
 
         for (Map.Entry<String, Long> e : end.counters.entrySet()) {
-            Long s = start.counters.get(e.getKey());
-            String unit = e.getKey().startsWith("comm.bytes") ? "B/op" : "msgs/op";
+            String lbl = e.getKey();
+            Long s = start.counters.get(lbl);
 
-            if (s != null)
-                out.add(result(e.getKey(), e.getValue() - s, ops, unit));
+            if (s == null)
+                continue;
+
+            if (e.getValue().longValue() != s)
+                moved.add(lbl);
+
+            // A node has hundreds of message classes and about 20 pools: each is reported from the first iteration
+            // in which it moved.
+            if ((lbl.startsWith(MSG_TYPE) || lbl.startsWith(POOL_TASKS)) && !moved.contains(lbl))
+                continue;
+
+            String unit = lbl.startsWith("comm.bytes") ? "B/op" : lbl.startsWith(POOL_TASKS) ? "tasks/op" : "msgs/op";
+
+            out.add(result(lbl, e.getValue() - s, ops, unit));
         }
 
         return out;
@@ -151,7 +180,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
 
     /** {@inheritDoc} */
     @Override public String getDescription() {
-        return "Bytes allocated per operation by node and thread pool, and messages per operation by node.";
+        return "Bytes allocated per operation by node and thread pool, and messages and tasks per operation by node.";
     }
 
     /**
@@ -282,13 +311,36 @@ public class JmhAllocationProfiler implements InternalProfiler {
                 if (node == null)
                     continue;
 
-                GridMetricManager mmgr = ((IgniteEx)ignite).context().metric();
+                GridKernalContext ctx = ((IgniteEx)ignite).context();
+                GridMetricManager mmgr = ctx.metric();
 
                 ReadOnlyMetricRegistry comm = mmgr.registry(COMMUNICATION_METRICS_GROUP_NAME);
 
                 s.put("comm.msgs.norm:" + node, comm.findMetric(SENT_MESSAGES_METRIC_NAME));
                 s.put("comm.bytes.norm:" + node, comm.findMetric(GridNioServer.SENT_BYTES_METRIC_NAME));
+                s.put("comm.rcvd.norm:" + node, comm.findMetric(RECEIVED_MESSAGES_METRIC_NAME));
                 s.put("disco.msgs.norm:" + node, mmgr.registry(DISCO_METRICS).findMetric(DISCO_PROCESSED_MESSAGES));
+
+                // Metric names end with the message's direct type: sentMessagesByType.<type>.
+                String byType = metricName(COMMUNICATION_METRICS_GROUP_NAME, SENT_MESSAGES_BY_TYPE_METRIC_NAME) + '.';
+
+                for (Metric m : comm) {
+                    if (m.name().startsWith(byType)) {
+                        short type = Short.parseShort(m.name().substring(byType.length()));
+
+                        s.put(MSG_TYPE + node + ':' + ctx.messageFactory().create(type).getClass().getSimpleName(), m);
+                    }
+                }
+
+                // The striped executors count completed tasks under another name.
+                for (ReadOnlyMetricRegistry reg : mmgr) {
+                    if (reg.name().startsWith(THREAD_POOLS + '.')) {
+                        Metric m = reg.findMetric("CompletedTaskCount");
+
+                        s.put(POOL_TASKS + node + '.' + reg.name().substring(THREAD_POOLS.length() + 1),
+                            m != null ? m : reg.findMetric("TotalCompletedTasksCount"));
+                    }
+                }
             }
 
             return s;
