@@ -23,11 +23,11 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * Custom serializer for {@link BinaryArray}.
+ * Custom serializer for binary arrays.
  */
-class BinaryArraySerializer extends JsonSerializer<BinaryArray> {
+class BinaryArraySerializer extends JsonSerializer<BinaryObjectEx> {
     /** {@inheritDoc} */
-    @Override public void serialize(BinaryArray val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+    @Override public void serialize(BinaryObjectEx val, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         gen.writeStartArray();
 
         for (Object o : val.array())
