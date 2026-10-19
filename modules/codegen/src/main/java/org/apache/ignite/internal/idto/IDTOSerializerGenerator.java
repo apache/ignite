@@ -173,6 +173,9 @@ public class IDTOSerializerGenerator {
     /** Type to generated serializer for. */
     private final TypeElement type;
 
+    /** Fields in the serialization order. */
+    private final List<VariableElement> orderedFlds;
+
     /** Serializer imports. */
     private final Set<String> imports = new HashSet<>();
 
@@ -195,6 +198,7 @@ public class IDTOSerializerGenerator {
         coll = env.getElementUtils().getTypeElement(Collection.class.getName()).asType();
         map = env.getElementUtils().getTypeElement(Map.class.getName()).asType();
         biTuple = env.getTypeUtils().erasure(env.getElementUtils().getTypeElement(IgniteBiTuple.class.getName()).asType());
+        orderedFlds = new ArrayList<>(fields(type));
     }
 
     /** @return Fully qualified name for generated class. */
@@ -207,6 +211,11 @@ public class IDTOSerializerGenerator {
         PackageElement pkg = (PackageElement)topLevelCls.getEnclosingElement();
 
         return pkg.getQualifiedName().toString() + "." + serializerName();
+    }
+
+    /** @return Fields in the serialization order. */
+    public List<VariableElement> fields() {
+        return orderedFlds;
     }
 
     /**
@@ -257,10 +266,8 @@ public class IDTOSerializerGenerator {
         if (type.getNestingKind() != NestingKind.TOP_LEVEL)
             imports.add(type.getQualifiedName().toString());
 
-        Collection<VariableElement> flds = fields(type);
-
-        List<String> write = generateWrite(flds);
-        List<String> read = generateRead(flds);
+        List<String> write = generateWrite(orderedFlds);
+        List<String> read = generateRead(orderedFlds);
 
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer);

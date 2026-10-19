@@ -22,8 +22,10 @@ import org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.apache.ignite.internal.codegen.MessageProcessorTest.compile;
 import static org.apache.ignite.internal.codegen.MessageProcessorTest.javaFile;
+import static org.apache.ignite.internal.codegen.MessageProcessorTest.jsonFile;
 import static org.junit.Assert.assertEquals;
 
 /** */
@@ -40,5 +42,25 @@ public class IgniteDataTransferObjectProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestIgniteDataTransferObjectSerializer")
             .hasSourceEquivalentTo(javaFile("idto/TestIgniteDataTransferObjectSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testProcessorGeneratesJson() {
+        Compilation compilation = compile(new IgniteDataTransferObjectProcessor(),
+            "idto/TestIgniteDataTransferObject.java", "idto/TestInheritedIgniteDataTransferObject.java");
+
+        assertThat(compilation).succeeded();
+
+        assertJson(compilation, "TestIgniteDataTransferObject", "TestIgniteDataTransferObject.json");
+        assertJson(compilation, "TestInheritedIgniteDataTransferObject", "TestInheritedIgniteDataTransferObject.json");
+        assertJson(compilation, "TestInheritedIgniteDataTransferObject$Nested", "TestInheritedIgniteDataTransferObjectNested.json");
+    }
+
+    /** */
+    private void assertJson(Compilation compilation, String cls, String expected) {
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, "META-INF/ignite-wire/idto/org.apache.ignite.internal." + cls + ".json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("idto/" + expected));
     }
 }

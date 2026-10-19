@@ -37,6 +37,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import org.apache.ignite.internal.MessageJsonGenerator;
 
 import static org.apache.ignite.internal.MessageCompanionGenerator.NL;
 import static org.apache.ignite.internal.MessageCompanionGenerator.TAB;
@@ -73,6 +74,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem"
     );
 
+    /** */
+    private MessageJsonGenerator jsonGen;
+
     /**
      * Processes all classes extending the {@code IgniteDataTransferObject} and generates corresponding serializer code.
      */
@@ -81,6 +85,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return true;
 
         genSerDes.clear();
+
+        if (jsonGen == null)
+            jsonGen = new MessageJsonGenerator(processingEnv, "idto/");
 
         roundEnv.getRootElements().forEach(this::generateSingle);
 
@@ -125,8 +132,11 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         try {
             IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
 
-            if (gen.generate())
+            if (gen.generate()) {
                 genSerDes.put(clazz, gen.serializerFQN());
+
+                jsonGen.generate(clazz, gen.fields());
+            }
         }
         catch (Exception e) {
             processingEnv.getMessager().printMessage(
