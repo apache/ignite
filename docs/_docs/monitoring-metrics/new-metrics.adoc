@@ -512,7 +512,8 @@ In the register name `ssl.{transport}`, `{transport}` is `communication`, `disco
 `ssl.http.rest` exists only when `ConnectorConfiguration.httpSslFactory` is set.
 Times are in milliseconds since the epoch.
 The reload metrics show the results of link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] and of link:security/ssl-tls#renewing-certificates-automatically[automatic renewals].
-A renewal attempt that finds only the certificate already in use changes only `NextRenewalTime`.
+A renewal attempt that finds only the chain already in use increments `ConsecutiveRenewalFailures` and updates `NextRenewalTime`, but leaves `LastReloadSuccessTime` and `LastReloadFailureReason` unchanged.
+Manual failures do not increase the counter, and a successful manual reload of the same chain or only the trust store does not reset it.
 To catch a certificate that is about to expire, alert on `ChainNotAfter`.
 
 Register name: `ssl.{transport}`
@@ -523,7 +524,7 @@ Register name: `ssl.{transport}`
 |CertificateIssuer | string | Issuer DN of the certificate presented on new connections.
 |CertificateSubject | string | Subject DN of the certificate presented on new connections.
 |ChainNotAfter | long | Earliest expiry time in the chain presented on new connections, `0` if unknown.
-|ConsecutiveReloadFailures | integer | Failed reloads in a row since the last successful one.
+|ConsecutiveRenewalFailures | integer | Unsuccessful automatic renewal attempts, including an unchanged certificate chain. Resets only when a reload or renewal puts a chain with a later earliest expiry in use.
 |LastReloadFailureReason | string | Reason for the last failed reload. A successful reload clears it.
 |LastReloadSuccessTime | long | Time of the last successful reload, `0` if no reload has succeeded since the node started.
 |NextRenewalTime | long | Time of the next automatic renewal, `0` if no renewal is planned.

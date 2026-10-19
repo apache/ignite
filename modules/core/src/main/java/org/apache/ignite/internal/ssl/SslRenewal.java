@@ -152,9 +152,9 @@ class SslRenewal {
     }
 
     /**
-     * Plans another attempt after a pause that doubles with every attempt that puts nothing in use, and logs why. A failure is logged
-     * every time. The factory returning the certificates in use, as when their files are not replaced yet, is no failure. It is logged
-     * once a day, and at once when the certificates in use come to expire soon and when they expire. Once the node stops, nothing is
+     * Plans another attempt after a pause that doubles with every attempt that puts nothing in use, and logs why. An exception is logged
+     * every time. The factory returning the certificates in use, as when their files are not replaced yet, is logged once a day,
+     * and at once when the certificates in use come to expire soon and when they expire. Once the node stops, nothing is
      * planned or logged: the stop interrupts the attempt in progress, and that is no failure.
      *
      * @param e Why the attempt failed, {@code null} if the factory returned the certificates in use.

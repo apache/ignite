@@ -171,8 +171,8 @@ public class SslContextRegistry extends GridProcessorAdapter {
         reg.register("LastReloadFailureReason", () -> provider.reloadOutcome().failureReason(), String.class,
             "Reason for the last failed reload; a successful reload clears it.");
 
-        reg.register("ConsecutiveReloadFailures", () -> provider.reloadOutcome().failures(),
-            "Failed reloads in a row since the last successful one.");
+        reg.register("ConsecutiveRenewalFailures", provider::renewalFailures,
+            "Failed automatic renewals, including unchanged certificates; reset when a chain with a later expiry is put in use.");
 
         reg.register("NextRenewalTime", () -> provider.nextRenewalTime(),
             "Time of the next automatic renewal, in milliseconds; 0 if none.");

@@ -232,6 +232,7 @@ Renewal puts a changed trust store in use only together with a new certificate.
 To move to a new certificate authority, follow <<Upgrading Certificates>>.
 
 If the files still hold the certificate in use, the node reads them again after a pause.
+Each such attempt, failure to read the files, or rejection of a new certificate increments link:monitoring-metrics/new-metrics#ssl[`ConsecutiveRenewalFailures`].
 The pauses grow from 1 minute to at most 1.5 hours.
 While the node waits for a new certificate, it logs a warning once a day.
 Once less than half of the renewal window is left, or the certificate expires before the next attempt, the node logs an error instead of the warning.
@@ -298,7 +299,7 @@ To take certificates from a source of your own, for example a PKI service, exten
 `control.sh --ssl reload` and automatic renewal then get a new certificate from your source without further code.
 A subclass that builds its context in its own `create()` must also override `createNew()` and build the context there from the same source. Otherwise a reload or a renewal builds the context without the code in `create()`.
 
-If the source has no newer certificate yet, return the certificates in use. The node treats this as waiting, not as a failure, and tries again after a pause.
+If the source has no newer certificate yet, return the certificates in use. Automatic renewal counts this as an unsuccessful attempt and tries again after a pause.
 If the factory throws an exception, the node logs it as a failure and keeps the certificates in use.
 The node calls the factory only when it starts, on a reload and on a renewal.
 On one node, two calls to the factory never run at the same time.

@@ -28,6 +28,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,6 +58,9 @@ public class SslContextProvider {
 
     /** Outcome of the reloads: the last success and the failures since it. */
     private volatile ReloadOutcome outcome = new ReloadOutcome(0, 0, null, 0);
+
+    /** Failed automatic attempts since a chain with a later expiry was put in use. */
+    private volatile int renewalFailures;
 
     /** Time of the next automatic renewal, {@code 0} if none is planned. */
     private volatile long nextRenewalTime;
@@ -166,8 +172,11 @@ public class SslContextProvider {
 
             X509Certificate[] next = SslCertificates.servedChain(rebuilt);
 
-            if (Arrays.equals(next, chain))
+            if (Arrays.equals(next, chain)) {
+                renewalFailures++;
+
                 return RenewalResult.UNCHANGED;
+            }
 
             check(rebuilt, next);
 
@@ -200,6 +209,10 @@ public class SslContextProvider {
             putInUse(rebuilt, next);
         }
         catch (Throwable e) {
+            if (!Thread.currentThread().isInterrupted() &&
+                !X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class, IgniteInterruptedCheckedException.class))
+                renewalFailures++;
+
             onFailure(e);
 
             throw e;
@@ -215,6 +228,9 @@ public class SslContextProvider {
      * @param next Chain it presents, {@code null} if it is unknown.
      */
     private void putInUse(SSLContext rebuilt, @Nullable X509Certificate[] next) {
+        if (next != null && (chain == null || chainNotAfter(next) > chainNotAfter(chain)))
+            renewalFailures = 0;
+
         chain = next;
         ctx = rebuilt;
     }
@@ -272,6 +288,11 @@ public class SslContextProvider {
     /** @return Outcome of the reloads, as one snapshot. */
     public ReloadOutcome reloadOutcome() {
         return outcome;
+    }
+
+    /** @return Failed automatic attempts since a chain with a later expiry was put in use, including unchanged certificates. */
+    int renewalFailures() {
+        return renewalFailures;
     }
 
     /**

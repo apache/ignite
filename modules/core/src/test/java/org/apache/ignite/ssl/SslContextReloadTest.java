@@ -184,7 +184,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node02", servedSubject(g0.context().clientListener().port()));
         assertEquals("CN=node01", servedSubject(g1.context().clientListener().port()));
 
-        assertEquals("1", metric(g1, "ConsecutiveReloadFailures"));
+        assertEquals("A manual reload failure must not count as an automatic renewal", "0", metric(g1, "ConsecutiveRenewalFailures"));
         assertContains(log, metric(g1, "LastReloadFailureReason"), "Failed to initialize key store");
         assertEquals("CN=node01", metric(g1, "CertificateSubject"));
     }
