@@ -413,7 +413,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Stop warmup. */
     private static final short OP_STOP_WARMUP = 10000;
 
-    /** Marshaller. */
+    /** Binary context. */
     private final BinaryContext bctx;
 
     /** Client connection context */

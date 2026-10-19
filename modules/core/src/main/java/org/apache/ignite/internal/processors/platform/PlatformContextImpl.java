@@ -93,7 +93,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** Marshaller. */
+    /** Binary context. */
     private final BinaryContext bctx;
 
     /** Memory manager. */
