@@ -747,8 +747,9 @@ public class BinaryContext {
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
             if (userType
+                && ldr != null
                 && !ldr.equals(CommonUtils.gridClassLoader())
-                && (desc = descriptorForTypeId(true, typeId, CommonUtils.gridClassLoader(), registerMeta)) != null)
+                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
@@ -756,8 +757,9 @@ public class BinaryContext {
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
             if (userType
+                && ldr != null
                 && !ldr.equals(CommonUtils.gridClassLoader())
-                && (desc = descriptorForTypeId(true, typeId, CommonUtils.gridClassLoader(), registerMeta)) != null)
+                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
