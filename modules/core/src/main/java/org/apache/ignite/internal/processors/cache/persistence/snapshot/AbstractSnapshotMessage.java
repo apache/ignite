@@ -21,12 +21,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-abstract class AbstractSnapshotMessage implements Message {
+abstract class AbstractSnapshotMessage extends AbstractMessage {
     /** Unique message ID. */
     @Order(0)
     String id;

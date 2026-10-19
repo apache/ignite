@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class ExceptionMessage implements Message {
+public class ExceptionMessage extends AbstractMessage {
     @Order(0)
     private IgniteException error;
 

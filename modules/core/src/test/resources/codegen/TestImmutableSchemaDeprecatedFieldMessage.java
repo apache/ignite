@@ -17,19 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-
-public abstract class AbstractMessage implements Message {
-    @Order(0)
-    int id;
-
-    @Order(1)
-    byte flags;
-
-    public short directType() {
-        return 0;
-    }
+/** */
+public class TestImmutableSchemaDeprecatedFieldMessage extends TestImmutableSchemaMessage {
+    /** */
+    @Order(value = 2, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
+    int fld;
 }

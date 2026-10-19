@@ -128,7 +128,9 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         writer.setBuffer(buf);
 
         assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA));
-        assertEquals("Writes" + ERROR_SUFFIX, expReadsWritesCnt, writer.state());
+        assertEquals("Writes" + ERROR_SUFFIX,
+            expReadsWritesCnt + 1, // Raw fields included.
+            writer.state());
 
         buf.flip();
 
@@ -138,7 +140,9 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         T res = (T)msgFactory.create(makeMessageType(buf.get(), buf.get()));
 
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader, LATEST_SCHEMA));
-        assertEquals("Reads" + ERROR_SUFFIX, expReadsWritesCnt, reader.state());
+        assertEquals("Reads" + ERROR_SUFFIX,
+            expReadsWritesCnt + 1, // Raw fields included.
+            reader.state());
 
         DiscoveryMarshalling.unmarshal(res, kctx);
 

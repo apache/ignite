@@ -176,7 +176,8 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         assertTrue(MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA));
         assertEquals("Writes" + ERROR_SUFFIX,
-            expReadsWritesCnt, writer.state());
+            expReadsWritesCnt + 1, // Raw fields included.
+            writer.state());
 
         buf.flip();
 
@@ -187,7 +188,8 @@ public class QueryEntityMessageSerializationTest extends GridCommonAbstractTest 
 
         assertTrue(MessageSerialization.readFrom(msgFactory, res, reader, LATEST_SCHEMA));
         assertEquals("Reads" + ERROR_SUFFIX,
-            expReadsWritesCnt, reader.state());
+            expReadsWritesCnt + 1, // Raw fields included.
+            reader.state());
 
         DiscoveryMarshalling.unmarshal(res, kctx);
 
