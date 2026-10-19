@@ -26,7 +26,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.service.ServiceTopology.EMPTY;
 
 /** Service's information container. */
-public class ServiceInfo implements ServiceDescriptor, Message {
+public class ServiceInfo extends AbstractMessage implements ServiceDescriptor {
     /** */
     private static final long serialVersionUID = 0L;
 

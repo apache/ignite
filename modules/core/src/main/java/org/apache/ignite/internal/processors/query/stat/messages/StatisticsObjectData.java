@@ -21,12 +21,12 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Statistics for some object (index or table) in database.
  */
-public class StatisticsObjectData implements Message, Serializable {
+public class StatisticsObjectData extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

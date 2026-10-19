@@ -21,6 +21,7 @@
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
+    using System.IO;
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
@@ -52,7 +53,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
                 {
                     NameMapper = new BinaryBasicNameMapper {IsSimpleName = true}
                 },
-                Logger = new ListLogger(new TestUtils.TestContextLogger()) {EnabledLevels = new[] {LogLevel.Warn}}
+                Logger = new ListLogger(new TestUtils.TestContextLogger()) {EnabledLevels = new[] {LogLevel.Warn}},
+                SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
             };
 
             _ignite = Ignition.Start(cfg);

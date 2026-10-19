@@ -21,12 +21,13 @@ import java.util.Collection;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Next page response.
  */
-public class GridQueryNextPageResponse implements Message {
+public class GridQueryNextPageResponse extends AbstractMessage {
     /** */
     @Order(0)
     long qryReqId;

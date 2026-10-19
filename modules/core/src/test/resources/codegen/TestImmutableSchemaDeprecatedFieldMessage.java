@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-
 /** */
-public class TestFeatureConflictMessage implements Message {
+public class TestImmutableSchemaDeprecatedFieldMessage extends TestImmutableSchemaMessage {
     /** */
-    @Order(value = 0, introducedBy = "ROLLING_UPGRADE_FEATURE", deprecatedBy = "ROLLING_UPGRADE_FEATURE")
+    @Order(value = 2, deprecatedBy = "ROLLING_UPGRADE_FEATURE")
     int fld;
 }

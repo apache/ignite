@@ -21,13 +21,13 @@ import java.nio.channels.Channel;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * A message with additional {@link Channel} attibutes which is send on connection established and
  * an appropriate channel is opened.
  */
-public class SessionChannelMessage implements Message {
+public class SessionChannelMessage extends AbstractMessage {
     /** Channel session unique identifier. */
     @Order(0)
     IgniteUuid sesId;
