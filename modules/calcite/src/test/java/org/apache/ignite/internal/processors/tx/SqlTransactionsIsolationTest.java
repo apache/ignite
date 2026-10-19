@@ -52,24 +52,30 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
-import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest.ModifyApi.CACHE;
-import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest.ModifyApi.QUERY;
+import static org.apache.ignite.internal.processors.tx.AbstractQueryTransactionIsolationTest.ModifyApi.CACHE;
+import static org.apache.ignite.internal.processors.tx.AbstractQueryTransactionIsolationTest.ModifyApi.QUERY;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /** */
+@ParameterizedClass(name = "gridCnt={0}, backups={1}, partitionAwareness={2}, mode={3}, execType={4}, " +
+    "modify={5}, commit={6}, multi={7}, txConcurrency={8}")
+@MethodSource("parameters")
 public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolationTest {
     /** */
     public static final String DEPARTMENTS = "DEPARTMENTS";
@@ -78,32 +84,14 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
     public static final String TBL = "TBL";
 
     /** */
-    private ThreadLocal<Connection> jdbcThinConn = ThreadLocal.withInitial(() -> {
-        try {
-            String addrs = partitionAwareness
-                ? Ignition.allGrids().stream()
-                    .filter(n -> !n.configuration().isClientMode())
-                    .map(n -> "127.0.0.1:" + ((IgniteEx)n).context().clientListener().port())
-                    .collect(Collectors.joining(","))
-                : "127.0.0.1:10800";
-
-            return DriverManager.getConnection("jdbc:ignite:thin://" + addrs + "?"
-                + PROP_PREFIX + "partitionAwareness=" + partitionAwareness + "&"
-                + PROP_PREFIX + "transactionConcurrency=" + txConcurrency);
-        }
-        catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    });
+    private ThreadLocal<Connection> jdbcThinConn;
 
     /** */
     private final Map<Integer, Set<Integer>> partsToKeys = new HashMap<>();
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(
-        name = "gridCnt={0},backups={1},partitionAwareness={2},mode={3},execType={4},modify={5},commit={6},multi={7},txConcurrency={8}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> parameters() {
+        Collection<Arguments> params = new ArrayList<>();
 
         for (int gridCnt : new int[]{1, 3}) {
             int[] backups = gridCnt > 1
@@ -133,7 +121,7 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
                                     }
 
                                     for (ExecutorType execType : nodeExecTypes) {
-                                        params.add(new Object[]{
+                                        params.add(Arguments.of(
                                             gridCnt,
                                             backup,
                                             false, //partitionAwareness
@@ -143,12 +131,12 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
                                             commit,
                                             mutli,
                                             txConcurrency
-                                        });
+                                        ));
                                     }
 
                                     for (ExecutorType execType : thinExecTypes) {
                                         for (boolean partitionAwareness : new boolean[]{false, true}) {
-                                            params.add(new Object[]{
+                                            params.add(Arguments.of(
                                                 gridCnt,
                                                 backup,
                                                 partitionAwareness,
@@ -158,7 +146,7 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
                                                 commit,
                                                 mutli,
                                                 txConcurrency
-                                            });
+                                            ));
                                         }
                                     }
                                 }
@@ -222,10 +210,37 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
+        partsToKeys.clear();
+
+        jdbcThinConn = ThreadLocal.withInitial(() -> {
+            try {
+                String addrs = partitionAwareness
+                    ? Ignition.allGrids().stream()
+                    .filter(n -> !n.configuration().isClientMode())
+                    .map(n -> "127.0.0.1:" + ((IgniteEx)n).context().clientListener().port())
+                    .collect(Collectors.joining(","))
+                    : "127.0.0.1:10800";
+
+                return DriverManager.getConnection("jdbc:ignite:thin://" + addrs + "?"
+                    + PROP_PREFIX + "partitionAwareness=" + partitionAwareness + "&"
+                    + PROP_PREFIX + "transactionConcurrency=" + txConcurrency);
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
         super.beforeTest();
 
         assertEquals(mode, cli.cache(tbl()).getConfiguration(CacheConfiguration.class).getCacheMode());
+    }
+
+    /** {@inheritDoc} */
+    @BeforeAll
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
     }
 
     /** */
@@ -763,9 +778,7 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
         else if (type == ExecutorType.THIN_JDBC) {
             assertTrue("Partition filter not supported", F.isEmpty(parts));
 
-            try {
-                PreparedStatement stmt = jdbcThinConn.get().prepareStatement(sqlText);
-
+            try (PreparedStatement stmt = jdbcThinConn.get().prepareStatement(sqlText)) {
                 if (!F.isEmpty(args)) {
                     for (int i = 0; i < args.length; i++)
                         stmt.setObject(i + 1, args[i]);
@@ -823,8 +836,8 @@ public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolat
     /** {@inheritDoc} */
     @Override protected void ensureModeSupported() {
         assumeFalse(
-            "Thin client doesn't support multiple statements for SQL",
-            multi && modify == QUERY && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY)
+            multi && modify == QUERY && (type == ExecutorType.THIN_VIA_CACHE_API || type == ExecutorType.THIN_VIA_QUERY),
+            "Thin client doesn't support multiple statements for SQL"
         );
     }
 

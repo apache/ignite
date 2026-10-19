@@ -78,6 +78,9 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     /** Version 2.15.0. */
     protected static final IgniteProductVersion VER_2_15_0 = IgniteProductVersion.fromString("2.15.0");
 
+    /** Version 2.16.0. */
+    protected static final IgniteProductVersion VER_2_16_0 = IgniteProductVersion.fromString("2.16.0");
+
     /** Version 2.18.0. */
     protected static final IgniteProductVersion VER_2_18_0 = IgniteProductVersion.fromString("2.18.0");
 

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -80,6 +81,13 @@ class ClientBinaryMarshaller {
      */
     public byte[] marshal(Object obj) {
         return impl.marshal(obj, false);
+    }
+
+    /**
+     * Serializes Java object into a byte array.
+     */
+    public void marshal(Object obj, BinaryOutputStream out) {
+        impl.marshal(obj, out);
     }
 
     /**

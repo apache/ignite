@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.profile.GCProfiler;
 
 /**
  * Thin client cache benchmark.
@@ -68,6 +69,7 @@ public class JmhThinClientCacheBenchmark extends JmhThinClientAbstractBenchmark 
             .threads(4)
             .benchmarks(JmhThinClientCacheBenchmark.class.getSimpleName())
             .jvmArguments("-Xms4g", "-Xmx4g")
+            .profilers(GCProfiler.class)
             .measurementIterations(10)
             .warmupIterations(10);
 

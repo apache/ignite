@@ -1771,14 +1771,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         return rwLock.isWriteLocked(absPtr + PAGE_LOCK_OFFSET);
     }
 
-    /**
-     * @param absPtr Absolute pointer to the page.
-     * @return {@code True} if read lock acquired for the page.
-     */
-    boolean isPageReadLocked(long absPtr) {
-        return rwLock.isReadLocked(absPtr + PAGE_LOCK_OFFSET);
-    }
-
     /** {@inheritDoc} */
     @Override public String pageLockStateInfo(long absPtr) {
         return rwLock.stateInfo(absPtr + PAGE_LOCK_OFFSET);
@@ -2493,21 +2485,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             int updated = old + delta;
 
             if (GridUnsafe.compareAndSwapInt(null, ptr, old, updated))
-                return updated;
-        }
-    }
-
-    /**
-     * @param ptr Pointer to update.
-     * @param delta Delta.
-     */
-    private static long updateAtomicLong(long ptr, long delta) {
-        while (true) {
-            long old = GridUnsafe.getLong(ptr);
-
-            long updated = old + delta;
-
-            if (GridUnsafe.compareAndSwapLong(null, ptr, old, updated))
                 return updated;
         }
     }

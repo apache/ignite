@@ -39,6 +39,7 @@ import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -760,10 +761,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
             GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr0 + 4, arr.length);
 
-            BinaryObject offheapObj = (BinaryObject)
-                ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
-
-            assertEquals(BinaryObjectOffheapImpl.class, offheapObj.getClass());
+            BinaryObjectOffheapImpl offheapObj = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).marshaller().
+                unmarshal(BinaryStreams.inputStream(ptr + 5, len));
 
             assertEquals(expectedHashCode("Class"), offheapObj.type().typeId());
             assertEquals(BinaryArrayIdentityResolver.instance().hashCode(po), offheapObj.hashCode());

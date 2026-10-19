@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
 /** DataStreamer cache receiver/updater message. */
-public class DataStreamerReceiverMessage implements Message {
+public class DataStreamerReceiverMessage extends AbstractMessage {
     /** Custom cache receiver/updater; {@code null} when {@link #builtIn} is effective. */
     @Marshalled("rcvrBytes")
     @Nullable StreamReceiver<?, ?> rcvr;

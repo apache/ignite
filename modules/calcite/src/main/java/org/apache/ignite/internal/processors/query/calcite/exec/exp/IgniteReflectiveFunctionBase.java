@@ -17,7 +17,11 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Method;
+import java.util.List;
+import org.apache.calcite.schema.FunctionParameter;
 import org.apache.calcite.schema.impl.ReflectiveFunctionBase;
+
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 /** A base for outer java-method functions. */
 abstract class IgniteReflectiveFunctionBase extends ReflectiveFunctionBase implements ImplementableFunction {
@@ -25,10 +29,20 @@ abstract class IgniteReflectiveFunctionBase extends ReflectiveFunctionBase imple
     protected final CallImplementor implementor;
 
     /** */
+    private final List<FunctionParameter> params;
+
+    /** */
     protected IgniteReflectiveFunctionBase(Method method, CallImplementor implementor) {
         super(method);
 
         this.implementor = implementor;
+
+        params = super.getParameters().stream().map(IgniteFunctionParameter::new).collect(toUnmodifiableList());
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<FunctionParameter> getParameters() {
+        return params;
     }
 
     /** {@inheritDoc} */

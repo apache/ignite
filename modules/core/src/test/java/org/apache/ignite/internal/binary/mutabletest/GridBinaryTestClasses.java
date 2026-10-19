@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.binary.mutabletest;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -33,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.UUID;
-import com.google.common.base.Throwables;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -248,26 +243,6 @@ public class GridBinaryTestClasses {
 
         /** */
         public Map.Entry entry;
-
-        /**
-         * @return Array.
-         */
-        private byte[] serialize() {
-            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-
-            try {
-                ObjectOutput out = new ObjectOutputStream(byteOut);
-
-                out.writeObject(this);
-
-                out.close();
-            }
-            catch (IOException e) {
-                Throwables.propagate(e);
-            }
-
-            return byteOut.toByteArray();
-        }
 
         /**
          *

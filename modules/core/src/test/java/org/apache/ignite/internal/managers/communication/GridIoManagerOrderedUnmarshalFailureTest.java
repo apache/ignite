@@ -28,13 +28,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -164,7 +165,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     }
 
     /** Message with a sequence number and a flag making its payload unmarshal fail on the receiver. */
-    private static class FailingUnmarshalMessage implements Message {
+    private static class FailingUnmarshalMessage extends AbstractMessage {
         /** */
         int seq;
 
@@ -186,7 +187,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     /** Writes the two fields behind the header. */
     private static class Serializer implements MessageSerializer<FailingUnmarshalMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(FailingUnmarshalMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(FailingUnmarshalMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -212,7 +213,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(FailingUnmarshalMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(FailingUnmarshalMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             switch (reader.state()) {
                 case 0:
                     msg.seq = reader.readInt();

@@ -381,15 +381,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param entry Entry to remove.
-     * @return {@code True} if was removed.
-     */
-    boolean removeNearMapping(UUID nodeId, GridCacheEntryEx entry) {
-        return removeMapping(nodeId, entry, nearMap);
-    }
-
-    /**
      * Removes tx entry from local DHT transaction state and all DHT/near mappings.
      *
      * @param key Tx key.

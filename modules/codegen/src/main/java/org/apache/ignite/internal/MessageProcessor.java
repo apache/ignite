@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -41,6 +41,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
@@ -48,9 +49,11 @@ import javax.tools.Diagnostic;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
+import static org.apache.ignite.internal.MessageSerializerGenerator.qualifiedClassName;
 
 /**
  * Annotation processor that generates serialization and deserialization code for classes implementing the {@code Message} interface.
@@ -96,6 +99,13 @@ public class MessageProcessor extends AbstractProcessor {
     /** Checked exception declared by the generated methods. */
     static final String IGNITE_CHECKED_EXCEPTION_CLS = "org.apache.ignite.IgniteCheckedException";
 
+    /** Feature registry a message resolves its feature gates against unless it declares one with {@link FeatureGated#registry()}. */
+    static final String DFLT_FEATURE_REG_CLS =
+        "org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry";
+
+    /** */
+    static final String IGNITE_FEATURE_CLS = "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature";
+
     /** */
     public static final String GRID_H2_NULL = "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Null";
 
@@ -115,6 +125,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
+
+    /** */
+    private MessageJsonGenerator jsonGen;
 
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -171,26 +184,102 @@ public class MessageProcessor extends AbstractProcessor {
                     clazz);
             }
 
-            if (!checkConstructors(clazz))
+            if (!checkConstructors(clazz) || !checkFeatureGatedFields(clazz, fields))
                 continue;
 
             msgFields.put(clazz, fields);
         }
 
-        List<Function<ProcessingEnvironment, MessageCompanionGenerator>> generators = List.of(
-            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
+        if (jsonGen == null)
+            jsonGen = new MessageJsonGenerator(processingEnv);
+
+        List<Supplier<MessageGenerator>> generators = List.of(
+            () -> new MessageSerializerGenerator(processingEnv),
+            () -> new MessageMarshallerGenerator(processingEnv),
+            () -> new MessageDeploymentGenerator(processingEnv),
+            () -> jsonGen);
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
-            for (Function<ProcessingEnvironment, MessageCompanionGenerator> factory : generators) {
-                MessageCompanionGenerator gen = factory.apply(processingEnv);
+            for (Supplier<MessageGenerator> factory : generators) {
+                MessageGenerator gen = factory.get();
 
                 try {
                     gen.generate(type.getKey(), type.getValue());
                 }
                 catch (Exception e) {
                     processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                        "Failed to generate a message " + gen.typeSuffix().toLowerCase() + ":" + e.getMessage(), type.getKey());
+                        "Failed to generate a message " + gen.name() + ":" + e.getMessage(), type.getKey());
                 }
+            }
+        }
+
+        return true;
+    }
+
+    /** */
+    private boolean checkFeatureGatedFields(TypeElement clazz, List<VariableElement> fields) {
+        boolean isSchemaImmutable = isSchemaImmutable(processingEnv, clazz);
+        String reg = null;
+        Map<String, VariableElement> gatedFields = new HashMap<>();
+
+        for (VariableElement field : fields) {
+            Order order = field.getAnnotation(Order.class);
+
+            if (order.introducedBy().isEmpty() && order.deprecatedBy().isEmpty())
+                continue;
+
+            if (isSchemaImmutable) {
+                printError(
+                    processingEnv,
+                    field,
+                    "A message with an immutable schema must not have fields gated by features [cls=" + clazz + ", field=" + field + ']');
+
+                return false;
+            }
+
+            String fieldReg = resolveFeatureRegistry(field.getEnclosingElement());
+
+            if (reg == null)
+                reg = fieldReg;
+            else if (!reg.equals(fieldReg)) {
+                printError(
+                    processingEnv,
+                    field,
+                    "All fields gated by features in one message hierarchy must resolve to the same feature registry" +
+                        " [expected=" + reg + ", actual=" + fieldReg + ']');
+
+                return false;
+            }
+
+            if (!order.introducedBy().isEmpty() && !order.deprecatedBy().isEmpty()) {
+                printError(
+                    processingEnv,
+                    field,
+                    "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it" +
+                        " is retired" +
+                        " [cls=" + clazz +
+                        ", field=" + field +
+                        ", introducedBy=" + order.introducedBy() +
+                        ", deprecatedBy=" + order.deprecatedBy() + ']');
+
+                return false;
+            }
+
+            String feature = order.introducedBy().isEmpty() ? order.deprecatedBy() : order.introducedBy();
+
+            VariableElement otherField = gatedFields.put(feature, field);
+
+            if (otherField != null) {
+                printError(
+                    processingEnv,
+                    field,
+                    "A feature can gate only one field of a message class hierarchy" +
+                        " [cls=" + clazz +
+                        ", feature=" + feature +
+                        ", field=" + field +
+                        ", otherField=" + otherField + ']');
+
+                return false;
             }
         }
 
@@ -425,4 +514,96 @@ public class MessageProcessor extends AbstractProcessor {
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
         return typeElement != null ? typeElement.asType() : null;
     }
+
+    /** */
+    @Nullable public static FieldFeatureGate buildFieldFeatureGate(ProcessingEnvironment env, VariableElement field) {
+        Order ann = field.getAnnotation(Order.class);
+
+        String introducingFeature = ann.introducedBy();
+        String deprecatingFeature = ann.deprecatedBy();
+
+        if (introducingFeature.isEmpty() && deprecatingFeature.isEmpty())
+            return null;
+
+        String regCls = resolveFeatureRegistry(field.getEnclosingElement());
+
+        String regName = regCls.substring(regCls.lastIndexOf('.') + 1);
+
+        boolean introduced = !introducingFeature.isEmpty();
+
+        String feature = introduced ? introducingFeature : deprecatingFeature;
+
+        validateFeature(env, field, feature, regCls);
+
+        return new FieldFeatureGate(
+            regCls,
+            (introduced ? "ctx.includeFieldIntroducedBy(" : "ctx.includeFieldDeprecatedBy(") + regName + '.' + feature + ')');
+    }
+
+    /** */
+    private static void validateFeature(ProcessingEnvironment env, VariableElement field, String featureName, String regCls) {
+        TypeElement regElem = env.getElementUtils().getTypeElement(regCls);
+
+        if (regElem == null) {
+            printError(env, field, "Cannot resolve the feature registry class [reg=" + regCls + ']');
+
+            return;
+        }
+
+        for (Element featureElem : regElem.getEnclosedElements()) {
+            if (featureElem.getKind() != ElementKind.FIELD || !featureElem.getSimpleName().contentEquals(featureName))
+                continue;
+
+            Set<Modifier> mods = featureElem.getModifiers();
+
+            if (!mods.contains(Modifier.PUBLIC) || !mods.contains(Modifier.STATIC) || !mods.contains(Modifier.FINAL))
+                printError(env, field, "Feature constant must be public static final [reg=" + regCls + ", feature=" + featureName + ']');
+            else if (!isIgniteFeature(env, featureElem))
+                printError(env, field, "Feature constant must be of type IgniteFeature [reg=" + regCls + ", feature=" + featureName + ']');
+
+            return;
+        }
+
+        printError(env, field, "Failed to resolve feature in the registry by its name [reg=" + regCls + ", feature=" + featureName + ']');
+    }
+
+    /** */
+    private static boolean isIgniteFeature(ProcessingEnvironment env, Element featureElem) {
+        TypeElement igniteFeatureType = env.getElementUtils().getTypeElement(IGNITE_FEATURE_CLS);
+
+        return igniteFeatureType != null && env.getTypeUtils().isAssignable(featureElem.asType(), igniteFeatureType.asType());
+    }
+
+    /** */
+    private static void printError(ProcessingEnvironment env, Element el, String msg) {
+        env.getMessager().printMessage(Diagnostic.Kind.ERROR, msg, el);
+    }
+
+    /** */
+    static String resolveFeatureRegistry(Element cls) {
+        FeatureGated ann = cls.getAnnotation(FeatureGated.class);
+
+        if (ann == null)
+            return DFLT_FEATURE_REG_CLS;
+
+        String regCls;
+
+        try {
+            regCls = ann.registry().getName();
+        }
+        catch (MirroredTypeException e) {
+            regCls = qualifiedClassName(e.getTypeMirror());
+        }
+
+        return Void.class.getName().equals(regCls) ? DFLT_FEATURE_REG_CLS : regCls;
+    }
+
+    /** @return {@code true} if {@code clazz} or any of its superclasses is annotated with {@link ImmutableSchema}. */
+    public static boolean isSchemaImmutable(ProcessingEnvironment env, TypeElement clazz) {
+        return SystemViewRowAttributeWalkerProcessor.superclasses(env, clazz)
+            .anyMatch(t -> t.getAnnotation(ImmutableSchema.class) != null);
+    }
+
+    /** */
+    public record FieldFeatureGate(String registry, String expression) { }
 }

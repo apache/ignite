@@ -20,8 +20,11 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -29,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication message reader.
@@ -196,21 +200,23 @@ public interface MessageReader {
     /**
      * Reads nested message.
      *
+     * @param ctx Serialization context.
      * @param <T> Type of the message.
      * @return Message.
      */
-    public default <T extends Message> T readMessage() {
-        return readMessage(false);
+    public default <T extends Message> T readMessage(MessageSerializationContext ctx) {
+        return readMessage(false, ctx);
     }
 
     /**
      * Reads nested message.
      *
      * @param compress Whether message should be decompressed.
+     * @param ctx Serialization context.
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage(boolean compress);
+    public <T extends Message> T readMessage(boolean compress, MessageSerializationContext ctx);
 
     /**
      * Reads {@link CacheObject}.
@@ -237,29 +243,32 @@ public interface MessageReader {
      * Reads array of objects.
      *
      * @param type Array component type.
+     * @param ctx Serialization context.
      * @param <T> Type of the read object.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(MessageArrayType type);
+    public <T> T[] readObjectArray(MessageArrayType type, MessageSerializationContext ctx);
 
     /**
      * Reads any collection.
      *
      * @param type Collection item type.
+     * @param ctx Serialization context.
      * @param <C> Type of the read collection.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionType type);
+    public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageSerializationContext ctx);
 
     /**
      * Reads map.
      *
      * @param type Map type.
+     * @param ctx Serialization context.
      * @param <M> Type of the read map.
      * @return Map.
      */
-    public default <M extends Map<?, ?>> M readMap(MessageMapType type) {
-        return readMap(type, false);
+    public default <M extends Map<?, ?>> M readMap(MessageMapType type, MessageSerializationContext ctx) {
+        return readMap(type, false, ctx);
     }
 
     /**
@@ -267,16 +276,34 @@ public interface MessageReader {
      *
      * @param type Map type.
      * @param compress Whether map should be compressed.
+     * @param ctx Serialization context.
      * @param <M> Type of the read map.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress);
+    public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress, MessageSerializationContext ctx);
 
     /** @return Ignite product version. */
     IgniteProductVersion readIgniteProductVersion();
 
     /** @return Grid cache version. */
     GridCacheVersion readGridCacheVersion();
+
+    /**
+     * Reads the raw-field suffix.
+     *
+     * @return Raw fields, {@code null} if the suffix is not fully read yet.
+     */
+    @Nullable public List<RawField> readRawFields();
+
+    /**
+     * Deserializes a raw field.
+     *
+     * @param f Raw field.
+     * @param valueReader Single typed read of the field value.
+     * @param <T> Field type.
+     * @return The field value.
+     */
+    public <T> T deserializeRawField(RawField f, Function<MessageReader, T> valueReader);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

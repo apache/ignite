@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -93,6 +94,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
@@ -110,6 +113,7 @@ import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_VERBOSE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.management.api.CommandUtils.cmdText;
 import static org.apache.ignite.internal.management.api.CommandUtils.executable;
 import static org.apache.ignite.internal.management.api.CommandUtils.visitCommandParams;
@@ -130,6 +134,21 @@ import static org.junit.Assert.fail;
  */
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class CommandHandlerParsingTest {
+    /** */
+    @Test
+    public void testCacheListHelpDescribesRegexPattern() {
+        ListeningTestLogger testLog = new ListeningTestLogger();
+        LogListener regexDescription = LogListener.matches(Pattern.compile(
+            "regexPattern\\s+- Java regular expression for filtering cache, group, or sequence names.*" +
+                "'\\^account-\\.\\*' matches names starting with 'account-'"
+        )).build();
+
+        testLog.registerListener(regexDescription);
+
+        assertEquals(EXIT_CODE_OK, new CommandHandler(testLog).execute(asList("--cache", "help")));
+        assertTrue(regexDescription.check());
+    }
+
     /** */
     @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
 

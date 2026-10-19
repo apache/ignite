@@ -37,8 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.mock;
 
 /** {@link AbstractPlannerTest} inner utility methods test. */

@@ -20,8 +20,11 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -246,10 +249,11 @@ public interface MessageWriter {
      * Writes nested message.
      *
      * @param val Message.
+     * @param ctx Serialization context.
      * @return Whether value was fully written.
      */
-    public default boolean writeMessage(Message val) {
-        return writeMessage(val, false);
+    public default boolean writeMessage(Message val, MessageSerializationContext ctx) {
+        return writeMessage(val, false, ctx);
     }
 
     /**
@@ -257,9 +261,10 @@ public interface MessageWriter {
      *
      * @param val Message.
      * @param compress Whether message should be compressed.
+     * @param ctx Serialization context.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(Message val, boolean compress);
+    public boolean writeMessage(Message val, boolean compress, MessageSerializationContext ctx);
 
     /**
      * Writes {@link CacheObject}.
@@ -290,32 +295,35 @@ public interface MessageWriter {
      *
      * @param arr Array of objects.
      * @param type Array component type.
+     * @param ctx Serialization context.
      * @param <T> Type of the objects that array contains.
      * @return Whether array was fully written.
      */
-    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type);
+    public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, MessageSerializationContext ctx);
 
     /**
      * Writes collection with its elements order.
      *
      * @param col Collection.
      * @param type Collection item type.
+     * @param ctx Serialization context.
      * @param <T> Type of the objects that collection contains.
      * @return Whether value was fully written.
      */
-    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type);
+    public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, MessageSerializationContext ctx);
 
     /**
      * Writes map.
      *
      * @param map Map.
      * @param type Map type.
+     * @param ctx Serialization context.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type) {
-        return writeMap(map, type, false);
+    public default <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, MessageSerializationContext ctx) {
+        return writeMap(map, type, false, ctx);
     }
 
     /**
@@ -324,11 +332,12 @@ public interface MessageWriter {
      * @param map Map.
      * @param type Map type.
      * @param compress Whether map should be compressed.
+     * @param ctx Serialization context.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
-    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress);
+    public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress, MessageSerializationContext ctx);
 
     /**
      * Writes ignite product version.
@@ -345,6 +354,22 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeGridCacheVersion(GridCacheVersion ver);
+
+    /**
+     * Serializes a field the peer cannot read positionally and keeps it until {@link #writeRawFields} writes it.
+     *
+     * @param tag Tag of the field, the id of the feature that gates it.
+     * @param valueWriter Writes the field value.
+     */
+    public void addPendingRawField(int tag, Consumer<MessageWriter> valueWriter);
+
+    /**
+     * Writes the pending raw fields followed by the specified ones.
+     *
+     * @param rawFields Raw fields the message object carries from an earlier hop, or {@code null}.
+     * @return Whether the suffix was fully written.
+     */
+    public boolean writeRawFields(@Nullable List<RawField> rawFields);
 
     /**
      * @return Whether header of current message is already written.

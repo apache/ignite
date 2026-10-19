@@ -132,6 +132,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         thinClient.destroyCache(DEFAULT_CACHE_NAME);
     }
 

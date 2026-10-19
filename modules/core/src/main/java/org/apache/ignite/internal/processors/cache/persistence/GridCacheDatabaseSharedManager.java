@@ -164,7 +164,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -1505,18 +1504,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         return rejected == null ? emptyList() : rejected;
-    }
-
-    /**
-     * Return short information about cache.
-     *
-     * @param cacheCtx Cache context.
-     * @return Short cache info.
-     */
-    private String cacheInfo(GridCacheContext cacheCtx) {
-        assert nonNull(cacheCtx);
-
-        return "name=" + cacheCtx.name() + ", grpName=" + cacheCtx.group().name();
     }
 
     /** {@inheritDoc} */

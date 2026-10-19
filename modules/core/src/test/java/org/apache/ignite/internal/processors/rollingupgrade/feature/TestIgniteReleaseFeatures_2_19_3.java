@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.rollingupgrade.feature;
 /** */
 public class TestIgniteReleaseFeatures_2_19_3 {
     /** */
-    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_19_2.ROLLING_UPGRADE_FEATURE;
+    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 
     /** */
-    public static final IgniteFeature VER_2_19_2_ID_1_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
+    public static final IgniteFeature VER_2_19_0_ID_1_FEATURE = new IgniteCoreFeature(1);
 
     /** */
-    public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_2_FEATURE;
+    public static final IgniteFeature VER_2_19_2_ID_2_FEATURE = new IgniteCoreFeature(2);
 
-    /** */
-    public static final IgniteFeature VER_2_19_3_ID_6_FEATURE = TestIgniteReleaseFeatures_2_21_0.VER_2_21_0_ID_6_FEATURE;
+    /** Cherry-picked into 2.19.3 with the commit that introduced it in 2.20.1. */
+    public static final IgniteFeature VER_2_19_3_ID_6_FEATURE = new IgniteCoreFeature(6);
 }

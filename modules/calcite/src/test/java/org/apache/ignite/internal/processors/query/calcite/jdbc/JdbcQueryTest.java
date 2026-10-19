@@ -52,17 +52,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  *
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class JdbcQueryTest extends GridCommonAbstractTest {
+public class JdbcQueryTest extends GridCommonAbstractWrapperTest {
     /** URL. */
     private final String url = "jdbc:ignite:thin://127.0.0.1?queryEngine=" + CalciteQueryEngineConfiguration.ENGINE_NAME;
 
@@ -87,8 +92,9 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
                 .setCacheConfiguration(ccfg);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
         startGrids(nodesCnt);
 
         connect(url);
@@ -112,6 +118,7 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         if (stmt != null && !stmt.isClosed()) {
             stmt.close();

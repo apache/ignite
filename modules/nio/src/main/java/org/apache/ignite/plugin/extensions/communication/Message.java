@@ -17,7 +17,9 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base type for all messages sent between nodes, both over the communication SPI and via discovery.
@@ -60,4 +62,14 @@ public interface Message {
     default void registerAsDirectType(short directType) {
         MessageRegistry.register(getClass(), directType);
     }
+
+    /** @return Fields this node cannot decode and forwards as is, or {@code null} if there are none. */
+    @Nullable public List<RawField> rawFields();
+
+    /**
+     * Sets the raw fields received from a peer that this node cannot decode and must forward.
+     *
+     * @param rawFields Raw fields, or {@code null}.
+     */
+    public void rawFields(@Nullable List<RawField> rawFields);
 }

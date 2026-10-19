@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord.PartitionState;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -29,6 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -50,7 +54,7 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
     private static final MessageMapType isolationStringMapCollDesc = new MessageMapType(new MessageCollectionType(new MessageEnumType<>(TransactionIsolation.class, DefaultEnumMapper.INSTANCE::encode, b -> DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, b)), CollectionImplementationType.ARRAY_LIST), new MessageItemType(MessageCollectionItemType.STRING), false);
 
     /** */
-    @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(DefaultMapperEnumFieldsMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -72,14 +76,22 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMap(msg.isolationStringMap, isolationStringMapCollDesc))
+                if (!writer.writeMap(msg.isolationStringMap, isolationStringMapCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeCollection(msg.partStates, partStatesCollDesc))
+                if (!writer.writeCollection(msg.partStates, partStatesCollDesc, ctx))
                     return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
 
                 writer.incrementState();
         }
@@ -88,7 +100,7 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
     }
 
     /** */
-    @Override public final boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(DefaultMapperEnumFieldsMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
                 msg.publicEnum = DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, reader.readByte());
@@ -107,7 +119,7 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 2:
-                msg.isolationStringMap = reader.readMap(isolationStringMapCollDesc);
+                msg.isolationStringMap = reader.readMap(isolationStringMapCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,10 +127,23 @@ public final class DefaultMapperEnumFieldsMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 3:
-                msg.partStates = reader.readCollection(partStatesCollDesc);
+                msg.partStates = reader.readCollection(partStatesCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 4:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

@@ -42,7 +42,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_1_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_19_2.VER_2_19_2_ID_2_FEATURE;
 import static org.apache.ignite.spi.discovery.tcp.TestBlockingTcpDiscoverySpi.blockingDiscovery;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -211,7 +211,7 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         forAllNodes(nodeIdx -> {
             upgradeNodeVersion(nodeIdx, "2.19.2");
-            checkFeatureActivationSubscription(nodeIdx, VER_2_19_2_ID_1_FEATURE, featureActivationLatch);
+            checkFeatureActivationSubscription(nodeIdx, VER_2_19_2_ID_2_FEATURE, featureActivationLatch);
         });
 
         finalizeClusterVersion(1, "2.19.2");

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.TestMarshalledMapMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "mapKeys"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "mapVals"},
+    {"type": "java.util.Map<org.apache.ignite.internal.processors.cache.version.GridCacheVersion,org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "theMap", "annotations": ["@org.apache.ignite.internal.Marshalled(keys=\"mapKeys\", values=\"mapVals\")"]}
+  ]
+}

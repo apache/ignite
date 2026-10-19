@@ -15,6 +15,7 @@
 
 from typing import NamedTuple
 
+from ignitetest.services.utils.jvm_utils import merge_jvm_settings
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.version import V_2_7_6
 
@@ -73,7 +74,8 @@ def configure_opencensus_metrics(config, _globals, spec):
                                      sendInstanceName=True))
 
     if not any("opencensus.metrics.port" in jvm_opt for jvm_opt in spec.jvm_opts):
-        spec.jvm_opts.append("-Dopencensus.metrics.port=%d" % metrics_params.port)
+        spec.jvm_opts = merge_jvm_settings(spec.jvm_opts,
+                                           ["-Dopencensus.metrics.port=%d" % metrics_params.port])
 
     if not any(bean[0] == OPENCENSUS_TEMPLATE_FILE for bean in config.ext_beans):
         config.ext_beans.append((OPENCENSUS_TEMPLATE_FILE, metrics_params))

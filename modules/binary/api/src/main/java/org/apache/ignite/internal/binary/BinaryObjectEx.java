@@ -68,6 +68,11 @@ public interface BinaryObjectEx extends BinaryObject {
         throw new UnsupportedOperationException("Not array");
     }
 
+    /** @return {@code true} if binary object stores array. */
+    public default boolean isArray() {
+        return false;
+    }
+
     /**
      * @return Enum class name.
      */
@@ -139,6 +144,11 @@ public interface BinaryObjectEx extends BinaryObject {
      * @return {@code true} if object has circular references.
      */
     public default boolean hasCircularReferences() {
+        return false;
+    }
+
+    /** @return {@code true} if binary object has compact footer. */
+    public default boolean isCompactFooter() {
         return false;
     }
 }

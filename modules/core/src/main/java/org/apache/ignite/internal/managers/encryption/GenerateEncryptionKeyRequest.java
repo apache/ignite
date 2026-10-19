@@ -20,12 +20,12 @@ package org.apache.ignite.internal.managers.encryption;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Generate encryption key request.
  */
-public class GenerateEncryptionKeyRequest implements Message {
+public class GenerateEncryptionKeyRequest extends AbstractMessage {
     /** Request ID. */
     @Order(0)
     IgniteUuid id;

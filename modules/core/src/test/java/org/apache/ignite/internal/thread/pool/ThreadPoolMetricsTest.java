@@ -235,8 +235,15 @@ public class ThreadPoolMetricsTest extends GridCommonAbstractTest {
             assertTrue(errMsg, stream(execTimeMetric.value()).sum() >= taskCnt);
 
             if (stripedExecutor) {
-                assertTrue(errMsg, ((IntMetric)mreg.findMetric("StripesCount")).value() > 0);
+                int stripes = ((IntMetric)mreg.findMetric("StripesCount")).value();
+
+                assertTrue(errMsg, stripes > 0);
                 assertTrue(errMsg, ((LongMetric)mreg.findMetric("TotalCompletedTasksCount")).value() >= taskCnt);
+
+                String statuses = mreg.findMetric("StripesActiveStatuses").getAsString();
+
+                assertEquals(Arrays.toString(new int[stripes]), mreg.findMetric("StripesQueueSizes").getAsString());
+                assertTrue(statuses.contains("true") && statuses.split(", ").length == stripes);
 
                 continue;
             }

@@ -24,7 +24,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 /**
  * Binary heap output stream.
  */
-final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
+public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
     /** Allocator. */
     private final BinaryMemoryAllocatorChunk chunk;
 

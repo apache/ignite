@@ -55,6 +55,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
@@ -81,12 +82,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 
@@ -95,7 +94,7 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
+public abstract class AbstractPlannerTest extends GridCommonAbstractWrapperTest {
     /** */
     private static final RelDataTypeSystem TYPE_SYSTEM = CalciteQueryProcessor.FRAMEWORK_CONFIG.getTypeSystem();
 
@@ -124,7 +123,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
 
     /** */
-    @Before
+    @BeforeEach
     public void setup() {
         nodes = new ArrayList<>(4);
 
@@ -133,7 +132,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws Throwable {
         if (!F.isEmpty(executors))
             executors.forEach(StripedQueryTaskExecutor::tearDown);

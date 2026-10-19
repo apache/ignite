@@ -20,11 +20,16 @@ package org.apache.ignite.internal.managers;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -42,11 +47,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 import static org.apache.ignite.plugin.extensions.communication.CollectionImplementationType.HASH_SET;
 import static org.junit.Assert.assertEquals;
 
@@ -106,13 +113,13 @@ public abstract class AbstractMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!MessageSerialization.writeTo(msgFactory, msg, writer)) {
+        while (!MessageSerialization.writeTo(msgFactory, msg, writer, LATEST_SCHEMA)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!MessageSerialization.readFrom(msgFactory, msg, reader)) {
+        while (!MessageSerialization.readFrom(msgFactory, msg, reader, LATEST_SCHEMA)) {
             // No-op.
         }
 
@@ -142,6 +149,16 @@ public abstract class AbstractMessageSerializationTest {
         /** */
         protected AbstractTestMessageWriter(int capacity) {
             this.capacity = capacity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addPendingRawField(int tag, Consumer<MessageWriter> valueWriter) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean writeRawFields(@Nullable List<RawField> rawFields) {
+            return true;
         }
 
         /** */
@@ -295,22 +312,22 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(Message val, boolean compress) {
+        @Override public boolean writeMessage(Message val, boolean compress, MessageSerializationContext ctx) {
             return writeField(Message.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
+        @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, MessageSerializationContext ctx) {
             return writeField(Object[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
+        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, MessageSerializationContext ctx) {
             return writeField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
+        @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress, MessageSerializationContext ctx) {
             return writeField(type.linked() ? LinkedHashMap.class : HashMap.class);
         }
 
@@ -380,6 +397,16 @@ public abstract class AbstractMessageSerializationTest {
         /** */
         protected AbstractTestMessageReader(int capacity) {
             this.capacity = capacity;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RawField> readRawFields() {
+            return Collections.emptyList();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T deserializeRawField(RawField f, Function<MessageReader, T> valueReader) {
+            throw new UnsupportedOperationException();
         }
 
         /** */
@@ -537,7 +564,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(boolean compress) {
+        @Override public <T extends Message> T readMessage(boolean compress, MessageSerializationContext ctx) {
             readField(Message.class);
 
             return null;
@@ -565,21 +592,21 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T[] readObjectArray(MessageArrayType type) {
+        @Override public <T> T[] readObjectArray(MessageArrayType type, MessageSerializationContext ctx) {
             readField(Object[].class);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+        @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageSerializationContext ctx) {
             readField(type.collectionImplementationType() == HASH_SET ? Set.class : Collection.class);
 
             return null;
         }
         
         /** {@inheritDoc} */
-        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
+        @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress, MessageSerializationContext ctx) {
             readField(type.linked() ? LinkedHashMap.class : HashMap.class);
 
             return null;

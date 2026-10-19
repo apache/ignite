@@ -21,6 +21,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -75,7 +76,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage
  *     </li>
  * </ol>
  */
-public abstract class DiscoveryCustomMessage implements DiscoverySpiCustomMessage {
+public abstract class DiscoveryCustomMessage extends AbstractMessage implements DiscoverySpiCustomMessage {
     /** Unique custom message ID. */
     @Order(0)
     public IgniteUuid id;

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Resolve-and-dispatch entry points for {@link MessageSerializer}: each looks up the serializer registered for the
@@ -40,11 +42,19 @@ public final class MessageSerialization {
      * @param factory Message factory.
      * @param msg Message instance.
      * @param writer Writer.
+     * @param ctx Serialization context.
      * @param <M> Message type.
      * @return Whether message was fully written.
      */
-    public static <M extends Message> boolean writeTo(MessageFactory factory, M msg, MessageWriter writer) {
-        return resolve(factory, msg).writeTo(msg, writer);
+    public static <M extends Message> boolean writeTo(
+        MessageFactory factory,
+        M msg,
+        MessageWriter writer,
+        MessageSerializationContext ctx
+    ) {
+        assert ctx != null : "Message is serialized without a serialization context [msg=" + msg.getClass().getName() + ']';
+
+        return resolveMessageserializer(factory, msg).writeTo(msg, writer, ctx);
     }
 
     /**
@@ -53,16 +63,29 @@ public final class MessageSerialization {
      * @param factory Message factory.
      * @param msg Message instance.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @param <M> Message type.
      * @return Whether message was fully read.
      */
-    public static <M extends Message> boolean readFrom(MessageFactory factory, M msg, MessageReader reader) {
-        return resolve(factory, msg).readFrom(msg, reader);
+    public static <M extends Message> boolean readFrom(
+        MessageFactory factory,
+        M msg,
+        MessageReader reader,
+        MessageSerializationContext ctx
+    ) {
+        assert ctx != null : "Message is deserialized without a serialization context [msg=" + msg.getClass().getName() + ']';
+
+        return resolveMessageserializer(factory, msg).readFrom(msg, reader, ctx);
+    }
+
+    /** */
+    public static @Nullable MessageSerializationContext resolveSerializationContext(GridNioSession ses) {
+        return ses.meta(GridNioSessionMetaKey.MSG_SER_CTX.ordinal());
     }
 
     /** @return the serializer registered for {@code msg}'s direct type. */
     @SuppressWarnings("unchecked")
-    private static <M extends Message> MessageSerializer<M> resolve(MessageFactory factory, M msg) {
+    private static <M extends Message> MessageSerializer<M> resolveMessageserializer(MessageFactory factory, M msg) {
         return (MessageSerializer<M>)factory.serializer(msg.directType());
     }
 }

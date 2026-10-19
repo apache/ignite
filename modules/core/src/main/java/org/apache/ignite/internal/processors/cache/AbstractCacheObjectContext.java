@@ -25,7 +25,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
@@ -59,11 +58,6 @@ public abstract class AbstractCacheObjectContext implements CacheObjectValueCont
     /** {@inheritDoc} */
     @Override public void waitMetadataWriteIfNeeded(final int typeId) {
         ctx.cacheObjects().waitMetadataWriteIfNeeded(typeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable ClassLoader classLoader() {
-        return ctx.config().getClassLoader();
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledObjectsMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -25,6 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -36,7 +40,7 @@ public final class TestMarshalledObjectsMessageSerializer implements MessageSeri
     private static final MessageCollectionType dataBytesCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.BYTE_ARR), CollectionImplementationType.ARRAY_LIST);
 
     /** */
-    @Override public final boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledObjectsMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -46,8 +50,16 @@ public final class TestMarshalledObjectsMessageSerializer implements MessageSeri
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection(msg.dataBytes, dataBytesCollDesc))
+                if (!writer.writeCollection(msg.dataBytes, dataBytesCollDesc, ctx))
                     return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
 
                 writer.incrementState();
         }
@@ -56,13 +68,26 @@ public final class TestMarshalledObjectsMessageSerializer implements MessageSeri
     }
 
     /** */
-    @Override public final boolean readFrom(TestMarshalledObjectsMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledObjectsMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                msg.dataBytes = reader.readCollection(dataBytesCollDesc);
+                msg.dataBytes = reader.readCollection(dataBytesCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 1:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

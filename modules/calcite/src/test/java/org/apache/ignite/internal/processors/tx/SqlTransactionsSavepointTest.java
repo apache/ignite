@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.tx;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -32,12 +32,13 @@ import org.apache.ignite.internal.processors.query.calcite.integration.AbstractB
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal.SAVEPOINTS_EXPLICIT_TX_ONLY;
 import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode.ALL;
@@ -46,7 +47,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** Tests SQL savepoint commands executed by Calcite. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@MethodSource("parameters")
 public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String TBL = "SAVEPOINT_TEST_TABLE";
@@ -56,12 +58,11 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     public TransactionConcurrency txConcurrency;
 
     /** */
-    @Parameters(name = "{0}")
-    public static Iterable<Object[]> testData() {
-        return Arrays.asList(new Object[][] {
-            {PESSIMISTIC},
-            {OPTIMISTIC}
-        });
+    private static Stream<Arguments> parameters() {
+        return Stream.of(
+            Arguments.arguments(PESSIMISTIC),
+            Arguments.arguments(OPTIMISTIC)
+        );
     }
 
     /** {@inheritDoc} */
@@ -74,6 +75,7 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @AfterAll
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
@@ -81,6 +83,7 @@ public class SqlTransactionsSavepointTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

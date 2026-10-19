@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.broadcast;
 import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
@@ -40,7 +40,7 @@ public class UncollectPlannerTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

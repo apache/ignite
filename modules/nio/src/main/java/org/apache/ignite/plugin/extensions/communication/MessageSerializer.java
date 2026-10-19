@@ -17,6 +17,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.internal.MessageSerializationContext;
+
 /**
  * Interface for message serialization logic. Resolve-and-dispatch entry points that look the serializer up from the
  * message factory live in {@code MessageSerialization}.
@@ -27,18 +29,20 @@ public interface MessageSerializer<M extends Message> {
      *
      * @param msg Message instance.
      * @param writer Writer.
+     * @param ctx Serialization context.
      * @return Whether message was fully written.
      */
-    public boolean writeTo(M msg, MessageWriter writer);
+    public boolean writeTo(M msg, MessageWriter writer, MessageSerializationContext ctx);
 
     /**
      * Reads this message from provided byte buffer.
      *
      * @param msg Message instance.
      * @param reader Reader.
+     * @param ctx Serialization context.
      * @return Whether message was fully read.
      */
-    public boolean readFrom(M msg, MessageReader reader);
+    public boolean readFrom(M msg, MessageReader reader, MessageSerializationContext ctx);
 
     /**
      * @return New instance of message.

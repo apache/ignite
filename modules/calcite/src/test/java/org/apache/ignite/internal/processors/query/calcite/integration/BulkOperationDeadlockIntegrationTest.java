@@ -42,8 +42,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -74,6 +75,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -122,7 +124,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** Concurrent updates lock rows produced by an unordered scan without deadlocks. */
-    @Ignore("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
+    @Disabled("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
     @Test
     public void testUpdateWithWhereDoesNotDeadlock() {
         runConcurrentBulkOperation(
@@ -139,7 +141,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** Concurrent putAll operations lock keys in opposite map iteration orders without deadlocks. */
-    @Ignore("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
+    @Disabled("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
     @Test
     public void testPutAllWithOppositeKeyOrderDoesNotDeadlock() {
         runConcurrentBulkOperation(
@@ -158,7 +160,7 @@ public class BulkOperationDeadlockIntegrationTest extends AbstractBasicIntegrati
     }
 
     /** Concurrent getAll operations lock keys in opposite set iteration orders without deadlocks. */
-    @Ignore("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
+    @Disabled("IGNITE-28958 Prevent deadlocks in concurrent bulk operations with different key orders")
     @Test
     public void testGetAllWithOppositeKeyOrderDoesNotDeadlock() {
         runConcurrentBulkOperation(

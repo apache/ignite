@@ -16,4 +16,5 @@
 -r requirements.txt
 pytest==6.2.5
 flake8==6.1.0
-tox
+tox==4.25.0
+virtualenv==20.35.4

@@ -24,11 +24,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class ServiceTopology implements Serializable, Message {
+public class ServiceTopology extends AbstractMessage implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

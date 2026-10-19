@@ -22,9 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -64,14 +65,24 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
+    @Override public @Nullable Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
+        throws BinaryObjectException {
+        return BinaryReaderExImpl.unmarshal(in, ctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered) {
+        return newWriter(ctx, failIfUnregistered, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+    }
+
+    /** */
+    public static BinaryWriterExImpl newWriter(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
         return new BinaryWriterExImpl(
             ctx,
-            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            new BinaryHeapOutputStream((int)CommonUtils.KB, locCtx.chunk()),
             locCtx.schemaHolder(),
-            null,
             failIfUnregistered,
             typeId
         );
@@ -83,7 +94,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
             ctx,
             out,
             BinaryThreadLocalContext.get().schemaHolder(),
-            null,
             false,
             GridBinaryMarshaller.UNREGISTERED_TYPE_ID
         );
@@ -91,7 +101,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
     /** {@inheritDoc} */
     @Override public BinaryWriterEx writerWithoutSchema(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out, null, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+        return new BinaryWriterExImpl(ctx, out, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 
     /** {@inheritDoc} */
@@ -164,6 +174,34 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryObjectEx binaryArray(BinaryContext ctx, Class<?> compCls, Object[] arr) {
+        boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
+
+        String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
+
+        // In case of interface or multidimensional array rely on class name.
+        // Interfaces and array not registered as binary types.
+        BinaryClassDescriptor desc = ctx.descriptorForClass(compCls);
+
+        if (compCls.isEnum() || compCls == BinaryUtils.binariesFactory.binaryEnumClass()) {
+            return new BinaryEnumArray(
+                ctx,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                arr
+            );
+        }
+        else {
+            return new BinaryArray(
+                ctx,
+                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
+                compClsName,
+                arr
+            );
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Class<?> binaryEnumClass() {
         return BinaryEnumObjectImpl.class;
     }
@@ -174,12 +212,24 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public Class<?> binaryArrayClass() {
+        return BinaryArray.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> binaryEnumArrayClass() {
+        return BinaryEnumArray.class;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Class<?>, Integer> predefinedTypes() {
         Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
 
         predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
         predefinedTypes.put(BinaryObjectOffheapImpl.class, 0);
         predefinedTypes.put(BinaryObjectImpl.class, 0);
+        predefinedTypes.put(BinaryArray.class, 0);
+        predefinedTypes.put(BinaryEnumArray.class, 0);
 
         return predefinedTypes;
     }
@@ -222,6 +272,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
     /** {@inheritDoc} */
     @Override public BinaryIdentityResolver arrayIdentityResolver() {
         return BinaryArrayIdentityResolver.instance();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearCache() {
+        BinaryEnumCache.clear();
     }
 
     /**

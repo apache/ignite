@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.normalizeResourcePermissions;
@@ -40,7 +41,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.toEnu
  * Simple implementation of {@link SecurityPermissionSet} interface.
  * Provides convenient way to specify permission set in the XML configuration.
  */
-public class SecurityBasicPermissionSet implements SecurityPermissionSet {
+public class SecurityBasicPermissionSet extends AbstractMessage implements SecurityPermissionSet {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 

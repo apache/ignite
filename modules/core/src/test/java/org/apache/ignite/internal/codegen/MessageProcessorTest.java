@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.codegen;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -48,6 +49,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
+import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -56,6 +58,9 @@ public class MessageProcessorTest {
     /** Custom mapper error. */
     public static final String CUSTOM_MAPPER_ERROR = "Annotation @CustomMapper must only be used for enum fields or " +
         "enum collections and maps, including nested ones.";
+
+    /** Directory of the representations in the class output. */
+    private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
     /** */
     @Test
@@ -73,6 +78,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMarshalledObjectsMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMarshalledObjectsMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestMarshalledObjectsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestMarshalledObjectsMessage.json"));
     }
 
     /** */
@@ -91,6 +100,161 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testRollingUpgradeAwareMessage() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestRollingUpgradeAwareMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestRollingUpgradeAwareMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestRollingUpgradeAwareMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestRollingUpgradeAwareMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestRollingUpgradeAwareMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testFeatureGatingFieldsOfDifferentMessagesAllowed() {
+        Compilation compilation = compile(
+            "TestFeatureRegistry.java",
+            "TestRollingUpgradeAwareMessage.java",
+            "TestSharedFeaturesMessage.java");
+
+        assertThat(compilation).succeeded();
+    }
+
+    /** */
+    @Test
+    public void testUnknownFeatureConstantRejected() {
+        Compilation compilation = compile("TestUnknownFeatureMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Failed to resolve feature in the registry by its name [reg=");
+        assertThat(compilation).hadErrorContaining(", feature=NO_SUCH_FEATURE]");
+    }
+
+    /** */
+    @Test
+    public void testImmutableSchemaMessageHasNoRawFields() {
+        Compilation compilation = compile("TestImmutableSchemaMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestImmutableSchemaMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestImmutableSchemaMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testIntroducedFieldOnImmutableSchemaRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestImmutableSchemaIntroducedFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A message with an immutable schema must not have fields gated by features");
+    }
+
+    /** */
+    @Test
+    public void testDeprecatedFieldOnImmutableSchemaSubclassRejected() {
+        Compilation compilation = compile("TestImmutableSchemaMessage.java", "TestImmutableSchemaDeprecatedFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A message with an immutable schema must not have fields gated by features");
+    }
+
+    /** */
+    @Test
+    public void testGatedFieldsOfDifferentRegistriesRejected() {
+        Compilation compilation = compile(
+            "TestFeatureRegistry.java",
+            "TestSecondFeatureRegistry.java",
+            "TestMixedRegistryBaseMessage.java",
+            "TestMixedRegistryMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("must resolve to the same feature registry");
+    }
+
+    /** */
+    @Test
+    public void testFeatureIntroducingTwoFieldsRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestTwoIntroducedFieldsMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining(", feature=FIRST_FEATURE, field=otherNewFld, otherField=newFld]");
+    }
+
+    /** */
+    @Test
+    public void testFeatureDeprecatingTwoFieldsRejected() {
+        Compilation compilation = compile(
+            "TestFeatureRegistry.java",
+            "TestTwoDeprecatedFieldsBaseMessage.java",
+            "TestTwoDeprecatedFieldsMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining(", feature=SECOND_FEATURE, field=otherOldFld, otherField=oldFld]");
+    }
+
+    /** */
+    @Test
+    public void testFeatureDeprecatingAndIntroducingFieldsRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestIntroducedAndDeprecatedFieldsMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("A feature can gate only one field of a message class hierarchy [cls=");
+        assertThat(compilation).hadErrorContaining(", feature=FIRST_FEATURE, field=newFld, otherField=oldFld]");
+    }
+
+    /** */
+    @Test
+    public void testIntroducedAndDeprecatedFieldRejected() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestIntroducedAndDeprecatedFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining(
+            "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it is retired [cls=");
+        assertThat(compilation).hadErrorContaining(", field=fld, introducedBy=FIRST_FEATURE, deprecatedBy=SECOND_FEATURE]");
+    }
+
+    /** */
+    @Test
+    public void testGatedFieldInitialValueAssertedOnCreate() {
+        Compilation compilation = compile("TestFeatureRegistry.java", "TestGatedFieldInitializerMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestGatedFieldInitializerMessageSerializer")
+            .contentsAsUtf8String()
+            .contains("assert msg.oldCnt == 0 : \"A field gated by a feature must have no initial value [field=oldCnt]\";");
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.TestGatedFieldInitializerMessageSerializer")
+            .contentsAsUtf8String()
+            .doesNotContain("msg.plain == 0");
+    }
+
+    /** */
+    @Test
+    public void testFeatureConstantOfWrongTypeRejected() {
+        Compilation compilation = compile("TestInvalidFeatureRegistry.java", "TestInvalidFeatureMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("must be of type IgniteFeature [reg=");
     }
 
     /** */
@@ -123,6 +287,14 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestEnumSetMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestEnumSetMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestEnumSetMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestEnumSetMessage.json"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 
     /** */
@@ -175,6 +347,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.CorrectEmptyMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CorrectEmptyMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.CorrectEmptyMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("CorrectEmptyMessage.json"));
     }
 
     /** */
@@ -204,7 +380,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testInheritedMessages() {
-        Compilation compilation = compile("AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("AbstractTestMessage.java", "ChildMessage.java");
 
         assertThat(compilation).succeeded();
 
@@ -214,12 +390,19 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.ChildMessageSerializer")
             .hasSourceEquivalentTo(javaFile("ChildMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.ChildMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("ChildMessage.json"));
+
+        assertTrue(compilation
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.AbstractMessage.json").isEmpty());
     }
 
     /** */
     @Test
     public void testMultipleMessages() {
-        Compilation compilation = compile("TestMessage.java", "AbstractMessage.java", "ChildMessage.java");
+        Compilation compilation = compile("TestMessage.java", "AbstractTestMessage.java", "ChildMessage.java");
 
         assertThat(compilation).succeeded();
 
@@ -393,6 +576,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumFieldsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.CustomMapperEnumFieldsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("CustomMapperEnumFieldsMessage.json"));
     }
 
     /** */
@@ -472,6 +659,10 @@ public class MessageProcessorTest {
             "TransactionIsolationEnumMapper.java");
 
         assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 
     /**
@@ -578,6 +769,10 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestMarshalledMapMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestMarshalledMapMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestMarshalledMapMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestMarshalledMapMessage.json"));
     }
 
     /** Verifies array-backed Map reconstruction of {@code @Marshalled} fields, both rebuilt and final maps. */
@@ -712,6 +907,57 @@ public class MessageProcessorTest {
     }
 
     /** */
+    @Test
+    public void testCompressFieldsMessage() {
+        Compilation compilation = compile("TestCompressFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestCompressFieldsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestCompressFieldsMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testWildcardFieldsMessage() {
+        Compilation compilation = compile("TestWildcardFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestWildcardFieldsMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestWildcardFieldsMessage.json"));
+    }
+
+    /** */
+    @Test
+    public void testTypeVariableMessage() {
+        Compilation compilation = compile("TestTypeVariableMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestTypeVariableMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestTypeVariableMessage.json"));
+    }
+
+    /** */
+    static String jsonFile(String name) {
+        return content(javaFile(name));
+    }
+
+    /** */
+    private static String content(JavaFileObject file) {
+        try {
+            return file.getCharContent(false).toString();
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Unable to read: " + file.getName(), e);
+        }
+    }
+
+    /** */
     private Compilation compile(String... srcFiles) {
         return compile(new MessageProcessor(), srcFiles);
     }
@@ -771,5 +1017,9 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.TestJdkMarshalledChildMessageMarshaller")
             .hasSourceEquivalentTo(javaFile("TestJdkMarshalledChildMessageMarshaller.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.TestJdkMarshalledChildMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestJdkMarshalledChildMessage.json"));
     }
 }

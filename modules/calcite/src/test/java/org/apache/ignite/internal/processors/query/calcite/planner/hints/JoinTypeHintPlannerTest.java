@@ -41,8 +41,9 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.CNL_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.HASH_JOIN;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.MERGE_JOIN;
@@ -67,6 +68,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     private IgniteSchema schema;
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -74,6 +76,7 @@ public class JoinTypeHintPlannerTest extends AbstractPlannerTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

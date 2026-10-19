@@ -31,8 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
 import static org.apache.calcite.rel.core.JoinRelType.INNER;
@@ -41,7 +40,7 @@ import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 
 /** */
-public class HashJoinExecutionTest extends AbstractExecutionTest {
+public class HashJoinExecutionTest extends AbstractExecutionParametrizedTest {
     /** */
     @Test
     public void testHashJoinRewind() {
