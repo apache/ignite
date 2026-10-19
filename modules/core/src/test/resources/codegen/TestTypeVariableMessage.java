@@ -19,9 +19,10 @@ package org.apache.ignite.internal;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-public class TestTypeVariableMessage<R extends Message, T extends Comparable<T>> implements Message {
+public class TestTypeVariableMessage<R extends Message, T extends Comparable<T>> extends AbstractMessage {
     @Order(0)
     Map<UUID, R> res;
 

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class ClusterUpdateNotifierDataBagItem implements Message {
+public class ClusterUpdateNotifierDataBagItem extends AbstractMessage {
     /** Update notifier enabled status. */
     @Order(0)
     boolean notifierEnabled;

@@ -17,19 +17,25 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public abstract class AbstractMessage implements Message {
-    @Order(0)
-    int id;
+/** */
+@FeatureGated(registry = TestFeatureRegistry.class)
+public class TestSharedFeaturesMessage extends AbstractMessage {
+    /** */
+    @Order(value = 0, deprecatedBy = "FIRST_FEATURE")
+    int oldCnt;
 
-    @Order(1)
-    byte flags;
+    /** */
+    @Order(value = 1, introducedBy = "SECOND_FEATURE")
+    TestRollingUpgradeAwareMessage newMsg;
 
-    public short directType() {
-        return 0;
+    /** */
+    @Order(value = 2, introducedBy = "THIRD_FEATURE")
+    String newFld;
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1;
     }
 }

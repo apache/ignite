@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query entry.
  */
-public class CacheContinuousQueryEntry implements GridCacheDeployable, Message, CacheIdAware {
+public class CacheContinuousQueryEntry extends AbstractMessage implements GridCacheDeployable, CacheIdAware {
     /** */
     private static final byte BACKUP_ENTRY = 0b0001;
 

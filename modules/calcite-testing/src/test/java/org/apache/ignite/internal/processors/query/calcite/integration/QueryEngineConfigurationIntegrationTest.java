@@ -99,7 +99,7 @@ public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractW
     /** */
     @Test
     public void testDefaultEngineConfiguration() throws Exception {
-        checkDefaultEngine(INDEXING_ENGINE);
+        checkDefaultEngine(CALCITE_ENGINE);
 
         checkDefaultEngine(INDEXING_ENGINE, new IndexingQueryEngineConfiguration(),
             new CalciteQueryEngineConfiguration());
@@ -149,22 +149,28 @@ public class QueryEngineConfigurationIntegrationTest extends GridCommonAbstractW
         }
     }
 
-    /** */
+    /** Without an explicit configuration both engines on the classpath can be selected by name. */
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testEngineWithoutConfiguration() throws Exception {
         try (Ignite ignite = startGrid(createConfiguration())) {
             IgniteCache<?, ?> cache = ignite.createCache("test");
 
-            // Hint can't be used when engines is not configured.
+            checkEngine(cache, CALCITE_ENGINE, "SELECT QUERY_ENGINE()");
+            checkEngine(cache, INDEXING_ENGINE, "SELECT /*+ QUERY_ENGINE('" + INDEXING_ENGINE + "') */ QUERY_ENGINE()");
+            checkEngine(cache, CALCITE_ENGINE, "SELECT /*+ QUERY_ENGINE('" + CALCITE_ENGINE + "') */ QUERY_ENGINE()");
+
+            checkJdbcEngine(CALCITE_ENGINE, jdbcUrl, "SELECT QUERY_ENGINE()");
+            checkJdbcEngine(INDEXING_ENGINE, jdbcUrl + "?queryEngine=" + INDEXING_ENGINE, "SELECT QUERY_ENGINE()");
+            checkJdbcEngine(CALCITE_ENGINE, jdbcUrl + "?queryEngine=" + CALCITE_ENGINE, "SELECT QUERY_ENGINE()");
+
+            // Unknown engine.
             GridTestUtils.assertThrowsWithCause(
-                () -> cache.query(new SqlFieldsQuery(
-                    "SELECT /*+ QUERY_ENGINE('" + INDEXING_ENGINE + "') */ QUERY_ENGINE()")).getAll(),
+                () -> cache.query(new SqlFieldsQuery("SELECT /*+ QUERY_ENGINE('noop') */ QUERY_ENGINE()")).getAll(),
                 IgniteException.class);
 
-            // JDBC connection property can't be used when engines is not configured.
             GridTestUtils.assertThrowsWithCause(
-                () -> DriverManager.getConnection(jdbcUrl + "?queryEngine=" + INDEXING_ENGINE),
+                () -> DriverManager.getConnection(jdbcUrl + "?queryEngine=noop"),
                 SQLException.class);
         }
     }

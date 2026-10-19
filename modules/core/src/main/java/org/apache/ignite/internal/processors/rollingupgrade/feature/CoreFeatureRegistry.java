@@ -94,6 +94,12 @@ public class CoreFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 
+    /**
+     * Feature that introduces the raw-field suffix, a count of raw fields and the raw fields themselves written after the
+     * positional fields of every message.
+     */
+    public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
+
     /** */
     public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = new IgniteCoreFeature(1);
 }

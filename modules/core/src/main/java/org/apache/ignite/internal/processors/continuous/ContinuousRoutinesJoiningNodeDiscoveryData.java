@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-public final class ContinuousRoutinesJoiningNodeDiscoveryData implements Message {
+public final class ContinuousRoutinesJoiningNodeDiscoveryData extends AbstractMessage {
     /** */
     @Order(0)
     List<ContinuousRoutineInfo> startedRoutines;

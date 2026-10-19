@@ -17,33 +17,56 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Simple holder for handles.
  */
-class BinaryReaderHandlesHolderImpl implements BinaryReaderHandlesHolder {
-    /** Handles. */
-    private BinaryReaderHandles hnds;
+class BinaryReaderHandlesHolder {
+    /** Reader context which is constantly passed between objects. */
+    BinaryReaderHandles hnds;
 
-    /** {@inheritDoc} */
-    @Override public void setHandle(Object obj, int pos) {
+    /**
+     * @param hnds Handles.
+     */
+    BinaryReaderHandlesHolder(@Nullable BinaryReaderHandles hnds) {
+        this.hnds = hnds;
+    }
+
+    /**
+     * Set handle.
+     *
+     * @param obj Object.
+     * @param pos Position.
+     */
+    final void setHandle(Object obj, int pos) {
         handles().put(pos, obj);
     }
 
-    /** {@inheritDoc} */
-    @Override public Object getHandle(int pos) {
+    /**
+     * Get handle.
+     *
+     * @param pos Position.
+     * @return Handle.
+     */
+    final Object getHandle(int pos) {
         return hnds != null ? hnds.get(pos) : null;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinaryReaderHandles handles() {
+    /**
+     * Get all handles.
+     *
+     * @return Handles.
+     */
+    public final BinaryReaderHandles handles() {
         if (hnds == null)
             hnds = new BinaryReaderHandles();
 
         return hnds;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
+    /** @return {@code True} if no handles were registered. */
+    final boolean isEmpty() {
         return hnds == null || hnds.isEmpty();
     }
 }
