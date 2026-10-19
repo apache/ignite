@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheJoinInfo",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.StoredCacheData", "name": "cacheData"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "cacheType"},
+    {"order": 2, "type": "boolean", "name": "sql"},
+    {"order": 3, "type": "long", "name": "flags"},
+    {"order": 4, "type": "boolean", "name": "staticallyConfigured"}
+  ]
+}

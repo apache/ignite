@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.ClientCacheChangeDiscoveryMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.Map<java.lang.Integer,java.lang.Boolean>", "name": "startedCaches"},
+    {"order": 2, "type": "java.util.Set<java.lang.Integer>", "name": "closedCaches"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState",
+  "fields": [
+    {"order": 0, "type": "java.util.Set<java.lang.Integer>", "name": "lostParts"},
+    {"order": 1, "type": "java.util.Set<java.lang.Integer>", "name": "zeroParts"}
+  ]
+}

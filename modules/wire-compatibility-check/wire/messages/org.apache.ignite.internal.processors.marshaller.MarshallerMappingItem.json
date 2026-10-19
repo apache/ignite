@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem",
+  "fields": [
+    {"order": 0, "type": "byte", "name": "platformId"},
+    {"order": 1, "type": "int", "name": "typeId"},
+    {"order": 2, "type": "java.lang.String", "name": "clsName"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "reqId"},
+    {"order": 1, "type": "long", "name": "nodeQryId"},
+    {"order": 2, "type": "boolean", "name": "asyncRes"}
+  ]
+}

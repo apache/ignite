@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.WalStateProposeMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "opId"},
+    {"order": 2, "type": "int", "name": "grpId"},
+    {"order": 3, "type": "org.apache.ignite.lang.IgniteUuid", "name": "grpDepId"},
+    {"order": 4, "type": "java.util.Map<java.lang.String,org.apache.ignite.lang.IgniteUuid>", "name": "caches"},
+    {"order": 5, "type": "boolean", "name": "enable"}
+  ]
+}

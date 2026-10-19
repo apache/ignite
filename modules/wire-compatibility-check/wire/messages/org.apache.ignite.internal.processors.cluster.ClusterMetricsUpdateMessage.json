@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage", "name": "singleNodeMetricsMsg"},
+    {"order": 1, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage>", "name": "allNodesMetrics"}
+  ]
+}
