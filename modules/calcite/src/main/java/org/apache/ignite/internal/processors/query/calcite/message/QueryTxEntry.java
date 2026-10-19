@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Class to pass to remote nodes transaction changes.
@@ -37,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * @see ExecutionContext#transactionChanges(int, int[], Function, Comparator)
  * @see QueryStartRequest#queryTransactionEntries()
  */
-public class QueryTxEntry implements Message, CacheIdAware {
+public class QueryTxEntry extends AbstractMessage implements CacheIdAware {
     /** Cache id. */
     @Order(0)
     int cacheId;

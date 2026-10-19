@@ -403,7 +403,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (!BinaryUtils.useBinaryArrays())
                 return pArr;
 
-            return binaryCtx.createBinaryArray(obj.getClass().getComponentType(), pArr);
+            return BinaryUtils.binariesFactory.binaryArray(binaryCtx, obj.getClass().getComponentType(), pArr);
         }
 
         if (obj instanceof IgniteBiTuple) {

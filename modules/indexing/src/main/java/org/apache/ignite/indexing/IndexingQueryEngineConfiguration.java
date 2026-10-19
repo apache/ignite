@@ -17,6 +17,7 @@
 
 package org.apache.ignite.indexing;
 
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IndexingQueryEngine;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
  */
 public class IndexingQueryEngineConfiguration implements QueryEngineConfigurationEx {
     /** Query engine name. */
-    public static final String ENGINE_NAME = "h2";
+    public static final String ENGINE_NAME = GridQueryProcessor.INDEXING_ENGINE_NAME;
 
     /** */
     private boolean isDflt;

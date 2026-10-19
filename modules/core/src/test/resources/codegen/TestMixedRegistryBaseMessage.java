@@ -15,35 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
+package org.apache.ignite.internal;
 
-/**
- * Holder for handles.
- */
-interface BinaryReaderHandlesHolder {
-    /**
-     * Set handle.
-     *
-     * @param obj Object.
-     * @param pos Position.
-     */
-    public void setHandle(Object obj, int pos);
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-    /**
-     * Get handle.
-     *
-     * @param pos Position.
-     * @return Handle.
-     */
-    public Object getHandle(int pos);
-
-    /**
-     * Get all handles.
-     *
-     * @return Handles.
-     */
-    public BinaryReaderHandles handles();
-
+/** */
+@FeatureGated(registry = TestFeatureRegistry.class)
+public class TestMixedRegistryBaseMessage extends AbstractMessage {
     /** */
-    public boolean isEmpty();
+    @Order(value = 0, deprecatedBy = "FIRST_FEATURE")
+    int oldFld;
 }

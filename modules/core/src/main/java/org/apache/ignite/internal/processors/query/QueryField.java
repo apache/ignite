@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Query field metadata.
  */
-public class QueryField implements Message {
+public class QueryField extends AbstractMessage {
     /** Field name. */
     @Order(0)
     String name;

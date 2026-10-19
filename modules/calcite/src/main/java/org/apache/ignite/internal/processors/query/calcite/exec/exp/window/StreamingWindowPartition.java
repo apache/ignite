@@ -19,17 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 
 /** Non-buffering implementation of the ROWS / RANGE window partition. */
-final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
+public final class StreamingWindowPartition<Row> extends WindowPartitionBase<Row> {
     /** */
     private Row prevRow;
-
-    /** */
-    private Row currRow;
 
     /** */
     private int rowIdx = -1;
@@ -44,7 +39,7 @@ final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
     private Object[] accResults;
 
     /** */
-    StreamWindowPartition(
+    StreamingWindowPartition(
         Comparator<Row> peerCmp,
         WindowFunctionFactory<Row> funcFactory,
         RowHandler.RowFactory<Row> rowFactory
@@ -52,55 +47,42 @@ final class StreamWindowPartition<Row> extends WindowPartitionBase<Row> {
         super(peerCmp, funcFactory, rowFactory);
     }
 
-    /** {@inheritDoc} */
-    @Override public void add(Row row) {
-        assert currRow == null : "StreamingWindowPartition can only hold one row";
-        currRow = row;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void evalTo(RowHandler.RowFactory<Row> factory, Consumer<Row> output) {
-        if (currRow == null)
-            return;
-
+    /** Evaluates window functions for the given row. */
+    public Row eval(Row row, RowHandler.RowFactory<Row> factory) {
         if (accumulators == null) {
             accumulators = createWrappers();
             accResults = new Object[accumulators.size()];
         }
 
         rowIdx++;
-        if (isNewPeer(currRow, prevRow))
+        if (isNewPeer(row, prevRow))
             peerIdx++;
 
         int accIdx = 0;
         for (WindowFunctionWrapper<Row> acc : accumulators) {
-            Object accResult = acc.callStreaming(currRow, rowIdx, peerIdx);
+            Object accResult = acc.callStreaming(row, rowIdx, peerIdx);
             accResults[accIdx++] = accResult;
         }
 
-        Row resultRow = createResultRow(factory, currRow, accResults);
-        output.accept(resultRow);
+        Row resultRow = createResultRow(factory, row, accResults);
+        prevRow = row;
+        return resultRow;
+    }
 
-        prevRow = currRow;
-        currRow = null;
+    /** Returns true if any of the window functions is an accumulator stores incomig row. */
+    public boolean hasAggAccumulators() {
+        List<WindowFunctionWrapper<Row>> accumulators = this.accumulators;
+        if (accumulators == null)
+            accumulators = createWrappers();
+
+        return accumulators.stream().anyMatch(WindowFunctionWrapper::isAggAccumulator);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        currRow = null;
         prevRow = null;
         rowIdx = -1;
         peerIdx = -1;
         accumulators = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isStreaming() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void attachMemoryTracker(RowTracker<Row> memoryTracker) {
-        // Streaming partition does not use memory tracker.
     }
 }

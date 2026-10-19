@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
 @FeatureGated(registry = TestInvalidFeatureRegistry.class)
-public class TestInvalidFeatureMessage implements Message {
+public class TestInvalidFeatureMessage extends AbstractMessage {
     /** */
     @Order(value = 0, introducedBy = "NOT_A_FEATURE")
     int fld;
