@@ -15,6 +15,9 @@
 
 """
 Fills one volume of a persistent server node under load and checks whether the node survives.
+
+The tests reproduce what Ignite does today and guard no behavior, so they run only with
+--globals '{"disk_full_tests": true}'.
 """
 import os
 import time
@@ -28,9 +31,10 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration, \
     DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.ignite_spec import IgniteNodeSpecFileOutput
 from ignitetest.services.utils.jvm_utils import merge_jvm_settings
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.utils import cluster, ignite_versions
+from ignitetest.utils import cluster, ignite_versions, ignore_if
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
@@ -48,6 +52,8 @@ FAILURES = {
     "work": ("CRITICAL_ERROR", "BinaryMetadataFileStore")
 }
 
+reproducer = ignore_if(lambda _, globals: not globals.get("disk_full_tests"))
+
 
 class DiskFullTest(IgniteTest):
     """
@@ -56,6 +62,7 @@ class DiskFullTest(IgniteTest):
     LOAD_APP = "org.apache.ignite.internal.ducktest.tests.disk_full.DiskFullLoadApplication"
 
     @cluster(num_nodes=2)
+    @reproducer
     @ignite_versions(str(DEV_BRANCH))
     def test_node_survives_full_log_volume(self, ignite_version):
         """
@@ -70,17 +77,21 @@ class DiskFullTest(IgniteTest):
 
         check_serves_load_for(ignite, load, seconds=15)
         assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
-        check_log_write_failed(ignite)
+
+        logs = [ignite.nodes[0].log_file, os.path.join(ignite.log_dir, "console.log")]
+
+        for log in logs:
+            check_write_failed(ignite, log)
 
         free_volume(ignite, ignite.log_dir)
 
-        size = log_size(ignite)
-        wait_until(lambda: log_size(ignite) > size, timeout_sec=15,
-                   err_msg="The node's log did not grow after space was freed")
+        for log in logs:
+            check_grows(ignite, log)
 
         load.stop()
 
     @cluster(num_nodes=2)
+    @reproducer
     @ignite_versions(str(DEV_BRANCH))
     def test_jvm_exits_on_full_jfr_volume(self, ignite_version):
         """
@@ -100,6 +111,7 @@ class DiskFullTest(IgniteTest):
         check_stops(ignite)
 
     @cluster(num_nodes=2)
+    @reproducer
     @ignite_versions(str(DEV_BRANCH))
     def test_node_stops_on_full_volume_shared_by_logs_and_data(self, ignite_version):
         """
@@ -115,6 +127,7 @@ class DiskFullTest(IgniteTest):
         check_stops(ignite)
 
     @cluster(num_nodes=2)
+    @reproducer
     @ignite_versions(str(DEV_BRANCH))
     def test_node_survives_full_wal_volume(self, ignite_version):
         """
@@ -136,6 +149,7 @@ class DiskFullTest(IgniteTest):
         load.stop()
 
     @cluster(num_nodes=2)
+    @reproducer
     @ignite_versions(str(DEV_BRANCH))
     @matrix(volume=["wal_archive", "partitions", "work"])
     def test_node_stops_on_full_volume(self, ignite_version, volume):
@@ -154,6 +168,7 @@ class DiskFullTest(IgniteTest):
         check_failure(ignite, *FAILURES[volume])
 
     @cluster(num_nodes=2)
+    @reproducer
     @ignite_versions(str(DEV_BRANCH))
     def test_node_stops_when_cdc_fills_wal_archive_volume(self, ignite_version):
         """
@@ -175,7 +190,8 @@ class DiskFullTest(IgniteTest):
 
     def __ignite(self, ignite_version):
         """
-        :return: Persistent server node with the partitions, the WAL and its archive in directories of their own.
+        :return: Persistent server node that writes its stdout and stderr into console.log itself, with the
+                 partitions, the WAL and its archive in directories of their own.
         """
         ignite = IgniteService(self.test_context, IgniteConfiguration(
             version=IgniteVersion(ignite_version),
@@ -186,6 +202,8 @@ class DiskFullTest(IgniteTest):
                 wal_segment_size=4 * MB,
                 max_wal_archive_size=32 * MB,
                 default=DataRegionConfiguration(persistence_enabled=True, max_size=256 * MB))), num_nodes=1)
+
+        ignite.spec = ignite.spec.rebuild_as(IgniteNodeSpecFileOutput)
 
         root = ignite.persistent_root
 
@@ -234,20 +252,27 @@ def free_volume(ignite, path):
     ignite.nodes[0].account.ssh(f"rm -f {os.path.join(path, FILLER)}", allow_fail=False)
 
 
-def log_size(ignite):
+def file_size(ignite, path):
     """
-    :return: Bytes written into the node's log.
+    :return: Bytes written into the file on the node.
     """
-    node = ignite.nodes[0]
-
-    return int(ignite.exec_command(node, f"stat -c %s {node.log_file}"))
+    return int(ignite.exec_command(ignite.nodes[0], f"stat -c %s {path}"))
 
 
-def check_log_write_failed(ignite):
+def check_write_failed(ignite, path):
     """
-    Checks that the node's log ends on a page boundary: a write the full tmpfs refused filled its last page.
+    Checks that the file ends on a page boundary: a write the full tmpfs refused filled its last page.
     """
-    assert log_size(ignite) % PAGE == 0, "No write into the node's log hit the full volume"
+    assert file_size(ignite, path) % PAGE == 0, f"No write into {path} hit the full volume"
+
+
+def check_grows(ignite, path):
+    """
+    Checks that the file grows within 15 s.
+    """
+    size = file_size(ignite, path)
+
+    wait_until(lambda: file_size(ignite, path) > size, timeout_sec=15, err_msg=f"{path} did not grow")
 
 
 def check_serves_load_for(ignite, load, seconds):
