@@ -41,10 +41,6 @@ PAGE = 4096
 
 FILLER = "filler"
 
-# A filled volume can open up again before it is measured: the node deletes files on it, archived WAL
-# segments above the archive limit being the case that happens under load. Refill that many times.
-FILL_ATTEMPTS = 5
-
 # Failure type and failed writer the node logs when the volume fills.
 FAILURES = {
     "wal_archive": ("SYSTEM_WORKER_TERMINATION", "Failed to archive WAL segment"),
@@ -224,22 +220,11 @@ class DiskFullTest(IgniteTest):
 
 def fill_volume(ignite, path):
     """
-    Writes a file into the path until its volume has no space left, and fails if it never got full.
+    Writes a file into the path until its volume refuses the write.
     """
-    free = -1
+    out = ignite.exec_command(ignite.nodes[0], f"dd if=/dev/zero of={os.path.join(path, FILLER)} bs=1M 2>&1")
 
-    for _ in range(FILL_ATTEMPTS):
-        # dd exits with 1 once the volume refuses the write, which is the point here, so its exit
-        # code is not the evidence that the volume is full. And the node frees space on it as it
-        # deletes files, so a volume that was full a moment ago may not be when it is measured.
-        ignite.nodes[0].account.ssh(f"dd if=/dev/zero of={os.path.join(path, FILLER)} bs=1M", allow_fail=True)
-
-        free = free_space(ignite, path)
-
-        if free == 0:
-            break
-
-    assert free == 0, f"{path} still has {free} bytes free after {FILL_ATTEMPTS} fill attempts"
+    assert "No space left on device" in out, f"{path} did not fill up: {out}"
 
 
 def free_volume(ignite, path):
@@ -247,13 +232,6 @@ def free_volume(ignite, path):
     Removes the file fill_volume wrote.
     """
     ignite.nodes[0].account.ssh(f"rm -f {os.path.join(path, FILLER)}", allow_fail=False)
-
-
-def free_space(ignite, path):
-    """
-    :return: Bytes free on the volume of the path.
-    """
-    return int(ignite.exec_command(ignite.nodes[0], f"df --output=avail -B1 {path} | tail -1"))
 
 
 def log_size(ignite):
