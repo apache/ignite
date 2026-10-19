@@ -47,7 +47,6 @@ import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -95,7 +94,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     private final GridKernalContext ctx;
 
     /** Marshaller. */
-    private final GridBinaryMarshaller marsh;
+    private final BinaryContext bctx;
 
     /** Memory manager. */
     private final PlatformMemoryManagerImpl mem;
@@ -153,7 +152,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
         cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
-        marsh = cacheObjProc.marshaller();
+        bctx = cacheObjProc.binaryContext();
 
         ctx.cache().context().exchange().registerExchangeAwareComponent(this);
     }
@@ -180,7 +179,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public BinaryReaderEx reader(PlatformInputStream in) {
-        return BinaryUtils.reader(marsh.context(),
+        return BinaryUtils.reader(bctx,
             in,
             ctx.config().getClassLoader(),
             true,
@@ -194,7 +193,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public BinaryWriterEx writer(PlatformOutputStream out) {
-        return marsh.writer(out);
+        return BinaryUtils.writer(bctx, out);
     }
 
     /** {@inheritDoc} */
