@@ -85,7 +85,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected SnapshotStatus reduce0(List<ComputeJobResult> results) {
+    @Override protected @Nullable Serializable reduce0(List<ComputeJobResult> results) {
         if (results.isEmpty())
             throw new IgniteException("Failed to get the snapshot status. Topology is empty.");
 
@@ -98,109 +98,108 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
         assert cmdInitiatorFeatures != null : "Command initiator features isn't set";
 
         boolean featureEnabled = ignite.context().rollingUpgrade().features().isActive(SNAPSHOT_CHECK_STATUS_FEATURE);
+        boolean initiatorSupport = cmdInitiatorFeatures.features().contains(SNAPSHOT_CHECK_STATUS_FEATURE.id());
 
         // Not empty results.
-        Collection<SnapshotStatus> statuses = new ArrayList<>(results.size());
+        Collection<SnapshotStatus> allStatuses = new ArrayList<>(results.size());
 
         for (ComputeJobResult jobRes : results) {
             if (jobRes.getData() == null)
                 continue;
 
+            /** Old single {@link SnapshotStatus} of creation or restoration status or new several results as a collection. */
             Serializable rawResult = jobRes.getData();
 
             assert rawResult instanceof SnapshotStatus || rawResult instanceof Collection<?> :
-                "Unsupported job result: " + rawResult.getClass().getSimpleName();
+                "Unsupported job result type: " + rawResult.getClass().getSimpleName();
 
             assert !(rawResult instanceof Collection<?> cll) || cll.isEmpty() || (F.first(cll) instanceof SnapshotStatus) :
                 "Statuses collection is empty or its first status is of unsupported type";
 
-            if (rawResult instanceof SnapshotStatus singleStatus) {
+            if (rawResult instanceof SnapshotStatus singleJobStatus) {
+                assert !featureEnabled :
+                    "Single snapshot status result is allowed only if the snapshot check status feature is not enabled";
+                assert singleJobStatus.operation() != SnapshotOperation.CHECK :
+                    "Snapshot check status result is allowed only within the result list, not as a single result";
 
+                allStatuses.add(singleJobStatus);
             }
             else {
-                assert cmdInitiatorFeatures.features().contains(SNAPSHOT_CHECK_STATUS_FEATURE.id());
-            }
+                assert featureEnabled :
+                    "Many snapshot status results are allowed only if the snapshot check status feature is enabled";
 
-            // Command initiator doesn't support the snapshot check status yet.
-            if (!initiatorSupportsStatuses && s instanceof SnapshotOperationStatus) {
-                // Do not store the status if there are only stnapshot checks (no other oparations).
-                if (s.operation() == SnapshotOperation.CHECK)
-                    continue;
+                Collection<SnapshotStatus> manyStatuses = (Collection<SnapshotStatus>)rawResult;
 
-                // Convert into the previious version for corrent serialization.
-                s = new SnapshotStatus(s.operation(), s.name(), s.incrementIndex(), s.requestId(), s.startTime(), s.progress());
-            }
+                // Skip the check status if cluster supports, but not a thin client of previous version.
+                if (!initiatorSupport) {
+                    manyStatuses = manyStatuses.stream().filter(s -> s.operation() != SnapshotOperation.CHECK).toList();
 
-            statuses.add(s);
+                    assert manyStatuses.isEmpty() || manyStatuses.size() == 1 :
+                        "Snapshot creation or restoration are mutually exclusive, only one of them allowed at the same time.";
+                }
 
-            List<SnapshotOperationStatus> checkStatuses = s instanceof SnapshotOperationStatus s2 ? s2.checkStatuses() : null;
-
-            if (checkStatuses == null) {
-                assert s.op != SnapshotOperation.CHECK;
-
-                continue;
-            }
-
-            if (chkStatuses == null)
-                chkStatuses = U.newHashMap(results.size());
-
-            for (SnapshotOperationStatus s0 : checkStatuses) {
-                SnapshotOperationStatus prev = chkStatuses.putIfAbsent(s0.name(), s0);
-
-                if (prev == null)
-                    continue;
-
-                // Merge nodes progress.
-                prev.progress.putAll(s0.progress());
+                allStatuses.addAll(manyStatuses);
             }
         }
 
-        // First, find create or restore operation. Check statuses, if are, contains any status.
-        Collection<SnapshotStatus> res = F.viewReadOnly(statuses, s -> s, s -> s.operation() != SnapshotOperation.CHECK);
-
-        if (res.isEmpty())
-            res = statuses;
-
-        // There is no snapshot operation.
-        if (res.isEmpty())
+        // There is no snapshot operation or the check operation in not supported yet in the result.
+        if (allStatuses.isEmpty())
             return null;
 
-        SnapshotStatus mergerRes = F.first(res);
+        ArrayList<SnapshotStatus> tastResultStatuses = null;
 
-        var rqId = mergerRes.requestId;
+        // First, find create or restore operation.
+        Collection<SnapshotStatus> filtered = F.viewReadOnly(allStatuses, s -> s, s -> s.operation() != SnapshotOperation.CHECK);
 
-        // Filter out differing requests due to concurrent updates on nodes.
-        res = F.view(res, s -> s.requestId.equals(rqId));
+        // Found create or restore statuses.
+        if (!filtered.isEmpty()) {
+            // Merged create or restore.
+            SnapshotStatus merged = F.first(filtered);
 
-        // Create or restore.
-        if (mergerRes.operation() != SnapshotOperation.CHECK) {
+            String mergedRqId = merged.requestId;
+
+            // Filter out differing requests due to concurrent updates on nodes.
+            filtered = F.view(filtered, s -> s.requestId.equals(mergedRqId));
+
             // Merge nodes progress.
             Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
 
-            res.forEach(s -> progress.putAll(s.progress));
+            filtered.forEach(s -> progress.putAll(s.progress));
 
-            if (initiatorSupportsStatuses) {
-                mergerRes = new SnapshotOperationStatus(mergerRes.op, mergerRes.name, mergerRes.incIdx, mergerRes.requestId,
-                    mergerRes.startTime, progress);
+            merged = new SnapshotStatus(merged.op, merged.name, merged.incIdx, merged.requestId, merged.startTime, progress);
 
-                ((SnapshotOperationStatus)mergerRes).checkStatuses = new ArrayList<>(chkStatuses.values());
-            }
-            else {
-                mergerRes = new SnapshotStatus(mergerRes.op, mergerRes.name, mergerRes.incIdx, mergerRes.requestId,
-                    mergerRes.startTime, progress);
+            // Return the old style single result.
+            if (!initiatorSupport || !featureEnabled)
+                return merged;
 
-                assert chkStatuses == null;
-            }
-        } else {
-            assert initiatorSupportsStatuses;
-            assert mergerRes instanceof  SnapshotOperationStatus;
+            if (tastResultStatuses == null)
+                tastResultStatuses = new ArrayList<>();
 
-            ((SnapshotOperationStatus)mergerRes).checkStatuses = new ArrayList<>(chkStatuses.values());
+            tastResultStatuses.add(merged);
         }
 
-        assert !F.isEmpty(mergerRes.progress);
+        // Check operation statuses.
+        filtered = F.viewReadOnly(allStatuses, s -> s, s -> s.operation() == SnapshotOperation.CHECK);
 
-        return mergerRes;
+        // Found check statuses.
+        if (!filtered.isEmpty()) {
+            // Merged check statuses per snapshot name.
+            Map<String, SnapshotStatus> mergedCheckStatuses = U.newHashMap(filtered.size());
+
+            filtered.forEach(chkStatus -> {
+                SnapshotStatus chkStatus0 = mergedCheckStatuses.computeIfAbsent(chkStatus.name, (snpName -> chkStatus));
+
+                if (chkStatus0 != chkStatus)
+                    chkStatus0.progress.putAll(chkStatus.progress);
+            });
+
+            if (tastResultStatuses == null)
+                tastResultStatuses = new ArrayList<>();
+
+            tastResultStatuses.addAll(mergedCheckStatuses.values());
+        }
+
+        return tastResultStatuses;
     }
 
     /**
@@ -376,7 +375,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
         private final long startTime;
 
         /** Progress of operation on nodes. */
-        protected final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
+        Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
 
         /** */
         private SnapshotStatus(

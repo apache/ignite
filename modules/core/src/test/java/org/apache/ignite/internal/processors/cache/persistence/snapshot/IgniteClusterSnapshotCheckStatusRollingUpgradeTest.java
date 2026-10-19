@@ -245,24 +245,24 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         assertTrue(waitForCondition(() -> spi(grid(blockNodeIdx)).hasBlockedMessages(), getTestTimeout()));
 
-        SnapshotStatusTask.SnapshotOperationStatus snpStatus;
+        Collection<SnapshotStatusTask.SnapshotStatus> snpStatuses;
 
         if (clientArg != null) {
-            snpStatus = snapshotStatusCli(clientArg);
+            snpStatuses = snapshotStatusCli(clientArg);
 
             if (positive)
-                assertTrue(snpStatus != null && snpStatus.checkStatuses() != null && snpStatus.checkStatuses().size() == 1);
+                assertTrue(snpStatuses != null && snpStatuses.size() == 1);
             else
-                assertTrue(snpStatus == null);
+                assertTrue(snpStatuses == null);
         }
         else {
             for (Ignite ig : G.allGrids()) {
-                snpStatus = snapshotStatusTask(ig);
+                snpStatuses = snapshotStatusTask(ig);
 
                 if (positive)
-                    assertTrue(snpStatus != null && snpStatus.checkStatuses() != null && snpStatus.checkStatuses().size() == 1);
+                    assertTrue(snpStatuses != null && snpStatuses.size() == 1);
                 else
-                    assertTrue(snpStatus == null);
+                    assertTrue(snpStatuses == null);
             }
         }
 
