@@ -6318,32 +6318,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * @param marsh Marshaller.
-     * @param zipBytes Zip-compressed bytes.
-     * @param clsLdr Class loader to use.
-     * @return Unmarshalled object.
-     * @throws IgniteCheckedException
-     */
-    public static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
-        assert marsh != null;
-        assert zipBytes != null;
-
-        try {
-            ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipBytes));
-
-            in.getNextEntry();
-
-            return marsh.unmarshal(in, clsLdr);
-        }
-        catch (IgniteCheckedException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException(e);
-        }
-    }
-
-    /**
      * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      * <p/>
