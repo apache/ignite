@@ -1,5 +1,6 @@
 {
   "class": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
   "fields": [
     {"order": 0, "type": "int", "name": "rangeStartInclusive"},
     {"order": 1, "type": "int", "name": "rangeEndInclusive"},

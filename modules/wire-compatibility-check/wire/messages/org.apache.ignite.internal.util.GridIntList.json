@@ -1,5 +1,6 @@
 {
   "class": "org.apache.ignite.internal.util.GridIntList",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
   "fields": [
     {"order": 0, "type": "int[]", "name": "arr"},
     {"order": 1, "type": "int", "name": "idx"}

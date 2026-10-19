@@ -1,5 +1,6 @@
 {
   "class": "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
   "fields": [
     {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
     {"order": 1, "type": "java.util.UUID", "name": "verifierNodeId"},
