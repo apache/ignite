@@ -3225,20 +3225,31 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Removes transaction entries and releases their acquired transactional locks.
+     * Removes the initiating-side state of a conditional lock rejected and cleaned up by the primary.
+     * No distributed unlock is needed: the primary has not replicated or acknowledged this lock.
      *
-     * @param entries Entries to remove and unlock.
+     * @param entry Entry enlisted by the failed attempt.
+     * @param snapshot Previous read entry state, if the entry was already enlisted before this attempt.
      */
-    public void removeAndUnlockTxEntries(Collection<IgniteTxEntry> entries) {
-        if (F.isEmpty(entries))
-            return;
+    public void removeFailedLockEntry(IgniteTxEntry entry, @Nullable IgniteTxEntry snapshot) {
+        removeEntryMappings(entry);
 
-        for (IgniteTxEntry entry : entries) {
-            txState().removeEntry(entry.txKey());
-            removeEntryMappings(entry);
+        if (entry.context().isNear()) {
+            try {
+                GridCacheEntryEx cached = entry.cached();
+
+                if (cached.hasLockCandidate(xidVersion()))
+                    cached.removeLock(xidVersion());
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // An obsolete near entry has no live candidate.
+            }
         }
 
-        unlockTxEntries(entries);
+        if (snapshot == null)
+            txState().removeEntry(entry.txKey());
+        else
+            entry.restoreFrom(snapshot);
     }
 
     /**
@@ -4278,6 +4289,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (timeout == -1)
             return new GridFinishedFuture<>(timeoutException());
 
+        boolean versionedLock = keys.stream().anyMatch(key ->
+            entry(cacheCtx.txKey((KeyCacheObject)key)).versionedLockPending());
+
         IgniteInternalFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
             timeout,
             waitTimeout,
@@ -4295,11 +4309,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret, false, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+            new PLC1<GridCacheReturn>(ret, false, !versionedLock && !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
                     boolean success = Boolean.TRUE.equals(fut.get());
+
+                    if (!success)
+                        checkValid();
 
                     ret.success(success);
 
