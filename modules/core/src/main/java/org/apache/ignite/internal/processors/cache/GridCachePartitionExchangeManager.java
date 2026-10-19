@@ -157,6 +157,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_LONG_RUNNING_CACHE_FUTURES_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
@@ -206,6 +207,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ActionLimiter<IgniteInternalTx> ltrDumpLimiter = new ActionLimiter<>(1);
+
+    /** Number of long running cache futures detected in the last dump cycle. */
+    private volatile long longRunningCacheFuturesCnt;
 
     /** */
     @GridToStringInclude
@@ -497,6 +501,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         mreg.register(PME_OPS_BLOCKED_DURATION,
             () -> currentPMEDuration(true),
             "Current PME cache operations blocked duration in milliseconds.");
+
+        mreg.register(PME_LONG_RUNNING_CACHE_FUTURES_CNT,
+            () -> longRunningCacheFuturesCnt,
+            "Number of long running cache futures (active + atomic) detected in the last dump cycle.");
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
@@ -2018,6 +2026,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         final IgniteDiagnosticPrepareContext diagCtx = cctx.kernalContext().cluster().diagnosticEnabled() ?
             new IgniteDiagnosticPrepareContext(cctx.localNodeId()) : null;
 
+        long futuresCnt = 0;
+
         if (tm != null) {
             WarningsGroup warnings = new WarningsGroup("First %d long running transactions [total=%d]",
                 diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
@@ -2056,6 +2066,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
+                    futuresCnt++;
+
                     if (activeWarnings.canAddMessage()) {
                         activeWarnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
@@ -2077,6 +2089,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (curTime - fut.startTime() > timeout) {
                     found = true;
 
+                    futuresCnt++;
+
                     if (atomicWarnings.canAddMessage()) {
                         atomicWarnings.add(">>> Future [startTime=" + formatTime(fut.startTime()) +
                             ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
@@ -2091,6 +2105,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             atomicWarnings.printToLog();
         }
+
+        longRunningCacheFuturesCnt = futuresCnt;
 
         if (diagCtx != null && !diagCtx.empty()) {
             try {

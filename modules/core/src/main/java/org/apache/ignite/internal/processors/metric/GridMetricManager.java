@@ -139,6 +139,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Whether cluster is in fully rebalanced state metric name. */
     public static final String REBALANCED = "Rebalanced";
 
+    /** Long running cache futures count metric name. */
+    public static final String PME_LONG_RUNNING_CACHE_FUTURES_CNT = "LongRunningCacheFuturesCount";
+
     /** Custom metrics registry name. */
     public static final String CUSTOM_METRICS = "custom";
 
