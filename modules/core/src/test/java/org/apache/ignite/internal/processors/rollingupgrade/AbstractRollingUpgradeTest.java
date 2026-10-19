@@ -40,11 +40,13 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
@@ -108,6 +110,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest {
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";
+
+    /** Reference to the current master version */
+    protected static final String MASTER_VER = "master";
 
     /** */
     protected static final String COMPONENT_VERSIONS_ATTRIBUTE = "test.component.versions";
@@ -186,10 +191,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         boolean pluginDeclaresFeatures = testVersions.containsPlugin() && pluginDeclaresFeatures(testVersions.pluginVersion());
 
-        IgniteCoreFeatureSet testCoreFeatures = new IgniteCoreFeatureSet(
-            IgniteProductVersion.fromString(testVersions.coreVersion()),
-            IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(testVersions.coreVersion()))
-        );
+        IgniteCoreFeatureSet testCoreFeatures = createCoreFeatureSet(testVersions.coreVersion());
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {
@@ -216,7 +218,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
         TcpDiscoverySpi discoSpi = new TestBlockingTcpDiscoverySpi(cfg) {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ignored) {
-                super.setNodeAttributes(attrs, IgniteProductVersion.fromString(testVersions.coreVersion()));
+                super.setNodeAttributes(attrs, testCoreFeatures.version());
             }
         };
 
@@ -242,6 +244,9 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     public static Collection<IgniteFeature> readDeclaredCoreFeatures(String ver) throws Exception {
+        if (MASTER_VER.equals(ver))
+            return IgniteFeatureSet.readDeclaredFeatures(CoreFeatureRegistry.class);
+
         Class<?> cls = Class.forName(
             TestIgniteReleaseFeatures_2_18_0.class.getPackageName() + ".TestIgniteReleaseFeatures_" + ver.replace(".", "_"));
 
@@ -411,7 +416,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     public static IgniteCoreFeatureSet createCoreFeatureSet(String ver) throws Exception {
         return new IgniteCoreFeatureSet(
-            IgniteProductVersion.fromString(ver),
+            MASTER_VER.equals(ver) ? IgniteVersionUtils.VER : IgniteProductVersion.fromString(ver),
             IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(ver)));
     }
 
@@ -575,7 +580,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected String resolveCompoundVersion(IgniteNodeFeatureSet features) {
         return Arrays.stream(features.values())
             .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
-            .map(f -> semanticVersion(f.version()))
+            .map(f -> IgniteVersionUtils.VER.equals(f.version()) ? MASTER_VER : semanticVersion(f.version()))
             .collect(Collectors.joining(" | "));
     }
 
@@ -591,13 +596,13 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             expLogicalVersions.cmpVersions.forEach((cmp, ver) -> {
                 IgniteComponentFeatureSet cmpFeatures = ru(ignite).features().activeComponentFeatures(cmp);
 
-                assertEquals(ver, cmpFeatures == null ? null : semanticVersion(cmpFeatures.version()));
+                assertEquals(toSemanticVersion(ver), cmpFeatures == null ? null : semanticVersion(cmpFeatures.version()));
             });
 
             expSrcVersions.cmpVersions.forEach((cmp, ver) -> {
                 IgniteComponentUpgradeState state = ru(ignite).state(cmp);
 
-                assertEquals(ver, state.srcVer == null ? null : semanticVersion(state.srcVer));
+                assertEquals(toSemanticVersion(ver), state.srcVer == null ? null : semanticVersion(state.srcVer));
             });
 
             expTargetVersions.cmpVersions.forEach((cmp, ver) -> {
@@ -605,9 +610,14 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
                 String expVer = Objects.equals(expSrcVersions.cmpVersions.get(cmp), ver) ? null : ver;
 
-                assertEquals(expVer, state.targetVer == null ? null : semanticVersion(state.targetVer));
+                assertEquals(toSemanticVersion(expVer), state.targetVer == null ? null : semanticVersion(state.targetVer));
             });
         }
+    }
+
+    /** */
+    private static @Nullable String toSemanticVersion(@Nullable String ver) {
+        return MASTER_VER.equals(ver) ? semanticVersion(IgniteVersionUtils.VER) : ver;
     }
 
     /** */
