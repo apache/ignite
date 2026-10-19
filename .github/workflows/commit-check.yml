@@ -138,7 +138,7 @@ jobs:
           ./mvnw test-compile -Pdocs -pl :code-snippets -am -B -V -Dmaven.compiler.useIncrementalCompilation=false
 
   check-dotnet:
-    name: Сheck .NET code
+    name: Check .NET code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

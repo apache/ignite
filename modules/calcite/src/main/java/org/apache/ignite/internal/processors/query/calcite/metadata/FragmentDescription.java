@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * @see #preparedToSend()
  * @see #received()
  */
-public class FragmentDescription implements Message {
+public class FragmentDescription extends AbstractMessage {
     /** */
     @Order(0)
     long fragmentId;

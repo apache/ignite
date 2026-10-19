@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -63,6 +64,12 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Metric name for user time histogram on node. */
     public static final String METRIC_USER_TIME_HISTOGRAM = "nodeUserTimeHistogram";
 
+    /** Metric name for maximum hold time of explicit locks currently held on node. */
+    public static final String METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME = "MaxExplicitLockHoldTime";
+
+    /** Metric name for explicit lock hold time histogram on node. */
+    public static final String METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM = "ExplicitLockHoldTimeHistogram";
+
     /** Histogram buckets for metrics of system and user time. */
     public static final long[] METRIC_TIME_BUCKETS =
         new long[] { 1, 2, 4, 8, 16, 25, 50, 75, 100, 250, 500, 750, 1000, 3000, 5000, 10000, 25000, 60000};
@@ -97,6 +104,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Holds the reference to metric for user time histogram on node. */
     private HistogramMetricImpl txUserTimeHistogram;
 
+    /** Holds the reference to metric for explicit lock hold time histogram on node. */
+    private final HistogramMetricImpl explicitLockHoldTimeHistogram;
+
     /**
      * @param ctx Kernal context.
      */
@@ -124,6 +134,12 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             METRIC_TIME_BUCKETS,
             "Transactions user times on node represented as histogram, in milliseconds."
         );
+
+        explicitLockHoldTimeHistogram = mreg.histogram(
+            METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM,
+            METRIC_TIME_BUCKETS,
+            "Explicit locks hold times on node represented as histogram, in milliseconds."
+        );
     }
 
     /** Callback invoked when {@link IgniteTxManager} started. */
@@ -142,6 +158,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         mreg.register("LockedKeysNumber",
             this::txLockedKeysNum,
             "The number of keys locked on the node.");
+
+        mreg.register(METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME,
+            this::maxExplicitLockHoldTime,
+            "Maximum hold time of explicit locks currently held on the node, in milliseconds.");
 
         mreg.register("OwnerTransactionsNumber",
             this::nearTxNum,
@@ -251,6 +271,15 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
             txUserTimeHistogram.value(userTime);
         }
+    }
+
+    /**
+     * Explicit lock release callback.
+     *
+     * @param holdTime Lock hold time in milliseconds.
+     */
+    public void onExplicitLockRelease(long holdTime) {
+        explicitLockHoldTimeHistogram.value(holdTime);
     }
 
     /**
@@ -402,6 +431,23 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             return 0;
 
         return mvccMgr.lockedKeys().size() + mvccMgr.nearLockedKeys().size();
+    }
+
+    /** @return Maximum hold time of explicit locks currently held on the node, in milliseconds. */
+    private long maxExplicitLockHoldTime() {
+        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccMgr == null)
+            return 0;
+
+        long now = U.currentTimeMillis();
+
+        long max = 0;
+
+        for (GridCacheExplicitLockSpan span : mvccMgr.activeExplicitLocks())
+            max = Math.max(max, span.maxHoldTime(now));
+
+        return max;
     }
 
     /** {@inheritDoc} */

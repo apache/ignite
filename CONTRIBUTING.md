@@ -1,7 +1,7 @@
 # Contributing to Apache Ignite
 ## Joining Community and its communication channels
-- Sign-in to Apache JIRA https://issues.apache.org/jira/
-- (To contribute code patches) Sing-in to [Apache Ignite](https://ignite.apache.org/) Continuous Integration server https://ci.ignite.apache.org/
+- Sign in to Apache JIRA https://issues.apache.org/jira/. If you do not have an account, request it at https://selfserve.apache.org/jira-account.html
+- (To contribute code patches) Sign in to [Apache Ignite](https://ignite.apache.org/) Continuous Integration server https://ci2.ignite.apache.org/
 - (To contribute documentation to the wiki) Sing-in to [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE)
 - Subscribe to both Apache [User List - user@ignite.apache.org](https://lists.apache.org/list.html?user@ignite.apache.org)
 and [Dev List - dev@ignite.apache.org](https://lists.apache.org/list.html?dev@ignite.apache.org) lists with your personal (non-corporate) email address.
@@ -21,7 +21,7 @@ Thanks!
 ```
 
 ## Needed Contributions
-[Apache Ignite](https://ignite.apache.org/) Community values any type of contributions from [CoPDoC](https://community.apache.org/contributors/#contributing-a-project-copdoc). Community member can contibute to any areas from (Co)mmunity, (P)roject, (Do)cumentation, and (C)ode.
+[Apache Ignite](https://ignite.apache.org/) Community values any type of contributions from [CoPDoC](https://community.apache.org/contributors/#contributing-a-project-copdoc). Community member can contribute to any areas from (Co)mmunity, (P)roject, (Do)cumentation, and (C)ode.
 
 Community values code contributions, but project value non-code contributions too, from writers, editors, testers, etc.
 We value user support on the list, as well as providing a summary of [user list](https://lists.apache.org/list.html?user@ignite.apache.org) threads to Apache Ignite developers.
@@ -36,7 +36,7 @@ Apache Ignite prefer to use [consensus to make decisions](http://community.apach
 
 ## Contributing Documentation
 Documentation can be contributed to
- - End-User documentation https://ignite.apache.org/docs/latest/ . Use Suggest Edits. See also [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).
+ - End-User documentation https://ignite.apache.org/docs/latest/ . Its sources are in the [docs](docs) directory, see [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).
  - Developer documentation, design documents, IEPs [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE). Ask at [Dev List](https://lists.apache.org/list.html?dev@ignite.apache.org) to be added as editor.
  - Markdown files, visible at GitHub, e.g. README.md; drawings explaining Apache Ignite & product internals.
  - Javadocs for packages (package-info.java), classes, methods, etc.
@@ -46,7 +46,7 @@ You can also blog about the product. It helps users to understand how to use Apa
 
 Feel free to share link to your blog with
  [User](https://lists.apache.org/list.html?user@ignite.apache.org) & [Dev](https://lists.apache.org/list.html?dev@ignite.apache.org) lists.
-Blogs are reffered from [Apache Ignite Blogs](https://ignite.apache.org/blogs.html).
+See also the [Apache Ignite Blog](https://ignite.apache.org/blog/).
 
 ## Contributing Code
 ### Project Initial Setup
@@ -65,6 +65,6 @@ Inspection profile is placed to IDEA [Project_Default](.idea/inspectionProfiles/
 ### Building project
 Usually all Maven builds are to be run with skipped tests:
 ```
-./mvnw -DskipTests
+./mvnw clean install -DskipTests
 ```
 See also [DEVNOTES.txt](DEVNOTES.txt)
