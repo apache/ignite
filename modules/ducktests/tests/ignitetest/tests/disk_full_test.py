@@ -34,7 +34,7 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataRegi
 from ignitetest.services.utils.ignite_spec import IgniteNodeSpecFileOutput
 from ignitetest.services.utils.jvm_utils import merge_jvm_settings
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.utils import cluster, ignite_versions, ignore_if
+from ignitetest.utils import cluster, ignite_versions, reproducer
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
 
@@ -52,8 +52,6 @@ FAILURES = {
     "work": ("CRITICAL_ERROR", "BinaryMetadataFileStore")
 }
 
-reproducer = ignore_if(lambda _, globals: not globals.get("disk_full_tests"))
-
 
 class DiskFullTest(IgniteTest):
     """
@@ -62,7 +60,7 @@ class DiskFullTest(IgniteTest):
     LOAD_APP = "org.apache.ignite.internal.ducktest.tests.disk_full.DiskFullLoadApplication"
 
     @cluster(num_nodes=2)
-    @reproducer
+    @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
     def test_node_survives_full_log_volume(self, ignite_version):
         """
@@ -91,7 +89,7 @@ class DiskFullTest(IgniteTest):
         load.stop()
 
     @cluster(num_nodes=2)
-    @reproducer
+    @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
     def test_jvm_exits_on_full_jfr_volume(self, ignite_version):
         """
@@ -111,7 +109,7 @@ class DiskFullTest(IgniteTest):
         check_stops(ignite)
 
     @cluster(num_nodes=2)
-    @reproducer
+    @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
     def test_node_stops_on_full_volume_shared_by_logs_and_data(self, ignite_version):
         """
@@ -127,7 +125,7 @@ class DiskFullTest(IgniteTest):
         check_stops(ignite)
 
     @cluster(num_nodes=2)
-    @reproducer
+    @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
     def test_node_survives_full_wal_volume(self, ignite_version):
         """
@@ -149,7 +147,7 @@ class DiskFullTest(IgniteTest):
         load.stop()
 
     @cluster(num_nodes=2)
-    @reproducer
+    @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
     @matrix(volume=["wal_archive", "partitions", "work"])
     def test_node_stops_on_full_volume(self, ignite_version, volume):
@@ -168,7 +166,7 @@ class DiskFullTest(IgniteTest):
         check_failure(ignite, *FAILURES[volume])
 
     @cluster(num_nodes=2)
-    @reproducer
+    @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
     def test_node_stops_when_cdc_fills_wal_archive_volume(self, ignite_version):
         """

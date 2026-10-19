@@ -51,6 +51,26 @@ class IgnoreIf(Ignore):
         return super().__eq__(other) and self.condition == other.condition
 
 
+class Reproducer(Ignore):
+    """
+    Ignore test unless the global that enables it is set.
+    """
+    def __init__(self, global_name):
+        super().__init__()
+        self.global_name = global_name
+
+    def apply(self, seed_context, context_list):
+        assert len(context_list) > 0, "reproducer decorator is not being applied to any test cases"
+
+        for ctx in context_list:
+            ctx.ignore = ctx.ignore or not ctx.globals.get(self.global_name)
+
+        return context_list
+
+    def __eq__(self, other):
+        return super().__eq__(other) and self.global_name == other.global_name
+
+
 class IgniteVersionParametrize(Mark):
     """
     Parametrize function with ignite_version
@@ -214,6 +234,20 @@ def ignore_if(condition, *, variable_name='ignite_version'):
     """
     def ignorer(func):
         Mark.mark(func, IgnoreIf(condition, variable_name))
+        return func
+
+    return ignorer
+
+
+def reproducer(global_name):
+    """
+    Mark decorated test method as IGNORE unless the global is set, e.g. --globals '{"<global_name>": true}'.
+    For tests that reproduce a behavior on demand rather than guard it on every run.
+
+    :param global_name: name of the global that enables the test.
+    """
+    def ignorer(func):
+        Mark.mark(func, Reproducer(global_name))
         return func
 
     return ignorer
