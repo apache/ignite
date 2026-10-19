@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.Collection;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see SnapshotDeleteProcess
  */
-public class SnapshotDeleteResponse implements Message {
+public class SnapshotDeleteResponse extends AbstractMessage {
     /** {@code null} for client node. */
     @Order(0)
     @Nullable SnapshotDeleteResponse.DeleteStatus status;

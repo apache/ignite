@@ -100,6 +100,6 @@ public class CoreFeatureRegistry {
      */
     public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
 
-    /** */
-    public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = new IgniteCoreFeature(1);
+    /** Feature that introduces the snapshot deletion command. */
+    public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = new IgniteCoreFeature(2);
 }
