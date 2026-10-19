@@ -52,6 +52,7 @@ import static org.apache.ignite.ssl.SslTestUtils.place;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
 import static org.apache.ignite.ssl.SslTestUtils.reloadFailure;
 import static org.apache.ignite.ssl.SslTestUtils.servedSubject;
+import static org.apache.ignite.ssl.SslTestUtils.status;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
@@ -149,7 +150,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
                 get(anon, "node02").startsWith("HTTP/1.1 200"));
         }
 
-        assertEquals("CN=node02", g.context().metric().registry("ssl.http.rest").findMetric("CertificateSubject").getAsString());
+        assertContains(log, status(g), "serving subject=CN=node02,");
 
         Files.write(keyStore, "not a key store".getBytes());
 

@@ -38,6 +38,8 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
+import org.apache.ignite.internal.ssl.SslCertificates;
+import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -118,7 +120,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A rotation on a running cluster reaches new connections, the report, the node log, status and metrics, and leaves established
+     * A rotation on a running cluster reaches new connections, the report, the node log and status, and leaves established
      * connections working.
      */
     @Test
@@ -151,13 +153,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node02", servedSubject(((TcpCommunicationSpi)g0.configuration().getCommunicationSpi()).boundPort()));
         assertEquals("CN=node02", servedSubject(discoveryPort(g0)));
 
-        assertEquals("CN=node02", metric(g0, "CertificateSubject"));
-        assertContains(log, metric(g0, "CertificateIssuer"), "CN=twoca");
-        assertTrue(Long.parseLong(metric(g0, "LastReloadSuccessTime")) > 0);
+        SslContextProvider p = g0.context().sslContexts().providers().iterator().next();
 
-        long chainNotAfter = Long.parseLong(metric(g0, "ChainNotAfter"));
+        assertEquals("CN=node02", p.servedCertificate().getSubjectX500Principal().getName());
+        assertContains(log, p.servedCertificate().getIssuerX500Principal().getName(), "CN=twoca");
+        assertTrue(p.reloadOutcome().successTime() > 0);
 
-        assertContains(log, status(g0), "chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter));
+        String status = status(g0);
+
+        assertContains(log, status, "chainNotAfter=" + Instant.ofEpochMilli(SslCertificates.chainNotAfter(p.servedChain())));
+        assertContains(log, status, "last reload succeeded at " + Instant.ofEpochMilli(p.reloadOutcome().successTime()));
     }
 
     /** One node fails: the others still take the new certificate and appear in the report; the command fails. */
@@ -185,8 +190,12 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(g1.context().clientListener().port()));
 
         assertEquals("A manual reload failure must not count as an automatic renewal", "0", metric(g1, "ConsecutiveRenewalFailures"));
-        assertContains(log, metric(g1, "LastReloadFailureReason"), "Failed to initialize key store");
-        assertEquals("CN=node01", metric(g1, "CertificateSubject"));
+
+        String status = status(g1);
+
+        assertContains(log, status, "last reload failed 1 time(s) in a row");
+        assertContains(log, status, "Failed to initialize key store");
+        assertContains(log, status, "serving subject=CN=node01,");
     }
 
     /**

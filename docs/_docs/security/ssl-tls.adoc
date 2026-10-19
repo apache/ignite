@@ -237,7 +237,7 @@ The pauses grow from 1 minute to at most 1.5 hours.
 While the node waits for a new certificate, it logs a warning once a day.
 Once less than half of the renewal window is left, or the certificate expires before the next attempt, the node logs an error instead of the warning.
 If the node cannot read the files or rejects the new certificate, it logs every failed attempt and tries again.
-`control.sh --ssl status` and the link:monitoring-metrics/new-metrics#ssl[`NextRenewalTime` metric] show when the next renewal is due.
+`control.sh --ssl status` shows when the next renewal is due.
 If the node cannot tell which certificate a factory with `renewalEnabled` serves, for example because its key store has no private key, the node does not start.
 
 == SslContextFactory Properties

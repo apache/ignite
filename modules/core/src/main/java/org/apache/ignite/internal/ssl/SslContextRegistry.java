@@ -20,7 +20,6 @@ package org.apache.ignite.internal.ssl;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -154,27 +153,7 @@ public class SslContextRegistry extends GridProcessorAdapter {
     private void registerMetrics(String transport, SslContextProvider provider) {
         MetricRegistryImpl reg = ctx.metric().registry(metricName("ssl", transport.replace(' ', '.').toLowerCase()));
 
-        reg.register("CertificateSubject", () -> Optional.ofNullable(provider.servedCertificate())
-            .map(c -> c.getSubjectX500Principal().toString()).orElse(null), String.class,
-            "Subject DN of the certificate presented on new connections.");
-
-        reg.register("CertificateIssuer", () -> Optional.ofNullable(provider.servedCertificate())
-            .map(c -> c.getIssuerX500Principal().toString()).orElse(null), String.class,
-            "Issuer DN of the certificate presented on new connections.");
-
-        reg.register("ChainNotAfter", () -> Optional.ofNullable(provider.servedChain()).map(SslCertificates::chainNotAfter).orElse(0L),
-            "Earliest expiry time in the chain presented on new connections, in milliseconds; 0 if unknown.");
-
-        reg.register("LastReloadSuccessTime", () -> provider.reloadOutcome().successTime(),
-            "Time of the last successful reload, in milliseconds; 0 if none.");
-
-        reg.register("LastReloadFailureReason", () -> provider.reloadOutcome().failureReason(), String.class,
-            "Reason for the last failed reload; a successful reload clears it.");
-
         reg.register("ConsecutiveRenewalFailures", provider::renewalFailures,
             "Failed automatic renewals, including unchanged certificates; reset when a chain with a later expiry is put in use.");
-
-        reg.register("NextRenewalTime", () -> provider.nextRenewalTime(),
-            "Time of the next automatic renewal, in milliseconds; 0 if none.");
     }
 }

@@ -24,6 +24,7 @@ import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -51,8 +52,7 @@ import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -144,7 +144,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertTrue("The certificate must have been renewed", chainNotAfter(g) > now + 30 * MINUTE);
         assertTrue("The renewal must not come before the window opens",
-            metrics(g, "ssl.communication").<LongMetric>findMetric("LastReloadSuccessTime").value() >= due - CLOCK_SLACK);
+            provider(g).reloadOutcome().successTime() >= due - CLOCK_SLACK);
         assertEquals("New connections must get the renewed certificate", chainNotAfter(g),
             servedCertificate(probe(), discoveryPort(g)).getNotAfter().getTime());
 
@@ -529,12 +529,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> automaticRenewals("transports=" + CLIENT_CONNECTOR) == 1, 30_000));
 
-        MetricRegistryImpl reg = metrics(g, "ssl.client.connector");
+        SslContextProvider p = provider(g, CLIENT_CONNECTOR);
 
-        long notAfter = reg.<LongMetric>findMetric("ChainNotAfter").value();
+        long notAfter = SslCertificates.chainNotAfter(p.servedChain());
 
         assertTrue(notAfter > now + 30 * MINUTE);
-        assertTrue(waitForCondition(() -> reg.<LongMetric>findMetric("NextRenewalTime").value() > now + 30 * MINUTE, 10_000));
+        assertTrue(waitForCondition(() -> p.nextRenewalTime() > now + 30 * MINUTE, 10_000));
 
         assertEquals("New connections must get the renewed certificate", notAfter,
             servedCertificate(probe(), g.context().clientListener().port()).getNotAfter().getTime());
@@ -588,7 +588,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         MetricRegistryImpl reg = metrics(g, "ssl.communication");
 
         assertTrue(reg.<IntMetric>findMetric("ConsecutiveRenewalFailures").value() >= 5);
-        assertNull(reg.<ObjectMetric<String>>findMetric("LastReloadFailureReason").value());
+        assertNull(provider(g).reloadOutcome().failureReason());
+
+        Iterator<Metric> metrics = reg.iterator();
+
+        assertEquals("ssl.communication.ConsecutiveRenewalFailures", metrics.next().name());
+        assertFalse("Only the renewal problem counter must be exposed", metrics.hasNext());
 
         reload(g);
 
@@ -833,10 +838,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         IgniteEx g = startClientConnectorOn(issuer);
 
-        MetricRegistryImpl reg = metrics(g, "ssl.client.connector");
+        SslContextProvider p = provider(g, CLIENT_CONNECTOR);
 
-        assertEquals(0, reg.<LongMetric>findMetric("ChainNotAfter").value());
-        assertEquals(0, reg.<LongMetric>findMetric("NextRenewalTime").value());
+        assertNull(p.servedChain());
+        assertEquals(0, p.nextRenewalTime());
         assertContains(log, status(g), "cannot tell which certificate is served");
         assertContains(log, reload(g), ": reloaded " + CLIENT_CONNECTOR);
         assertTrue(appender.events().isEmpty());
@@ -994,12 +999,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /** */
     private static long nextRenewalTime(IgniteEx g) {
-        return metrics(g, "ssl.communication").<LongMetric>findMetric("NextRenewalTime").value();
+        return provider(g).nextRenewalTime();
     }
 
     /** */
     private static long chainNotAfter(IgniteEx g) {
-        return metrics(g, "ssl.communication").<LongMetric>findMetric("ChainNotAfter").value();
+        return SslCertificates.chainNotAfter(provider(g).servedChain());
     }
 
     /**
@@ -1016,12 +1021,21 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      * @return Provider of the context communication takes.
      */
     private static SslContextProvider provider(IgniteEx g) {
+        return provider(g, COMMUNICATION);
+    }
+
+    /**
+     * @param g Node.
+     * @param transport Transport.
+     * @return Provider of the context the transport takes.
+     */
+    private static SslContextProvider provider(IgniteEx g, String transport) {
         for (SslContextProvider p : g.context().sslContexts().providers()) {
-            if (p.transports().contains(COMMUNICATION))
+            if (p.transports().contains(transport))
                 return p;
         }
 
-        throw new AssertionError("Nothing serves " + COMMUNICATION);
+        throw new AssertionError("Nothing serves " + transport);
     }
 
     /**
