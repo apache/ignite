@@ -105,6 +105,7 @@
                             <exclude>*-tests.jar</exclude>
                             <exclude>*-javadoc.jar</exclude>
                             <exclude>*-sources.jar</exclude>
+                            <exclude>original-*.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
