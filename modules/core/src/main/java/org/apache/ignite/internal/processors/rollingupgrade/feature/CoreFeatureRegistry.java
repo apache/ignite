@@ -99,4 +99,9 @@ public class CoreFeatureRegistry {
      * positional fields of every message.
      */
     public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
+
+    /**
+     * Feature that introduces the snapshots list command.
+     */
+    public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = new IgniteCoreFeature(3);
 }
