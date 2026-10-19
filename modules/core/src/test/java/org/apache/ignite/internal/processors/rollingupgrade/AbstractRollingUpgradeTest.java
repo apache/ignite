@@ -111,8 +111,11 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     protected static final String TEST_DEFAULT_VER = "2.19.0";
 
-    /** Reference to the current master version */
-    protected static final String MASTER_VER = "master";
+    /** Reference to the current master version. Corresponds to {@link #IGNITE_VERSION}. */
+    protected static final String MASTER_VER_REF = "master";
+
+    /** Current resovled Ignite version. Corresponds to {@link #MASTER_VER_REF} and {@link CoreFeatureRegistry}. */
+    protected static final IgniteProductVersion IGNITE_VERSION = IgniteVersionUtils.VER;
 
     /** */
     protected static final String COMPONENT_VERSIONS_ATTRIBUTE = "test.component.versions";
@@ -244,7 +247,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     public static Collection<IgniteFeature> readDeclaredCoreFeatures(String ver) throws Exception {
-        if (MASTER_VER.equals(ver))
+        if (MASTER_VER_REF.equals(ver))
             return IgniteFeatureSet.readDeclaredFeatures(CoreFeatureRegistry.class);
 
         Class<?> cls = Class.forName(
@@ -416,7 +419,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     public static IgniteCoreFeatureSet createCoreFeatureSet(String ver) throws Exception {
         return new IgniteCoreFeatureSet(
-            MASTER_VER.equals(ver) ? IgniteVersionUtils.VER : IgniteProductVersion.fromString(ver),
+            MASTER_VER_REF.equals(ver) ? IGNITE_VERSION : IgniteProductVersion.fromString(ver),
             IgniteFeatureSet.buildFrom(readDeclaredCoreFeatures(ver)));
     }
 
@@ -580,7 +583,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     protected String resolveCompoundVersion(IgniteNodeFeatureSet features) {
         return Arrays.stream(features.values())
             .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
-            .map(f -> IgniteVersionUtils.VER.equals(f.version()) ? MASTER_VER : semanticVersion(f.version()))
+            .map(f -> IGNITE_VERSION.equals(f.version()) ? MASTER_VER_REF : semanticVersion(f.version()))
             .collect(Collectors.joining(" | "));
     }
 
@@ -617,7 +620,7 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     private static @Nullable String toSemanticVersion(@Nullable String ver) {
-        return MASTER_VER.equals(ver) ? semanticVersion(IgniteVersionUtils.VER) : ver;
+        return MASTER_VER_REF.equals(ver) ? semanticVersion(IGNITE_VERSION) : ver;
     }
 
     /** */
