@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -26,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NU
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
 /** */
-public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, SnapshotStatus> {
+public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serializable> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get the status of the current snapshot operation";
@@ -59,37 +60,27 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Snapsh
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(NoArg arg, @Nullable SnapshotStatus status, Consumer<String> printer) {
-        if (status == null) {
+    @Override public void printResult(NoArg arg, @Nullable Serializable rawResult, Consumer<String> printer) {
+        if (rawResult == null) {
             printer.accept("There is no create or restore snapshot operation in progress.");
 
             return;
         }
 
-        // Status with the support of the sanpshot checks operations.
-        SnapshotStatusTask.SnapshotOperationStatus s2 = status instanceof SnapshotStatusTask.SnapshotOperationStatus
-            ? (SnapshotStatusTask.SnapshotOperationStatus)status
-            : null;
+        assert rawResult instanceof SnapshotStatus || rawResult instanceof Collection<?> :
+            "Unsupported job result: " + rawResult.getClass().getSimpleName();
 
-        // The check operation can be run in parallel for different snapshots.
-        List<? extends SnapshotStatusTask.SnapshotStatus> multipleOpsView;
+        SnapshotStatus singleStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
+        Collection<SnapshotStatus> statuses = rawResult instanceof Collection ? (Collection<SnapshotStatus>)rawResult : null;
 
-        if (status.operation() == SnapshotStatusTask.SnapshotOperation.CHECK) {
-            assert s2 != null;
+        assert statuses == null || (!statuses.isEmpty() || (F.first(statuses) instanceof SnapshotStatus)) :
+            "Statuses collection has unsupported result type";
 
-            // Check operation always has itself in its aggregated check statuses.
-            multipleOpsView = s2.checkStatuses();
-        }
-        else {
-            // If the operation is not check, attach possible parallel checks after.
-            multipleOpsView = s2 == null || s2.checkStatuses() == null
-                ? Collections.singletonList(status)
-                : Stream.concat(Stream.of(status), s2.checkStatuses().stream()).collect(Collectors.toList());
-        }
+        statuses = statuses == null ? Collections.singleton(singleStatus) : statuses;
 
         boolean first = true;
 
-        for (SnapshotStatus s0 : multipleOpsView) {
+        for (SnapshotStatus s0 : statuses) {
             if (!first) {
                 printer.accept(U.nl());
 

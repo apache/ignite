@@ -77,7 +77,6 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -117,10 +116,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -140,11 +135,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
@@ -3670,52 +3662,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
 
-    /**
-     * Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process.
-     * All nodes support the check status.
-     */
+    /** Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process. */
     @Test
-    public void testRestoreSnapshotMetricsAtStartAllNodesSupport() throws Exception {
-        doTestRestoreSnapshotMetricsAtStart(false);
-    }
-
-    /**
-     * Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process.
-     * One node doesn't support the check status.
-     */
-    @Test
-    public void testRestoreSnapshotMetricsAtStartOneNodeDoesntSupport() throws Exception {
-        doTestRestoreSnapshotMetricsAtStart(true);
-    }
-
-    /**
-     * @param oneNodeDoesntSupport If {@code true}, one node will simulate not supporting snapshot check status.
-     */
-    private void doTestRestoreSnapshotMetricsAtStart(boolean oneNodeDoesntSupport) throws Exception {
-        // Creates empty feature set unsupporting the snapshot check ststus if required.
-        pluginProvider = !oneNodeDoesntSupport ? null : new AbstractTestPluginProvider() {
-            @Override public String name() {
-                return "Test Ignite features provider";
-            }
-
-            @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-                if (!cls.equals(DiscoveryNodeValidationProcessor.class))
-                    return null;
-
-                boolean doNotSupport = ctx.igniteConfiguration().getIgniteInstanceName().equals(getTestIgniteInstanceName(2));
-
-                return (T)new RollingUpgradeProcessor(
-                    ((IgniteEx)ctx.grid()).context(),
-                    doNotSupport ? new IgniteCoreFeatureSet(IgniteVersionUtils.VER, new IgniteFeatureSet()) : IgniteCoreFeatureSet.local()
-                ) {
-                    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode joiningNode) {
-                        // Simulates started rolling updrade allowing node with other features join cluster.
-                        return null;
-                    }
-                };
-            }
-        };
-
+    public void testRestoreSnapshotMetricsAtStart() throws Exception {
         listeningLog = new ListeningTestLogger(log);
 
         startGrids(3).cluster().state(ClusterState.ACTIVE);
@@ -3735,7 +3684,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Block one of the process' first messages of snapshot restoring or snapshot checking.
         F.asList(cm1, cm2).forEach(cm -> cm.blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> sm
-                && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal() || sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())));
+            && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal() || sm.type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal())));
 
         // Snapshot restoration should get paused at the preceeding snapshot check.
         IgniteFutureImpl<Void> restoreFut = snpMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
@@ -3749,29 +3698,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        LogListener logLsnr = null;
-
-        if (oneNodeDoesntSupport) {
-            logLsnr = LogListener.matches("Node %s doesn't support the snapshot check status feature"
-                .formatted(grid(2).localNode().id())).build();
-
-            listeningLog.registerListener(logLsnr);
-        }
-
         int code = execute("--snapshot", "status");
 
         assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
 
-        var out = testOut.toString();
+        String out = testOut.toString();
 
-        if (oneNodeDoesntSupport) {
-            assertTrue(logLsnr.check(getTestTimeout()));
-            assertContains(log, out, "There is no create or restore snapshot operation in progress");
-        }
-        else {
-            assertContains(log, out, "Check snapshot operation is in progress");
-            assertContains(log, out, "Snapshot name: test_snapshot");
-        }
+        assertContains(log, out, "Check snapshot operation is in progress");
+        assertContains(log, out, "Snapshot name: test_snapshot");
 
         // Ensure that no snapshot restore started or finished.
         assertFalse("Snapshot future has finished", restoreFut.isDone());
