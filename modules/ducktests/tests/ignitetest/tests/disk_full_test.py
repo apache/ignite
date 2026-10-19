@@ -31,6 +31,7 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration, \
     DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_spec import IgniteNodeSpecFileOutput
 from ignitetest.services.utils.jvm_utils import merge_jvm_settings
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
@@ -59,6 +60,8 @@ class DiskFullTest(IgniteTest):
     """
     LOAD_APP = "org.apache.ignite.internal.ducktest.tests.disk_full.DiskFullLoadApplication"
 
+    FLOOD_APP = "org.apache.ignite.internal.ducktest.tests.disk_full.StdoutFloodApplication"
+
     @cluster(num_nodes=2)
     @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
@@ -86,6 +89,39 @@ class DiskFullTest(IgniteTest):
         for log in logs:
             check_grows(ignite, log)
 
+        load.stop()
+
+    @cluster(num_nodes=3)
+    @reproducer("disk_full_tests")
+    @ignite_versions(str(DEV_BRANCH))
+    def test_node_survives_log_volume_filled_by_stdout(self, ignite_version):
+        """
+        A service on the node writes to System.out until its output fills the log volume.
+        """
+        ignite = self.__ignite(ignite_version)
+        ignite.mount_tmpfs(ignite.log_dir, 32)
+
+        load = self.__start(ignite)
+
+        flood = IgniteApplicationService(
+            self.test_context,
+            IgniteConfiguration(version=ignite.config.version, client_mode=True,
+                                discovery_spi=from_ignite_cluster(ignite)),
+            java_class_name=self.FLOOD_APP)
+
+        flood.start()
+
+        wait_until(lambda: free_space(ignite, ignite.log_dir) == 0, timeout_sec=60,
+                   err_msg="System.out did not fill the log volume")
+
+        lines = printed_lines(flood)
+
+        check_serves_load_for(ignite, load, seconds=15)
+        assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
+        assert printed_lines(flood) > lines, "The service stopped writing to System.out"
+        check_write_failed(ignite, os.path.join(ignite.log_dir, "console.log"))
+
+        flood.stop()
         load.stop()
 
     @cluster(num_nodes=2)
@@ -248,6 +284,20 @@ def free_volume(ignite, path):
     Removes the file fill_volume wrote.
     """
     ignite.nodes[0].account.ssh(f"rm -f {os.path.join(path, FILLER)}", allow_fail=False)
+
+
+def free_space(ignite, path):
+    """
+    :return: Bytes free on the volume of the path.
+    """
+    return int(ignite.exec_command(ignite.nodes[0], f"df --output=avail -B1 {path} | tail -1"))
+
+
+def printed_lines(flood):
+    """
+    :return: Lines the service wrote to System.out, as the flood application recorded last.
+    """
+    return int(flood.extract_results("lines")[-1])
 
 
 def file_size(ignite, path):
