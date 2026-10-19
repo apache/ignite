@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "srvcId"}
+  ]
+}

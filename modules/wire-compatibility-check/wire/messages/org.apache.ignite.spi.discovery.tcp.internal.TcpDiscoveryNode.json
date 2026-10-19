@@ -1,0 +1,19 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "id"},
+    {"order": 1, "type": "byte[]", "name": "consistentIdBytes"},
+    {"order": 2, "type": "byte[]", "name": "attrsBytes"},
+    {"order": 3, "type": "java.util.Collection<java.lang.String>", "name": "addrs"},
+    {"order": 4, "type": "java.util.Collection<java.lang.String>", "name": "hostNames"},
+    {"order": 5, "type": "int", "name": "discPort"},
+    {"order": 6, "type": "org.apache.ignite.internal.ClusterMetricsSnapshot", "name": "clusterMetricsSnapshot"},
+    {"order": 7, "type": "long", "name": "order"},
+    {"order": 8, "type": "long", "name": "intOrder"},
+    {"order": 9, "type": "org.apache.ignite.lang.IgniteProductVersion", "name": "ver"},
+    {"order": 10, "type": "java.util.UUID", "name": "clientRouterNodeId"},
+    {"order": 11, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet", "name": "features"},
+    {"type": "java.lang.Object", "name": "consistentId", "annotations": ["@org.apache.ignite.internal.Marshalled(\"consistentIdBytes\")"]},
+    {"type": "java.util.Map<java.lang.String,java.lang.Object>", "name": "attrs", "annotations": ["@org.apache.ignite.internal.Marshalled(\"attrsBytes\")"]}
+  ]
+}

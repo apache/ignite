@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.message.GenericValueMessage",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "serialized"},
+    {"type": "java.lang.Object", "name": "val", "annotations": ["@org.apache.ignite.internal.Marshalled(\"serialized\")"]}
+  ]
+}

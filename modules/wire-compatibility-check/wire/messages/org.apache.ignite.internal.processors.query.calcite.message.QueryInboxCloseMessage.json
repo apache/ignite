@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.message.QueryInboxCloseMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "qryId"},
+    {"order": 1, "type": "long", "name": "fragmentId"},
+    {"order": 2, "type": "long", "name": "exchangeId"}
+  ]
+}

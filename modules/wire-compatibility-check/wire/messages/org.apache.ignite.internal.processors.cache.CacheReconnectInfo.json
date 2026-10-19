@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheReconnectInfo",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "deploymentId"},
+    {"order": 2, "type": "boolean", "name": "nearCache"}
+  ]
+}

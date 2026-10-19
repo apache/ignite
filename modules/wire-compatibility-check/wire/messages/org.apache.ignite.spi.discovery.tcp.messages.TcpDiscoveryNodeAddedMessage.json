@@ -1,0 +1,17 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "verifierNodeId"},
+    {"order": 2, "type": "long", "name": "topVer"},
+    {"order": 3, "type": "int", "name": "flags"},
+    {"order": 4, "type": "java.util.Set<java.util.UUID>", "name": "failedNodes"},
+    {"order": 5, "type": "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage", "name": "opCtxSnp"},
+    {"order": 6, "type": "org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode", "name": "node"},
+    {"order": 7, "type": "org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket", "name": "dataPacket"},
+    {"order": 8, "type": "java.util.Collection<org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage>", "name": "pendingMsgs"},
+    {"order": 9, "type": "java.util.Collection<org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode>", "name": "top"},
+    {"order": 10, "type": "java.util.Map<java.lang.Long,java.util.Collection<org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode>>", "name": "topHist"},
+    {"order": 11, "type": "long", "name": "gridStartTime"}
+  ]
+}

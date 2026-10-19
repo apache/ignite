@@ -141,6 +141,7 @@
                 <exclude>${project.groupId}:ignite-extdata-platform</exclude>
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-calcite-testing</exclude>
+                <exclude>${project.groupId}:ignite-wire-compatibility-check</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <exclude>${project.groupId}:ignite-control-utility</exclude>
                 <exclude>${project.groupId}:ignite-checkstyle</exclude>
