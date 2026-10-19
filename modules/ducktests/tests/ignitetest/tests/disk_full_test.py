@@ -41,6 +41,10 @@ PAGE = 4096
 
 FILLER = "filler"
 
+# A filled volume can open up again before it is measured: the node deletes files on it, archived WAL
+# segments above the archive limit being the case that happens under load. Refill that many times.
+FILL_ATTEMPTS = 5
+
 # Failure type and failed writer the node logs when the volume fills.
 FAILURES = {
     "wal_archive": ("SYSTEM_WORKER_TERMINATION", "Failed to archive WAL segment"),
@@ -67,7 +71,6 @@ class DiskFullTest(IgniteTest):
         load = self.__start(ignite)
 
         fill_volume(ignite, ignite.log_dir)
-        assert free_space(ignite, ignite.log_dir) == 0
 
         check_serves_load_for(ignite, load, seconds=15)
         assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
@@ -96,7 +99,6 @@ class DiskFullTest(IgniteTest):
         self.__start(ignite)
 
         fill_volume(ignite, repository)
-        assert free_space(ignite, repository) == 0
 
         ignite.await_event("An irrecoverable error in Jfr", 60, from_the_beginning=True, log_file="console.log")
         check_stops(ignite)
@@ -113,7 +115,6 @@ class DiskFullTest(IgniteTest):
         self.__start(ignite)
 
         fill_volume(ignite, ignite.persistent_root)
-        assert free_space(ignite, ignite.persistent_root) == 0
 
         check_stops(ignite)
 
@@ -133,7 +134,6 @@ class DiskFullTest(IgniteTest):
         assert int(segments) > 0, "No WAL segments on the volume"
 
         fill_volume(ignite, wal)
-        assert free_space(ignite, wal) == 0
 
         check_serves_load_for(ignite, load, seconds=15)
 
@@ -153,7 +153,6 @@ class DiskFullTest(IgniteTest):
         self.__start(ignite)
 
         fill_volume(ignite, path)
-        assert free_space(ignite, path) == 0
 
         check_stops(ignite)
         check_failure(ignite, *FAILURES[volume])
@@ -225,9 +224,22 @@ class DiskFullTest(IgniteTest):
 
 def fill_volume(ignite, path):
     """
-    Writes a file into the path until its volume has no space left.
+    Writes a file into the path until its volume has no space left, and fails if it never got full.
     """
-    ignite.nodes[0].account.ssh(f"dd if=/dev/zero of={os.path.join(path, FILLER)} bs=1M", allow_fail=True)
+    free = -1
+
+    for _ in range(FILL_ATTEMPTS):
+        # dd exits with 1 once the volume refuses the write, which is the point here, so its exit
+        # code is not the evidence that the volume is full. And the node frees space on it as it
+        # deletes files, so a volume that was full a moment ago may not be when it is measured.
+        ignite.nodes[0].account.ssh(f"dd if=/dev/zero of={os.path.join(path, FILLER)} bs=1M", allow_fail=True)
+
+        free = free_space(ignite, path)
+
+        if free == 0:
+            break
+
+    assert free == 0, f"{path} still has {free} bytes free after {FILL_ATTEMPTS} fill attempts"
 
 
 def free_volume(ignite, path):

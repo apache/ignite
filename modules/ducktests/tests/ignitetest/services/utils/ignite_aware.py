@@ -209,14 +209,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         for path, size_mb in self.tmpfs_volumes.items():
             node.account.ssh(f"findmnt -rn -S {self.TMPFS_SOURCE} -M {path} > /dev/null || (mkdir -p {path} && "
-                             f"sudo mount -t tmpfs -o size={size_mb}m,uid=$(id -u),gid=$(id -g) {self.TMPFS_SOURCE} "
+                             f"mount -t tmpfs -o size={size_mb}m,uid=$(id -u),gid=$(id -g) {self.TMPFS_SOURCE} "
                              f"{path})", allow_fail=False)
 
     def __unmount_tmpfs_volumes(self, node):
         """
         Unmounts every volume mount_tmpfs made on the node, also one left by an aborted run.
         """
-        node.account.ssh(f"findmnt -rn -S {self.TMPFS_SOURCE} -o TARGET | xargs -r -n1 sudo umount -l",
+        node.account.ssh(f"findmnt -rn -S {self.TMPFS_SOURCE} -o TARGET | xargs -r -n1 umount -l",
                          allow_fail=False)
 
     def init_persistent(self, node):
