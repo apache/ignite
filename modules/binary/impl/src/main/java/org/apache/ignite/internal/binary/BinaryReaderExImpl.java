@@ -131,9 +131,6 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
     /** Footer end. */
     private final int footerLen;
 
-    /** Class descriptor. */
-    private BinaryClassDescriptor desc;
-
     /** Mapper. */
     private final BinaryInternalMapper mapper;
 
@@ -160,6 +157,9 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
 
     /** Whether stream is in raw mode. */
     private boolean raw;
+
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
 
     /**
      * Constructor.

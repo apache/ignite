@@ -389,8 +389,8 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, ctx.classLoader(), false).unmarshalField(fieldName);
+    @Nullable @Override protected <F> F field(BinaryReaderHandles hnds, String fieldName) {
+        return (F)reader(hnds, ctx.classLoader(), false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -415,7 +415,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserializeValue();
+        return (T)reader(null, ctx.classLoader(), true).deserialize();
     }
 
     /** {@inheritDoc} */
@@ -484,13 +484,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /**
-     * @return Deserialized value.
-     */
-    private Object deserializeValue() {
-        return reader(null, ctx.classLoader(), true).deserialize();
-    }
-
-    /**
      * Create new reader for this object.
      *
      * @return Reader.
@@ -502,13 +495,12 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
+     * @param hnds Reader context.
      * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-        boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles hnds, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
@@ -516,7 +508,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         return new BinaryReaderExImpl(ctx,
             stream,
             ldr,
-            rCtx,
+            hnds,
             false,
             forUnmarshal);
     }
