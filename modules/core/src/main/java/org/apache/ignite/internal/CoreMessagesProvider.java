@@ -283,6 +283,7 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceTopology;
 import org.apache.ignite.internal.processors.service.ServiceUndeploymentRequest;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessageSerializer;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
@@ -291,6 +292,7 @@ import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage;
@@ -351,12 +353,12 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /** */
     private @Nullable IgniteMessageFactory factory;
 
-    /**
-     * Default plugin-purposes constructor.
-     *
-     */
-    public CoreMessagesProvider() {
-        // No-op.
+    /** */
+    private final GridKernalContext ctx;
+
+    /** */
+    public CoreMessagesProvider(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
     /**
@@ -751,7 +753,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
 
         // [13400 - 13500]: Operation context messages.
         msgIdx = 13400;
-        register(OperationContextSnapshotMessage.class);
+        register(OperationContextSnapshotMessage.class, new OperationContextSnapshotMessageSerializer(ctx));
         register(SecurityContextWrapper.class);
 
         // [13600 - 13700]: Rolling Upgrade messages.
@@ -768,5 +770,10 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
     /** Registers the message under the next id. */
     private <T extends Message> void register(Class<T> cls) {
         register(factory, cls, msgIdx++);
+    }
+
+    /** */
+    private <T extends Message> void register(Class<T> cls, MessageSerializer<T> serializer) {
+        register(factory, cls, msgIdx++, serializer);
     }
 }

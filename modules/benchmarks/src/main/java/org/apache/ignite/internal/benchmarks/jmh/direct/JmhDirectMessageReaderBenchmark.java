@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -30,6 +31,8 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -73,7 +76,7 @@ public class JmhDirectMessageReaderBenchmark {
 
     /** */
     @Setup
-    public void setup() {
+    public void setup() throws IgniteCheckedException {
         MessageFactory msgFactory = msgFactory();
 
         reader = new DirectMessageReader(msgFactory, null);
@@ -120,8 +123,8 @@ public class JmhDirectMessageReaderBenchmark {
     }
 
     /** */
-    private static MessageFactory msgFactory() {
-        return new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-            new CoreMessagesProvider()});
+    private static MessageFactory msgFactory() throws IgniteCheckedException {
+        return new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
+            new CoreMessagesProvider(new StandaloneGridKernalContext(new NullLogger(), null))});
     }
 }
