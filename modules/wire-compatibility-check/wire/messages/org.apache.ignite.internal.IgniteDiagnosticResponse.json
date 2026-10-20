@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.IgniteDiagnosticResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "futId"},
+    {"order": 1, "type": "java.lang.String", "name": "respInfo"}
+  ]
+}

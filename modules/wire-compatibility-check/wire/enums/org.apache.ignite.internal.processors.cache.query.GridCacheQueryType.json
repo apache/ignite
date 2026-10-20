@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "SPI"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "SCAN"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "SQL"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "SQL_FIELDS"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "TEXT"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "SET"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryType", "name": "INDEX"}
+  ]
+}

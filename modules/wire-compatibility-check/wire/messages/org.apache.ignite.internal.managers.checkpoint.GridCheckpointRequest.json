@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sesId"},
+    {"order": 1, "type": "java.lang.String", "name": "key"},
+    {"order": 2, "type": "java.lang.String", "name": "cpSpi"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "latchId"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 2, "type": "boolean", "name": "isFinal"}
+  ]
+}

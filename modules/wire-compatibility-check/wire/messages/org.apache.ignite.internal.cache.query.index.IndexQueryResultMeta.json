@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings", "name": "keyTypeSettings"},
+    {"order": 1, "type": "java.util.LinkedHashMap<java.lang.String,org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition>", "name": "keyDefs"}
+  ]
+}

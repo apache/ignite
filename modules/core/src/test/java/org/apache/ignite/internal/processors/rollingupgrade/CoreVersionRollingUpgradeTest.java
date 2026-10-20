@@ -180,6 +180,24 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         finalizeClusterVersion(1, "2.19.2");
     }
 
+    /** Tests usage of {@link #MASTER_VER_REF}. */
+    @Test
+    public void testUpgradeWithTheMasterVersionReference() throws Exception {
+        startCluster("2.18.0");
+
+        checkVersionUpgradeInactive("2.18.0");
+
+        ru(0).enableVersionUpgrade();
+
+        forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.18.0", MASTER_VER_REF));
+
+        checkFeaturesActive("2.18.0");
+
+        checkVersionUpgradeInProgress("2.18.0", MASTER_VER_REF);
+
+        finalizeClusterVersion(0, MASTER_VER_REF);
+    }
+
     /** */
     @Test
     public void testJoinAfterClusterVersionFinalization() throws Exception {

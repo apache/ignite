@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.managers.deployment.GridDeploymentResponse",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "success"},
+    {"order": 1, "type": "java.lang.String", "name": "errMsg"},
+    {"order": 2, "type": "org.apache.ignite.internal.util.GridByteArrayList", "name": "byteSrc"}
+  ]
+}

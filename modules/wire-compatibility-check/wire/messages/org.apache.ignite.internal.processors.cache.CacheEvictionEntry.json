@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheEvictionEntry",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 2, "type": "boolean", "name": "near"}
+  ]
+}

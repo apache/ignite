@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2CacheObject",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "obj"}
+  ]
+}

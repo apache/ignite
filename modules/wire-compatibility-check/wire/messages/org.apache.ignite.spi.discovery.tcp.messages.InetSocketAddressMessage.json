@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.messages.InetSocketAddressMessage",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "hostName"},
+    {"order": 1, "type": "byte[]", "name": "addrBytes"},
+    {"order": 2, "type": "int", "name": "port"}
+  ]
+}

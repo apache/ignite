@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.managers.encryption.EncryptionDataBagItem",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted>", "name": "knownKeys"}
+  ]
+}
