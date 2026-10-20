@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommand;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,7 +45,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
 public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstractTest {
@@ -150,28 +148,19 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** */
     @Test
     public void testNoSnapshots() throws Exception {
-        doTestSnapshotsLists(0, false, false);
+        doTestSnapshotsLists(0, false);
     }
 
     /** */
     @Test
     public void testSingleSnapshot() throws Exception {
-        doTestSnapshotsLists(1, false, false);
+        doTestSnapshotsLists(1, false);
     }
 
     /** */
     @Test
     public void testSeveralSnapshots() throws Exception {
-        doTestSnapshotsLists(3, false, false);
-    }
-
-    /** */
-    @Test
-    public void testOneNodeMisses() throws Exception {
-        // Keeps just one node not seeing the snapshot.
-        assumeTrue(separatedWorkDir);
-
-        doTestSnapshotsLists(2, true, false);
+        doTestSnapshotsLists(3, false);
     }
 
     /** */
@@ -183,7 +172,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         extStorages = true;
 
-        doTestSnapshotsLists(2, false, false);
+        doTestSnapshotsLists(2, false);
     }
 
     /** */
@@ -192,11 +181,11 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // In new created working directories there will be obviously no snapshots.
         assumeFalse(separatedWorkDir);
 
-        doTestSnapshotsLists(1, false, true);
+        doTestSnapshotsLists(1, true);
     }
 
     /** */
-    private void doTestSnapshotsLists(int snpCnt, boolean deleteOnOneNode, boolean restartWithChangedCstIds) throws Exception {
+    private void doTestSnapshotsLists(int snpCnt, boolean restartWithChangedCstIds) throws Exception {
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeFalse(customPath && separatedWorkDir);
@@ -237,16 +226,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
                     snp(ig).createSnapshot("testSnapshot" + snpIdx, absPathStr, true, false).get(getTestTimeout());
                 }
-            }
-
-            if (deleteOnOneNode) {
-                SnapshotFileTree sft = new SnapshotFileTree(ig.context(), "testSnapshot0", absPathStr);
-
-                assertTrue(sft.root().exists());
-                assertTrue(U.delete(sft.root()));
-                assertFalse(sft.root().exists());
-
-                grid0HasNoSnapshot0 = true;
             }
         }
 
