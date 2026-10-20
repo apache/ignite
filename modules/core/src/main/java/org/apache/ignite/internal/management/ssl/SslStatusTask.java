@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.management.ssl;
 
+import java.io.Serial;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -36,10 +35,11 @@ import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
 import static org.apache.ignite.internal.ssl.SslCertificates.describe;
 import static org.apache.ignite.internal.ssl.SslCertificates.invalidAt;
 
-/** Reports the TLS certificates of every mapped node; a node serving a certificate that is not valid now fails the command. */
+/** Reports loaded TLS certificate metadata; a known chain that is not valid now fails the command. */
 @GridInternal
 public class SslStatusTask extends AbstractSslTask {
     /** */
+    @Serial
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
@@ -50,6 +50,7 @@ public class SslStatusTask extends AbstractSslTask {
     /** */
     private static class SslStatusJob extends VisorJob<NoArg, IgniteBiTuple<Boolean, String>> {
         /** */
+        @Serial
         private static final long serialVersionUID = 0L;
 
         /** */
@@ -73,27 +74,22 @@ public class SslStatusTask extends AbstractSslTask {
             for (SslContextProvider provider : providers) {
                 lines.add(id + ": " + provider.transports());
 
-                X509Certificate[] chain = provider.servedChain();
+                X509Certificate[] chain = provider.certificateChain();
 
                 if (chain == null)
-                    lines.add(DOUBLE_INDENT + "cannot tell which certificate is served");
+                    lines.add(DOUBLE_INDENT + "certificate metadata is unavailable");
                 else {
                     long chainNotAfter = chainNotAfter(chain);
 
-                    lines.add(DOUBLE_INDENT + "serving " + describe(chain[0]) +
+                    lines.add(DOUBLE_INDENT + "loaded " + describe(chain[0]) +
                         (chainNotAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) : ""));
 
                     if (invalidAt(chain, System.currentTimeMillis()) != null) {
                         invalid = true;
 
-                        lines.add(DOUBLE_INDENT + "PROBLEM: the certificate is not valid now, peers refuse it");
+                        lines.add(DOUBLE_INDENT + "PROBLEM: the loaded certificate is not valid now");
                     }
                 }
-
-                List<X500Principal> trusted = provider.trustedAuthorities();
-
-                lines.add(DOUBLE_INDENT + "trusts: " +
-                    (trusted.isEmpty() ? "unknown" : trusted.stream().map(X500Principal::toString).collect(Collectors.joining("; "))));
 
                 SslContextProvider.ReloadOutcome outcome = provider.reloadOutcome();
 

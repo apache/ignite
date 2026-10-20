@@ -96,18 +96,16 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         for (IgniteEx grid : nodes)
             assertContains(log, reloadOutput,
-                node(grid) + ": reloaded " + transports(grid) + "; serving subject=CN=node02");
+                node(grid) + ": reloaded " + transports(grid) + "; loaded subject=CN=node02");
 
         assertEquals("CN=node02", servedSubject(nodes.get(0).localNode().attribute(ATTR_REST_TCP_PORT)));
 
         String statusOutput = executeCommand(EXIT_CODE_OK, "--ssl", "status");
 
-        assertContains(log, statusOutput, "    trusts: unknown");
-
         for (IgniteEx grid : nodes)
             assertContains(log, statusOutput, node(grid) + ": " + transports(grid));
 
-        assertContains(log, statusOutput, "serving subject=CN=node02");
+        assertContains(log, statusOutput, "loaded subject=CN=node02");
         assertNotContains(log, statusOutput, "subject=CN=node01");
         assertContains(log, statusOutput, "last reload succeeded at");
 

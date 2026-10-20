@@ -2172,7 +2172,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                sslCtx = ((IgniteEx)ignite).context().sslContexts().register(ignite.configuration().getSslContextFactory(), DISCOVERY);
+                sslCtx = ignite.context().sslContexts().register(ignite.configuration().getSslContextFactory(), DISCOVERY);
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "

@@ -1773,44 +1773,37 @@ A node that is not in the topology when the command runs, such as a reconnecting
 The command output does not list nodes that are not in the topology.
 Run the command again when the node is back in the topology, or restart the node if it cannot reconnect.
 
-The reload covers communication, discovery, the client connector, binary REST, and HTTP REST if it takes its certificates from `ConnectorConfiguration.httpSslFactory`.
-New connections use the new certificates.
-Established connections stay open and keep the old certificates.
+The reload covers communication, discovery, the client connector, binary REST, and HTTP REST if it takes its certificates from `ConnectorConfiguration.httpSslFactory`. New connections use the new SSL context. Established connections stay open and keep their existing context.
 
 The command does not make thin clients or JDBC and ODBC drivers read their stores again, see link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
 
-A reload fails for an SSL context factory, and all transports that use it keep the old certificate, if:
+A reload succeeds for a factory when its new SSL context has been installed. If the factory supplies certificate metadata, Ignite checks the chain's validity dates before installation. It does not test TLS connections or peer trust. The administrator must ensure that certificates, trust stores, protocols, cipher suites and client authentication are compatible across nodes and clients.
 
-* a certificate in the new chain is not valid now
-* the new key store presents no certificate while the old one does, for example because the new one has no private key
-* the factory serves discovery or communication, and a test TLS handshake with its new certificate and trust store fails or cannot complete
+A reload fails before replacing the context, and all transports that use the factory keep the old context, if:
+
+* a certificate in the chain supplied by the factory is expired or not yet valid
+* automatic renewal is enabled and the new context provides no certificate chain
 * the factory is a custom one that returns the same SSL context on every call, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories]
 * the factory fails, for example because it cannot read a store
 
-The node does not check whether other nodes accept the new certificate.
-Run `control.sh --diagnostic connectivity` after the reload to see which pairs of nodes fail to open a new connection.
+After the reload, check communication between nodes with `control.sh --diagnostic connectivity` and test new connections from your applications. Connection failures do not roll back an installed context. Correct the configuration or restore the old material and reload again.
 
 For each node, the command prints one line per SSL context factory, with all transports that use it.
-If some nodes fail, the others keep the new certificates.
+If some nodes fail, the others keep the new contexts.
 The command then lists the failed nodes first, in a separate block, and ends with an error:
 
 [source,text]
 ----
 Failed on 1 node(s):
-46db5416-d199-48d6-a807-88b7f1300000 [consistentId=node02]: failed on client connector, communication, discovery (The new certificate fails a test handshake with this node's own trust store [subject=CN=node02, issuer=CN=newca, serial=5f3a91c2e8, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z]: No trusted certificate found)
+46db5416-d199-48d6-a807-88b7f1300000 [consistentId=node02]: failed on client connector, communication, discovery (The new certificate chain is not valid now [subject=CN=node02, issuer=CN=newca, serial=5f3a91c2e8, notBefore=2025-10-04T09:00:00Z, notAfter=2026-10-04T09:00:00Z, now=2026-10-05T09:00:02.347Z])
 
 Succeeded on 1 node(s):
-e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: reloaded client connector, communication, discovery; serving subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
+e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: reloaded client connector, communication, discovery; loaded subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
 ----
 
-In this example, node02 does not trust the new certificate authority, but node01 already serves a certificate from it.
-New connections between them fail, so node02 may leave the topology once the open connections close.
-Fix the trust store of node02 without delay.
-Then run the command again, or restart node02 if the command cannot reach it.
+In this example, node02 keeps its previous context because the replacement certificate has expired. Node01 has installed its new context. Provide a valid certificate for node02 and run the command again.
 
-Every node logs the certificate it put in use, or why the reload failed.
-The log line also names the node the command came through.
-With security enabled, it also names the login and network address of the user who ran the command.
+Every node logs the reload result. Successful reload entries include the loaded certificate metadata when the factory provides it. The log line names the node the command came through. With security enabled, it also names the login and network address of the user who ran the command.
 
 === Checking Certificates
 
@@ -1819,36 +1812,24 @@ With security enabled, it also names the login and network address of the user w
 control.sh|bat --ssl status
 ----
 
-For every node, the command prints one block per SSL context factory.
-Each block shows the transports that use the factory and the certificate they serve.
-The block also shows the certificate authorities these transports accept and the result of the last reload.
-If the factory has `renewalEnabled` set and a renewal is planned, the command also shows the time of the next link:security/ssl-tls#renewing-certificates-automatically[automatic renewal]:
+For every node, the command prints one block per SSL context factory. Each block shows its transports, the certificate metadata attached to the loaded context and the result of the last reload. If the factory has `renewalEnabled` set and a renewal is planned, the command also shows the time of the next link:security/ssl-tls#renewing-certificates-automatically[automatic renewal]:
 
 [source,text]
 ----
 e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: client connector, communication, discovery
-    serving subject=CN=node01, issuer=CN=ca, serial=2c41d7a09b, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
-    trusts: CN=ca; CN=newca
+    loaded subject=CN=node01, issuer=CN=ca, serial=2c41d7a09b, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
     last reload succeeded at 2026-10-05T09:00:02.347Z
     next automatic renewal at 2027-08-11T15:00:00Z
 ----
 
-The `trusts` line lists the certificate authorities that the node names when it asks a peer for a certificate.
-`trusts: unknown` means the node names no certificate authority.
-The line shows names, not certificates, so it cannot tell apart two authorities with the same name.
-A trust manager of your own may name authorities other than the ones it accepts, or none.
-
-If the node cannot tell which certificate a factory serves, the status shows `cannot tell which certificate is served`.
+Status reads the metadata supplied when the factory built the SSL context. It does not reread a keystore, contact PKI or perform a TLS connection test. If the factory supplied no chain, status shows `certificate metadata is unavailable`. Missing metadata alone does not make the status command fail.
 
 A node without an SSL context factory prints `no SSL context factory is configured`.
 Such a node does not make `--ssl reload` or `--ssl status` end with an error.
 
-If a certificate authority in the chain expires before the certificate, the `serving` line also shows when that authority expires, as `chainNotAfter`.
-From the `chainNotAfter` time, peers refuse the chain.
+If a certificate authority in the chain expires before the node's certificate, the `loaded` line also shows the chain's earliest expiry as `chainNotAfter`.
 
 After a failed reload, the `last reload` line shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
 Automatic renewals also update this line, except attempts that find only the certificate already in use.
 
-If a certificate in the chain a node serves is not valid now, the block shows `PROBLEM: the certificate is not valid now, peers refuse it`.
-The command ends with an error only if it finds such a node or cannot run on a node, for example because the node left.
-The command lists these nodes first, under `Failed on N node(s)`.
+If a certificate in the loaded chain is expired or not yet valid, the block shows `PROBLEM: the loaded certificate is not valid now`. The command ends with an error only if it finds such a node or cannot run on a node, for example because the node left. It lists these nodes first, under `Failed on N node(s)`.

@@ -32,12 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.RENEWED;
-import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.UNCHANGED;
-
 /**
  * Renews the certificate of one context built by a factory with {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal
- * enabled}, before it expires. Everything but {@link #start()} and {@link #replan()} runs in the renewal thread.
+ * enabled}, before it expires. Everything but {@link #replan()} runs in the renewal thread.
  */
 class SslRenewal {
     /** How the node log names an automatic renewal in {@code initiator=}. */
@@ -70,6 +67,9 @@ class SslRenewal {
     /** Last planned attempt, {@code null} before the first one. */
     private ScheduledFuture<?> next;
 
+    /** Time of the next automatic renewal, {@code 0} if none is planned. */
+    private volatile long nextRenewalTime;
+
     /** Earliest expiry in the chain in use when the renewal was planned. */
     private long chainNotAfter;
 
@@ -98,15 +98,13 @@ class SslRenewal {
         this.log = log;
     }
 
-    /** Renews the certificate of the provider from now on. */
-    void start() {
-        provider.onReload(this::replan);
-
-        replan();
+    /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
+    long nextRenewalTime() {
+        return nextRenewalTime;
     }
 
     /** Plans the next renewal in the renewal thread. */
-    private void replan() {
+    void replan() {
         submit(this::plan, 0);
     }
 
@@ -115,7 +113,7 @@ class SslRenewal {
         pause = waitLogTime = 0;
 
         SSLContext planned = provider.context();
-        X509Certificate[] chain = provider.servedChain();
+        X509Certificate[] chain = SslContextProvider.certificateChain(planned);
 
         chainNotAfter = SslCertificates.chainNotAfter(chain);
 
@@ -138,13 +136,13 @@ class SslRenewal {
      */
     private void attempt(SSLContext planned) {
         try {
-            SslContextProvider.RenewalResult res = provider.renew(planned);
+            X509Certificate renewed = provider.renew(planned);
 
-            if (res == RENEWED) {
+            if (renewed != null) {
                 U.log(log, "TLS certificates reloaded [transports=" + provider.transports() + ", " +
-                    SslCertificates.describe(provider.servedCertificate()) + ", initiator=" + INITIATOR + ']');
+                    SslCertificates.describe(renewed) + ", initiator=" + INITIATOR + ']');
             }
-            else if (res == UNCHANGED)
+            else if (provider.context() == planned)
                 retry(planned, null);
         }
         catch (Throwable e) {
@@ -205,7 +203,7 @@ class SslRenewal {
         if (next != null)
             next.cancel(false);
 
-        provider.nextRenewalTime(at);
+        nextRenewalTime = at;
 
         next = submit(() -> attempt(planned), Math.max(0, at - U.currentTimeMillis()));
     }

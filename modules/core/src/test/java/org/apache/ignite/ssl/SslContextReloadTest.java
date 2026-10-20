@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
 import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -113,7 +114,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTest() {
         stopAllGrids();
 
         U.delete(dir);
@@ -155,14 +156,21 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         SslContextProvider p = g0.context().sslContexts().providers().iterator().next();
 
-        assertEquals("CN=node02", p.servedCertificate().getSubjectX500Principal().getName());
-        assertContains(log, p.servedCertificate().getIssuerX500Principal().getName(), "CN=twoca");
+        assertEquals("CN=node02", p.certificate().getSubjectX500Principal().getName());
+        assertContains(log, p.certificate().getIssuerX500Principal().getName(), "CN=twoca");
         assertTrue(p.reloadOutcome().successTime() > 0);
 
         String status = status(g0);
 
-        assertContains(log, status, "chainNotAfter=" + Instant.ofEpochMilli(SslCertificates.chainNotAfter(p.servedChain())));
+        assertContains(log, status, "chainNotAfter=" + Instant.ofEpochMilli(SslCertificates.chainNotAfter(p.certificateChain())));
         assertContains(log, status, "last reload succeeded at " + Instant.ofEpochMilli(p.reloadOutcome().successTime()));
+
+        stopGrid(0);
+
+        IgniteEx restarted = startGrid(0);
+
+        assertEquals("CN=node02", servedSubject(restarted.context().clientListener().port()));
+        assertEquals("CN=node02", servedSubject(discoveryPort(restarted)));
     }
 
     /** One node fails: the others still take the new certificate and appear in the report; the command fails. */
@@ -189,13 +197,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node02", servedSubject(g0.context().clientListener().port()));
         assertEquals("CN=node01", servedSubject(g1.context().clientListener().port()));
 
-        assertEquals("A manual reload failure must not count as an automatic renewal", "0", metric(g1, "ConsecutiveRenewalFailures"));
-
         String status = status(g1);
 
         assertContains(log, status, "last reload failed 1 time(s) in a row");
         assertContains(log, status, "Failed to initialize key store");
-        assertContains(log, status, "serving subject=CN=node01,");
+        assertContains(log, status, "loaded subject=CN=node01,");
     }
 
     /**
@@ -220,69 +226,114 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
     }
 
-    /** A factory that is not an {@link AbstractSslContextFactory} and builds a new context on every call is reloaded. */
+    /** A shared custom factory loads once at startup and once per reload. Status does not load it. */
     @Test
     public void testCustomFactoryReloaded() throws Exception {
+        TestFactory factory = new TestFactory();
+
         IgniteEx g = startGrid(0, cfg -> {
-            cfg.setSslContextFactory(() -> storeFactory(cfg.getIgniteInstanceName()).create());
+            cfg.setSslContextFactory(factory);
+            cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(true));
         });
+
+        SslContextRegistry registry = g.context().sslContexts();
+        SSLContext ctx = registry.register(factory, COMMUNICATION);
+
+        assertSame(ctx, registry.register(factory, DISCOVERY));
+        assertSame(ctx, registry.register(factory, CLIENT_CONNECTOR));
+        assertSame(ctx, registry.register(factory, BINARY_REST));
+        assertEquals(1, registry.providers().size());
+        assertEquals(1, factory.calls);
+
+        String transports = BINARY_REST + ", " + ALL_TRANSPORTS;
+
+        assertContains(log, status(g), node(g) + ": " + transports);
+        assertEquals("Status must not load the factory", 1, factory.calls);
 
         placeKeys("node02");
 
-        assertReloaded(reload(g), g, ALL_TRANSPORTS);
+        assertReloaded(reload(g), g, transports);
+        assertEquals("Reload must load the shared factory once", 2, factory.calls);
+        assertSame(ctx, registry.register(factory, COMMUNICATION));
+        assertContains(log, status(g), "loaded subject=CN=node02,");
+        assertEquals("Status must not load the factory", 2, factory.calls);
+
         assertEquals("CN=node02", servedSubject(discoveryPort(g)));
+        assertEquals("CN=node02", servedSubject(g.context().clientListener().port()));
+        assertEquals("CN=node02", servedSubject(g.localNode().attribute(ATTR_REST_TCP_PORT)));
     }
 
-    /** Neither a certificate the node's own trust store rejects nor an expired one is put in use; the report, log and status say why. */
+    /** Equal but distinct factories reload independently, including when one of them fails. */
     @Test
-    public void testRejectedCertificateNotApplied() throws Exception {
-        initTrustStore = "trustone";
+    public void testEqualFactoriesReloadIndependently() throws Exception {
+        TestFactory nodeFactory = new TestFactory();
+        TestFactory clientFactory = new TestFactory();
 
-        LogListener untrusted = LogListener.matches(Pattern.compile("Failed to reload TLS certificates, the ones in use stay " +
-            "\\[transports=" + ALL_TRANSPORTS + ", initiator=management command, .*reason=The new certificate fails a test handshake " +
-            "with this node's own trust store.*subject=CN=node02,")).build();
+        assertNotSame(nodeFactory, clientFactory);
+        assertEquals(nodeFactory, clientFactory);
+        assertEquals(nodeFactory.hashCode(), clientFactory.hashCode());
 
+        IgniteEx g = startGrid(0, cfg -> {
+            cfg.setSslContextFactory(nodeFactory);
+            cfg.getClientConnectorConfiguration().setUseIgniteSslContextFactory(false).setSslContextFactory(clientFactory);
+        });
+
+        SslContextRegistry registry = g.context().sslContexts();
+
+        assertEquals(2, registry.providers().size());
+        assertNotSame(registry.register(nodeFactory, COMMUNICATION), registry.register(clientFactory, CLIENT_CONNECTOR));
+        assertEquals(1, nodeFactory.calls);
+        assertEquals(1, clientFactory.calls);
+
+        placeKeys("node02");
+
+        String res = reload(g);
+
+        assertReloaded(res, g, COMMUNICATION + ", " + DISCOVERY);
+        assertReloaded(res, g, CLIENT_CONNECTOR);
+        assertEquals(2, nodeFactory.calls);
+        assertEquals(2, clientFactory.calls);
+
+        nodeFactory.fail = true;
+        placeKeys("node03");
+
+        res = reloadFailure(g);
+
+        assertFailed(res, g, COMMUNICATION + ", " + DISCOVERY);
+        assertReloaded(res, g, CLIENT_CONNECTOR);
+        assertEquals(3, nodeFactory.calls);
+        assertEquals(3, clientFactory.calls);
+        assertEquals("CN=node02", servedSubject(discoveryPort(g)));
+        assertEquals("CN=node03", servedSubject(g.context().clientListener().port()));
+    }
+
+    /** An expired certificate stays out of use, and the report, log and status identify the rejected chain. */
+    @Test
+    public void testExpiredCertificateNotApplied() throws Exception {
         LogListener expired = LogListener.matches(Pattern.compile("Failed to reload TLS certificates, the ones in use stay .*" +
             "reason=The new certificate chain is not valid now \\[subject=CN=node02old,")).build();
 
-        nodeLog.registerListener(untrusted);
         nodeLog.registerListener(expired);
 
         IgniteEx g = startGrid(0);
 
-        placeKeys("node02");
+        placeKeys("node02old");
 
         String res = reloadFailure(g);
 
         assertFailed(res, g, ALL_TRANSPORTS);
-        assertContains(log, res, "The new certificate fails a test handshake with this node's own trust store");
-        assertContains(log, res, "subject=CN=node02,");
-        assertTrue(untrusted.check());
-
+        assertContains(log, res, "The new certificate chain is not valid now [subject=CN=node02old,");
+        assertTrue(expired.check());
         assertEquals("CN=node01", servedSubject(discoveryPort(g)));
 
         String status = status(g);
 
-        assertContains(log, status, "serving subject=CN=node01, issuer=");
+        assertContains(log, status, "loaded subject=CN=node01, issuer=");
         assertContains(log, status, "last reload failed 1 time(s) in a row");
-        assertContains(log, status, "The new certificate fails a test handshake with this node's own trust store");
-
-        placeTrust("trustboth");
-        placeKeys("node02old");
-
-        res = reloadFailure(g);
-
-        assertFailed(res, g, ALL_TRANSPORTS);
-        assertContains(log, res, "The new certificate chain is not valid now [subject=CN=node02old,");
-        assertTrue(expired.check());
-
-        assertEquals("CN=node01", servedSubject(discoveryPort(g)));
+        assertContains(log, status, "The new certificate chain is not valid now");
     }
 
-    /**
-     * A client connector and binary REST with factories of their own reload separately and skip the handshake check: nodes do not use
-     * their trust stores.
-     */
+    /** A client connector and binary REST with factories of their own reload separately from the node-wide factory. */
     @Test
     public void testClientTransportsWithSeparateFactories() throws Exception {
         initTrustStore = "trustone";
@@ -295,36 +346,52 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         placeKeys("node02");
 
-        String res = reloadFailure(g);
+        String res = reload(g);
 
         assertReloaded(res, g, CLIENT_CONNECTOR);
         assertReloaded(res, g, BINARY_REST);
-        assertFailed(res, g, COMMUNICATION + ", " + DISCOVERY);
+        assertReloaded(res, g, COMMUNICATION + ", " + DISCOVERY);
 
         assertEquals("CN=node02", servedSubject(g.context().clientListener().port()));
         assertEquals("CN=node02", servedSubject(g.localNode().attribute(ATTR_REST_TCP_PORT)));
-        assertEquals("CN=node01", servedSubject(discoveryPort(g)));
+        assertEquals("CN=node02", servedSubject(discoveryPort(g)));
     }
 
-    /** A key store that gives clients no certificate, such as one without a private key, is not put in use on a client connector. */
+    /** Manual reload accepts several keys, reports unavailable metadata and keeps existing and new TLS connections working. */
     @Test
-    public void testKeyStoreWithoutKeyNotApplied() throws Exception {
+    public void testKeyStoreWithMultipleKeysReloadedWithoutMetadata() throws Exception {
         ownClientConnectorFactory = true;
 
         IgniteEx g = startGrid(0);
 
-        placeKeys("trustboth");
+        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + g.context().clientListener().port())
+            .setSslMode(SslMode.REQUIRED).setSslContextFactory(GridTestUtils.sslTrustedFactory("node01", "trustboth"))
+            .setPartitionAwarenessEnabled(false).setClusterDiscoveryEnabled(false))) {
+            placeKeys("node0102");
 
-        assertContains(log, reloadFailure(g), node(g) + ": failed on " + CLIENT_CONNECTOR +
-            " (The new SSL context presents no certificate to a client");
+            String res = reload(g);
 
-        assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
+            assertContains(log, res, node(g) + ": reloaded " + CLIENT_CONNECTOR);
+            assertContains(log, res, node(g) + ": reloaded " + COMMUNICATION + ", " + DISCOVERY);
+
+            cli.cacheNames();
+        }
+
+        String subj = servedSubject(g.context().clientListener().port());
+
+        assertTrue(subj, List.of("CN=node01", "CN=node02").contains(subj));
+
+        String status = status(g);
+
+        assertContains(log, status, "certificate metadata is unavailable");
+        assertContains(log, status, "last reload succeeded at");
+        assertNotContains(log, status, "loaded subject=");
     }
 
     /**
      * The authority is replaced in steps: trust the new one, present its certificates, drop the old one; then the nodes open new
-     * connections to each other, and a node of the new one joins. Status shows which authorities every node trusts before the change
-     * and after each change of the trust store.
+     * connections to each other, and a node of the new one joins.
      */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
@@ -338,25 +405,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         placeTrust("trustboth");
         reload(g0, g1);
 
-        List<String> trustsBoth = status(g0, g1).lines().filter(line -> line.startsWith("    trusts: ")).toList();
-
-        assertEquals(2, trustsBoth.size());
-
-        for (String line : trustsBoth) {
-            assertContains(log, line, "CN=oneca, EMAILADDRESS=oneca@ignite.apache.org; ");
-            assertContains(log, line, "CN=twoca, EMAILADDRESS=twoca@ignite.apache.org");
-        }
-
         placeKeys("node02");
         reload(g0, g1);
 
         placeTrust("trusttwo");
         reload(g0, g1);
 
-        String trustsTwo = status(g0, g1);
+        String reloadedStatus = status(g0, g1);
 
-        assertNotContains(log, trustsTwo, "CN=oneca");
-        assertContains(log, trustsTwo, "trusts: C=RU, ST=SPb, L=SPb, O=Ignite, OU=Dev, CN=twoca");
+        assertNotContains(log, reloadedStatus, "CN=oneca");
+        assertContains(log, reloadedStatus, "CN=twoca");
 
         ConnectionClientPool pool = U.field(g0.configuration().getCommunicationSpi(), "clientPool");
 
@@ -388,50 +446,24 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> status(g), Exception.class, null));
         String id = node(g);
 
-        assertContains(log, res, id + ": " + CLIENT_CONNECTOR + "\n    serving subject=CN=node02old, issuer=");
-        assertContains(log, res, id + ": " + COMMUNICATION + ", " + DISCOVERY + "\n    serving subject=CN=node02old, issuer=");
+        assertContains(log, res, id + ": " + CLIENT_CONNECTOR + "\n    loaded subject=CN=node02old, issuer=");
+        assertContains(log, res, id + ": " + COMMUNICATION + ", " + DISCOVERY + "\n    loaded subject=CN=node02old, issuer=");
         assertContains(log, res, "CN=twoca");
-        assertContains(log, res, "PROBLEM: the certificate is not valid now, peers refuse it");
-
-        List<String> trusts = res.lines().filter(line -> line.startsWith("    trusts: ")).toList();
-
-        assertEquals(2, trusts.size());
-
-        for (String line : trusts) {
-            assertContains(log, line, "CN=oneca");
-            assertContains(log, line, "CN=twoca");
-        }
+        assertContains(log, res, "PROBLEM: the loaded certificate is not valid now");
     }
 
-    /** A node whose own trust store does not accept its certificate starts, but warns that reloads and renewals will refuse it. */
-    @Test
-    public void testOwnTrustStoreRefusingOwnCertificateWarned() throws Exception {
-        initTrustStore = "trusttwo";
-
-        LogListener warned = LogListener.matches("The node's own trust store does not accept its certificate").build();
-
-        nodeLog.registerListener(warned);
-
-        startGrid(0);
-
-        assertTrue(warned.check());
-    }
-
-    /** A node that starts on an expired certificate warns that peers refuse it, not that its own trust store does. */
+    /** A node that starts on an expired certificate warns that peers refuse it. */
     @Test
     public void testExpiredCertificateWarnedAtStart() throws Exception {
         place("node02old", keyStore(getTestIgniteInstanceName(0)));
 
         LogListener expired = LogListener.matches("The TLS certificate chain in use is not valid now").build();
-        LogListener untrusted = LogListener.matches("The node's own trust store does not accept its certificate").build();
 
         nodeLog.registerListener(expired);
-        nodeLog.registerListener(untrusted);
 
         startGrid(0);
 
         assertTrue(expired.check());
-        assertFalse(untrusted.check());
     }
 
     /** A node whose job did not finish is named in the report like the others. */
@@ -495,18 +527,42 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             place(name, trustStore(node.name()));
     }
 
-    /** @return Metric of the client connector of the node, as a string. */
-    private static String metric(IgniteEx node, String name) {
-        return node.context().metric().registry("ssl.client.connector").findMetric(name).getAsString();
-    }
-
     /** */
     private void assertReloaded(String res, IgniteEx node, String transports) {
-        assertContains(log, res, node(node) + ": reloaded " + transports + "; serving ");
+        assertContains(log, res, node(node) + ": reloaded " + transports + "; loaded ");
     }
 
     /** */
     private void assertFailed(String res, IgniteEx node, String transports) {
         assertContains(log, res, node(node) + ": failed on " + transports + " (");
+    }
+
+    /** Counts loads and deliberately considers distinct instances equal. */
+    private class TestFactory implements Factory<SSLContext> {
+        /** Factory calls, including failed loads. */
+        private int calls;
+
+        /** Whether loads fail. */
+        private boolean fail;
+
+        /** {@inheritDoc} */
+        @Override public SSLContext create() {
+            calls++;
+
+            if (fail)
+                throw new IgniteException("Certificate source is unavailable");
+
+            return storeFactory(getTestIgniteInstanceName(0)).create();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj instanceof TestFactory;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return 0;
+        }
     }
 }

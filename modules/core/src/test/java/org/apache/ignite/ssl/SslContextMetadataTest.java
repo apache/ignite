@@ -1,0 +1,229 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.ssl;
+
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManager;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
+
+/** Tests that certificate metadata belongs to the key material used to create a context. */
+public class SslContextMetadataTest extends GridCommonAbstractTest {
+    /** Store and key password of the test fixtures. */
+    private static final char[] PASSWORD = "123456".toCharArray();
+
+    /** A reload loads once, leaves the cached context intact and keeps each context's own chain. */
+    @Test public void testMetadataUsesOneLoadAndStaysWithContext() throws Exception {
+        KeyStore firstStore = loadStore("node01");
+        StoreFactory factory = new StoreFactory(firstStore);
+
+        SSLContext first = factory.create();
+
+        assertArrayEquals(chain(firstStore, "node01"), chain(first));
+        assertEquals(1, factory.loads);
+
+        factory.store = loadStore("node02");
+
+        SSLContext next = factory.createNew();
+
+        assertNotSame(first, next);
+        assertSame(first, factory.create());
+        assertEquals(2, factory.loads);
+        assertArrayEquals(chain(firstStore, "node01"), chain(first));
+        assertArrayEquals(chain(factory.store, "node02"), chain(next));
+    }
+
+    /** More than one private key leaves the chain unknown without preventing context creation. */
+    @Test public void testMultiplePrivateKeysHaveUnknownChain() throws Exception {
+        assertNull(chain(new StoreFactory(loadStore("node0102")).create()));
+    }
+
+    /** Trusted certificates and secret keys do not count as private keys. */
+    @Test public void testOnlyPrivateKeyEntriesCount() throws Exception {
+        KeyStore keys = loadStore("node01");
+        KeyStore store = KeyStore.getInstance("JCEKS");
+
+        store.load(null, PASSWORD);
+        store.setCertificateEntry("trusted", keys.getCertificate("node01"));
+        store.setEntry("secret", new KeyStore.SecretKeyEntry(new SecretKeySpec(new byte[16], "AES")),
+            new KeyStore.PasswordProtection(PASSWORD));
+
+        StoreFactory factory = new StoreFactory(store);
+
+        assertNull(chain(factory.create()));
+
+        store.setKeyEntry("key", keys.getKey("node01", PASSWORD), PASSWORD, keys.getCertificateChain("node01"));
+
+        assertArrayEquals(chain(keys, "node01"), chain(factory.createNew()));
+    }
+
+    /** An old subclass's validation, key manager and trust manager overrides still run on each build. */
+    @Test public void testLegacyOverridesAreUsedWithoutMetadata() {
+        LegacyFactory factory = new LegacyFactory();
+
+        SSLContext first = factory.create();
+
+        assertSame(first, factory.create());
+        assertNotSame(first, factory.createNew());
+        assertNull(chain(first));
+        assertEquals(2, factory.checks);
+        assertEquals(2, factory.keys);
+        assertEquals(2, factory.trust);
+    }
+
+    /** Neither callers nor another parameters wrapper can replace a context's recorded chain. */
+    @Test public void testWrapperPreservesAndCopiesChain() throws Exception {
+        X509Certificate[] expected = chain(loadStore("node01"), "node01");
+        X509Certificate[] input = expected.clone();
+        SSLContext delegate = SSLContext.getInstance("TLS");
+
+        delegate.init(null, null, null);
+
+        SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, input);
+
+        input[0] = null;
+        wrapper.getCertificateChain()[0] = null;
+
+        assertArrayEquals(expected, wrapper.getCertificateChain());
+
+        SSLParameters params = new SSLParameters();
+
+        params.setProtocols(new String[] {"TLSv1.2"});
+
+        SSLContextWrapper outer = new SSLContextWrapper(wrapper, params);
+
+        assertArrayEquals(expected, outer.getCertificateChain());
+        assertArrayEquals(new String[] {"TLSv1.2"}, outer.createSSLEngine().getEnabledProtocols());
+    }
+
+    /** A wrapper with metadata alone preserves the engine peer and native socket factories. */
+    @Test public void testMetadataWrapperPreservesContextBehavior() throws Exception {
+        SSLContext delegate = SSLContext.getInstance("TLS");
+
+        delegate.init(null, null, null);
+
+        SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, chain(loadStore("node01"), "node01"));
+        SSLEngine engine = wrapper.createSSLEngine("peer.example", 10800);
+
+        assertEquals("peer.example", engine.getPeerHost());
+        assertEquals(10800, engine.getPeerPort());
+        assertArrayEquals(delegate.createSSLEngine().getEnabledProtocols(), engine.getEnabledProtocols());
+        assertArrayEquals(delegate.createSSLEngine().getEnabledCipherSuites(), engine.getEnabledCipherSuites());
+        assertEquals(delegate.getSocketFactory().getClass(), wrapper.getSocketFactory().getClass());
+        assertEquals(delegate.getServerSocketFactory().getClass(), wrapper.getServerSocketFactory().getClass());
+
+        try (ServerSocket sock = wrapper.getServerSocketFactory().createServerSocket()) {
+            assertFalse(sock.isBound());
+        }
+    }
+
+    /** @return Loaded test key store. */
+    private static KeyStore loadStore(String name) throws Exception {
+        KeyStore store = KeyStore.getInstance("JKS");
+
+        try (InputStream in = Files.newInputStream(Path.of(GridTestUtils.keyStorePath(name)))) {
+            store.load(in, PASSWORD);
+        }
+
+        return store;
+    }
+
+    /** @return Chain stored for the alias. */
+    private static X509Certificate[] chain(KeyStore store, String alias) throws Exception {
+        Certificate[] chain = store.getCertificateChain(alias);
+
+        return Arrays.copyOf(chain, chain.length, X509Certificate[].class);
+    }
+
+    /** @return Chain attached to the context, if known. */
+    private static X509Certificate[] chain(SSLContext ctx) {
+        return ctx instanceof SSLContextWrapper ? ((SSLContextWrapper)ctx).getCertificateChain() : null;
+    }
+
+    /** A file factory whose existing store-loading hook supplies the test material. */
+    private static class StoreFactory extends SslContextFactory {
+        /** */
+        private KeyStore store;
+
+        /** */
+        private int loads;
+
+        /** */
+        StoreFactory(KeyStore store) {
+            this.store = store;
+
+            setKeyStoreType(store.getType());
+            setKeyStoreFilePath("test-store");
+            setKeyStorePassword(PASSWORD);
+            setTrustManagers(getDisabledTrustManager());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected KeyStore loadKeyStore(String type, String path, char[] pwd) {
+            loads++;
+
+            return store;
+        }
+    }
+
+    /** An existing subclass that does not implement the new metadata hook. */
+    private static class LegacyFactory extends AbstractSslContextFactory {
+        /** */
+        private int checks;
+
+        /** */
+        private int keys;
+
+        /** */
+        private int trust;
+
+        /** {@inheritDoc} */
+        @Override protected void checkParameters() {
+            checks++;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected KeyManager[] createKeyManagers() {
+            keys++;
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected TrustManager[] createTrustManagers() {
+            trust++;
+
+            return null;
+        }
+    }
+}

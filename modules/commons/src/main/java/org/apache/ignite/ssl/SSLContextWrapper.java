@@ -17,20 +17,45 @@
 
 package org.apache.ignite.ssl;
 
+import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapper for {@link SSLContext} that extend source context with custom SSL parameters.
+ * Wrapper for {@link SSLContext} with custom SSL parameters and the certificate chain loaded with the context.
  */
 public class SSLContextWrapper extends SSLContext {
+    /** Chain loaded with the delegate, or {@code null} if unknown. */
+    private final X509Certificate[] chain;
+
     /**
      * @param delegate Wrapped SSL context.
      * @param sslParameters Extended SSL parameters.
      */
     public SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
+        this(delegate, sslParameters, delegate instanceof SSLContextWrapper
+            ? ((SSLContextWrapper)delegate).getCertificateChain() : null);
+    }
+
+    /**
+     * Wraps a context with its loaded certificate chain. The chain describes the key material, not the outcome of a TLS
+     * handshake. The delegate must not be reinitialized with different key material after wrapping.
+     *
+     * @param delegate Wrapped SSL context.
+     * @param sslParameters Extended SSL parameters, or {@code null} to keep the delegate's parameters.
+     * @param chain Chain of the single private key, own certificate first, or {@code null} if unknown.
+     */
+    public SSLContextWrapper(SSLContext delegate, @Nullable SSLParameters sslParameters, @Nullable X509Certificate[] chain) {
         super(new DelegatingSSLContextSpi(delegate, sslParameters),
             delegate.getProvider(),
             delegate.getProtocol());
+
+        this.chain = chain == null || chain.length == 0 ? null : chain.clone();
+    }
+
+    /** @return Chain loaded with the context, own certificate first, or {@code null} if unknown. */
+    public @Nullable X509Certificate[] getCertificateChain() {
+        return chain == null ? null : chain.clone();
     }
 }

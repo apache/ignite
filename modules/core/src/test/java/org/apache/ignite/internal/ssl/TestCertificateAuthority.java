@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.ssl;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -27,13 +25,12 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.SecureRandom;
-import java.security.Signature;
-import java.security.cert.CertificateFactory;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -41,28 +38,20 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
-
-import static java.nio.charset.StandardCharsets.US_ASCII;
+import org.apache.ignite.ssl.SSLContextWrapper;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
  * Certificate authority for tests that need certificates valid for a chosen time, which the stores checked into the repository cannot give.
- * Certificates are put together in memory, with the platform's own security providers only.
  */
 class TestCertificateAuthority {
     /** Password of every store made here. */
     static final char[] PWD = "123456".toCharArray();
-
-    /** DER of {@code ecdsa-with-SHA256}, the algorithm every certificate here is signed with. */
-    private static final byte[] SIG_ALG = seq(new byte[] {0x06, 0x08, 0x2A, (byte)0x86, 0x48, (byte)0xCE, 0x3D, 0x04, 0x03, 0x02});
-
-    /** DER of a critical {@code basicConstraints} extension that makes a certificate a CA. */
-    private static final byte[] CA_EXT = tlv(0xA3, seq(seq(
-        new byte[] {0x06, 0x03, 0x55, 0x1D, 0x13},
-        new byte[] {0x01, 0x01, (byte)0xFF},
-        tlv(0x04, seq(new byte[] {0x01, 0x01, (byte)0xFF})))));
-
-    /** Format of {@code UTCTime}, which covers the years up to 2049. */
-    private static final DateTimeFormatter UTC_TIME = DateTimeFormatter.ofPattern("yyMMddHHmmss'Z'").withZone(ZoneOffset.UTC);
 
     /** */
     private static final SecureRandom RND = new SecureRandom();
@@ -132,7 +121,29 @@ class TestCertificateAuthority {
 
         ctx.init(keyManagers(keyStore), trustManagers(trustStore), null);
 
-        return ctx;
+        return new SSLContextWrapper(ctx, null, certificateChain(keyStore));
+    }
+
+    /**
+     * @param keyStore Store with at most one private key.
+     * @return Its certificate chain, or {@code null} if the store has no private key.
+     */
+    static X509Certificate[] certificateChain(KeyStore keyStore) throws Exception {
+        X509Certificate[] chain = null;
+
+        for (String alias : Collections.list(keyStore.aliases())) {
+            if (!keyStore.isKeyEntry(alias))
+                continue;
+
+            if (chain != null)
+                throw new IllegalArgumentException("The test key store must contain at most one private key");
+
+            Certificate[] certs = keyStore.getCertificateChain(alias);
+
+            chain = Arrays.copyOf(certs, certs.length, X509Certificate[].class);
+        }
+
+        return chain;
     }
 
     /**
@@ -178,24 +189,20 @@ class TestCertificateAuthority {
      * @return Certificate signed by this authority.
      */
     private X509Certificate sign(X500Principal subj, KeyPair subjKeys, long notBefore, long notAfter, boolean ca) throws Exception {
-        byte[] tbs = seq(
-            tlv(0xA0, tlv(0x02, new byte[] {2})),
-            tlv(0x02, new BigInteger(64, RND).add(BigInteger.ONE).toByteArray()),
-            SIG_ALG,
-            name.getEncoded(),
-            seq(time(notBefore), time(notAfter)),
-            subj.getEncoded(),
-            subjKeys.getPublic().getEncoded(),
-            ca ? CA_EXT : new byte[0]);
+        JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
+            name,
+            new BigInteger(Long.SIZE, RND).add(BigInteger.ONE),
+            new Date(notBefore),
+            new Date(notAfter),
+            subj,
+            subjKeys.getPublic());
 
-        Signature sig = Signature.getInstance("SHA256withECDSA");
+        if (ca)
+            builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
 
-        sig.initSign(keys.getPrivate());
-        sig.update(tbs);
+        ContentSigner signer = new JcaContentSignerBuilder("SHA256withECDSA").build(keys.getPrivate());
 
-        byte[] der = seq(tbs, SIG_ALG, bitString(sig.sign()));
-
-        return (X509Certificate)CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(der));
+        return new JcaX509CertificateConverter().getCertificate(builder.build(signer));
     }
 
     /** */
@@ -214,65 +221,5 @@ class TestCertificateAuthority {
         store.load(null, PWD);
 
         return store;
-    }
-
-    /**
-     * @param millis Time.
-     * @return DER of the time as {@code UTCTime}.
-     */
-    private static byte[] time(long millis) {
-        return tlv(0x17, UTC_TIME.format(Instant.ofEpochMilli(millis)).getBytes(US_ASCII));
-    }
-
-    /**
-     * @param parts DER of the elements.
-     * @return DER of the sequence of them.
-     */
-    private static byte[] seq(byte[]... parts) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        for (byte[] part : parts)
-            out.write(part, 0, part.length);
-
-        return tlv(0x30, out.toByteArray());
-    }
-
-    /**
-     * @param bytes Bytes, all of their bits used.
-     * @return DER of the BIT STRING of them.
-     */
-    private static byte[] bitString(byte[] bytes) {
-        byte[] val = new byte[bytes.length + 1];
-
-        System.arraycopy(bytes, 0, val, 1, bytes.length);
-
-        return tlv(0x03, val);
-    }
-
-    /**
-     * @param tag Tag.
-     * @param val Contents.
-     * @return DER of the element.
-     */
-    private static byte[] tlv(int tag, byte[] val) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-        out.write(tag);
-
-        if (val.length < 0x80)
-            out.write(val.length);
-        else if (val.length < 0x100) {
-            out.write(0x81);
-            out.write(val.length);
-        }
-        else {
-            out.write(0x82);
-            out.write(val.length >> 8);
-            out.write(val.length);
-        }
-
-        out.write(val, 0, val.length);
-
-        return out.toByteArray();
     }
 }

@@ -508,12 +508,12 @@ NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registe
 == SSL
 
 Each SSL-enabled transport exposes a counter for link:security/ssl-tls#renewing-certificates-automatically[automatic renewal].
-In the register name `ssl.{transport}`, `{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
+In the register name `ssl.\{transport}`, `\{transport}` is `communication`, `discovery`, `client.connector`, `binary.rest` or `http.rest`.
 `ssl.http.rest` exists only when `ConnectorConfiguration.httpSslFactory` is set.
 
 Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to inspect the certificate in use, reload results and the next renewal time.
 
-Register name: `ssl.{transport}`
+Register name: `ssl.\{transport}`
 
 [cols="2,1,3",opts="header"]
 |===

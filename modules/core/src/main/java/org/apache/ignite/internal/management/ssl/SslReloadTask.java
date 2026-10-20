@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.ssl;
 
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +39,7 @@ import static org.apache.ignite.internal.ssl.SslCertificates.reason;
 @GridInternal
 public class SslReloadTask extends AbstractSslTask {
     /** */
+    @Serial
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
@@ -48,6 +50,7 @@ public class SslReloadTask extends AbstractSslTask {
     /** */
     private static class SslReloadJob extends VisorJob<NoArg, IgniteBiTuple<Boolean, String>> {
         /** */
+        @Serial
         private static final long serialVersionUID = 0L;
 
         /** Node the command came through. */
@@ -83,14 +86,12 @@ public class SslReloadTask extends AbstractSslTask {
                 String transports = provider.transports();
 
                 try {
-                    provider.reload();
-
-                    String desc = describe(provider.servedCertificate());
+                    String desc = describe(provider.reload());
 
                     U.log(ignite.log(), "TLS certificates reloaded [transports=" + transports + (desc.isEmpty() ? "" : ", " + desc) +
                         ", initiator=" + initiator + ']');
 
-                    lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; serving " + desc));
+                    lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; loaded " + desc));
                 }
                 catch (Exception e) {
                     failed = true;

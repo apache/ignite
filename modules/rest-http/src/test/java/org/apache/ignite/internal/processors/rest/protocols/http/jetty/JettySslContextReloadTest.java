@@ -154,7 +154,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             assertVersionResponse(anonymous, "node02");
         }
 
-        assertContains(log, status(g), "serving subject=CN=node02,");
+        assertContains(log, status(g), "loaded subject=CN=node02,");
 
         Files.write(keyStore, "not a key store".getBytes());
 
@@ -260,7 +260,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** @return A new client context with the trusted node certificate. */
-    private static SSLContext trustedClient() throws Exception {
+    private static SSLContext trustedClient() {
         return GridTestUtils.sslTrustedFactory("node01", "trustboth").create();
     }
 

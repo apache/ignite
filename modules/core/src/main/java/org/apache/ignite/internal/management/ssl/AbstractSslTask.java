@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.management.ssl;
 
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteException;
@@ -36,6 +37,7 @@ import static org.apache.ignite.internal.ssl.SslCertificates.reason;
  */
 public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, IgniteBiTuple<Boolean, String>> {
     /** */
+    @Serial
     private static final long serialVersionUID = 0L;
 
     /**

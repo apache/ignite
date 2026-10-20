@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.management.ssl;
 
 import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import org.apache.ignite.internal.management.api.NoArg;
 
 /** SSL features command. */
-public class SslCommand extends CommandRegistryImpl {
+public class SslCommand extends CommandRegistryImpl<NoArg, Void> {
     /** */
     public SslCommand() {
         super(new SslReloadCommand(), new SslStatusCommand());
