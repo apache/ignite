@@ -1527,7 +1527,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)doReadCollection(in, ctx, ldr, this, false, true, factory);
+                return doReadCollection(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = positionForHandle(in) - in.readInt();
@@ -1605,7 +1605,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)doReadMap(in, ctx, ldr, this, false, true, factory);
+                return doReadMap(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = positionForHandle(in) - in.readInt();
