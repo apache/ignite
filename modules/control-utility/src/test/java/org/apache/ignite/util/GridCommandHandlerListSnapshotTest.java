@@ -79,14 +79,14 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     public int incCnt;
 
     /** */
-    @Parameters(name = "cmdHnd={0},customPath={1},ownWorkDir={2},addExtraSrvr={3},incCnt={4}")
+    @Parameters(name = "cmdHnd={0}, customPath={1}, ownWorkDir={2}, addExtraSrvr={3}, incCnt={4}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(false, true), // Custom snapshot path
-            F.asList(false, true), // Separated (own) work directories
-            F.asList(false, true), // Add a server node after the snapshot creation
-            F.asList(0, 2) // Number of incremental snapshots
+            F.asList(false, true), // Custom snapshot path.
+            F.asList(false, true), // Separated (own) work directories.
+            F.asList(false, true), // Add a server node after the snapshot creation.
+            F.asList(0, 2) // Number of incremental snapshots.
         );
     }
 
@@ -109,8 +109,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
-        super.cleanPersistenceDir();
-
         // Also cleans separated snapshot working directories and custom snapshot paths.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
@@ -152,8 +150,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** */
     @Test
     public void testNoSnapshots() throws Exception {
-        assumeFalse(addExtraSrvr || incCnt > 0);
-
         doTestSnapshotsLists(0, false, false);
     }
 
@@ -173,11 +169,9 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Test
     public void testOneNodeMisses() throws Exception {
         // Doesn't matter here.
-        assumeFalse(incCnt > 0);
-        // Let's keep just one node not seeing the snapshot.
+//        assumeFalse(incCnt > 0);
+        // Keeps just one node not seeing the snapshot.
         assumeTrue(separatedWorkDir);
-        // Almost the same tests.
-        assumeFalse(addExtraSrvr);
 
         doTestSnapshotsLists(2, true, false);
     }
@@ -199,8 +193,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     public void testChangedConsistentId() throws Exception {
         // In new created working directories there will be obviously no snapshots.
         assumeFalse(separatedWorkDir);
-        // Fastens the tests
-        assumeFalse(incCnt > 0);
 
         doTestSnapshotsLists(1, false, true);
     }
@@ -319,11 +311,15 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
             assertEquals(certainSnpRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + snpIdx + "'"));
 
-            if (incCnt > 0)
-                assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "incremental snapshots: cnt=" + incCnt));
-
             if (extStorages)
                 assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "external storages: cnt=1, size="));
+        }
+
+        if (incCnt > 0) {
+            assertEquals(
+                snpsRecordsCnt * snpCnt - (grid0HasNoSnapshot0 ? 1 : 0),
+                countEntries(out, "incremental snapshots: cnt=" + incCnt)
+            );
         }
     }
 

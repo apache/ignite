@@ -20,7 +20,10 @@ package org.apache.ignite.internal.management.snapshot;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +64,12 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     @Override public void printResult(SnapshotListCommandArg arg, SnapshotListTaskResult res, Consumer<String> printer) {
         printer.accept(HEADER);
 
-        for (int nodeIdx = 0; nodeIdx < res.nodesIds().length; nodeIdx++) {
+        // Sorting the results by consistent id for better reading.
+        Integer[] nodesOrder = IntStream.range(0, res.nodesIds().length).boxed()
+            .sorted(Comparator.comparing(idx -> res.consistentIds()[idx]))
+            .toArray(Integer[]::new);
+
+        for (int nodeIdx : nodesOrder) {
             // Skip line before node.
             printer.accept("");
 
@@ -75,7 +83,8 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 continue;
             }
 
-            nodeResult.snapshots().forEach((snpName, snpInfo) -> {
+            // Sorted snapshots names for better user reading.
+            new TreeMap<>(nodeResult.snapshots()).forEach((snpName, snpInfo) -> {
                 printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
                     snpName,
                     U.humanReadableByteCount(snpInfo.size()),

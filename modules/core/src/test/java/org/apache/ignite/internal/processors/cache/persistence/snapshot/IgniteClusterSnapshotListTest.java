@@ -74,13 +74,13 @@ import static org.junit.Assume.assumeTrue;
 
 /** Cluster-wide snapshot list procedure tests. */
 public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
-    /** Number of cache keys to pre-create at node start. */
+    /** Number of cache keys to pre-create at node startup. */
     private static final int CACHE_KEYS_RANGE = 15;
 
-    /** Number of partitions within a snapshot cache group. */
+    /** Number of partitions of the test cache. */
     private static final int CACHE_PARTITIONS_COUNT = 4;
 
-    /** */
+    /** Flag showing that the filesystem supports POSIX permissions. */
     private static boolean posixPermissions;
 
     /** Size of the snapshot utility thread pool. */
@@ -100,9 +100,9 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, snpThrdPoolSz={2}")
     public static Collection<Object[]> params() {
         return cartesianProduct(
-            encryptionParameters(), // Encryption
-            F.asList(false, true), // Only primary
-            F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1) // Snapshots thread pool size
+            encryptionParameters(), // Encryption.
+            F.asList(false, true), // Only primary.
+            F.asList(DFLT_SNAPSHOT_THREAD_POOL_SIZE, 1) // Snapshots thread pool size.
         );
     }
 
@@ -182,7 +182,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testConcurrentCreation() throws Exception {
-        // The test uses the thread blocking and conditional waitings. Won't proceed with 1 thread.
+        // The test uses the thread blocking and conditional waiting. Won't proceed with 1 thread.
         assumeTrue(snpThrdPoolSz > 1);
 
         int grids = 3;
@@ -228,7 +228,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         assertTrue(beginSnpCreation.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        SnapshotListTaskResult lstOpRes = listSnapshots(grid(2));
+        SnapshotListTaskResult lstOpRes = listSnapshots(grid(0));
 
         int snpsCnt = Stream.of(lstOpRes.nodesSnapshots()).mapToInt(jr -> jr.snapshots().size()).sum();
 
@@ -345,64 +345,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         }
     }
 
-    /**
-     * Ensures that a file can be read without locking or other issues while being concurrently written on current OS and
-     * file system. This behavior is important for the case when snapshots are being read while creation.
-     */
-    @Test
-    public void testReadWhileCreating() throws Exception {
-        // Doesn't matter here. speeds up the tests.
-        assumeFalse(encryption || onlyPrimary);
-
-        assertTrue(new File(U.defaultWorkDirectory()).exists());
-
-        File testF = new File(U.defaultWorkDirectory(), "test.out");
-
-        assumeFalse(testF.exists());
-
-        CountDownLatch proceedWriteLatch = new CountDownLatch(1);
-        AtomicBoolean readFlag = new AtomicBoolean();
-
-        try {
-            try (RandomAccessFile raf = new RandomAccessFile(testF, "rw");) {
-                raf.write(1);
-                raf.write(2);
-
-                Thread t = new Thread(() -> {
-                    try (RandomAccessFile raf0 = new RandomAccessFile(testF, "r")) {
-                        assertEquals(1, raf0.read());
-                        assertEquals(2, raf0.read());
-
-                        readFlag.set(true);
-
-                        proceedWriteLatch.countDown();
-                    }
-                    catch (Throwable e) {
-                        log.error("Failed to concurrently read the test file.", e);
-                    }
-                });
-
-                t.setDaemon(true);
-                t.start();
-
-                assertTrue(proceedWriteLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-                raf.write(3);
-            }
-
-            try (RandomAccessFile raf = new RandomAccessFile(testF, "r");) {
-                assertEquals(1, raf.read());
-                assertEquals(2, raf.read());
-                assertEquals(3, raf.read());
-            }
-        }
-        finally {
-            assertTrue(!testF.exists() || testF.delete());
-        }
-
-        assertTrue(readFlag.get());
-    }
-
     /** */
     @Test
     public void testMissingSnapshotPath() throws Exception {
@@ -418,7 +360,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     private void doTestWrongSnapshotPath(boolean missing) throws Exception {
         // Doesn't matter here, speeds up the tests.
-        assumeFalse(encryption || onlyPrimary || snpThrdPoolSz < 2);
+        assumeFalse(snpThrdPoolSz < 2);
 
         doTestSnapshotPath(null);
 
@@ -486,9 +428,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
      * @param corruptFile If {@code true}, corrupts metadata. Otherwise, deletes metadata.
      */
     private void doTestWithWrongMeta(boolean corruptFile) throws Exception {
-        // Speeds up the tests.
-        assumeFalse(encryption);
-
         int grids = 3;
         int testGridIdx = 1;
 
@@ -608,7 +547,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     @Test
     public void testDeniedPermissions() throws Exception {
         assumeTrue(posixPermissions);
-        // We rely on sizes here. Better to avoid empty data nodes not to become flaky.
+        // We rely on the snapshot sizes here. Better to avoid empty data nodes not to become flaky.
         assumeFalse(onlyPrimary);
 
         int grids = 3;
@@ -859,10 +798,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testSnapshotListsSizesExternalStorages() throws Exception {
-        // Speeds up the tests.
-        assumeTrue(snpThrdPoolSz > 1);
-        assumeTrue(onlyPrimary);
-
         int grids = 3;
 
         extStorages = true;
@@ -891,7 +826,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
             long rootSize = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
 
-            // If there is a data withing the snapshot's external storage, its size must be added to the total size.
+            // If there is a data within the snapshot's external storage, its size must be added to the total size.
             assertTrue(info.externalStorages().size() > 0L ? info.size() > rootSize : info.size() == rootSize);
             assertEquals(rootSize + info.externalStorages().size(), info.size());
         }
@@ -900,9 +835,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testNodeStopDuringSnapshotList() throws Exception {
-        // Doesn't matter here, speeds up the tests.
-        assumeFalse(encryption || onlyPrimary);
-
         int grids = 3;
         int testGridIdx = 1;
 

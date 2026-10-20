@@ -22,7 +22,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteDataStreamer;
@@ -30,12 +30,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommandArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
@@ -60,16 +58,11 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
     /** */
     private static final int CLIENTS = 1;
 
-    /** */
-    private static final String SNP_NAME = "testSnapshot";
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        cleanPersistenceDir();
-
-        // Clean all: also separated snapshot working directories.
+        // Clean all, also the separated working directories.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);
@@ -80,14 +73,11 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, String ver) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, ver);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                )
-        );
+        DataRegionConfiguration dataRegionCfg = new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(dataRegionCfg));
 
         cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
 
@@ -121,7 +111,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
 
         assertTrue(spi(grid(testNodeIx)).waitForBlocked(1, getTestTimeout()));
 
-        ensureSnapshotListFailed();
+        ensureSnapshotListCommandFails();
 
         spi(grid(testNodeIx)).stopBlock();
 
@@ -148,7 +138,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
 
         createCacheAndSnapshot(1);
 
-        ensureSnapshotListFailed();
+        ensureSnapshotListCommandFails();
 
         ru(grid(0)).enableVersionUpgrade();
 
@@ -157,7 +147,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
 
             upgradeNodeVersion(i, "2.18.0", "2.19.4");
 
-            ensureSnapshotListFailed();
+            ensureSnapshotListCommandFails();
         }
 
         ru(grid(1)).finalizeClusterVersion();
@@ -173,20 +163,25 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
 
     /** */
     private void ensureSnapshotListSucceeds() throws Exception {
-        for (int g = 0; g < ALL_GRIDS; g++) {
-            SnapshotListTaskResult listOpRes = listSnapshots(grid(g));
+        for (int i = 0; i < ALL_GRIDS; i++) {
+            for (int k = 0; k < ALL_GRIDS; k++) {
+                int i0 = i;
+                int k0 = k;
 
-            assertEquals(3, listOpRes.nodesSnapshots().length);
+                SnapshotListTaskResult listOpRes = launchSnapshotsListCommand(i0, grid(k0).localNode().id());
 
-            // Tests client exclusion.
-            if (CLIENTS > 0) {
-                UUID cliId = grid(ALL_GRIDS - CLIENTS).cluster().localNode().id();
+                assertEquals(3, listOpRes.nodesSnapshots().length);
 
-                assertFalse(new HashSet<>(Arrays.asList(listOpRes.nodesIds())).contains(cliId));
+                // Tests client exclusion.
+                if (CLIENTS > 0) {
+                    UUID cliId = grid(ALL_GRIDS - CLIENTS).cluster().localNode().id();
+
+                    assertFalse(new HashSet<>(Arrays.asList(listOpRes.nodesIds())).contains(cliId));
+                }
+
+                for (SnapshotListJobResult nodeRes : listOpRes.nodesSnapshots())
+                    assertEquals(1, nodeRes.snapshots().size());
             }
-
-            for (SnapshotListJobResult nodeRes : listOpRes.nodesSnapshots())
-                assertEquals(1, nodeRes.snapshots().size());
         }
     }
 
@@ -205,41 +200,31 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
                 ds.addData(i, i);
         }
 
-        createSnapshot(gridIdx);
+        grid(gridIdx).context().cache().context().snapshotMgr().createSnapshot("testSnapshot").get(getTestTimeout());
     }
 
     /** */
-    private void createSnapshot(int gridIdx) {
-        snp(gridIdx).createSnapshot(SNP_NAME).get(getTestTimeout());
-    }
-
-    /** */
-    private void ensureSnapshotListFailed() {
-        String err = "The snapshot list feature isn't activated yet";
-
+    private void ensureSnapshotListCommandFails() {
         for (int i = 0; i < ALL_GRIDS; i++) {
-            int i0 = i;
+            for (int k = 0; k < ALL_GRIDS; k++) {
+                int i0 = i;
+                int k0 = k;
 
-            assertThrowsAnyCause(
-                null,
-                () -> listSnapshots(grid(i0)),
-                IgniteException.class,
-                err
-            );
+                assertThrowsAnyCause(
+                    null,
+                    () -> launchSnapshotsListCommand(i0, grid(k0).localNode().id()),
+                    IgniteException.class,
+                    SnapshotListTask.FEATURE_NOT_ACTIVE_ERR_MSG
+                );
+            }
         }
     }
 
     /** */
-    private IgniteSnapshotManager snp(int gridIdx) {
-        return grid(gridIdx).context().cache().context().snapshotMgr();
-    }
-
-    /** */
-    private static SnapshotListTaskResult listSnapshots(IgniteEx grid) throws Exception {
-        SnapshotListCommandArg arg = new SnapshotListCommandArg();
-
-        Collection<UUID> nodes = grid.cluster().forServers().nodes().stream().map(ClusterNode::id).toList();
-
-        return grid.compute().execute(SnapshotListTask.class, new VisorTaskArgument<>(nodes, arg, false)).result();
+    private SnapshotListTaskResult launchSnapshotsListCommand(int gridFromIdx, UUID targetGrid) throws Exception {
+        return grid(gridFromIdx).compute().execute(
+            SnapshotListTask.class,
+            new VisorTaskArgument<>(Collections.singleton(targetGrid), new SnapshotListCommandArg(), false)
+        ).result();
     }
 }

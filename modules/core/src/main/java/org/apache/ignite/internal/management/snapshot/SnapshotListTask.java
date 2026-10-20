@@ -37,7 +37,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,11 +60,17 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+
 /** */
 @GridInternal
 public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg, SnapshotListTaskResult, SnapshotListJobResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final String FEATURE_NOT_ACTIVE_ERR_MSG = "Won't search for local snapshots. " +
+        "The snapshot list feature isn't activated yet.";
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotListCommandArg, SnapshotListJobResult> job(SnapshotListCommandArg arg) {
@@ -75,10 +80,10 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<SnapshotListCommandArg> arg) {
         if (!ignite.context().rollingUpgrade().features().isActive(CoreFeatureRegistry.SNAPSHOT_LIST_FEATURE))
-            throw new IgniteException("Won't search for local snapshots. The snapshot list feature isn't activated yet.");
+            throw new IgniteException(FEATURE_NOT_ACTIVE_ERR_MSG);
 
-        /** Allows {@link #map0(List, VisorTaskArgument)} to use the entire subgrid. */
-        return ignite.cluster().forServers().nodes().stream().map(ClusterNode::id).collect(Collectors.toList());
+        /** Allows {@link #map0(List, VisorTaskArgument)} to use the entire grid. */
+        return nodeIds(ignite.cluster().forServers().nodes());
     }
 
     /** {@inheritDoc} */
@@ -86,11 +91,6 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         String[] cstIds = new String[nodesJobsResults.size()];
         UUID[] nodesIds = new UUID[nodesJobsResults.size()];
         SnapshotListJobResult[] nodesResults = new SnapshotListJobResult[nodesJobsResults.size()];
-
-        // Sorting the results by consistent id for better reading.
-        nodesJobsResults = nodesJobsResults.stream()
-            .sorted((jr0, jr1) -> nodeConsistentId(jr0.getNode()).compareTo(nodeConsistentId(jr1.getNode())))
-            .toList();
 
         for (int i = 0; i < nodesJobsResults.size(); i++) {
             ComputeJobResult nodeJobRes = nodesJobsResults.get(i);
@@ -184,24 +184,26 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             if (locSnps.isEmpty())
                 return new SnapshotListJobResult(Collections.emptyMap());
 
-            // Optional external storages descriptions (per snapshot name).
-            Map<String, SnapshotListJobResult.SnapshotInfo> extStors = new ConcurrentHashMap<>(locSnps.size(), 1.0f);
+            // Main sizes of the local snapshots (per snapshot name).
+            Map<String, Long> sizes = new ConcurrentHashMap<>(locSnps.size(), 1.0f);
             // Optional incremental parts descriptions (per snapshot name).
             Map<String, SnapshotListJobResult.SnapshotInfo> incs = new ConcurrentHashMap<>(locSnps.size(), 1.0f);
+            // Optional external storages descriptions (per snapshot name).
+            Map<String, SnapshotListJobResult.SnapshotInfo> extStors = new ConcurrentHashMap<>(locSnps.size(), 1.0f);
 
-            // Incremental parts and external storages futures.
-            List<Future<?>> futs = new ArrayList<>(locSnps.size() * 2);
+            // Snapshot sizes, incremental parts and external storages futures.
+            List<Future<?>> futs = new ArrayList<>(locSnps.size() * 3);
             // Names of snapshots with read failures.
             Set<String> failedSnps = ConcurrentHashMap.newKeySet(locSnps.size() / 2);
 
             IgniteThreadPoolExecutor exec = ignite.context().pools().getSnapshotExecutorService();
 
-            // Optional descriptions of snapshot external storages and incremental parts.
+            // Descriptions of the local snapshots: main sizes, external storages and incremental parts.
             for (T2<SnapshotFileTree, Long> snpPair : locSnps) {
                 SnapshotFileTree sft = snpPair.get1();
                 String snpName = sft.name();
 
-                // Future for optional external storages.
+                // Future for the snapshot main size. It is the largest part of the job, thus it goes first.
                 Future<?> fut = exec.submit(() -> {
                     if (ignite.context().isStopping())
                         throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
@@ -210,15 +212,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                         return;
 
                     try {
-                        SnapshotListJobResult.SnapshotInfo extDesc = externalStorages(sft);
-
-                        if (extDesc != null)
-                            extStors.put(snpName, extDesc);
+                        sizes.put(snpName, calculateDirectorySize(sft.root()));
                     }
                     catch (Exception e) {
                         failedSnps.add(snpName);
 
-                        log.warning("Failed to read snapshot's external storages, snapshot ignored [snpName=" + snpName + ']', e);
+                        log.warning("Failed to calculate snapshot's size, snapshot ignored [snpName='" + snpName + "']", e);
                     }
                 });
 
@@ -241,24 +240,43 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     catch (Exception e) {
                         failedSnps.add(snpName);
 
-                        log.warning("Failed to read snapshot's incremental parts, snapshot ignored [snpName=" + snpName + ']', e);
+                        log.warning("Failed to read snapshot's incremental parts, snapshot ignored [snpName='" + snpName + "']", e);
+                    }
+                });
+
+                futs.add(fut);
+
+                // Future for optional external storages.
+                fut = exec.submit(() -> {
+                    if (ignite.context().isStopping())
+                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+
+                    if (failedSnps.contains(snpName))
+                        return;
+
+                    try {
+                        SnapshotListJobResult.SnapshotInfo extDesc = externalStorages(sft);
+
+                        if (extDesc != null)
+                            extStors.put(snpName, extDesc);
+                    }
+                    catch (Exception e) {
+                        failedSnps.add(snpName);
+
+                        log.warning("Failed to read snapshot's external storages, snapshot ignored [snpName='" + snpName + "']", e);
                     }
                 });
 
                 futs.add(fut);
             }
 
-            // Wait for the snapshot optional description futures.
+            // Wait for the futures.
             for (Future<?> fut : futs) {
                 try {
                     fut.get();
                 }
                 catch (ExecutionException e) {
-                    if (X.hasCause(e, NodeStoppingException.class))
-                        throw new IgniteException("Won't search for local snapshots.", e.getCause());
-
-                    // All the futures have internal exceptions being logged. No errors expected.
-                    throw new IgniteException("Failed to read local nodes' snapshots.", e);
+                    throw new IgniteException("Failed to read local node's snapshots.", e);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -272,22 +290,15 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             // Reduce results.
             for (T2<SnapshotFileTree, Long> snpPair : locSnps) {
-                SnapshotFileTree sft = snpPair.get1();
-                String snpName = sft.name();
+                String snpName = snpPair.get1().name();
 
                 if (failedSnps.contains(snpName))
                     continue;
 
-                long size;
+                Long size = sizes.get(snpName);
 
-                try {
-                    size = calculateDirectorySize(sft.root());
-                }
-                catch (IOException e) {
-                    log.warning("Failed to calculate snapshot's size, snapshot ignored [snpName=" + snpName + ']', e);
-
-                    continue;
-                }
+                // The size must be calculated unless the snapshot has failed.
+                assert size != null;
 
                 SnapshotListJobResult.SnapshotInfo snpDesc = new SnapshotListJobResult.SnapshotInfo(
                     size,
@@ -314,9 +325,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                 try {
                     extStoragesSize += calculateDirectorySize(extraStorage);
                 }
-                catch (IOException e) {
-                    log.warning("Failed to calculate snapshot's external storage size, storage ignored [extraStorage=" +
-                        extraStorage + ']', e);
+                catch (Exception e) {
+                    log.warning("Failed to calculate snapshot's external storage size, storage ignored [extraStorage='" +
+                        extraStorage + "']", e);
 
                     continue;
                 }
@@ -329,7 +340,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
         private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
-            // The tree is used only to extract the snapshots root directory. The snapshot name isn't used.
+            // The tree is used only to extract the snapshots root directory. Such snapshot name is actually unallowed.
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
@@ -386,7 +397,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     if (X.hasCause(e, NodeStoppingException.class))
                         throw new IgniteException("Won't search for local snapshots.", e.getCause());
 
-                    log.warning("Failed to read snapshot, snapshot ignored [path=" + snpPath + ']', e);
+                    log.warning("Failed to read snapshot, snapshot ignored.", e);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -431,7 +442,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     cnt++;
                 }
                 catch (Exception e) {
-                    log.warning("Failed to read incremental snapshot, skipped [dir=" + incDir + ']', e);
+                    log.warning("Failed to read incremental snapshot, incremental part ignored [dir='" + incDir + "']", e);
                 }
             }
 
