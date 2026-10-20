@@ -63,7 +63,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
     /** */
     public static final String FEATURE_NOT_ACTIVE_ERR_MSG = "Won't search for local snapshots. " +
-        "The snapshot list feature isn't activated yet.";
+        "The snapshot list feature isn't activated yet. The Rolling Upgrade has to be finished.";
 
     /** {@inheritDoc} */
     @Override protected VisorJob<SnapshotListCommandArg, SnapshotListJobResult> job(SnapshotListCommandArg arg) {
@@ -263,7 +263,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         private void checkNodeIsStopping() {
             if (ignite.context().isStopping()) {
                 throw new IgniteException(
-                    "Will not search for local snapshots due to the local node stoppage.",
+                    "Won't search for local snapshots due to the local node stoppage.",
                     new NodeStoppingException("Local node is stopping.")
                 );
             }
@@ -274,16 +274,16 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             int extStoragesCnt = 0;
             long extStoragesSize = 0;
 
-            for (File extraStorage : sft.allStorages().toList()) {
-                if (sft.nodeStorage().equals(extraStorage))
+            for (File extStorage : sft.allStorages().toList()) {
+                if (sft.nodeStorage().equals(extStorage))
                     continue;
 
                 try {
-                    extStoragesSize += GridFileUtils.sizeOfDirectory(extraStorage);
+                    extStoragesSize += GridFileUtils.sizeOfDirectory(extStorage);
                 }
                 catch (Exception e) {
-                    log.warning("Failed to calculate snapshot's external storage size, storage ignored [extraStorage='" +
-                        extraStorage + "']", e);
+                    log.warning("Failed to calculate snapshot's external storage size, storage ignored [externalStorage='" +
+                        extStorage + "']", e);
 
                     continue;
                 }
@@ -294,9 +294,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             return extStoragesCnt == 0 ? null : new SnapshotListJobResult.SnapshotInfo(extStoragesCnt, extStoragesSize);
         }
 
-        /** @return Snapshot file tree and creation time from the snapshot metadata. */
+        /** @return Snapshot file trees and related snapshots' creation times from the snapshot metadata. */
         private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
-            // The tree is used only to obtain the snapshots root directory; the snapshot name is irrelevant here
+            // The tree is used only to obtain the snapshots root directory. The snapshot name is irrelevant here
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
@@ -320,7 +320,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     if (metas.isEmpty())
                         return null;
 
-                    // Get the last-created time snapshot metadata.
+                    // "Get the metadata of the most recently created snapshot.
                     SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime)).get();
 
                     // Snapshot file tree based on its metadata. Holds the real snapshot consistent ID and corresponding
@@ -365,7 +365,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             return res;
         }
 
-        /** @return Number, total size and last creation time of incremental snapshotss, or {@code null} if there are none. */
+        /** @return Number, total size and last creation time of incremental snapshots, or {@code null} if there are none. */
         private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) {
             File[] incs = sft.incrementsRoot().listFiles();
 

@@ -1841,7 +1841,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * from the local one.
      *
      * @param sft Snapshot file tree.
-     * @param failIfCantRead If {@code true}, throws exception if cannot read a metadata file.
+     * @param failIfCantRead If {@code true}, throws exception if a metadata file cannot be read.
      * @return List of snapshot metadata for the given snapshot name on local node.
      * If snapshot has been taken from local node the snapshot metadata for given
      * local node will be placed on the first place.
@@ -1875,7 +1875,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (failIfCantRead)
                     throw new IgniteException("Failed to read snapshot metadata [meta=" + smf + ']', e);
                 else
-                    log.warning("Failed to read snapshot metadata, snapshot skipped [meta=" + smf + ']', e);
+                    log.warning("Failed to read snapshot metadata, the file skipped [meta=" + smf + ']', e);
             }
         }
 

@@ -50,7 +50,7 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
         this.nodesSnapshots = nodesSnapshots;
     }
 
-    /** @return Nodes consistent ids. */
+    /** @return Nodes consistent IDs. */
     public String[] consistentIds() {
         return consistentIds;
     }

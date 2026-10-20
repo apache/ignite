@@ -58,7 +58,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** Flag to use {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
     private boolean extStorage;
 
-    /** Resolved external storages paths. {@code null} if {@code extStorage} is {@code false}. */
+    /** Resolved external storage paths. {@code null} if {@code extStorage} is {@code false}. */
     private @Nullable String[] extStoragePaths;
 
     /** Node consistent id postfix if required. */
@@ -100,7 +100,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        /** Handy if test running is interrupted and {@link #afterTest()} isn't invoked. */
+        /** Handy if the test run is interrupted and {@link #afterTest()} isn't invoked. */
         cleanPersistenceDir();
     }
 
@@ -206,7 +206,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
      * <ul>
      *     <li>Step 1: Starts cluster</li>
      *     <li>
-     *         Step 2: If {@code snapshotsCnt} &gt 0, creates a cache, fills it and creates this number of the test snapshots.
+     *         Step 2: If {@code snapshotsCnt} &gt; 0, creates a cache, fills it and creates this number of the test snapshots.
      *         <p>If {@link #incrementalsCnt} &gt; 0, adds this number of incrementals to each snapshot.</p>
      *         <p>If {@link #customPath} is set, uses it as the snapshot path to create each test snapshot.</p>
      *         <p>If {@code snapshotsCnt} == 0, doesn't create any test snapshot.</p>
@@ -217,8 +217,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
      *     <li>Step 6: If {@code snapshotsCnt} == 0, ensures that the output says there are no snapshots on any node and quits.</li>
      *     <li>
      *         Step 7: If {@code snapshotsCnt} &gt; 0, checks the snapshots list of each node in the output.
-     *         <p>If {@link #extStorage} is set, also checks that the output's snapshots list of every node has proper
-     *         a descriptions of the current snapshot's external storage.</p>
+     *         <p>If {@link #extStorage} is set, also checks that the output's snapshots list of every node contains a proper
+     *         description of the current snapshot's external storage.</p>
      *         <p>If {@link #incrementalsCnt} &gt; 0, also verifies the total number of incremental snapshots found in the output.</p>
      *     </li>
      * </ul>
@@ -270,7 +270,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             }
         }
 
-        // Step 3: After the tests snapshots are created, invoke optional test listener.
+        // Step 3: After the test snapshots are created, invoke optional test listener.
         if (snapshotsCreatedLsnr != null)
             snapshotsCreatedLsnr.run();
 
@@ -318,12 +318,12 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "incremental snapshots: cnt=" + incrementalsCnt));
     }
 
-    /** {@link #doTestSnapshotsLists(int, Runnable)} with not set {@code snapshotsCreatedLsnr} by default. */
+    /** {@link #doTestSnapshotsLists(int, Runnable)} with {@code snapshotsCreatedLsnr} not set. */
     private void doTestSnapshotsLists(int snapshotsCnt) throws Exception {
         doTestSnapshotsLists(snapshotsCnt, null);
     }
 
-    /** @return Number of the test entries in original text. */
+    /** @return Number of the test entries in the original text. */
     private static int countEntries(String txt, String entry) {
         String prev = txt;
 

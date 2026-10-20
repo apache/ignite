@@ -59,11 +59,11 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         @Order(1)
         @Nullable Long date;
 
-        /** Snapshot external storages description if exists. */
+        /** Snapshot external storages description if it exists. */
         @Order(2)
         @Nullable SnapshotInfo extStors;
 
-        /** Snapshot incremental parts description if exists. */
+        /** Snapshot incremental parts description if it exists. */
         @Order(3)
         @Nullable SnapshotInfo incs;
 
@@ -83,7 +83,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             @Nullable SnapshotInfo extStors,
             @Nullable SnapshotInfo incs
         ) {
-            // The incrementals snapshots are included into the main snapshot so that their sizes are already calculated.
+            // Incremental snapshots are inside the main snapshot directory, so their size is already counted in the main size.
             size = mainSize + (extStors == null ? 0L : extStors.size());
             this.date = date;
             this.extStors = extStors;
@@ -117,7 +117,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         }
 
         /**
-         * @return Snapshot external storages description if exists. Is always {@code null} for anything other than
+         * @return Snapshot external storages description if it exists. Is always {@code null} for anything other than
          * the main snapshot description.
          */
         public @Nullable SnapshotInfo externalStorages() {
@@ -125,7 +125,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         }
 
         /**
-         * @return Snapshot incremental parts description if exists. Is always {@code null} for anything other than
+         * @return Snapshot incremental parts description if it exists. Is always {@code null} for anything other than
          * the main snapshot description.
          */
         public @Nullable SnapshotInfo incrementals() {

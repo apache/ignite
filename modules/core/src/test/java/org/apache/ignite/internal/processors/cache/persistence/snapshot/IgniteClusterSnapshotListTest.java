@@ -529,7 +529,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /**
      * Test snapshot list operation when a node can't read some snapshot part due to insufficient permissions.
-     * That is, a test node can read the snapshot metadata but cannot read some of the snapshot data
+     * That is, a test node can read the snapshot metadata but cannot read some of the snapshot data.
      */
     @Test
     public void testDeniedPermissions() throws Exception {
@@ -694,7 +694,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             assertTrue(info.date() > time0);
         }
 
-        // Wait for a while, spend some time.
+        // "Wait for a while to let the timestamps differ.
         U.sleep(300L);
 
         long time1 = U.currentTimeMillis();

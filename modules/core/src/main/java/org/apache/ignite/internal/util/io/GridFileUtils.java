@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.io;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -141,9 +140,10 @@ public class GridFileUtils {
                 return FileVisitResult.CONTINUE;
             }
 
-            @Override public FileVisitResult visitFileFailed(Path file, IOException err) {
+            @Override public FileVisitResult visitFileFailed(Path file, IOException err) throws IOException {
+                // Cannot enter directory at all.
                 if (!entered.get() && file.toFile().equals(path))
-                    throw new UncheckedIOException(err);
+                    throw err;
 
                 return FileVisitResult.CONTINUE;
             }

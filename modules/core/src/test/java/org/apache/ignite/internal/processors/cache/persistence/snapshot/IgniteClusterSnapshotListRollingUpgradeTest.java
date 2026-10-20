@@ -62,7 +62,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        // Clean all, also the separated working directories.
+        // Clean everything, including the separated working directories.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);
