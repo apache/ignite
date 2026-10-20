@@ -72,7 +72,10 @@ class DiskFullTest(IgniteTest):
         ignite = self.__ignite(ignite_version)
         ignite.mount_tmpfs(ignite.log_dir, 32)
 
-        load = self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
 
         fill_volume(ignite, ignite.log_dir)
 
@@ -101,15 +104,12 @@ class DiskFullTest(IgniteTest):
         ignite = self.__ignite(ignite_version)
         ignite.mount_tmpfs(ignite.log_dir, 32)
 
-        load = self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
 
-        flood = IgniteApplicationService(
-            self.test_context,
-            IgniteConfiguration(version=ignite.config.version, client_mode=True,
-                                discovery_spi=from_ignite_cluster(ignite)),
-            java_class_name=self.FLOOD_APP)
+        load = self.__start_load_client(ignite)
 
-        flood.start()
+        flood = self.__start_flood_service(ignite)
 
         wait_until(lambda: free_space(ignite, ignite.log_dir) == 0, timeout_sec=60,
                    err_msg="System.out did not fill the log volume")
@@ -119,9 +119,17 @@ class DiskFullTest(IgniteTest):
         check_serves_load_for(ignite, load, seconds=15)
         assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
         assert printed_lines(flood) > lines, "The service stopped writing to System.out"
-        check_write_failed(ignite, os.path.join(ignite.log_dir, "console.log"))
+
+        console_log = os.path.join(ignite.log_dir, "console.log")
+
+        check_write_failed(ignite, console_log)
 
         flood.stop()
+
+        enlarge_volume(ignite, ignite.log_dir, 128)
+
+        check_grows(ignite, ignite.nodes[0].log_file)
+
         load.stop()
 
     @cluster(num_nodes=2)
@@ -137,12 +145,17 @@ class DiskFullTest(IgniteTest):
         ignite.spec.jvm_opts = merge_jvm_settings(ignite.spec.jvm_opts, jfr_opts)
         ignite.mount_tmpfs(repository, 32)
 
-        self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
 
         fill_volume(ignite, repository)
 
         ignite.await_event("An irrecoverable error in Jfr", 60, from_the_beginning=True, log_file="console.log")
         check_stops(ignite)
+
+        load.stop()
 
     @cluster(num_nodes=2)
     @reproducer("disk_full_tests")
@@ -154,11 +167,16 @@ class DiskFullTest(IgniteTest):
         ignite = self.__ignite(ignite_version)
         ignite.mount_tmpfs(ignite.persistent_root, 256)
 
-        self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
 
         fill_volume(ignite, ignite.persistent_root)
 
         check_stops(ignite)
+
+        load.stop()
 
     @cluster(num_nodes=2)
     @reproducer("disk_full_tests")
@@ -171,7 +189,10 @@ class DiskFullTest(IgniteTest):
         wal = os.path.join(ignite.persistent_root, "wal")
         ignite.mount_tmpfs(wal, 64)
 
-        load = self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
 
         segments = ignite.exec_command(ignite.nodes[0], f"ls {wal}/*/*.wal 2>/dev/null | wc -l")
         assert int(segments) > 0, "No WAL segments on the volume"
@@ -194,12 +215,17 @@ class DiskFullTest(IgniteTest):
         path = os.path.join(ignite.persistent_root, volume)
         ignite.mount_tmpfs(path, 64)
 
-        self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
 
         fill_volume(ignite, path)
 
         check_stops(ignite)
         check_failure(ignite, *FAILURES[volume])
+
+        load.stop()
 
     @cluster(num_nodes=2)
     @reproducer("disk_full_tests")
@@ -217,10 +243,15 @@ class DiskFullTest(IgniteTest):
             cdc_wal_path=os.path.join(archive, "cdc"), default=data_storage.default._replace(cdc_enabled=True)))
         ignite.mount_tmpfs(archive, 256)
 
-        self.__start(ignite)
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
 
         check_stops(ignite, timeout_sec=120)
         check_failure(ignite, *FAILURES["wal_archive"])
+
+        load.stop()
 
     def __ignite(self, ignite_version):
         """
@@ -248,15 +279,11 @@ class DiskFullTest(IgniteTest):
 
         return ignite
 
-    def __start(self, ignite):
+    def __start_load_client(self, ignite):
         """
         Starts and activates the node, then a load that records its puts and errors once a second.
         :return: Load application service.
         """
-        ignite.start()
-
-        ControlUtility(ignite).activate()
-
         address = f"{ignite.nodes[0].account.hostname}:{ignite.config.client_connector_configuration.port}"
 
         load = IgniteApplicationService(
@@ -268,6 +295,17 @@ class DiskFullTest(IgniteTest):
         load.start()
 
         return load
+
+    def __start_flood_service(self, ignite):
+        flood = IgniteApplicationService(
+            self.test_context,
+            IgniteConfiguration(version=ignite.config.version, client_mode=True,
+                                discovery_spi=from_ignite_cluster(ignite)),
+            java_class_name=self.FLOOD_APP)
+
+        flood.start()
+
+        return flood
 
 
 def fill_volume(ignite, path):
@@ -284,6 +322,13 @@ def free_volume(ignite, path):
     Removes the file fill_volume wrote.
     """
     ignite.nodes[0].account.ssh(f"rm -f {os.path.join(path, FILLER)}", allow_fail=False)
+
+
+def enlarge_volume(ignite, path, size_mb):
+    """
+    Grows the tmpfs mounted over the path, keeping its files and what they hold, so writes there go on.
+    """
+    ignite.nodes[0].account.ssh(f"sudo mount -o remount,size={size_mb}m {path}", allow_fail=False)
 
 
 def free_space(ignite, path):

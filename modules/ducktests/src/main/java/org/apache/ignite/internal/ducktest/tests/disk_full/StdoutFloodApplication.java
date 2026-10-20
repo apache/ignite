@@ -22,7 +22,8 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
  * Deploys {@link StdoutFloodServiceImpl} on every server node and records {@code lines-><n><-}, the lines the
- * service wrote, once a second.
+ * service wrote, once a second. Cancels the service on stop, so the servers stop writing to their
+ * {@code System.out} once {@code markFinished} is logged.
  */
 public class StdoutFloodApplication extends IgniteAwareApplication {
     /** Service name. */
@@ -43,6 +44,8 @@ public class StdoutFloodApplication extends IgniteAwareApplication {
 
             recordResult("lines", svc.lines());
         }
+
+        ignite.services().cancelAsync(SVC_NAME).get();
 
         markFinished();
     }
