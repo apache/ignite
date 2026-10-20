@@ -114,4 +114,15 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the cache size estimation task for SQL statistics. */
     public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
+
+    /**
+     * Feature that makes distributed operation context attributes Rolling Upgrade-compatible. It introduces:
+     *
+     * <ul>
+     *     <li>The ability to specify the feature that introduced a distributed attribute.</li>
+     *     <li>Delivery of a distributed attribute through nodes that do not know it to the nodes that do.</li>
+     *     <li>A more compact serialized form of the operation context snapshot.</li>
+     * </ul>
+     */
+    public static final IgniteFeature RU_AWARE_DISTRIBUTED_OP_CTX_FEATURE = new IgniteCoreFeature(6);
 }

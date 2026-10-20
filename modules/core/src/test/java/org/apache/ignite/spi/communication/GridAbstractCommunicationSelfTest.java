@@ -28,8 +28,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -152,8 +150,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             GridSpiTestContext ctx = initSpiContext();
 
-            ctx.messageFactory(new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-                new CoreMessagesProvider(), customMessageFactory()}));
+            ctx.messageFactory(createExtendedMessageFactory(customMessageFactory()));
 
             ctx.setLocalNode(node);
 
