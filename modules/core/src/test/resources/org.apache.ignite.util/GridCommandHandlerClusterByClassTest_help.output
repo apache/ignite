@@ -269,7 +269,7 @@ This utility can do the following commands:
   Get the status of the current snapshot operation:
     control.(sh|bat) --snapshot status
 
-  Lists all snapshots on all online server nodes with their sizes:
+  Lists all snapshots on all online server nodes, including their sizes:
     control.(sh|bat) --snapshot list [--src path/to/snapshots]
 
     Parameters:

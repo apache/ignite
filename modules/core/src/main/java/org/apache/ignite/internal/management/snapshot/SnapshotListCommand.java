@@ -31,10 +31,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /** Snapshot list command. */
 public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCommandArg, SnapshotListTaskResult> {
     /** */
-    public static final String HEADER = "Snapshots found on the following nodes:";
+    public static final String HEADER = "Snapshots were found on the following nodes:";
 
     /** */
-    public static final String DESC = "Lists all snapshots on all online server nodes with their sizes";
+    public static final String DESC = "Lists all snapshots on all online server nodes, including their sizes";
 
     /** */
     public static final String NO_SNAPSHOTS = "No snapshots found.";
@@ -70,7 +70,6 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             .toArray(Integer[]::new);
 
         for (int nodeIdx : nodesOrder) {
-            // Skip line before node.
             printer.accept("");
 
             printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
@@ -83,7 +82,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 continue;
             }
 
-            // Sorted snapshots names for better user reading.
+            // Sorted snapshot names for better readability.
             new TreeMap<>(nodeResult.snapshots()).forEach((snpName, snpInfo) -> {
                 printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
                     snpName,
@@ -116,7 +115,6 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             });
         }
 
-        // Drop a line.
         printer.accept("");
     }
 }

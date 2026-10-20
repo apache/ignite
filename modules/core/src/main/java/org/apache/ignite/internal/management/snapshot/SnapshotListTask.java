@@ -18,12 +18,6 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,11 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -51,9 +42,11 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.util.io.GridFileUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -102,56 +95,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             assert nodeJobRes.getData() != null;
 
-            cstIds[i] = nodeConsistentId(nodeJobRes.getNode());
+            cstIds[i] = ignite.context().discovery().findConsistentId(nodeJobRes.getNode().id());
             nodesIds[i] = nodeJobRes.getNode().id();
             nodesResults[i] = nodeJobRes.getData();
         }
 
         return new SnapshotListTaskResult(cstIds, nodesIds, nodesResults);
-    }
-
-    /** */
-    private String nodeConsistentId(ClusterNode n) {
-        UUID nodeId = n.id();
-
-        n = ignite.context().discovery().node(nodeId);
-
-        if (n == null)
-            n = ignite.context().discovery().historicalNode(nodeId);
-
-        return n == null ? "" : n.consistentId().toString();
-    }
-
-    /**
-     * Walk through a directory. Doesn't lock it or its content. Tries to find files and summarize their size.
-     * Tolerates and skips concurrent modification errors.
-     */
-    public static long calculateDirectorySize(File path) throws IOException {
-        AtomicLong size = new AtomicLong(0);
-        AtomicBoolean entered = new AtomicBoolean();
-
-        Files.walkFileTree(path.toPath(), new SimpleFileVisitor<>() {
-            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                entered.compareAndSet(false, true);
-
-                // Use attrs instead of Files.size() for efficiency.
-                if (attrs.isRegularFile())
-                    size.addAndGet(attrs.size());
-
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override public FileVisitResult visitFileFailed(Path file, IOException err) throws IOException {
-                if (!entered.get() && file.toFile().equals(path)) {
-                    // Cannot even start snapshot size calculation - can't enter snapshot directory.
-                    throw err;
-                }
-
-                return FileVisitResult.CONTINUE;
-            }
-        });
-
-        return size.get();
     }
 
     /** */
@@ -205,14 +154,13 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                 // Future for the snapshot main size. It is the largest part of the job, thus it goes first.
                 Future<?> fut = exec.submit(() -> {
-                    if (ignite.context().isStopping())
-                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+                    checkNodeIsStopping();
 
                     if (failedSnps.contains(snpName))
                         return;
 
                     try {
-                        sizes.put(snpName, calculateDirectorySize(sft.root()));
+                        sizes.put(snpName, GridFileUtils.sizeOfDirectory(sft.root()));
                     }
                     catch (Exception e) {
                         failedSnps.add(snpName);
@@ -225,8 +173,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                 // Future for optional incremental parts.
                 fut = exec.submit(() -> {
-                    if (ignite.context().isStopping())
-                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+                    checkNodeIsStopping();
 
                     if (failedSnps.contains(snpName))
                         return;
@@ -248,8 +195,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                 // Future for optional external storages.
                 fut = exec.submit(() -> {
-                    if (ignite.context().isStopping())
-                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+                    checkNodeIsStopping();
 
                     if (failedSnps.contains(snpName))
                         return;
@@ -286,7 +232,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             }
 
             // Result snapshot descriptions.
-            Map<String, SnapshotListJobResult.SnapshotInfo> resMap = new ConcurrentHashMap<>(locSnps.size() - failedSnps.size(), 1.0f);
+            Map<String, SnapshotListJobResult.SnapshotInfo> resMap = U.newHashMap(locSnps.size() - failedSnps.size());
 
             // Reduce results.
             for (T2<SnapshotFileTree, Long> snpPair : locSnps) {
@@ -314,6 +260,16 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         }
 
         /** */
+        private void checkNodeIsStopping() {
+            if (ignite.context().isStopping()) {
+                throw new IgniteException(
+                    "Will not search for local snapshots due to the local node stoppage.",
+                    new NodeStoppingException("Local node is stopping.")
+                );
+            }
+        }
+
+        /** */
         private @Nullable SnapshotListJobResult.SnapshotInfo externalStorages(SnapshotFileTree sft) {
             int extStoragesCnt = 0;
             long extStoragesSize = 0;
@@ -323,7 +279,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     continue;
 
                 try {
-                    extStoragesSize += calculateDirectorySize(extraStorage);
+                    extStoragesSize += GridFileUtils.sizeOfDirectory(extraStorage);
                 }
                 catch (Exception e) {
                     log.warning("Failed to calculate snapshot's external storage size, storage ignored [extraStorage='" +
@@ -340,7 +296,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
         private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
-            // The tree is used only to extract the snapshots root directory. Such snapshot name is actually unallowed.
+            // The tree is used only to extract the snapshots root directory. The snapshot name used is not essential.
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
@@ -352,12 +308,11 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             for (File snpDir : dirsToParse) {
                 Future<T2<SnapshotFileTree, Long>> snpDirFut = exec.submit(() -> {
-                    if (ignite.context().isStopping())
-                        throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+                    checkNodeIsStopping();
 
                     String snpName = snpDir.getName();
 
-                    // Snapshot tree being used as a path, to read the metas only.
+                    // Snapshot tree being used as a path to read the snapshot metadatas only.
                     SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), snpName, snpPath);
 
                     List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
@@ -368,7 +323,8 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     // Get the last-created time snapshot metadata.
                     SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime)).get();
 
-                    // Real, meta-based snapshot file tree. Can belong to other cluster, other consistent id.
+                    // Snapshot file tree based on its metadata. Holds real snapshot consistent ID and corresponding
+                    // snapshot directory name.
                     sft = new SnapshotFileTree(
                         ignite.configuration(),
                         ignite.context().pdsFolderResolver().fileTree(),
@@ -435,7 +391,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                     IncrementalSnapshotMetadata incMeta = snpMgr.readIncrementalSnapshotMetadata(incTree.meta());
 
-                    size += calculateDirectorySize(incDir);
+                    size += GridFileUtils.sizeOfDirectory(incDir);
 
                     createTime = Math.max(createTime, incMeta.snapshotTime());
 

@@ -1998,6 +1998,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @return Related consistent id by the passed node id. If there is no such node online, a historical node is used.
+     * If node is not found at all, empty string.
+     */
+    public String findConsistentId(UUID nodeId) {
+        ClusterNode n = node(nodeId);
+
+        if (n == null)
+            n = historicalNode(nodeId);
+
+        return n == null ? "" : n.consistentId().toString();
+    }
+
+    /**
      * Gets consistentId from history for given topology version.
      *
      * @param topVer Topology version.

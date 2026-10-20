@@ -109,7 +109,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
     /** {@inheritDoc} */
     @Override protected void cleanPersistenceDir() throws Exception {
-        // Also cleans separated snapshot working directories and custom snapshot paths.
+        // Cleans everything: separated working directories and snapshots with custom paths.
         try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()))) {
             for (Path path : files)
                 U.delete(path);
@@ -168,8 +168,6 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     /** */
     @Test
     public void testOneNodeMisses() throws Exception {
-        // Doesn't matter here.
-//        assumeFalse(incCnt > 0);
         // Keeps just one node not seeing the snapshot.
         assumeTrue(separatedWorkDir);
 

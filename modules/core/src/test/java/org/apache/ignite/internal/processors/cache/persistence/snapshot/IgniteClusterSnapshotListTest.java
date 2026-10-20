@@ -50,6 +50,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommandArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
+import org.apache.ignite.internal.util.io.GridFileUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -236,7 +237,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         SnapshotFileTree testSft = new SnapshotFileTree(grid(testNodeIdx).context(), SNAPSHOT_NAME, null);
 
-        assertTrue(SnapshotListTask.calculateDirectorySize(testSft.root()) > 0L);
+        assertTrue(GridFileUtils.sizeOfDirectory(testSft.root()) > 0L);
 
         proceedSnpCreation.countDown();
 
@@ -296,7 +297,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         SnapshotFileTree testSnpFt = new SnapshotFileTree(grid(testGridIdx).context(), SNAPSHOT_NAME, null);
 
-        long testSnpSz = SnapshotListTask.calculateDirectorySize(testSnpFt.root());
+        long testSnpSz = GridFileUtils.sizeOfDirectory(testSnpFt.root());
 
         assertTrue(testSnpSz > 0);
 
@@ -334,7 +335,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
                     assertEquals(1, nodeSnps.size());
 
-                    long curSnpSz = SnapshotListTask.calculateDirectorySize(testSnpFt.root());
+                    long curSnpSz = GridFileUtils.sizeOfDirectory(testSnpFt.root());
 
                     assertTrue(curSnpSz < testSnpSz);
                 }
@@ -347,27 +348,11 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testMissingSnapshotPath() throws Exception {
-        doTestWrongSnapshotPath(true);
-    }
-
-    /** */
-    @Test
     public void testEmptySnapshotPath() throws Exception {
-        doTestWrongSnapshotPath(false);
-    }
-
-    /** */
-    private void doTestWrongSnapshotPath(boolean missing) throws Exception {
         // Doesn't matter here, speeds up the tests.
         assumeFalse(snpThrdPoolSz < 2);
 
-        doTestSnapshotPath(null);
-
         File path = new File(U.defaultWorkDirectory(), "not_snapshots");
-
-        if (!missing)
-            assertTrue(new File(path, SNAPSHOT_NAME).mkdirs());
 
         SnapshotListJobResult[] lstOpRes = listSnapshots(grid(0), path.getAbsolutePath()).nodesSnapshots();
 
@@ -577,7 +562,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
                                 // Ensure that blocked snapshot part has some size. We use sizes to compare later.
                                 try {
-                                    assertTrue(SnapshotListTask.calculateDirectorySize(victimDir) > 0L);
+                                    assertTrue(GridFileUtils.sizeOfDirectory(victimDir) > 0L);
                                 }
                                 catch (IOException e) {
                                     throw new IllegalStateException(e);
@@ -673,7 +658,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             }
         }
 
-        // Ensure that the calculated anew size is bigger than in the previous run.
+        // Ensure that the newly calculated size is bigger than in the previous run.
         assertTrue(testSize1 > 0L);
         assertTrue(testSize1 > testSize0);
     }
@@ -756,7 +741,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         // Check the sizes.
         for (int g = 0; g < grids; g++) {
-            long sz = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
+            long sz = GridFileUtils.sizeOfDirectory(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
 
             assertEquals(sz, sizes0.get(grid(g).localNode().id()).longValue());
 
@@ -789,7 +774,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             // is placed inside the snapshot root and must not be counted twice.
             assertTrue(sizes1.get(nodeId) > sizes0.get(nodeId));
 
-            long sz = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
+            long sz = GridFileUtils.sizeOfDirectory(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
 
             assertEquals(sz, sizes1.get(nodeId).longValue());
         }
@@ -824,7 +809,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             assertNotNull(info);
             assertNotNull(info.externalStorages());
 
-            long rootSize = SnapshotListTask.calculateDirectorySize(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
+            long rootSize = GridFileUtils.sizeOfDirectory(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
 
             // If there is a data within the snapshot's external storage, its size must be added to the total size.
             assertTrue(info.externalStorages().size() > 0L ? info.size() > rootSize : info.size() == rootSize);

@@ -101,5 +101,5 @@ public class CoreFeatureRegistry {
     public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
 
     /** Feature that introduces the snapshots list command. */
-    public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(2);
+    public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(3);
 }
