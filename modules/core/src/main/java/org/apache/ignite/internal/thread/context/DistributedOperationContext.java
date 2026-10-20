@@ -99,7 +99,7 @@ public class DistributedOperationContext {
     public @Nullable OperationContextSnapshotMessage createSnapshot() {
         DistributedAttribute[] locDistrAttrs = distrAttrs;
 
-        Message[] attrs = new Message[locDistrAttrs.length];
+        Message[] attrs = null;
 
         byte idBitmap = 0;
         int cnt = 0;
@@ -115,12 +115,15 @@ public class DistributedOperationContext {
             if (curVal == attr.initialValue())
                 continue;
 
+            if (attrs == null)
+                attrs = new Message[locDistrAttrs.length - id];
+
             attrs[cnt++] = curVal;
 
             idBitmap = set(idBitmap, id);
         }
 
-        if (idBitmap == 0)
+        if (attrs == null)
             return null;
 
         return new OperationContextSnapshotMessage(idBitmap, cnt == attrs.length ? attrs : Arrays.copyOf(attrs, cnt));
