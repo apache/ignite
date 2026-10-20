@@ -352,7 +352,7 @@ public class GridBinaryMarshaller {
      */
     @Nullable public <T> T unwrapBinary(BinaryInputStream in, Class<?> clazz) throws BinaryObjectException {
         BinaryReaderHandles hnds = new BinaryReaderHandles();
-        Object obj = deserialize(in, null, hnds);
+        Object obj = deserialize(in, hnds);
 
         return (T)unwrapBinary(obj, hnds, clazz);
     }
@@ -365,7 +365,7 @@ public class GridBinaryMarshaller {
             BinaryObjectEx obj0 = (BinaryObjectEx)obj;
             BinaryInputStream in = BinaryStreams.inputStream(obj0.bytes(), obj0.start());
 
-            return deserialize(in, null, hnds);
+            return deserialize(in, hnds);
         }
         else if (obj instanceof BinaryObject)
             return ((BinaryObject)obj).deserialize();
@@ -435,22 +435,27 @@ public class GridBinaryMarshaller {
         if (arr[0] == NULL)
             return null;
 
-        return deserialize(BinaryStreams.inputStream(arr), ldr, null);
+        BinaryContext oldCtx = pushContext(ctx);
+
+        try {
+            return (T)BinaryUtils.reader(ctx, BinaryStreams.inputStream(arr), ldr, null, true).deserialize();
+        }
+        finally {
+            popContext(oldCtx);
+        }
     }
 
     /**
      * @param in Input stream.
-     * @param ldr Class loader.
      * @param hnds Handles.
      * @return Deserialized object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    @Nullable <T> T deserialize(BinaryInputStream in, @Nullable ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds) throws BinaryObjectException {
+    @Nullable <T> T deserialize(BinaryInputStream in, @Nullable BinaryReaderHandles hnds) throws BinaryObjectException {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)BinaryUtils.reader(ctx, in, ldr, hnds, true).deserialize();
+            return (T)BinaryUtils.reader(ctx, in, null, hnds, true).deserialize();
         }
         finally {
             popContext(oldCtx);
