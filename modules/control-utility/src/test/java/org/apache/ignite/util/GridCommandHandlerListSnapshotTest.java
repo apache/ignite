@@ -45,46 +45,45 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /** Test for the command '--snapshot list'. */
 public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstractTest {
+    /** */
+    private static final int GRIDS_CNT = 3;
+
     /** External storage path. */
     private static final String EXT_STORAGE_PATH = "extStorage";
 
     /** Flag to use {@link DataStorageConfiguration#setExtraSnapshotPaths(String...)}. */
-    private boolean extStorages;
+    private boolean extStorage;
 
-    /** Resolved external storages paths. {@code null} if {@code extStorages} is {@code false}. */
+    /** Resolved external storages paths. {@code null} if {@code extStorage} is {@code false}. */
     private @Nullable String[] extStoragePaths;
 
-    /** Consistent id postfix. */
+    /** Node consistent id postfix if required. */
     private @Nullable String cstIdPostfix = "";
 
-    /** Flag setting the usage of a custom snapshot path. */
+    /** Flag to use the custom paths for the test snapshots. */
     @Parameter(1)
     public boolean customPath;
 
-    /** Flag setting the usage of dedicated, own node working directories. */
+    /** Flag to use separated node working directories. */
     @Parameter(2)
     public boolean separatedWorkDir;
 
-    /** Flag to add external server node after the snapshot creation. */
-    @Parameter(3)
-    public boolean addExtraSrvr;
-
     /** Number of incremental snapshots to add to the main test snapshots. */
-    @Parameter(4)
-    public int incCnt;
+    @Parameter(3)
+    public int incrementalsCnt;
 
     /** */
-    @Parameters(name = "cmdHnd={0}, customPath={1}, ownWorkDir={2}, addExtraSrvr={3}, incCnt={4}")
+    @Parameters(name = "cmdHnd={0}, customPath={1}, separatedWorkDir={2}, incrementalsCnt={3}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(
             commandHandlers(),
-            F.asList(false, true), // Custom snapshot path.
-            F.asList(false, true), // Separated (own) work directories.
-            F.asList(false, true), // Add a server node after the snapshot creation.
-            F.asList(0, 2) // Number of incremental snapshots.
+            F.asList(false, true), // Custom test snapshots paths.
+            F.asList(false, true), // Separated nodes' work directories.
+            F.asList(0, 2) // Number of incremental snapshots to add to the main test snapshots.
         );
     }
 
@@ -124,9 +123,9 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         cfg.setWorkDirectory(workDir);
 
-        cfg.getDataStorageConfiguration().setWalCompactionEnabled(incCnt > 0);
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(incrementalsCnt > 0);
 
-        if (extStorages) {
+        if (extStorage) {
             cfg.getDataStorageConfiguration().setExtraStoragePaths(
                 workDir + File.separator,
                 workDir + File.separator + EXT_STORAGE_PATH
@@ -145,56 +144,95 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         return super.getTestIgniteInstanceName() + cstIdPostfix;
     }
 
-    /** */
+    /** Tests the main scenario when there are no snapshots at all. */
     @Test
     public void testNoSnapshots() throws Exception {
-        doTestSnapshotsLists(0, false);
+        // Incremental snapshots do not matter here. Speeds up the tests.
+        assumeTrue(incrementalsCnt == 0);
+
+        doTestSnapshotsLists(0);
     }
 
-    /** */
+    /** Tests the main scenario for a single snapshot. */
     @Test
     public void testSingleSnapshot() throws Exception {
-        doTestSnapshotsLists(1, false);
+        doTestSnapshotsLists(1);
     }
 
-    /** */
+    /** Tests the main scenario for several snapshots. */
     @Test
     public void testSeveralSnapshots() throws Exception {
-        doTestSnapshotsLists(3, false);
+        doTestSnapshotsLists(3);
     }
 
-    /** */
+    /** Tests the main scenario with an external storage added to the test snapshots. */
     @Test
-    public void testExternalStorages() throws Exception {
-        // External storages are required to be the same as configured in the node's PDS storages. Thus, we skip different work folders.
-        // Also, extra snapshot storages aren't used if snapshot is created with a custom path.
+    public void testExternalStorage() throws Exception {
+        // External storage paths must match those configured in the node PDS storages, so the cases with different work
+        // directories are skipped. Also, extra snapshot storages aren't used if snapshot is created with a custom path.
         assumeFalse(separatedWorkDir || customPath);
 
-        extStorages = true;
+        extStorage = true;
 
-        doTestSnapshotsLists(2, false);
+        doTestSnapshotsLists(2);
     }
 
-    /** */
+    /** Tests listing the snapshots created before the cluster restart changed the node consistent IDs. */
     @Test
     public void testChangedConsistentId() throws Exception {
-        // In new created working directories there will be obviously no snapshots.
+        // Newly created work directories obviously contain no snapshots.
         assumeFalse(separatedWorkDir);
 
-        doTestSnapshotsLists(1, true);
+        Runnable snapshotsCreatedLsnr = () -> {
+            stopAllGrids();
+
+            cstIdPostfix = "_changed";
+
+            try {
+                startGridsMultiThreaded(GRIDS_CNT);
+
+                startGrid(CLIENT_NODE_NAME_PREFIX);
+            }
+            catch (Exception e) {
+                throw new RuntimeException("Failed to restart the cluster", e);
+            }
+        };
+
+        doTestSnapshotsLists(1, snapshotsCreatedLsnr);
     }
 
-    /** */
-    private void doTestSnapshotsLists(int snpCnt, boolean restartWithChangedCstIds) throws Exception {
+    /**
+     * The main test scenario:
+     * <ul>
+     *     <li>Step 1: Starts cluster</li>
+     *     <li>
+     *         Step 2: If {@code snapshotsCnt} &gt 0, creates a cache, fills it and creates this number of the test snapshots.
+     *         <p>If {@link #incrementalsCnt} &gt; 0, adds this number of incrementals to each snapshot.</p>
+     *         <p>If {@link #customPath} is set, uses it as the snapshot path to create each test snapshot.</p>
+     *         <p>If {@code snapshotsCnt} == 0, doesn't create any test snapshot.</p>
+     *     </li>
+     *     <li>Step 3: If {@code snapshotsCreatedLsnr} is not null, calls it.</li>
+     *     <li>Step 4: Requests the snapshots list and parses the command's output.</li>
+     *     <li>Step 5: Ensures that all the nodes are present in the output.</li>
+     *     <li>Step 6: If {@code snapshotsCnt} == 0, ensures that the output says there are no snapshots on any node and quits.</li>
+     *     <li>
+     *         Step 7: If {@code snapshotsCnt} &gt; 0, checks the snapshots list of each node in the output.
+     *         <p>If {@link #extStorage} is set, also checks that the output's snapshots list of every node has proper
+     *         a descriptions of the current snapshot's external storage.</p>
+     *         <p>If {@link #incrementalsCnt} &gt; 0, also verifies the total number of incremental snapshots found in the output.</p>
+     *     </li>
+     * </ul>
+     *
+     * @param snapshotsCnt Number of the test snapshots to create before calling the snapshots list command.
+     * @param snapshotsCreatedLsnr Optional listener. Is called after the test snapshots creation.
+     */
+    private void doTestSnapshotsLists(int snapshotsCnt, @Nullable Runnable snapshotsCreatedLsnr) throws Exception {
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeFalse(customPath && separatedWorkDir);
 
-        int srvrsCnt = 3;
-        int entriesCnt = 10;
-        int partitions = 4;
-
-        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(srvrsCnt);
+        // Step 1: Starting the cluster.
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(GRIDS_CNT);
 
         startGrid(CLIENT_NODE_NAME_PREFIX);
 
@@ -204,21 +242,24 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             ? new File(ig.context().pdsFolderResolver().fileTree().snapshotsRoot(), "ex_snapshots")
             : null;
 
-        // Flag if 'testSnapshot0' deleted on node0.
-        boolean grid0HasNoSnapshot0 = false;
+        // Step 2: Cache and snapshot creation, if any.
+        if (snapshotsCnt > 0) {
+            int entriesCnt = 10;
+            int partitions = 4;
 
-        // Create snapshots.
-        if (snpCnt > 0) {
+            // Create cache.
             createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);
 
-            String absPathStr = null;
+            String absPathStr;
 
-            for (int snpIdx = 0; snpIdx < snpCnt; snpIdx++) {
+            // Create the test snapshots.
+            for (int snpIdx = 0; snpIdx < snapshotsCnt; snpIdx++) {
                 absPathStr = customPath ? snpsRootFile.getAbsolutePath() : null;
 
                 snp(ig).createSnapshot("testSnapshot" + snpIdx, absPathStr, false, false).get(getTestTimeout());
 
-                for (int incIdx = 0; incIdx < incCnt; incIdx++) {
+                // Create the optional incremental snapshots.
+                for (int incIdx = 0; incIdx < incrementalsCnt; incIdx++) {
                     try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
                         for (int val = (snpIdx + incIdx + 1) * entriesCnt; val < (snpIdx + incIdx + 2) * entriesCnt; val++)
                             ds.addData(val, val);
@@ -229,23 +270,13 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             }
         }
 
-        if (restartWithChangedCstIds) {
-            stopAllGrids();
+        // Step 3: After the tests snapshots are created, invoke optional test listener.
+        if (snapshotsCreatedLsnr != null)
+            snapshotsCreatedLsnr.run();
 
-            cstIdPostfix = "_changed";
-
-            startGridsMultiThreaded(srvrsCnt);
-
-            startGrid(CLIENT_NODE_NAME_PREFIX);
-        }
-
-        // Add a server.
-        if (addExtraSrvr)
-            startGrid(G.allGrids().size());
-
+        // Step 4: Prepare and invoke the snapshots list command.
         injectTestSystemOut();
 
-        // Requests snapshots.
         if (customPath) {
             assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list", "--src",
                 snpsRootFile.getAbsolutePath()));
@@ -255,52 +286,44 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         String out = testOut.toString();
 
-        // Find the nodes in the output.
+        // Step 5: Find the nodes in the output.
         for (Ignite g : G.allGrids()) {
             ClusterNode n = g.cluster().localNode();
 
             assertEquals(n.isClient() ? 0 : 1, countEntries(out, "Node '%s'".formatted(n.consistentId().toString())));
         }
 
-        // Ensure that there are no snapshots.
-        if (snpCnt == 0) {
+        // Step 6: Ensure that there are no snapshots if none are expected and exit.
+        if (snapshotsCnt == 0) {
             assertFalse(out.contains("Snapshot '"));
 
-            assertEquals(srvrsCnt + (addExtraSrvr ? 1 : 0), countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
+            assertEquals(GRIDS_CNT, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
             return;
         }
 
-        assertEquals((addExtraSrvr && separatedWorkDir ? 1 : 0), countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
+        // Step 7: Find the test snapshots in the output.
+        assertEquals(0, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
-        // The additional server node doesn't have snapshots. But it can see them if shared the snapshot directory.
-        int snpsRecordsCnt = srvrsCnt + (addExtraSrvr
-            ? (separatedWorkDir ? 0 : 1)
-            : 0
-        );
+        for (int snpIdx = 0; snpIdx < snapshotsCnt; snpIdx++) {
+            assertEquals(GRIDS_CNT, countEntries(out, "Snapshot 'testSnapshot" + snpIdx + "'"));
 
-        // Find the snapshots in the output.
-        for (int snpIdx = 0; snpIdx < snpCnt; snpIdx++) {
-            // 'testSnapshot0' has fewer records if was deleted on one node.
-            int certainSnpRecordsCnt = snpIdx == 0 && grid0HasNoSnapshot0
-                ? snpsRecordsCnt - 1
-                : snpsRecordsCnt;
-
-            assertEquals(certainSnpRecordsCnt, countEntries(out, "Snapshot 'testSnapshot" + snpIdx + "'"));
-
-            if (extStorages)
-                assertEquals(certainSnpRecordsCnt * snpCnt, countEntries(out, "external storages: cnt=1, size="));
+            // If the external storage is configured, find the info about it.
+            if (extStorage)
+                assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "external storages: cnt=1, size="));
         }
 
-        if (incCnt > 0) {
-            assertEquals(
-                snpsRecordsCnt * snpCnt - (grid0HasNoSnapshot0 ? 1 : 0),
-                countEntries(out, "incremental snapshots: cnt=" + incCnt)
-            );
-        }
+        // If the incremental snapshots are configured, find the info about them.
+        if (incrementalsCnt > 0)
+            assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "incremental snapshots: cnt=" + incrementalsCnt));
     }
 
-    /** */
+    /** {@link #doTestSnapshotsLists(int, Runnable)} with not set {@code snapshotsCreatedLsnr} by default. */
+    private void doTestSnapshotsLists(int snapshotsCnt) throws Exception {
+        doTestSnapshotsLists(snapshotsCnt, null);
+    }
+
+    /** @return Number of the test entries in original text. */
     private static int countEntries(String txt, String entry) {
         String prev = txt;
 
@@ -309,7 +332,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         return (prev.length() - txt.length()) / entry.length();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration<?, ?> testCacheConfiguration(
         String cacheName,
         int partitions,
@@ -317,7 +340,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     ) {
         CacheConfiguration<?, ?> ccfg = super.testCacheConfiguration(cacheName, partitions, filter);
 
-        if (extStorages)
+        if (extStorage)
             ccfg.setStoragePaths(extStoragePaths);
 
         return ccfg;

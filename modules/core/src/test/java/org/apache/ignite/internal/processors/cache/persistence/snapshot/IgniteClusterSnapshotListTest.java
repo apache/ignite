@@ -91,10 +91,10 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     private PluginProvider<PluginConfiguration> pluginProvider;
 
-    /** Flag to spread the test cache data over the external storages. */
+    /** Flag to spread the test cache data over external storages. */
     private boolean extStorages;
 
-    /** Resolved external storages paths. {@code null} if {@link #extStorages} is {@code false}. */
+    /** Resolved external storage paths. {@code null} if {@link #extStorages} is {@code false}. */
     private @Nullable String[] extStoragePaths;
 
     /** Parameters. */
@@ -116,8 +116,8 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             cfg.setPluginProviders(pluginProvider);
 
         if (extStorages) {
-            // External storage paths must be identical on all the nodes (a cache has the single storage paths
-            // setting). Thus, a shared work directory is used, like in GridCommandHandlerListSnapshotTest.
+            // External storage paths must be identical on all nodes (a cache has a single storage path setting).
+            // Thus, a shared work directory is used, like in GridCommandHandlerListSnapshotTest.
             cfg.setWorkDirectory(U.defaultWorkDirectory());
 
             cfg.getDataStorageConfiguration().setExtraStoragePaths(
@@ -183,7 +183,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testConcurrentCreation() throws Exception {
-        // The test uses the thread blocking and conditional waiting. Won't proceed with 1 thread.
+        // The test relies on thread blocking and conditional waiting, so it does not run with a single thread.
         assumeTrue(snpThrdPoolSz > 1);
 
         int grids = 3;
@@ -350,13 +350,13 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     @Test
     public void testEmptySnapshotPath() throws Exception {
         // Doesn't matter here, speeds up the tests.
-        assumeFalse(snpThrdPoolSz < 2);
+        assumeTrue(snpThrdPoolSz > 1);
 
         File path = new File(U.defaultWorkDirectory(), "not_snapshots");
 
-        SnapshotListJobResult[] lstOpRes = listSnapshots(grid(0), path.getAbsolutePath()).nodesSnapshots();
+        SnapshotListJobResult[] listOperationRes = listSnapshots(grid(0), path.getAbsolutePath()).nodesSnapshots();
 
-        int cnt = Stream.of(lstOpRes).mapToInt(nodeRes -> nodeRes.snapshots().size()).sum();
+        int cnt = Stream.of(listOperationRes).mapToInt(nodeRes -> nodeRes.snapshots().size()).sum();
 
         assertEquals(0, cnt);
     }
@@ -527,7 +527,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
     /**
      * Test snapshot list operation when a node can't read some snapshot part due to insufficient permissions.
-     * I.e. a test node is able to read snapshot meta but can't read some of the snapshot's data.
+     * That is, a test node can read the snapshot metadata but cannot read some of the snapshot data
      */
     @Test
     public void testDeniedPermissions() throws Exception {
@@ -543,7 +543,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         // The 'change permissions' flag.
         AtomicBoolean changePermissions = new AtomicBoolean(true);
 
-        // Deny reading on a couple of incremental snapshot metadata files on one node.
+        // Deny reading the whole snapshot part of one node.
         pluginProvider = new AbstractTestPluginProvider() {
             @Override public String name() {
                 return "TestSnpMgrProvider";
@@ -560,7 +560,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
                                 assertTrue(victimDir.exists());
                                 assertTrue(victimDir.isDirectory());
 
-                                // Ensure that blocked snapshot part has some size. We use sizes to compare later.
+                                // Ensure the blocked snapshot part has a non-zero size; the sizes are compared later.
                                 try {
                                     assertTrue(GridFileUtils.sizeOfDirectory(victimDir) > 0L);
                                 }
@@ -582,7 +582,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
                                     oldPerms.put(victimDirPath, perms);
                                 }
                                 catch (Exception e) {
-                                    throw new IgniteException("Unable to set the test posix permissions.", e);
+                                    throw new IgniteException("Unable to set the test POSIX permissions.", e);
                                 }
                             }
 
@@ -604,20 +604,20 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         // Snapshot size with normal permissions.
         long testSize1 = 0L;
 
-        SnapshotListTaskResult snpLstOpRes;
+        SnapshotListTaskResult listTaskRes;
 
         try {
             // First run.
-            snpLstOpRes = listSnapshots(grid(0));
+            listTaskRes = listSnapshots(grid(0));
 
             assertFalse(oldPerms.isEmpty());
 
-            for (int i = 0; i < snpLstOpRes.nodesIds().length; i++) {
-                UUID nodeId = snpLstOpRes.nodesIds()[i];
+            for (int i = 0; i < listTaskRes.nodesIds().length; i++) {
+                UUID nodeId = listTaskRes.nodesIds()[i];
 
-                // Store size of the partly read snapshot.
+                // Store the partly read snapshot size.
                 if (nodeId.equals(testNodeId)) {
-                    Map<String, SnapshotListJobResult.SnapshotInfo> snps = snpLstOpRes.nodesSnapshots()[i].snapshots();
+                    Map<String, SnapshotListJobResult.SnapshotInfo> snps = listTaskRes.nodesSnapshots()[i].snapshots();
 
                     assertEquals(1, snps.size());
 
@@ -625,7 +625,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
                 }
             }
 
-            // Ensure that we've found and read snapshot on the test node.
+            // Ensure that we've found and read the snapshot on the test node.
             assertTrue(testSize0 > 0L);
         }
         finally {
@@ -643,14 +643,14 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         // Relaunch the operation.
         changePermissions.set(false);
 
-        snpLstOpRes = listSnapshots(grid(0));
+        listTaskRes = listSnapshots(grid(0));
 
-        for (int i = 0; i < snpLstOpRes.nodesIds().length; i++) {
-            UUID nodeId = snpLstOpRes.nodesIds()[i];
+        for (int i = 0; i < listTaskRes.nodesIds().length; i++) {
+            UUID nodeId = listTaskRes.nodesIds()[i];
 
-            // Store size of the partly read snapshot.
+            // Store the fully read snapshot size.
             if (nodeId.equals(testNodeId)) {
-                Map<String, SnapshotListJobResult.SnapshotInfo> snps = snpLstOpRes.nodesSnapshots()[i].snapshots();
+                Map<String, SnapshotListJobResult.SnapshotInfo> snps = listTaskRes.nodesSnapshots()[i].snapshots();
 
                 assertEquals(1, snps.size());
 
@@ -658,7 +658,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             }
         }
 
-        // Ensure that the newly calculated size is bigger than in the previous run.
+        // Ensure that the newly calculated size is greater than in the previous run.
         assertTrue(testSize1 > 0L);
         assertTrue(testSize1 > testSize0);
     }
@@ -675,7 +675,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         long time0 = U.currentTimeMillis();
 
-        // Wait for a while, spend some time.
+        // Wait so that the timestamps differ.
         U.sleep(300L);
 
         snp(ig).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
@@ -770,8 +770,8 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             assertNotNull(info.incrementals());
             assertEquals(1, info.incrementals().number().intValue());
 
-            // The size must grow, but exactly to the actual directory size: the incremental part
-            // is placed inside the snapshot root and must not be counted twice.
+            // The size must grow and equal the actual directory size. Incremental part is placed inside the snapshot
+            // root and must not be counted twice.
             assertTrue(sizes1.get(nodeId) > sizes0.get(nodeId));
 
             long sz = GridFileUtils.sizeOfDirectory(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
@@ -787,7 +787,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         extStorages = true;
 
-        // Properly delays the test cache creation with the configured external storages.
+        // Prevents the default test cache from being created with the external storages configured.
         dfltCacheCfg = null;
 
         startGridsMultiThreaded(grids);
@@ -811,7 +811,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
             long rootSize = GridFileUtils.sizeOfDirectory(new SnapshotFileTree(grid(g).context(), SNAPSHOT_NAME, null).root());
 
-            // If there is a data within the snapshot's external storage, its size must be added to the total size.
+            // If there is data within the snapshot's external storage, its size must be added to the total size.
             assertTrue(info.externalStorages().size() > 0L ? info.size() > rootSize : info.size() == rootSize);
             assertEquals(rootSize + info.externalStorages().size(), info.size());
         }

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-/** Per-node result of the snapshot list command. Contains information of the snapshots found on the current node. */
+/** Per-node result of the snapshot list task. Contains information about the snapshots found on the node. */
 public final class SnapshotListJobResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -41,7 +41,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         this.snapshots = snapshots;
     }
 
-    /** @return The snapshots descriptions. */
+    /** @return Snapshot descriptions by snapshot name. */
     public Map<String, SnapshotInfo> snapshots() {
         return snapshots;
     }
@@ -55,7 +55,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
         @Order(0)
         long size;
 
-        /** Creation date of snapshot or of its incremental parts. */
+        /** Creation date of the snapshot or of its incremental parts. */
         @Order(1)
         @Nullable Long date;
 
@@ -76,7 +76,7 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             // No-op.
         }
 
-        /** Creates snapshot main description. */
+        /** Creates the snapshot main description. */
         public SnapshotInfo(
             long mainSize,
             long date,
@@ -90,13 +90,13 @@ public final class SnapshotListJobResult extends IgniteDataTransferObject {
             this.incs = incs;
         }
 
-        /** Creates description of snapshot external storages. */
+        /** Creates the description of snapshot external storages. */
         public SnapshotInfo(int cnt, long size) {
             this.cnt = cnt;
             this.size = size;
         }
 
-        /** Creates description of incremental snapshot parts. */
+        /** Creates the description of incremental snapshot parts. */
         public SnapshotInfo(int cnt, long size, long date) {
             this(cnt, size);
 

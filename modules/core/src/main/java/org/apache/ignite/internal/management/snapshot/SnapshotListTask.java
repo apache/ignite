@@ -81,7 +81,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
     /** {@inheritDoc} */
     @Override protected SnapshotListTaskResult reduce0(List<ComputeJobResult> nodesJobsResults) throws IgniteException {
-        String[] cstIds = new String[nodesJobsResults.size()];
+        String[] consistentIds = new String[nodesJobsResults.size()];
         UUID[] nodesIds = new UUID[nodesJobsResults.size()];
         SnapshotListJobResult[] nodesResults = new SnapshotListJobResult[nodesJobsResults.size()];
 
@@ -95,12 +95,12 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             assert nodeJobRes.getData() != null;
 
-            cstIds[i] = ignite.context().discovery().findConsistentId(nodeJobRes.getNode().id());
+            consistentIds[i] = nodeJobRes.getNode().consistentId().toString();
             nodesIds[i] = nodeJobRes.getNode().id();
             nodesResults[i] = nodeJobRes.getData();
         }
 
-        return new SnapshotListTaskResult(cstIds, nodesIds, nodesResults);
+        return new SnapshotListTaskResult(consistentIds, nodesIds, nodesResults);
     }
 
     /** */
@@ -296,7 +296,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
         /** @return Snapshot file tree and creation time from the snapshot metadata. */
         private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
-            // The tree is used only to extract the snapshots root directory. The snapshot name used is not essential.
+            // The tree is used only to obtain the snapshots root directory; the snapshot name is irrelevant here
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
@@ -312,7 +312,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
                     String snpName = snpDir.getName();
 
-                    // Snapshot tree being used as a path to read the snapshot metadatas only.
+                    // The tree is used only as a path for reading the snapshot metadata.
                     SnapshotFileTree sft = new SnapshotFileTree(ignite.context(), snpName, snpPath);
 
                     List<SnapshotMetadata> metas = ignite.context().cache().context().snapshotMgr().readSnapshotMetadatas(sft, false);
@@ -323,7 +323,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     // Get the last-created time snapshot metadata.
                     SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime)).get();
 
-                    // Snapshot file tree based on its metadata. Holds real snapshot consistent ID and corresponding
+                    // Snapshot file tree based on its metadata. Holds the real snapshot consistent ID and corresponding
                     // snapshot directory name.
                     sft = new SnapshotFileTree(
                         ignite.configuration(),
@@ -365,7 +365,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             return res;
         }
 
-        /** @return Number, total size and last creation time of incremental snapshots. */
+        /** @return Number, total size and last creation time of incremental snapshotss, or {@code null} if there are none. */
         private @Nullable SnapshotListJobResult.SnapshotInfo incrementals(SnapshotFileTree sft) {
             File[] incs = sft.incrementsRoot().listFiles();
 

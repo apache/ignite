@@ -26,15 +26,15 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Nodes consistent ids. */
+    /** Node consistent IDs. */
     @Order(0)
     String[] consistentIds;
 
-    /** Nodes UUIDs. */
+    /** Node UUIDs. */
     @Order(1)
     UUID[] nodesIds;
 
-    /** Results. */
+    /** Per-node results. */
     @Order(2)
     SnapshotListJobResult[] nodesSnapshots;
 
@@ -60,7 +60,7 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
         return nodesIds;
     }
 
-    /** @return The results. */
+    /** @return Per-node results. */
     public SnapshotListJobResult[] nodesSnapshots() {
         return nodesSnapshots;
     }
