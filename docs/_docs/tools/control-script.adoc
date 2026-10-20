@@ -1764,9 +1764,11 @@ With security enabled, `--ssl reload` and `--ssl status` need the `ADMIN_OPS` sy
 The built-in `SslContextFactory` reads its key and trust stores again, with the settings the node started with.
 To change a path, a password, a store type, protocols or cipher suites, restart the node.
 If the factory has `trustManagers` set, the node keeps them and reads no trust store.
+
 A node that is not in the topology when the command runs, such as a reconnecting client node, keeps the stores it read before.
 The command output does not list nodes that are not in the topology.
 Run the command again when the node is back in the topology, or restart the node if it cannot reconnect.
+
 The reload covers communication, discovery, the client connector, binary REST, and HTTP REST if it takes its certificates from `ConnectorConfiguration.httpSslFactory`.
 New connections use the new certificates.
 Established connections stay open and keep the old certificates.
@@ -1801,6 +1803,7 @@ In this example, node02 does not trust the new certificate authority, but node01
 New connections between them fail, so node02 may leave the topology once the open connections close.
 Fix the trust store of node02 without delay.
 Then run the command again, or restart node02 if the command cannot reach it.
+
 Every node logs the certificate it put in use, or why the reload failed.
 The log line also names the node the command came through.
 With security enabled, it also names the login and network address of the user who ran the command.
@@ -1830,14 +1833,18 @@ The `trusts` line lists the certificate authorities that the node names when it 
 `trusts: unknown` means the node names no certificate authority.
 The line shows names, not certificates, so it cannot tell apart two authorities with the same name.
 A trust manager of your own may name authorities other than the ones it accepts, or none.
+
 If the node cannot tell which certificate a factory serves, the status shows `cannot tell which certificate is served`.
+
 A node without an SSL context factory prints `no SSL context factory is configured`.
 Such a node does not make `--ssl reload` or `--ssl status` end with an error.
 
 If a certificate authority in the chain expires before the certificate, the `serving` line also shows when that authority expires, as `chainNotAfter`.
 From the `chainNotAfter` time, peers refuse the chain.
+
 After a failed reload, the `last reload` line shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
 Automatic renewals also update this line, except attempts that find only the certificate already in use.
+
 If a certificate in the chain a node serves is not valid now, the block shows `PROBLEM: the certificate is not valid now, peers refuse it`.
 The command ends with an error only if it finds such a node or cannot run on a node, for example because the node left.
 The command lists these nodes first, under `Failed on N node(s)`.
