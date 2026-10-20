@@ -31,6 +31,7 @@ import org.apache.ignite.internal.ssl.SslContextProvider;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
 import static org.apache.ignite.internal.ssl.SslCertificates.describe;
 import static org.apache.ignite.internal.ssl.SslCertificates.invalidAt;
@@ -75,36 +76,36 @@ public class SslStatusTask extends AbstractSslTask {
                 X509Certificate[] chain = provider.servedChain();
 
                 if (chain == null)
-                    lines.add("    cannot tell which certificate is served");
+                    lines.add(DOUBLE_INDENT + "cannot tell which certificate is served");
                 else {
                     long chainNotAfter = chainNotAfter(chain);
 
-                    lines.add("    serving " + describe(chain[0]) +
+                    lines.add(DOUBLE_INDENT + "serving " + describe(chain[0]) +
                         (chainNotAfter < chain[0].getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) : ""));
 
                     if (invalidAt(chain, System.currentTimeMillis()) != null) {
                         invalid = true;
 
-                        lines.add("    PROBLEM: the certificate is not valid now, peers refuse it");
+                        lines.add(DOUBLE_INDENT + "PROBLEM: the certificate is not valid now, peers refuse it");
                     }
                 }
 
                 List<X500Principal> trusted = provider.trustedAuthorities();
 
-                lines.add(trusted.isEmpty() ? "    trusts: unknown" : "    trusts: " +
-                    trusted.stream().map(X500Principal::toString).collect(Collectors.joining("; ")));
+                lines.add(DOUBLE_INDENT + "trusts: " +
+                    (trusted.isEmpty() ? "unknown" : trusted.stream().map(X500Principal::toString).collect(Collectors.joining("; "))));
 
                 SslContextProvider.ReloadOutcome outcome = provider.reloadOutcome();
 
                 if (outcome.failures() > 0) {
-                    lines.add("    last reload failed " + outcome.failures() + " time(s) in a row, the last at " +
+                    lines.add(DOUBLE_INDENT + "last reload failed " + outcome.failures() + " time(s) in a row, the last at " +
                         Instant.ofEpochMilli(outcome.failureTime()) + ": " + outcome.failureReason());
                 }
                 else if (outcome.successTime() > 0)
-                    lines.add("    last reload succeeded at " + Instant.ofEpochMilli(outcome.successTime()));
+                    lines.add(DOUBLE_INDENT + "last reload succeeded at " + Instant.ofEpochMilli(outcome.successTime()));
 
                 if (provider.nextRenewalTime() > 0)
-                    lines.add("    next automatic renewal at " + Instant.ofEpochMilli(provider.nextRenewalTime()));
+                    lines.add(DOUBLE_INDENT + "next automatic renewal at " + Instant.ofEpochMilli(provider.nextRenewalTime()));
             }
 
             return new IgniteBiTuple<>(!invalid, String.join("\n", lines));
