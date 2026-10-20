@@ -33,7 +33,8 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdSelectivity.COMPARISON_SELECTIVITY;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdSelectivity.EQUALS_SELECTIVITY;
@@ -64,6 +65,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
     private IgniteSchema publicSchema;
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 
