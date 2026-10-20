@@ -34,7 +34,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.util.CommonUtils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.builder.BinaryObjectBuildersFactoryImpl.unwrapLazy;
@@ -492,7 +491,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos + 1);
 
-                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, CommonUtils.resolveClassLoader(null, ctx.classLoader()));
+                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, ctx.classLoader());
 
                 return obj;
             }
@@ -844,7 +843,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos);
 
-                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, CommonUtils.resolveClassLoader(null, ctx.classLoader()));
+                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, ctx.classLoader());
 
                 pos = bin.position();
 
