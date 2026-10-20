@@ -64,6 +64,9 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.RENEWED;
+import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.SUPERSEDED;
+import static org.apache.ignite.internal.ssl.SslContextProvider.RenewalResult.UNCHANGED;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
@@ -75,6 +78,7 @@ import static org.apache.ignite.ssl.SslTestUtils.status;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assert.assertArrayEquals;
 
 /** Tests that a node renews the certificates of a factory with renewal enabled before they expire. */
 public class SslRenewalTest extends GridCommonAbstractTest {
@@ -159,6 +163,28 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue("The renewal thread must stop with the node", waitForCondition(() -> !renewalThreadAlive(g.name()), 10_000));
     }
 
+    /** Plans renewal from the authority's expiry when it expires before the leaf certificate. */
+    @Test
+    public void testRenewalPlannedBeforeAuthorityExpiry() throws Exception {
+        long now = System.currentTimeMillis();
+
+        KeyStore keys = ca.issue("node", now - HOUR, now + TimeUnit.DAYS.toMillis(400));
+
+        X509Certificate leaf = (X509Certificate)keys.getCertificate("node");
+        X509Certificate authority = (X509Certificate)keys.getCertificateChain("node")[1];
+
+        long notBefore = leaf.getNotBefore().getTime();
+        long notAfter = authority.getNotAfter().getTime();
+        long due = notAfter - (long)((notAfter - notBefore) * DFLT_RENEW_BEFORE_FRACTION);
+
+        assertTrue("The authority must expire before the leaf", notAfter < leaf.getNotAfter().getTime());
+
+        IgniteEx g = startNode(new Issuer(() -> keys));
+
+        assertTrue("Renewal must be planned by the authority's expiry",
+            waitForCondition(() -> nextRenewalTime(g) == due, 10_000));
+    }
+
     /** With less than half of the window left, failures must be logged as errors and counted, and the status must show the next attempt. */
     @Test
     public void testLateFailureLoggedAsError() throws Exception {
@@ -236,7 +262,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         issuer.trust = TestCertificateAuthority.trustStore(ca, other);
 
-        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+        assertEquals(RENEWED, p.renew(p.context()));
     }
 
     /** A renewal that drops the authority of the certificate in use must be refused: peers that have not renewed yet still present it. */
@@ -274,7 +300,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         issuer.trust = other.trustStore();
 
-        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+        assertEquals(RENEWED, p.renew(p.context()));
         assertEquals("CN=otherca", p.servedCertificate().getIssuerX500Principal().getName());
     }
 
@@ -336,7 +362,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         p.reload();
 
-        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+        assertEquals(RENEWED, p.renew(p.context()));
         assertEquals("CN=otherca", p.servedCertificate().getIssuerX500Principal().getName());
     }
 
@@ -366,14 +392,14 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         SSLContext planned = p.context();
 
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(planned));
+        assertEquals(UNCHANGED, p.renew(planned));
         assertEquals(1, p.renewalFailures());
 
         p.reload();
 
         SSLContext reloaded = p.context();
 
-        assertEquals(SslContextProvider.RenewalResult.SUPERSEDED, p.renew(planned));
+        assertEquals(SUPERSEDED, p.renew(planned));
         assertEquals(1, p.renewalFailures());
         assertSame(reloaded, p.context());
         assertEquals("The superseded renewal must not ask for another certificate", 3, issuer.calls.size());
@@ -498,7 +524,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         startNode(issuer);
 
-        assertTrue(waitForCondition(() -> issuer.calls.size() >= 5, 30_000));
+        assertTrue(waitForCondition(() -> automaticRenewals("transports=" + COMMUNICATION) >= 4, 30_000));
+        assertTrue("Every attempt must renew the certificate",
+            appender.events().stream().noneMatch(e -> e.getLevel().isMoreSpecificThan(Level.WARN)));
 
         for (int i = 2; i < 5; i++) {
             long pause = issuer.calls.get(i).time - issuer.calls.get(i - 1).time;
@@ -523,9 +551,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         Issuer issuer = new Issuer(valid(now - HOUR, now + 5 * MINUTE), fresh(HOUR));
 
-        IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg
-            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
-                .setUseIgniteSslContextFactory(false).setSslContextFactory(issuer)));
+        IgniteEx g = startClientConnectorOn(issuer);
 
         assertTrue(waitForCondition(() -> automaticRenewals("transports=" + CLIENT_CONNECTOR) == 1, 30_000));
 
@@ -674,7 +700,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue(appender.events().stream().noneMatch(e -> e.getLevel().isMoreSpecificThan(Level.WARN)));
     }
 
-    /** A factory that returns the certificates in use, as the very same context or as an expired chain, must leave nothing to renew. */
+    /** Cached and expired unchanged chains stay in use and count as unsuccessful renewal attempts. */
     @Test
     public void testSameCertificatesUnchanged() throws Exception {
         long now = System.currentTimeMillis();
@@ -683,9 +709,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         SslContextProvider p = new SslContextProvider(() -> cached);
 
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(p.context()));
+        assertEquals(UNCHANGED, p.renew(p.context()));
         assertEquals(1, p.renewalFailures());
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(p.context()));
+
+        assertEquals(UNCHANGED, p.renew(p.context()));
         assertEquals(2, p.renewalFailures());
         assertEquals(0, p.reloadOutcome().failures());
 
@@ -693,7 +720,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         SslContextProvider expiredProvider = new SslContextProvider(new Issuer(() -> expired));
 
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, expiredProvider.renew(expiredProvider.context()));
+        SSLContext expiredCtx = expiredProvider.context();
+
+        assertEquals(UNCHANGED, expiredProvider.renew(expiredCtx));
+        assertSame(expiredCtx, expiredProvider.context());
         assertEquals(1, expiredProvider.renewalFailures());
     }
 
@@ -706,17 +736,17 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         SslContextProvider p = new SslContextProvider(new Issuer(() -> inUse, () -> inUse, failure(), () -> inUse, fresh(2 * HOUR)));
 
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(p.context()));
+        assertEquals(UNCHANGED, p.renew(p.context()));
         assertEquals(1, p.renewalFailures());
 
         GridTestUtils.assertThrows(log, () -> p.renew(p.context()), IgniteException.class, ISSUER_DOWN);
 
         assertEquals(2, p.renewalFailures());
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(p.context()));
+        assertEquals(UNCHANGED, p.renew(p.context()));
         assertEquals(3, p.renewalFailures());
         assertEquals(1, p.reloadOutcome().failures());
 
-        assertEquals(SslContextProvider.RenewalResult.RENEWED, p.renew(p.context()));
+        assertEquals(RENEWED, p.renew(p.context()));
         assertEquals(0, p.renewalFailures());
     }
 
@@ -732,13 +762,15 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         SslContextProvider p = new SslContextProvider(issuer);
 
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(p.context()));
+        assertEquals(UNCHANGED, p.renew(p.context()));
         assertEquals(1, p.renewalFailures());
 
+        // A failed manual reload is not an automatic renewal attempt.
         GridTestUtils.assertThrows(log, p::reload, IgniteException.class, ISSUER_DOWN);
 
         assertEquals(1, p.renewalFailures());
 
+        // Reloading the same certificate clears the reload error, but not the renewal failures.
         p.reload();
 
         assertEquals(1, p.renewalFailures());
@@ -748,16 +780,19 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         issuer.trust = TestCertificateAuthority.trustStore(ca, other);
 
+        // Updating only the trust store does not renew the certificate.
         p.reload();
 
         assertEquals(1, p.renewalFailures());
         assertTrue(p.trustedAuthorities().contains(new X500Principal("CN=otherca")));
 
+        // A different certificate with the same expiry still does not extend the chain's lifetime.
         p.reload();
 
         assertFalse(inUse.getCertificate("node").equals(p.servedCertificate()));
         assertEquals(1, p.renewalFailures());
 
+        // Only the final certificate extends the chain's lifetime.
         p.reload();
 
         assertEquals(0, p.renewalFailures());
@@ -776,7 +811,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         long chainExpiry = SslCertificates.chainNotAfter(p.servedChain());
         long leafExpiry = p.servedCertificate().getNotAfter().getTime();
 
-        assertEquals(SslContextProvider.RenewalResult.UNCHANGED, p.renew(p.context()));
+        assertEquals(UNCHANGED, p.renew(p.context()));
 
         p.reload();
 
@@ -940,11 +975,13 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      */
     private static void assertRenewalRejected(SslContextProvider p, String reason) {
         SSLContext inUse = p.context();
+        X509Certificate[] chain = p.servedChain();
         int failures = p.renewalFailures();
 
         GridTestUtils.assertThrows(log, () -> p.renew(inUse), IgniteCheckedException.class, reason);
 
         assertSame(inUse, p.context());
+        assertArrayEquals(chain, p.servedChain());
         assertEquals(failures + 1, p.renewalFailures());
     }
 

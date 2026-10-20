@@ -92,23 +92,24 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         place("node02", keyStore);
 
-        String out = executeCommand(EXIT_CODE_OK, "--ssl", "reload");
+        String reloadOutput = executeCommand(EXIT_CODE_OK, "--ssl", "reload");
 
-        for (IgniteEx node : nodes)
-            assertContains(log, out, node(node) + ": reloaded " + transports(node) + "; serving subject=CN=node02");
+        for (IgniteEx grid : nodes)
+            assertContains(log, reloadOutput,
+                node(grid) + ": reloaded " + transports(grid) + "; serving subject=CN=node02");
 
         assertEquals("CN=node02", servedSubject(nodes.get(0).localNode().attribute(ATTR_REST_TCP_PORT)));
 
-        out = executeCommand(EXIT_CODE_OK, "--ssl", "status");
+        String statusOutput = executeCommand(EXIT_CODE_OK, "--ssl", "status");
 
-        assertContains(log, out, "    trusts: unknown");
+        assertContains(log, statusOutput, "    trusts: unknown");
 
-        for (IgniteEx node : nodes)
-            assertContains(log, out, node(node) + ": " + transports(node));
+        for (IgniteEx grid : nodes)
+            assertContains(log, statusOutput, node(grid) + ": " + transports(grid));
 
-        assertContains(log, out, "serving subject=CN=node02");
-        assertNotContains(log, out, "subject=CN=node01");
-        assertContains(log, out, "last reload succeeded at");
+        assertContains(log, statusOutput, "serving subject=CN=node02");
+        assertNotContains(log, statusOutput, "subject=CN=node01");
+        assertContains(log, statusOutput, "last reload succeeded at");
 
         Files.write(keyStore, "not a key store".getBytes());
 

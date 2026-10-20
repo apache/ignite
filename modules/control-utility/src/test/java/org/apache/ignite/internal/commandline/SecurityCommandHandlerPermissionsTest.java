@@ -196,13 +196,13 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         assertEquals(0, svcs.size());
     }
 
-    /** */
+    /** Reloading TLS certificates requires administrative permission. */
     @Test
     public void testSslReload() throws Exception {
         checkCommandPermissions(asList("--ssl", "reload"), systemPermissions(ADMIN_OPS));
     }
 
-    /** */
+    /** Reading TLS certificate status requires administrative permission. */
     @Test
     public void testSslStatus() throws Exception {
         checkCommandPermissions(asList("--ssl", "status"), systemPermissions(ADMIN_OPS));

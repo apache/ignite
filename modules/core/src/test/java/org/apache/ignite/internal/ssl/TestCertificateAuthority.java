@@ -42,6 +42,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 
+import static java.nio.charset.StandardCharsets.US_ASCII;
+
 /**
  * Certificate authority for tests that need certificates valid for a chosen time, which the stores checked into the repository cannot give.
  * Certificates are put together in memory, with the platform's own security providers only.
@@ -219,7 +221,7 @@ class TestCertificateAuthority {
      * @return DER of the time as {@code UTCTime}.
      */
     private static byte[] time(long millis) {
-        return tlv(0x17, UTC_TIME.format(Instant.ofEpochMilli(millis)).getBytes());
+        return tlv(0x17, UTC_TIME.format(Instant.ofEpochMilli(millis)).getBytes(US_ASCII));
     }
 
     /**

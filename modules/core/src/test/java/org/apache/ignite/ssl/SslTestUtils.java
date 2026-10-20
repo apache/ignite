@@ -19,6 +19,7 @@ package org.apache.ignite.ssl;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -42,6 +43,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 
 /** Runs the {@code --ssl} commands the way control.sh does, probes what the transports serve, and places the test stores. */
 public class SslTestUtils {
+    /** Timeout for a probe connection or TLS handshake. */
+    private static final int SOCKET_TIMEOUT = 30_000;
+
     /** */
     private SslTestUtils() {
         // No-op.
@@ -77,7 +81,10 @@ public class SslTestUtils {
      * @return Certificate the node presents on a new TLS connection to that port.
      */
     public static X509Certificate servedCertificate(SSLContext probe, int port) throws Exception {
-        try (SSLSocket sock = (SSLSocket)probe.getSocketFactory().createSocket(InetAddress.getLoopbackAddress(), port)) {
+        try (SSLSocket sock = (SSLSocket)probe.getSocketFactory().createSocket()) {
+            sock.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), SOCKET_TIMEOUT);
+            sock.setSoTimeout(SOCKET_TIMEOUT);
+
             sock.startHandshake();
 
             return (X509Certificate)sock.getSession().getPeerCertificates()[0];

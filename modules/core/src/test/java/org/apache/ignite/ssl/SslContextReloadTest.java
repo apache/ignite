@@ -284,7 +284,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
      * their trust stores.
      */
     @Test
-    public void testOwnClientConnectorFactoryReloadedApart() throws Exception {
+    public void testClientTransportsWithSeparateFactories() throws Exception {
         initTrustStore = "trustone";
         ownClientConnectorFactory = true;
 
@@ -338,11 +338,14 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         placeTrust("trustboth");
         reload(g0, g1);
 
-        String trustsBoth = status(g0, g1);
+        List<String> trustsBoth = status(g0, g1).lines().filter(line -> line.startsWith("    trusts: ")).toList();
 
-        assertEquals(2, trustsBoth.split("    trusts: ", -1).length - 1);
-        assertContains(log, trustsBoth, "CN=oneca, EMAILADDRESS=oneca@ignite.apache.org; ");
-        assertContains(log, trustsBoth, "CN=twoca, EMAILADDRESS=twoca@ignite.apache.org");
+        assertEquals(2, trustsBoth.size());
+
+        for (String line : trustsBoth) {
+            assertContains(log, line, "CN=oneca, EMAILADDRESS=oneca@ignite.apache.org; ");
+            assertContains(log, line, "CN=twoca, EMAILADDRESS=twoca@ignite.apache.org");
+        }
 
         placeKeys("node02");
         reload(g0, g1);
@@ -390,10 +393,14 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, res, "CN=twoca");
         assertContains(log, res, "PROBLEM: the certificate is not valid now, peers refuse it");
 
-        String trusts = res.substring(res.indexOf("    trusts: "), res.indexOf('\n', res.indexOf("    trusts: ")));
+        List<String> trusts = res.lines().filter(line -> line.startsWith("    trusts: ")).toList();
 
-        assertContains(log, trusts, "CN=oneca");
-        assertContains(log, trusts, "CN=twoca");
+        assertEquals(2, trusts.size());
+
+        for (String line : trusts) {
+            assertContains(log, line, "CN=oneca");
+            assertContains(log, line, "CN=twoca");
+        }
     }
 
     /** A node whose own trust store does not accept its certificate starts, but warns that reloads and renewals will refuse it. */

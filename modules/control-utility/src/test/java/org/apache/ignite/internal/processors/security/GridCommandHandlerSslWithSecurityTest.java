@@ -50,16 +50,16 @@ import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
  * Command line handler test with SSL and security.
  */
 public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFactoryAbstractTest {
+    /** Login of an operator other than the node, so that the log names the operator and not the node. */
+    private static final String OPERATOR = "sslOperator";
+
     /** Login. */
     private final String login = "testUsr";
 
     /** Password. */
     private final String pwd = "testPwd";
 
-    /** Login of an operator other than the node, so that the log names the operator and not the node. */
-    private static final String OPERATOR = "sslOperator";
-
-    /** */
+    /** Captures reload messages from the node. */
     private final ListeningTestLogger nodeLog = new ListeningTestLogger(log);
 
     /** System out. */
@@ -223,12 +223,13 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
 
         nodeLog.registerListener(logged);
 
-        assertEquals(EXIT_CODE_OK, newCommandHandler().execute(Arrays.asList("--ssl", "reload", "--yes",
+        int exitCode = newCommandHandler().execute(Arrays.asList("--ssl", "reload", "--yes",
             "--user", OPERATOR, "--password", pwd,
             "--keystore", keyStorePath("thinClient"), "--keystore-password", keyStorePassword(),
-            "--truststore", keyStorePath("trusttwo"), "--truststore-password", keyStorePassword())));
+            "--truststore", keyStorePath("trusttwo"), "--truststore-password", keyStorePassword()));
 
-        assertTrue(logged.check());
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertTrue("The reload log must identify the operator", logged.check());
     }
 
     /**

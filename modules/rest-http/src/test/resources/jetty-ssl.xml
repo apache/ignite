@@ -25,8 +25,7 @@
             <New class="org.eclipse.jetty.server.ServerConnector">
                 <Arg><Ref refid="Server"/></Arg>
                 <Arg>
-                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-                    </New>
+                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server"/>
                 </Arg>
                 <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>
             </New>
