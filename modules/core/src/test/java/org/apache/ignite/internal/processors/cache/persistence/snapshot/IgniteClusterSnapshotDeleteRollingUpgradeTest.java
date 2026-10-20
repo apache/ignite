@@ -107,7 +107,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
 
-            upgradeNodeVersion(i, "2.18.0", "2.19.4");
+            upgradeNodeVersion(i, "2.18.0", MASTER_VER_REF);
         }
 
         spi(grid(testNodeIx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -162,7 +162,7 @@ public class IgniteClusterSnapshotDeleteRollingUpgradeTest extends AbstractRolli
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
 
-            upgradeNodeVersion(i, "2.18.0", "2.19.4");
+            upgradeNodeVersion(i, "2.18.0", MASTER_VER_REF);
 
             ensureSnapshotDeletionFailed(useTask);
         }
