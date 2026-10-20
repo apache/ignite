@@ -22,11 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
-import org.apache.ignite.internal.CoreMessagesProvider;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -49,11 +46,8 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private static final int CHUNK_SIZE = 16;
 
     /** Message factory. */
-    private final MessageFactory msgFactory =
-        new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider(),
-            factory -> factory.register(TestNestedContainersMessage.TYPE, new TestNestedContainersMessageSerializer())
-        });
+    private final MessageFactory msgFactory = createExtendedMessageFactory(
+        factory -> factory.register(TestNestedContainersMessage.TYPE, new TestNestedContainersMessageSerializer()));
 
     /** */
     @Test

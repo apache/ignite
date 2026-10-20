@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.thread.context;
 
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage.MAX_ATTRS_CNT;
 
@@ -37,15 +39,30 @@ public final class DistributedAttributeKey {
     private final byte id;
 
     /** */
+    @GridToStringInclude
+    @Nullable private final IgniteFeature introducedBy;
+
+    /** */
     DistributedAttributeKey(int id) {
+        this(id, null);
+    }
+
+    /** */
+    DistributedAttributeKey(int id, @Nullable IgniteFeature introducedBy) {
         assert 0 <= id && id < MAX_ATTRS_CNT : "Invalid distributed attribute id [id=" + id + ']';
 
         this.id = (byte)id;
+        this.introducedBy = introducedBy;
     }
 
     /** @return Cluster-wide id of the attribute. */
     public byte id() {
         return id;
+    }
+
+    /** @return Feature that introduced the attribute, or {@code null} if every peer reads it. */
+    public @Nullable IgniteFeature introducedBy() {
+        return introducedBy;
     }
 
     /** {@inheritDoc} */
