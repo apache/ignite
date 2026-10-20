@@ -37,15 +37,12 @@ import org.junit.Test;
 public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvictionAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
-    /**
-     * Concurrent large inserts into a region pre-filled with small entries must complete without deadlock and without
-     * corrupting the free list.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testConcurrentLargeWritesNoDeadlock() throws Exception {
         int smallEntries = 1_000;
@@ -58,7 +55,6 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         long regionMax = regionMaxSize(ignite);
 
-        // Small values fill ~80% of the region, below the 0.9 eviction threshold.
         int smallValSize = (int)(regionMax * 0.8 / smallEntries);
 
         for (int i = 0; i < smallEntries; i++)
@@ -69,7 +65,6 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         CountDownLatch startLatch = new CountDownLatch(1);
         AtomicInteger threadIdx = new AtomicInteger();
 
-        // Large values (5% of the region) trigger eviction during concurrent writes.
         int largeValSize = (int)(regionMax / 20);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
@@ -90,9 +85,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
 
-        // Probe put+get: the free list must not be corrupted.
         int probeKey = smallEntries + threads * largeRowsPerThread + 1;
-
         byte[] probeVal = valueFor(probeKey, pageSize(ignite) - 200);
 
         cache.put(probeKey, probeVal);
@@ -109,11 +102,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         assertTrue("At least one large entry must survive", survivedLarge > 0);
     }
 
-    /**
-     * Batch insert path test.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testRebalanceBatchInsertsWithEviction() throws Exception {
         IgniteEx ignite1 = startGrid(1);
@@ -148,7 +137,6 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         int writers = 4;
         int rowsPerWriter = 5;
-
         int writerKeyBase = smallKeyBase + (int)totalPages(ignite1);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
@@ -179,72 +167,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         assertTrue("At least one large entry must survive", survived > 0);
     }
 
-    /**
-     * Concurrent {@code putAll} batches on a near-full region with enabled eviction must complete without deadlock.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConcurrentPutAllNoDeadlock() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        IgniteCache<Integer, byte[]> cache = ignite.createCache(new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(0)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC));
-
-        int pSize = pageSize(ignite);
-
-        // Pre-fill to ~70% of the region.
-        int smallValSize = pSize / 4 - 50;
-        int smallEntries = (int)(regionMaxSize(ignite) * 0.7 / smallValSize);
-
-        for (int i = 0; i < smallEntries; i++)
-            cache.put(i, valueFor(i, smallValSize));
-
-        int valSize = pSize / 4 - 50;
-
-        CountDownLatch startLatch = new CountDownLatch(1);
-        AtomicInteger keyGen = new AtomicInteger(smallEntries);
-
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-            U.awaitQuiet(startLatch);
-
-            for (int b = 0; b < 10; b++) {
-                Map<Integer, byte[]> batch = new HashMap<>();
-
-                for (int i = 0; i < 50; i++) {
-                    int key = keyGen.incrementAndGet();
-
-                    batch.put(key, valueFor(key, valSize));
-                }
-
-                cache.putAll(batch);
-            }
-        }, 4, "batch-writer");
-
-        startLatch.countDown();
-
-        fut.get(TimeUnit.MINUTES.toMillis(3));
-
-        assertTrue("Eviction must have started during concurrent batch writes", isEvictionsStarted(ignite));
-
-        int probeKey = keyGen.incrementAndGet();
-        byte[] probeVal = valueFor(probeKey, smallValSize);
-
-        cache.put(probeKey, probeVal);
-
-        byte[] read = cache.get(probeKey);
-
-        assertNotNull(read);
-        assertTrue(Arrays.equals(probeVal, read));
-    }
-
-    /**
-     * Concurrent single-row puts interleaved with {@code putAll} batches on a near-full region.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testConcurrentPutsAndPutAllNoDeadlock() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -261,9 +184,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
             cache.put(i, valueFor(i, valSize));
 
         AtomicInteger keyGen = new AtomicInteger(smallEntries);
-
         CountDownLatch startLatch = new CountDownLatch(1);
-
         AtomicInteger threadIdx = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
@@ -297,9 +218,19 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         fut.get(TimeUnit.MINUTES.toMillis(3));
 
         assertTrue("Eviction must have started", isEvictionsStarted(ignite));
+
+        int probeKey = keyGen.incrementAndGet();
+        byte[] probeVal = valueFor(probeKey, valSize);
+
+        cache.put(probeKey, probeVal);
+
+        byte[] read = cache.get(probeKey);
+
+        assertNotNull(read);
+        assertTrue(Arrays.equals(probeVal, read));
     }
 
-    /** Asserts every non-null value in {@code [base, base+cnt)} is byte-identical to {@code valueFor(k, valSize)}. */
+    /** */
     private static int verifyContent(IgniteCache<Integer, ?> cache, int base, int cnt, int valSize) {
         int survived = 0;
 

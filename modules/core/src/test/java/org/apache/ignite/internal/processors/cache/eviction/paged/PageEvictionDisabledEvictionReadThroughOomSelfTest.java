@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
-import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,8 +33,7 @@ import org.junit.Test;
 
 /**
  * Regression test for the disabled-eviction in-memory OOM guard on insert paths that bypass {@code FreeList.reserve}:
- * read-through inside {@code get()} runs under the entry lock and cannot reserve, so the per-insert guard previously
- * living in {@code RowStore.addRow} (now {@code FreeList.checkFitsForInsert}) must still fire and reject the insert
+ * read-through inside {@code get()} runs under the entry lock and cannot reserve, so the per-insert guard fire and reject the insert
  * with {@link IgniteOutOfMemoryException} when the region is at the threshold — rather than silently consuming the
  * free-list bookkeeping margin.
  */
@@ -55,13 +50,7 @@ public class PageEvictionDisabledEvictionReadThroughOomSelfTest extends PageEvic
         stopAllGrids();
     }
 
-    /**
-     * Fills the region until a {@code put} hits the disabled-eviction OOM guard, then verifies that a read-through
-     * {@code get} on a missing key also throws {@link IgniteOutOfMemoryException} from the same guard (the bypass
-     * path must not silently consume the remaining free-list margin).
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test(timeout = 120_000)
     public void testReadThroughGetOomAtThreshold() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -78,7 +67,6 @@ public class PageEvictionDisabledEvictionReadThroughOomSelfTest extends PageEvic
 
         byte[] small = new byte[pageSize(ignite) - 200];
 
-        // Fill the region until the disabled-eviction OOM guard fires on a put.
         int filled = 0;
 
         for (int i = 0; i < 100_000; i++) {
@@ -95,20 +83,14 @@ public class PageEvictionDisabledEvictionReadThroughOomSelfTest extends PageEvic
             }
         }
 
-        assertTrue("Region must be filled before OOM (filled=" + filled + ")", filled > 0);
+        assertTrue(filled > 0);
 
-        // Read-through on a missing key: the store returns a page-sized value, which must be rejected by the
-        // disabled-eviction OOM guard at the RowStore level (the bypass path cannot reserve).
         int missingKey = filled + 1;
 
         GridTestUtils.assertThrowsWithCause(() -> cache.get(missingKey), IgniteOutOfMemoryException.class);
     }
 
-    /**
-     * Below the threshold, read-through {@code get} must succeed — the restored guard must not spuriously reject.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testReadThroughGetBelowThresholdSucceeds() throws Exception {
         startGrid(0);
@@ -121,38 +103,9 @@ public class PageEvictionDisabledEvictionReadThroughOomSelfTest extends PageEvic
             .setReadThrough(true)
             .setCacheStoreFactory(new TestStoreFactory());
 
-        IgniteCache<Integer, byte[]> cache = grid(0).getOrCreateCache(cfg);
-
-        // A single read-through load well below capacity must succeed.
-        byte[] val = cache.get(1);
+        byte[] val = grid(0).getOrCreateCache(cfg).get(1);
 
         assertNotNull("Read-through load must succeed below threshold", val);
         assertEquals(PAGE_SIZE - 200, val.length);
-    }
-
-    /** */
-    private static class TestStoreFactory implements Factory<TestCacheStore> {
-        /** {@inheritDoc} */
-        @Override public TestCacheStore create() {
-            return new TestCacheStore();
-        }
-    }
-
-    /** */
-    private static class TestCacheStore extends CacheStoreAdapter<Integer, byte[]> {
-        /** {@inheritDoc} */
-        @Override public byte[] load(Integer key) throws CacheLoaderException {
-            return new byte[PAGE_SIZE - 200];
-        }
-
-        /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void delete(Object key) {
-            // No-op.
-        }
     }
 }

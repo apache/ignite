@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
 /**
- * Regression test for C1: {@code GridCacheMapEntry#rowSize()} must not throw NPE when the value is an unmarshalled
+ * {@code GridCacheMapEntry#rowSize()} must not throw NPE when the value is an unmarshalled
  * {@code BinaryObjectImpl} or a POJO whose key has not yet been marshalled on the reservation path.
  */
 public class PageEvictionRowSizeBinaryObjectTest extends PageEvictionAbstractTest {
@@ -41,14 +41,12 @@ public class PageEvictionRowSizeBinaryObjectTest extends PageEvictionAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
-    /**
-     * POJO puts on the transactional commit path must not throw NPE inside {@code rowSize}.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testPojoPutTxDoesNotNpeInRowSize() throws Exception {
         IgniteEx ignite = startGrid(0);
@@ -60,7 +58,6 @@ public class PageEvictionRowSizeBinaryObjectTest extends PageEvictionAbstractTes
                 .setCacheMode(CacheMode.REPLICATED)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC));
 
-        // ~1 row per page; fill past the eviction threshold.
         int entries = 15_000;
 
         for (int i = 1; i <= entries; i++)
@@ -75,18 +72,13 @@ public class PageEvictionRowSizeBinaryObjectTest extends PageEvictionAbstractTes
         assertNotNull(cache.get(probeKey));
     }
 
-    /**
-     * POJO puts via a {@code DataStreamer} must not throw NPE inside {@code rowSize}.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testPojoDataStreamDoesNotNpeInRowSize() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        IgniteCache<Integer, TestObject> cache = ignite.createCache(
-            new CacheConfiguration<Integer, TestObject>(DEFAULT_CACHE_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 32)));
+        IgniteCache<Integer, TestObject> cache = ignite.createCache(new CacheConfiguration<Integer, TestObject>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
         int entries = 15_000;
 

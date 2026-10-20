@@ -24,8 +24,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
 /**
- * Regression test for C2: the batch-level {@code ensureFreeSpace} must evict at the configured
- * {@code evictionThreshold} (default 0.9), not silently skip eviction when the headroom exceeds the empty-pages pool.
+ * The batch-level {@code ensureFreeSpace} must evict at the configured {@code evictionThreshold} (default 0.9),
+ * not silently skip eviction when the headroom exceeds the empty-pages pool.
  */
 public class PageEvictionEnsureFreeSpaceThresholdTest extends PageEvictionAbstractTest {
     /** {@inheritDoc} */

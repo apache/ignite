@@ -37,15 +37,12 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
-    /**
-     * Concurrent page eviction and TTL cleanup on the same data region must not deadlock: large inserts trigger
-     * eviction while page-sized TTL entries expire and free real pages concurrently.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testLargePutWithExpiryNoDeadlock() throws Exception {
         IgniteEx ignite = startGrid(1);
@@ -60,7 +57,6 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         assertFalse("Eviction must not have started during pre-fill", isEvictionsStarted(ignite));
 
-        // Page-sized TTL entries: their cleanup frees real pages concurrently with eviction.
         int ttlEntries = 100;
         byte[] ttlVal = new byte[pageSize(ignite) - 200];
 
@@ -99,11 +95,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
     }
 
-    /**
-     * After short-TTL entries expire and free their pages, putting the same data to a non-expiring cache must succeed.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testTtlFreedSpaceAccountedForByEviction() throws Exception {
         IgniteEx ignite = startGrid(1);

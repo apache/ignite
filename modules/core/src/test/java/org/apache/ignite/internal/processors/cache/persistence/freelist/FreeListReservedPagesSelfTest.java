@@ -22,20 +22,29 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -43,38 +52,50 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 /**
  * Tests that the atomic page reservation of an in-memory free list with enabled page eviction is fully released after
  * batch inserts: whole-page fragments, fill-up-handler rows, whole-page-aligned rows, concurrent batch inserts, and
- * the end-to-end backup entry path.
+ * concurrent single-row puts on a backup node.
  */
-public class FreeListReservedPagesSelfTest extends FreeListReservedPagesAbstractTest {
-    /** */
-    @Test
-    public void testReservedPagesReleasedAfterSmallRowsBatch() throws Exception {
-        assertReservedPagesReleasedAfterBatch(10);
+public class FreeListReservedPagesSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setInitialSize(10 * 1024 * 1024L)
+                .setMaxSize(20 * 1024 * 1024L)
+                .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)));
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
     }
 
     /** */
     @Test
-    public void testReservedPagesReleasedAfterLargeRowsBatch() throws Exception {
-        assertReservedPagesReleasedAfterBatch(10_000);
-    }
-
-    /** */
-    @Test
-    public void testReservedPagesReleasedAfterWholePageAlignedRowsBatch() throws Exception {
+    public void testReservedPagesReleasedAfterBatchInserts() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         createCache(ignite);
 
         FreeList<CacheDataRow> freeList = freeList(ignite, DEFAULT_CACHE_NAME);
 
+        // Phase 1: small rows that fit into a single page (fill-up path, no whole-page fragments).
+        insertBatchesAndCheckReservedPages(ignite, freeList, 10);
+
+        // Phase 2: large rows that span multiple pages (whole-page fragments + fill-up remainder).
+        insertBatchesAndCheckReservedPages(ignite, freeList, 10_000);
+
+        // Phase 3: rows sized to an exact multiple of the whole-page fragment size (whole-page fragments only).
         int minPageSize = getFieldValue(freeList, "MIN_SIZE_FOR_DATA_PAGE");
 
-        // Size the value so the whole row is an exact multiple of the whole-page fragment size.
         int fixedSize = row(cacheContext(ignite), 0, 0).size();
 
-        insertBatches(ignite, freeList, 2 * minPageSize - fixedSize);
-
-        assertEquals(0, reservedPages(freeList));
+        insertBatchesAndCheckReservedPages(ignite, freeList, 2 * minPageSize - fixedSize);
     }
 
     /** */
@@ -109,37 +130,7 @@ public class FreeListReservedPagesSelfTest extends FreeListReservedPagesAbstract
         assertTrue(GridTestUtils.waitForCondition(() -> reservedPages(freeList) == 0, 10_000));
     }
 
-    /**
-     * End-to-end entry path: a 2-node cluster with {@code backups=1} so the backup node reserves pages before the
-     * entry lock. After puts and quiescence, {@code reservedPages} must be 0 on both nodes.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReservedPagesReleasedAfterEntryPathPutsOnBackup() throws Exception {
-        startGrids(2);
-
-        IgniteCache<Integer, byte[]> cache = grid(0).createCache(new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
-
-        awaitPartitionMapExchange();
-
-        int keyCnt = 500;
-        int payloadSize = 200;
-
-        for (int i = 0; i < keyCnt; i++)
-            cache.put(i, new byte[payloadSize]);
-
-        assertAllReleased(DEFAULT_CACHE_NAME, 10_000);
-    }
-
-    /**
-     * Concurrent single-row puts on a 2-node cluster with backups; {@code reservedPages} must be 0 after quiescence.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testReservedPagesReleasedAfterConcurrentPuts() throws Exception {
         startGrids(2);
@@ -164,12 +155,7 @@ public class FreeListReservedPagesSelfTest extends FreeListReservedPagesAbstract
         assertAllReleased(DEFAULT_CACHE_NAME, 10_000);
     }
 
-    /**
-     * Concurrent {@code putAll} batches on a 2-node cluster with backups; {@code reservedPages} must be 0 after
-     * quiescence.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testReservedPagesReleasedAfterConcurrentPutAll() throws Exception {
         startGrids(2);
@@ -200,17 +186,44 @@ public class FreeListReservedPagesSelfTest extends FreeListReservedPagesAbstract
         assertAllReleased(DEFAULT_CACHE_NAME, 10_000);
     }
 
-    /** */
-    private void assertReservedPagesReleasedAfterBatch(int payloadSize) throws Exception {
-        IgniteEx ignite = startGrid(0);
+    /**
+     * Asserts that {@code reservedPages} is {@code 0} on every data store of every started node, waiting up to
+     * {@code timeoutMs} for the reservation to drain.
+     *
+     * @param cacheName Cache name.
+     * @param timeoutMs Wait timeout in milliseconds.
+     * @throws Exception If the reservation does not drain in time.
+     */
+    public static void assertAllReleased(String cacheName, long timeoutMs) throws Exception {
+        for (Ignite ignite : Ignition.allGrids()) {
+            for (CacheDataStore store : ((IgniteEx)ignite).context().cache().cache(cacheName).context().offheap().cacheDataStores()) {
+                FreeList<CacheDataRow> freeList = (FreeList<CacheDataRow>)store.rowStore().freeList();
 
-        createCache(ignite);
+                if (reservedPages(freeList) == 0)
+                    continue;
 
-        insertBatches(ignite, freeList(ignite, DEFAULT_CACHE_NAME), payloadSize);
+                assertTrue(GridTestUtils.waitForCondition(() -> reservedPages(freeList) == 0, timeoutMs));
+            }
+        }
     }
 
     /** */
-    private static void insertBatches(IgniteEx ignite, FreeList<CacheDataRow> freeList, int payloadSize) throws IgniteCheckedException {
+    private static long reservedPages(FreeList<CacheDataRow> freeList) {
+        return ((AtomicLong)getFieldValue(freeList, "reservedPages")).get();
+    }
+
+    /** */
+    private static FreeList<CacheDataRow> freeList(IgniteEx ignite, String cacheName) {
+        return (FreeList<CacheDataRow>)ignite.context().cache().cache(cacheName).context().offheap()
+            .cacheDataStores().iterator().next().rowStore().freeList();
+    }
+
+    /** */
+    private static void insertBatchesAndCheckReservedPages(
+        IgniteEx ignite,
+        FreeList<CacheDataRow> freeList,
+        int payloadSize
+    ) throws IgniteCheckedException {
         int batchSize = 500;
 
         for (int batch = 0; batch < 3; batch++) {

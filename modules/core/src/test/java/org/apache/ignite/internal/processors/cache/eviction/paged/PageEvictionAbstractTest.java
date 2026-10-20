@@ -16,13 +16,17 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
+import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -216,5 +220,31 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             cache.put(i, small);
 
         return entries;
+    }
+
+    /** */
+    protected static class TestStoreFactory implements Factory<TestCacheStore> {
+        /** {@inheritDoc} */
+        @Override public TestCacheStore create() {
+            return new TestCacheStore();
+        }
+    }
+
+    /** */
+    protected static class TestCacheStore extends CacheStoreAdapter<Integer, byte[]> {
+        /** {@inheritDoc} */
+        @Override public byte[] load(Integer key) throws CacheLoaderException {
+            return new byte[PAGE_SIZE - 200];
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            // No-op.
+        }
     }
 }

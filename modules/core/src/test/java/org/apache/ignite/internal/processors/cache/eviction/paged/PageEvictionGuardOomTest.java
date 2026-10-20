@@ -40,24 +40,19 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
     }
 
-    /**
-     * With every candidate entry locked, eviction cannot free any page, so a row needing more free pages than remain
-     * must fail with OOM (bounded time), not hang.
-     *
-     * @throws Exception If failed.
-     */
+    /** */
     @Test(timeout = 180_000)
     public void testGuardOomWhenAllEntriesLocked() throws Exception {
         IgniteEx ignite = startGrid(1);
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, 0, true);
 
-        // Fill to ~85% of total pages (below the 0.9 threshold), ~1 page per entry.
         int fillEntries = (int)(totalPages(ignite) * 0.85);
-
         byte[] fillVal = new byte[pageSize(ignite) - 200];
 
         for (int i = 1; i <= fillEntries; i++)
@@ -69,7 +64,6 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
             keys.add(i);
 
         CountDownLatch ready = new CountDownLatch(1);
-
         CountDownLatch release = new CountDownLatch(1);
 
         // Hold entry locks on every resident key from a background thread so eviction has no evictable page.
@@ -91,7 +85,6 @@ public class PageEvictionGuardOomTest extends PageEvictionAbstractTest {
         try {
             assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
 
-            // All pages locked → eviction cannot free anything → OOM.
             GridTestUtils.assertThrowsWithCause(
                 () -> cache.put(fillEntries + 1, new byte[4 * 1024 * 1024]),
                 IgniteOutOfMemoryException.class
