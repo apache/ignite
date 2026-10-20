@@ -246,6 +246,7 @@ During rebalancing, Ignite prefers nodes from the same data center when such sup
 If the required partition data cannot be obtained from the same data center, Ignite can rebalance from a
 remote data center.
 This behavior applies to both full and historical rebalance.
+See link:data-rebalancing#rebalance-strategy[Rebalance Strategy] for the conditions that determine which strategy is used.
 
 == Monitoring
 
