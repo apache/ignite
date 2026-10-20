@@ -23,18 +23,21 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import static org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage.MAX_ATTRS_CNT;
 
 /**
- * Represents key that is used to consistently identify {@link OperationContext} attributes across
+ * Represents a key that is used to consistently identify {@link OperationContext} attributes across
  * all nodes in the cluster.
  *
  * @see DistributedOperationContext
  */
 public final class DistributedAttributeKey {
+    /** Key reserved for the distributed Security Context attribute. */
+    public static final DistributedAttributeKey SECURITY = new DistributedAttributeKey(0);
+
     /** */
     @GridToStringInclude
     private final byte id;
 
     /** */
-    public DistributedAttributeKey(int id) {
+    DistributedAttributeKey(int id) {
         assert 0 <= id && id < MAX_ATTRS_CNT : "Invalid distributed attribute id [id=" + id + ']';
 
         this.id = (byte)id;

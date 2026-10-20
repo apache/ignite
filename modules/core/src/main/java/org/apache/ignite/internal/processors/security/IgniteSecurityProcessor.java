@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSa
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.thread.context.DistributedAttributeKey;
-import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -89,13 +88,6 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     static boolean hasSandboxedNodes() {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
-
-    /**
-     * Key of the distributed Security Context attribute.
-     *
-     * @see DistributedOperationContext
-     */
-    private static final DistributedAttributeKey ATTR_KEY = new DistributedAttributeKey(0);
 
     /** */
     private static final OperationContextAttribute<SecurityContextWrapper> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
@@ -256,7 +248,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.distributedOperationContext().register(ATTR_KEY, SEC_CTX_ATTR);
+        ctx.distributedOperationContext().register(DistributedAttributeKey.SECURITY, SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 
