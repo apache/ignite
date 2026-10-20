@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import com.google.common.collect.Lists;
 import org.apache.ignite.cluster.ClusterState;
@@ -82,7 +84,8 @@ public class SystemViewSnapshotsTest extends SystemViewAbstractTest {
 
                 if (incIdx == null) {
                     assertEquals(ignite.localNode().consistentId().toString(), v.baselineNodes());
-                    assertEquals(String.join(",", dfltCacheGrp, METASTORAGE_CACHE_NAME), v.cacheGroups());
+                    assertEquals(new HashSet<>(Arrays.asList(dfltCacheGrp, METASTORAGE_CACHE_NAME)),
+                        new HashSet<>(Arrays.asList(v.cacheGroups().split(","))));
                     assertEquals("FULL", v.type());
                 }
                 else
