@@ -1761,6 +1761,10 @@ The command makes every server and client node in the topology ask its SSL conte
 See link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] for the order of steps when you replace certificates or a certificate authority.
 With security enabled, `--ssl reload` and `--ssl status` need the `ADMIN_OPS` system permission.
 
+The command asks for confirmation before reloading certificates on all nodes.
+Add `--yes` to skip this prompt, for example when running the command from a script.
+Certificate and permission checks still apply.
+
 The built-in `SslContextFactory` reads its key and trust stores again, with the settings the node started with.
 To change a path, a password, a store type, protocols or cipher suites, restart the node.
 If the factory has `trustManagers` set, the node keeps them and reads no trust store.
