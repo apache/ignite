@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"},
+    {"order": 5, "type": "org.apache.ignite.lang.IgniteUuid", "name": "miniId"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "keys"},
+    {"order": 7, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"}
+  ]
+}

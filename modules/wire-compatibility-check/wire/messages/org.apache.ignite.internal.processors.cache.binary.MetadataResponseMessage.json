@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage",
+  "fields": [
+    {"order": 0, "type": "int", "name": "typeId"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo", "name": "metaVerInfo"}
+  ]
+}

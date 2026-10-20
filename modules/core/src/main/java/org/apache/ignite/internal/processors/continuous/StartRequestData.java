@@ -22,12 +22,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Start request data.
  */
-public class StartRequestData implements Message {
+public class StartRequestData extends AbstractMessage {
     /** Node filter, restored by the processor reading this request. */
     IgnitePredicate<ClusterNode> nodeFilter;
 

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap",
+  "fields": [
+    {"order": 0, "type": "long[]", "name": "initUpdCntrs"},
+    {"order": 1, "type": "long[]", "name": "updCntrs"}
+  ]
+}

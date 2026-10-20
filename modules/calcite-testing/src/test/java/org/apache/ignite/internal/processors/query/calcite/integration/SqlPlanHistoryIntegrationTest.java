@@ -480,25 +480,25 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractWrapperTest
     }
 
     /**
-     * Checks that the actual SQL plan history remains empty and its size in {@link SqlConfiguration} equals {@code -1}
-     * when SQL is not explicitly configured. In such cases, H2 is used as the default engine.
+     * Checks that the SQL plan history is enabled with the default size when SQL is not explicitly configured. In such
+     * cases, both engines are on the classpath and Calcite is used as the default engine.
      */
     @Test
     public void testNoSqlConfiguration() throws Exception {
         isSqlConfigured = false;
 
-        checkDefaultHistorySize(true, -1, 0, 1);
+        checkDefaultHistorySize(true, DFLT_SQL_PLAN_HISTORY_SIZE, DFLT_SQL_PLAN_HISTORY_SIZE, DFLT_SQL_PLAN_HISTORY_SIZE);
     }
 
     /**
-     * Checks that the actual SQL plan history remains empty and its size in {@link SqlConfiguration} equals {@code -1}
-     * when the SQL engine is not configured. In such cases, H2 is used as the default engine.
+     * Checks that the SQL plan history is enabled with the default size when the SQL engine is not configured. In such
+     * cases, both engines are on the classpath and Calcite is used as the default engine.
      */
     @Test
     public void testNoSqlEngineConfiguration() throws Exception {
         isSqlEngineConfigured = false;
 
-        checkDefaultHistorySize(true, -1, 0, 1);
+        checkDefaultHistorySize(true, DFLT_SQL_PLAN_HISTORY_SIZE, DFLT_SQL_PLAN_HISTORY_SIZE, DFLT_SQL_PLAN_HISTORY_SIZE);
     }
 
     /**

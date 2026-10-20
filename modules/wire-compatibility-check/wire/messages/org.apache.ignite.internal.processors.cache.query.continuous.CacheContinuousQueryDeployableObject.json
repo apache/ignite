@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "bytes"},
+    {"order": 1, "type": "java.lang.String", "name": "clsName"},
+    {"order": 2, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"}
+  ]
+}

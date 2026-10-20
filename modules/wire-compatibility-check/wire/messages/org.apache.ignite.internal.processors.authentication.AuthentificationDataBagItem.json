@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.authentication.AuthentificationDataBagItem",
+  "fields": [
+    {"order": 0, "type": "java.util.ArrayList<org.apache.ignite.internal.processors.authentication.User>", "name": "usrs"},
+    {"order": 1, "type": "java.util.ArrayList<org.apache.ignite.internal.processors.authentication.UserManagementOperation>", "name": "activeOps"}
+  ]
+}

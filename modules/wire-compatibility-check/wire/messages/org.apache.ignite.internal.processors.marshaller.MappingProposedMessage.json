@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "origNodeId"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem", "name": "mappingItem"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage$ProposalStatus", "name": "status"},
+    {"order": 4, "type": "java.lang.String", "name": "conflictingClsName"}
+  ]
+}

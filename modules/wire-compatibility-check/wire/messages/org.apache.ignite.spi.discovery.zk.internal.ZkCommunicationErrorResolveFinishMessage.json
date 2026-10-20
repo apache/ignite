@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.spi.discovery.zk.internal.ZkCommunicationErrorResolveFinishMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "futId"},
+    {"order": 1, "type": "long", "name": "topVer"}
+  ]
+}

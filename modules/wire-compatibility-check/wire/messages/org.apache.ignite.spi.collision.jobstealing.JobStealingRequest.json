@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.collision.jobstealing.JobStealingRequest",
+  "fields": [
+    {"order": 0, "type": "int", "name": "delta"}
+  ]
+}
