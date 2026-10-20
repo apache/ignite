@@ -126,4 +126,15 @@ public class CoreFeatureRegistry {
 
     /** Feature that deprecates {@code GridDhtTxFinishRequest#nearNodeId}. */
     public static final IgniteFeature DHT_TX_FINISH_NEAR_NODE_ID_DEPRECATED_FEATURE = new IgniteCoreFeature(8);
+
+    /**
+     * Feature that makes distributed operation context attributes Rolling Upgrade-compatible. It introduces:
+     *
+     * <ul>
+     *     <li>The ability to specify the feature that introduced a distributed attribute.</li>
+     *     <li>Delivery of a distributed attribute through nodes that do not know it to the nodes that do.</li>
+     *     <li>A more compact serialized form of the operation context snapshot.</li>
+     * </ul>
+     */
+    public static final IgniteFeature RU_AWARE_DISTRIBUTED_OP_CTX_FEATURE = new IgniteCoreFeature(9);
 }
