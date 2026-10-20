@@ -703,7 +703,7 @@ public class BinaryContext {
     /**
      * @param userType User type or not.
      * @param typeId Type ID.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
