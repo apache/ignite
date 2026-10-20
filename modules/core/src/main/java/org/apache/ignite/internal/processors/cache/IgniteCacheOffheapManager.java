@@ -228,23 +228,26 @@ public interface IgniteCacheOffheapManager {
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> cacheIterator(
-        int cacheId,
+    public GridIterator<CacheDataRow> cacheIterator(int cacheId,
         boolean primary,
         boolean backup,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        Boolean dataPageScanEnabled
     ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part) throws IgniteCheckedException;
+    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part,
+        Boolean dataPageScanEnabled) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -276,6 +279,7 @@ public interface IgniteCacheOffheapManager {
      * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
+     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -284,7 +288,8 @@ public interface IgniteCacheOffheapManager {
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary
+        final boolean keepBinary,
+        Boolean dataPageScanEnabled
     ) throws IgniteCheckedException;
 
     /**
@@ -407,11 +412,11 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
-     * Provides the offheap manager's busy lock.
+     * Provides the offheap manager's stoppage lock.
      *
-     * @return The offheap manager's busy lock.
+     * @return The offheap manager's stoppage lock.
      */
-    public GridSpinBusyLock busyLock();
+    public GridSpinBusyLock stoppageLock();
 
     /**
      *

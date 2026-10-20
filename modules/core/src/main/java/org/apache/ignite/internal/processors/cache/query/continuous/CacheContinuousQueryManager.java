@@ -789,8 +789,8 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 cctx.cacheId(),
                 true,
                 true,
-                AffinityTopologyVersion.NONE
-            );
+                AffinityTopologyVersion.NONE,
+                null);
 
             locLsnr.onUpdated(new Iterable<CacheEntryEvent>() {
                 @Override public Iterator<CacheEntryEvent> iterator() {
