@@ -36,6 +36,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
  * ├── db                                                                       ← db (shared between all local nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
+ * │  ├── classpath                                                             ← classpath (shared between all local nodes).
  * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
  *
@@ -48,6 +49,9 @@ public class SharedFileTree {
     /** Name of marshaller mappings folder. */
     public static final String MARSHALLER_DIR = "marshaller";
 
+    /** Name of classpath folder. */
+    public static final String CLASSPATH_DIR = "classpath";
+
     /** Database default folder. */
     protected static final String DB_DIR = "db";
 
@@ -59,6 +63,9 @@ public class SharedFileTree {
 
     /** Path to the directory containing marshaller files. */
     private final File marshaller;
+
+    /** Path to the directory containing classpath files. */
+    protected final File icpRoot;
 
     /** Path to the snapshot root directory. */
     private final File snpsRoot;
@@ -77,6 +84,7 @@ public class SharedFileTree {
 
         marshaller = Paths.get(rootStr, DB_DIR, MARSHALLER_DIR).toFile();
         binaryMetaRoot = Paths.get(rootStr, DB_DIR, BINARY_METADATA_DIR).toFile();
+        icpRoot = Paths.get(rootStr, DB_DIR, CLASSPATH_DIR).toFile();
     }
 
     /**
