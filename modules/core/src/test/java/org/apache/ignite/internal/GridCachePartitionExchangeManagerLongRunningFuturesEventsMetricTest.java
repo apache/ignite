@@ -51,7 +51,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class GridCachePartitionExchangeManagerLongRunningFuturesEventsMetricTest extends GridCommonAbstractTest {
     /** */
-    private static final String DUMP_TIMEOUT = "1000";
+    private static final String DUMP_TIMEOUT = "3000";
 
     /** */
     private static final String CACHE_NAME = "TEST_CACHE";
