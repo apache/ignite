@@ -27,7 +27,7 @@ import org.apache.ignite.cache.affinity.AffinityDistributionLoggingTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
 import org.apache.ignite.internal.GridCacheHashMapPutAllWarningsTest;
 import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
-import org.apache.ignite.internal.GridCachePartitionExchangeManagerLongRunningFuturesMetricTest;
+import org.apache.ignite.internal.GridCachePartitionExchangeManagerLongRunningFuturesEventsMetricTest;
 import org.apache.ignite.internal.GridCachePartitionExchangeManagerWarningsTest;
 import org.apache.ignite.internal.processors.cache.ClientSlowDiscoveryTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.ClientSlowDiscoveryTransactionRemapTest;
@@ -76,8 +76,6 @@ public class IgniteCacheTestSuite11 {
 
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionExchangeManagerWarningsTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionExchangeManagerLongRunningFuturesMetricTest.class, ignoredTests);
-
         GridTestUtils.addTestIfNeeded(suite, GridCacheHashMapPutAllWarningsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, NotMappedPartitionInTxTest.class, ignoredTests);
@@ -90,6 +88,8 @@ public class IgniteCacheTestSuite11 {
         GridTestUtils.addTestIfNeeded(suite, ClientSlowDiscoveryTransactionRemapTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCachePartitionExchangeManagerLongRunningFuturesEventsMetricTest.class, ignoredTests);
 
         return suite;
     }

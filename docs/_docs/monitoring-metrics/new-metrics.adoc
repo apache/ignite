@@ -254,10 +254,10 @@ Register name: `pme`
 |CacheOperationsBlockedDurationHistogram | histogram | Histogram of cache operations blocked PME durations in milliseconds.
 |Duration | long | Current PME duration in milliseconds.
 |DurationHistogram | histogram | Histogram of PME durations in milliseconds.
-|LongRunningCacheFuturesCount | long | Number of long running cache futures (active + atomic) detected in the last dump cycle.
+|LongRunningCacheFuturesEventsCount | hitrate | Number of long running cache futures events detected during the last dump window.
 |===
 
-NOTE: `LongRunningCacheFuturesCount` is a gauge updated by the periodic long running operations dump (`IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT`, 60 seconds by default). It holds the number of cache futures that exceeded the timeout in the most recent dump cycle and is `0` when none are found.
+NOTE: `LongRunningCacheFuturesEventsCount` is a self-resetting counter maintained by the periodic long running operations dump (window = `IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT`, 60 seconds by default). The value is the number of events detected during the last window (one per non-empty active/atomic group).
 
 == Compute Jobs
 

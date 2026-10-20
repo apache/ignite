@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -38,32 +40,30 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_LONG_RUNNING_CACHE_FUTURES_CNT;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_LONG_RUNNING_CACHE_FUTURES_EVENTS_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
-/**
- * Tests that the {@code LongRunningCacheFuturesCount} metric in the {@code pme} registry is updated
- * by the periodic long running operations dump when cache futures are detected, and that the metric
- * value matches the {@code total} reported by the corresponding diagnostic log line.
- */
-public class GridCachePartitionExchangeManagerLongRunningFuturesMetricTest extends GridCommonAbstractTest {
-    /** Long running operations dump timeout (ms). */
-    private static final String LONG_OPERATIONS_DUMP_TIMEOUT = "1000";
+/** */
+public class GridCachePartitionExchangeManagerLongRunningFuturesEventsMetricTest extends GridCommonAbstractTest {
+    /** */
+    private static final String DUMP_TIMEOUT = "1000";
 
-    /** Atomic cache name. */
+    /** */
     private static final String CACHE_NAME = "TEST_CACHE";
 
     /** Matches the diagnostic log line title, capturing the total number of long running cache futures in the group. */
-    private static final Pattern TOTAL_PATTERN = Pattern.compile("long running cache futures \\[total=(\\d+)\\]");
+    private static final Pattern TOTAL_PATTERN = Pattern.compile("long running cache futures \\[total=(\\d+)]");
 
-    /** Last {@code total} value per grid node id. */
-    private final Map<String, AtomicLong> totals = new HashMap<>();
+    /** Drop backup responses to make the data streamer futures hang. */
+    private final AtomicBoolean dropResponses = new AtomicBoolean(true);
+
+    /** Total number of non-empty {@code long running cache futures} log headers observed per grid node. */
+    private final Map<String, AtomicLong> logHdrHits = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -72,15 +72,15 @@ public class GridCachePartitionExchangeManagerLongRunningFuturesMetricTest exten
         cfg.setCommunicationSpi(new CustomTcpCommunicationSpi());
         cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME).setBackups(1).setAtomicityMode(ATOMIC));
 
-        totals.put(igniteInstanceName, new AtomicLong());
+        logHdrHits.put(igniteInstanceName, new AtomicLong());
 
         ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
         log.registerListener(msg -> {
             Matcher m = TOTAL_PATTERN.matcher(msg);
 
-            if (m.find())
-                totals.get(igniteInstanceName).set(Long.parseLong(m.group(1)));
+            if (m.find() && Long.parseLong(m.group(1)) > 0)
+                logHdrHits.get(igniteInstanceName).incrementAndGet();
         });
 
         cfg.setGridLogger(log);
@@ -92,27 +92,19 @@ public class GridCachePartitionExchangeManagerLongRunningFuturesMetricTest exten
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        totals.clear();
+        logHdrHits.clear();
 
         stopAllGrids();
     }
 
     /** */
     @Test
-    @WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = LONG_OPERATIONS_DUMP_TIMEOUT)
-    public void testLongRunningCacheFuturesMetricUpdatedByPeriodicCheck() throws Exception {
+    @WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = DUMP_TIMEOUT)
+    public void testLongRunningCacheFuturesEventsCountPerDumpWindow() throws Exception {
         startGrids(2);
 
-        awaitPartitionMapExchange();
-
-        LongMetric cnt0 = longRunningFuturesCountMetric(grid(0));
-        LongMetric cnt1 = longRunningFuturesCountMetric(grid(1));
-
-        assertNotNull(cnt0);
-        assertNotNull(cnt1);
-
-        assertEquals(0L, cnt0.value());
-        assertEquals(0L, cnt1.value());
+        LongMetric cnt0 = longRunningFuturesEventsMetric(grid(0));
+        LongMetric cnt1 = longRunningFuturesEventsMetric(grid(1));
 
         Ignite client = startClientGrid(2);
 
@@ -121,36 +113,37 @@ public class GridCachePartitionExchangeManagerLongRunningFuturesMetricTest exten
 
             for (int i = 0; i < 100; i++)
                 streamer.addData(i, i);
+
+            streamer.flush();
+
+            assertTrue(waitForCondition(() -> cnt0.value() > 0 || cnt1.value() > 0, Long.parseLong(DUMP_TIMEOUT) * 2));
+
+            assertTrue(cnt0.value() == logHdrHits.get(grid(0).name()).get());
+            assertTrue(cnt1.value() == logHdrHits.get(grid(1).name()).get());
+        }
+        finally {
+            dropResponses.set(false);
         }
 
-        assertTrue(waitForCondition(() -> cnt0.value() > 0 || cnt1.value() > 0, Long.parseLong(LONG_OPERATIONS_DUMP_TIMEOUT) * 10));
-
-        assertMetricMatchesLogTotal(grid(0), cnt0);
-        assertMetricMatchesLogTotal(grid(1), cnt1);
+        assertTrue("Metric was not reset to 0 after futures were completed",
+            waitForCondition(() -> cnt0.value() == 0 && cnt1.value() == 0, Long.parseLong(DUMP_TIMEOUT) * 3));
     }
 
     /** */
-    private void assertMetricMatchesLogTotal(IgniteEx ignite, LongMetric cnt) throws IgniteInterruptedCheckedException {
-        if (cnt.value() == 0)
-            return;
+    private LongMetric longRunningFuturesEventsMetric(IgniteEx ignite) {
+        LongMetric metric = ignite.context().metric().registry(PME_METRICS).findMetric(PME_LONG_RUNNING_CACHE_FUTURES_EVENTS_CNT);
 
-        assertTrue(waitForCondition(() -> cnt.value() == 0 ||  cnt.value() == totals.get(ignite.name()).get(),
-            Long.parseLong(LONG_OPERATIONS_DUMP_TIMEOUT) * 10));
-    }
+        assertNotNull(metric);
 
-    /** */
-    private LongMetric longRunningFuturesCountMetric(IgniteEx ignite) {
-        return ignite.context().metric().registry(PME_METRICS).findMetric(PME_LONG_RUNNING_CACHE_FUTURES_CNT);
+        return metric;
     }
 
     /** Custom communication SPI for simulating long running cache futures. */
-    private static class CustomTcpCommunicationSpi extends TcpCommunicationSpi {
+    private class CustomTcpCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg,
-            IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (msg instanceof GridIoMessage) {
-                // Skip response from backup node, so that the data streamer futures hang.
-                if (((GridIoMessage)msg).message() instanceof GridDhtAtomicDeferredUpdateResponse)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+            if (msg instanceof GridIoMessage ioMsg) {
+                if (ioMsg.message() instanceof GridDhtAtomicDeferredUpdateResponse && dropResponses.get())
                     return;
             }
 
