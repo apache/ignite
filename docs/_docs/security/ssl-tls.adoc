@@ -327,7 +327,7 @@ The node calls the factory only when it starts, on a reload and on a renewal.
 On one node, two calls to the factory never run at the same time.
 
 A call that fetches certificates from a remote service must limit how long it takes and stop when its thread is interrupted.
-When the node stops, it interrupts a running call to the factory and waits for the call to end.
+When the node stops, it interrupts an automatic renewal in progress and waits for it to end.
 
 Use a new factory object for every node start. With the same factory object, a node started again in the same JVM gets the context that `create()` built at the first start.
 

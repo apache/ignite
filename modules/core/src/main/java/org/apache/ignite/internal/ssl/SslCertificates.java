@@ -32,6 +32,8 @@ import java.util.List;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
@@ -41,7 +43,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
+import static javax.net.ssl.SSLEngineResult.Status.OK;
 
 /** Tells what an SSL context presents and whether nodes accept it, by TLS handshakes run in memory, and describes certificates. */
 public class SslCertificates {
@@ -60,14 +64,20 @@ public class SslCertificates {
      * Checks the context the way an inter-node transport uses it, with the context at both ends: the node's own trust store must accept
      * the node's own certificate. Peers on the same trust store then accept it too. A node whose trust store does not hold the authority
      * of its own certificate, as a client node that trusts only the authority of the server nodes, fails this check although peers
-     * accept it. Only a refused handshake counts. An exchange that cannot be driven to the end for another reason lets the context
-     * through, so that the check never blocks a rotation by itself.
+     * accept it.
      *
      * @param ctx SSL context to check.
-     * @throws SSLException If the handshake was refused.
+     * @throws SSLException If the handshake was refused or could not be completed.
      */
     static void checkInterNodeHandshake(SSLContext ctx) throws SSLException {
-        handshake(ctx.createSSLEngine(), ctx.createSSLEngine(), true);
+        SSLEngine cli = ctx.createSSLEngine();
+        SSLEngine srv = ctx.createSSLEngine();
+
+        cli.setUseClientMode(true);
+        srv.setUseClientMode(false);
+        srv.setNeedClientAuth(true);
+
+        handshake(cli, srv);
     }
 
     /**
@@ -76,15 +86,23 @@ public class SslCertificates {
      *
      * @param truster Context whose trust store decides.
      * @param presenter Context whose certificate is checked.
-     * @throws SSLException If the handshake was refused.
+     * @throws SSLException If the handshake was refused or could not be completed.
      */
     static void checkAccepts(SSLContext truster, SSLContext presenter) throws SSLException {
-        handshake(truster.createSSLEngine(), presenter.createSSLEngine(), false);
+        SSLEngine cli = truster.createSSLEngine();
+        SSLEngine srv = presenter.createSSLEngine();
+
+        cli.setUseClientMode(true);
+        srv.setUseClientMode(false);
+        srv.setNeedClientAuth(false);
+
+        handshake(cli, srv);
     }
 
     /**
      * @param ctx SSL context.
-     * @return Names of the authorities the context announces to a client it asks for a certificate, sorted; empty if it announces none.
+     * @return Names of the authorities the context announces to a client it asks for a certificate, sorted; empty if it announces none
+     *      or they cannot be determined.
      */
     static List<X500Principal> trustedAuthorities(SSLContext ctx) {
         AuthorityRecorder recorder = new AuthorityRecorder();
@@ -92,9 +110,8 @@ public class SslCertificates {
         try {
             probe(ctx, new KeyManager[] {recorder}, true);
         }
-        catch (GeneralSecurityException | IOException | RuntimeException announcedAlready) {
-            // The context refuses the probe, which presents no certificate, only after naming the authorities it accepts. A trust
-            // manager whose getAcceptedIssuers() returns null makes the JDK throw NullPointerException before that.
+        catch (GeneralSecurityException | IOException | RuntimeException cannotTell) {
+            return emptyList();
         }
 
         recorder.authorities.sort(Comparator.comparing(X500Principal::getName));
@@ -111,9 +128,6 @@ public class SslCertificates {
         try {
             SSLSession ses = probe(ctx, null, false);
 
-            if (ses == null)
-                return null;
-
             Certificate[] certs = ses.getPeerCertificates();
 
             return Arrays.copyOf(certs, certs.length, X509Certificate[].class);
@@ -129,12 +143,12 @@ public class SslCertificates {
      *
      * @param ctx Context to probe as a server.
      * @param keyMgrs Key managers of the probe client, if needed to record a certificate request.
-     * @param needClientAuth Whether the server should ask the probe for a certificate.
-     * @return Session of the probe, or {@code null} if the exchange could not be driven to the end.
+     * @param requestClientAuth Whether the server should ask the probe for a certificate without requiring one.
+     * @return Session of the probe.
      * @throws GeneralSecurityException If the probe cannot be initialized.
-     * @throws SSLException If the handshake was refused.
+     * @throws SSLException If the handshake was refused or could not be completed.
      */
-    private static @Nullable SSLSession probe(SSLContext ctx, @Nullable KeyManager[] keyMgrs, boolean needClientAuth)
+    private static SSLSession probe(SSLContext ctx, @Nullable KeyManager[] keyMgrs, boolean requestClientAuth)
         throws GeneralSecurityException, SSLException {
         SSLContext probe = SSLContext.getInstance("TLS");
 
@@ -145,11 +159,12 @@ public class SslCertificates {
 
         cli.setUseClientMode(true);
         srv.setUseClientMode(false);
+        srv.setWantClientAuth(requestClientAuth);
 
         cli.setEnabledProtocols(supported(srv.getEnabledProtocols(), cli.getSupportedProtocols()));
         cli.setEnabledCipherSuites(supported(srv.getEnabledCipherSuites(), cli.getSupportedCipherSuites()));
 
-        return handshake(cli, srv, needClientAuth);
+        return handshake(cli, srv);
     }
 
     /** @return Values enabled by the factory that the probe's provider supports. */
@@ -268,20 +283,16 @@ public class SslCertificates {
     /**
      * @param cli Engine of the client end.
      * @param srv Engine of the server end.
-     * @param needClientAuth Whether the server end demands a client certificate.
-     * @return Session of the client end if the handshake completed, {@code null} if it could not be driven to the end.
-     * @throws SSLException If either side refused the handshake.
+     * @return Session of the client end after the handshake completes.
+     * @throws SSLException If either side refused the handshake or it could not be completed.
      */
-    private static @Nullable SSLSession handshake(SSLEngine cli, SSLEngine srv, boolean needClientAuth) throws SSLException {
-        cli.setUseClientMode(true);
-        srv.setUseClientMode(false);
-        srv.setNeedClientAuth(needClientAuth);
-
-        int bufSize = cli.getSession().getPacketBufferSize();
+    private static SSLSession handshake(SSLEngine cli, SSLEngine srv) throws SSLException {
+        int bufSize = Math.max(cli.getSession().getPacketBufferSize(), srv.getSession().getPacketBufferSize());
 
         ByteBuffer cliNet = ByteBuffer.allocate(bufSize).limit(0);
         ByteBuffer srvNet = ByteBuffer.allocate(bufSize).limit(0);
-        ByteBuffer app = ByteBuffer.allocate(cli.getSession().getApplicationBufferSize());
+        ByteBuffer app = ByteBuffer.allocate(Math.max(cli.getSession().getApplicationBufferSize(),
+            srv.getSession().getApplicationBufferSize()));
 
         cli.beginHandshake();
         srv.beginHandshake();
@@ -289,14 +300,18 @@ public class SslCertificates {
         for (int i = 0; i < MAX_STEPS; i++) {
             boolean progress = step(cli, cliNet, srvNet, app) | step(srv, srvNet, cliNet, app);
 
+            if (cli.isInboundDone() || cli.isOutboundDone() || srv.isInboundDone() || srv.isOutboundDone())
+                throw new SSLException("TLS handshake closed before completion");
+
             if (cli.getHandshakeStatus() == NOT_HANDSHAKING && srv.getHandshakeStatus() == NOT_HANDSHAKING)
                 return cli.getSession();
 
             if (!progress)
-                return null;
+                throw new SSLException("TLS handshake made no progress [client=" + cli.getHandshakeStatus() +
+                    ", server=" + srv.getHandshakeStatus() + ']');
         }
 
-        return null;
+        throw new SSLException("TLS handshake exceeded " + MAX_STEPS + " steps");
     }
 
     /**
@@ -305,17 +320,26 @@ public class SslCertificates {
      * @param in Buffer holding the data written by the peer engine.
      * @param app Scratch buffer for decoded data.
      * @return {@code True} if the engine moved forward.
-     * @throws SSLException If the handshake was refused.
+     * @throws SSLException If the handshake was refused or the engine could not process its data.
      */
     private static boolean step(SSLEngine engine, ByteBuffer out, ByteBuffer in, ByteBuffer app) throws SSLException {
-        switch (engine.getHandshakeStatus()) {
+        HandshakeStatus before = engine.getHandshakeStatus();
+
+        SSLEngineResult res;
+
+        switch (before) {
             case NEED_TASK:
+                boolean ranTask = false;
+
                 Runnable task;
 
-                while ((task = engine.getDelegatedTask()) != null)
+                while ((task = engine.getDelegatedTask()) != null) {
                     task.run();
 
-                return true;
+                    ranTask = true;
+                }
+
+                return ranTask || engine.getHandshakeStatus() != before;
 
             case NEED_WRAP:
                 boolean peerReadPrevious = !out.hasRemaining();
@@ -325,11 +349,11 @@ public class SslCertificates {
 
                 out.clear();
 
-                engine.wrap(EMPTY, out);
+                res = engine.wrap(EMPTY, out);
 
                 out.flip();
 
-                return true;
+                break;
 
             case NEED_UNWRAP:
                 if (!in.hasRemaining())
@@ -337,12 +361,20 @@ public class SslCertificates {
 
                 app.clear();
 
-                engine.unwrap(in, app);
+                res = engine.unwrap(in, app);
 
-                return true;
+                break;
+
+            case NOT_HANDSHAKING:
+                return false;
 
             default:
-                return false;
+                throw new SSLException("Unsupported TLS handshake status: " + before);
         }
+
+        if (res.getStatus() != OK)
+            throw new SSLException("TLS handshake could not process data: " + res);
+
+        return res.bytesConsumed() > 0 || res.bytesProduced() > 0 || res.getHandshakeStatus() != before;
     }
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RunnableScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -46,11 +47,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridJavaProcess;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
@@ -404,6 +407,96 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertSame(reloaded, p.context());
         assertEquals("The superseded renewal must not ask for another certificate", 3, issuer.calls.size());
         assertSame(planned, issuer.create());
+    }
+
+    /** A reload during planning must not let an attempt for the old certificate rebuild the new context. */
+    @Test
+    public void testReloadDuringRenewalPlanning() throws Exception {
+        long now = System.currentTimeMillis();
+
+        Issuer issuer = new Issuer(valid(now - HOUR, now + 9 * MINUTE), fresh(2 * HOUR), fresh(3 * HOUR));
+
+        CountDownLatch planRead = new CountDownLatch(1);
+        CountDownLatch continuePlanning = new CountDownLatch(1);
+        CountDownLatch reloaded = new CountDownLatch(1);
+        CountDownLatch allowReplan = new CountDownLatch(1);
+        CountDownLatch attemptStarted = new CountDownLatch(1);
+
+        AtomicBoolean firstPlan = new AtomicBoolean(true);
+
+        SslContextProvider p = new SslContextProvider(issuer) {
+            @Override public ReloadOutcome reloadOutcome() {
+                ReloadOutcome outcome = super.reloadOutcome();
+
+                if (firstPlan.getAndSet(false)) {
+                    planRead.countDown();
+
+                    U.awaitQuiet(continuePlanning);
+                }
+
+                return outcome;
+            }
+
+            @Override void onReload(Runnable lsnr) {
+                super.onReload(() -> {
+                    reloaded.countDown();
+
+                    U.awaitQuiet(allowReplan);
+
+                    lsnr.run();
+                });
+            }
+
+            @Override RenewalResult renew(SSLContext expected) throws IgniteCheckedException {
+                attemptStarted.countDown();
+
+                return super.renew(expected);
+            }
+        };
+
+        ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1);
+        IgniteInternalFuture<?> reload = null;
+
+        try {
+            new SslRenewal(p, DFLT_RENEW_BEFORE_FRACTION, exec, log).start();
+
+            assertTrue(planRead.await(10, TimeUnit.SECONDS));
+
+            reload = GridTestUtils.runAsync(() -> {
+                p.reload();
+
+                return null;
+            });
+
+            assertTrue(reloaded.await(10, TimeUnit.SECONDS));
+
+            SSLContext inUse = p.context();
+
+            // Let the old plan start its attempt before the reload queues a new plan.
+            continuePlanning.countDown();
+
+            assertTrue(attemptStarted.await(10, TimeUnit.SECONDS));
+
+            allowReplan.countDown();
+
+            reload.get(10_000);
+            exec.submit(() -> {}).get(10, TimeUnit.SECONDS);
+
+            assertEquals("Only the initial load and the manual reload may call the factory", 2, issuer.calls.size());
+            assertSame(inUse, p.context());
+            assertTrue("The next attempt must follow the new certificate", p.nextRenewalTime() > now + HOUR);
+        }
+        finally {
+            continuePlanning.countDown();
+            allowReplan.countDown();
+
+            exec.shutdownNow();
+
+            if (reload != null)
+                reload.get(10_000);
+
+            assertTrue(exec.awaitTermination(10, TimeUnit.SECONDS));
+        }
     }
 
     /** A successful reload by the command must cancel the planned retry and plan the next renewal by the new certificate. */

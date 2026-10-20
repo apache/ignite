@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteS
 import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
 import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
+import org.apache.ignite.internal.ssl.SslCertificatesTest;
 import org.apache.ignite.internal.ssl.SslRenewalTest;
 import org.apache.ignite.internal.thread.context.ComputeTaskOperationContextPropagationTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest;
@@ -144,6 +145,7 @@ import org.junit.runners.Suite;
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
     SslContextReloadTest.class,
+    SslCertificatesTest.class,
     SslRenewalTest.class,
     MaintenanceModeNodeSecurityTest.class,
     ServiceAuthorizationTest.class,

@@ -249,8 +249,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * <p>
      * Calls to this method of one factory on one node never overlap: while one runs, other reloads and renewals of this factory
      * wait. Calls to different factories may run at the same time. A subclass that fetches certificates from a remote source must
-     * limit how long a call takes. The call must also stop when its thread is interrupted: a node that stops interrupts the call
-     * and waits for it to end.
+     * limit how long a call takes and stop when its thread is interrupted. When the node stops, it interrupts an automatic
+     * renewal in progress and waits for it to end.
      *
      * @return SSL context.
      */

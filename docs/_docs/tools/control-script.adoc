@@ -1783,7 +1783,7 @@ A reload fails for an SSL context factory, and all transports that use it keep t
 
 * a certificate in the new chain is not valid now
 * the new key store presents no certificate while the old one does, for example because the new one has no private key
-* the factory serves discovery or communication, and the node's own new trust store does not accept the new certificate
+* the factory serves discovery or communication, and a test TLS handshake with its new certificate and trust store fails or cannot complete
 * the factory is a custom one that returns the same SSL context on every call, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories]
 * the factory fails, for example because it cannot read a store
 

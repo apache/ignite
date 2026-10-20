@@ -114,6 +114,7 @@ class SslRenewal {
     private void plan() {
         pause = waitLogTime = 0;
 
+        SSLContext planned = provider.context();
         X509Certificate[] chain = provider.servedChain();
 
         chainNotAfter = SslCertificates.chainNotAfter(chain);
@@ -124,7 +125,7 @@ class SslRenewal {
 
         long at = Math.max(chainNotAfter - window, Math.max(provider.reloadOutcome().successTime() + minPause, U.currentTimeMillis()));
 
-        schedule(at);
+        schedule(at, planned);
 
         U.log(log, "TLS certificates will be renewed automatically [transports=" + provider.transports() +
             ", nextRenewal=" + Instant.ofEpochMilli(at) + ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ']');
@@ -144,10 +145,10 @@ class SslRenewal {
                     SslCertificates.describe(provider.servedCertificate()) + ", initiator=" + INITIATOR + ']');
             }
             else if (res == UNCHANGED)
-                retry(null);
+                retry(planned, null);
         }
         catch (Throwable e) {
-            retry(e);
+            retry(planned, e);
         }
     }
 
@@ -157,9 +158,10 @@ class SslRenewal {
      * and at once when the certificates in use come to expire soon and when they expire. Once the node stops, nothing is
      * planned or logged: the stop interrupts the attempt in progress, and that is no failure.
      *
+     * @param planned Context the attempt was planned for.
      * @param e Why the attempt failed, {@code null} if the factory returned the certificates in use.
      */
-    private void retry(@Nullable Throwable e) {
+    private void retry(SSLContext planned, @Nullable Throwable e) {
         if (exec.isShutdown())
             return;
 
@@ -169,7 +171,7 @@ class SslRenewal {
 
         long at = now + pause + ThreadLocalRandom.current().nextLong(pause / 2 + 1);
 
-        schedule(at);
+        schedule(at, planned);
 
         boolean soon = now >= chainNotAfter - window / 2 || at >= chainNotAfter;
         int lateness = now >= chainNotAfter ? 2 : soon ? 1 : 0;
@@ -195,12 +197,13 @@ class SslRenewal {
             U.warn(log, msg, e);
     }
 
-    /** @param at Time of the next attempt. */
-    private void schedule(long at) {
+    /**
+     * @param at Time of the next attempt.
+     * @param planned Context the attempt is planned for.
+     */
+    private void schedule(long at, SSLContext planned) {
         if (next != null)
             next.cancel(false);
-
-        SSLContext planned = provider.context();
 
         provider.nextRenewalTime(at);
 
