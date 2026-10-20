@@ -103,7 +103,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
  * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
-public class BinaryReaderExImpl implements BinaryReaderEx {
+public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements BinaryReaderEx {
     /** Binary context. */
     private final BinaryContext ctx;
 
@@ -112,9 +112,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** Class loaded. */
     private final ClassLoader ldr;
-
-    /** Reader context which is constantly passed between objects. */
-    private BinaryReaderHandles hnds;
 
     /** */
     private final int start;
@@ -219,10 +216,11 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         boolean skipHdrCheck,
         boolean forUnmarshal) {
         // Initialize base members.
+        super(hnds);
+
         this.ctx = ctx;
         this.in = in;
         this.ldr = ldr;
-        this.hnds = hnds;
 
         start = in.position();
 
@@ -391,24 +389,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setHandle(Object obj, int pos) {
-        handles().put(pos, obj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getHandle(int pos) {
-        return hnds != null ? hnds.get(pos) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinaryReaderHandles handles() {
-        if (hnds == null)
-            hnds = new BinaryReaderHandles();
-
-        return hnds;
     }
 
     /**
@@ -1338,7 +1318,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl(), true, deserialize);
+        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null), true, deserialize);
     }
 
     /** {@inheritDoc} */
@@ -2471,11 +2451,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        return hnds == null || hnds.isEmpty();
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() throws IOException {
         // No-op.
     }
@@ -3399,7 +3374,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      */
     @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl());
+        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null));
     }
 
     /**

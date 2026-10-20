@@ -23,11 +23,11 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Continous routine Discovery data item. */
-public final class ContinousRoutineDiscoveryDataItem implements Message {
+public final class ContinousRoutineDiscoveryDataItem extends AbstractMessage {
     /** */
     @Order(0)
     UUID routineId;

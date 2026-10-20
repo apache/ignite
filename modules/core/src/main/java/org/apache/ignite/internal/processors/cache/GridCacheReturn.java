@@ -30,14 +30,14 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Message, CacheIdAware {
+public class GridCacheReturn extends AbstractMessage implements CacheIdAware {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;

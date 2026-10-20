@@ -438,6 +438,8 @@ public class PoolProcessor extends GridProcessorAdapter {
             workerRegistry,
             cfg.getFailureDetectionTimeout());
 
+        addExecutorForStarvationDetection("dataStreamer", dataStreamerExecSvc);
+
         // Note that we do not pre-start threads here as this pool may not be needed.
         validateThreadPoolSize(cfg.getAsyncCallbackPoolSize(), "async callback");
 

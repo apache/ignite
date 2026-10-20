@@ -34,6 +34,7 @@
             <includes>
                 <include>${project.groupId}:ignite-spring</include>
                 <include>${project.groupId}:ignite-calcite</include>
+                <include>${project.groupId}:ignite-indexing</include>
                 <include>${project.groupId}:ignite-control-utility</include>
             </includes>
             <sources>
@@ -131,6 +132,7 @@
                 <exclude>${project.groupId}:ignite-extdata-pluggable</exclude>
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-calcite</exclude>
+                <exclude>${project.groupId}:ignite-indexing</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
@@ -140,6 +142,7 @@
                 <exclude>${project.groupId}:ignite-extdata-platform</exclude>
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-calcite-testing</exclude>
+                <exclude>${project.groupId}:ignite-wire-compatibility-check</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <exclude>${project.groupId}:ignite-control-utility</exclude>
                 <exclude>${project.groupId}:ignite-checkstyle</exclude>

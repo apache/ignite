@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "long", "name": "futId"},
+    {"order": 4, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey>", "name": "txKeys"}
+  ]
+}

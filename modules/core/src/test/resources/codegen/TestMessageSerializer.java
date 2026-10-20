@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -143,6 +146,14 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
             case 15:
                 if (!writer.writeMessage(msg.nioMsg, ctx))
                     return false;
+
+                writer.incrementState();
+
+            case 16:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
 
                 writer.incrementState();
         }
@@ -278,6 +289,19 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 16:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

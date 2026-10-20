@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription",
+  "fields": [
+    {"order": 0, "type": "long", "name": "fragmentId"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping", "name": "mapping"},
+    {"order": 2, "type": "java.util.Map<java.lang.Long,java.util.List<java.util.UUID>>", "name": "remoteSources"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup", "name": "target"}
+  ]
+}
