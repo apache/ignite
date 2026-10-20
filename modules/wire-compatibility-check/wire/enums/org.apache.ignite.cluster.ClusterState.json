@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.cluster.ClusterState",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cluster.ClusterState", "name": "INACTIVE"},
+    {"order": 1, "type": "org.apache.ignite.cluster.ClusterState", "name": "ACTIVE"},
+    {"order": 2, "type": "org.apache.ignite.cluster.ClusterState", "name": "ACTIVE_READ_ONLY"}
+  ]
+}

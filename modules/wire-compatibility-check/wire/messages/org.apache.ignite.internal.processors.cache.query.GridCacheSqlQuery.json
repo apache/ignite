@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "qry"},
+    {"order": 1, "type": "int[]", "name": "paramIdxs"},
+    {"order": 2, "type": "java.util.UUID", "name": "node"}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap",
+  "fields": [
+    {"order": 0, "type": "int[]", "name": "partIds"},
+    {"order": 1, "type": "long[]", "name": "initialUpdCntrs"},
+    {"order": 2, "type": "long[]", "name": "updCntrs"},
+    {"order": 3, "type": "int", "name": "curIdx"}
+  ]
+}

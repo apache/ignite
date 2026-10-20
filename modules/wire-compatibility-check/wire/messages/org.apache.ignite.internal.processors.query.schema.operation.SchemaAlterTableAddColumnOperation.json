@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "opId"},
+    {"order": 1, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 2, "type": "java.lang.String", "name": "schemaName"},
+    {"order": 3, "type": "java.lang.String", "name": "tblName"},
+    {"order": 4, "type": "java.util.List<org.apache.ignite.internal.processors.query.QueryField>", "name": "cols"},
+    {"order": 5, "type": "boolean", "name": "ifTblExists"},
+    {"order": 6, "type": "boolean", "name": "ifNotExists"}
+  ]
+}

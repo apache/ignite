@@ -35,14 +35,14 @@ import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery.EMPTY_PARAMS;
 
 /**
  * Query request.
  */
-public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
+public class GridH2QueryRequest extends AbstractMessage implements GridCacheQueryMarshallable {
     /**
      * Map query will not destroy context until explicit query cancel request will be received because distributed join
      * requests can be received.

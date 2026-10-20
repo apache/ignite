@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "long", "name": "updateSeq"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "top"},
+    {"order": 3, "type": "org.apache.ignite.internal.util.GridPartitionStateMap", "name": "map"},
+    {"order": 4, "type": "int", "name": "moving"}
+  ]
+}

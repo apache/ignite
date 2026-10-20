@@ -22,11 +22,14 @@ import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.RawField;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid partition state map. States are encoded using bits.
@@ -43,6 +46,9 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     /** Required bits to hold all state. Additional zero state is required as well. */
     private static final int BITS = Integer.SIZE -
         Integer.numberOfLeadingZeros(GridDhtPartitionState.values().length + 1);
+
+    /** */
+    @Nullable private transient List<RawField> rawFields;
 
     /**
      * Contains partition map.
@@ -228,6 +234,16 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
             st |= ((states.get(off + i) ? 1 : 0) << i);
 
         return st == 0 ? null : GridDhtPartitionState.fromOrdinal(st - 1);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public List<RawField> rawFields() {
+        return rawFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rawFields(@Nullable List<RawField> rawFields) {
+        this.rawFields = rawFields;
     }
 
     /** {@inheritDoc} */

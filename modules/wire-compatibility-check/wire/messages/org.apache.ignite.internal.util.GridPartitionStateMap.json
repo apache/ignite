@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.util.GridPartitionStateMap",
+  "fields": [
+    {"order": 0, "type": "java.util.BitSet", "name": "states"},
+    {"order": 1, "type": "int", "name": "size"}
+  ]
+}

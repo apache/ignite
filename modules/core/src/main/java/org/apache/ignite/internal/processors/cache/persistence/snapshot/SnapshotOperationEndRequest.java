@@ -24,14 +24,14 @@ import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation end request for {@link DistributedProcessType#END_SNAPSHOT} initiate message.
  */
-public class SnapshotOperationEndRequest implements Message {
+public class SnapshotOperationEndRequest extends AbstractMessage {
     /** Request ID. */
     @GridToStringInclude
     @Order(0)

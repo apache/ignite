@@ -22,12 +22,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-public class CachePartitionFullCountersMap implements Message {
+public class CachePartitionFullCountersMap extends AbstractMessage {
     /** */
     @Order(0)
     long[] initUpdCntrs;

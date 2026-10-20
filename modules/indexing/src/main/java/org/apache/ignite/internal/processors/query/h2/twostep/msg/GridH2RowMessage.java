@@ -21,12 +21,12 @@ import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * SQL Row message.
  */
-public class GridH2RowMessage implements Message {
+public class GridH2RowMessage extends AbstractMessage {
     /** */
     @GridToStringInclude
     @Order(0)

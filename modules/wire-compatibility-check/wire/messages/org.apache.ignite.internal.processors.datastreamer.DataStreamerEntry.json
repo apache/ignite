@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "val"}
+  ]
+}

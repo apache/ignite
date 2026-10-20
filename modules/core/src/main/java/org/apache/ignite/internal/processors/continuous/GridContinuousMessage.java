@@ -24,6 +24,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 /**
  * Continuous processor message.
  */
-public class GridContinuousMessage implements DeferredUnmarshalMessage {
+public class GridContinuousMessage extends AbstractMessage implements DeferredUnmarshalMessage {
     /** Message type. */
     @Order(0)
     GridContinuousMessageType type;

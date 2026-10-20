@@ -105,6 +105,7 @@
                             <exclude>*-tests.jar</exclude>
                             <exclude>*-javadoc.jar</exclude>
                             <exclude>*-sources.jar</exclude>
+                            <exclude>original-*.jar</exclude>
                         </excludes>
                     </fileSet>
                 </fileSets>
@@ -141,6 +142,7 @@
                 <exclude>${project.groupId}:ignite-extdata-platform</exclude>
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-calcite-testing</exclude>
+                <exclude>${project.groupId}:ignite-wire-compatibility-check</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
                 <exclude>${project.groupId}:ignite-direct-io</exclude>

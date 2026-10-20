@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.util.Collection;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class IncorrectRawCollectionMessage2 implements Message {
+public class IncorrectRawCollectionMessage2 extends AbstractMessage {
     /** */
     @Marshalled("msgBytes")
     Collection<?> msgColl;
