@@ -135,7 +135,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -150,7 +149,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -230,16 +228,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
 
     /** */
-    protected static File defaultDiagnosticDir;
+    protected static File dfltDiagnosticDir;
 
     /** */
     protected static File customDiagnosticDir;
 
     /** */
     protected ListeningTestLogger listeningLog;
-
-    /** */
-    protected @Nullable PluginProvider pluginProvider;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -264,9 +259,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (listeningLog != null)
             cfg.setGridLogger(listeningLog);
 
-        if (pluginProvider != null)
-            cfg.setPluginProviders(pluginProvider);
-
         return cfg;
     }
 
@@ -274,7 +266,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @throws IgniteCheckedException If failed.
      */
     protected void initDiagnosticDir() throws IgniteCheckedException {
-        defaultDiagnosticDir = new File(U.defaultWorkDirectory()
+        dfltDiagnosticDir = new File(U.defaultWorkDirectory()
             + separatorChar + DEFAULT_TARGET_FOLDER + separatorChar);
 
         customDiagnosticDir = new File(U.defaultWorkDirectory()
@@ -285,7 +277,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * Clean diagnostic directories.
      */
     protected void cleanDiagnosticDir() {
-        U.delete(defaultDiagnosticDir);
+        U.delete(dfltDiagnosticDir);
         U.delete(customDiagnosticDir);
     }
 
@@ -2378,7 +2370,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         );
 
         // Check file dump in default path.
-        checkNumberFiles(defaultDiagnosticDir, 1);
+        checkNumberFiles(dfltDiagnosticDir, 1);
 
         assertEquals(
             EXIT_CODE_OK,
@@ -2401,7 +2393,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         );
 
         // Current cluster 4 nodes -> 4 files + 1 from previous operation.
-        checkNumberFiles(defaultDiagnosticDir, 5);
+        checkNumberFiles(dfltDiagnosticDir, 5);
 
         assertEquals(
             EXIT_CODE_OK,
@@ -2425,7 +2417,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         );
 
         // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
-        checkNumberFiles(defaultDiagnosticDir, 7);
+        checkNumberFiles(dfltDiagnosticDir, 7);
 
         // Dump locks only for 2 nodes use constIds as arg.
         assertEquals(
