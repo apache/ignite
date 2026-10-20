@@ -3206,13 +3206,13 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
             int start = in.readInt();
 
-            return BinaryUtils.binariesFactory.binaryOffheapObject(ctx, in.offheapPointer() + pos, start, len);
+            return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
             byte[] arr = BinaryUtils.doReadByteArray(in);
             int start = in.readInt();
 
-            BinaryObject binO = BinaryUtils.binariesFactory.binaryObject(ctx, arr, start);
+            BinaryObject binO = new BinaryObjectImpl(ctx, arr, start);
 
             if (detach)
                 return BinaryUtils.detach(binO);
@@ -3332,7 +3332,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return BinaryUtils.binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
+        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
@@ -3345,7 +3345,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryUtils.binariesFactory.binaryEnumClass(), len);
+        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -3426,7 +3426,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 BinaryObjectEx po;
 
                 if (detach) {
-                    BinaryObjectEx binObj = BinaryUtils.binariesFactory.binaryObject(ctx, in.array(), start);
+                    BinaryObjectEx binObj = new BinaryObjectImpl(ctx, in.array(), start);
 
                     binObj.detachAllowed(true);
 
@@ -3434,9 +3434,9 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 }
                 else {
                     if (in.offheapPointer() == 0)
-                        po = BinaryUtils.binariesFactory.binaryObject(ctx, in.array(), start);
+                        po = new BinaryObjectImpl(ctx, in.array(), start);
                     else
-                        po = BinaryUtils.binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
+                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
                 }
 
