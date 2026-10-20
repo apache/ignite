@@ -61,8 +61,8 @@ public class FreeListReservedPagesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setInitialSize(10 * 1024 * 1024L)
-                .setMaxSize(20 * 1024 * 1024L)
+                .setInitialSize(32 * 1024 * 1024L)
+                .setMaxSize(64 * 1024 * 1024L)
                 .setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU)));
 
         return cfg;
@@ -105,13 +105,13 @@ public class FreeListReservedPagesSelfTest extends GridCommonAbstractTest {
 
         createCache(ignite);
 
-        final FreeList<CacheDataRow> freeList = freeList(ignite, DEFAULT_CACHE_NAME);
+        FreeList<CacheDataRow> freeList = freeList(ignite, DEFAULT_CACHE_NAME);
 
-        final GridCacheContext<?, ?> cctx = cacheContext(ignite);
+        GridCacheContext<?, ?> cctx = cacheContext(ignite);
 
         int rowsPerThread = 200;
 
-        final AtomicInteger keyGen = new AtomicInteger();
+        AtomicInteger keyGen = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
             try {
@@ -145,11 +145,8 @@ public class FreeListReservedPagesSelfTest extends GridCommonAbstractTest {
         AtomicInteger keyGen = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < 300; i++) {
-                int key = keyGen.incrementAndGet();
-
-                cache.put(key, new byte[500]);
-            }
+            for (int i = 0; i < 300; i++)
+                cache.put(keyGen.incrementAndGet(), new byte[500]);
         }, 8, "concurrent-put");
 
         assertAllReleased(DEFAULT_CACHE_NAME, 10_000);
@@ -173,11 +170,8 @@ public class FreeListReservedPagesSelfTest extends GridCommonAbstractTest {
             for (int b = 0; b < 10; b++) {
                 Map<Integer, byte[]> batch = new HashMap<>();
 
-                for (int i = 0; i < 100; i++) {
-                    int key = keyGen.incrementAndGet();
-
-                    batch.put(key, new byte[300]);
-                }
+                for (int i = 0; i < 100; i++)
+                    batch.put(keyGen.incrementAndGet(), new byte[300]);
 
                 cache.putAll(batch);
             }

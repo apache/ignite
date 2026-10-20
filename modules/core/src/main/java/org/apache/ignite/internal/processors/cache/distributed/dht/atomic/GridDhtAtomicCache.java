@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -139,6 +138,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DEL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.rowSize;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -3001,9 +3001,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} guarantees every row of a
      * batch with known value sizes can be inserted without an out-of-memory in {@code FreeList.insertDataRow}.
      *
-     * <p>Best-effort only: {@code TRANSFORM} rows reserve the key sizes (processor results are unknown), and batches
-     * above {@link #MAX_RESERVE_BATCH_BYTES} are reserved for the capped size.
-     *
      * @param req Update request.
      * @return Reserved pages to release via {@link #releaseBatchSpace}, or {@code 0} if reservation is not engaged.
      * @throws IgniteCheckedException If failed.
@@ -3030,7 +3027,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // CacheVersionIO.SIZE_V2 is the maximum of both version protocols (V1 is smaller), so this is an upper
             // bound: the actual rows can not be larger than estimated.
-            sumRowSize += RowStore.rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, cacheId);
+            sumRowSize += rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, cacheId);
         }
 
         if (sumRowSize == 0)

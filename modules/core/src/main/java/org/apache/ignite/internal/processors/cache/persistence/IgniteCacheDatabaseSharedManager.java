@@ -1181,31 +1181,37 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Reserves free-list pages in the given data region for a row (or a batch of rows totaling {@code rowSize} bytes)
-     * about to be inserted. See {@link FreeList#reserve(int)} for the caller contract (no entry/page locks held).
+     * about to be inserted.
      *
-     * @param memPlc Data region ({@code null} is tolerated).
+     * @param memPlc Data region.
      * @param rowSize Size of the row, or the total size of all rows of a batch.
      * @return Number of reserved pages to be passed to {@link FreeList#insertDataRow} and released via
      *      {@link #releaseInRegion(DataRegion, long)}, or {@code 0} if the reservation is not engaged for this region
      *      (persistent data region or disabled page eviction).
      * @throws IgniteCheckedException If failed.
      */
-    public long reserveInRegion(DataRegion memPlc, int rowSize) throws IgniteCheckedException {
+    public long reserveInRegion(@Nullable DataRegion memPlc, int rowSize) throws IgniteCheckedException {
         if (memPlc == null || memPlc.config().isPersistenceEnabled())
             return 0;
 
-        return freeList(memPlc.config().getName()).reserve(rowSize);
+        FreeList<?> freeList = freeList(memPlc.config().getName());
+
+        return freeList == null ? 0 : freeList.reserve(rowSize);
     }
 
     /**
      * Releases the unconsumed portion of a reservation made by {@link #reserveInRegion(DataRegion, int)}.
      *
-     * @param memPlc Data region the reservation was made in ({@code null} is tolerated).
+     * @param memPlc Data region the reservation was made in.
      * @param pages Number of pages to release.
      */
-    public void releaseInRegion(DataRegion memPlc, long pages) {
-        if (memPlc != null && pages != 0)
-            freeList(memPlc.config().getName()).releaseReserved(pages);
+    public void releaseInRegion(@Nullable DataRegion memPlc, long pages) {
+        if (memPlc != null && pages != 0) {
+            FreeList<?> freeList = freeList(memPlc.config().getName());
+
+            if (freeList != null)
+                freeList.releaseReserved(pages);
+        }
     }
 
     /**

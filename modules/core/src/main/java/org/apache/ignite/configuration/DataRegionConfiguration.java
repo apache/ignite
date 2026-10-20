@@ -345,11 +345,11 @@ public final class DataRegionConfiguration implements Serializable {
      * Specifies the minimal number of empty pages to be present in reuse lists for this data region.
      * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
      * (key, value) pair is slightly larger than page size / 2.
-     * Since size-aware eviction automatically frees additional pages when the inserted row is larger than this pool,
-     * it is no longer required to increase this parameter up to the size of the largest cache entry.
-     * It also acts as the concurrency-safety margin for size-aware eviction: the reserve keeps this many empty pages
-     * on top of each row's own requirement, so the insert path is safe for up to {@code emptyPagesPoolSize} concurrent
-     * writers.
+     * Since size-aware eviction automatically frees additional pages when the row plus this pool exceeds the available
+     * free pages, it is no longer required to increase this parameter up to the size of the largest cache entry.
+     * In addition, this value is the reservation margin for size-aware eviction: each row's reservation adds this many
+     * empty pages on top of the row's own requirement, covering concurrent writers until the margin is exhausted,
+     * after which the insert falls back to blocking eviction.
      *
      * @return Minimum number of empty pages in reuse list.
      */
@@ -361,11 +361,11 @@ public final class DataRegionConfiguration implements Serializable {
      * Specifies the minimal number of empty pages to be present in reuse lists for this data region.
      * This parameter ensures that Ignite will be able to successfully evict old data entries when the size of
      * (key, value) pair is slightly larger than page size / 2.
-     * Since size-aware eviction automatically frees additional pages when the inserted row is larger than this pool,
-     * it is no longer required to increase this parameter up to the size of the largest cache entry.
-     * It also acts as the concurrency-safety margin for size-aware eviction: the reserve keeps this many empty pages
-     * on top of each row's own requirement, so the insert path is safe for up to {@code emptyPagesPoolSize} concurrent
-     * writers.
+     * Since size-aware eviction automatically frees additional pages when the row plus this pool exceeds the available
+     * free pages, it is no longer required to increase this parameter up to the size of the largest cache entry.
+     * In addition, this value is the reservation margin for size-aware eviction: each row's reservation adds this many
+     * empty pages on top of the row's own requirement, covering concurrent writers until the margin is exhausted,
+     * after which the insert falls back to blocking eviction.
      *
      * @param emptyPagesPoolSize Empty pages pool size.
      * @return {@code this} for chaining.

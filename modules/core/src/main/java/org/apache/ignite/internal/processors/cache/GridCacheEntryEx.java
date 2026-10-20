@@ -665,10 +665,6 @@ public interface GridCacheEntryEx {
      * Sets new value if passed in version matches the current version
      * (used for read-through only).
      *
-     * <p>This overload reserves page space internally (before acquiring the entry lock). Use
-     * {@link #versionedValue(CacheObject, GridCacheVersion, GridCacheVersion, IgniteCacheExpiryPolicy,
-     * ReaderArguments, long)} when the caller has already reserved (or the entry is already locked).
-     *
      * @param val New value.
      * @param curVer Version to match or {@code null} if match is not required.
      * @param newVer Version to set.

@@ -24,17 +24,11 @@ import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Data store for H2 rows.
@@ -178,32 +172,5 @@ public class RowStore {
         assert rowCacheCleaner != null;
 
         this.rowCacheCleaner = rowCacheCleaner;
-    }
-
-    /**
-     * Computes the size a row with the given key and value occupies in page memory. Single source of truth for the
-     * row size: {@link CacheDataRowAdapter#size()} delegates here, and callers use it to reserve free-list pages
-     * before the actual row is created.
-     *
-     * @param key Row key.
-     * @param val Row value ({@code null} if unknown — under-reserves safely).
-     * @param verSize Serialized version size (see {@link CacheVersionIO#size(GridCacheVersion, boolean)}).
-     * @param coctx Cache object context to compute key/value bytes lengths.
-     * @param cacheId Cache ID stored in the data page.
-     * @return Row size in bytes.
-     * @throws IgniteCheckedException If failed to compute key or value bytes length.
-     */
-    public static int rowSize(
-        KeyCacheObject key,
-        @Nullable CacheObject val,
-        int verSize,
-        CacheObjectValueContext coctx,
-        int cacheId
-    ) throws IgniteCheckedException {
-        int len = key.valueBytesLength(coctx);
-
-        len += (val != null ? val.valueBytesLength(coctx) : 0) + verSize + 8;
-
-        return len + (cacheId != 0 ? 4 : 0);
     }
 }

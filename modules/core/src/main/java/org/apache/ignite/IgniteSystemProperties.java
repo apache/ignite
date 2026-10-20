@@ -88,6 +88,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
+import static org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable.DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.DFLT_DELAYED_REPLACED_PAGE_WRITE;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.DFLT_LOADED_PAGES_BACKWARD_SHIFT_MAP;
@@ -1636,6 +1637,21 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Page lock tracker thread for checking hangs threads interval",
         type = Integer.class, defaults = "" + DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL)
     public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
+
+    /**
+     * Maximum time in milliseconds the size-aware eviction guard is willing to wait without either an eviction or a
+     * deficit decrease before failing with an out-of-memory. This is a liveness guard against a true deadlock (all
+     * evictable entries locked); a progressing eviction that is simply slow (e.g. a large putAll on a nearly-full
+     * region) is not killed by this timeout.
+     * <p>
+     * {@code 0} or a negative value disables the grace period: OOM is thrown on the first no-progress iteration.
+     * <p>
+     * Default is {@code 1000} (1 second).
+     */
+    @SystemProperty(value = "Maximum time in milliseconds the size-aware eviction guard waits without progress " +
+        "before failing with out-of-memory. A progressing eviction is not killed by this timeout. 0 or a " +
+        "negative value disables the grace period", type = Long.class, defaults = "" + DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS)
+    public static final String IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = "IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS";
 
     /**
      * Enables threads locks dumping on critical node failure.

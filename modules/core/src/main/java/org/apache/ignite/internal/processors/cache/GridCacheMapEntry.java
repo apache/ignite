@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
@@ -3682,10 +3681,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Computes the data row size for the given value and version (see {@link RowStore#rowSize}).
+     * Computes the data row size for the given value and version.
      * Used to reserve pages before the entry lock is acquired.
      *
-     * @param val Value (maybe {@code null} if unknown — under-reserves safely).
+     * @param val Value (maybe {@code null} if unknown - under-reserves safely).
      * @param ver Version.
      * @return Estimated row size in bytes.
      * @throws IgniteCheckedException If failed.
@@ -3693,7 +3692,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private int rowSize(@Nullable CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-        return RowStore.rowSize(key, val, CacheVersionIO.size(ver, false), cctx.cacheObjectContext(), cacheId);
+        return CacheDataRowAdapter.rowSize(key, val, CacheVersionIO.size(ver, false), cctx.cacheObjectContext(), cacheId);
     }
 
     /**

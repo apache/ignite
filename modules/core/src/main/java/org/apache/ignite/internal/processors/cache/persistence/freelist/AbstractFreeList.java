@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl.SEG_CNT;
 
@@ -89,16 +91,22 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private static final long EVICTION_BACKOFF_MAX_NANOS = 1_000_000L;
 
     /**
-     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without either an eviction or a
-     * new highest empty-pages count before failing with an out-of-memory.
+     * Default maximum time (milliseconds) the size-aware eviction guard is willing to wait without the region's free
+     * page count increasing (the deficit shrinking) before failing with an out-of-memory. Configurable via
+     * {@link IgniteSystemProperties#IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS}.
      */
-    private static final long EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = 1_000L;
+    public static final long DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = 1_000L;
 
     /**
-     * Hard upper bound (milliseconds) on the total duration of one size-aware eviction cycle, regardless of
-     * per-iteration progress.
+     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without the region's free page
+     * count increasing (the deficit shrinking) before failing with an out-of-memory. This is a liveness guard: a
+     * {@code evictDataPage()} call can report success while freeing no page (for example when the sampled rows are not
+     * actually reclaimable), so progress is measured by a real deficit decrease, not by the eviction's return value.
+     * An eviction that is merely slow but still frees pages keeps shrinking the deficit and thus keeps resetting the
+     * timer; a stall that frees nothing for the whole window fails fast instead of spinning.
      */
-    private static final long EVICTION_MAX_CYCLE_TIME_MILLIS = 5 * EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
+    private static final long EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = IgniteSystemProperties.getLong(
+        IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS, DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
 
     /**
      * Number of compare-and-set attempts in {@link #tryReserve(int)}. A deficit (the space is genuinely unavailable)
@@ -664,6 +672,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return freeSpace > MIN_PAGE_FREE_SPACE ? bucket(freeSpace, false) : -1;
     }
 
+    /**
+     * @param part Partition.
+     * @return Page ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long allocateDataPage(int part) throws IgniteCheckedException {
+        assert part <= PageIdAllocator.MAX_PARTITION_ID;
+
+        return pageMem.allocatePage(grpId, part, FLAG_DATA);
+    }
+
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int written = 0;
@@ -812,9 +831,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Take a page and write row on it. The reservation made by {@link #reserve(int)} (when engaged for the row's
-     * insert) is released as a whole by the caller once the insert completes, so pages taken here are not
-     * individually accounted against it.
+     * Take a page and write row on it.
      *
      * @param row Row to write.
      * @param written Written size.
@@ -1058,16 +1075,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         long lastProgressNanos = System.nanoTime();
 
-        long cycleDeadlineNanos = lastProgressNanos + TimeUnit.MILLISECONDS.toNanos(EVICTION_MAX_CYCLE_TIME_MILLIS);
-
         long totalPages = totalPages();
 
         while (true) {
-            long deficit = claimPages - (freePages(totalPages) - reservedPages.get());
+            long reserved = reservedPages.get();
+            long deficit = claimPages - (freePages(totalPages) - reserved);
 
             if (deficit <= 0) {
-                long reserved = reservedPages.get();
-
                 if (reservedPages.compareAndSet(reserved, reserved + claimPages))
                     return claimPages;
 
@@ -1079,13 +1093,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
             }
 
-            boolean evicted = evictionTracker.evictDataPage();
+            evictionTracker.evictDataPage();
 
             memMetrics.updateEvictionRate();
 
-            long curDeficit = claimPages - (freePages(totalPages) - reservedPages.get());
+            long curReserved = reservedPages.get();
+            long curDeficit = claimPages - (freePages(totalPages) - curReserved);
 
-            if (evicted || curDeficit < deficit) {
+            if (curDeficit < deficit) {
                 lastProgressNanos = System.nanoTime();
 
                 backoffNanos = EVICTION_BACKOFF_START_NANOS;
@@ -1096,10 +1111,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 backoffNanos = Math.min(backoffNanos << 1, EVICTION_BACKOFF_MAX_NANOS);
             }
 
-            long nowNanos = System.nanoTime();
-
-            if (nowNanos - lastProgressNanos > TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS) ||
-                nowNanos > cycleDeadlineNanos)
+            if (System.nanoTime() - lastProgressNanos > TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS))
                 throw outOfMemory(dataRegion.config());
         }
     }
@@ -1115,6 +1127,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** {@inheritDoc} */
     @Override public void checkFitsForInsert(int rowSize) throws IgniteOutOfMemoryException {
         checkDisabledEvictionOom(rowSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "FreeList [name=" + name() + ']';
     }
 
     /**
@@ -1169,13 +1186,21 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return Math.min(requiredPages + dataRegion.config().getEmptyPagesPoolSize(), totalPages);
     }
 
-    /** @return Total number of pages in the data region (maxSize / systemPageSize). */
+    /** @return Total number of pages in the data region. */
     private long totalPages() {
         return dataRegion.config().getMaxSize() / pageMem.systemPageSize();
     }
 
     /**
-     * OOM threshold check for the disabled-eviction in-memory case (previously in {@code ensureFreeSpace}).
+     * @param totalPages Total pages in the region.
+     * @return Free pages of the region: empty pages in this free list plus unallocated headroom.
+     */
+    private long freePages(long totalPages) {
+        return emptyDataPages() + Math.max(0, (totalPages > SEG_CNT ? totalPages - SEG_CNT : 0) - pageMem.loadedPages());
+    }
+
+    /**
+     * OOM threshold check for the disabled-eviction in-memory case.
      *
      * @param rowSize Row size in bytes.
      * @throws IgniteOutOfMemoryException If the region is near exhaustion.
@@ -1190,39 +1215,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (oomThreshold)
                 throw outOfMemory(dataRegion.config());
         }
-    }
-
-    /**
-     * @param part Partition.
-     * @return Page ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    private long allocateDataPage(int part) throws IgniteCheckedException {
-        assert part <= PageIdAllocator.MAX_PARTITION_ID;
-
-        return pageMem.allocatePage(grpId, part, FLAG_DATA);
-    }
-
-    /**
-     * @param totalPages Total pages in the region (maxSize / systemPageSize).
-     * @return Free pages of the region: empty pages in this free list plus unallocated headroom. Effective headroom
-     * accounts for per-segment allocation overhead (up to one page per segment), so it does not trust headroom
-     * that cannot actually be allocated.
-     */
-    private long freePages(long totalPages) {
-        return emptyDataPages() + effectiveHeadroom(totalPages, pageMem.loadedPages());
-    }
-
-    /**
-     * Computes the effective headroom (unallocated pages that can actually be allocated), accounting for per-segment
-     * allocation overhead (up to one page per segment).
-     *
-     * @param totalPages Total pages in the region (maxSize / systemPageSize).
-     * @param loadedPages Currently loaded pages.
-     * @return Effective headroom, never negative.
-     */
-    private static long effectiveHeadroom(long totalPages, long loadedPages) {
-        return Math.max(0, (totalPages > SEG_CNT ? totalPages - SEG_CNT : 0) - loadedPages);
     }
 
     /**

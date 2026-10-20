@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
@@ -890,7 +891,32 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
-        return RowStore.rowSize(key(), value(), CacheVersionIO.size(version(), false), null, cacheId());
+        return rowSize(key(), value(), CacheVersionIO.size(version(), false), null, cacheId());
+    }
+
+    /**
+     * Computes the size a row with the given key and value occupies in page memory.
+     *
+     * @param key Row key.
+     * @param val Row value ({@code null} if unknown — under-reserves safely).
+     * @param verSize Serialized version size (see {@link CacheVersionIO#size(GridCacheVersion, boolean)}).
+     * @param coctx Cache object context to compute key/value bytes lengths.
+     * @param cacheId Cache ID stored in the data page.
+     * @return Row size in bytes.
+     * @throws IgniteCheckedException If failed to compute key or value bytes length.
+     */
+    public static int rowSize(
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        int verSize,
+        CacheObjectValueContext coctx,
+        int cacheId
+    ) throws IgniteCheckedException {
+        int len = key.valueBytesLength(coctx);
+
+        len += (val != null ? val.valueBytesLength(coctx) : 0) + verSize + 8;
+
+        return len + (cacheId != 0 ? 4 : 0);
     }
 
     /**
