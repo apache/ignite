@@ -18,9 +18,11 @@ package org.apache.ignite.internal.thread.context;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage.nextAttributeId;
+import static org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage.set;
 
 /**
  * Provides the ability to manage {@link OperationContext} attributes in a distributed manner.
@@ -32,82 +34,96 @@ import org.jetbrains.annotations.Nullable;
  * <p>The implementation relies on a mapping between a distributed identifier and an
  * {@link OperationContextAttribute} instance that is consistent across all cluster nodes.</p>
  *
- * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the
- * attribute must be registered with the {@link #registerDistributedAttribute(int, OperationContextAttribute)} method.
+ * <p>To enable propagation of an {@link OperationContextAttribute} value across cluster nodes, the attribute must be
+ * registered with the {@link #register(DistributedAttributeKey, OperationContextAttribute)}
+ * method.
  *
  * <p> Note, that the maximum number of distributed attributes to register is currently limited to
- * {@link #MAX_ATTRS_CNT} for implementation reasons.</p>
+ * {@link OperationContextSnapshotMessage#MAX_ATTRS_CNT} for implementation reasons.</p>
  *
  * @see OperationContext
  * @see OperationContextSnapshotMessage
  */
-public class OperationContextDispatcher {
-    /** Maximal number of supported distributed attributes. */
-    static final byte MAX_ATTRS_CNT = Byte.SIZE;
-
+public class DistributedOperationContext {
     /** Registered distributed attributes by their cluster-wide id. */
-    private volatile OperationContextAttribute<? extends Message>[] registeredAttrs = new OperationContextAttribute[0];
+    private volatile DistributedAttribute[] distrAttrs = new DistributedAttribute[0];
 
     /** Whether the registration of new distributed attributes is allowed. */
     private boolean regFinished;
 
     /**
-     * Registers an attribute of {@link OperationContext} with the specified distributed ID.
+     * Registers an attribute of {@link OperationContext} with the specified distributed attribute key.
      *
-     * <p>The distributed ID is used to consistently identify the attribute across all nodes in the cluster.
-     * It must be unique, and its value must be in the range [{@code 0} : {@code Byte.SIZE}).</p>
+     * <p>The key consistently identifies the attribute across all nodes in the cluster and must be unique.</p>
      *
      * <p>Registered attribute value is automatically captured and propagated between cluster nodes
      * during the messages transmission.</p>
      *
-     * @see DistributedAttributeIdRegistry
+     * @see DistributedAttributeKey
      */
-    public synchronized <T extends Message> void registerDistributedAttribute(int id, OperationContextAttribute<T> attr) {
+    public synchronized <T extends Message> void register(DistributedAttributeKey key, OperationContextAttribute<T> attr) {
         if (regFinished)
             throw new IgniteException("Initialization of distributed operation context attributes has already finished.");
 
-        assert 0 <= id && id < MAX_ATTRS_CNT : "Invalid distributed attributed id [id=" + id + ']';
+        byte id = key.id();
 
-        OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
-
-        OperationContextAttribute<? extends Message>[] copy = Arrays.copyOf(
-            locRegisteredAttrs,
-            Math.max(locRegisteredAttrs.length, id + 1));
-
-        if (copy[id] != null)
+        if (key.equals(key(id)))
             throw new IgniteException("Duplicated distributed attribute id [id=" + id + ']');
 
-        copy[id] = attr;
+        DistributedAttribute[] locDistrAttrs = distrAttrs;
 
-        registeredAttrs = copy;
+        DistributedAttribute[] copy = Arrays.copyOf(locDistrAttrs, Math.max(locDistrAttrs.length, id + 1));
+
+        copy[id] = new DistributedAttribute(key, attr);
+
+        distrAttrs = copy;
+    }
+
+    /** @return Key of the attribute registered under the id, or {@code null} if none is. */
+    public @Nullable DistributedAttributeKey key(int id) {
+        DistributedAttribute[] attrs = distrAttrs;
+
+        if (id < 0 || id >= attrs.length)
+            return null;
+
+        DistributedAttribute attr = attrs[id];
+
+        return attr == null ? null : attrs[id].key;
     }
 
     /**
-     * Collects the values of all distributed {@link OperationContextAttribute}s registered by this dispatcher.
+     * Collects the values of all registered distributed {@link OperationContextAttribute}s.
      *
      * @see OperationContext#get(OperationContextAttribute)
      */
     public @Nullable OperationContextSnapshotMessage createSnapshot() {
-        OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
+        DistributedAttribute[] locDistrAttrs = distrAttrs;
 
-        if (locRegisteredAttrs.length == 0)
-            return null;
+        Message[] attrs = new Message[locDistrAttrs.length];
 
-        OperationContextSnapshotMessage.Builder snpBuilder = OperationContextSnapshotMessage.Builder.create();
+        byte idBitmap = 0;
+        int cnt = 0;
 
-        for (int id = 0; id < locRegisteredAttrs.length; id++) {
-            OperationContextAttribute<? extends Message> attr = locRegisteredAttrs[id];
-
-            if (attr == null)
+        for (int id = 0; id < locDistrAttrs.length; id++) {
+            if (locDistrAttrs[id] == null)
                 continue;
+
+            OperationContextAttribute<? extends Message> attr = locDistrAttrs[id].attr;
 
             Message curVal = OperationContext.get(attr);
 
-            if (curVal != attr.initialValue())
-                snpBuilder.add(id, curVal);
+            if (curVal == attr.initialValue())
+                continue;
+
+            attrs[cnt++] = curVal;
+
+            idBitmap = set(idBitmap, id);
         }
 
-        return snpBuilder.isEmpty() ? null : snpBuilder.build();
+        if (idBitmap == 0)
+            return null;
+
+        return new OperationContextSnapshotMessage(idBitmap, cnt == attrs.length ? attrs : Arrays.copyOf(attrs, cnt));
     }
 
     /** Restores {@link OperationContextAttribute} values received from a remote node. */
@@ -115,27 +131,15 @@ public class OperationContextDispatcher {
         if (snp == null)
             return OperationContext.Restorer.restoreEmpty();
 
-        OperationContextAttribute<? extends Message>[] locRegisteredAttrs = registeredAttrs;
-
-        assert snp.idBitmap != 0;
-        assert !F.isEmpty(snp.attrs);
-        assert snp.attrs.length <= MAX_ATTRS_CNT;
+        DistributedAttribute[] locDistrAttrs = distrAttrs;
 
         OperationContext.Restorer ctxRestorer = OperationContext.Restorer.create();
 
-        for (byte valIdx = 0, attrId = 0; valIdx < snp.attrs.length; ++valIdx) {
-            Message attrVal = snp.attrs[valIdx];
+        for (int attrId = nextAttributeId(snp.idBitmap, -1); attrId >= 0; attrId = nextAttributeId(snp.idBitmap, attrId)) {
+            assert attrId < locDistrAttrs.length;
+            assert locDistrAttrs[attrId] != null;
 
-            while ((snp.idBitmap & (1 << attrId)) == 0)
-                ++attrId;
-
-            assert attrId < locRegisteredAttrs.length;
-
-            OperationContextAttribute<Message> attr = (OperationContextAttribute<Message>)locRegisteredAttrs[attrId++];
-
-            assert attr != null;
-
-            ctxRestorer.add(attr, attrVal);
+            ctxRestorer.add((OperationContextAttribute<Message>)locDistrAttrs[attrId].attr, snp.getValue(attrId));
         }
 
         return ctxRestorer.restore();
@@ -145,4 +149,7 @@ public class OperationContextDispatcher {
     public synchronized void finishRegistration() {
         regFinished = true;
     }
+
+    /** */
+    private record DistributedAttribute(DistributedAttributeKey key, OperationContextAttribute<? extends Message> attr) {}
 }
