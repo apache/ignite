@@ -1967,7 +1967,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
         if (!findFieldById(fieldId))
             return null;
 
-        return BinaryUtils.reader(ctx, in, ldr, hnds, false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**
@@ -3365,7 +3365,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
      */
     @Nullable private static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return BinaryUtils.reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**
