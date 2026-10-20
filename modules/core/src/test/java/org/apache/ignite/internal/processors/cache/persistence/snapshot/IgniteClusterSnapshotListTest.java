@@ -352,6 +352,8 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
         // Doesn't matter here, speeds up the tests.
         assumeTrue(snpThrdPoolSz > 1);
 
+        startGrids(3);
+
         File path = new File(U.defaultWorkDirectory(), "not_snapshots");
 
         SnapshotListJobResult[] listOperationRes = listSnapshots(grid(0), path.getAbsolutePath()).nodesSnapshots();
@@ -872,7 +874,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             null,
             () -> lstOpFut.get(getTestTimeout()),
             NodeStoppingException.class,
-            "Node is stopping"
+            "Local node is stopping"
         );
 
         stopFut.get(getTestTimeout());
