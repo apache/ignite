@@ -181,7 +181,7 @@ Before starting, check peer trust, protocols, cipher suites and client authentic
 * *On every server and client node:* import the new CA certificate into the trust store. For self-signed certificates, import each peer's new certificate, including application client certificates, instead of a CA certificate. After updating the trust stores on all nodes, run link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] once.
 * *In every application that connects over SSL:* update its trust store in the same way. This includes the trust store passed to `control.sh` with `--truststore`.
 
-Make running applications load the updated stores:
+Load the updated stores in running applications:
 
 [cols="2,3",opts="header"]
 |===
@@ -204,7 +204,7 @@ Make running applications load the updated stores:
 . Run `control.sh --ssl reload`, then use `control.sh --ssl status` to check the certificate loaded on that node. The reload command runs on all nodes, even when you changed the files on only one.
 . Test new connections before replacing the next node's certificate. Use `control.sh --diagnostic connectivity` to check communication between nodes. Test the client connector and HTTP REST with new connections from your applications.
 
-Before removing old trust, also replace any application client certificate that would no longer be trusted. This includes `control.sh` started with `--keystore`. Make the applications load their updated stores as described in stage 1.
+Before removing old trust, also replace any application client certificate that would no longer be trusted. This includes `control.sh` started with `--keystore`. Reload the application stores as described in stage 1.
 
 *If a connection fails:* stop the rollout. Correct peer trust and TLS settings, or restore the old key store and run `control.sh --ssl reload` again. The restored chain must still be valid. If the command cannot reach the node, restore its configuration and restart it.
 
@@ -215,7 +215,7 @@ Before removing old trust, also replace any application client certificate that 
 *When:* all affected nodes and applications use the new certificates, and the old CA or self-signed certificates must no longer be trusted. Skip this stage if the old CA must remain trusted.
 
 . Use `control.sh --ssl status` to check the new certificates on all updated server and client nodes. Verify new connections and check that every affected application has loaded its replacement client certificate.
-. Remove the old CA certificate, or the old self-signed certificates, from node and application trust stores. Run `control.sh --ssl reload` for the nodes. Make applications load the updated stores as described in stage 1.
+. Remove the old CA certificate, or the old self-signed certificates, from node and application trust stores. Run `control.sh --ssl reload` for the nodes. Reload the application stores as described in stage 1.
 
 Reload leaves existing connections open. If you are replacing certificates after a private key compromise, also restart nodes one at a time to close connections established with the old certificates.
 
@@ -231,19 +231,19 @@ Transports configured with the same factory object get the new certificate toget
 The node does not renew HTTP REST certificates that you set in the Jetty configuration file.
 
 With renewal on, `SslContextFactory` reads its key store and trust store files again in the renewal window, the last part of the certificate lifetime.
-A factory of your own that extends `AbstractSslContextFactory` takes the new certificate from its own source, see <<Custom SSL Context Factories>>.
+A custom factory that extends `AbstractSslContextFactory` loads certificates from its configured source. See <<Custom SSL Context Factories>>.
 
 The `renewBeforeFraction` property sets the size of the window as a share of the lifetime, 15% by default.
 Changes to `renewalEnabled` and `renewBeforeFraction` take effect after restarting the node.
 For a certificate valid for 30 days, the window starts 4.5 days before the certificate expires.
-If a certificate authority in the chain expires before the certificate, the lifetime ends when the authority expires.
+If a CA certificate in the chain expires first, its expiry determines when the renewal window starts.
 
 Replace the old files with the new ones before the renewal window starts.
 Replace them only with files you are ready to use, because the node starts to use them without a command.
 
-Before installing the new context, the node checks the dates of the chain supplied by the factory. The chain must be valid now, and its earliest expiry must be later than that of the chain in use. If a certificate authority in the chain expires first, renew it too.
+Before installing the new context, the node checks the dates of the chain supplied by the factory. The chain must be valid now, and its earliest expiry must be later than that of the chain in use. If a CA certificate in the chain expires first, renew it too.
 
-Prepare trust stores so that nodes and clients accept both old and new certificates during rollout. Renewal does not test peer trust or TLS compatibility. It puts a changed trust store in use only together with a new certificate. To move to a new certificate authority, follow <<Upgrading Certificates>>.
+Prepare trust stores so that nodes and clients accept both old and new certificates during rollout. Renewal does not test peer trust or TLS compatibility. During automatic renewal, an updated trust store takes effect only when a new certificate is accepted. To move to a new certificate authority, follow <<Upgrading Certificates>>.
 
 If the files still hold the certificate in use, the node reads them again after a pause.
 Each such attempt, failure to read the files, or rejection of a new certificate increments the node's link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric.
@@ -311,7 +311,7 @@ Automatic renewal requires a factory that supplies the single X.509 chain loaded
 
 == Custom SSL Context Factories
 
-To take certificates from a source of your own, such as a PKI service, extend `AbstractSslContextFactory` and implement `checkParameters()`, `createKeyManagers()` and `createTrustManagers()`.
+To load certificates from a custom source, such as a PKI service, extend `AbstractSslContextFactory` and implement `checkParameters()`, `createKeyManagers()` and `createTrustManagers()`.
 
 For certificate status and automatic renewal, also override the protected `createKeyMaterial()` method. Return a `KeyMaterial` with the key managers and the X.509 chain from the same load, with the node's certificate first.
 

@@ -1757,7 +1757,7 @@ control.sh|bat --event list --enabled
 control.sh|bat --ssl reload [--yes]
 ----
 
-The command makes every server and client node in the topology ask its SSL context factories for new certificates.
+The command requests new SSL contexts from the configured factories on every server and client node in the topology.
 See link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] for the order of steps when you replace certificates or a certificate authority.
 With security enabled, `--ssl reload` and `--ssl status` need the `ADMIN_OPS` system permission.
 
@@ -1779,7 +1779,7 @@ The command does not make thin clients or JDBC and ODBC drivers read their store
 
 A reload succeeds for a factory when its new SSL context has been installed. If the factory supplies certificate metadata, Ignite checks the chain's validity dates before installation. It does not test TLS connections or peer trust. The administrator must ensure that certificates, trust stores, protocols, cipher suites and client authentication are compatible across nodes and clients.
 
-A reload fails before replacing the context, and all transports that use the factory keep the old context, if:
+The reload fails and all transports using the factory keep their old context if:
 
 * a certificate in the chain supplied by the factory is expired or not yet valid
 * automatic renewal is enabled and the new context provides no certificate chain
@@ -1827,7 +1827,7 @@ Status reads the metadata supplied when the factory built the SSL context. It do
 A node without an SSL context factory prints `no SSL context factory is configured`.
 Such a node does not make `--ssl reload` or `--ssl status` end with an error.
 
-If a certificate authority in the chain expires before the node's certificate, the `loaded` line also shows the chain's earliest expiry as `chainNotAfter`.
+If a CA certificate in the chain expires before the node's certificate, the `loaded` line also shows the chain's earliest expiry as `chainNotAfter`.
 
 After a failed reload, the `last reload` line shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
 Automatic renewals also update this line, except attempts that find only the certificate already in use.
