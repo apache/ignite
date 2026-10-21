@@ -25,11 +25,14 @@ import java.time.Period;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode.IN_BUFFER_SIZE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /** Checks external Java values in nested ROW, ARRAY and MAP results. */
 public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTest {
@@ -50,10 +53,15 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     @MethodSource("values")
     public void testArrayElement(String expr, Object expected) {
         String qry = "SELECT ARRAY[" + expr + ']';
-        List<?> arr = Assertions.assertInstanceOf(List.class, value(qry), qry);
 
-        assertEquals(1, arr.size());
-        assertExternalValue(expected, arr.get(0), qry);
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                List<?> arr = assertInstanceOf(List.class, singleValue(rows), qry);
+
+                assertEquals(1, arr.size());
+                assertExternalValue(expected, arr.get(0), qry);
+            })
+            .check();
     }
 
     /** Conversion must descend through multiple levels, as required by ARRAY-of-ROW paths. */
@@ -61,30 +69,40 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     @MethodSource("values")
     public void testArrayOfRows(String expr, Object expected) {
         String qry = "SELECT ARRAY[ROW(" + expr + ", 42)]";
-        List<?> arr = Assertions.assertInstanceOf(List.class, value(qry), qry);
 
-        assertEquals(1, arr.size());
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                List<?> arr = assertInstanceOf(List.class, singleValue(rows), qry);
 
-        Object[] row = Assertions.assertInstanceOf(Object[].class, arr.get(0), qry);
+                assertEquals(1, arr.size());
 
-        assertEquals(2, row.length);
-        assertEquals(42, row[1]);
-        assertExternalValue(expected, row[0], qry);
+                Object[] row = assertInstanceOf(Object[].class, arr.get(0), qry);
+
+                assertEquals(2, row.length);
+                assertEquals(42, row[1]);
+                assertExternalValue(expected, row[0], qry);
+            })
+            .check();
     }
 
     /** NULL fields in an ARRAY-of-ROW result must remain NULL after conversion. */
     @Test
     public void testArrayOfRowsWithNullField() {
         String qry = "SELECT ARRAY[ROW(CAST(NULL AS DATE), 42)]";
-        List<?> arr = Assertions.assertInstanceOf(List.class, value(qry), qry);
 
-        assertEquals(1, arr.size());
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                List<?> arr = assertInstanceOf(List.class, singleValue(rows), qry);
 
-        Object[] row = Assertions.assertInstanceOf(Object[].class, arr.get(0), qry);
+                assertEquals(1, arr.size());
 
-        assertEquals(2, row.length);
-        assertEquals(42, row[1]);
-        assertNull(row[0]);
+                Object[] row = assertInstanceOf(Object[].class, arr.get(0), qry);
+
+                assertEquals(2, row.length);
+                assertEquals(42, row[1]);
+                assertNull(row[0]);
+            })
+            .check();
     }
 
     /** The constructor's ROW value is a single result column containing two fields. */
@@ -92,11 +110,16 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     @MethodSource("values")
     public void testRowField(String expr, Object expected) {
         String qry = "SELECT ROW(" + expr + ", 42)";
-        Object[] row = Assertions.assertInstanceOf(Object[].class, value(qry), qry);
 
-        assertEquals(2, row.length);
-        assertEquals(42, row[1]);
-        assertExternalValue(expected, row[0], qry);
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                Object[] row = assertInstanceOf(Object[].class, singleValue(rows), qry);
+
+                assertEquals(2, row.length);
+                assertEquals(42, row[1]);
+                assertExternalValue(expected, row[0], qry);
+            })
+            .check();
     }
 
     /** Each field is converted according to its own type, preserving order and NULL values. */
@@ -104,18 +127,23 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     public void testRowWithDifferentFieldTypes() {
         String qry = "SELECT ROW(DATE '2026-01-01', 42, TIME '12:34:56', 'text', CAST(NULL AS DATE), "
             + "TIMESTAMP '2026-01-01 12:34:56', INTERVAL '1' DAY, INTERVAL '1-2' YEAR TO MONTH, X'0102')";
-        Object[] row = Assertions.assertInstanceOf(Object[].class, value(qry), qry);
 
-        assertEquals(9, row.length);
-        assertExternalValue(Date.valueOf("2026-01-01"), row[0], qry);
-        assertExternalValue(42, row[1], qry);
-        assertExternalValue(Time.valueOf("12:34:56"), row[2], qry);
-        assertExternalValue("text", row[3], qry);
-        assertNull(row[4]);
-        assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), row[5], qry);
-        assertExternalValue(Duration.ofDays(1), row[6], qry);
-        assertExternalValue(Period.of(1, 2, 0), row[7], qry);
-        assertExternalValue(new byte[] {1, 2}, row[8], qry);
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                Object[] row = assertInstanceOf(Object[].class, singleValue(rows), qry);
+
+                assertEquals(9, row.length);
+                assertExternalValue(Date.valueOf("2026-01-01"), row[0], qry);
+                assertExternalValue(42, row[1], qry);
+                assertExternalValue(Time.valueOf("12:34:56"), row[2], qry);
+                assertExternalValue("text", row[3], qry);
+                assertNull(row[4]);
+                assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), row[5], qry);
+                assertExternalValue(Duration.ofDays(1), row[6], qry);
+                assertExternalValue(Period.of(1, 2, 0), row[7], qry);
+                assertExternalValue(new byte[] {1, 2}, row[8], qry);
+            })
+            .check();
     }
 
     /** Fields of different types are also converted when the ROW is inside an ARRAY. */
@@ -123,22 +151,27 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     public void testArrayOfRowsWithDifferentFieldTypes() {
         String qry = "SELECT ARRAY[ROW(DATE '2026-01-01', 42, TIME '12:34:56', 'text', CAST(NULL AS DATE), "
             + "TIMESTAMP '2026-01-01 12:34:56', INTERVAL '1' DAY, INTERVAL '1-2' YEAR TO MONTH, X'0102')]";
-        List<?> arr = Assertions.assertInstanceOf(List.class, value(qry), qry);
 
-        assertEquals(1, arr.size());
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                List<?> arr = assertInstanceOf(List.class, singleValue(rows), qry);
 
-        Object[] row = Assertions.assertInstanceOf(Object[].class, arr.get(0), qry);
+                assertEquals(1, arr.size());
 
-        assertEquals(9, row.length);
-        assertExternalValue(Date.valueOf("2026-01-01"), row[0], qry);
-        assertExternalValue(42, row[1], qry);
-        assertExternalValue(Time.valueOf("12:34:56"), row[2], qry);
-        assertExternalValue("text", row[3], qry);
-        assertNull(row[4]);
-        assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), row[5], qry);
-        assertExternalValue(Duration.ofDays(1), row[6], qry);
-        assertExternalValue(Period.of(1, 2, 0), row[7], qry);
-        assertExternalValue(new byte[] {1, 2}, row[8], qry);
+                Object[] row = assertInstanceOf(Object[].class, arr.get(0), qry);
+
+                assertEquals(9, row.length);
+                assertExternalValue(Date.valueOf("2026-01-01"), row[0], qry);
+                assertExternalValue(42, row[1], qry);
+                assertExternalValue(Time.valueOf("12:34:56"), row[2], qry);
+                assertExternalValue("text", row[3], qry);
+                assertNull(row[4]);
+                assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), row[5], qry);
+                assertExternalValue(Duration.ofDays(1), row[6], qry);
+                assertExternalValue(Period.of(1, 2, 0), row[7], qry);
+                assertExternalValue(new byte[] {1, 2}, row[8], qry);
+            })
+            .check();
     }
 
     /** MAP values must use the same external types as other result values. */
@@ -146,10 +179,15 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     @MethodSource("values")
     public void testMapValue(String expr, Object expected) {
         String qry = "SELECT MAP['value', " + expr + ']';
-        Map<?, ?> map = Assertions.assertInstanceOf(Map.class, value(qry), qry);
 
-        assertEquals(1, map.size());
-        assertExternalValue(expected, map.get("value"), qry);
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                Map<?, ?> map = assertInstanceOf(Map.class, singleValue(rows), qry);
+
+                assertEquals(1, map.size());
+                assertExternalValue(expected, map.get("value"), qry);
+            })
+            .check();
     }
 
     /** MAP keys must also be converted, including binary keys compared by content. */
@@ -157,14 +195,19 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     @MethodSource("values")
     public void testMapKey(String expr, Object expected) {
         String qry = "SELECT MAP[" + expr + ", 42]";
-        Map<?, ?> map = Assertions.assertInstanceOf(Map.class, value(qry), qry);
 
-        assertEquals(1, map.size());
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                Map<?, ?> map = assertInstanceOf(Map.class, singleValue(rows), qry);
 
-        Map.Entry<?, ?> entry = map.entrySet().iterator().next();
+                assertEquals(1, map.size());
 
-        assertExternalValue(expected, entry.getKey(), qry);
-        assertEquals(42, entry.getValue());
+                Map.Entry<?, ?> entry = map.entrySet().iterator().next();
+
+                assertExternalValue(expected, entry.getKey(), qry);
+                assertEquals(42, entry.getValue());
+            })
+            .check();
     }
 
     /** Converts keys and values together and preserves entries with NULL values. */
@@ -172,12 +215,17 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     public void testMapWithDifferentKeyAndValueTypes() {
         String qry = "SELECT MAP[DATE '2026-01-01', TIMESTAMP '2026-01-01 12:34:56', "
             + "DATE '2026-01-02', CAST(NULL AS TIMESTAMP)]";
-        Map<?, ?> map = Assertions.assertInstanceOf(Map.class, value(qry), qry);
 
-        assertEquals(2, map.size());
-        assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), map.get(Date.valueOf("2026-01-01")), qry);
-        assertTrue(map.containsKey(Date.valueOf("2026-01-02")));
-        assertNull(map.get(Date.valueOf("2026-01-02")));
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                Map<?, ?> map = assertInstanceOf(Map.class, singleValue(rows), qry);
+
+                assertEquals(2, map.size());
+                assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), map.get(Date.valueOf("2026-01-01")), qry);
+                assertTrue(map.containsKey(Date.valueOf("2026-01-02")));
+                assertNull(map.get(Date.valueOf("2026-01-02")));
+            })
+            .check();
     }
 
     /** Conversion descends from a MAP value into a ROW and its ARRAY field. */
@@ -185,45 +233,83 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
     public void testMapWithRowValue() {
         String qry = "SELECT MAP[DATE '2026-01-01', ROW(TIMESTAMP '2026-01-01 12:34:56', "
             + "ARRAY[INTERVAL '1' DAY], CAST(NULL AS TIME))]";
-        Map<?, ?> map = Assertions.assertInstanceOf(Map.class, value(qry), qry);
 
-        assertEquals(1, map.size());
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                Map<?, ?> map = assertInstanceOf(Map.class, singleValue(rows), qry);
 
-        Object[] row = Assertions.assertInstanceOf(Object[].class, map.get(Date.valueOf("2026-01-01")), qry);
+                assertEquals(1, map.size());
 
-        assertEquals(3, row.length);
-        assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), row[0], qry);
+                Object[] row = assertInstanceOf(Object[].class, map.get(Date.valueOf("2026-01-01")), qry);
 
-        List<?> arr = Assertions.assertInstanceOf(List.class, row[1], qry);
+                assertEquals(3, row.length);
+                assertExternalValue(Timestamp.valueOf("2026-01-01 12:34:56"), row[0], qry);
 
-        assertEquals(1, arr.size());
-        assertExternalValue(Duration.ofDays(1), arr.get(0), qry);
-        assertNull(row[2]);
+                List<?> arr = assertInstanceOf(List.class, row[1], qry);
+
+                assertEquals(1, arr.size());
+                assertExternalValue(Duration.ofDays(1), arr.get(0), qry);
+                assertNull(row[2]);
+            })
+            .check();
     }
 
     /** A MAP nested in a CYCLE-like ARRAY-of-ROW result also requires conversion. */
     @Test
     public void testArrayOfRowsWithMapField() {
         String qry = "SELECT ARRAY[ROW(MAP['value', DATE '2026-01-01'], 42)]";
-        List<?> arr = Assertions.assertInstanceOf(List.class, value(qry), qry);
 
-        assertEquals(1, arr.size());
+        assertQuery(qry)
+            .withResultChecker(rows -> {
+                List<?> arr = assertInstanceOf(List.class, singleValue(rows), qry);
 
-        Object[] row = Assertions.assertInstanceOf(Object[].class, arr.get(0), qry);
+                assertEquals(1, arr.size());
 
-        assertEquals(2, row.length);
-        assertEquals(42, row[1]);
+                Object[] row = assertInstanceOf(Object[].class, arr.get(0), qry);
 
-        Map<?, ?> map = Assertions.assertInstanceOf(Map.class, row[0], qry);
+                assertEquals(2, row.length);
+                assertEquals(42, row[1]);
 
-        assertEquals(1, map.size());
-        assertExternalValue(Date.valueOf("2026-01-01"), map.get("value"), qry);
+                Map<?, ?> map = assertInstanceOf(Map.class, row[0], qry);
+
+                assertEquals(1, map.size());
+                assertExternalValue(Date.valueOf("2026-01-01"), map.get("value"), qry);
+            })
+            .check();
     }
 
-    /** Executes a one-row, one-column query without normalizing the returned value. */
-    private Object value(String qry) {
-        List<List<?>> rows = sql(qry);
+    /** Returning an ARRAY of ROWs must not change values still used by subsequent UNNEST iterations. */
+    @Test
+    public void testArrayOfRowsReusedByJoin() {
+        // Exceed the execution buffers so UNNEST continues after the first results have been converted.
+        int rowsCnt = 8 * IN_BUFFER_SIZE;
+        String qry = "SELECT a.arr, OCTET_LENGTH(u.bin) FROM TABLE(SYSTEM_RANGE(1, " + rowsCnt + ")) s "
+            + "CROSS JOIN (SELECT ARRAY_AGG(ROW(X'0102', x)) arr FROM TABLE(SYSTEM_RANGE(1, 1))) a "
+            + "CROSS JOIN UNNEST(a.arr) u(bin, id)";
 
+        assertQuery(grid(0), qry)
+            .resultSize(rowsCnt)
+            .withResultChecker(rows -> {
+                for (List<?> row : rows) {
+                    assertEquals(2, row.size());
+                    assertEquals(2, row.get(1));
+
+                    List<?> arr = assertInstanceOf(List.class, row.get(0), qry);
+
+                    assertEquals(1, arr.size());
+
+                    Object[] nestedRow = assertInstanceOf(Object[].class, arr.get(0), qry);
+
+                    assertEquals(2, nestedRow.length);
+                    assertExternalValue(new byte[] {1, 2}, nestedRow[0], qry);
+                    assertEquals(1L, nestedRow[1]);
+                }
+            })
+            .check();
+    }
+
+    /** Extracts the only result value without normalizing it. */
+    private static Object singleValue(List<List<?>> rows) {
         assertEquals(1, rows.size());
         assertEquals(1, rows.get(0).size());
 
@@ -232,11 +318,11 @@ public class NestedResultTypesIntegrationTest extends AbstractBasicIntegrationTe
 
     /** Checks both Java type and value, including binary content. */
     private static void assertExternalValue(Object expected, Object actual, String qry) {
-        Assertions.assertInstanceOf(expected.getClass(), actual, qry + "; actual value: " + actual);
+        assertInstanceOf(expected.getClass(), actual, qry + "; actual value: " + actual);
 
         if (expected instanceof byte[])
-            Assertions.assertArrayEquals((byte[])expected, (byte[])actual, qry);
+            assertArrayEquals((byte[])expected, (byte[])actual, qry);
         else
-            Assertions.assertEquals(expected, actual, qry);
+            assertEquals(qry, expected, actual);
     }
 }

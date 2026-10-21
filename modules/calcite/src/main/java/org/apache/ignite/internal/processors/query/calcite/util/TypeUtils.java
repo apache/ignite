@@ -258,6 +258,7 @@ public class TypeUtils {
         RelDataType type,
         @Nullable List<String> origin
     ) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Preserve MULTISET types and resolve their element types.
         // Java types, including byte[], are values rather than SQL containers.
         if (type instanceof RelDataTypeFactoryImpl.JavaType)
             return typeFactory.createType(getResultClass(typeFactory, schema, type, origin));
@@ -352,6 +353,7 @@ public class TypeUtils {
 
     /** */
     private static Function<Object, Object> fieldConverter(ExecutionContext<?> ectx, RelDataType fieldType) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Add recursive conversion of MULTISET elements.
         if (!needsResultConversion(fieldType))
             return Function.identity();
 
@@ -415,6 +417,7 @@ public class TypeUtils {
 
     /** Checks declared types during converter construction, without inspecting result values. */
     private static boolean needsResultConversion(RelDataType type) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Check MULTISET element types for required conversion.
         if (type instanceof RelDataTypeFactoryImpl.JavaType)
             return isConvertableType(type);
 
