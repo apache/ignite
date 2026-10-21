@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -91,8 +92,8 @@ public class CheckpointMapSnapshotCompatibilityTest extends IgnitePersistenceCom
     }
 
     /**
-     * Starts a node of the old version, waits until it writes {@code cpMapSnapshot.bin}, then starts a node of the
-     * current version on the same PDS and checks that the snapshot file is read without errors.
+     * 1. Starts a node of the old version, waits until it writes {@code cpMapSnapshot.bin}
+     * 2. Starts a node of the current version on the same PDS and checks that the snapshot file is read without errors.
      */
     @Test
     public void testSnapshotFileReadableByCurrentVersion() throws Exception {
@@ -116,6 +117,10 @@ public class CheckpointMapSnapshotCompatibilityTest extends IgnitePersistenceCom
 
         byte[] oldBytes = Files.readAllBytes(snpFile.toPath());
 
+        EarliestCheckpointMapSnapshot snp = Marshallers.jdk().unmarshal(oldBytes, null);
+
+        assertNotNull(snp);
+
         listeningLog = new ListeningTestLogger(log);
 
         LogListener errLsnr = LogListener.matches(UNMARSHAL_ERR_MSG).build();
@@ -131,29 +136,18 @@ public class CheckpointMapSnapshotCompatibilityTest extends IgnitePersistenceCom
             errLsnr.check()
         );
 
-        EarliestCheckpointMapSnapshot snap = node.context().marshallerContext().jdkMarshaller().unmarshal(oldBytes, null);
-
-        assertNotNull(snap);
-
         IgniteCache<Integer, String> cache = node.cache(CACHE_NAME);
 
         for (int i = 0; i < ENTRIES_CNT; i++)
             assertEquals("val" + i, cache.get(i));
     }
 
-    /**
-     * Configures persistence for the old and the current version node. Checkpoint frequency is lowered so the old node
-     * writes the snapshot file shortly after the data is loaded.
-     *
-     * @param cfg Ignite configuration.
-     */
+    /** */
     private static void configure(IgniteConfiguration cfg) {
         cfg.setConsistentId(CONSISTENT_ID);
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setCheckpointFrequency(1_000)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(64L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
     }
 }
