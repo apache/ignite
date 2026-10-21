@@ -159,15 +159,15 @@ class DiskFullTest(IgniteTest):
         assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
         assert printed_lines(flood) > lines, "The service stopped writing to System.out"
 
-        console_log = os.path.join(ignite.log_dir, "console.log")
-
-        check_write_failed(ignite, console_log)
+        for log in log_files(ignite):
+            check_write_failed(ignite, log)
 
         flood.stop()
 
         enlarge_volume(ignite, ignite.log_dir, 128)
 
-        check_grows(ignite, ignite.nodes[0].log_file)
+        for log in log_files(ignite):
+            check_grows(ignite, log)
 
         load.stop()
 
