@@ -160,52 +160,64 @@ include::{javaFile}[tag=disable-validation,indent=0]
 --
 
 == Upgrading Certificates
-If your SSL certificates are about to expire or have been compromised, you can install new certificates without shutting down the whole cluster.
 
-Reload installs a new SSL context without testing TLS connections. Before rollout, check peer trust, protocols, cipher suites and client authentication. If a connection fails after the context is installed, Ignite does not roll back the change automatically.
+You can replace certificates without stopping the whole cluster. Choose the stages that apply to your change:
 
-. First of all, make sure the new certificates are trusted by all cluster nodes.
-This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
-+
---
-Import the certificate of the new authority to the trusted store of every node, server or client. Then run link:tools/control-script#reloading-certificates[`control.sh --ssl reload`].
-With self-signed certificates, import the new certificate of every node instead of an authority certificate.
+[cols="2,3",opts="header"]
+|===
+|Change |Stages
+|Same CA, already trusted by every node and application
+|Replace certificates (stage 2).
+|New CA or new self-signed certificates
+|Add trust → replace certificates → remove old trust if required (stages 1–3).
+|===
 
-Also import the new certificate to the trusted stores of applications that connect to the cluster with SSL.
-An application that does not trust the new certificate cannot connect to a node that serves it.
-For `control.sh`, import the new certificate to the trusted store that you pass with `--truststore`.
+Before starting, check peer trust, protocols, cipher suites and client authentication. `control.sh --ssl reload` does not test TLS connections or roll back a context if new connections fail.
 
-Java and C++ thin clients read their stores only when they start, so restart those that are running.
-Also restart running JDBC applications that take their stores from the `javax.net.ssl.*` system properties.
-ODBC drivers, and JDBC drivers that set their stores in the connection properties, read them on every new connection.
+=== 1. Trust the New Certificates
 
-Before proceeding, check the trust stores or custom trust managers on every node and client. They must accept the new certificates. Reload does not verify these trust relationships, and `--ssl status` does not report them.
---
+*When:* before installing certificates from a new CA or new self-signed certificates. Keep the old certificates trusted throughout the replacement.
 
-. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Before you change the key store, make a copy of it.
-+
---
-Put the new key store on one node first and run `control.sh --ssl reload`. Use `control.sh --ssl status` to check the certificate loaded into its SSL context. Test new connections before repeating this on the remaining nodes.
+* *On every server and client node:* import the new CA certificate into the trust store. For self-signed certificates, import each peer's new certificate, including application client certificates, instead of a CA certificate. After updating the trust stores on all nodes, run link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] once.
+* *In every application that connects over SSL:* update its trust store in the same way. This includes the trust store passed to `control.sh` with `--truststore`.
 
-`control.sh --diagnostic connectivity` checks communication between nodes. Check the client connector and HTTP REST with new connections from your applications.
+Make running applications load the updated stores:
 
-If peers cannot connect, correct their trust and TLS settings or restore the old key store and run `control.sh --ssl reload` again. The restored chain must still be valid. If the command cannot reach the node, restart it after restoring its configuration.
+[cols="2,3",opts="header"]
+|===
+|Application |How to load the stores
+|Java and C++ thin clients
+|Restart the running clients.
+|JDBC applications using `javax.net.ssl.*` system properties
+|Restart the running applications.
+|ODBC applications and JDBC applications using connection properties for their stores
+|Open new connections. The drivers read the stores for each new connection.
+|===
 
-If HTTP REST takes its key store from the Jetty configuration file, restart the node so that HTTP REST serves the new certificate.
-To avoid the restart next time, move the TLS setup of HTTP REST to `ConnectorConfiguration.httpSslFactory`, see link:restapi#configuration[REST API configuration].
---
+*Before stage 2:* verify that the trust stores or custom trust managers of every node and application accept the new certificates. Neither `--ssl reload` nor `--ssl status` verifies these trust relationships.
 
-. Do this step if you moved to a new certificate authority and the nodes must stop trusting the old one.
-+
---
-Check with `control.sh --ssl status` that every server and client node has loaded a certificate from the new authority. Verify new connections and make sure that every application with a client certificate uses one from the new authority. This includes `control.sh` started with `--keystore`.
+=== 2. Replace the Certificates
 
-Then remove the old authority from the trusted stores of the nodes and run `control.sh --ssl reload`.
-If you remove it earlier, nodes reject new connections from nodes and applications that still use certificates from the old authority.
---
+*When:* every node and application trusts the new certificates. Start with one node, check it, then repeat on the remaining nodes.
 
-If a private key has been compromised, follow steps 1 to 3 with a new certificate authority.
-Then restart the nodes one at a time to close connections opened with certificates from the old authority.
+. Back up the node's key store. Replace the old certificate and private key with the new certificate, its chain and private key.
+. Run `control.sh --ssl reload`, then use `control.sh --ssl status` to check the certificate loaded on that node. The reload command runs on all nodes, even when you changed the files on only one.
+. Test new connections before replacing the next node's certificate. Use `control.sh --diagnostic connectivity` to check communication between nodes. Test the client connector and HTTP REST with new connections from your applications.
+
+Before removing old trust, also replace any application client certificate that would no longer be trusted. This includes `control.sh` started with `--keystore`. Make the applications load their updated stores as described in stage 1.
+
+*If a connection fails:* stop the rollout. Correct peer trust and TLS settings, or restore the old key store and run `control.sh --ssl reload` again. The restored chain must still be valid. If the command cannot reach the node, restore its configuration and restart it.
+
+*HTTP REST configured in Jetty XML:* restart the node to load its new HTTP REST certificate. To use reload for future replacements, move its TLS setup to `ConnectorConfiguration.httpSslFactory`, see link:restapi#configuration[REST API configuration].
+
+=== 3. Remove the Old Trust
+
+*When:* all affected nodes and applications use the new certificates, and the old CA or self-signed certificates must no longer be trusted. Skip this stage if the old CA must remain trusted.
+
+. Use `control.sh --ssl status` to check the new certificates on all updated server and client nodes. Verify new connections and check that every affected application has loaded its replacement client certificate.
+. Remove the old CA certificate, or the old self-signed certificates, from node and application trust stores. Run `control.sh --ssl reload` for the nodes. Make applications load the updated stores as described in stage 1.
+
+Reload leaves existing connections open. If you are replacing certificates after a private key compromise, also restart nodes one at a time to close connections established with the old certificates.
 
 == Renewing Certificates Automatically
 
