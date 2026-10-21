@@ -85,35 +85,6 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
     }
 
     /**
-     * Verify single queries.
-     */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testDataPageScanSingle() throws Exception {
-        checkDataPageScan("SELECT * FROM TEST WHERE val > 42", null);
-        checkDataPageScan("UPDATE TEST SET val = val + 1 WHERE val > 10", null);
-
-        checkDataPageScan("SELECT id FROM TEST WHERE val < 3", true);
-        checkDataPageScan("UPDATE TEST SET val = val + 3 WHERE val < 3", true);
-
-        checkDataPageScan("SELECT val FROM TEST WHERE id = 5", false);
-        checkDataPageScan("UPDATE TEST SET val = val - 5 WHERE val < 100", false);
-    }
-
-    /**
-     * Verify the case property is set on connection and batched operations are performed.
-     */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
-    public void testDataPageScanBatching() throws Exception {
-        checkDataPageScanInBatch("UPDATE TEST SET val = ? WHERE val > 10", null);
-
-        checkDataPageScanInBatch("UPDATE TEST SET val = val + 3 WHERE val < ?", true);
-
-        checkDataPageScanInBatch("UPDATE TEST SET val = val - 5 WHERE val < ?", false);
-    }
-
-    /**
      * Checks that executed query executed has the same data page scan flag value as we specified in the connection
      * properties. Queries are executed with batching.
      *

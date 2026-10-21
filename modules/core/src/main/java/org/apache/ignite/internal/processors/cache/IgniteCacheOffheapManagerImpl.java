@@ -661,16 +661,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                                 curPart = ds.partId();
 
-                                // Data page scan is disabled by default for scan queries.
-                                // TODO https://issues.apache.org/jira/browse/IGNITE-11998
-                                CacheDataTree.setDataPageScanEnabled(false);
+                                cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
 
-                                try {
-                                    cur = cacheId == CU.UNDEFINED_CACHE_ID ? ds.cursor() : ds.cursor(cacheId);
-                                }
-                                finally {
-                                    CacheDataTree.setDataPageScanEnabled(false);
-                                }
                             }
                             else
                                 break;

@@ -268,7 +268,7 @@ public class GridReduceQueryExecutor {
 
                     try {
                         GridQueryNextPageRequest msg0 = new GridQueryNextPageRequest(qryReqId, qry, seg, pageSize,
-                            (byte)GridH2QueryRequest.setDataPageScanEnabled(0, r.isDataPageScanEnabled()));
+                            (byte)GridH2QueryRequest.setDataPageScanEnabled(0));
 
                         if (node.isLocal())
                             h2.mapQueryExecutor().onNextPageRequest(node, msg0);
@@ -323,7 +323,6 @@ public class GridReduceQueryExecutor {
      * @param params Query parameters.
      * @param parts Partitions.
      * @param lazy Lazy execution flag.
-     * @param dataPageScanEnabled If data page scan is enabled.
      * @param pageSize Page size.
      * @return Rows iterator.
      */
@@ -340,7 +339,6 @@ public class GridReduceQueryExecutor {
         Object[] params,
         int[] parts,
         boolean lazy,
-        Boolean dataPageScanEnabled,
         int pageSize
     ) {
         if (pageSize <= 0)
@@ -406,7 +404,7 @@ public class GridReduceQueryExecutor {
 
             try {
                 final ReduceQueryRun r = createReduceQueryRun(conn, mapQueries, nodes,
-                    pageSize, nodeToSegmentsCnt, skipMergeTbl, qry.explain(), dataPageScanEnabled);
+                    pageSize, nodeToSegmentsCnt, skipMergeTbl, qry.explain());
 
                 runs.put(qryReqId, r);
 
@@ -425,7 +423,7 @@ public class GridReduceQueryExecutor {
                         .partitions(convert(mapping.partitionsMap()))
                         .queries(mapQueries)
                         .parameters(params)
-                        .flags(queryFlags(qry, enforceJoinOrder, lazy, dataPageScanEnabled))
+                        .flags(queryFlags(qry, enforceJoinOrder, lazy))
                         .timeout(timeoutMillis)
                         .explicitTimeout(true)
                         .schemaName(schemaName)
@@ -526,7 +524,6 @@ public class GridReduceQueryExecutor {
                                 rdc.query(),
                                 timeoutMillis,
                                 cancel,
-                                dataPageScanEnabled,
                                 null
                             ),
                             qryInfo
@@ -754,7 +751,6 @@ public class GridReduceQueryExecutor {
      * @param nodeToSegmentsCnt Segments per-index.
      * @param skipMergeTbl Skip merge table flag.
      * @param explain Explain query flag.
-     * @param dataPageScanEnabled DataPage scan enabled flag.
      * @return Reduce query run.
      */
     @NotNull private ReduceQueryRun createReduceQueryRun(
@@ -764,14 +760,9 @@ public class GridReduceQueryExecutor {
         int pageSize,
         Map<ClusterNode, BitSet> nodeToSegmentsCnt,
         boolean skipMergeTbl,
-        boolean explain,
-        Boolean dataPageScanEnabled) {
+        boolean explain) {
 
-        final ReduceQueryRun r = new ReduceQueryRun(
-            mapQueries.size(),
-            pageSize,
-            dataPageScanEnabled
-        );
+        final ReduceQueryRun r = new ReduceQueryRun(mapQueries.size(), pageSize);
 
         int tblIdx = 0;
         int replicatedQrysCnt = 0;
@@ -827,14 +818,13 @@ public class GridReduceQueryExecutor {
      */
     private int queryFlags(GridCacheTwoStepQuery qry,
         boolean enforceJoinOrder,
-        boolean lazy,
-        Boolean dataPageScanEnabled) {
+        boolean lazy) {
         if (qry.distributedJoins())
             enforceJoinOrder = true;
 
         return GridH2QueryRequest.queryFlags(qry.distributedJoins(),
             enforceJoinOrder, lazy, qry.isReplicatedOnly(),
-            qry.explain(), dataPageScanEnabled, qry.treatReplicatedAsPartitioned());
+            qry.explain(), qry.treatReplicatedAsPartitioned());
     }
 
     /**
@@ -1139,7 +1129,6 @@ public class GridReduceQueryExecutor {
                     null,
                     0,
                     null,
-                    null,
                     null);
 
             lists.add(F.asList(getPlan(rs)));
@@ -1159,7 +1148,6 @@ public class GridReduceQueryExecutor {
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters(params)),
             0,
-            null,
             null, null);
 
         lists.add(F.asList(getPlan(rs)));
