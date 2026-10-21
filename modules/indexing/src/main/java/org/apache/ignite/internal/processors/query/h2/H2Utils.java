@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.api.ErrorCode;
 import org.h2.engine.Session;
 import org.h2.index.Index;
 import org.h2.jdbc.JdbcConnection;
@@ -1048,6 +1049,40 @@ public class H2Utils {
         field.setAccessible(true);
 
         return new Setter<>(field);
+    }
+
+    /**
+     * Maps H2 error code to the matching Ignite query error code when possible.
+     *
+     * @param h2ErrCode H2 error code.
+     * @return Ignite query error code, or the default parsing code when there is no more specific counterpart.
+     */
+    public static int h2ErrorCode(int h2ErrCode) {
+        switch (h2ErrCode) {
+            case ErrorCode.TABLE_OR_VIEW_ALREADY_EXISTS_1:
+                return IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
+
+            case ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1:
+                return IgniteQueryErrorCode.TABLE_NOT_FOUND;
+
+            case ErrorCode.INDEX_ALREADY_EXISTS_1:
+                return IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
+
+            case ErrorCode.INDEX_NOT_FOUND_1:
+                return IgniteQueryErrorCode.INDEX_NOT_FOUND;
+
+            case ErrorCode.DUPLICATE_COLUMN_NAME_1:
+                return IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
+
+            case ErrorCode.COLUMN_NOT_FOUND_1:
+                return IgniteQueryErrorCode.COLUMN_NOT_FOUND;
+
+            case ErrorCode.SCHEMA_NOT_FOUND_1:
+                return IgniteQueryErrorCode.SCHEMA_NOT_FOUND;
+
+            default:
+                return IgniteQueryErrorCode.PARSING;
+        }
     }
 
     /**

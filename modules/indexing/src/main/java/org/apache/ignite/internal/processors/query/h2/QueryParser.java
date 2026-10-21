@@ -516,7 +516,8 @@ public class QueryParser {
                         IgniteQueryErrorCode.DB_UNRECOVERABLE_ERROR, e);
                 }
                 else
-                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                        H2Utils.h2ErrorCode(e.getErrorCode()), e);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);

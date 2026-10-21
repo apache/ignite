@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -192,6 +195,51 @@ public class IgniteCacheSqlQueryErrorSelfTest extends GridCacheAbstractSelfTest 
 
         checkSqlErrorMessage("alter table test drop column",
             "Failed to parse query. Syntax error in SQL statement \"ALTER TABLE TEST DROP COLUMN [*]");
+    }
+
+    /**
+     * Checks error codes of the queries failed to parse.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testParseErrorCodes() throws Exception {
+        checkSqlErrorCode("select from wrong", IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        checkSqlErrorCode("select wrong from test", IgniteQueryErrorCode.COLUMN_NOT_FOUND);
+        checkSqlErrorCode("select * from wrong_schema.test", IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
+        checkSqlErrorCode("insert into wrong (id, val) values (3, 'val3')", IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        checkSqlErrorCode("alter table wrong drop column val", IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+        // Generic syntax errors must be reported with the default parsing code.
+        checkSqlErrorCode("select from test where", IgniteQueryErrorCode.PARSING);
+    }
+
+    /**
+     * Checks SQL error code.
+     *
+     * @param sql SQL command.
+     * @param expCode Expected error code.
+     */
+    private void checkSqlErrorCode(final String sql, int expCode) {
+        execute("DROP TABLE IF EXISTS wrong");
+        execute("DROP TABLE IF EXISTS test");
+
+        execute("CREATE TABLE test (id INT PRIMARY KEY, val VARCHAR)");
+
+        execute("INSERT INTO test (id, val) VALUES (1, 'val1')");
+
+        try {
+            execute(sql);
+
+            fail("Exception is expected: " + sql);
+        }
+        catch (CacheException e) {
+            IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+
+            assertNotNull("Failed to find SQL error for query: " + sql, sqlEx);
+
+            assertEquals("Unexpected error code for query: " + sql, expCode, sqlEx.statusCode());
+        }
     }
 
     /**
