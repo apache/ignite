@@ -103,7 +103,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
  * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
-public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements BinaryReaderEx {
+public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements BinaryReaderEx {
     /** Binary context. */
     private final BinaryContext ctx;
 
@@ -131,9 +131,6 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
     /** Footer end. */
     private final int footerLen;
 
-    /** Class descriptor. */
-    private BinaryClassDescriptor desc;
-
     /** Mapper. */
     private final BinaryInternalMapper mapper;
 
@@ -160,6 +157,9 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
 
     /** Whether stream is in raw mode. */
     private boolean raw;
+
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
 
     /**
      * Constructor.
@@ -1527,7 +1527,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)doReadCollection(in, ctx, ldr, this, false, true, factory);
+                return doReadCollection(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = positionForHandle(in) - in.readInt();
@@ -1605,7 +1605,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)doReadMap(in, ctx, ldr, this, false, true, factory);
+                return doReadMap(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = positionForHandle(in) - in.readInt();
@@ -1967,7 +1967,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
         if (!findFieldById(fieldId))
             return null;
 
-        return BinaryUtils.reader(ctx, in, ldr, hnds, false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**
@@ -3206,13 +3206,13 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
 
             int start = in.readInt();
 
-            return BinaryUtils.binariesFactory.binaryOffheapObject(ctx, in.offheapPointer() + pos, start, len);
+            return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
             byte[] arr = BinaryUtils.doReadByteArray(in);
             int start = in.readInt();
 
-            BinaryObject binO = BinaryUtils.binariesFactory.binaryObject(ctx, arr, start);
+            BinaryObject binO = new BinaryObjectImpl(ctx, arr, start);
 
             if (detach)
                 return BinaryUtils.detach(binO);
@@ -3332,7 +3332,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return BinaryUtils.binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
+        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
@@ -3345,7 +3345,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryUtils.binariesFactory.binaryEnumClass(), len);
+        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -3365,7 +3365,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
      */
     @Nullable private static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return BinaryUtils.reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**
@@ -3426,7 +3426,7 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
                 BinaryObjectEx po;
 
                 if (detach) {
-                    BinaryObjectEx binObj = BinaryUtils.binariesFactory.binaryObject(ctx, in.array(), start);
+                    BinaryObjectEx binObj = new BinaryObjectImpl(ctx, in.array(), start);
 
                     binObj.detachAllowed(true);
 
@@ -3434,9 +3434,9 @@ public class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements Bin
                 }
                 else {
                     if (in.offheapPointer() == 0)
-                        po = BinaryUtils.binariesFactory.binaryObject(ctx, in.array(), start);
+                        po = new BinaryObjectImpl(ctx, in.array(), start);
                     else
-                        po = BinaryUtils.binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
+                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
                 }
 
