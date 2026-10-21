@@ -149,8 +149,8 @@ public class InlineRecommender {
         }
         else {
             return "use INLINE_SIZE option for CREATE INDEX command, " +
-                "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
-                "QueryEntity configuration";
+                "QuerySqlField.inlineSize for annotated classes, QueryIndex.inlineSize for explicit " +
+                "QueryEntity configuration, or QueryGroupIndex.inlineSize for group indexes";
         }
     }
 

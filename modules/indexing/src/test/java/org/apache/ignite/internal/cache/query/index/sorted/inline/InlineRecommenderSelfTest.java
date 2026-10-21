@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,9 +35,10 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 /**
- * Tests that the inline size recommendation suggests both ways of increasing inline size
- * of a primary key index: the global system property and the per-cache
- * {@code CacheConfiguration.sqlIndexMaxInlineSize}.
+ * Tests that the inline size recommendation mentions all the ways of increasing the inline size:
+ * both the global system property and the per-cache {@code CacheConfiguration.sqlIndexMaxInlineSize}
+ * for primary key indexes, and {@code QueryGroupIndex.inlineSize} for group indexes among
+ * secondary index options.
  */
 @WithSystemProperty(key = "IGNITE_THROTTLE_INLINE_SIZE_CALCULATION", value = "1")
 public class InlineRecommenderSelfTest extends GridCommonAbstractTest {
@@ -45,9 +47,13 @@ public class InlineRecommenderSelfTest extends GridCommonAbstractTest {
     public static final TestRule classRule = new SystemPropertiesRule();
 
     /** */
-    private static final LogListener LSNR = LogListener.matches(msg ->
+    private static final LogListener PK_IDX_LSNR = LogListener.matches(msg ->
         msg.contains("IGNITE_MAX_INDEX_PAYLOAD_SIZE") && msg.contains("CacheConfiguration.sqlIndexMaxInlineSize")
     ).times(1).build();
+
+    /** */
+    private static final LogListener GRP_IDX_LSNR = LogListener.matches("QueryGroupIndex.inlineSize")
+        .times(1).build();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -55,7 +61,8 @@ public class InlineRecommenderSelfTest extends GridCommonAbstractTest {
 
         ListeningTestLogger testLog = new ListeningTestLogger(log);
 
-        testLog.registerListener(LSNR);
+        testLog.registerListener(PK_IDX_LSNR);
+        testLog.registerListener(GRP_IDX_LSNR);
 
         cfg.setGridLogger(testLog);
 
@@ -68,7 +75,8 @@ public class InlineRecommenderSelfTest extends GridCommonAbstractTest {
 
         super.afterTest();
 
-        LSNR.reset();
+        PK_IDX_LSNR.reset();
+        GRP_IDX_LSNR.reset();
     }
 
     /**
@@ -105,7 +113,43 @@ public class InlineRecommenderSelfTest extends GridCommonAbstractTest {
         cache.put(key, new Value(2));
 
         assertTrue("Inline size recommendation must mention both the system property and the per-cache "
-            + "CacheConfiguration.sqlIndexMaxInlineSize option", LSNR.check());
+            + "CacheConfiguration.sqlIndexMaxInlineSize option", PK_IDX_LSNR.check());
+    }
+
+    /**
+     * A row with a long indexed string column cannot be fully inlined into a secondary index;
+     * the logged recommendation must mention {@code QueryGroupIndex.inlineSize} for group indexes.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRecommendationMentionsGroupIndexInlineSize() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+
+        fields.put("id", Integer.class.getName());
+        fields.put("str", String.class.getName());
+
+        CacheConfiguration<Integer, Value> ccfg = new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME)
+            .setQueryEntities(Collections.singleton(new QueryEntity()
+                .setKeyType(Integer.class.getName())
+                .setValueType(Value.class.getName())
+                .setKeyFieldName("id")
+                .setFields(fields)
+                .setIndexes(Collections.singleton(new QueryIndex("str")))));
+
+        IgniteCache<Integer, Value> cache = ignite.createCache(ccfg);
+
+        Value val = new Value("a".repeat(1024));
+
+        // The first put into an empty index tree does not compare against an existing row,
+        // so the recommendation can only be triggered by a subsequent put.
+        cache.put(1, val);
+        cache.put(1, val);
+
+        assertTrue("Inline size recommendation for secondary indexes must mention QueryGroupIndex.inlineSize "
+            + "for group indexes", GRP_IDX_LSNR.check());
     }
 
     /** */
@@ -114,8 +158,20 @@ public class InlineRecommenderSelfTest extends GridCommonAbstractTest {
         private final int val;
 
         /** */
+        private final String str;
+
+        /** */
         Value(int val) {
             this.val = val;
+
+            this.str = null;
+        }
+
+        /** */
+        Value(String str) {
+            this.val = 0;
+
+            this.str = str;
         }
     }
 }
