@@ -313,7 +313,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     /**
      * Adds new node and remote class loader id to this class loader.
      * Class loader will ask all associated nodes for the class/resource
-     * until find it. The node is asked first.
+     * until find it.
      *
      * @param nodeId Participating node ID.
      * @param ldrId Participating class loader id.
