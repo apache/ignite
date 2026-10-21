@@ -752,6 +752,14 @@ public class SnapshotCheckProcess {
             mreg.register("processedSnapshotParts", ctx.checkedSnapshotParts::get,
                 "Number of checked snapshot parts (nodes data) on current node.");
         }
+
+        // Presence of this metrics also marks that the registry is complete.
+        mreg.register(
+            "requestId",
+            () -> ctx.req.requestId().toString(),
+            String.class,
+            "The request ID of the last running cluster snapshot check operation on this node."
+        );
     }
 
     /** */
@@ -778,7 +786,7 @@ public class SnapshotCheckProcess {
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-        /** Common counter of total work units to process on current node. */
+        /** Common counter of total work units to process on current node, of all snapshot parts ({@link #checkedSnapshotParts}). */
         @GridToStringExclude
         private final AtomicInteger totalCounter = new AtomicInteger(-1);
 
