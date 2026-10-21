@@ -1323,12 +1323,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         grid(1).close();
 
-        assertThrowsAnyCause(
-            log,
+        assertThrowsAnyCause(log,
             fut::get,
             ClusterTopologyException.class,
-            "Snapshot operation interrupted, because baseline node left the cluster"
-        );
+            "Snapshot operation interrupted, because baseline node left the cluster");
 
         GridCacheContext<?, ?> cctx = ignite.context().cache().internalCache(dfltCacheCfg.getName()).context();
 
