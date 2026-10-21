@@ -44,9 +44,9 @@ public class EarliestCheckpointMapSnapshotSerializer implements IgniteDataTransf
             int len = obj.data == null ? -1 : obj.data.size();
             out.writeInt(len);
             if (len > 0) {
-                for (Map.Entry<UUID, Map<java.lang.Integer, org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot>> el : obj.data.entrySet()) {
+                for (Map.Entry<UUID, Map<Integer, EarliestCheckpointMapSnapshot.GroupStateSnapshot>> el : obj.data.entrySet()) {
                     UUID k = el.getKey();
-                    Map<java.lang.Integer, org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot> v = el.getValue();
+                    Map<Integer, EarliestCheckpointMapSnapshot.GroupStateSnapshot> v = el.getValue();
                     U.writeUuid(out, k);
                     {
                         int len1 = v == null ? -1 : v.size();
@@ -82,7 +82,7 @@ public class EarliestCheckpointMapSnapshotSerializer implements IgniteDataTransf
                 obj.data = new HashMap<>();
                 for (int i = 0; i < len; i++) {
                     UUID k = null;
-                    Map<java.lang.Integer, org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot> v = null;
+                    Map<Integer, EarliestCheckpointMapSnapshot.GroupStateSnapshot> v = null;
                     k = U.readUuid(in);
                     {
                         int len1 = in.readInt();
