@@ -221,6 +221,8 @@ Reload leaves existing connections open. If you are replacing certificates after
 
 == Renewing Certificates Automatically
 
+Use automatic renewal when an external system delivers updated key store files to the nodes, or when a <<Custom SSL Context Factories,custom factory>> retrieves new certificates from a service. If you replace JKS or other key store files manually, run `control.sh --ssl reload` after replacing them and check the result as described in <<Upgrading Certificates>>.
+
 Before enabling renewal, make sure the factory supplies the X.509 certificate chain with each SSL context. Without this information, the node cannot determine when to renew the certificate and will not start with `renewalEnabled=true`.
 
 To enable automatic renewal, set `renewalEnabled` to `true` on each SSL context factory that should renew its certificates, then restart the nodes one at a time. Renewal is disabled by default.
@@ -231,7 +233,7 @@ Besides `IgniteConfiguration.sslContextFactory`, a node may use `ClientConnector
 
 Transports configured with the same factory object get the new certificate together. HTTP REST certificates configured in the Jetty XML file are not renewed automatically.
 
-For `SslContextFactory`, replace the key store and trust store files before the renewal window starts. The node loads them automatically. Custom factories load certificates from their configured source, as described in <<Custom SSL Context Factories>>.
+For `SslContextFactory`, configure the delivery system to update the key store files before the renewal window starts. Ignite reads them when renewal is due, not when the files change.
 
 Use a valid certificate chain that expires later than the one in use. A chain expires as soon as any certificate in it expires. Renew the CA certificate too if it expires first.
 
