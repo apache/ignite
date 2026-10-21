@@ -42,6 +42,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -208,6 +209,10 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             Map<String, BinaryFieldMetadata> fieldsMeta = null;
 
+            // For optimization needs already known object fields are not pushed into structure.
+            // This flag signals about such optimizations.
+            T1<Boolean> partialFields = new T1<>(false);
+
             if (reader != null && BinaryImplUtils.hasSchema(flags)) {
                 Map<Integer, Object> assignedFldsById;
 
@@ -223,7 +228,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
                         assignedFldsById.put(fieldId, val);
 
                         if (val != REMOVED_FIELD_MARKER)
-                            fieldsMeta = checkMetadata(meta, fieldsMeta, val, name, fieldId);
+                            fieldsMeta = checkMetadata(meta, fieldsMeta, val, name, fieldId, partialFields);
                     }
 
                     remainsFlds = assignedFldsById.keySet();
@@ -315,9 +320,10 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
                     serializer.writeValue(writer, val);
 
-                    if (reader == null)
+                    if (reader == null) {
                         // Metadata has already been checked.
-                        fieldsMeta = checkMetadata(meta, fieldsMeta, val, name, fieldId);
+                        fieldsMeta = checkMetadata(meta, fieldsMeta, val, name, fieldId, partialFields);
+                    }
                 }
             }
 
@@ -338,7 +344,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             writer.postWrite(true, registeredType);
 
-            ctx.updateMetaIfNeeded(writer, meta, typeId, typeName, affFieldName, fieldsMeta);
+            ctx.updateMetaIfNeeded(writer, meta, typeId, typeName, affFieldName, fieldsMeta, partialFields.get());
 
             // Update hash code after schema is written.
             writer.postWriteHashCode(registeredType ? null : clsNameToWrite);
@@ -356,9 +362,10 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
      * @param newVal Field value being serialized.
      * @param name Field name.
      * @param fieldId Field ID.
+     * @param partialFields It will be {@code true} if found already known object fields.
      */
     private Map<String, BinaryFieldMetadata> checkMetadata(BinaryType meta, Map<String, BinaryFieldMetadata> fieldsMeta,
-        Object newVal, String name, int fieldId) {
+        Object newVal, String name, int fieldId, T1<Boolean> partialFields) {
         String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
 
         boolean nullFieldVal = false;
@@ -402,18 +409,22 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             fieldsMeta.put(name, new BinaryFieldMetadata(newFldTypeId, fieldId));
         }
-        else if (!nullFieldVal) {
-            String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
+        else {
+            partialFields.set(true);
 
-            if (!Objects.equals(newFldTypeName, oldFldTypeName) &&
-                !oldFldTypeName.equals(BinaryUtils.fieldTypeName(GridBinaryMarshaller.OBJ))) {
-                throw new BinaryObjectException(
-                    "Wrong value has been set [" +
-                        "typeName=" + (typeName == null ? meta.typeName() : typeName) +
-                        ", fieldName=" + name +
-                        ", fieldType=" + oldFldTypeName +
-                        ", assignedValueType=" + newFldTypeName + ']'
-                );
+            if (!nullFieldVal) {
+                String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
+
+                if (!Objects.equals(newFldTypeName, oldFldTypeName) &&
+                    !oldFldTypeName.equals(BinaryUtils.fieldTypeName(GridBinaryMarshaller.OBJ))) {
+                    throw new BinaryObjectException(
+                        "Wrong value has been set [" +
+                            "typeName=" + (typeName == null ? meta.typeName() : typeName) +
+                            ", fieldName=" + name +
+                            ", fieldType=" + oldFldTypeName +
+                            ", assignedValueType=" + newFldTypeName + ']'
+                    );
+                }
             }
         }
 
