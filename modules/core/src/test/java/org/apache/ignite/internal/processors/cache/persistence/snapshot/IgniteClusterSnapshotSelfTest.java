@@ -59,6 +59,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -1306,7 +1307,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        Ignite cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
+        IgniteEx cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
             .setCacheConfiguration(dfltCacheCfg))
             .setFailureHandler(new StopNodeFailureHandler()));
 
@@ -1320,17 +1321,22 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         failNodeSpi.waitForBlocked(1, 10_000L);
 
-        UUID failNodeId = grid(1).localNode().id();
-
         grid(1).close();
 
-        assertThrowsAnyCause(log,
+        assertThrowsAnyCause(
+            log,
             fut::get,
             ClusterTopologyException.class,
-            "Snapshot operation interrupted, because baseline node left the cluster");
+            "Snapshot operation interrupted, because baseline node left the cluster"
+        );
 
-        // The client processes the node-left event asynchronously. The query should be mapped on a proper topology.
-        assertTrue(waitForCondition(() -> cln.cluster().node(failNodeId) == null, 10_000L));
+        GridCacheContext<?, ?> cctx = ignite.context().cache().internalCache(dfltCacheCfg.getName()).context();
+
+        // The client refreshes its cache affinity asynchronously. A scan query is mapped
+        // on the affinity topology version, so wait for it to advance, otherwise the query
+        // can be mapped on the outdated topology still containing the left node.
+        assertTrue(waitForCondition(() ->
+            cctx.affinity().affinityTopologyVersion().compareTo(cln.context().discovery().topologyVersionEx()) >= 0, 10_000L));
 
         // Check that client node is alive.
         assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
