@@ -604,7 +604,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         AffinityTopologyVersion topVer,
         Boolean dataPageScanEnabled
     ) {
-        return iterator(cacheId, cacheData(primary, backups, topVer), dataPageScanEnabled);
+        return iterator(cacheId, cacheData(primary, backups, topVer));
     }
 
     /** {@inheritDoc} */
@@ -615,7 +615,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(cacheId, singletonIterator(data), dataPageScanEnabled);
+        return iterator(cacheId, singletonIterator(data));
     }
 
     /** {@inheritDoc} */
@@ -625,21 +625,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         if (data == null)
             return new GridEmptyCloseableIterator<>();
 
-        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data), null);
+        return iterator(CU.UNDEFINED_CACHE_ID, singletonIterator(data));
     }
 
     /**
      *
      * @param cacheId Cache ID.
-     * @param dataIt Data store iterator.
-     * @param dataPageScanEnabled Flag to enable data page scan.
+     * @param dataIt  Data store iterator.
      * @return Rows iterator
      */
-    private GridCloseableIterator<CacheDataRow> iterator(int cacheId,
-        Iterator<CacheDataStore> dataIt,
-        Boolean dataPageScanEnabled
-    ) {
-        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+    private GridCloseableIterator<CacheDataRow> iterator(int cacheId, Iterator<CacheDataStore> dataIt) {
+        return new GridCloseableIteratorAdapter<>() {
             /** */
             private GridCursor<? extends CacheDataRow> cur;
 
