@@ -21,7 +21,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -30,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -98,7 +96,14 @@ public class CheckpointMapSnapshotCompatibilityTest extends IgnitePersistenceCom
      */
     @Test
     public void testSnapshotFileReadableByCurrentVersion() throws Exception {
-        startGrid(1, oldVer, new ConfigurationClosure(), new PostStartupClosure());
+        startGrid(1, oldVer, CheckpointMapSnapshotCompatibilityTest::configure, (ignite) -> {
+            ignite.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+            for (int i = 0; i < ENTRIES_CNT; i++)
+                cache.put(i, "val" + i);
+        });
 
         File snpFile = new File(nodeFileTree(U.maskForFileName(CONSISTENT_ID)).checkpoint(), EARLIEST_CP_SNAPSHOT_FILE);
 
@@ -150,26 +155,5 @@ public class CheckpointMapSnapshotCompatibilityTest extends IgnitePersistenceCom
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(64L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
-    }
-
-    /** Configuration closure for the old version node. */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteConfiguration cfg) {
-            configure(cfg);
-        }
-    }
-
-    /** Loads data into the old version node so that checkpoints have something to record. */
-    private static class PostStartupClosure implements IgniteInClosure<Ignite> {
-        /** {@inheritDoc} */
-        @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
-
-            IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME);
-
-            for (int i = 0; i < ENTRIES_CNT; i++)
-                cache.put(i, "val" + i);
-        }
     }
 }

@@ -34,17 +34,15 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Earliest checkpoint map snapshot.
  * Speeds up construction of the earliestCp map in the {@link CheckpointHistory}.
- * <p>
- * The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}), so its binary format
- * must stay readable across versions. The format is the one produced by {@code IgniteDataTransferObject}, which this
- * class extended in previous versions: a header followed by a length-prefixed byte array with the payload.
- * Keep {@link #writeExternal(ObjectOutput)} and {@link #readExternal(ObjectInput)} byte-compatible with it.
+ *
+ * <b>The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}),
+ * so its binary format must stay readable across versions.</b>
  */
 public class EarliestCheckpointMapSnapshot implements Externalizable {
     /** Serial version UUID. */
     private static final long serialVersionUID = 0L;
 
-    /** Header magic number. Older versions wrote a protocol version in the lowest byte, so it must be masked out. */
+    /** Header magic number. */
     private static final int MAGIC = 0x42BEEF00;
 
     /** Last snapshot's checkpoint timestamp. */
@@ -106,7 +104,10 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
         return checkpointIds.contains(checkpointId);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * <b>The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}),
+     * so its binary format must stay readable across versions.</b>
+     */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(MAGIC);
 
@@ -116,7 +117,10 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * <b>The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}),
+     * so its binary format must stay readable across versions.</b>
+     */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         readHeader(in);
 
@@ -126,12 +130,7 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
         }
     }
 
-    /**
-     * Reads and validates the header.
-     *
-     * @param in Input.
-     * @throws IOException If the header is unexpected.
-     */
+    /** */
     private static void readHeader(ObjectInput in) throws IOException {
         int hdr = in.readInt();
 
