@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckProcessRequest",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 1, "type": "java.lang.String", "name": "snpName"},
+    {"order": 2, "type": "java.lang.String", "name": "snpPath"},
+    {"order": 3, "type": "java.util.Collection<java.lang.String>", "name": "grps"},
+    {"order": 4, "type": "long", "name": "startTime"},
+    {"order": 5, "type": "java.util.Set<java.util.UUID>", "name": "nodes"},
+    {"order": 6, "type": "boolean", "name": "fullCheck"},
+    {"order": 7, "type": "boolean", "name": "allRestoreHandlers"},
+    {"order": 8, "type": "int", "name": "incIdx"}
+  ]
+}

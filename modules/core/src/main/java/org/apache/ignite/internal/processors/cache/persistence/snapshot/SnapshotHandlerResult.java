@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <T> Type of the local processing result.
  */
-public class SnapshotHandlerResult<T extends Message> implements Message {
+public class SnapshotHandlerResult<T extends Message> extends AbstractMessage {
     /** Result of local processing. */
     @Order(0)
     Message data;

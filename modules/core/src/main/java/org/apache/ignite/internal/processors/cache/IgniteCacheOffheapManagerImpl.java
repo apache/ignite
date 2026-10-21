@@ -198,6 +198,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public GridSpinBusyLock stoppageLock() {
+        return busyLock;
+    }
+
+    /** {@inheritDoc} */
     @Override public void stop() {
         GridKernalContext kctx = ctx.kernalContext();
 

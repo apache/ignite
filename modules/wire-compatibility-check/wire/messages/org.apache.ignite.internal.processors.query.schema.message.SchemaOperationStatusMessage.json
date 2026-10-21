@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "opId"},
+    {"order": 1, "type": "int", "name": "errCode"},
+    {"order": 2, "type": "java.lang.String", "name": "errMsg"},
+    {"order": 3, "type": "boolean", "name": "nop"}
+  ]
+}

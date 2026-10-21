@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.NonMarshallableMessage;
 import org.h2.value.Value;
 
 /**
  * Abstract message wrapper for H2 values.
  */
-public abstract class GridH2ValueMessage implements NonMarshallableMessage {
+public abstract class GridH2ValueMessage extends AbstractMessage implements NonMarshallableMessage {
     /**
      * Gets H2 value.
      *

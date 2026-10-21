@@ -284,11 +284,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             /**
              * Initially all cache descriptors are included.
              */
-            private final Set<CacheGroupContext> filteredCacheGrps;
+            private final Set<CacheGroupContext> filteredCacheGroups;
 
             /** */
             public CachesFiltering(Collection<CacheGroupContext> cacheGroups) {
-                filteredCacheGrps = new HashSet<>(cacheGroups);
+                filteredCacheGroups = new HashSet<>(cacheGroups);
             }
 
             /**
@@ -298,7 +298,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
              * @return this
              */
             public CachesFiltering filter(IgniteInClosure<Set<CacheGroupContext>> closure) {
-                closure.apply(filteredCacheGrps);
+                closure.apply(filteredCacheGroups);
 
                 return this;
             }
@@ -311,7 +311,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             public Set<Integer> result() {
                 Set<Integer> res = new HashSet<>();
 
-                for (CacheGroupContext cacheGrp : filteredCacheGrps)
+                for (CacheGroupContext cacheGrp : filteredCacheGroups)
                     res.add(cacheGrp.groupId());
 
                 return res;
@@ -483,6 +483,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
+                if (!gctx.offheap().stoppageLock().enterBusy()) {
+                    part.release();
+
+                    return res;
+                }
+
                 boolean gwLocked = false;
 
                 try {
@@ -499,7 +505,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            () -> cancelled.getAsBoolean() || ignite.context().isStopping()
+                            () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                         );
                     }
 
@@ -513,7 +519,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
                         gctx.offheap().partitionIterator(part.id()),
-                        () -> cancelled.getAsBoolean() || ignite.context().isStopping()
+                        () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                     );
 
                     if (hash != null)
@@ -539,6 +545,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (gwLocked)
                         ignite.context().gateway().readUnlock();
 
+                    gctx.offheap().stoppageLock().leaveBusy();
                     part.release();
                 }
 

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -409,6 +410,13 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     public void preloadPartition(int pardId) throws IgniteCheckedException;
+
+    /**
+     * Provides the offheap manager's stoppage lock.
+     *
+     * @return The offheap manager's stoppage lock.
+     */
+    public GridSpinBusyLock stoppageLock();
 
     /**
      *

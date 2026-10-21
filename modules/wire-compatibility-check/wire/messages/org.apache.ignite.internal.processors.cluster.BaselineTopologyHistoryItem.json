@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cluster.BaselineTopologyHistoryItem",
+  "fields": [
+    {"order": 0, "type": "int", "name": "id"},
+    {"order": 1, "type": "java.util.List<java.lang.Long>", "name": "branchingHistory"}
+  ]
+}

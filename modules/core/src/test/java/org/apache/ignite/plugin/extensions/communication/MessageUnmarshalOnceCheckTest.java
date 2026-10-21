@@ -60,7 +60,7 @@ public class MessageUnmarshalOnceCheckTest extends GridCommonAbstractTest {
     }
 
     /** Minimal {@link MarshallableMessage}; only its identity matters to the check. */
-    private static class NoopMarshallableMessage implements MarshallableMessage {
+    private static class NoopMarshallableMessage extends AbstractMessage implements MarshallableMessage {
         /** {@inheritDoc} */
         @Override public void marshal(Marshaller marsh) {
             // No-op.

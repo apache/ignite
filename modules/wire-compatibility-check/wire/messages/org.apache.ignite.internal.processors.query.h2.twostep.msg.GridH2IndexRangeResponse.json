@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "originNodeId"},
+    {"order": 1, "type": "long", "name": "qryId"},
+    {"order": 2, "type": "int", "name": "segmentId"},
+    {"order": 3, "type": "int", "name": "originSegmentId"},
+    {"order": 4, "type": "int", "name": "batchLookupId"},
+    {"order": 5, "type": "java.util.List<org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange>", "name": "ranges"},
+    {"order": 6, "type": "byte", "name": "status"},
+    {"order": 7, "type": "java.lang.String", "name": "err"}
+  ]
+}

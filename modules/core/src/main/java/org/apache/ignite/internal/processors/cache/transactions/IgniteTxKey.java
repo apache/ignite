@@ -21,14 +21,14 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cache transaction key. This wrapper is needed because same keys may be enlisted in the same transaction
  * for multiple caches.
  */
-public class IgniteTxKey implements Message, CacheIdAware {
+public class IgniteTxKey extends AbstractMessage implements CacheIdAware {
     /** Key. */
     @Order(0)
     @GridToStringInclude(sensitive = true)

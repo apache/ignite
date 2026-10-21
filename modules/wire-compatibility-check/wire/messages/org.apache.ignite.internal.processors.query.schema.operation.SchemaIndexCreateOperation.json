@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "opId"},
+    {"order": 1, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 2, "type": "java.lang.String", "name": "schemaName"},
+    {"order": 3, "type": "java.lang.String", "name": "tblName"},
+    {"order": 4, "type": "org.apache.ignite.internal.cache.query.QueryIndexMessage", "name": "idxMsg"},
+    {"order": 5, "type": "boolean", "name": "ifNotExists"},
+    {"order": 6, "type": "int", "name": "parallel"}
+  ]
+}
