@@ -30,16 +30,16 @@ In clusters with persistence, the baseline topology has to be changed manually (
 
 == Rebalance Strategy [[rebalance-strategy]]
 
-When a node rejoins the cluster, each partition is restored using one of two strategies:
+When a node joins or rejoins the cluster, each partition is restored using one of two strategies:
 
 - *Full rebalance* — the node downloads the entire partition content from another server node that holds a copy of the partition.
-- *Historical rebalance* — the node restores its own data from the local disk and downloads only the delta (WAL entries written while it was absent) from that node.
+- *Historical rebalance* — the node restores its own data from the local disk and downloads only the delta (WAL entries written while it was absent) from the source node that holds a copy of the partition.
 
 The strategy is selected per partition based on the following rules:
 
 . A full rebalance is used if the node has no local data for the partition (update counter is zero).
 +
-Example: node was in the cluster, was evicted from the baseline, and rejoined. Its local disk has no data for the partition (counter = 0). There is nothing to restore from disk, so the full partition content must be downloaded.
+This applies both to a *new node joining for the first time* (it has no data on disk at all) and to a node that was *evicted from the baseline* and rejoined (its local partition data was invalidated). In both cases the full partition content must be downloaded from another node.
 
 . A full rebalance is used if the delta exceeds the total number of entries in the partition — transferring the full content is more efficient in that case.
 +
@@ -47,7 +47,7 @@ Example: a partition contains 100 entries. While the node was absent, 500 writes
 
 . A full rebalance is used if the partition size is below the `historical.rebalance.threshold` (DMS property, default 500 entries), unless the `IGNITE_PREFER_WAL_REBALANCE` system property is set to `true`.
 +
-Example: a partition contains 10 entries. While the node was absent, 3 writes hit this partition. The delta (3) is smaller than the partition (10), but 10 < 500 — the partition is too small to justify WAL replay overhead → full rebalance. With `IGNITE_PREFER_WAL_REBALANCE=true` this check is bypassed.
+Example: a partition contains 10 entries. While the node was absent, 3 writes hit this partition. The delta (3) is smaller than the partition (10), but 10 < 500 — the partition is too small to justify WAL replay overhead → full rebalance. With `IGNITE_PREFER_WAL_REBALANCE=true` this threshold check is bypassed, and a historical rebalance is used regardless of the partition size (provided the other rules above are not triggered).
 
 . A historical rebalance is used when all of the above conditions are not met: the node has local data, the delta is smaller than the partition, and the partition exceeds the threshold.
 +
@@ -223,6 +223,48 @@ The following table lists the properties of `IgniteConfiguration` related to reb
 | 0 (no delay)
 |===
 
+
+== Rebalance Risks
+
+A rebalance transfers a significant volume of data between nodes. Depending on the cluster size and the data volume, it can have a measurable impact on availability and performance. The following risks should be considered before scaling a cluster, particularly across data centers.
+
+=== Bandwidth saturation
+
+During a rebalance, one or more source nodes simultaneously transfer partition data to the target node. In a link:clustering/multi-data-center[multi-data-center] setup this traffic traverses the inter-DC (WAN) link, which is typically the narrowest part of the topology. A rebalance can saturate this link, degrading or starving all other traffic between the data centers (client requests, replication, monitoring).
+
+The impact is proportional to the number of source nodes and the size of the transferred partitions, and inversely proportional to the available link bandwidth. It is most severe for small clusters (few nodes, each holding a large share of the data) over limited WAN links.
+
+=== Full cluster stall (synchronous mode)
+
+In the `SYNC` rebalancing mode, all public cache operations are blocked until the rebalance completes. For a large cache over a slow or high-latency link, this can result in a prolonged unavailability of the entire cache.
+
+=== Target node disk I/O
+
+The target node must persist all received partitions to disk. This produces a write I/O spike that can saturate the node's storage. If the node serves live traffic concurrently, request latency will increase.
+
+=== Source node contention
+
+Each source node transfers its share of the partitions while continuing to serve requests. This reduces the effective request throughput of the existing nodes for the duration of the rebalance. The effect is more pronounced in smaller clusters, where each node holds a larger share of the data.
+
+=== Rebalance timeout
+
+Each rebalance message is subject to `rebalanceTimeout` (default 10 seconds). Over a slow or high-latency link, transferring a single batch may exceed this value, causing the rebalance to fail and the target node to remain only partially populated.
+
+== Recommendations for Cluster Administrators
+
+The following recommendations apply when scaling a cluster, especially when adding nodes to a remote or a new data center.
+
+. *Use asynchronous rebalancing.* Configure the cache with the `ASYNC` rebalancing mode so that the cache remains available for operations while the data is transferred in the background. The `SYNC` mode should be avoided for large caches or cross-DC transfers.
+. *Throttle the transfer.* Set `rebalanceThrottle` (a delay between batches) and, if necessary, reduce `rebalanceBatchSize`, to limit the bandwidth consumed by the rebalance and avoid saturating the inter-DC link.
+. *Schedule during low-load periods.* Start the scaling operation when the cluster is under minimal load, so that the rebalance traffic competes with as little production traffic as possible.
+. *Increase the timeout for slow links.* On high-latency or low-bandwidth links, increase `rebalanceTimeout` (and reduce `rebalanceBatchSize`) so that individual batches do not time out.
+. *Manage the baseline explicitly.* When the baseline topology is not auto-adjusted, confirm the new node is fully up and then commit the current cluster topology as the new baseline via `ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion())`, so that the rebalance starts at the intended moment.
+. *Monitor the rebalance.* Track the link:monitoring-metrics/new-metrics#caches[rebalancing metrics], the inter-DC link utilization, and the I/O load of the target node during the operation, and be prepared to throttle or abort if the impact exceeds expectations.
+
+[NOTE]
+====
+For a node joining for the first time (no local data), the rebalance is always a full transfer of its partitions, regardless of the `IGNITE_PREFER_WAL_REBALANCE` setting. The bandwidth, disk, and stall considerations above therefore apply in full.
+====
 
 == Monitoring Rebalancing Process
 
