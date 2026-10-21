@@ -514,11 +514,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer,
-        boolean keepBinary,
-        Boolean dataPageScanEnabled
+        boolean keepBinary
     ) {
-        Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup,
-            topVer, dataPageScanEnabled);
+        Iterator<CacheDataRow> it = cacheIterator(cctx.cacheId(), primary, backup, topVer);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
             /** */
@@ -601,15 +599,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         int cacheId,
         boolean primary,
         boolean backups,
-        AffinityTopologyVersion topVer,
-        Boolean dataPageScanEnabled
+        AffinityTopologyVersion topVer
     ) {
         return iterator(cacheId, cacheData(primary, backups, topVer));
     }
 
     /** {@inheritDoc} */
-    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part,
-        Boolean dataPageScanEnabled) {
+    @Override public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, int part) {
         CacheDataStore data = dataStore(part, true);
 
         if (data == null)

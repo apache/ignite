@@ -212,7 +212,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
             deployFilterOrTransformer,
-            qry.isDataPageScanEnabled(),
             qry.skipKeys());
     }
 
@@ -235,8 +234,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
             qry.taskHash(),
             cctx.affinity().affinityTopologyVersion(),
             // Force deployment anyway if scan query is used.
-            qry.scanFilter() != null && cctx.gridDeploy().enabled(),
-            qry.isDataPageScanEnabled());
+            qry.scanFilter() != null && cctx.gridDeploy().enabled());
     }
 
     /**
@@ -283,7 +281,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
-     * @param dataPageScanEnabled Flag to enable data page scan.
      */
     private GridCacheQueryRequest(
         int cacheId,
@@ -295,8 +292,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         boolean keepBinary,
         int taskHash,
         AffinityTopologyVersion topVer,
-        boolean addDepInfo,
-        Boolean dataPageScanEnabled
+        boolean addDepInfo
     ) {
         this.cacheId = cacheId;
         this.id = id;
@@ -309,7 +305,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
 
-        flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+        flags = setDataPageScanEnabled(flags);
     }
 
     /**
@@ -359,7 +355,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         int taskHash,
         AffinityTopologyVersion topVer,
         boolean addDepInfo,
-        Boolean dataPageScanEnabled,
         @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert type != null || fields;
@@ -388,20 +383,16 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.addDepInfo = addDepInfo;
         this.skipKeys = skipKeys;
 
-        flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
+        flags = setDataPageScanEnabled(flags);
     }
 
     /**
      * @param flags Flags.
-     * @param enabled If data page scan enabled.
      * @return Updated flags.
      */
-    private static byte setDataPageScanEnabled(int flags, Boolean enabled) {
-        int x = enabled == null ? FLAG_DATA_PAGE_SCAN_DFLT :
-            enabled ? FLAG_DATA_PAGE_SCAN_ENABLED : FLAG_DATA_PAGE_SCAN_DISABLED;
-
+    private static byte setDataPageScanEnabled(int flags) {
         flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
-        flags |= x; // Set new bits.
+        flags |= FLAG_DATA_PAGE_SCAN_DFLT; // Set new bits.
 
         return (byte)flags;
     }
