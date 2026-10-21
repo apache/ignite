@@ -82,14 +82,53 @@ class DiskFullTest(IgniteTest):
         check_serves_load_for(ignite, load, seconds=15)
         assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
 
-        logs = [ignite.nodes[0].log_file, os.path.join(ignite.log_dir, "console.log")]
-
-        for log in logs:
+        for log in log_files(ignite):
             check_write_failed(ignite, log)
 
         free_volume(ignite, ignite.log_dir)
 
-        for log in logs:
+        for log in log_files(ignite):
+            check_grows(ignite, log)
+
+        load.stop()
+
+    @cluster(num_nodes=2)
+    @reproducer("disk_full_tests")
+    @ignite_versions(str(DEV_BRANCH))
+    def test_node_restarts_on_full_log_volume(self, ignite_version):
+        """
+        The node restarts while its log volume is full.
+        """
+        ignite = self.__ignite(ignite_version)
+        ignite.mount_tmpfs(ignite.log_dir, 32)
+
+        ignite.start()
+        ControlUtility(ignite).activate()
+
+        load = self.__start_load_client(ignite)
+
+        fill_volume(ignite, ignite.log_dir)
+
+        ignite.stop()
+
+        # Once the load's puts fail, its count of puts stands still until the node is back.
+        _, errors = progress(load)
+        wait_until(lambda: progress(load)[1] > errors, timeout_sec=30, err_msg="The load still reaches the node")
+
+        puts, _ = progress(load)
+
+        # start() awaits a line in the node's new log, which the full volume refuses.
+        ignite.start_async(clean=False)
+
+        wait_until(lambda: progress(load)[0] > puts, timeout_sec=60, err_msg="No puts after the restart")
+
+        check_serves_load_for(ignite, load, seconds=15)
+        assert ControlUtility(ignite).cluster_state().state == "ACTIVE"
+        assert file_size(ignite, ignite.nodes[0].log_file) == 0, "The restarted node wrote its log"
+
+        free_volume(ignite, ignite.log_dir)
+
+        for log in log_files(ignite):
             check_grows(ignite, log)
 
         load.stop()
@@ -281,7 +320,7 @@ class DiskFullTest(IgniteTest):
 
     def __start_load_client(self, ignite):
         """
-        Starts and activates the node, then a load that records its puts and errors once a second.
+        Starts a load that records its puts and errors once a second.
         :return: Load application service.
         """
         address = f"{ignite.nodes[0].account.hostname}:{ignite.config.client_connector_configuration.port}"
@@ -297,6 +336,10 @@ class DiskFullTest(IgniteTest):
         return load
 
     def __start_flood_service(self, ignite):
+        """
+        Starts the application that deploys the System.out flood service on the server.
+        :return: Flood application service.
+        """
         flood = IgniteApplicationService(
             self.test_context,
             IgniteConfiguration(version=ignite.config.version, client_mode=True,
@@ -306,6 +349,13 @@ class DiskFullTest(IgniteTest):
         flood.start()
 
         return flood
+
+
+def log_files(ignite):
+    """
+    :return: The node's log4j2 log, console.log and gc.log, all on the log volume.
+    """
+    return [ignite.nodes[0].log_file] + [os.path.join(ignite.log_dir, log) for log in ("console.log", "gc.log")]
 
 
 def fill_volume(ignite, path):
