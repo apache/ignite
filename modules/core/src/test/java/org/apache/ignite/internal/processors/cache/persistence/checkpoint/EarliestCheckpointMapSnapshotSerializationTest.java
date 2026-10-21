@@ -27,11 +27,9 @@ import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot;
 import org.apache.ignite.marshaller.Marshallers;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.MAGIC;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -51,41 +49,51 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
 
         check(snap, serdes(snap, false));
         check(snap, serdes(snap, true));
-
     }
 
-    /**
-     * Marshals the snapshot with the generated serializer or the current code and unmarshals it the same way
-     * {@code CheckpointMarkersStorage} does.
-     *
-     * @param snap Snapshot.
-     * @param writeGenerated {@code True} to write with {@link EarliestCheckpointMapSnapshotSerializer},
-     *      {@code false} to write with {@link EarliestCheckpointMapSnapshot#writeExternal}.
-     * @return Deserialized snapshot.
-     */
-    private static EarliestCheckpointMapSnapshot serdes(
-        EarliestCheckpointMapSnapshot snap,
-        boolean writeGenerated
-    ) throws Exception {
-        JdkMarshaller marsh = Marshallers.jdk();
+    /** Compares the snapshots field by field. */
+    private static void check(EarliestCheckpointMapSnapshot exp, EarliestCheckpointMapSnapshot act) {
+        assertEquals(exp.checkpointIds, act.checkpointIds);
 
-        byte[] bytes = marsh.marshal(writeGenerated ? new GeneratedLayoutSnapshot(snap) : snap);
+        assertEquals(exp.data.keySet(), act.data.keySet());
 
-        return marsh.unmarshal(bytes, null);
+        for (Map.Entry<UUID, Map<Integer, GroupStateSnapshot>> e : exp.data.entrySet()) {
+            Map<Integer, GroupStateSnapshot> expGrps = e.getValue();
+            Map<Integer, GroupStateSnapshot> actGrps = act.data.get(e.getKey());
+
+            assertEquals(expGrps.keySet(), actGrps.keySet());
+
+            for (Map.Entry<Integer, GroupStateSnapshot> g : expGrps.entrySet()) {
+                GroupStateSnapshot expGrp = g.getValue();
+                GroupStateSnapshot actGrp = actGrps.get(g.getKey());
+
+                assertArrayEquals(expGrp.partitionIds(), actGrp.partitionIds());
+                assertArrayEquals(expGrp.partitionCounters(), actGrp.partitionCounters());
+                assertEquals(expGrp.size(), actGrp.size());
+            }
+        }
+    }
+
+    /** */
+    private static EarliestCheckpointMapSnapshot serdes(EarliestCheckpointMapSnapshot snap, boolean writeGenerated) throws Exception {
+        return Marshallers.jdk().unmarshal(
+            Marshallers.jdk().marshal(writeGenerated ? new IDTOGeneratedSerializer(snap) : snap),
+            null
+        );
     }
 
     /** Written the way builds with the generated serializer did, read by the inherited current code. */
-    private static class GeneratedLayoutSnapshot extends EarliestCheckpointMapSnapshot {
+    private static class IDTOGeneratedSerializer extends EarliestCheckpointMapSnapshot {
         /** Serial version UUID. */
         private static final long serialVersionUID = 0L;
 
         /** Constructor for serialization. */
-        public GeneratedLayoutSnapshot() {
+        public IDTOGeneratedSerializer() {
             // No-op.
         }
 
         /** @param snap Snapshot to copy. */
-        GeneratedLayoutSnapshot(EarliestCheckpointMapSnapshot snap) {
+        IDTOGeneratedSerializer(EarliestCheckpointMapSnapshot snap) {
             super(snap.checkpointIds, snap.data);
         }
 
@@ -124,28 +132,5 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
         ids.add(cp2);
 
         return new EarliestCheckpointMapSnapshot(ids, data);
-    }
-
-    /** Compares the snapshots field by field. */
-    private static void check(EarliestCheckpointMapSnapshot exp, EarliestCheckpointMapSnapshot act) {
-        assertEquals(exp.checkpointIds, act.checkpointIds);
-
-        assertEquals(exp.data.keySet(), act.data.keySet());
-
-        for (Map.Entry<UUID, Map<Integer, GroupStateSnapshot>> e : exp.data.entrySet()) {
-            Map<Integer, GroupStateSnapshot> expGrps = e.getValue();
-            Map<Integer, GroupStateSnapshot> actGrps = act.data.get(e.getKey());
-
-            assertEquals(expGrps.keySet(), actGrps.keySet());
-
-            for (Map.Entry<Integer, GroupStateSnapshot> g : expGrps.entrySet()) {
-                GroupStateSnapshot expGrp = g.getValue();
-                GroupStateSnapshot actGrp = actGrps.get(g.getKey());
-
-                assertArrayEquals(expGrp.partitionIds(), actGrp.partitionIds());
-                assertArrayEquals(expGrp.partitionCounters(), actGrp.partitionCounters());
-                assertEquals(expGrp.size(), actGrp.size());
-            }
-        }
     }
 }
