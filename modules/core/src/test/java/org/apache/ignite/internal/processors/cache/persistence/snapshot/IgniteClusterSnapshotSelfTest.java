@@ -1329,7 +1329,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
 
-        // The client processes the node-left event asynchronously. The query must be mapped on a proper topology.
+        // The client processes the node-left event asynchronously. The query should be mapped on a proper topology.
         assertTrue(waitForCondition(() -> cln.cluster().node(failNodeId) == null, 10_000L));
 
         // Check that client node is alive.
