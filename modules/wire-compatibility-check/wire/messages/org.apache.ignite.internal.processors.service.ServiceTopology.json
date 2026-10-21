@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceTopology",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,java.lang.Integer>", "name": "snapshot"},
+    {"order": 1, "type": "boolean", "name": "isTransitional"}
+  ]
+}

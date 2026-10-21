@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryBatchAck",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "java.util.UUID", "name": "routineId"},
+    {"order": 5, "type": "java.util.Map<java.lang.Integer,java.lang.Long>", "name": "updateCntrs"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.GridJobSiblingsRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sesId"},
+    {"order": 1, "type": "long", "name": "topicId"}
+  ]
+}

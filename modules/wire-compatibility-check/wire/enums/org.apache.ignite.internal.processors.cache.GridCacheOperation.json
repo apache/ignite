@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.GridCacheOperation",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "READ"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "CREATE"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "UPDATE"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "DELETE"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "TRANSFORM"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "RELOAD"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "NOOP"}
+  ]
+}

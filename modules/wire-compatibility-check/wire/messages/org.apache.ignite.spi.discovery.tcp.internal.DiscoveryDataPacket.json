@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "joiningNodeId"},
+    {"order": 1, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message>", "name": "joiningNodeData", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 2, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message>", "name": "commonData", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 3, "type": "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message>>", "name": "nodeSpecificData", "annotations": ["@org.apache.ignite.internal.Compress"]}
+  ]
+}
