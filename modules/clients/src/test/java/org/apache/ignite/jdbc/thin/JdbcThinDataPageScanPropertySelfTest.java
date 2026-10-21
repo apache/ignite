@@ -33,8 +33,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 /**
  * Check that data page scan property defined in the thin driver correctly passed to Indexing.
@@ -89,14 +87,11 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      * properties. Queries are executed with batching.
      *
      * @param qryWithParam query that has one int positional parameter to run.
-     * @param dps data page scan value to test.
      */
-    private void checkDataPageScanInBatch(String qryWithParam, @Nullable Boolean dps) throws Exception {
-        String params = (dps == null) ? null : "dataPageScanEnabled=" + dps;
-
+    private void checkDataPageScanInBatch(String qryWithParam) throws Exception {
         int expCnt = 0;
 
-        try (Connection conn = GridTestUtils.connect(grid(0), params)) {
+        try (Connection conn = GridTestUtils.connect(grid(0), null)) {
             try (PreparedStatement upd = conn.prepareStatement(qryWithParam)) {
                 for (int i = 0; i < TOTAL_QUERIES_TO_EXECUTE; i++) {
                     upd.setInt(1, i);
@@ -118,7 +113,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
         assertTrue("Original query have not been executed.", containsOrig);
 
         IndexingWithQueries.queries.forEach(query ->
-            assertEquals("Data page scan flag value is unexpected for query " + query, dps, null)
+            assertEquals("Data page scan flag value is unexpected for query " + query, null)
         );
 
         int executed = IndexingWithQueries.queries.size();
@@ -135,9 +130,7 @@ public class JdbcThinDataPageScanPropertySelfTest extends GridCommonAbstractTest
      * @param dps data page scan value to test.
      */
     private void checkDataPageScan(String qry, @Nullable Boolean dps) throws Exception {
-        String params = (dps == null) ? null : "dataPageScanEnabled=" + dps;
-
-        try (Connection conn = GridTestUtils.connect(grid(0), params)) {
+        try (Connection conn = GridTestUtils.connect(grid(0), null)) {
             try (PreparedStatement stmt = conn.prepareStatement(qry)) {
                 stmt.execute();
             }

@@ -47,18 +47,6 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  */
 public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCacheDeployable, DeployableMessage {
     /** */
-    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_ENABLED = 0b01;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_DISABLED = 0b10;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11;
-
-    /** */
     @Order(0)
     long id;
 
@@ -304,8 +292,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.taskHash = taskHash;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
-
-        flags = setDataPageScanEnabled(flags);
     }
 
     /**
@@ -382,19 +368,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
         this.skipKeys = skipKeys;
-
-        flags = setDataPageScanEnabled(flags);
-    }
-
-    /**
-     * @param flags Flags.
-     * @return Updated flags.
-     */
-    private static byte setDataPageScanEnabled(int flags) {
-        flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
-        flags |= FLAG_DATA_PAGE_SCAN_DFLT; // Set new bits.
-
-        return (byte)flags;
     }
 
     /** {@inheritDoc} */
@@ -546,21 +519,6 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     public int taskHash() {
         return taskHash;
-    }
-
-    /**
-     * @return Flag to enable data page scan.
-     */
-    public Boolean isDataPageScanEnabled() {
-        switch (flags & FLAG_DATA_PAGE_SCAN_MASK) {
-            case FLAG_DATA_PAGE_SCAN_ENABLED:
-                return true;
-
-            case FLAG_DATA_PAGE_SCAN_DISABLED:
-                return false;
-        }
-
-        return null;
     }
 
     /** @return Set of keys that must be skiped during iteration. */

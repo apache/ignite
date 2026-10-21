@@ -75,16 +75,6 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
     public static final int FLAG_LAZY = 1 << 5;
 
     /** */
-    private static final int FLAG_DATA_PAGE_SCAN_SHIFT = 6;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11 << FLAG_DATA_PAGE_SCAN_SHIFT;
-
-    /** */
-    @SuppressWarnings("PointlessBitwiseExpression")
-    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00 << FLAG_DATA_PAGE_SCAN_SHIFT;
-
-    /** */
     @Order(0)
     long reqId;
 
@@ -417,17 +407,6 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
         this.qryInitiatorId = qryInitiatorId;
 
         return this;
-    }
-
-    /**
-     * @param flags Flags.
-     * @return Updated flags.
-     */
-    public static int setDataPageScanEnabled(int flags) {
-        flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
-        flags |= FLAG_DATA_PAGE_SCAN_DFLT; // Set new bits.
-
-        return flags;
     }
 
     /**
