@@ -283,6 +283,9 @@ public class NodeFileTree extends SharedFileTree {
     /** CDC caches state file name. */
     private static final String CDC_CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
 
+    /** CDC destroyed caches state file name. */
+    private static final String CDC_DESTROYED_CACHES_STATE_FILE_NAME = "cdc-destroyed-state" + FILE_SUFFIX;
+
     /** Maintenance file name. */
     private static final String MAINTENANCE_FILE_NAME = "maintenance_tasks.mntc";
 
@@ -1065,6 +1068,16 @@ public class NodeFileTree extends SharedFileTree {
     /** @return Temp CDC caches state file path. */
     public Path tmpCdcCachesState() {
         return cdcState().resolve(CDC_CACHES_STATE_FILE_NAME + TMP_SUFFIX);
+    }
+
+    /** @return Destroyed CDC caches state file path. */
+    public Path cdcDestroyedCachesState() {
+        return cdcState().resolve(CDC_DESTROYED_CACHES_STATE_FILE_NAME);
+    }
+
+    /** @return Temp destroyed CDC caches state file path. */
+    public Path tmpCdcDestroyedCachesState() {
+        return cdcState().resolve(CDC_DESTROYED_CACHES_STATE_FILE_NAME + TMP_SUFFIX);
     }
 
     /** @return CDC manager mode state file path. */

@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -258,7 +257,8 @@ public class CdcMain implements Runnable {
     /** Already processed segments. */
     private final Set<Path> processedSegments = new HashSet<>();
 
-    private final Map<Long, Set<Integer>> walSegmentsDestroyedCaches = new HashMap<>();
+    /** Destroyed caches state. */
+    private Map<Long, Set<Integer>> destroyedCachesState;
 
     /**
      * @param cfg Ignite configuration.
@@ -334,7 +334,8 @@ public class CdcMain implements Runnable {
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
-                cachesState = state.loadCaches();
+                cachesState = state.loadCaches(ft.cdcCachesState());
+                destroyedCachesState = state.loadCaches(ft.cdcDestroyedCachesState());
                 cdcModeState = state.loadCdcMode();
 
                 if (walState != null) {
@@ -591,7 +592,7 @@ public class CdcMain implements Runnable {
         else
             consumeSegmentActively(builder);
 
-        Set<Integer> destroyed = walSegmentsDestroyedCaches.remove(segmentIdx);
+        Set<Integer> destroyed = destroyedCachesState.remove(segmentIdx);
 
         if (destroyed != null) {
             Iterator<Integer> destroyedIter = destroyed.iterator();
@@ -813,10 +814,11 @@ public class CdcMain implements Runnable {
             if (!destroyed.isEmpty()) {
                 long segment = kctx.cache().context().wal(true).currentSegment();
 
-                walSegmentsDestroyedCaches.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
+                destroyedCachesState.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
             }
 
-            state.saveCaches(cachesState);
+            state.saveCaches(cachesState, ft.tmpCdcCachesState(), ft.cdcCachesState());
+            state.saveCaches(destroyedCachesState, ft.tmpCdcDestroyedCachesState(), ft.cdcDestroyedCachesState());
         }
         catch (IOException e) {
             throw new IgniteException(e);
