@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "xid"},
+    {"order": 1, "type": "java.lang.Long", "name": "minDuration"},
+    {"order": 2, "type": "java.lang.Integer", "name": "minSize"},
+    {"order": 3, "type": "java.lang.String", "name": "label"},
+    {"order": 4, "type": "boolean", "name": "servers"},
+    {"order": 5, "type": "boolean", "name": "clients"},
+    {"order": 6, "type": "java.lang.String[]", "name": "nodes"},
+    {"order": 7, "type": "java.lang.Integer", "name": "limit"},
+    {"order": 8, "type": "org.apache.ignite.internal.management.tx.TxSortOrder", "name": "order"},
+    {"order": 9, "type": "boolean", "name": "kill"}
+  ]
+}

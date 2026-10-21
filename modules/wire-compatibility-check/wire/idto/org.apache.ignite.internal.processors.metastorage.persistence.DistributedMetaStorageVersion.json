@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion",
+  "fields": [
+    {"order": 0, "type": "long", "name": "id"},
+    {"order": 1, "type": "long", "name": "hash"}
+  ]
+}

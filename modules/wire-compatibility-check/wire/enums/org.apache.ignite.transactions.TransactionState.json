@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.transactions.TransactionState",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.transactions.TransactionState", "name": "ACTIVE"},
+    {"order": 1, "type": "org.apache.ignite.transactions.TransactionState", "name": "PREPARING"},
+    {"order": 2, "type": "org.apache.ignite.transactions.TransactionState", "name": "PREPARED"},
+    {"order": 3, "type": "org.apache.ignite.transactions.TransactionState", "name": "MARKED_ROLLBACK"},
+    {"order": 4, "type": "org.apache.ignite.transactions.TransactionState", "name": "COMMITTING"},
+    {"order": 5, "type": "org.apache.ignite.transactions.TransactionState", "name": "COMMITTED"},
+    {"order": 6, "type": "org.apache.ignite.transactions.TransactionState", "name": "ROLLING_BACK"},
+    {"order": 7, "type": "org.apache.ignite.transactions.TransactionState", "name": "ROLLED_BACK"},
+    {"order": 8, "type": "org.apache.ignite.transactions.TransactionState", "name": "UNKNOWN"},
+    {"order": 9, "type": "org.apache.ignite.transactions.TransactionState", "name": "SUSPENDED"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot$GroupStateSnapshot>>", "name": "data"},
+    {"order": 1, "type": "java.util.Set<java.util.UUID>", "name": "checkpointIds"}
+  ]
+}

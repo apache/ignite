@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.QueryEntity",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "keyType"},
+    {"order": 1, "type": "java.lang.String", "name": "valType"},
+    {"order": 2, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "qryFlds"},
+    {"order": 3, "type": "java.util.List<java.lang.String>", "name": "keyFields"},
+    {"order": 4, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "aliases"},
+    {"order": 5, "type": "java.lang.String", "name": "tblName"},
+    {"order": 6, "type": "java.lang.String", "name": "keyFieldName"},
+    {"order": 7, "type": "java.lang.String", "name": "valFieldName"},
+    {"order": 8, "type": "java.util.List<org.apache.ignite.internal.management.cache.QueryIndex>", "name": "grps"}
+  ]
+}
