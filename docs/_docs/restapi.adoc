@@ -90,10 +90,6 @@ The following table describes the properties of link:https://ignite.apache.org/r
 The node does not start if the connector from the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
 
 Supports `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] without a restart.
-
-HTTP REST does not use the weak cipher suites that Jetty turns off by default, even if the factory enables them.
-
-Without a `SecureRequestCustomizer` in the Jetty XML, HTTP REST accepts requests whose host name or IP address is not listed in the certificate.
 |Yes
 |`null`
 
@@ -117,6 +113,7 @@ To move the TLS setup of HTTP REST to `httpSslFactory`:
 Ignite's `SslContextFactory` cannot pick a key by alias, so keep only one private key in the HTTP REST key store.
 The private key must have the same password as the key store, because the factory has one password for both.
 . Set `protocols` and `cipherSuites` of Ignite's `SslContextFactory` to the protocols and cipher suites that the Jetty SSL context factory enables. Otherwise, HTTP REST uses the defaults of the JVM.
+Jetty's default cipher exclusions still apply.
 . If the Jetty configuration file sets `needClientAuth` to `true`, set `httpSslClientAuth` to `true` too. Otherwise, clients without a certificate can connect.
 . Ignite keeps the `SecureRequestCustomizer` from the Jetty configuration file, with its settings. Set its `sniHostCheck` to `false` only if clients send requests to a host name or IP address not in the certificate.
 . Restart the nodes one at a time.
