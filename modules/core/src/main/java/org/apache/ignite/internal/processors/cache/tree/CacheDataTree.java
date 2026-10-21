@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -96,14 +95,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
 
         initTree(initNew);
-    }
-
-    /**
-     * @return {@code true} If the last observed call to the method {@code find(...)} used data page scan.
-     */
-    @TestOnly
-    public static Boolean isLastFindWithDataPageScan1() {
-        return false;
     }
 
     /** {@inheritDoc} */
