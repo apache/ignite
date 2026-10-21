@@ -45,7 +45,7 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Header magic number {@code IgniteDataTransferObject#MAGIC}. */
-    private static final int MAGIC = 0x42BEEF00;
+    static final int MAGIC = 0x42BEEF00;
 
     /** Last snapshot's checkpoint timestamp. */
     Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();

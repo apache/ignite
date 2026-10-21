@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,9 +26,12 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot;
+import org.apache.ignite.marshaller.Marshallers;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.MAGIC;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -38,37 +39,24 @@ import static org.junit.Assert.assertArrayEquals;
  * by {@link EarliestCheckpointMapSnapshotSerializer}.
  */
 public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAbstractTest {
-    /** Header written by {@code IgniteDataTransferObject#writeExternal}. */
-    private static final int HDR = 0x42BEEF00;
-
     /** */
     @Test
-    public void testCurrentWrites() throws Exception {
+    public void testSerdes() throws Exception {
+        EarliestCheckpointMapSnapshot empty = new EarliestCheckpointMapSnapshot();
+
+        check(empty, serdes(empty, false));
+        check(empty, serdes(empty, true));
+
         EarliestCheckpointMapSnapshot snap = snapshot();
 
         check(snap, serdes(snap, false));
-    }
-
-    /** The upgrade case. */
-    @Test
-    public void testGeneratedWrites() throws Exception {
-        EarliestCheckpointMapSnapshot snap = snapshot();
-
         check(snap, serdes(snap, true));
-    }
 
-    /** */
-    @Test
-    public void testEmptySnapshot() throws Exception {
-        for (boolean writeGenerated : new boolean[] {false, true}) {
-            EarliestCheckpointMapSnapshot snap = new EarliestCheckpointMapSnapshot();
-
-            check(snap, serdes(snap, writeGenerated));
-        }
     }
 
     /**
-     * Writes the snapshot with the generated serializer or the current code and reads it with the current code.
+     * Marshals the snapshot with the generated serializer or the current code and unmarshals it the same way
+     * {@code CheckpointMarkersStorage} does.
      *
      * @param snap Snapshot.
      * @param writeGenerated {@code True} to write with {@link EarliestCheckpointMapSnapshotSerializer},
@@ -79,28 +67,36 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
         EarliestCheckpointMapSnapshot snap,
         boolean writeGenerated
     ) throws Exception {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        JdkMarshaller marsh = Marshallers.jdk();
 
-        try (ObjectOutputStream out = new ObjectOutputStream(bos)) {
-            if (!writeGenerated)
-                snap.writeExternal(out);
-            else {
-                // Same as IgniteDataTransferObject#writeExternal: header, then the payload of the generated serializer.
-                out.writeInt(HDR);
+        byte[] bytes = marsh.marshal(writeGenerated ? new GeneratedLayoutSnapshot(snap) : snap);
 
-                try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
-                    new EarliestCheckpointMapSnapshotSerializer().writeExternal(snap, dtout);
-                }
+        return marsh.unmarshal(bytes, null);
+    }
+
+    /** Written the way builds with the generated serializer did, read by the inherited current code. */
+    private static class GeneratedLayoutSnapshot extends EarliestCheckpointMapSnapshot {
+        /** Serial version UUID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Constructor for serialization. */
+        public GeneratedLayoutSnapshot() {
+            // No-op.
+        }
+
+        /** @param snap Snapshot to copy. */
+        GeneratedLayoutSnapshot(EarliestCheckpointMapSnapshot snap) {
+            super(snap.checkpointIds, snap.data);
+        }
+
+        /** Same as {@code IgniteDataTransferObject#writeExternal}: header, then the payload of the generated serializer. */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(MAGIC);
+
+            try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
+                new EarliestCheckpointMapSnapshotSerializer().writeExternal(this, dtout);
             }
         }
-
-        EarliestCheckpointMapSnapshot res = new EarliestCheckpointMapSnapshot();
-
-        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()))) {
-            res.readExternal(in);
-        }
-
-        return res;
     }
 
     /** @return Snapshot with two checkpoints and several groups. */
