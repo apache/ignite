@@ -42,7 +42,7 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
     /** Serial version UUID. */
     private static final long serialVersionUID = 0L;
 
-    /** Header magic number. */
+    /** Header magic number {@code IgniteDataTransferObject#MAGIC}. */
     private static final int MAGIC = 0x42BEEF00;
 
     /** Last snapshot's checkpoint timestamp. */
