@@ -221,7 +221,11 @@ Reload leaves existing connections open. If you are replacing certificates after
 
 == Renewing Certificates Automatically
 
-Automatic renewal is disabled by default. Set `renewalEnabled` to `true` on each SSL context factory that should renew its certificates. Apply changes to renewal settings by restarting the nodes one at a time. See link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory] for renewal timing and configuration parameters.
+Before enabling renewal, make sure the factory supplies the X.509 certificate chain with each SSL context. Without this information, the node cannot determine when to renew the certificate and will not start with `renewalEnabled=true`.
+
+To enable automatic renewal, set `renewalEnabled` to `true` on each SSL context factory that should renew its certificates, then restart the nodes one at a time. Renewal is disabled by default.
+
+To change when renewal starts, use `renewBeforeFraction`, described in the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory Javadoc]. Changes to renewal settings require a node restart.
 
 Besides `IgniteConfiguration.sslContextFactory`, a node may use `ClientConnectorConfiguration.sslContextFactory` with `useIgniteSslContextFactory=false`, `ConnectorConfiguration.sslFactory` and `ConnectorConfiguration.httpSslFactory`.
 
@@ -229,13 +233,13 @@ Transports configured with the same factory object get the new certificate toget
 
 For `SslContextFactory`, replace the key store and trust store files before the renewal window starts. The node loads them automatically. Custom factories load certificates from their configured source, as described in <<Custom SSL Context Factories>>.
 
-The new chain must be valid now, and its earliest expiry must be later than that of the chain in use. If a CA certificate in the chain expires first, renew it too.
+Use a valid certificate chain that expires later than the one in use. A chain expires as soon as any certificate in it expires. Renew the CA certificate too if it expires first.
 
-Prepare trust stores so that nodes and clients accept both old and new certificates during rollout. Renewal does not test peer trust or TLS compatibility. During automatic renewal, an updated trust store takes effect only when a new certificate is accepted. To move to a new certificate authority, follow <<Upgrading Certificates>>.
+Prepare trust stores so that nodes and clients accept both old and new certificates during rollout. Renewal does not test peer trust or TLS compatibility. To move to a new certificate authority, follow <<Upgrading Certificates>>.
+
+Automatic renewal does not apply changes to the trust store alone. Use `control.sh --ssl reload` for those changes.
 
 If renewal finds the same chain or cannot load or accept a new one, the node keeps its current context and retries. Check the node logs and the link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric for unsuccessful attempts. `control.sh --ssl status` shows when the next attempt is due.
-
-Automatic renewal requires a factory that supplies the single X.509 chain loaded into each SSL context. If `renewalEnabled` is set but this metadata is unavailable, the node does not start.
 
 == SslContextFactory Properties
 
@@ -284,8 +288,8 @@ Automatic renewal requires a factory that supplies the single X.509 chain loaded
 
 == Custom SSL Context Factories
 
-To load certificates from a custom source, such as a PKI service, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory]. Its Javadoc describes the `createKeyMaterial()` and `createNew()` contracts, including concurrency and interruption requirements.
+To load certificates from a custom source, such as a PKI service, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory].
 
-For certificate status and automatic renewal, supply the single X.509 chain from the same load as the key managers. If the factory builds the SSL context directly, attach the chain with link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SSLContextWrapper.html[SSLContextWrapper].
+Return the single X.509 chain together with the key managers from the same certificate load, through `createKeyMaterial()`. Ignite uses this chain for certificate status and automatic renewal. If the factory builds the SSL context directly, attach the chain with link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SSLContextWrapper.html[SSLContextWrapper].
 
-A plain `Factory<SSLContext>` supports manual reload only and must return a new context on every call. Without chain metadata, Ignite cannot report or check certificate dates. See link:tools/control-script#reloading-certificates[Reloading Certificates] for reload requirements.
+A plain `Factory<SSLContext>` supports link:tools/control-script#reloading-certificates[manual reload] only and must return a new context on every call. Without chain metadata, Ignite cannot report or check certificate dates.

@@ -1777,7 +1777,9 @@ The reload covers communication, discovery, the client connector, binary REST, a
 
 The command does not make thin clients or JDBC and ODBC drivers read their stores again, see link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
 
-A reload succeeds for a factory when its new SSL context has been installed. If the factory supplies certificate metadata, Ignite checks the chain's validity dates before installation. It does not test TLS connections or peer trust. The administrator must ensure that certificates, trust stores, protocols, cipher suites and client authentication are compatible across nodes and clients. An installed context is not rolled back if new connections fail.
+A successful reload means that the node has installed the factory's new SSL context. If the factory provides the certificate chain, Ignite checks its validity dates before installation.
+
+Before reloading, make sure nodes and clients trust the new certificates and use compatible protocols, cipher suites and client authentication settings. Reload does not test connections or roll back the change if new connections fail.
 
 The reload fails and all transports using the factory keep their old context if:
 
@@ -1808,7 +1810,7 @@ Every node logs the reload result. With security enabled, the entry also identif
 control.sh|bat --ssl status
 ----
 
-For each node, status lists the transports, loaded certificate metadata, last reload result and, when scheduled, the next link:security/ssl-tls#renewing-certificates-automatically[automatic renewal], grouped by SSL context factory:
+For each node, the command shows the certificate loaded by each factory, the transports that use it and the last reload result. If link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] is scheduled, it also shows the next attempt time:
 
 [source,text]
 ----

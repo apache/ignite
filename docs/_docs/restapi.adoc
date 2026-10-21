@@ -64,7 +64,7 @@ tab:C#/.NET[]
 tab:C++[unsupported]
 --
 
-The following table describes the properties of `ConnectorConfiguration` that are related to the http server:
+The following table describes the properties of link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/configuration/ConnectorConfiguration.html[ConnectorConfiguration] that are related to the http server:
 
 [width="100%", cols="30%,50%,10%,10%"]
 |=======
@@ -93,9 +93,7 @@ Supports `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificat
 
 HTTP REST does not use the weak cipher suites that Jetty turns off by default, even if the factory enables them.
 
-Unless the Jetty configuration file sets a `SecureRequestCustomizer` of its own, HTTP REST answers requests to a host name or IP address that the certificate does not name, such as a Kubernetes pod IP.
-
-See link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/configuration/ConnectorConfiguration.html[ConnectorConfiguration] for the configuration API.
+Without a `SecureRequestCustomizer` in the Jetty XML, HTTP REST accepts requests whose host name or IP address is not listed in the certificate.
 |Yes
 |`null`
 

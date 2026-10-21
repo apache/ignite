@@ -507,7 +507,7 @@ NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registe
 
 == SSL
 
-Each node exposes one counter for link:security/ssl-tls#renewing-certificates-automatically[automatic renewal], including nodes without SSL. Transports sharing the same factory object contribute only once.
+Each node exposes one counter for link:security/ssl-tls#renewing-certificates-automatically[automatic renewal], including nodes without SSL. A factory is counted once even if several transports use it.
 
 Register name: `ssl`
 
@@ -517,8 +517,9 @@ Register name: `ssl`
 |ConsecutiveRenewalFailures | integer | Sum of consecutive unsuccessful automatic renewal attempts for each factory, including an unchanged chain, a loading error or a rejected certificate.
 |===
 
-When a manual reload or automatic renewal puts a chain with a later earliest expiry in use, that factory's contribution resets to zero. Other factories' counts remain.
-Failed manual reloads do not increment it.
+Ignite counts failed attempts separately for each factory and adds the counts together. When renewal installs a chain that expires later than the one in use, that factory's count resets to zero. The first certificate to expire determines the expiry date of each chain. Counts for other factories stay unchanged.
+
+A manual reload can reset a factory's count in the same way, but failed manual reloads do not increase it.
 
 Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] and the node logs to investigate failures.
 
