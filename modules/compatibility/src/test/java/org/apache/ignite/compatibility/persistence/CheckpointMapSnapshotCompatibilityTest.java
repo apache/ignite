@@ -70,7 +70,7 @@ public class CheckpointMapSnapshotCompatibilityTest extends IgnitePersistenceCom
         return since(VER_2_17_0);
     }
 
-    /** Logger of the current version node. */
+    /** */
     private ListeningTestLogger listeningLog;
 
     /** {@inheritDoc} */
