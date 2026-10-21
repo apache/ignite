@@ -250,7 +250,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     // Propagate the cancellation to the async partition hash calculations.
                     cancel();
 
-                    // Wait for the rest of futures to stop.
+                    // Wait for the rest of the futures to stop.
                     for (int j = i; j < partHashCalcFuts.size(); ++j) {
                         Future<?> partFut = partHashCalcFuts.get(j);
 
@@ -495,9 +495,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
-                // Entyre node stoppage lock flag.
+                // Entire node stop guard (kernal gateway read lock).
                 boolean gwLocked = false;
-                // The related page memory stoppage flag.
+                // Cache group stop guard (offheap busy lock).
                 boolean memLocked = false;
 
                 try {
@@ -518,11 +518,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         );
                     }
 
-                    // The related cache might be concurrently destroed.
+                    // The cache group can be destroyed concurrently.
                     if (gctx.offheap().enterBusy())
                         memLocked = true;
                     else
-                        throw new IgniteCheckedException("Partition hash calculation has been cancelled: the page memory is stopping.");
+                        throw new IgniteCheckedException("Partition hash calculation has been cancelled: the cache group is stopping.");
 
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
