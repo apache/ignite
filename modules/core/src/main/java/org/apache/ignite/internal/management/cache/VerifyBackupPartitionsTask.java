@@ -518,13 +518,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         );
                     }
 
+                    PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
+
                     // The cache group can be destroyed concurrently.
                     if (gctx.offheap().enterBusy())
                         memLocked = true;
                     else
                         throw new IgniteCheckedException("Partition hash calculation has been cancelled: the cache group is stopping.");
-
-                    PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
                     PartitionHashRecord hash = calculatePartitionHash(
                         key,
