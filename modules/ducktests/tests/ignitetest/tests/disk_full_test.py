@@ -111,7 +111,7 @@ class DiskFullTest(IgniteTest):
 
         ignite.stop()
 
-        # Once the load's puts fail, its count of puts stands still until the node is back.
+        # Waits for a failed put, so the count of puts read next is final until the node is back.
         _, errors = progress(load)
         wait_until(lambda: progress(load)[1] > errors, timeout_sec=30, err_msg="The load still reaches the node")
 
