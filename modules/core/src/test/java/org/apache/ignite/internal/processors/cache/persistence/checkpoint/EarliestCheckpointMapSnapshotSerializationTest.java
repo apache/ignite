@@ -19,30 +19,25 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Checks that {@link EarliestCheckpointMapSnapshot} reads every layout of {@code cpMapSnapshot.bin} that was ever
- * written: the legacy one (2.17, 2.18, current) and the one of {@link EarliestCheckpointMapSnapshotSerializer}.
+ * Checks that {@link EarliestCheckpointMapSnapshot} reads {@code cpMapSnapshot.bin} written by the current code and
+ * by {@link EarliestCheckpointMapSnapshotSerializer}.
  */
 public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAbstractTest {
-    /** Header written by 2.18 and later. */
+    /** Header written by {@code IgniteDataTransferObject#writeExternal}. */
     private static final int HDR = 0x42BEEF00;
-
-    /** Header written by 2.17 and earlier: magic plus protocol version 1. */
-    private static final int HDR_V1 = 0x42BEEF01;
 
     /** */
     private static final UUID CP1 = UUID.randomUUID();
@@ -56,93 +51,60 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
     /** */
     @Test
     public void testCurrentWrites() throws Exception {
-        check(serdes(false));
+        check(serdes(snapshot(), false));
     }
 
     /** The upgrade case. */
     @Test
     public void testGeneratedWrites() throws Exception {
-        check(serdes(true));
+        check(serdes(snapshot(), true));
     }
 
     /** */
     @Test
     public void testEmptySnapshot() throws Exception {
-        EarliestCheckpointMapSnapshot snap = read(write(new EarliestCheckpointMapSnapshot(), false));
+        for (boolean writeGenerated : new boolean[] {false, true}) {
+            EarliestCheckpointMapSnapshot snap = serdes(new EarliestCheckpointMapSnapshot(), writeGenerated);
 
-        assertNull(snap.groupState(CP1));
-        assertFalse(snap.checkpointWasPresent(CP1));
-    }
-
-    /** 2.17 wrote the protocol version in the header. */
-    @Test
-    public void testLegacyHeaderWithProtocolVersion() throws Exception {
-        EarliestCheckpointMapSnapshot snap = snapshot();
-
-        byte[] bytes = writeWithHeader(HDR_V1, payload -> {
-            U.writeMap(payload, snap.data);
-            U.writeCollection(payload, snap.checkpointIds);
-        });
-
-        check(read(bytes));
+            assertNull(snap.groupState(CP1));
+            assertFalse(snap.checkpointWasPresent(CP1));
+        }
     }
 
     /**
      * Writes the snapshot with the generated serializer or the current code and reads it with the current code.
      *
+     * @param snap Snapshot.
      * @param writeGenerated {@code True} to write with {@link EarliestCheckpointMapSnapshotSerializer},
      *      {@code false} to write with {@link EarliestCheckpointMapSnapshot#writeExternal}.
      * @return Deserialized snapshot.
      */
-    private static EarliestCheckpointMapSnapshot serdes(boolean writeGenerated) throws Exception {
-        return read(write(snapshot(), writeGenerated));
-    }
-
-    /** */
-    private static byte[] write(EarliestCheckpointMapSnapshot snap, boolean generated) throws IOException {
-        if (generated)
-            return writeWithHeader(HDR, payload -> new EarliestCheckpointMapSnapshotSerializer().writeExternal(snap, payload));
-
+    private static EarliestCheckpointMapSnapshot serdes(
+        EarliestCheckpointMapSnapshot snap,
+        boolean writeGenerated
+    ) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         try (ObjectOutputStream out = new ObjectOutputStream(bos)) {
-            snap.writeExternal(out);
+            if (!writeGenerated)
+                snap.writeExternal(out);
+            else {
+                // Same as IgniteDataTransferObject#writeExternal: header, then the payload of the generated serializer.
+                out.writeInt(HDR);
+
+                try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
+                    new EarliestCheckpointMapSnapshotSerializer().writeExternal(snap, dtout);
+                }
+            }
         }
 
-        return bos.toByteArray();
-    }
+        EarliestCheckpointMapSnapshot res = new EarliestCheckpointMapSnapshot();
 
-    /** Reads with {@link EarliestCheckpointMapSnapshot#readExternal}. */
-    private static EarliestCheckpointMapSnapshot read(byte[] bytes) throws Exception {
-        EarliestCheckpointMapSnapshot snap = new EarliestCheckpointMapSnapshot();
-
-        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-            snap.readExternal(in);
+        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()))) {
+            res.readExternal(in);
         }
 
-        return snap;
-    }
-
-    /**
-     * Writes the way {@code IgniteDataTransferObject#writeExternal} did: header, then the length-prefixed payload
-     * produced by a nested {@link ObjectOutputStream}.
-     */
-    private static byte[] writeWithHeader(int hdr, PayloadWriter payloadWriter) throws IOException {
-        ByteArrayOutputStream payloadBos = new ByteArrayOutputStream();
-
-        try (ObjectOutputStream payload = new ObjectOutputStream(payloadBos)) {
-            payloadWriter.write(payload);
-        }
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-        try (ObjectOutputStream out = new ObjectOutputStream(bos)) {
-            out.writeInt(hdr);
-
-            U.writeByteArray(out, payloadBos.toByteArray());
-        }
-
-        return bos.toByteArray();
+        return res;
     }
 
     /** @return Snapshot with two checkpoints and several groups. */
@@ -194,12 +156,5 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
         assertEquals(21, grps2.get(1).counterByPartition(1));
 
         assertNull(snap.groupState(CP_ABSENT));
-    }
-
-    /** */
-    @FunctionalInterface
-    private interface PayloadWriter {
-        /** */
-        void write(ObjectOutput out) throws IOException;
     }
 }
