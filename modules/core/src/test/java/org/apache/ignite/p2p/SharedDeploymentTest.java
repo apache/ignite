@@ -53,6 +53,11 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Start a cluster of 3 server nodes.
+     * Run callables deployed on nodes 2 and 3 from the first classpath. Check return values.
+     * Stop nodes 2 and 3 (all master nodes of the deployment), restart node 3 and run a callable deployed on it
+     * from the second classpath (another version of the same class). Check the return value of the new version.
+     *
      * @throws Exception if failed.
      */
     @Test
@@ -80,6 +85,11 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
 
             for (Object o: res)
                 assertEquals(o, 42);
+
+            // In SHARED mode classes are undeployed only when all master nodes leave: node 2 participates in the
+            // deployment serving the first version of the classes, so it has to leave before node 3 is restarted
+            // with the second version. Otherwise node 3 would legitimately share the already deployed classes.
+            stopGrid(2);
 
             ignite3.close();
 
