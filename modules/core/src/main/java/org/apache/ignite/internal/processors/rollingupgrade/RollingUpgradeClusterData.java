@@ -38,7 +38,7 @@ public class RollingUpgradeClusterData extends AbstractMessage {
     IgniteNodeFeatureSet activeFeatures;
 
     /** */
-    @Order(value = 3, deprecatedBy = "RAW_FIELDS_FEATURE")
+    @Order(value = 3, deprecatedBy = "PREV_CLUSTER_VER_DEPRECATED_FEATURE")
     @Nullable IgniteNodeFeatureSet prevActiveFeatures;
 
     /** */
