@@ -1320,12 +1320,17 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         failNodeSpi.waitForBlocked(1, 10_000L);
 
+        UUID failNodeId = grid(1).localNode().id();
+
         grid(1).close();
 
         assertThrowsAnyCause(log,
             fut::get,
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
+
+        // The client processes the node-left event asynchronously. The query must be mapped on a proper topology.
+        assertTrue(waitForCondition(() -> cln.cluster().node(failNodeId) == null, 10_000L));
 
         // Check that client node is alive.
         assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
