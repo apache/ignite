@@ -553,15 +553,16 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies historical rebalance behavior with {@code rebalanceDelay > 0}.
+     * Verifies that with {@code rebalanceDelay > 0} the rebalance always uses the full
+     * strategy.
      *
-     * <p>Per IGNITE-14524: when rebalanceDelay is set, the rebalance is deferred and
-     * executed without a partition map exchange future ({@code exchFut == null}), which
-     * causes the preloader to fall back to full rebalance even when
-     * {@code PREFER_WAL_REBALANCE=true} and persistence is enabled.
+     * <p>Documented limitation (see data-rebalancing.adoc, "Rebalance Strategy"): when a
+     * rebalance delay is configured, the rebalance is scheduled outside of the partition
+     * map exchange context, and the historical path (which is tied to that context) is
+     * never taken — every partition is restored with a full rebalance regardless of the
+     * delta size and regardless of {@code IGNITE_PREFER_WAL_REBALANCE}.
      *
-     * <p>Expected result if the bug is present: {@code full=true, historical=false}.
-     * If fixed: {@code historical=true}.
+     * <p>Related ticket: IGNITE-14524.
      */
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
