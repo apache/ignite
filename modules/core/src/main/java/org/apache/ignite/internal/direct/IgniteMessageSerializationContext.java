@@ -139,8 +139,8 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
         if (c == 0) {
             assert locCmpFeatures.features().equals(rmtCmpFeatures.features());
 
-            // Newly introduced fields are included. Deprecated fields are excluded: a node fills them only while an
-            // RU is in progress, and a filled one is sent as a raw field.
+            // Newly introduced fields are included. Deprecated fields are excluded. A deprecated field holding a
+            // non-default value is written to the raw-field suffix instead.
             return new ComponentMessageSerializationContext(rmtCmpFeatures.features(), rmtCmpFeatures.features());
         }
         else {
