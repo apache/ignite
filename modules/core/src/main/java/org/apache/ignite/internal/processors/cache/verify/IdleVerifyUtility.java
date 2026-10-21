@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -67,13 +66,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
  */
 public class IdleVerifyUtility {
     /** Cluster not idle message. */
-    public static final String GRID_NOT_IDLE_MSG = "Cluster not idle. Modifications found in caches or groups: ";
+    public static final String GRID_NOT_IDLE_MSG =
+        "Cluster not idle. Modifications found in caches or groups: ";
 
     /** */
     public static final String CRC_CHECK_ERR_MSG = "CRC check of partition failed";
-
-    /** */
-    private static final String CANCELED_MSG = "Partition hash calculation has been cancelled.";
 
     /**
      * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id

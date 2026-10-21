@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -416,11 +415,12 @@ public interface IgniteCacheOffheapManager {
      *
      * @return {@code true} if entered to busy state.
      */
-    public boolean enterBusy() {
-        return !lock.writeLockedByCurrentThread() && lock.tryReadLock();
-    }
+    public boolean enterBusy();
 
-     gctx.offheap().stoppageLock().leaveBusy();
+    /**
+     * Leaves "busy" state.
+     */
+    public void leaveBusy();
 
     /**
      *

@@ -250,6 +250,18 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     // Propagate the cancellation to the async partition hash calculations.
                     cancel();
 
+                    // Wait for the rest of futures to stop.
+                    for (int j = i; j < partHashCalcFuts.size(); ++j) {
+                        Future<?> partFut = partHashCalcFuts.get(j);
+
+                        try {
+                            partFut.get();
+                        }
+                        catch (Exception ignored) {
+                            // No-op: we are already cancelling due to an exception.
+                        }
+                    }
+
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
                     // Avoid excessive wrapping.
@@ -483,13 +495,10 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
-                if (!gctx.offheap().stoppageLock().enterBusy()) {
-                    part.release();
-
-                    return res;
-                }
-
+                // Entyre node stoppage lock flag.
                 boolean gwLocked = false;
+                // The related page memory stoppage flag.
+                boolean memLocked = false;
 
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
@@ -509,6 +518,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         );
                     }
 
+                    // The related cache might be concurrently destroed.
+                    if (gctx.offheap().enterBusy())
+                        memLocked = true;
+                    else
+                        throw new IgniteCheckedException("Partition hash calculation has been cancelled: the page memory is stopping.");
+
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
                     PartitionHashRecord hash = calculatePartitionHash(
@@ -521,6 +536,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         gctx.offheap().partitionIterator(part.id()),
                         () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
                     );
+
+                    gctx.offheap().leaveBusy();
+                    memLocked = false;
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
@@ -542,10 +560,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     throw new IgniteException(msg, e);
                 }
                 finally {
+                    if (memLocked)
+                        gctx.offheap().leaveBusy();
+
                     if (gwLocked)
                         ignite.context().gateway().readUnlock();
 
-                    gctx.offheap().stoppageLock().leaveBusy();
                     part.release();
                 }
 
