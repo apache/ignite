@@ -36,15 +36,20 @@ import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_LONG_RUNNING_CACHE_FUTURES_NUMBER;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_MAX_CACHE_FUTURE_DURATION;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -246,6 +251,46 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         IgniteEx client = startClientGrid(getConfiguration(getTestIgniteInstanceName(1)).setCacheConfiguration());
 
         checkExplicitLockMetrics(client, srv, client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>()));
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, value = "200")
+    public void testMaxCacheFutureDurationAndLongRunningCacheFuturesNumber() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        IgniteCache<Integer, String> cache = srv.cache(DEFAULT_CACHE_NAME);
+
+        MetricRegistry mreg = srv.context().metric().registry(TX_METRICS);
+
+        LongMetric maxFutDuration = mreg.findMetric(METRIC_MAX_CACHE_FUTURE_DURATION);
+        LongMetric longRunningFutNum = mreg.findMetric(METRIC_LONG_RUNNING_CACHE_FUTURES_NUMBER);
+
+        Lock lock = cache.lock(1);
+
+        lock.lock();
+
+        IgniteInternalFuture<?> waiter;
+
+        try {
+            waiter = runAsync(() -> {
+                Lock lock0 = cache.lock(1);
+
+                lock0.lock();
+                lock0.unlock();
+            });
+
+            assertTrue(waitForCondition(() -> maxFutDuration.value() > 200, getTestTimeout()));
+            assertTrue(waitForCondition(() -> longRunningFutNum.value() >= 1, getTestTimeout()));
+        }
+        finally {
+            lock.unlock();
+        }
+
+        waiter.get(getTestTimeout());
+
+        assertTrue(waitForCondition(() -> maxFutDuration.value() == 0, getTestTimeout()));
+        assertTrue(waitForCondition(() -> longRunningFutNum.value() == 0, getTestTimeout()));
     }
 
     /**

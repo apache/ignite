@@ -103,7 +103,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.thread.context.OperationContext;
@@ -132,6 +131,7 @@ import org.apache.ignite.internal.util.worker.queue.IgniteAsyncObjectHandler;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -139,7 +139,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_WARN_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -150,7 +149,6 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
-import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -159,12 +157,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_DURATION_HISTOGRAM;
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_LONG_RUNNING_CACHE_FUTURES_EVENTS_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
-import static org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric.DFLT_SIZE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
@@ -210,10 +206,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ActionLimiter<IgniteInternalTx> ltrDumpLimiter = new ActionLimiter<>(1);
-
-    /** Number of long running cache futures events detected during the last dump window. */
-    @GridToStringExclude
-    private HitRateMetric longRunningCacheFuturesEvtCnt;
 
     /** */
     @GridToStringInclude
@@ -496,7 +488,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        MetricRegistryImpl mreg = cctx.kernalContext().metric().registry(PME_METRICS);
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(PME_METRICS);
 
         mreg.register(PME_DURATION,
             () -> currentPMEDuration(false),
@@ -505,10 +497,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         mreg.register(PME_OPS_BLOCKED_DURATION,
             () -> currentPMEDuration(true),
             "Current PME cache operations blocked duration in milliseconds.");
-
-        longRunningCacheFuturesEvtCnt = mreg.hitRateMetric(PME_LONG_RUNNING_CACHE_FUTURES_EVENTS_CNT,
-            "Number of long running cache futures events detected during the last dump window.",
-            getLong(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, DFLT_LONG_OPERATIONS_DUMP_TIMEOUT), DFLT_SIZE);
 
         durationHistogram = mreg.findMetric(PME_DURATION_HISTOGRAM);
         blockingDurationHistogram = mreg.findMetric(PME_OPS_BLOCKED_DURATION_HISTOGRAM);
@@ -2082,9 +2070,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             activeWarnings.printToLog();
 
-            if (activeWarnings.total() > 0)
-                longRunningCacheFuturesEvtCnt.increment();
-
             WarningsGroup atomicWarnings = new WarningsGroup("First %d long running cache futures [total=%d]",
                 diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
 
@@ -2105,9 +2090,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
 
             atomicWarnings.printToLog();
-
-            if (atomicWarnings.total() > 0)
-                longRunningCacheFuturesEvtCnt.increment();
         }
 
         if (diagCtx != null && !diagCtx.empty()) {
@@ -3631,11 +3613,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          */
         private void incTotal() {
             warningsTotal++;
-        }
-
-        /** @return Total number of warnings in the group. */
-        private int total() {
-            return warningsTotal;
         }
 
         /**

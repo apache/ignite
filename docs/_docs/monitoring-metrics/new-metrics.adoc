@@ -227,6 +227,8 @@ Register name: `tx`
 |AllOwnerTransactions | Map<String, String> | Map of local node owning transactions.
 |ExplicitLockHoldTimeHistogram | histogram | Explicit locks hold times on node represented as histogram, in milliseconds.
 |LockedKeysNumber | long | The number of keys locked on the node.
+|LongRunningCacheFuturesNumber | long | The number of cache futures currently in progress on the node whose duration exceeds the long operations dump timeout.
+|MaxCacheFutureDuration | long | Maximum duration of cache futures currently in progress on the node, in milliseconds.
 |MaxExplicitLockHoldTime | long | Maximum hold time of explicit locks currently held on the node, in milliseconds.
 |OwnerTransactionsNumber | long | The number of active transactions for which this node is the initiator.
 |TransactionsHoldingLockNumber | long | The number of active transactions holding at least one key lock.
@@ -254,10 +256,7 @@ Register name: `pme`
 |CacheOperationsBlockedDurationHistogram | histogram | Histogram of cache operations blocked PME durations in milliseconds.
 |Duration | long | Current PME duration in milliseconds.
 |DurationHistogram | histogram | Histogram of PME durations in milliseconds.
-|LongRunningCacheFuturesEventsCount | hitrate | Number of long running cache futures events detected during the last dump window.
 |===
-
-NOTE: `LongRunningCacheFuturesEventsCount` is a self-resetting counter maintained by the periodic long running operations dump (window = `IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT`, 60 seconds by default). The value is the number of events detected during the last window (one per non-empty active/atomic group).
 
 == Compute Jobs
 
