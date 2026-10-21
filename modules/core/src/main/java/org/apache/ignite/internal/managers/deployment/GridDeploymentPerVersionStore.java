@@ -499,7 +499,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             // or the class indeed should have a separate deployment.
             for (SharedDeployment d : depsToCheck) {
                 // In SHARED mode a class unknown to the existing deployments gets a separate deployment, so that
-                // a deployment is never extended with classes its participants do not have (see IGNITE-6922).
+                // a deployment is never extended with classes its participants do not have.
                 if (meta.deploymentMode() != CONTINUOUS)
                     break;
 
