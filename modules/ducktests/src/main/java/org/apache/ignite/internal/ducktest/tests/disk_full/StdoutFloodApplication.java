@@ -21,9 +21,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
- * Deploys {@link StdoutFloodServiceImpl} on every server node and records {@code lines-><n><-}, the lines the
- * service wrote, once a second. Cancels the service on stop, so the servers stop writing to their
- * {@code System.out} once {@code markFinished} is logged.
+ * Deploys {@link StdoutFloodServiceImpl} on every server node, records {@code lines-><n><-}, the lines the service
+ * wrote, once a second, and cancels the service on stop.
  */
 public class StdoutFloodApplication extends IgniteAwareApplication {
     /** Service name. */
@@ -45,7 +44,7 @@ public class StdoutFloodApplication extends IgniteAwareApplication {
             recordResult("lines", svc.lines());
         }
 
-        ignite.services().cancelAsync(SVC_NAME).get();
+        ignite.services().cancel(SVC_NAME);
 
         markFinished();
     }

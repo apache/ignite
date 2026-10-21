@@ -32,7 +32,7 @@ public class StdoutFloodServiceImpl implements Service, StdoutFloodService {
     /** Line, 1 KB with its line separator. */
     private static final String LINE = "x".repeat(1023);
 
-    /** Lines written once a millisecond. */
+    /** Lines written per millisecond. */
     private static final int LINES_PER_MS = 10;
 
     /** Service context. */
