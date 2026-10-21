@@ -1777,7 +1777,7 @@ The reload covers communication, discovery, the client connector, binary REST, a
 
 The command does not make thin clients or JDBC and ODBC drivers read their stores again, see link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
 
-A reload succeeds for a factory when its new SSL context has been installed. If the factory supplies certificate metadata, Ignite checks the chain's validity dates before installation. It does not test TLS connections or peer trust. The administrator must ensure that certificates, trust stores, protocols, cipher suites and client authentication are compatible across nodes and clients.
+A reload succeeds for a factory when its new SSL context has been installed. If the factory supplies certificate metadata, Ignite checks the chain's validity dates before installation. It does not test TLS connections or peer trust. The administrator must ensure that certificates, trust stores, protocols, cipher suites and client authentication are compatible across nodes and clients. An installed context is not rolled back if new connections fail.
 
 The reload fails and all transports using the factory keep their old context if:
 
@@ -1785,8 +1785,6 @@ The reload fails and all transports using the factory keep their old context if:
 * automatic renewal is enabled and the new context provides no certificate chain
 * the factory is a custom one that returns the same SSL context on every call, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories]
 * the factory fails, for example because it cannot read a store
-
-After the reload, check communication between nodes with `control.sh --diagnostic connectivity` and test new connections from your applications. Connection failures do not roll back an installed context. Correct the configuration or restore the old material and reload again.
 
 For each node, the command prints one line per SSL context factory, with all transports that use it.
 If some nodes fail, the others keep the new contexts.
@@ -1801,9 +1799,7 @@ Succeeded on 1 node(s):
 e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: reloaded client connector, communication, discovery; loaded subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
 ----
 
-In this example, node02 keeps its previous context because the replacement certificate has expired. Node01 has installed its new context. Provide a valid certificate for node02 and run the command again.
-
-Every node logs the reload result. Successful reload entries include the loaded certificate metadata when the factory provides it. The log line names the node the command came through. With security enabled, it also names the login and network address of the user who ran the command.
+Every node logs the reload result. With security enabled, the entry also identifies the user's login and network address.
 
 === Checking Certificates
 
@@ -1812,7 +1808,7 @@ Every node logs the reload result. Successful reload entries include the loaded 
 control.sh|bat --ssl status
 ----
 
-For every node, the command prints one block per SSL context factory. Each block shows its transports, the certificate metadata attached to the loaded context and the result of the last reload. If the factory has `renewalEnabled` set and a renewal is planned, the command also shows the time of the next link:security/ssl-tls#renewing-certificates-automatically[automatic renewal]:
+For each node, status lists the transports, loaded certificate metadata, last reload result and, when scheduled, the next link:security/ssl-tls#renewing-certificates-automatically[automatic renewal], grouped by SSL context factory:
 
 [source,text]
 ----
@@ -1824,8 +1820,7 @@ e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: client connector, co
 
 Status reads the metadata supplied when the factory built the SSL context. It does not reread a keystore, contact PKI or perform a TLS connection test. If the factory supplied no chain, status shows `certificate metadata is unavailable`. Missing metadata alone does not make the status command fail.
 
-A node without an SSL context factory prints `no SSL context factory is configured`.
-Such a node does not make `--ssl reload` or `--ssl status` end with an error.
+A node without an SSL context factory prints `no SSL context factory is configured` without making `--ssl reload` or `--ssl status` fail.
 
 If a CA certificate in the chain expires before the node's certificate, the `loaded` line also shows the chain's earliest expiry as `chainNotAfter`.
 

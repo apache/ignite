@@ -86,24 +86,21 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |`null`
 
 |`setHttpSslFactory(Factory<SSLContext>)`
-|Factory of the SSL context for HTTPS.
-When it is set, HTTP REST serves HTTPS with the certificates of this factory.
-Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty configuration file.
+|SSL context factory for HTTPS, used by the built-in Jetty connector or the connector in the Jetty configuration file.
 The node does not start if the connector from the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
 
-With this factory, `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] put new HTTP REST certificates in use without a restart.
+Supports `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] without a restart.
 
 HTTP REST does not use the weak cipher suites that Jetty turns off by default, even if the factory enables them.
 
 Unless the Jetty configuration file sets a `SecureRequestCustomizer` of its own, HTTP REST answers requests to a host name or IP address that the certificate does not name, such as a Kubernetes pod IP.
 
-To require client certificates, use `setHttpSslClientAuth`.
+See link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/configuration/ConnectorConfiguration.html[ConnectorConfiguration] for the configuration API.
 |Yes
 |`null`
 
 |`setHttpSslClientAuth(boolean)`
-|Whether HTTP REST requires a client certificate.
-When it is `true`, a client can connect only if the trust store of `httpSslFactory` trusts its certificate.
+|Whether HTTP REST requires a client certificate trusted by `httpSslFactory`.
 
 Without `httpSslFactory`, the node does not start with this property set to `true`. For TLS set up in the Jetty configuration file, set `needClientAuth` in that file instead.
 |Yes
@@ -117,7 +114,7 @@ Without `httpSslFactory`, the node does not start with this property set to `tru
 
 To move the TLS setup of HTTP REST to `httpSslFactory`:
 
-. Remove the `SslConnectionFactory` from the Jetty configuration file. Otherwise, the node does not start.
+. Remove the `SslConnectionFactory` from the Jetty configuration file.
 . Configure an `org.apache.ignite.ssl.SslContextFactory` with the HTTP REST key store and trust store, then assign it to `httpSslFactory`.
 Ignite's `SslContextFactory` cannot pick a key by alias, so keep only one private key in the HTTP REST key store.
 The private key must have the same password as the key store, because the factory has one password for both.

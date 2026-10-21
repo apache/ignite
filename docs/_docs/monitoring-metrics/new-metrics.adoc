@@ -507,11 +507,7 @@ NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registe
 
 == SSL
 
-Each node exposes one counter for link:security/ssl-tls#renewing-certificates-automatically[automatic renewal].
-It sums unsuccessful attempts across the node's SSL context factories. Transports sharing the same factory object contribute only once.
-The value is zero when there are no unsuccessful attempts, including on nodes without SSL or automatic renewal.
-
-Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to inspect the certificate in use, reload results and the next renewal time.
+Each node exposes one counter for link:security/ssl-tls#renewing-certificates-automatically[automatic renewal], including nodes without SSL. Transports sharing the same factory object contribute only once.
 
 Register name: `ssl`
 
@@ -523,6 +519,8 @@ Register name: `ssl`
 
 When a manual reload or automatic renewal puts a chain with a later earliest expiry in use, that factory's contribution resets to zero. Other factories' counts remain.
 Failed manual reloads do not increment it.
+
+Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] and the node logs to investigate failures.
 
 == Discovery IO
 
