@@ -412,11 +412,15 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
-     * Provides the offheap manager's stoppage lock.
+     * Enters "busy" state.
      *
-     * @return The offheap manager's stoppage lock.
+     * @return {@code true} if entered to busy state.
      */
-    public GridSpinBusyLock stoppageLock();
+    public boolean enterBusy() {
+        return !lock.writeLockedByCurrentThread() && lock.tryReadLock();
+    }
+
+     gctx.offheap().stoppageLock().leaveBusy();
 
     /**
      *

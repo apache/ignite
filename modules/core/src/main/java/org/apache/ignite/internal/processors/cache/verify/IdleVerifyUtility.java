@@ -322,7 +322,7 @@ public class IdleVerifyUtility {
         }
 
         if (cancelled.getAsBoolean())
-            throw cancelledException();
+            throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
 
         return new PartitionHashRecord(
             partKey,
@@ -333,11 +333,6 @@ public class IdleVerifyUtility {
             PartitionHashRecord.PartitionState.OWNING,
             ctx
         );
-    }
-
-    /** */
-    public static IgniteCheckedException cancelledException() {
-        return new NodeStoppingException(CANCELED_MSG);
     }
 
     /**
