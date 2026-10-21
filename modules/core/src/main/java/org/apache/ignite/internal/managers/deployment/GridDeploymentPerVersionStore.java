@@ -390,31 +390,37 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                         // request. In both SHARED and CONTINUOUS modes a deployment whose participants are able to
                         // provide the requested class is reused, so that the same class coming from different nodes
                         // is represented by a single class on this node.
-                        for (SharedDeployment d : deps) {
-                            if (!d.pendingUndeploy() && !d.undeployed()) {
-                                Map<UUID, IgniteUuid> parties = d.participants();
+                        // Classes of a sandboxed subject are never shared with other subjects: the JVM checks the
+                        // package access permissions of the subject that resolves a class first and caches the result
+                        // per class loader, so a shared loader would extend that subject's permissions to all other
+                        // participants. Hence in SHARED mode under the sandbox every sender gets its own deployment.
+                        if (meta.deploymentMode() != SHARED || !ctx.security().sandbox().enabled()) {
+                            for (SharedDeployment d : deps) {
+                                if (!d.pendingUndeploy() && !d.undeployed()) {
+                                    Map<UUID, IgniteUuid> parties = d.participants();
 
-                                if (parties != null) {
-                                    IgniteUuid ldrId = parties.get(meta.senderNodeId());
+                                    if (parties != null) {
+                                        IgniteUuid ldrId = parties.get(meta.senderNodeId());
 
-                                    if (ldrId != null) {
-                                        assert !ldrId.equals(meta.classLoaderId());
+                                        if (ldrId != null) {
+                                            assert !ldrId.equals(meta.classLoaderId());
 
-                                        if (log.isDebugEnabled())
-                                            log.debug("Skipping deployment (loaders on remote node are different) " +
-                                                "[dep=" + d + ", meta=" + meta + ']');
+                                            if (log.isDebugEnabled())
+                                                log.debug("Skipping deployment (loaders on remote node are different) " +
+                                                    "[dep=" + d + ", meta=" + meta + ']');
 
-                                        continue;
+                                            continue;
+                                        }
                                     }
+
+                                    if (depsToCheck == null)
+                                        depsToCheck = new LinkedList<>();
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Adding deployment to check: " + d);
+
+                                    depsToCheck.add(d);
                                 }
-
-                                if (depsToCheck == null)
-                                    depsToCheck = new LinkedList<>();
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Adding deployment to check: " + d);
-
-                                depsToCheck.add(d);
                             }
                         }
 
