@@ -1156,13 +1156,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             GridCloseableIterator<IgniteBiTuple<K, V>> iter = idxQryRes.iter();
 
             return new GridCloseableIteratorAdapter() {
+                /** */
+                private int cnt;
+
                 @Override protected Object onNext() throws IgniteCheckedException {
                     IgniteBiTuple<K, V> entry = iter.nextX();
+                    cnt++;
 
                     return new CacheEntryImpl<>(entry.getKey(), entry.getValue());
                 }
 
                 @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    if (qry.limit() > 0 && qry.limit() <= cnt)
+                        return false;
+
                     return iter.hasNextX();
                 }
             };
