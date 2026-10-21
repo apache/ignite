@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Earlie
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * Checks that {@link EarliestCheckpointMapSnapshot} reads {@code cpMapSnapshot.bin} written by the current code and
  * by {@link EarliestCheckpointMapSnapshotSerializer}.
@@ -40,34 +42,28 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
     private static final int HDR = 0x42BEEF00;
 
     /** */
-    private static final UUID CP1 = UUID.randomUUID();
-
-    /** */
-    private static final UUID CP2 = UUID.randomUUID();
-
-    /** */
-    private static final UUID CP_ABSENT = UUID.randomUUID();
-
-    /** */
     @Test
     public void testCurrentWrites() throws Exception {
-        check(serdes(snapshot(), false));
+        EarliestCheckpointMapSnapshot snap = snapshot();
+
+        check(snap, serdes(snap, false));
     }
 
     /** The upgrade case. */
     @Test
     public void testGeneratedWrites() throws Exception {
-        check(serdes(snapshot(), true));
+        EarliestCheckpointMapSnapshot snap = snapshot();
+
+        check(snap, serdes(snap, true));
     }
 
     /** */
     @Test
     public void testEmptySnapshot() throws Exception {
         for (boolean writeGenerated : new boolean[] {false, true}) {
-            EarliestCheckpointMapSnapshot snap = serdes(new EarliestCheckpointMapSnapshot(), writeGenerated);
+            EarliestCheckpointMapSnapshot snap = new EarliestCheckpointMapSnapshot();
 
-            assertNull(snap.groupState(CP1));
-            assertFalse(snap.checkpointWasPresent(CP1));
+            check(snap, serdes(snap, writeGenerated));
         }
     }
 
@@ -120,41 +116,40 @@ public class EarliestCheckpointMapSnapshotSerializationTest extends GridCommonAb
 
         grps2.put(1, new GroupStateSnapshot(new int[] {0, 1}, new long[] {20, 21}, 2));
 
-        data.put(CP1, grps1);
-        data.put(CP2, grps2);
+        UUID cp1 = UUID.randomUUID();
+        UUID cp2 = UUID.randomUUID();
+
+        data.put(cp1, grps1);
+        data.put(cp2, grps2);
 
         Set<UUID> ids = new HashSet<>();
 
-        ids.add(CP1);
-        ids.add(CP2);
+        ids.add(cp1);
+        ids.add(cp2);
 
         return new EarliestCheckpointMapSnapshot(ids, data);
     }
 
-    /** */
-    private static void check(EarliestCheckpointMapSnapshot snap) {
-        assertTrue(snap.checkpointWasPresent(CP1));
-        assertTrue(snap.checkpointWasPresent(CP2));
-        assertFalse(snap.checkpointWasPresent(CP_ABSENT));
+    /** Compares the snapshots field by field. */
+    private static void check(EarliestCheckpointMapSnapshot exp, EarliestCheckpointMapSnapshot act) {
+        assertEquals(exp.checkpointIds, act.checkpointIds);
 
-        Map<Integer, CheckpointEntry.GroupState> grps1 = snap.groupState(CP1);
+        assertEquals(exp.data.keySet(), act.data.keySet());
 
-        assertEquals(2, grps1.size());
+        for (Map.Entry<UUID, Map<Integer, GroupStateSnapshot>> e : exp.data.entrySet()) {
+            Map<Integer, GroupStateSnapshot> expGrps = e.getValue();
+            Map<Integer, GroupStateSnapshot> actGrps = act.data.get(e.getKey());
 
-        assertEquals(3, grps1.get(1).size());
-        assertEquals(10, grps1.get(1).counterByPartition(0));
-        assertEquals(11, grps1.get(1).counterByPartition(1));
-        assertEquals(12, grps1.get(1).counterByPartition(2));
+            assertEquals(expGrps.keySet(), actGrps.keySet());
 
-        assertEquals(1, grps1.get(2).size());
-        assertEquals(50, grps1.get(2).counterByPartition(5));
+            for (Map.Entry<Integer, GroupStateSnapshot> g : expGrps.entrySet()) {
+                GroupStateSnapshot expGrp = g.getValue();
+                GroupStateSnapshot actGrp = actGrps.get(g.getKey());
 
-        Map<Integer, CheckpointEntry.GroupState> grps2 = snap.groupState(CP2);
-
-        assertEquals(1, grps2.size());
-        assertEquals(2, grps2.get(1).size());
-        assertEquals(21, grps2.get(1).counterByPartition(1));
-
-        assertNull(snap.groupState(CP_ABSENT));
+                assertArrayEquals(expGrp.partitionIds(), actGrp.partitionIds());
+                assertArrayEquals(expGrp.partitionCounters(), actGrp.partitionCounters());
+                assertEquals(expGrp.size(), actGrp.size());
+            }
+        }
     }
 }
