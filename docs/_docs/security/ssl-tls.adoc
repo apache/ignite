@@ -234,7 +234,7 @@ Before installing the new context, the node checks the dates of the chain suppli
 Prepare trust stores so that nodes and clients accept both old and new certificates during rollout. Renewal does not test peer trust or TLS compatibility. It puts a changed trust store in use only together with a new certificate. To move to a new certificate authority, follow <<Upgrading Certificates>>.
 
 If the files still hold the certificate in use, the node reads them again after a pause.
-Each such attempt, failure to read the files, or rejection of a new certificate increments link:monitoring-metrics/new-metrics#ssl[`ConsecutiveRenewalFailures`].
+Each such attempt, failure to read the files, or rejection of a new certificate increments the node's link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric.
 The pauses grow from 1 minute to at most 1.5 hours.
 
 While the node waits for a new certificate, it logs a warning once a day.

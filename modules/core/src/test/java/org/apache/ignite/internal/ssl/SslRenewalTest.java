@@ -45,13 +45,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -192,7 +192,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> logged(Level.ERROR, late) >= 2, 30_000));
 
-        assertTrue(metrics(g, "ssl.communication").<IntMetric>findMetric("ConsecutiveRenewalFailures").value() >= 2);
+        assertTrue(metrics(g).<IntMetric>findMetric("ConsecutiveRenewalFailures").value() >= 2);
         assertContains(log, status(g), "next automatic renewal at");
     }
 
@@ -541,7 +541,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(8, issuer.calls.size());
         assertEquals(6, logged(Level.WARN, "initiator=automatic renewal, reason=" + ISSUER_DOWN));
         assertEquals(0, logged(Level.ERROR, ISSUER_DOWN));
-        assertEquals(0, metrics(g, "ssl.communication").<IntMetric>findMetric("ConsecutiveRenewalFailures").value());
+        assertEquals(0, metrics(g).<IntMetric>findMetric("ConsecutiveRenewalFailures").value());
         assertTrue(chainNotAfter(g) > now + 30 * MINUTE);
     }
 
@@ -639,6 +639,55 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertTrue(appender.events().isEmpty());
     }
 
+    /** The node sums failures once per factory, and a recovery clears only that factory's contribution. */
+    @Test
+    public void testRenewalFailuresMetric() throws Exception {
+        try (IgniteEx g = startGrid(0)) {
+            assertEquals(0, metrics(g).<IntMetric>findMetric("ConsecutiveRenewalFailures").value());
+        }
+
+        long now = System.currentTimeMillis();
+
+        KeyStore inUse = ca.issue("node", now - HOUR, now + HOUR);
+
+        Issuer nodeIssuer = new Issuer(() -> inUse, () -> inUse, fresh(2 * HOUR));
+        Issuer clientIssuer = new Issuer(() -> inUse, () -> inUse, () -> inUse, fresh(2 * HOUR));
+
+        nodeIssuer.setRenewalEnabled(false);
+        clientIssuer.setRenewalEnabled(false);
+
+        IgniteEx g = startGrid(0, cfg -> {
+            cfg.setSslContextFactory(nodeIssuer);
+            cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslEnabled(true).setSslClientAuth(false)
+                .setUseIgniteSslContextFactory(false).setSslContextFactory(clientIssuer));
+        });
+
+        SslContextProvider node = provider(g);
+        SslContextProvider client = provider(g, CLIENT_CONNECTOR);
+
+        assertSame(node, provider(g, DISCOVERY));
+
+        for (ReadOnlyMetricRegistry reg : g.context().metric())
+            assertFalse("Transport aliases must not be registered: " + reg.name(), reg.name().startsWith("ssl."));
+
+        IntMetric failures = metrics(g).findMetric("ConsecutiveRenewalFailures");
+
+        assertEquals(0, failures.value());
+
+        assertNull(node.renew(node.context()));
+        assertEquals(1, failures.value());
+
+        assertNull(client.renew(client.context()));
+        assertNull(client.renew(client.context()));
+        assertEquals(3, failures.value());
+
+        assertNotNull(node.renew(node.context()));
+        assertEquals(2, failures.value());
+
+        assertNotNull(client.renew(client.context()));
+        assertEquals(0, failures.value());
+    }
+
     /**
      * While the factory returns the certificate in use, as a file-based one does until the files are replaced, the node must wait
      * rather than throw. It must count unsuccessful renewals and log one warning without a stack trace for many attempts. A reload
@@ -665,14 +714,14 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(0, logged(Level.ERROR, WAITING));
         assertTrue("The wait must be logged without a stack trace", appender.events().stream().allMatch(e -> e.getThrown() == null));
 
-        MetricRegistryImpl reg = metrics(g, "ssl.communication");
+        ReadOnlyMetricRegistry reg = metrics(g);
 
         assertTrue(reg.<IntMetric>findMetric("ConsecutiveRenewalFailures").value() >= 5);
         assertNull(provider(g).reloadOutcome().failureReason());
 
         Iterator<Metric> metrics = reg.iterator();
 
-        assertEquals("ssl.communication.ConsecutiveRenewalFailures", metrics.next().name());
+        assertEquals("ssl.ConsecutiveRenewalFailures", metrics.next().name());
         assertFalse("Only the renewal problem counter must be exposed", metrics.hasNext());
 
         reload(g);
@@ -1229,11 +1278,15 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /**
      * @param g Node.
-     * @param name Registry name, as the documentation gives it.
-     * @return Metrics of a transport.
+     * @return SSL metrics of the node.
      */
-    private static MetricRegistryImpl metrics(IgniteEx g, String name) {
-        return g.context().metric().registry(name);
+    private static ReadOnlyMetricRegistry metrics(IgniteEx g) {
+        for (ReadOnlyMetricRegistry reg : g.context().metric()) {
+            if (reg.name().equals("ssl"))
+                return reg;
+        }
+
+        throw new AssertionError("SSL metrics are not registered");
     }
 
     /**

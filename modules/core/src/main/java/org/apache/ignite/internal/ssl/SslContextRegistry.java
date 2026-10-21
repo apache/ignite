@@ -27,13 +27,11 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
-/** SSL contexts of a node: one provider per configured factory, with the metrics of every transport and the automatic renewals. */
+/** SSL contexts of a node: one provider per configured factory, with automatic renewals and their node-wide failure metric. */
 public class SslContextRegistry extends GridProcessorAdapter {
     /** */
     public static final String COMMUNICATION = "communication";
@@ -66,6 +64,13 @@ public class SslContextRegistry extends GridProcessorAdapter {
         renewalExec = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
     }
 
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) {
+        ctx.metric().registry("ssl").register("ConsecutiveRenewalFailures",
+            () -> providers.stream().mapToInt(SslContextProvider::renewalFailures).sum(),
+            "Sum of unsuccessful automatic renewals across factories; each factory resets its count after a later-expiring chain.");
+    }
+
     /**
      * @param factory Factory the transport is configured with.
      * @param transport Transport, one of the names above.
@@ -85,8 +90,6 @@ public class SslContextRegistry extends GridProcessorAdapter {
         }
         else
             provider.addTransport(transport);
-
-        registerMetrics(transport, provider);
 
         return provider.sharedContext();
     }
@@ -118,16 +121,5 @@ public class SslContextRegistry extends GridProcessorAdapter {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    /**
-     * @param transport Transport.
-     * @param provider Provider serving it.
-     */
-    private void registerMetrics(String transport, SslContextProvider provider) {
-        MetricRegistryImpl reg = ctx.metric().registry(metricName("ssl", transport.replace(' ', '.').toLowerCase()));
-
-        reg.register("ConsecutiveRenewalFailures", provider::renewalFailures,
-            "Failed automatic renewals, including unchanged certificates; reset when a chain with a later expiry is put in use.");
     }
 }
