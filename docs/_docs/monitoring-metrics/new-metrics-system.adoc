@@ -246,7 +246,7 @@ tab:XML[]
     <property name="metricExporterSpi">
       <list>
         <bean class="org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi">
-          <property name="period" value="10000"/>
+          <property name="period" value="1000"/>
           <property name="sendNodeId" value="true"/>
           <property name="sendInstanceName" value="true"/>
           <property name="sendConsistentId" value="true"/>
@@ -291,12 +291,6 @@ The examples require the `ignite-opencensus` module, `opencensus-exporter-stats-
             <groupId>io.opencensus</groupId>
             <artifactId>opencensus-exporter-stats-prometheus</artifactId>
             <version>${opencensus.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.prometheus</groupId>
-            <artifactId>simpleclient_httpserver</artifactId>
-            <version>${simpleclient.version}</version>
         </dependency>
 
     </dependencies>
@@ -400,7 +394,11 @@ a|`Caches`, `OwningPartitionsAllocationMap`, `MovingPartitionsAllocationMap`,
 |`LastSnapshotName`, `LastSnapshotErrorMessage`, `LocalSnapshotNames`, `LastRequestId`
 |No equivalent.
 
-|`snapshot.incremental` and `snapshot-restore`
+|`snapshot.incremental`
+|`snapshotName`, `error`
+|No equivalent.
+
+|`snapshot-restore`
 |`snapshotName`, `requestId`, `error`
 |No equivalent.
 
