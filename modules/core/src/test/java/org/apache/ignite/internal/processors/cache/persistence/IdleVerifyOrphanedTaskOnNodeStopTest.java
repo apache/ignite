@@ -126,7 +126,7 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
 
         AtomicBoolean stopUpdatingFlag = new AtomicBoolean();
 
-        // Continuously updates one partition
+        // Continuously updates one partition.
         IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(() -> {
             for (int i = 0; !stopUpdatingFlag.get(); i++)
                 cache.put(keyUnderLoad, i);
