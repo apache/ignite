@@ -108,6 +108,8 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
             assertFalse(viewContent.containsKey("SslContextFactory.KeyStorePassword"));
             assertFalse(viewContent.containsKey("SslContextFactory.TrustStorePassword"));
             assertFalse(viewContent.containsKey("ConnectorConfiguration.SecretKey"));
+
+            assertTrue(viewContent.values().stream().noneMatch(val -> val != null && val.contains(secretKey)));
         }
     }
 
