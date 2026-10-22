@@ -17,8 +17,9 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
-import org.apache.ignite.IgniteCheckedException;
+import java.util.zip.ZipInputStream;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
@@ -42,7 +43,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
 
     /** */
     @Test
-    public void testSerializationAndDeserialization() throws IgniteCheckedException {
+    public void testSerializationAndDeserialization() throws Exception {
         HashMap<Integer, CacheMetricsSnapshot> metrics = new HashMap<>();
 
         metrics.put(1, createMetricsWithBorderMarker());
@@ -51,7 +52,11 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
 
         byte[] zipMarshal = U.zip(U.marshal(marshaller, metrics));
 
-        HashMap<Integer, CacheMetricsSnapshot> unmarshalMetrics = U.unmarshalZip(marshaller, zipMarshal, null);
+        ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipMarshal));
+
+        in.getNextEntry();
+
+        HashMap<Integer, CacheMetricsSnapshot> unmarshalMetrics = U.unmarshal(marshaller, in, null);
 
         assertTrue(isMetricsEquals(metrics.get(1), unmarshalMetrics.get(1)));
 

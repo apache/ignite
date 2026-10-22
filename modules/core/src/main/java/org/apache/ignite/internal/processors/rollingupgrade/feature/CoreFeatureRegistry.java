@@ -100,6 +100,12 @@ public class CoreFeatureRegistry {
      */
     public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
 
+    /**
+     * Feature that deprecates the mechanism for tracking the features of the previous version under which the node operated.
+     * This mechanism was replaced by the raw-field suffix.
+     */
+    public static final IgniteFeature PREV_CLUSTER_VER_DEPRECATED_FEATURE = new IgniteCoreFeature(2);
+
     /** Feature that introduces the snapshot list command. */
-    public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(3);
+    public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
 }
