@@ -21,8 +21,10 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.TreeMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
@@ -82,14 +84,11 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 continue;
             }
 
-            // Sorted snapshot names for better readability.
-            new TreeMap<>(nodeResult.snapshots()).forEach((snpName, snpInfo) -> {
-                printer.accept("\t\tSnapshot '%s': totalSize=%s (%db), created='%s' (epoch=%d)".formatted(
+            sortResults(nodeResult.snapshots()).forEach((snpName, snpInfo) -> {
+                printer.accept("\t\tSnapshot '%s': totalSize=%s, created='%s'".formatted(
                     snpName,
                     U.humanReadableByteCount(snpInfo.size()),
-                    snpInfo.size(),
-                    DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.date())),
-                    snpInfo.date()
+                    DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.date()))
                 ));
 
                 SnapshotListJobResult.SnapshotInfo extStors = snpInfo.externalStorages();
@@ -116,5 +115,28 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
         }
 
         printer.accept("");
+    }
+
+    /** Sorts the snapshots by most recent creation or update date. */
+    private static Map<String, SnapshotListJobResult.SnapshotInfo> sortResults(Map<String, SnapshotListJobResult.SnapshotInfo> rawResults) {
+        Comparator<SnapshotListJobResult.SnapshotInfo> cmp = new Comparator<>() {
+            @Override public int compare(SnapshotListJobResult.SnapshotInfo s1, SnapshotListJobResult.SnapshotInfo s2) {
+                long date1 = s1.incrementals() == null ? s1.date() : s1.incrementals().date();
+                long date2 = s2.incrementals() == null ? s2.date() : s2.incrementals().date();
+
+                return Long.compare(date1, date2);
+            }
+        };
+
+        // Sorted by the creation or modification date.
+        return rawResults.entrySet()
+            .stream()
+            .sorted(Map.Entry.comparingByValue(cmp))
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (e1, e2) -> e1,
+                LinkedHashMap::new
+            ));
     }
 }

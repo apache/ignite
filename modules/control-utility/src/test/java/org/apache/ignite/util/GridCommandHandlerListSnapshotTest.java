@@ -198,7 +198,18 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             }
         };
 
-        doTestSnapshotsLists(1, snapshotsCreatedLsnr);
+        doTestSnapshotsLists(1, snapshotsCreatedLsnr, 0L);
+    }
+
+    /** Tests that snapshots are listed respecting their dates. */
+    @Test
+    public void testSnapshotsOrder() throws Exception {
+        // Is not so important here, speeds up the tests.
+        assumeFalse(customPath);
+
+        String out = doTestSnapshotsLists(3, null, 300L);
+
+        System.err.println("TEST | output: " + out);
     }
 
     /**
@@ -207,6 +218,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
      *     <li>Step 1: Starts cluster</li>
      *     <li>
      *         Step 2: If {@code snapshotsCnt} &gt; 0, creates a cache, fills it and creates this number of the test snapshots.
+     *         <p>If {@code delayBeforeNextSnp} &gt; 0, uses these milliseconds to wait before creating next snapshot.</p>
      *         <p>If {@link #incrementalsCnt} &gt; 0, adds this number of incrementals to each snapshot.</p>
      *         <p>If {@link #customPath} is set, uses it as the snapshot path to create each test snapshot.</p>
      *         <p>If {@code snapshotsCnt} == 0, doesn't create any test snapshot.</p>
@@ -225,8 +237,10 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
      *
      * @param snapshotsCnt Number of the test snapshots to create before calling the snapshots list command.
      * @param snapshotsCreatedLsnr Optional listener. Is called after the test snapshots creation.
+     * @param delayBeforeNextSnp If &gt; 0 and {@code snapshotsCnt} &gt; 1, uses these milliseconds to wait before creating next snapshot.
+     * @return The command output.
      */
-    private void doTestSnapshotsLists(int snapshotsCnt, @Nullable Runnable snapshotsCreatedLsnr) throws Exception {
+    private String doTestSnapshotsLists(int snapshotsCnt, @Nullable Runnable snapshotsCreatedLsnr, long delayBeforeNextSnp) throws Exception {
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeFalse(customPath && separatedWorkDir);
@@ -267,6 +281,10 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
                     snp(ig).createSnapshot("testSnapshot" + snpIdx, absPathStr, true, false).get(getTestTimeout());
                 }
+
+                // If required, wait before creating next snapshot.
+                if(delayBeforeNextSnp > 0L && snpIdx < snapshotsCnt - 1)
+                    U.sleep(delayBeforeNextSnp);
             }
         }
 
@@ -299,7 +317,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
             assertEquals(GRIDS_CNT, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
-            return;
+            return out;
         }
 
         // Step 7: Find the test snapshots in the output.
@@ -316,11 +334,13 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // If the incremental snapshots are configured, find the info about them.
         if (incrementalsCnt > 0)
             assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "incremental snapshots: cnt=" + incrementalsCnt));
+
+        return out;
     }
 
-    /** {@link #doTestSnapshotsLists(int, Runnable)} with {@code snapshotsCreatedLsnr} not set. */
-    private void doTestSnapshotsLists(int snapshotsCnt) throws Exception {
-        doTestSnapshotsLists(snapshotsCnt, null);
+    /** {@link #doTestSnapshotsLists(int, Runnable, long)} with {@code snapshotsCreatedLsnr} and {@code delayBeforeNextSnp} not set. */
+    private String doTestSnapshotsLists(int snapshotsCnt) throws Exception {
+        return doTestSnapshotsLists(snapshotsCnt, null, 0L);
     }
 
     /** @return Number of the test entries in the original text. */
