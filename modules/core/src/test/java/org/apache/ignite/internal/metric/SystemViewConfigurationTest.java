@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
@@ -101,10 +102,7 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
             .setConnectorConfiguration(new TestConnectorConfiguration().setSecretKey(secretKey));
 
         try (IgniteEx ignite = startGrid(icfg)) {
-            Map<String, String> viewContent = new HashMap<>();
-
-            ignite.context().systemView().<ConfigurationView>view(CFG_VIEW)
-                .forEach(view -> viewContent.put(view.name(), view.value()));
+            Map<String, String> viewContent = viewContent(ignite.context().systemView().<ConfigurationView>view(CFG_VIEW));
 
             assertTrue(viewContent.containsKey("SslContextFactory.KeyStoreFilePath"));
             assertTrue(viewContent.containsKey("ConnectorConfiguration.Port"));
@@ -132,12 +130,8 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         holder0.setRef(shared);
         holder1.setRef(shared);
 
-        IgniteConfiguration icfg = getConfiguration().setPluginConfigurations(self, a, holder0, holder1, null);
-
-        Map<String, String> viewContent = new HashMap<>();
-
-        for (ConfigurationView view : new IgniteConfigurationIterable(icfg))
-            viewContent.put(view.name(), view.value());
+        Map<String, String> viewContent = viewContent(
+            getConfiguration().setPluginConfigurations(self, a, holder0, holder1, null));
 
         // Self reference.
         assertTrue(viewContent.containsKey("PluginConfigurations[0].Ref"));
@@ -167,17 +161,42 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         TestPluginConfiguration empty = new TestPluginConfiguration();
         empty.setRef(new TestPluginConfiguration[0]);
 
-        IgniteConfiguration icfg = getConfiguration().setPluginConfigurations(nullsOnly, cyclicOnly, empty);
-
-        Map<String, String> viewContent = new HashMap<>();
-
-        for (ConfigurationView view : new IgniteConfigurationIterable(icfg))
-            viewContent.put(view.name(), view.value());
+        Map<String, String> viewContent = viewContent(getConfiguration()
+            .setPluginConfigurations(nullsOnly, cyclicOnly, empty));
 
         assertEquals("[null, null]", viewContent.get("PluginConfigurations[0].Ref"));
         assertNotNull(viewContent.get("PluginConfigurations[1].Ref"));
         assertFalse(viewContent.containsKey("PluginConfigurations[1].Ref[0].Ref"));
         assertEquals("[]", viewContent.get("PluginConfigurations[2].Ref"));
+    }
+
+    /** Tests that the package is checked for each array element rather than for the array component type. */
+    @Test
+    public void testArrayElementPackage() throws Exception {
+        // Proxy class is not from the Ignite package, although the array component type is.
+        TestBean foreign = (TestBean)Proxy.newProxyInstance(getClass().getClassLoader(),
+            new Class<?>[] {TestBean.class}, (proxy, mtd, args) -> null);
+
+        TestPluginConfiguration foreignArr = new TestPluginConfiguration();
+        foreignArr.setRef(new TestBean[] {foreign});
+
+        // Element from the Ignite package, although the array component type is not.
+        TestPluginConfiguration objArr = new TestPluginConfiguration();
+        objArr.setRef(new Object[] {"str", new TestPluginConfiguration()});
+
+        TestPluginConfiguration enumArr = new TestPluginConfiguration();
+        enumArr.setRef(new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
+
+        Map<String, String> viewContent = viewContent(
+            getConfiguration().setPluginConfigurations(foreignArr, objArr, enumArr));
+
+        assertTrue(viewContent.containsKey("PluginConfigurations[0].Ref"));
+        assertFalse(viewContent.containsKey("PluginConfigurations[0].Ref[0].Ref"));
+
+        assertFalse(viewContent.containsKey("PluginConfigurations[1].Ref"));
+        assertTrue(viewContent.containsKey("PluginConfigurations[1].Ref[1].Ref"));
+
+        assertEquals("[ATOMIC]", viewContent.get("PluginConfigurations[2].Ref"));
     }
 
     /** Tests that a failed properties collection does not affect the next one. */
@@ -193,27 +212,54 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
 
         failing.fail = false;
 
-        Map<String, String> viewContent = new HashMap<>();
-
-        for (ConfigurationView view : iter)
-            viewContent.put(view.name(), view.value());
+        Map<String, String> viewContent = viewContent(iter);
 
         assertEquals(icfg.getIgniteInstanceName(), viewContent.get("IgniteInstanceName"));
         assertEquals("val", viewContent.get("PluginConfigurations[0].Val"));
     }
 
+    /**
+     * @param icfg Configuration.
+     * @return Configuration view content: property names and values.
+     */
+    private static Map<String, String> viewContent(IgniteConfiguration icfg) {
+        return viewContent(new IgniteConfigurationIterable(icfg));
+    }
+
+    /**
+     * @param view Configuration view.
+     * @return Configuration view content: property names and values.
+     */
+    private static Map<String, String> viewContent(Iterable<ConfigurationView> view) {
+        Map<String, String> viewContent = new HashMap<>();
+
+        for (ConfigurationView row : view)
+            viewContent.put(row.name(), row.value());
+
+        return viewContent;
+    }
+
+    /** Bean with a reference to another object. */
+    public interface TestBean {
+        /** @return Reference. */
+        Object getRef();
+
+        /** @param ref Reference. */
+        void setRef(Object ref);
+    }
+
     /** Plugin configuration with a reference to another object. */
-    public static class TestPluginConfiguration implements PluginConfiguration {
+    public static class TestPluginConfiguration implements PluginConfiguration, TestBean {
         /** Reference. */
         private Object ref;
 
-        /** @return Reference. */
-        public Object getRef() {
+        /** {@inheritDoc} */
+        @Override public Object getRef() {
             return ref;
         }
 
-        /** @param ref Reference. */
-        public void setRef(Object ref) {
+        /** {@inheritDoc} */
+        @Override public void setRef(Object ref) {
             this.ref = ref;
         }
     }

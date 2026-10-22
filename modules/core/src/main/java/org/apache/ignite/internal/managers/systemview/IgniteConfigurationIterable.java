@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -50,18 +49,24 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
  * and expose all properties in form of String pairs.
  * Properties of configuration classes are collected via reflection once, the configuration is iterated on each iteration.
  * Properties marked as {@link SensitiveProperty} and {@code char[]} properties (usually passwords) are never exposed.
+ * Only objects of classes from the configured packages are iterated, for an array this is checked for each element.
  * Cyclic references are not iterated: such a property is exposed as a plain value, such an array element is skipped.
- * An array without elements to iterate (empty, or with {@code null} and cyclic elements only) is exposed as a plain value.
+ * Array elements that are {@code null} or not iterated by package are skipped as well.
+ * An array without elements to iterate is exposed as a plain value.
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
+    /** Properties of configuration classes: names and getters. */
+    private static final ClassValue<Map<String, Method>> PROPS = new ClassValue<>() {
+        @Override protected Map<String, Method> computeValue(Class<?> cls) {
+            return props(cls);
+        }
+    };
+
     /** Packages to expose objects from. */
     private final List<String> pkgs;
 
     /** Configuration to iterate. */
     private final IgniteConfiguration cfg;
-
-    /** Properties of configuration classes: names and getters. */
-    private final Map<Class<?>, Map<String, Method>> clsProps = new ConcurrentHashMap<>();
 
     /**
      * @param cfg Configuration to iterate.
@@ -97,7 +102,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     protected <T> Iterator<T> iterator0(BiFunction<String, Object, T> trans) {
         Queue<Node> iters = new LinkedList<>();
 
-        iters.add(new Node(cfg, objProps(cfg), "", null));
+        iters.add(new Node(cfg, objectProperties(cfg), "", null));
 
         return new Iterator<T>() {
             private T next;
@@ -171,15 +176,10 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
         Class<?> cls = val.getClass();
 
-        boolean isArr = cls.isArray();
+        if (cls.isArray()) {
+            if (cls.getComponentType().isPrimitive())
+                return false;
 
-        if (isArr)
-            cls = cls.getComponentType();
-
-        if (!checkPkg(cls.getName()))
-            return false;
-
-        if (isArr) {
             int length = Array.getLength(val);
 
             boolean added = false;
@@ -187,8 +187,8 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             for (int i = 0; i < length; i++) {
                 Object el = Array.get(val, i);
 
-                if (el != null && !Node.contains(parent, el)) {
-                    iters.add(new Node(el, objProps(el), prefix + '[' + i + ']', parent));
+                if (checkObjectPackage(el) && !Node.contains(parent, el)) {
+                    iters.add(new Node(el, objectProperties(el), prefix + '[' + i + ']', parent));
 
                     added = true;
                 }
@@ -197,29 +197,39 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             return added;
         }
 
-        if (Node.contains(parent, val))
+        if (!checkPkg(cls.getName()) || Node.contains(parent, val))
             return false;
 
-        iters.add(new Node(val, objProps(val), prefix, parent));
+        iters.add(new Node(val, objectProperties(val), prefix, parent));
 
         return true;
+    }
+
+    /**
+     * Checks package of an array element.
+     *
+     * @param val Array element.
+     * @return {@code True} if {@code val} is a configuration bean that must be recursively exposed by the view.
+     */
+    private boolean checkObjectPackage(@Nullable Object val) {
+        return val != null && !val.getClass().isEnum() && checkPkg(val.getClass().getName());
     }
 
     /**
      * @param obj Object.
      * @return Iterator of object properties: names and getters.
      */
-    private Iterator<Map.Entry<String, Method>> objProps(Object obj) {
-        return clsProps.computeIfAbsent(obj.getClass(), this::props).entrySet().iterator();
+    private Iterator<Map.Entry<String, Method>> objectProperties(Object obj) {
+        return PROPS.get(obj.getClass()).entrySet().iterator();
     }
 
     /**
      * Sensitive properties are skipped.
      *
      * @param cls Class to find properties.
-     * @return Object properties sorted by name: names and getters.
+     * @return Unmodifiable object properties sorted by name: names and getters.
      */
-    private Map<String, Method> props(Class<?> cls) {
+    private static Map<String, Method> props(Class<?> cls) {
         Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted.
 
         for (; cls != Object.class; cls = cls.getSuperclass()) {
@@ -240,7 +250,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
         props.values().removeIf(IgniteConfigurationIterable::isSensitive);
 
-        return props;
+        return Collections.unmodifiableMap(props);
     }
 
     /**

@@ -3333,15 +3333,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** Registers configuration system view. */
     private void registerConfigurationSystemView() {
-        // Single instance per node, so properties of configuration classes are not collected again on each view access.
-        IgniteConfigurationIterable cfgIter = new IgniteConfigurationIterable(ctx.config());
-
         ctx.systemView().registerInnerCollectionView(
             CFG_VIEW,
             CFG_VIEW_DESC,
             new ConfigurationViewWalker(),
             singleton(ctx.config()),
-            cfg -> cfgIter,
+            IgniteConfigurationIterable::new,
             (cfg, view) -> view
         );
     }
