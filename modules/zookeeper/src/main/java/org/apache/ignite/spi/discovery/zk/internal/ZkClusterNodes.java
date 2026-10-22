@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 
 /**
  * Zk Cluster Nodes.
@@ -82,21 +83,13 @@ public class ZkClusterNodes {
     }
 
     /**
-     * Adds a node to the topology and removes its certificates: only authentication needs them, and it is done by now.
-     *
      * @param node New node.
      */
     void addNode(ZookeeperClusterNode node) {
         assert node.id() != null : node;
         assert node.order() > 0 : node;
 
-        if (node.getAttributes().containsKey(ATTR_NODE_CERTIFICATES)) {
-            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
-
-            attrs.remove(ATTR_NODE_CERTIFICATES);
-
-            node.setAttributes(attrs);
-        }
+        clearNodeSensitiveData(node);
 
         ZookeeperClusterNode old = nodesById.put(node.id(), node);
 
@@ -109,6 +102,16 @@ public class ZkClusterNodes {
         old = nodesByInternalId.put(node.internalId(), node);
 
         assert old == null : old;
+    }
+
+    /** */
+    private static void clearNodeSensitiveData(ZookeeperClusterNode node) {
+        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+        attrs.remove(ATTR_NODE_CERTIFICATES);
+        attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+        node.setAttributes(attrs);
     }
 
     /**

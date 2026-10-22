@@ -521,15 +521,16 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     }
 
     /**
-     * Checks that node authentication gets the node certificates and no node keeps them after the join.
+     * Checks that node authentication gets the node certificates and no node keeps them or the credentials after
+     * the join.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testNodeCertificatesRemovedAfterJoin() throws Exception {
+    public void testNodeSensitiveDataRemovedAfterJoin() throws Exception {
         startGridsWithCertificates();
 
-        checkNoNodeCertificates();
+        checkNoNodeSensitiveData();
 
         IgniteEx cli = grid(2);
 
@@ -552,7 +553,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             () -> G.allGrids().stream().allMatch(ignite -> ignite.cluster().node(cliId) != null),
             getTestTimeout()));
 
-        checkNoNodeCertificates();
+        checkNoNodeSensitiveData();
 
         String cliName = getTestIgniteInstanceName(2);
 
@@ -594,12 +595,15 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         waitForTopology(3);
     }
 
-    /** Checks that no node of any grid has the node certificates in its attributes. */
-    private void checkNoNodeCertificates() {
+    /** Checks that no node of any grid has the node certificates or credentials in its attributes. */
+    private void checkNoNodeSensitiveData() {
         for (Ignite ignite : G.allGrids()) {
             for (ClusterNode node : ignite.cluster().nodes()) {
-                assertFalse("grid=" + ignite.name() + ", node=" + node.id(),
-                    ((ZookeeperClusterNode)node).getAttributes().containsKey(ATTR_NODE_CERTIFICATES));
+                Map<String, Object> attrs = ((ZookeeperClusterNode)node).getAttributes();
+                String msg = "grid=" + ignite.name() + ", node=" + node.id();
+
+                assertFalse(msg, attrs.containsKey(ATTR_NODE_CERTIFICATES));
+                assertFalse(msg, attrs.containsKey(ATTR_SECURITY_CREDENTIALS));
             }
         }
     }
