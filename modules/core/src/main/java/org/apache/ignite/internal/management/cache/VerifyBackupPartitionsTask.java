@@ -247,7 +247,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         continue;
                     }
 
-                    cancelFutures(i, partHashCalcFuts);
+                    cancel(i, partHashCalcFuts);
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
@@ -277,7 +277,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /** */
-        private void cancelFutures(int startIdx, List<Future<Map<PartitionKey, PartitionHashRecord>>> futs) {
+        private void cancel(int startIdx, List<Future<Map<PartitionKey, PartitionHashRecord>>> futs) {
             // Propagate the cancellation to the async partition hash calculations.
             cancel();
 
@@ -492,8 +492,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final GridDhtLocalPartition part,
             final BooleanSupplier cancelled
         ) {
-            checkCancelledOrStopped(cancelled, gctx, true);
-
             return pool.submit(() -> {
                 checkCancelledOrStopped(cancelled, gctx, true);
 
@@ -522,7 +520,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     PartitionHashRecord hash;
 
                     // The cache group can be destroyed concurrently.
-                    if (!gctx.offheap().enterBusy())
+                    if (!gctx.offheap().preventStopping())
                         throw cancellationException();
 
                     try {
@@ -536,8 +534,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             gctx.offheap().partitionIterator(part.id()),
                             () -> checkCancelledOrStopped(cancelled, gctx, false)
                         );
-                    } finally {
-                        gctx.offheap().leaveBusy();
+                    }
+                    finally {
+                        gctx.offheap().allowStopping();
                     }
 
                     if (hash != null)
@@ -575,10 +574,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @return {@code True} if {@code throwIfCancelled} is {@code false} and: the cancelation is request,
          * or local node is stopping, or the cache group is stopping/being destroing.
          */
-        private boolean checkCancelledOrStopped(BooleanSupplier canceled, CacheGroupContext gctx, boolean throwIfCancelled) {
-            boolean res =  canceled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+        private boolean checkCancelledOrStopped(BooleanSupplier canceled, CacheGroupContext gctx,
+            boolean throwIfCancelled) {
+            boolean res = canceled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
 
-            if(res && throwIfCancelled)
+            if (res && throwIfCancelled)
                 throw cancellationException();
 
             return res;

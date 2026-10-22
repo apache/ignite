@@ -411,16 +411,19 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
-     * Enters "busy" state.
+     * Tries to lock the manager against stopping.
      *
-     * @return {@code true} if entered to busy state.
+     * @return {@code true} if entered the 'stop-unallowed' state. {@code False} if the manager is already stopping.
+     * @see #allowStopping()
      */
-    public boolean enterBusy();
+    public boolean preventStopping();
 
     /**
-     * Leaves "busy" state.
+     * Releases the 'stop-unallowed' state and allows the manager to stop.
+     *
+     * @see #preventStopping()
      */
-    public void leaveBusy();
+    public void allowStopping();
 
     /**
      *
