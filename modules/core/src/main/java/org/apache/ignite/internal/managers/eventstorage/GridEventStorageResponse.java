@@ -24,11 +24,11 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Events collected for a {@link GridEventStorageRequest}, or the failure that prevented it. */
-public class GridEventStorageResponse implements Message {
+public class GridEventStorageResponse extends AbstractMessage {
     /** */
     @Marshalled("evtsBytes")
     Collection<Event> evts;

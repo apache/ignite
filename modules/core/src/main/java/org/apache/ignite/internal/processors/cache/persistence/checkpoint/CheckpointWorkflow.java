@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
@@ -243,9 +242,7 @@ public class CheckpointWorkflow {
 
         WALPointer cpPtr = null;
 
-        CheckpointContextImpl ctx0 = new CheckpointContextImpl(
-            curr, new PartitionAllocationMap(), checkpointCollectPagesInfoPool, workProgressDispatcher
-        );
+        CheckpointContextImpl ctx0 = new CheckpointContextImpl(curr, checkpointCollectPagesInfoPool, workProgressDispatcher);
 
         checkpointReadWriteLock.readLock();
 
@@ -577,7 +574,7 @@ public class CheckpointWorkflow {
         if (checkpointMarkersStorage != null)
             checkpointMarkersStorage.onCheckpointFinished(chp);
 
-        CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null, null);
+        CheckpointContextImpl emptyCtx = new CheckpointContextImpl(chp.progress, null, null);
 
         Collection<DataRegion> checkpointedRegions = dataRegions.get();
 

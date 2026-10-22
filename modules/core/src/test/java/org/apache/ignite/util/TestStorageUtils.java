@@ -80,8 +80,7 @@ public class TestStorageUtils {
                 dataEntry.value(),
                 dataEntry.writeVersion(),
                 dataEntry.expireTime(),
-                locPart,
-                null);
+                locPart);
 
             ctx.offheap().dataStore(locPart).updateInitialCounter(dataEntry.partitionCounter() - 1, 1);
         }

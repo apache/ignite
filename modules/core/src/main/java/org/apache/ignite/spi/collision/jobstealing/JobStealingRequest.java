@@ -19,12 +19,12 @@ package org.apache.ignite.spi.collision.jobstealing;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Job stealing request.
  */
-public class JobStealingRequest implements Message {
+public class JobStealingRequest extends AbstractMessage {
     /** Delta. */
     @Order(0)
     int delta;

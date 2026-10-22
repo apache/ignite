@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.managers.communication.IgniteIoTestMessage",
+  "fields": [
+    {"order": 0, "type": "long", "name": "id"},
+    {"order": 1, "type": "boolean", "name": "processInNioThread"},
+    {"order": 2, "type": "boolean", "name": "req"},
+    {"order": 3, "type": "byte[]", "name": "payload"},
+    {"order": 4, "type": "long", "name": "reqSndTsMillis"},
+    {"order": 5, "type": "long", "name": "reqRcvTsMillis"},
+    {"order": 6, "type": "long", "name": "resSndTsMillis"},
+    {"order": 7, "type": "long", "name": "resRcvTsMillis"}
+  ]
+}

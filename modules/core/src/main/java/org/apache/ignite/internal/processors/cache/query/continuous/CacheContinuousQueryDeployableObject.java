@@ -27,12 +27,12 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Deployable object.
  */
-public final class CacheContinuousQueryDeployableObject implements Message {
+public final class CacheContinuousQueryDeployableObject extends AbstractMessage {
     /** Serialized object. */
     @GridToStringExclude
     @Order(0)

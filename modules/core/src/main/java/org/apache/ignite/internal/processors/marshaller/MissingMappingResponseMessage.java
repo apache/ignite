@@ -18,14 +18,14 @@ package org.apache.ignite.internal.processors.marshaller;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * On receiving a {@link MissingMappingRequestMessage} mapping request server node looks up class name
  * for requested platformId and typeId in its local marshaller cache and sends back
  * a {@link MissingMappingResponseMessage} mapping response with resolved class name.
  */
-public class MissingMappingResponseMessage implements Message {
+public class MissingMappingResponseMessage extends AbstractMessage {
     /** */
     @Order(0)
     byte platformId;

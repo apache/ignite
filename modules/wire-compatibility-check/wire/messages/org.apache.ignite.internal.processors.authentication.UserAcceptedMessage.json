@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.authentication.UserAcceptedMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "opId"},
+    {"order": 2, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}

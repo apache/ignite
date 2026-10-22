@@ -17,24 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.window;
 
-import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
-
 /** Partition of rows in window function calculation. */
 public interface WindowPartition<Row> {
-    /** Adding row to the window partition. */
-    void add(Row row);
-
-    /** Evaluates partition to an output. */
-    void evalTo(RowHandler.RowFactory<Row> factory, Consumer<Row> output);
-
     /** Reset current window partition (i.e., on partition restart). */
     void reset();
-
-    /** Returns {@code true} if partition is streaming. */
-    boolean isStreaming();
-
-    /** Sets memory tracker for current partition. */
-    void attachMemoryTracker(RowTracker<Row> memoryTracker);
 }

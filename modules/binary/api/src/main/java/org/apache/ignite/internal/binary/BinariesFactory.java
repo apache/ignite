@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -73,6 +74,18 @@ public interface BinariesFactory {
                                  boolean forUnmarshal);
 
     /**
+     * Unmarshals object from the input stream without deserialization of user types.
+     *
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @return Unmarshalled object.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
+        throws BinaryObjectException;
+
+    /**
      * @param ctx Context.
      * @param failIfUnregistered Flag to fail while writing object of unregistered type.
      * @return Writer instance.
@@ -121,13 +134,12 @@ public interface BinariesFactory {
     public BinaryObjectEx binaryEnum(BinaryContext ctx, byte[] arr);
 
     /**
-     * @param ctx Context.
-     * @param ptr Memory address.
-     * @param start Object start.
-     * @param size Memory size.
-     * @return Binary object based on offheap memory.
+     * @param ctx Context
+     * @param compCls Component class.
+     * @param arr Data.
+     * @return Binary array instance.
      */
-    public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size);
+    public BinaryObjectEx binaryArray(BinaryContext ctx, Class<?> compCls, Object[] arr);
 
     /**
      * @return Binary enum class.
@@ -138,6 +150,16 @@ public interface BinariesFactory {
      * @return Binary object impl class.
      */
     public Class<?> binaryObjectImplClass();
+
+    /**
+     * @return Binary array class.
+     */
+    public Class<?> binaryArrayClass();
+
+    /**
+     * @return Binary enum array class.
+     */
+    public Class<?> binaryEnumArrayClass();
 
     /**
      * @return Map of predefined types.

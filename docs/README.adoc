@@ -226,7 +226,7 @@ Source code files are located in the `docs/_docs/code-snippets/{language}` folde
 
 To add a code snippet to a page, follow these steps:
 
-* Create a file in the code snippets directory, e.g. _docs/code-snippets/java/org/apache/ignite/snippets/JavaThinClient.java
+* Create a file in the code snippets directory, e.g. _docs/code-snippets/java/src/main/java/org/apache/ignite/snippets/JavaThinClient.java
 
 * Enclose the piece of code you want to include within named tags (see https://asciidoctor.org/docs/user-manual/#by-tagged-regions). Give the tag a self-evident name.
 For example:

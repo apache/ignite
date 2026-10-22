@@ -37,6 +37,7 @@ import com.google.common.base.Throwables;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryObject;
@@ -331,6 +332,47 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         fut.get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+    }
+
+    /** Tests that snapshot restore is declined when the same snapshot is being deleted. */
+    @Test
+    public void testConcurrentSnapshotDeleteAndRestoreOperations() throws Exception {
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> startGridsWithSnapshot(3, CACHE_KEYS_RANGE),
+            () -> snp(grid(2)).restoreSnapshot(snapshotName, null).get(),
+            e -> e.getMessage().contains("Delete operation of snapshot '%s' is in progress".formatted(snapshotName)),
+            true
+        );
+    }
+
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndRestoreOperationsWithDifferentPath() throws Exception {
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> {
+                startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+
+                grid(0).createCache(DEFAULT_CACHE_NAME);
+
+                try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                    for (int i = 0; i < CACHE_KEYS_RANGE; ++i)
+                        ds.addData(i, i);
+                }
+
+                snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(getTestTimeout());
+
+                grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+                awaitPartitionMapExchange();
+            },
+            () -> snp(grid(2)).restoreSnapshot(SNAPSHOT_NAME, snpPath, null).get(),
+            null,
+            false
+        );
     }
 
     /**

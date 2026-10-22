@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.WalStateAckMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "opId"},
+    {"order": 1, "type": "boolean", "name": "affNode"},
+    {"order": 2, "type": "boolean", "name": "changed"},
+    {"order": 3, "type": "java.lang.String", "name": "errMsg"}
+  ]
+}

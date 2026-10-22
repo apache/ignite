@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceInfo",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "originNodeId"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "srvcId"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage", "name": "cfgMsg"},
+    {"order": 3, "type": "boolean", "name": "staticCfg"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.service.ServiceTopology", "name": "top"}
+  ]
+}

@@ -57,3 +57,10 @@ In Ignite, locks are supported only for the `TRANSACTIONAL` atomicity mode, whic
 Explicit locks are not transactional and cannot not be used from within transactions (exception will be thrown).
 If you do need explicit locking within transactions, then you should use the `TransactionConcurrency.PESSIMISTIC` concurrency
 control for transactions which will acquire explicit locks for relevant cluster data requests.
+
+== Monitoring
+
+The node that acquired a lock reports how long explicit locks are held: the `MaxExplicitLockHoldTime` metric shows the
+maximum hold time of the locks currently held, and the `ExplicitLockHoldTimeHistogram` metric shows the distribution of
+hold times of released locks, see link:monitoring-metrics/new-metrics#transactions[Transactions] metrics. The locks held at
+the moment are listed in the link:monitoring-metrics/system-views#cache_explicit_locks[CACHE_EXPLICIT_LOCKS] system view.

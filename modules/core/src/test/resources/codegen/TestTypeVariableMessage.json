@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.TestTypeVariableMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,R extends org.apache.ignite.plugin.extensions.communication.Message>", "name": "res"},
+    {"order": 1, "type": "byte[]", "name": "valBytes"},
+    {"type": "T extends java.lang.Comparable", "name": "val", "annotations": ["@org.apache.ignite.internal.Marshalled(\"valBytes\")"]}
+  ]
+}

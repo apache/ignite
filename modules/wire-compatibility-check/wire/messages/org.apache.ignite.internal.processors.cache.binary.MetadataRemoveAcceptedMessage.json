@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.binary.MetadataRemoveAcceptedMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "int", "name": "typeId"},
+    {"order": 2, "type": "boolean", "name": "duplicated"}
+  ]
+}

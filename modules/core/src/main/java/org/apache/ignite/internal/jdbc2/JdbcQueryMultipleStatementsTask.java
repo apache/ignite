@@ -29,7 +29,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -136,7 +136,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
                 throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
             }
 
-            QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)cur0;
+            QueryCursorEx<List<?>> cur = (QueryCursorEx<List<?>>)cur0;
 
             long updCnt = -1;
 

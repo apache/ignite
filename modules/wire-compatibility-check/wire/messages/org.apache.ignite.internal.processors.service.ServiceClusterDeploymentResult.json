@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "srvcId"},
+    {"order": 1, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult>", "name": "results"},
+    {"order": 2, "type": "boolean", "name": "isSvcTopTransitional"}
+  ]
+}

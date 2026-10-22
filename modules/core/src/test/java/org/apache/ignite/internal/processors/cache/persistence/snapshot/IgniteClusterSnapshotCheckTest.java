@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
@@ -124,6 +125,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Cluster-wide snapshot check procedure tests.
@@ -725,7 +727,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             discoSpi(grid(coordId)).block(msg -> msg instanceof FullMessage
                 && ((FullMessage<?>)msg).type() == CHECK_SNAPSHOT_METAS.ordinal());
 
-            long mills = System.currentTimeMillis();
+            long mills = U.currentTimeMillis();
 
             if (restore) {
                 fut2 = snp(grid(initiator)).restoreSnapshot(SNAPSHOT_NAME, null, null, incremental ? 1 : 0,
@@ -742,6 +744,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             discoSpi(grid(coordId)).waitBlocked(getTestTimeout());
 
+            long blockedMills = U.currentTimeMillis();
+
+            assertTrue(waitForCondition(() -> U.currentTimeMillis() > blockedMills, getTestTimeout()));
+
             for (int i = 0; i < G.allGrids().size(); ++i) {
                 if (stoppedNodes0.contains(i))
                     continue;
@@ -757,7 +763,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 assertTrue(mreg.iterator().hasNext());
 
-                assertTrue(mreg.<LongMetric>findMetric("startTime").value() > mills);
+                long startTime = mreg.<LongMetric>findMetric("startTime").value();
+
+                assertTrue(startTime >= mills && startTime <= blockedMills);
 
                 if (incremental) {
                     assertEquals(1, mreg.<IntMetric>findMetric("incrementIndex").value());
@@ -1201,6 +1209,39 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         );
     }
 
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndCheckOperations() throws Exception {
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> prepareGridsAndSnapshot(4, 3, 1, false),
+            () -> snp(grid(2)).checkSnapshot(snapshotName, null).get(),
+            e -> e.getMessage().contains("Delete operation of snapshot '%s' is in progress".formatted(snapshotName)),
+            true
+        );
+    }
+
+    /** */
+    @Test
+    public void testConcurrentSnapshotDeleteAndCheckOperationsWithDifferentPath() throws Exception {
+        // The test uses thread blocking.
+        assumeTrue(snpThrdPoolSz > 1);
+
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> {
+                prepareGridsAndSnapshot(4, 3, 1, false);
+
+                snp(grid(0)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(getTestTimeout());
+            },
+            () -> snp(grid(2)).checkSnapshot(SNAPSHOT_NAME, snpPath).get(),
+            null,
+            false
+        );
+    }
+
     /** Tests that concurrent snapshot full check is declined when the same snapshot is being fully restored (checked). */
     @Test
     public void testConcurrentTheSameSnpFullCheckWhenFullyRestoringDeclined() throws Exception {
@@ -1409,8 +1450,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /**
      * Tests concurrent snapshot operations related to the snapshot checking.
      *
-     * @param originatorOp First snapshot operation on an originator node.
-     * @param trierOp Second concurrent snapshot operation on a trier node.
+     * @param firstOp First snapshot operation on an originator node.
+     * @param secondOp Second concurrent snapshot operation on a trier node.
      * @param firstDelay First distributed process full message of {@code originatorOp} to delay on the coordinator
      *                            to launch {@code trierOp}.
      * @param secondDelay Second distributed process full message of {@code originatorOp} to delay on the coordinator
@@ -1422,8 +1463,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @param cleaner If not {@code null}, is executed at the end.
      */
     private void doTestConcurrentSnpCheckOperations(
-        Supplier<IgniteFuture<?>> originatorOp,
-        Supplier<IgniteFuture<?>> trierOp,
+        Supplier<IgniteFuture<?>> firstOp,
+        Supplier<IgniteFuture<?>> secondOp,
         DistributedProcess.DistributedProcessType firstDelay,
         @Nullable DistributedProcess.DistributedProcessType secondDelay,
         boolean expectFailure,
@@ -1440,17 +1481,17 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                     && ((FullMessage<?>)msg).type() == firstDelay.ordinal()
                     && (waitForBothFirstDelays || firstDelayed.compareAndSet(false, true)));
 
-            IgniteFuture<?> fut = originatorOp.get();
+            IgniteFuture<?> fut = firstOp.get();
 
             discoSpi(grid(0)).waitBlocked(getTestTimeout());
 
-            IgniteFuture<?> fut2 = trierOp.get();
+            IgniteFuture<?> fut2 = secondOp.get();
 
             if (expectFailure) {
                 assertThrowsAnyCause(
                     log,
                     fut2::get,
-                    IllegalStateException.class,
+                    IgniteIllegalStateException.class,
                     "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
                 );
 
@@ -1473,7 +1514,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 assertThrowsAnyCause(
                     log,
                     fut2::get,
-                    IllegalStateException.class,
+                    IgniteIllegalStateException.class,
                     "Validation of snapshot '" + SNAPSHOT_NAME + "' has already started"
                 );
 

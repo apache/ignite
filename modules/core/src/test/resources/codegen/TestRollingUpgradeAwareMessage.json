@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.TestRollingUpgradeAwareMessage",
+  "annotations": ["@org.apache.ignite.internal.FeatureGated(registry=org.apache.ignite.internal.TestFeatureRegistry.class)"],
+  "fields": [
+    {"order": 0, "type": "int", "name": "plain"},
+    {"order": 1, "type": "java.lang.String", "name": "oldFld", "annotations": ["@org.apache.ignite.internal.Order(value=1, deprecatedBy=\"FIRST_FEATURE\")"]},
+    {"order": 2, "type": "java.lang.String", "name": "newFld", "annotations": ["@org.apache.ignite.internal.Order(value=2, introducedBy=\"SECOND_FEATURE\")"]},
+    {"order": 3, "type": "long", "name": "newCnt", "annotations": ["@org.apache.ignite.internal.Order(value=3, introducedBy=\"THIRD_FEATURE\")"]},
+    {"order": 4, "type": "int", "name": "oldCnt", "annotations": ["@org.apache.ignite.internal.Order(value=4, deprecatedBy=\"FOURTH_FEATURE\")"]}
+  ]
+}

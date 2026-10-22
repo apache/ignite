@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class CustomEnumMapperOnNonEnumMapMessage implements Message {
+public class CustomEnumMapperOnNonEnumMapMessage extends AbstractMessage {
     @Order(0)
     @CustomMapper("org.apache.ignite.internal.CustomEnumMapper")
     Map<String, Integer> intColField;
