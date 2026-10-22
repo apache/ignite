@@ -309,7 +309,9 @@ public class IdleVerifyUtility {
 
         VerifyPartitionContext ctx = new VerifyPartitionContext();
 
-        while (!cancelled.getAsBoolean() && it.hasNextX()) {
+        boolean cancelled0;
+
+        while (!(cancelled0 = cancelled.getAsBoolean()) && it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
             if (row.expireTime() > 0)
@@ -318,7 +320,7 @@ public class IdleVerifyUtility {
             ctx.update(row.key(), row.value(), row.version());
         }
 
-        if (cancelled.getAsBoolean())
+        if (cancelled0)
             throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
 
         return new PartitionHashRecord(

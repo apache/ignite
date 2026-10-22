@@ -247,20 +247,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         continue;
                     }
 
-                    // Propagate the cancellation to the async partition hash calculations.
-                    cancel();
-
-                    // Wait for the rest of the futures to stop.
-                    for (int j = i; j < partHashCalcFuts.size(); ++j) {
-                        Future<?> partFut = partHashCalcFuts.get(j);
-
-                        try {
-                            partFut.get();
-                        }
-                        catch (Exception ignored) {
-                            // No-op: we are already cancelling due to an exception.
-                        }
-                    }
+                    cancelFutures(i, partHashCalcFuts);
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
@@ -287,6 +274,22 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw new IdleVerifyException(exceptions);
 
             return res;
+        }
+
+        /** */
+        private void cancelFutures(int startIdx, List<Future<Map<PartitionKey, PartitionHashRecord>>> futs) {
+            // Propagate the cancellation to the async partition hash calculations.
+            cancel();
+
+            // Wait for the rest of the futures to stop.
+            for (int i = startIdx; i < futs.size(); i++) {
+                try {
+                    futs.get(i).get();
+                }
+                catch (Exception ignored) {
+                    // No-op: we are already cancelling due to an exception.
+                }
+            }
         }
 
         /**
@@ -489,23 +492,22 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final GridDhtLocalPartition part,
             final BooleanSupplier cancelled
         ) {
+            checkCancelledOrStopped(cancelled, gctx, true);
+
             return pool.submit(() -> {
+                checkCancelledOrStopped(cancelled, gctx, true);
+
                 Map<PartitionKey, PartitionHashRecord> res = emptyMap();
 
                 if (!part.reserve())
                     return res;
 
-                // Entire node stop guard (kernal gateway read lock).
-                boolean gwLocked = false;
                 // Cache group stop guard (offheap busy lock).
                 boolean memLocked = false;
 
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
-
-                    ignite.context().gateway().readLock();
-                    gwLocked = true;
 
                     if (arg.checkCrc() && gctx.persistenceEnabled()) {
                         FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
@@ -514,7 +516,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
+                            () -> checkCancelledOrStopped(cancelled, gctx, false)
                         );
                     }
 
@@ -524,7 +526,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (gctx.offheap().enterBusy())
                         memLocked = true;
                     else
-                        throw new IgniteCheckedException("Partition hash calculation has been cancelled: the cache group is stopping.");
+                        throw cancellationException();
 
                     PartitionHashRecord hash = calculatePartitionHash(
                         key,
@@ -534,7 +536,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         part.primary(gctx.topology().readyTopologyVersion()),
                         part.dataStore().fullSize(),
                         gctx.offheap().partitionIterator(part.id()),
-                        () -> cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping()
+                        () -> checkCancelledOrStopped(cancelled, gctx, false)
                     );
 
                     gctx.offheap().leaveBusy();
@@ -563,9 +565,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (memLocked)
                         gctx.offheap().leaveBusy();
 
-                    if (gwLocked)
-                        ignite.context().gateway().readUnlock();
-
                     part.release();
                 }
 
@@ -573,6 +572,26 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 return res;
             });
+        }
+
+        /**
+         * Checks whether the cancellation is required. If is required and the exception is requested, throws it.
+         *
+         * @return {@code True} if {@code throwIfCancelled} is {@code false} and: the cancelation is request,
+         * or local node is stopping, or the cache group is stopping/being destroing.
+         */
+        private boolean checkCancelledOrStopped(BooleanSupplier canceled, CacheGroupContext gctx, boolean throwIfCancelled) {
+            boolean res =  canceled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+
+            if(res && throwIfCancelled)
+                throw cancellationException();
+
+            return res;
+        }
+
+        /** */
+        private static IgniteException cancellationException() {
+            return new IgniteException("Partition hash calculation has been cancelled: the cache group is stopping.");
         }
     }
 }
