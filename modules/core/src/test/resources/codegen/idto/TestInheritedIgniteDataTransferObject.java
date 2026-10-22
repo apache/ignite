@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /** */
 public class TestInheritedIgniteDataTransferObject extends TestIgniteDataTransferObject {
     /** */
     @Order(1)
     int intVal;
+
+    /** */
+    @Order(2)
+    TransactionIsolation isolation;
 
     /** */
     public static class Nested extends IgniteDataTransferObject {

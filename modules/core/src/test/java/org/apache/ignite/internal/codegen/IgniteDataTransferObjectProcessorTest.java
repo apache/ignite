@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.codegen;
 
 import com.google.testing.compile.Compilation;
+import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
@@ -55,6 +57,23 @@ public class IgniteDataTransferObjectProcessorTest {
         assertJson(compilation, "TestIgniteDataTransferObject", "TestIgniteDataTransferObject.json");
         assertJson(compilation, "TestInheritedIgniteDataTransferObject", "TestInheritedIgniteDataTransferObject.json");
         assertJson(compilation, "TestInheritedIgniteDataTransferObject$Nested", "TestInheritedIgniteDataTransferObjectNested.json");
+        assertEnumJson(compilation);
+    }
+
+    /** */
+    @Test
+    public void testEnumSharedWithMessage() {
+        Compilation compilation = compile(F.asList(new MessageProcessor(), new IgniteDataTransferObjectProcessor()),
+            "TestEnumSetMessage.java", "idto/TestIgniteDataTransferObject.java", "idto/TestInheritedIgniteDataTransferObject.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, "META-INF/ignite-wire/messages/org.apache.ignite.internal.TestEnumSetMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TestEnumSetMessage.json"));
+
+        assertJson(compilation, "TestInheritedIgniteDataTransferObject", "TestInheritedIgniteDataTransferObject.json");
+        assertEnumJson(compilation);
     }
 
     /** */
@@ -62,5 +81,12 @@ public class IgniteDataTransferObjectProcessorTest {
         assertThat(compilation)
             .generatedFile(CLASS_OUTPUT, "META-INF/ignite-wire/idto/org.apache.ignite.internal." + cls + ".json")
             .contentsAsUtf8String().isEqualTo(jsonFile("idto/" + expected));
+    }
+
+    /** */
+    private void assertEnumJson(Compilation compilation) {
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, "META-INF/ignite-wire/enums/org.apache.ignite.transactions.TransactionIsolation.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("TransactionIsolation.json"));
     }
 }

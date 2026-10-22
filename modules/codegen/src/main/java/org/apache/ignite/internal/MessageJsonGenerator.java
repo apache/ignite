@@ -19,10 +19,12 @@ package org.apache.ignite.internal;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import javax.annotation.processing.FilerException;
+import java.util.WeakHashMap;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -38,6 +40,10 @@ public class MessageJsonGenerator implements MessageGenerator {
     /** Directory of the representations in the class output. */
     private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
+    /** Enums described in each compilation, shared by its processors. */
+    private static final Map<ProcessingEnvironment, Set<String>> DESCRIBED_ENUMS =
+        Collections.synchronizedMap(new WeakHashMap<>());
+
     /** */
     private final ProcessingEnvironment env;
 
@@ -51,7 +57,7 @@ public class MessageJsonGenerator implements MessageGenerator {
     private final WireJsonWriter writer = new WireJsonWriter();
 
     /** */
-    private final Set<String> describedEnums = new HashSet<>();
+    private final Set<String> describedEnums;
 
     /**
      * @param env Processing environment.
@@ -62,6 +68,7 @@ public class MessageJsonGenerator implements MessageGenerator {
         this.dir = dir;
 
         reader = new SchemaReader(env);
+        describedEnums = DESCRIBED_ENUMS.computeIfAbsent(env, e -> new HashSet<>());
     }
 
     /** {@inheritDoc} */
@@ -70,23 +77,13 @@ public class MessageJsonGenerator implements MessageGenerator {
 
         for (Schema enumSchema : reader.enums(fields)) {
             if (describedEnums.add(enumSchema.cls()))
-                writeEnum(enumSchema, type);
+                write("enums/", enumSchema, type);
         }
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return "JSON representation";
-    }
-
-    /** Writes an enum representation. */
-    private void writeEnum(Schema schema, TypeElement src) throws IOException {
-        try {
-            write("enums/", schema, src);
-        }
-        catch (FilerException ignored) {
-            // No-op.
-        }
     }
 
     /** Writes a representation to the class output. */

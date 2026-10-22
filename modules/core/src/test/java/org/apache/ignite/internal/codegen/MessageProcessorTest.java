@@ -964,6 +964,11 @@ public class MessageProcessorTest {
 
     /** */
     static Compilation compile(Processor proc, String... srcFiles) {
+        return compile(F.asList(proc), srcFiles);
+    }
+
+    /** */
+    static Compilation compile(Iterable<? extends Processor> procs, String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 
         for (String srcFile: srcFiles)
@@ -977,7 +982,7 @@ public class MessageProcessorTest {
 
         return Compiler.javac()
             .withClasspath(F.asList(igniteCoreJar, igniteCodegenJar, igniteBinaryApiJar, igniteCommonsJar, igniteNioJar))
-            .withProcessors(proc)
+            .withProcessors(procs)
             .compile(input);
     }
 
