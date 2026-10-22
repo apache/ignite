@@ -20,10 +20,10 @@ package org.apache.ignite.internal;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestEnumSetMessage implements Message {
+public class TestEnumSetMessage extends AbstractMessage {
     @Order(0)
     EnumSet<TransactionIsolation> isolations;
 

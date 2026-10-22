@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class SnapshotCheckHandlersResponse implements Message {
+public class SnapshotCheckHandlersResponse extends AbstractMessage {
     /** Per metas result: snapshot part's consistent id -> check result per handler name. */
     @Order(0)
     Map<String, Map<String, SnapshotHandlerResult<Message>>> perMetaResults;

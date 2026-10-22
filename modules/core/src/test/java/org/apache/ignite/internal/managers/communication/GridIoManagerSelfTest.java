@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestNode;
@@ -223,7 +224,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestMessage implements Message {
+    private static class TestMessage extends AbstractMessage {
         /** {@inheritDoc} */
         @Override public short directType() {
             return 0;

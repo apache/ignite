@@ -19,11 +19,12 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Data bag data holder. */
-public class ZkDiscoDataBagWrapper implements Message {
+public class ZkDiscoDataBagWrapper extends AbstractMessage {
     /** */
     @Order(0)
     Map<Integer, Message> data;

@@ -63,6 +63,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.INDEXING_ENGINE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
@@ -79,9 +80,6 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     /** */
     public static final String H2_ONLY_QRY_MSG = "is supported by the H2 query engine only. Add module " +
         "'ignite-indexing' to the classpath of all Ignite nodes";
-
-    /** Name of the H2 engine, which is not available to the node. */
-    private static final String H2_ENGINE_NAME = "h2";
 
     /** */
     private static final String[] CLASS_PATH_PROPS = {"java.class.path", "surefire.test.class.path"};
@@ -291,9 +289,9 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     public void testJdbcH2QueryEngineProperty() {
         assertThrowsAnyCause(
             log,
-            () -> DriverManager.getConnection(JDBC_URL + "?queryEngine=" + H2_ENGINE_NAME),
+            () -> DriverManager.getConnection(JDBC_URL + "?queryEngine=" + INDEXING_ENGINE_NAME),
             SQLException.class,
-            "Not found configuration for query engine: " + H2_ENGINE_NAME
+            "Not found configuration for query engine: " + INDEXING_ENGINE_NAME
         );
     }
 
@@ -314,7 +312,7 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
     /** The H2 engine cannot be selected by the query hint. */
     @Test
     public void testH2QueryEngineHint() throws Exception {
-        String qry = "SELECT /*+ QUERY_ENGINE('" + H2_ENGINE_NAME + "') */ QUERY_ENGINE()";
+        String qry = "SELECT /*+ QUERY_ENGINE('" + INDEXING_ENGINE_NAME + "') */ QUERY_ENGINE()";
 
         try (Connection conn = DriverManager.getConnection(JDBC_URL);
              Statement stmt = conn.createStatement()
@@ -323,7 +321,7 @@ public class CalciteOnlyNodeIntegrationTest extends GridCommonAbstractWrapperTes
                 log,
                 () -> stmt.executeQuery(qry),
                 SQLException.class,
-                "Query engine not found: " + H2_ENGINE_NAME
+                "Query engine not found: " + INDEXING_ENGINE_NAME
             );
         }
     }

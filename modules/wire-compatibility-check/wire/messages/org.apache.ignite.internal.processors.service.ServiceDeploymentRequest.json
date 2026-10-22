@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceDeploymentRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "srvcId"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage", "name": "cfgMsg"}
+  ]
+}

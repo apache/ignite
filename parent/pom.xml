@@ -899,7 +899,6 @@
                                         <inputExclude>**/.gitignore</inputExclude>
                                         <inputExclude>**/.git</inputExclude>
                                         <inputExclude>**/.asf.yaml</inputExclude>
-                                        <inputExclude>.travis.yml</inputExclude>
                                         <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>
                                         <inputExclude>idea/ignite_codeStyle.xml</inputExclude>
                                         <inputExclude>**/DEVNOTES*.txt</inputExclude>
@@ -921,7 +920,6 @@
                                         <inputExclude>**/books/*.txt</inputExclude><!--books examples-->
                                         <inputExclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</inputExclude><!--books examples-->
                                         <inputExclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</inputExclude><!--books examples-->
-                                        <inputExclude>src/main/java/org/jetbrains/annotations/*.java</inputExclude><!--copyright-->
                                         <inputExclude>dev-tools/IGNITE-*.patch</inputExclude>
                                         <inputExclude>dev-tools/.gradle/**/*</inputExclude>
                                         <inputExclude>dev-tools/gradle/wrapper/**/*</inputExclude>

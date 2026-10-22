@@ -36,7 +36,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -178,7 +178,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
                 throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
             }
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)fldQryCursor;
+            QueryCursorEx<List<?>> qryCursor = (QueryCursorEx<List<?>>)fldQryCursor;
 
             if (isQry == null)
                 isQry = qryCursor.isQuery();
@@ -362,8 +362,8 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
         /**
          * @return Cursor.
          */
-        public QueryCursorImpl<List<?>> queryCursor() {
-            return (QueryCursorImpl<List<?>>)cursor;
+        public QueryCursorEx<List<?>> queryCursor() {
+            return (QueryCursorEx<List<?>>)cursor;
         }
     }
 }

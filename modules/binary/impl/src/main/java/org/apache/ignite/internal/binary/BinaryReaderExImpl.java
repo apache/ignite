@@ -103,7 +103,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UUID_ARR;
  * Binary reader implementation.
  */
 @SuppressWarnings("unchecked")
-public class BinaryReaderExImpl implements BinaryReaderEx {
+public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implements BinaryReaderEx {
     /** Binary context. */
     private final BinaryContext ctx;
 
@@ -112,9 +112,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** Class loaded. */
     private final ClassLoader ldr;
-
-    /** Reader context which is constantly passed between objects. */
-    private BinaryReaderHandles hnds;
 
     /** */
     private final int start;
@@ -133,9 +130,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** Footer end. */
     private final int footerLen;
-
-    /** Class descriptor. */
-    private BinaryClassDescriptor desc;
 
     /** Mapper. */
     private final BinaryInternalMapper mapper;
@@ -163,6 +157,9 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** Whether stream is in raw mode. */
     private boolean raw;
+
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
 
     /**
      * Constructor.
@@ -219,10 +216,11 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         boolean skipHdrCheck,
         boolean forUnmarshal) {
         // Initialize base members.
+        super(hnds);
+
         this.ctx = ctx;
         this.in = in;
         this.ldr = ldr;
-        this.hnds = hnds;
 
         start = in.position();
 
@@ -391,24 +389,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setHandle(Object obj, int pos) {
-        handles().put(pos, obj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getHandle(int pos) {
-        return hnds != null ? hnds.get(pos) : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinaryReaderHandles handles() {
-        if (hnds == null)
-            hnds = new BinaryReaderHandles();
-
-        return hnds;
     }
 
     /**
@@ -1338,7 +1318,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl(), true, deserialize);
+        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null), true, deserialize);
     }
 
     /** {@inheritDoc} */
@@ -1547,7 +1527,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         throws BinaryObjectException {
         switch (checkFlag(COL)) {
             case NORMAL:
-                return (Collection)doReadCollection(in, ctx, ldr, this, false, true, factory);
+                return doReadCollection(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = positionForHandle(in) - in.readInt();
@@ -1625,7 +1605,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     private Map readMap0(@Nullable BinaryMapFactory factory) throws BinaryObjectException {
         switch (checkFlag(MAP)) {
             case NORMAL:
-                return (Map)doReadMap(in, ctx, ldr, this, false, true, factory);
+                return doReadMap(in, ctx, ldr, this, false, true, factory);
 
             case HANDLE: {
                 int handlePos = positionForHandle(in) - in.readInt();
@@ -1987,7 +1967,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
         if (!findFieldById(fieldId))
             return null;
 
-        return BinaryUtils.reader(ctx, in, ldr, hnds, false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, false, true).deserialize();
     }
 
     /**
@@ -2468,11 +2448,6 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     /** {@inheritDoc} */
     @Override public int available() throws IOException {
         return in.remaining();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEmpty() {
-        return hnds == null || hnds.isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -3231,13 +3206,13 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
 
             int start = in.readInt();
 
-            return BinaryUtils.binariesFactory.binaryOffheapObject(ctx, in.offheapPointer() + pos, start, len);
+            return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
             byte[] arr = BinaryUtils.doReadByteArray(in);
             int start = in.readInt();
 
-            BinaryObject binO = BinaryUtils.binariesFactory.binaryObject(ctx, arr, start);
+            BinaryObject binO = new BinaryObjectImpl(ctx, arr, start);
 
             if (detach)
                 return BinaryUtils.detach(binO);
@@ -3357,7 +3332,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return BinaryUtils.binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
+        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
@@ -3370,7 +3345,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryUtils.binariesFactory.binaryEnumClass(), len);
+        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -3390,7 +3365,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      */
     @Nullable private static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) throws BinaryObjectException {
-        return BinaryUtils.reader(ctx, in, ldr, handles.handles(), false, true).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**
@@ -3399,7 +3374,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
      */
     @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
         throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolderImpl());
+        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null));
     }
 
     /**
@@ -3451,7 +3426,7 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 BinaryObjectEx po;
 
                 if (detach) {
-                    BinaryObjectEx binObj = BinaryUtils.binariesFactory.binaryObject(ctx, in.array(), start);
+                    BinaryObjectEx binObj = new BinaryObjectImpl(ctx, in.array(), start);
 
                     binObj.detachAllowed(true);
 
@@ -3459,9 +3434,9 @@ public class BinaryReaderExImpl implements BinaryReaderEx {
                 }
                 else {
                     if (in.offheapPointer() == 0)
-                        po = BinaryUtils.binariesFactory.binaryObject(ctx, in.array(), start);
+                        po = new BinaryObjectImpl(ctx, in.array(), start);
                     else
-                        po = BinaryUtils.binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
+                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
                 }
 

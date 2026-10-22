@@ -21,11 +21,11 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Message for {@link LazyServiceConfiguration}. */
-public class LazyServiceConfigurationMessage implements Message {
+public class LazyServiceConfigurationMessage extends AbstractMessage {
     /** Service name. */
     @Order(0)
     String name;

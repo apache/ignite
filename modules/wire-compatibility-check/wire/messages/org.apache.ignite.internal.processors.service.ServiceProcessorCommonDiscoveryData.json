@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceProcessorCommonDiscoveryData",
+  "fields": [
+    {"order": 0, "type": "java.util.List<org.apache.ignite.internal.processors.service.ServiceInfo>", "name": "registeredServices"}
+  ]
+}

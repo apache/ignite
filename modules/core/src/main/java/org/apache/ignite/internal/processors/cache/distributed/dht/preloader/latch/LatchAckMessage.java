@@ -18,12 +18,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.la
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Message is used to send acks for {@link Latch} instances management.
  */
-public class LatchAckMessage implements Message {
+public class LatchAckMessage extends AbstractMessage {
     /** Latch id. */
     @Order(0)
     String latchId;

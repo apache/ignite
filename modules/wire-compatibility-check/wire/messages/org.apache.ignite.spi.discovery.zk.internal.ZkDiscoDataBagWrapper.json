@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.discovery.zk.internal.ZkDiscoDataBagWrapper",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.plugin.extensions.communication.Message>", "name": "data"}
+  ]
+}

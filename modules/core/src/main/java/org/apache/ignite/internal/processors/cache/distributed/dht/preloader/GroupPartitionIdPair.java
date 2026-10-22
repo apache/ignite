@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Pair of group ID and partition ID. */
-public class GroupPartitionIdPair implements Message {
+public class GroupPartitionIdPair extends AbstractMessage {
     /** Group ID. */
     @Order(0)
     int grpId;
