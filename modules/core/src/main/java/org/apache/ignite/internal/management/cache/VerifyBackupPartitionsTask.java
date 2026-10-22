@@ -247,20 +247,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         continue;
                     }
 
-                    // Propagate the cancellation to the async partition hash calculations.
-                    cancel();
-
-                    // Wait for the rest of the futures to stop.
-                    for (int j = i; j < partHashCalcFuts.size(); ++j) {
-                        Future<?> partFut = partHashCalcFuts.get(j);
-
-                        try {
-                            partFut.get();
-                        }
-                        catch (Exception ignored) {
-                            // No-op: we are already cancelling due to an exception.
-                        }
-                    }
+                    cancelFutures(i, partHashCalcFuts);
 
                     if (e instanceof InterruptedException)
                         throw new IgniteInterruptedException((InterruptedException)e);
@@ -287,6 +274,22 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw new IdleVerifyException(exceptions);
 
             return res;
+        }
+
+        /** */
+        private void cancelFutures(int fromIdx, List<Future<Map<PartitionKey, PartitionHashRecord>>> futs) {
+            // Propagate the cancellation to the async partition hash calculations.
+            cancel();
+
+            // Wait for the rest of the futures to stop.
+            for (int i = fromIdx; i < futs.size(); i++) {
+                try {
+                    futs.get(i).get();
+                }
+                catch (Exception ignored) {
+                    // No-op: we are already cancelling due to an exception.
+                }
+            }
         }
 
         /**
@@ -495,17 +498,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
-                // Entire node stop guard (kernal gateway read lock).
-                boolean gwLocked = false;
                 // Cache group stop guard (offheap busy lock).
                 boolean memLocked = false;
 
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
-
-                    ignite.context().gateway().readLock();
-                    gwLocked = true;
 
                     if (arg.checkCrc() && gctx.persistenceEnabled()) {
                         FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
@@ -562,9 +560,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 finally {
                     if (memLocked)
                         gctx.offheap().leaveBusy();
-
-                    if (gwLocked)
-                        ignite.context().gateway().readUnlock();
 
                     part.release();
                 }
