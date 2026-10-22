@@ -169,11 +169,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size) {
-        return new BinaryObjectOffheapImpl(ctx, ptr, start, size);
-    }
-
-    /** {@inheritDoc} */
     @Override public BinaryObjectEx binaryArray(BinaryContext ctx, Class<?> compCls, Object[] arr) {
         boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
 

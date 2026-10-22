@@ -81,9 +81,6 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  * Binary context.
  */
 public class BinaryContext {
-    /** System loader. */
-    private static final ClassLoader sysLdr = CommonUtils.gridClassLoader();
-
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(false), new BinaryBasicIdMapper(true), false);
@@ -129,10 +126,10 @@ public class BinaryContext {
     private final @Nullable ClassLoader clsLdr;
 
     /** Actual marshaller. */
-    private BinaryMarshaller marsh;
+    private final BinaryMarshaller marsh;
 
     /** */
-    private MarshallerContext marshCtx;
+    private final MarshallerContext marshCtx;
 
     /** */
     private final @Nullable BinarySerializer dfltSerializer;
@@ -276,14 +273,17 @@ public class BinaryContext {
 
         if (marsh != null) {
             this.marsh = marsh;
-
-            marshCtx = marsh.getContext();
+            this.marshCtx = marsh.getContext();
 
             assert marshCtx != null;
 
             optmMarsh.setContext(marshCtx);
 
             configure(nameMapper, idMapper, dfltSerializer, typeCfgs, affFlds);
+        }
+        else {
+            this.marsh = null;
+            this.marshCtx = null;
         }
     }
 
@@ -703,7 +703,7 @@ public class BinaryContext {
     /**
      * @param userType User type or not.
      * @param typeId Type ID.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
@@ -720,9 +720,6 @@ public class BinaryContext {
 
         if (desc != null)
             return desc;
-
-        if (ldr == null)
-            ldr = sysLdr;
 
         Class cls;
 
@@ -749,14 +746,20 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
+            if (userType
+                && ldr != null
+                && !ldr.equals(CommonUtils.gridClassLoader())
+                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
+            if (userType
+                && ldr != null
+                && !ldr.equals(CommonUtils.gridClassLoader())
+                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);

@@ -60,7 +60,6 @@ import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -72,7 +71,6 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -801,38 +799,6 @@ public class BinaryUtils {
         }
 
         return arr;
-    }
-
-    /**
-     * Resolve the class.
-     *
-     * @param ctx Binary context.
-     * @param typeId Type ID.
-     * @param clsName Class name.
-     * @param ldr Class loaded.
-     * @return Resovled class.
-     */
-    static Class resolveClass(BinaryContext ctx, int typeId, @Nullable String clsName,
-        @Nullable ClassLoader ldr, boolean registerMeta) {
-        Class cls;
-
-        if (ldr == null)
-            ldr = ctx.classLoader();
-
-        if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
-            cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();
-        else {
-            try {
-                cls = ClassLoaderUtils.forName(clsName, ldr);
-            }
-            catch (ClassNotFoundException e) {
-                throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
-            }
-
-            ctx.registerType(cls, false, false);
-        }
-
-        return cls;
     }
 
     /**
