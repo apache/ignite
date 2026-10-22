@@ -181,7 +181,7 @@ For automatically delivered certificates, see <<Renewing Certificates Automatica
 If `trustManagers` is configured on the factory, it controls trust instead of a trust store file. Reload keeps those managers. Follow their implementation's procedure to change which certificates they accept.
 
 When the factory supplies its certificate chain, reload rejects expired or not yet valid certificates and keeps the previous context. Without the chain, reload cannot check certificate dates.
-Reload also refuses a replacement if the factory reports that its key store contains no private key. Provide the certificate with its private key and run reload again.
+With `SslContextFactory`, reload also rejects a key store that contains no private key. Put the certificate and its private key in the key store and run reload again.
 You must check that peers trust the replacement and that protocols, cipher suites and client authentication settings remain compatible. Reload does not test connections or undo a successful replacement if connections later fail.
 
 == Upgrading Certificates
@@ -219,7 +219,7 @@ Load the updated stores in running applications:
 |Open new connections. The drivers read the stores for each new connection.
 |===
 
-*Before stage 2:* check trust on every node and application. For JKS or PKCS#12 trust stores, use `keytool -list -keystore <path>` and compare the trusted certificate fingerprints with those of the new CA certificate, or of each new self-signed certificate. For custom trust managers, use their own tools. Neither `--ssl reload` nor `--ssl status` verifies these trust relationships.
+*Before stage 2:* check trust on every node and application. For JKS or PKCS#12 trust stores, run `keytool -list -keystore <path>`. Check that the output shows the fingerprint of the new CA certificate, or of each new self-signed certificate. For custom trust managers, use their own tools. Neither `--ssl reload` nor `--ssl status` verifies these trust relationships.
 
 === 2. Replace the Certificates
 
@@ -242,7 +242,7 @@ Before removing old trust, also replace any application client certificate that 
 
 === After a Private Key Compromise
 
-Replacing a certificate does not prevent someone from using the old certificate with the stolen key. Revoke the old certificate and verify that every node and application enforces revocation. If revocation is not enforced, switch to a new CA using stages 1–3 and remove trust in the old CA. For a self-signed certificate, replace it and remove the old certificate from every trust store.
+Replacing a certificate does not prevent someone from using the old certificate with the stolen key. Revoke the old certificate and verify that every node and application enforces revocation. `SslContextFactory` with a trust store file does not enforce revocation when `keyAlgorithm` is `SunX509`, the default. If revocation is not enforced, switch to a new CA using stages 1–3 and remove trust in the old CA. For a self-signed certificate, replace it and remove the old certificate from every trust store.
 
 Reload leaves existing connections open. After preventing new connections with the old certificate, restart nodes one at a time to close existing connections.
 
@@ -261,7 +261,7 @@ With `SslContextFactory`, keep exactly one private key and its X.509 certificate
 A custom factory must supply the chain with each SSL context. Without it, a node with automatic renewal enabled cannot start because it cannot determine when renewal is due.
 
 Nodes and applications must trust the replacement certificates before they are loaded. For a new CA, follow the stages in <<Upgrading Certificates>>.
-When renewal installs a replacement certificate, `SslContextFactory` also reloads its trust store. Keep the old CA trusted until every affected node and application has switched certificates. To apply a trust store change without replacing the certificate, run `control.sh --ssl reload`.
+When renewal installs a replacement certificate, `SslContextFactory` also reloads its trust store. Keep the old CA in the trust store until every affected node and application has switched certificates. Otherwise, the renewed node cannot connect to nodes that still use certificates from the old CA. To apply a trust store change without replacing the certificate, run `control.sh --ssl reload`.
 
 === Enable Renewal
 
@@ -347,4 +347,3 @@ If the factory builds the SSL context directly, attach the chain with link:https
 Automatic renewal requires the chain both at startup and on every reload.
 
 A plain `Factory<SSLContext>` supports manual reload only and must return a new context on every call. Returning the context already in use makes reload fail.
-Without the chain, Ignite cannot check or report certificate dates.

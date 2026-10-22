@@ -55,13 +55,14 @@ public class SSLContextWrapper extends SSLContext {
     }
 
     /**
-     * Wraps a context with certificate metadata from the same key material used to initialize it.
+     * Wraps a context with its loaded certificate chain and records whether that key material has no private key.
      *
      * @param delegate Wrapped SSL context.
      * @param sslParameters Extended SSL parameters, or {@code null} to keep the delegate's parameters.
      * @param chain Chain of the single private key, own certificate first, or {@code null} if unknown.
-     * @param privateKeyMissing {@code true} only if the loaded material is known to contain no private key. An unknown chain
-     *      does not establish this: the material may contain several keys or use custom key managers.
+     * @param privateKeyMissing {@code true} only if the loaded material is known to contain no private key. A node refuses such a
+     *      context on reload or renewal. Do not pass {@code true} just because the chain is unknown: the material may contain
+     *      several keys or use custom key managers.
      */
     public SSLContextWrapper(SSLContext delegate, @Nullable SSLParameters sslParameters, @Nullable X509Certificate[] chain,
         boolean privateKeyMissing) {
@@ -78,7 +79,7 @@ public class SSLContextWrapper extends SSLContext {
         return chain == null ? null : chain.clone();
     }
 
-    /** @return Whether the loaded material is known to contain no private key. Unknown material returns {@code false}. */
+    /** @return {@code true} only if the loaded material is known to contain no private key. */
     public boolean isPrivateKeyMissing() {
         return privateKeyMissing;
     }

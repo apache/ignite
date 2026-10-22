@@ -270,9 +270,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * context in its own {@link #create()} must override this method too and build the context from the same sources. Otherwise,
      * this method builds the context without the code in that {@link #create()}.
      * <p>
-     * To report certificate dates and support automatic renewal, both methods must return the loaded chain with the context,
-     * using {@link SSLContextWrapper#SSLContextWrapper(SSLContext, SSLParameters, X509Certificate[])}. A subclass that only changes
-     * the certificate source can override {@link #createKeyMaterial()} instead and keep both methods unchanged.
+     * If a subclass overrides {@link #create()} and this method, both must return the loaded chain with the context, using
+     * {@link SSLContextWrapper#SSLContextWrapper(SSLContext, SSLParameters, X509Certificate[])}. Without the chain, the node cannot
+     * report certificate dates or renew the certificate automatically. A subclass that only changes the certificate source can
+     * override {@link #createKeyMaterial()} instead.
      * <p>
      * Reload and renewal calls to the same factory on one node never overlap. Calls to different factories may run at the same
      * time. A subclass that fetches certificates from a remote source must limit how long a call takes and stop when its thread is
@@ -326,8 +327,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
         /**
          * Takes the chain from the store used to create the key managers. Stores with no private key, more than one private key,
-         * or a chain containing a non-X.509 certificate leave the chain unknown. A store without a private key is also marked
-         * so that a node can refuse it during reload, without preventing its use by a client that needs no client certificate.
+         * or a chain containing a non-X.509 certificate leave the chain unknown. On reload, a node refuses a store with no private
+         * key. A client that needs no client certificate can still use such a store.
          *
          * @param keyMgrs Key managers initialized from the store.
          * @param store Already loaded key store.
