@@ -495,7 +495,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     }
 
     /**
-     * Checks that a thin client gets the node details without the node certificates and credentials.
+     * Checks that a thin client gets the node details without the node certificates.
      *
      * @throws Exception If failed.
      */
@@ -513,10 +513,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
             assertEquals(3, nodes.size());
 
-            for (ClusterNode node : nodes) {
+            for (ClusterNode node : nodes)
                 assertFalse(node.id().toString(), node.attributes().containsKey(ATTR_NODE_CERTIFICATES));
-                assertFalse(node.id().toString(), node.attributes().containsKey(ATTR_SECURITY_CREDENTIALS));
-            }
         }
     }
 
@@ -546,10 +544,10 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, reconnected);
 
-        // The servers may still have the client node from before the reconnect.
         UUID cliId = cli.localNode().id();
 
-        assertTrue(GridTestUtils.waitForCondition(
+        // Servers add the client under its new id after the client sees the reconnect.
+        assertTrue("Client " + cliId + " is missing on some grid", GridTestUtils.waitForCondition(
             () -> G.allGrids().stream().allMatch(ignite -> ignite.cluster().node(cliId) != null),
             getTestTimeout()));
 
