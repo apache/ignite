@@ -189,8 +189,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
                     sslParameters.setProtocols(protocols);
             }
 
-            if (sslParameters != null || material.chain != null)
-                ctx = new SSLContextWrapper(ctx, sslParameters, material.chain);
+            if (sslParameters != null || material.chain != null || material.privateKeyMissing)
+                ctx = new SSLContextWrapper(ctx, sslParameters, material.chain, material.privateKeyMissing);
 
             ctx.init(material.keyMgrs, trustMgrs, null);
 
@@ -270,10 +270,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * context in its own {@link #create()} must override this method too and build the context from the same sources. Otherwise,
      * this method builds the context without the code in that {@link #create()}.
      * <p>
-     * On each node, Ignite serializes reload and renewal calls to the same factory object. Calls to different factories may run
-     * at the same time. A subclass that fetches certificates from a remote source must
-     * limit how long a call takes and stop when its thread is interrupted. When the node stops, it interrupts an automatic
-     * renewal in progress and waits for it to end.
+     * To report certificate dates and support automatic renewal, both methods must return the loaded chain with the context,
+     * using {@link SSLContextWrapper#SSLContextWrapper(SSLContext, SSLParameters, X509Certificate[])}. A subclass that only changes
+     * the certificate source can override {@link #createKeyMaterial()} instead and keep both methods unchanged.
+     * <p>
+     * Reload and renewal calls to the same factory on one node never overlap. Calls to different factories may run at the same
+     * time. A subclass that fetches certificates from a remote source must limit how long a call takes and stop when its thread is
+     * interrupted. When the node stops, it interrupts an automatic renewal in progress and waits for it to end.
      *
      * @return SSL context.
      */
@@ -294,13 +297,26 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         /** */
         private final X509Certificate[] chain;
 
+        /** Whether the loaded store is known to contain no private key. */
+        private final boolean privateKeyMissing;
+
         /**
          * @param keyMgrs Key managers, or {@code null} to use the provider's defaults.
          * @param chain Chain of the single private key, own certificate first, or {@code null} if unknown.
          */
         public KeyMaterial(@Nullable KeyManager[] keyMgrs, @Nullable X509Certificate[] chain) {
+            this(keyMgrs, chain, false);
+        }
+
+        /**
+         * @param keyMgrs Key managers.
+         * @param chain Certificate chain, if known.
+         * @param privateKeyMissing Whether the loaded store contains no private key.
+         */
+        private KeyMaterial(@Nullable KeyManager[] keyMgrs, @Nullable X509Certificate[] chain, boolean privateKeyMissing) {
             this.keyMgrs = keyMgrs == null ? null : keyMgrs.clone();
             this.chain = chain == null || chain.length == 0 ? null : chain.clone();
+            this.privateKeyMissing = privateKeyMissing;
         }
 
         /** @return Key managers, or {@code null} to use the provider's defaults. */
@@ -310,7 +326,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
         /**
          * Takes the chain from the store used to create the key managers. Stores with no private key, more than one private key,
-         * or a chain containing a non-X.509 certificate leave the chain unknown.
+         * or a chain containing a non-X.509 certificate leave the chain unknown. A store without a private key is also marked
+         * so that a node can refuse it during reload, without preventing its use by a client that needs no client certificate.
          *
          * @param keyMgrs Key managers initialized from the store.
          * @param store Already loaded key store.
@@ -333,7 +350,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             }
 
             if (keyAlias == null)
-                return new KeyMaterial(keyMgrs, null);
+                return new KeyMaterial(keyMgrs, null, true);
 
             Certificate[] certs = store.getCertificateChain(keyAlias);
 

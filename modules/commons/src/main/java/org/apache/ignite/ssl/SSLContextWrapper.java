@@ -29,13 +29,17 @@ public class SSLContextWrapper extends SSLContext {
     /** Chain loaded with the delegate, or {@code null} if unknown. */
     private final X509Certificate[] chain;
 
+    /** Whether the loaded key material is known to contain no private key. */
+    private final boolean privateKeyMissing;
+
     /**
      * @param delegate Wrapped SSL context.
      * @param sslParameters Extended SSL parameters.
      */
     public SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
         this(delegate, sslParameters, delegate instanceof SSLContextWrapper
-            ? ((SSLContextWrapper)delegate).getCertificateChain() : null);
+            ? ((SSLContextWrapper)delegate).getCertificateChain() : null,
+            delegate instanceof SSLContextWrapper && ((SSLContextWrapper)delegate).isPrivateKeyMissing());
     }
 
     /**
@@ -47,15 +51,35 @@ public class SSLContextWrapper extends SSLContext {
      * @param chain Chain of the single private key, own certificate first, or {@code null} if unknown.
      */
     public SSLContextWrapper(SSLContext delegate, @Nullable SSLParameters sslParameters, @Nullable X509Certificate[] chain) {
+        this(delegate, sslParameters, chain, false);
+    }
+
+    /**
+     * Wraps a context with certificate metadata from the same key material used to initialize it.
+     *
+     * @param delegate Wrapped SSL context.
+     * @param sslParameters Extended SSL parameters, or {@code null} to keep the delegate's parameters.
+     * @param chain Chain of the single private key, own certificate first, or {@code null} if unknown.
+     * @param privateKeyMissing {@code true} only if the loaded material is known to contain no private key. An unknown chain
+     *      does not establish this: the material may contain several keys or use custom key managers.
+     */
+    public SSLContextWrapper(SSLContext delegate, @Nullable SSLParameters sslParameters, @Nullable X509Certificate[] chain,
+        boolean privateKeyMissing) {
         super(new DelegatingSSLContextSpi(delegate, sslParameters),
             delegate.getProvider(),
             delegate.getProtocol());
 
         this.chain = chain == null || chain.length == 0 ? null : chain.clone();
+        this.privateKeyMissing = privateKeyMissing;
     }
 
     /** @return Chain loaded with the context, own certificate first, or {@code null} if unknown. */
     public @Nullable X509Certificate[] getCertificateChain() {
         return chain == null ? null : chain.clone();
+    }
+
+    /** @return Whether the loaded material is known to contain no private key. Unknown material returns {@code false}. */
+    public boolean isPrivateKeyMissing() {
+        return privateKeyMissing;
     }
 }

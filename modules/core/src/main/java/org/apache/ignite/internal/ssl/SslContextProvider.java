@@ -132,7 +132,8 @@ public class SslContextProvider {
 
     /**
      * Builds a new context from the factory, puts it in use for new connections and records the outcome. The new context is put into use
-     * only if every certificate of the known chain is valid now. Certificate metadata is required when automatic renewal is enabled.
+     * only if every certificate of the known chain is valid now and the loaded material is not known to lack a private key.
+     * Certificate metadata is required when automatic renewal is enabled.
      * The administrator must ensure that peers trust the new certificates and can connect with the new context.
      *
      * @return Certificate installed by this reload, or {@code null} if its metadata is unavailable.
@@ -237,9 +238,15 @@ public class SslContextProvider {
         return ctx instanceof SSLContextWrapper wrapper ? wrapper.getCertificateChain() : null;
     }
 
-    /** @return Context built anew, or the one in use if the factory caches it. */
-    private SSLContext build() {
+    /**
+     * @return Context built anew, or the one in use if the factory caches it.
+     * @throws IgniteCheckedException If the factory reports that the loaded material has no private key.
+     */
+    private SSLContext build() throws IgniteCheckedException {
         SSLContext rebuilt = factory instanceof AbstractSslContextFactory f ? f.createNew() : factory.create();
+
+        if (rebuilt instanceof SSLContextWrapper wrapper && wrapper.isPrivateKeyMissing())
+            throw new IgniteCheckedException("The new key material has no private key, so the node would present no certificate");
 
         rebuilt.createSSLEngine();
 

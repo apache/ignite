@@ -963,10 +963,18 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             "The SSL context factory provides no certificate chain");
     }
 
+    /** Renewal rejects a store without a private key and retains the context and chain in use. */
+    @Test
+    public void testKeyStoreWithoutKeyNotRenewed() {
+        SslContextProvider p = new SslContextProvider(new Issuer(fresh(HOUR), SslRenewalTest::noKey));
+
+        assertRenewalRejected(p, "The new key material has no private key, so the node would present no certificate");
+    }
+
     /** Without renewal, a factory with no certificate metadata can be reloaded, and status reports the missing metadata. */
     @Test
     public void testUnknownCertificateWithoutRenewal() throws Exception {
-        Issuer issuer = new Issuer(SslRenewalTest::noKey);
+        Issuer issuer = new Issuer(this::twoKeys);
 
         issuer.setRenewalEnabled(false);
 

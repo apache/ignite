@@ -1818,7 +1818,7 @@ Status does not test connections or verify that other nodes and clients trust th
 |`PROBLEM: the loaded certificate is not valid now`
 |A certificate in the loaded chain has expired or is not yet valid. Install a valid chain and run reload.
 |`certificate metadata is unavailable`
-|The factory did not supply certificate details. Check its certificate source directly. The command cannot check its dates.
+|The factory did not supply its certificate chain, so the command cannot check its dates. With `SslContextFactory`, check that the key store contains exactly one private key and its X.509 certificate chain. For a custom factory, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories]. Check the certificates at their source.
 |`no SSL context factory is configured`
 |This node has no certificates managed by these commands. This message does not make either command fail.
 |===

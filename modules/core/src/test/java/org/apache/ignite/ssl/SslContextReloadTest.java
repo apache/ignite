@@ -29,6 +29,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -333,6 +334,22 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, status, "The new certificate chain is not valid now");
     }
 
+    /** A trust-only store must not replace a working node's keys; new connections still receive the original certificate. */
+    @Test
+    public void testKeyStoreWithoutKeyNotApplied() throws Exception {
+        IgniteEx g = startGrid(0);
+
+        placeKeys("trustboth");
+
+        String res = reloadFailure(g);
+
+        assertFailed(res, g, ALL_TRANSPORTS);
+        assertContains(log, res, "The new key material has no private key, so the node would present no certificate");
+        assertEquals("CN=node01", servedSubject(g.context().clientListener().port()));
+        assertEquals("CN=node01", servedSubject(discoveryPort(g)));
+        assertClientConnected(g, "node01");
+    }
+
     /** A client connector and binary REST with factories of their own reload separately from the node-wide factory. */
     @Test
     public void testClientTransportsWithSeparateFactories() throws Exception {
@@ -390,20 +407,25 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one; then the nodes open new
-     * connections to each other, and a node of the new one joins.
+     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one. New connections accept
+     * clients of the new authority and reject the old one; the nodes reconnect and a node of the new authority joins.
      */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
         initTrustStore = "trustone";
 
-        IgniteEx g0 = startGrid(0);
-        IgniteEx g1 = startGrid(1);
-
-        assertNotContains(log, status(g0, g1), "CN=twoca");
+        IgniteEx g0 = startGrid(0, cfg -> {
+            cfg.getClientConnectorConfiguration().setSslClientAuth(true);
+        });
+        IgniteEx g1 = startGrid(1, cfg -> {
+            cfg.getClientConnectorConfiguration().setSslClientAuth(true);
+        });
 
         placeTrust("trustboth");
         reload(g0, g1);
+
+        assertClientConnected(g0, "node01");
+        assertClientConnected(g0, "node02");
 
         placeKeys("node02");
         reload(g0, g1);
@@ -413,8 +435,17 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         String reloadedStatus = status(g0, g1);
 
-        assertNotContains(log, reloadedStatus, "CN=oneca");
-        assertContains(log, reloadedStatus, "CN=twoca");
+        assertTrue(reloadedStatus, Pattern.compile("issuer=[^;\\n]*CN=twoca").matcher(reloadedStatus).find());
+
+        for (IgniteEx node : List.of(g0, g1)) {
+            assertClientConnected(node, "node02");
+
+            GridTestUtils.assertThrows(log, () -> {
+                assertClientConnected(node, "node01");
+
+                return null;
+            }, ClientConnectionException.class, null);
+        }
 
         ConnectionClientPool pool = U.field(g0.configuration().getCommunicationSpi(), "clientPool");
 
@@ -452,7 +483,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, res, "PROBLEM: the loaded certificate is not valid now");
     }
 
-    /** A node that starts on an expired certificate warns that peers refuse it. */
+    /** A node that starts on an expired certificate logs a warning. */
     @Test
     public void testExpiredCertificateWarnedAtStart() throws Exception {
         place("node02old", keyStore(getTestIgniteInstanceName(0)));
@@ -491,6 +522,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         assertContains(log, reload(g), node(g) + ": no SSL context factory is configured");
         assertContains(log, status(g), node(g) + ": no SSL context factory is configured");
+    }
+
+    /** Opens a new authenticated client connection; its own trust store accepts both test authorities. */
+    private void assertClientConnected(IgniteEx node, String keyStore) {
+        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + node.context().clientListener().port())
+            .setSslMode(SslMode.REQUIRED).setSslContextFactory(GridTestUtils.sslTrustedFactory(keyStore, "trustboth"))
+            .setPartitionAwarenessEnabled(false).setClusterDiscoveryEnabled(false))) {
+            cli.cacheNames();
+        }
     }
 
     /** @return Factory reading the stores of the node. */

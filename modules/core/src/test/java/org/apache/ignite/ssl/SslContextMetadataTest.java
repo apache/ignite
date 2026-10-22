@@ -43,7 +43,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     private static final char[] PASSWORD = "123456".toCharArray();
 
     /** A reload loads once, leaves the cached context intact and keeps each context's own chain. */
-    @Test public void testMetadataUsesOneLoadAndStaysWithContext() throws Exception {
+    @Test
+    public void testMetadataUsesOneLoadAndStaysWithContext() throws Exception {
         KeyStore firstStore = loadStore("node01");
         StoreFactory factory = new StoreFactory(firstStore);
 
@@ -63,13 +64,36 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertArrayEquals(chain(factory.store, "node02"), chain(next));
     }
 
+    /** Both factory methods retain certificate metadata when they also apply TLS parameters. */
+    @Test
+    public void testMetadataWithTlsParameters() throws Exception {
+        KeyStore store = loadStore("node01");
+        StoreFactory factory = new StoreFactory(store);
+        String[] protocols = {"TLSv1.2"};
+        String[] ciphers = {"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"};
+
+        factory.setProtocols(protocols);
+        factory.setCipherSuites(ciphers);
+
+        for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
+            assertArrayEquals(chain(store, "node01"), chain(ctx));
+
+            SSLEngine engine = ctx.createSSLEngine();
+
+            assertArrayEquals(protocols, engine.getEnabledProtocols());
+            assertArrayEquals(ciphers, engine.getEnabledCipherSuites());
+        }
+    }
+
     /** More than one private key leaves the chain unknown without preventing context creation. */
-    @Test public void testMultiplePrivateKeysHaveUnknownChain() throws Exception {
+    @Test
+    public void testMultiplePrivateKeysHaveUnknownChain() throws Exception {
         assertNull(chain(new StoreFactory(loadStore("node0102")).create()));
     }
 
     /** Trusted certificates and secret keys do not count as private keys. */
-    @Test public void testOnlyPrivateKeyEntriesCount() throws Exception {
+    @Test
+    public void testOnlyPrivateKeyEntriesCount() throws Exception {
         KeyStore keys = loadStore("node01");
         KeyStore store = KeyStore.getInstance("JCEKS");
 
@@ -87,8 +111,29 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertArrayEquals(chain(keys, "node01"), chain(factory.createNew()));
     }
 
-    /** An old subclass's validation, key manager and trust manager overrides still run on each build. */
-    @Test public void testLegacyOverridesAreUsedWithoutMetadata() {
+    /** Trust-only contexts can still be built for clients, and another parameters wrapper preserves the missing-key marker. */
+    @Test
+    public void testTrustOnlyContextCreation() throws Exception {
+        StoreFactory factory = new StoreFactory(loadStore("trustboth"));
+
+        for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
+            assertNull(chain(ctx));
+            assertTrue(((SSLContextWrapper)ctx).isPrivateKeyMissing());
+
+            SSLParameters params = new SSLParameters();
+
+            params.setProtocols(new String[] {"TLSv1.2"});
+
+            SSLContextWrapper outer = new SSLContextWrapper(ctx, params);
+
+            assertTrue(outer.isPrivateKeyMissing());
+            assertArrayEquals(new String[] {"TLSv1.2"}, outer.createSSLEngine().getEnabledProtocols());
+        }
+    }
+
+    /** A subclass that does not override createKeyMaterial() still supplies validation and managers on every build. */
+    @Test
+    public void testLegacyOverridesAreUsedWithoutMetadata() {
         LegacyFactory factory = new LegacyFactory();
 
         SSLContext first = factory.create();
@@ -102,7 +147,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     }
 
     /** Neither callers nor another parameters wrapper can replace a context's recorded chain. */
-    @Test public void testWrapperPreservesAndCopiesChain() throws Exception {
+    @Test
+    public void testWrapperPreservesAndCopiesChain() throws Exception {
         X509Certificate[] expected = chain(loadStore("node01"), "node01");
         X509Certificate[] input = expected.clone();
         SSLContext delegate = SSLContext.getInstance("TLS");
@@ -127,7 +173,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     }
 
     /** A wrapper with metadata alone preserves the engine peer and native socket factories. */
-    @Test public void testMetadataWrapperPreservesContextBehavior() throws Exception {
+    @Test
+    public void testMetadataWrapperPreservesContextBehavior() throws Exception {
         SSLContext delegate = SSLContext.getInstance("TLS");
 
         delegate.init(null, null, null);
@@ -196,7 +243,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         }
     }
 
-    /** An existing subclass that does not implement the new metadata hook. */
+    /** A subclass that implements the manager hooks without overriding createKeyMaterial(). */
     private static class LegacyFactory extends AbstractSslContextFactory {
         /** */
         private int checks;
