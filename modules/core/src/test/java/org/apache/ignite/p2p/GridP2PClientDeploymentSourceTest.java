@@ -22,12 +22,16 @@ import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentPerVersionStore;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -53,6 +57,9 @@ public class GridP2PClientDeploymentSourceTest extends GridCommonAbstractTest {
     /** Message logged by {@code GridDeploymentClassLoader} when a node reports a class as missing. */
     private static final String CLS_NOT_FOUND_MSG = "Failed to find class on remote node";
 
+    /** Log category the peer class loaders of a node log under. The miss on a participant is reported at DEBUG level. */
+    private static final String DEP_LOG_NAME = GridDeploymentPerVersionStore.class.getName();
+
     /** Server node. */
     private static final int SRV = 0;
 
@@ -73,6 +80,9 @@ public class GridP2PClientDeploymentSourceTest extends GridCommonAbstractTest {
 
     /** Server log. */
     private ListeningTestLogger srvLog;
+
+    /** Level of {@link #DEP_LOG_NAME} before the test. */
+    private Level initDepLogLevel;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -102,11 +112,16 @@ public class GridP2PClientDeploymentSourceTest extends GridCommonAbstractTest {
         partialLdr = new GridTestExternalClassLoader(urls, TASK1_CLS_NAME, JOB1_CLS_NAME);
 
         srvLog = new ListeningTestLogger(log);
+
+        initDepLogLevel = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(DEP_LOG_NAME).getLevel();
+        Configurator.setLevel(DEP_LOG_NAME, Level.DEBUG);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        Configurator.setLevel(DEP_LOG_NAME, initDepLogLevel);
 
         super.afterTest();
     }
