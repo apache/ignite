@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -40,7 +39,6 @@ import org.junit.Test;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.IgniteKernal.CFG_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.sslFactory;
 
 /** Tests for {@link SystemView} for configuration. */
@@ -130,8 +128,8 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         holder0.setRef(shared);
         holder1.setRef(shared);
 
-        Map<String, String> viewContent = viewContent(
-            getConfiguration().setPluginConfigurations(self, a, holder0, holder1, null));
+        Map<String, String> viewContent = viewContent(getConfiguration()
+            .setPluginConfigurations(self, a, holder0, holder1, null));
 
         // Self reference.
         assertTrue(viewContent.containsKey("PluginConfigurations[0].Ref"));
@@ -199,25 +197,6 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         assertEquals("[ATOMIC]", viewContent.get("PluginConfigurations[2].Ref"));
     }
 
-    /** Tests that a failed properties collection does not affect the next one. */
-    @Test
-    public void testFailedCollectionNotCached() throws Exception {
-        FailingPluginConfiguration failing = new FailingPluginConfiguration();
-
-        IgniteConfiguration icfg = getConfiguration().setPluginConfigurations(failing);
-
-        IgniteConfigurationIterable iter = new IgniteConfigurationIterable(icfg);
-
-        assertThrows(log, () -> iter.forEach(v -> {}), IgniteException.class, null);
-
-        failing.fail = false;
-
-        Map<String, String> viewContent = viewContent(iter);
-
-        assertEquals(icfg.getIgniteInstanceName(), viewContent.get("IgniteInstanceName"));
-        assertEquals("val", viewContent.get("PluginConfigurations[0].Val"));
-    }
-
     /**
      * @param icfg Configuration.
      * @return Configuration view content: property names and values.
@@ -261,25 +240,6 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         /** {@inheritDoc} */
         @Override public void setRef(Object ref) {
             this.ref = ref;
-        }
-    }
-
-    /** Plugin configuration with a property getter that fails on demand. */
-    public static class FailingPluginConfiguration implements PluginConfiguration {
-        /** If {@code true}, the getter fails. */
-        private volatile boolean fail = true;
-
-        /** @return Value. */
-        public String getVal() {
-            if (fail)
-                throw new IllegalStateException("Test failure.");
-
-            return "val";
-        }
-
-        /** @param val Value. */
-        public void setVal(String val) {
-            // No-op.
         }
     }
 

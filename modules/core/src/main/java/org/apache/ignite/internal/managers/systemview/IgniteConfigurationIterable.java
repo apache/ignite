@@ -47,15 +47,14 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 /**
  * Responsibility of this class it to recursively iterate {@link IgniteConfiguration} object
  * and expose all properties in form of String pairs.
- * Properties of configuration classes are collected via reflection once, the configuration is iterated on each iteration.
- * Properties marked as {@link SensitiveProperty} and {@code char[]} properties (usually passwords) are never exposed.
- * Only objects of classes from the configured packages are iterated, for an array this is checked for each element.
- * Cyclic references are not iterated: such a property is exposed as a plain value, such an array element is skipped.
- * Array elements that are {@code null} or not iterated by package are skipped as well.
- * An array without elements to iterate is exposed as a plain value.
+ * Properties of a class are collected via reflection once.
+ * {@link SensitiveProperty} and {@code char[]} properties are never exposed.
+ * Only objects of classes from the configured packages are iterated, for an array each element is checked.
+ * Cyclic references are not iterated: a property is exposed as a plain value, an array element is skipped
+ * (as well as {@code null} and foreign elements). An array without elements to iterate is exposed as a plain value.
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
-    /** Properties of configuration classes: names and getters. */
+    /** Properties of classes: names and getters. */
     private static final ClassValue<Map<String, Method>> PROPS = new ClassValue<>() {
         @Override protected Map<String, Method> computeValue(Class<?> cls) {
             return props(cls);
@@ -164,10 +163,8 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
      * If {@code val} is configuration bean that must be recursively exposed by the view then
      * it will be added to the {@code iters} queue.
      *
-     * @param iters Queue of objects to iterate.
-     * @param val Value.
      * @param prefix Name prefix of the value properties.
-     * @param parent Queue entry of the object the value belongs to.
+     * @param parent Entry of the object the value belongs to.
      * @return {@code True} if {@code val} was added to {@code iters} queue, {@code false} otherwise.
      */
     private boolean addToQueue(Queue<Node> iters, Object val, String prefix, Node parent) {
@@ -206,8 +203,6 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     }
 
     /**
-     * Checks package of an array element.
-     *
      * @param val Array element.
      * @return {@code True} if {@code val} is a configuration bean that must be recursively exposed by the view.
      */
@@ -215,19 +210,14 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         return val != null && !val.getClass().isEnum() && checkPkg(val.getClass().getName());
     }
 
-    /**
-     * @param obj Object.
-     * @return Iterator of object properties: names and getters.
-     */
+    /** @return Iterator of {@code obj} properties: names and getters. */
     private Iterator<Map.Entry<String, Method>> objectProperties(Object obj) {
         return PROPS.get(obj.getClass()).entrySet().iterator();
     }
 
     /**
-     * Sensitive properties are skipped.
-     *
      * @param cls Class to find properties.
-     * @return Unmodifiable object properties sorted by name: names and getters.
+     * @return Unmodifiable non-sensitive properties sorted by name: names and getters.
      */
     private static Map<String, Method> props(Class<?> cls) {
         Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted.
@@ -254,9 +244,8 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     }
 
     /**
-     * Getter can be overridden in a subclass, so the superclass chain is checked (interfaces are not checked).
+     * Annotation is also looked up in superclasses, as the getter can be overridden. Interfaces are not checked.
      *
-     * @param getter Property getter.
      * @return {@code True} if property is marked as {@link SensitiveProperty} or has {@code char[]} type.
      */
     private static boolean isSensitive(Method getter) {
@@ -299,24 +288,19 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
     /** Queue entry: object to iterate. */
     private static class Node {
-        /** Object. */
+        /** */
         private final Object obj;
 
-        /** Iterator of object properties. */
+        /** */
         private final Iterator<Map.Entry<String, Method>> props;
 
         /** Name prefix of object properties. */
         private final String prefix;
 
-        /** Entry of the object this object belongs to, {@code null} for the root. */
+        /** Parent entry, {@code null} for the root. */
         @Nullable private final Node parent;
 
-        /**
-         * @param obj Object.
-         * @param props Iterator of object properties.
-         * @param prefix Name prefix of object properties.
-         * @param parent Entry of the object this object belongs to, {@code null} for the root.
-         */
+        /** */
         private Node(Object obj, Iterator<Map.Entry<String, Method>> props, String prefix, @Nullable Node parent) {
             this.obj = obj;
             this.props = props;
@@ -324,11 +308,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             this.parent = parent;
         }
 
-        /**
-         * @param node Entry to start from.
-         * @param obj Object.
-         * @return {@code True} if {@code obj} is the object of {@code node} or of any of its parents.
-         */
+        /** @return {@code True} if {@code obj} is the object of {@code node} or of any of its parents. */
         private static boolean contains(@Nullable Node node, Object obj) {
             for (; node != null; node = node.parent) {
                 if (node.obj == obj)

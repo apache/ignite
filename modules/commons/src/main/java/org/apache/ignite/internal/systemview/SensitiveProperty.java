@@ -24,10 +24,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Attach this annotation to a getter of a configuration property to indicate that the property value is sensitive
- * (password, secret key, etc.) and <b>should not</b> be exposed, e.g. in the configuration system view.
- * <p>
- * Note, that this annotation doesn't affect {@code toString()} output.
+ * Marks a getter of a sensitive configuration property (password, secret key, etc.) that must not be exposed
+ * in the configuration system view. Doesn't affect {@code toString()} output.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
