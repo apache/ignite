@@ -226,16 +226,19 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             boolean jobFailure = false;
             // Acceptable exceptions to collect.
             List<IgniteException> acceptableExcs = new ArrayList<>();
-            // Unacceptable exception that disrupts the job
+            // Unacceptable exception that disrupts the job.
             IgniteException unacceptableEx = null;
+            // The current thread's interruption flag.
             boolean interrupted = false;
+            // The cancellation flag. If it is set, no need to store the acceptable exceptions from the futures.
+            boolean cancelled = false;
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
             // Start time of the current log-timeout interval.
             long lastProgressLogTs = U.currentTimeMillis();
 
-            // Launch the partition jobs
+            // Launch the partition jobs.
             List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
 
             // Iterate over the per-partition futures. We wait for all of them to finish.
@@ -248,13 +251,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     if (!jobFailure)
                         res.putAll(partHash);
                 }
-                catch (Throwable t) {
-                    // A timeout of a particular future is not a problem. We just log that the progress is still on.
-                    if (t instanceof TimeoutException) {
-                        // But if the entire job has already failed, there is no need to take this timeout into account.
-                        if (jobFailure)
-                            continue;
+                catch (Exception e) {
+                    if (isCancelled())
+                        cancelled = true;
 
+                    // A timeout of a particular future is not a problem. We just log that the progress is still on.
+                    if (e instanceof TimeoutException) {
                         // Log the progress status periodically.
                         if (U.currentTimeMillis() - lastProgressLogTs > LOG_PROGRESS_TIMEOUT) {
                             lastProgressLogTs = U.currentTimeMillis();
@@ -269,12 +271,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         continue;
                     }
 
-                    if (t instanceof InterruptedException || t instanceof ExecutionException) {
-                        if (t instanceof InterruptedException)
+                    if (e instanceof InterruptedException || e instanceof ExecutionException) {
+                        if (e instanceof InterruptedException)
                             interrupted = true;
 
-                        if (t.getCause() instanceof IgniteException && !(t.getCause() instanceof GridNotIdleException)) {
-                            acceptableExcs.add((IgniteException)t.getCause());
+                        if (e.getCause() instanceof IgniteException && !(e.getCause() instanceof GridNotIdleException)) {
+                            if (!cancelled)
+                                acceptableExcs.add((IgniteException)e.getCause());
 
                             // Current future is processed with an acceptable exception.
                             continue;
@@ -289,32 +292,32 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         cancel();
 
                         // Store an unacceptable exception to rethrow after all the futures stop.
-                        if (unacceptableEx == null) {
-                            if (t instanceof InterruptedException)
-                                unacceptableEx = new IgniteInterruptedException((InterruptedException)t);
-                            else if (t.getCause() instanceof IgniteException ie)
-                                unacceptableEx = ie;
-                            else
-                                unacceptableEx = new IgniteException(t.getCause());
-                        }
-                        else if (log.isDebugEnabled()) {
-                            log.debug("Idle verify stopping with the exception: '" + unacceptableEx.getMessage() +
-                                "'. Another exception appeared during the stoppage of the partition hash calculations: '" +
-                                t.getMessage() + "'.");
-                        }
+                        if (e instanceof InterruptedException)
+                            unacceptableEx = new IgniteInterruptedException((InterruptedException)e);
+                        else if (e.getCause() instanceof IgniteException ie)
+                            unacceptableEx = ie;
+                        else
+                            unacceptableEx = new IgniteException(e.getCause());
+                    }
+                    else if (log.isDebugEnabled()) {
+                        log.debug("Idle verify stopping with the exception: '" + unacceptableEx.getMessage() +
+                            "'. Another exception appeared during the stopping of the partition hash calculations: '" +
+                            e.getMessage() + "'.");
                     }
                 }
             }
 
-            if (unacceptableEx != null) {
-                if (interrupted)
-                    Thread.currentThread().interrupt();
+            if (interrupted)
+                Thread.currentThread().interrupt();
 
+            if (unacceptableEx != null)
                 throw unacceptableEx;
-            }
 
             if (log.isInfoEnabled())
                 log.info("Idle verify procedure has finished.");
+
+            if (cancelled)
+                throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
 
             if (!F.isEmpty(acceptableExcs))
                 throw new IdleVerifyException(acceptableExcs);
@@ -607,7 +610,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @param throwIfCancelled If {@code true}, throws a cancellation exception instead of returning {@code true}.
          * @return {@code true} if the work should be stopped.
          */
-
         private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx, boolean throwIfCancelled) {
             boolean res = cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
 

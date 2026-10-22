@@ -24,7 +24,6 @@ import org.apache.ignite.cdc.CdcCacheVersionTest;
 import org.apache.ignite.cdc.CdcManagerTest;
 import org.apache.ignite.cdc.WalForCdcTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.HistoricalRebalanceCheckpointTest;
-import org.apache.ignite.internal.processors.cache.persistence.IdleVerifyOrphanedTaskOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
@@ -99,7 +98,6 @@ public class IgnitePdsTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, CheckpointTimeoutLockTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, FullHistRebalanceOnClientStopTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, HistoricalRebalanceCheckpointTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IdleVerifyOrphanedTaskOnNodeStopTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDataStorageMetricsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteLocalWalSizeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteNodeStoppedDuringDisableWALTest.class, ignoredTests);

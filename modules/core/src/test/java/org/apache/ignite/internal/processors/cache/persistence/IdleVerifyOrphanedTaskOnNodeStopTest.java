@@ -41,7 +41,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_IDLE_VERIFY_POOL_SIZE;
 
 /** */
 @RunWith(Parameterized.class)
@@ -103,7 +102,7 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
         ignite.cluster().state(ClusterState.ACTIVE);
 
         // Take enough partitions to process.
-        int parts = Math.max(DFLT_IDLE_VERIFY_POOL_SIZE * 2, 16);
+        int parts = Math.max(Math.max(4, IgniteConfiguration.AVAILABLE_PROC_CNT) * 2, 16);
         int keys = parts * 100_000;
 
         // Create cache and fill some data.
