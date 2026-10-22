@@ -26,7 +26,7 @@ import java.sql.Time;
 import java.text.MessageFormat;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.SensitiveProperty;
+import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;

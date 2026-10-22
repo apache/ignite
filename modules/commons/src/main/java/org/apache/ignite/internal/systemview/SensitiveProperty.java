@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.systemview;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
