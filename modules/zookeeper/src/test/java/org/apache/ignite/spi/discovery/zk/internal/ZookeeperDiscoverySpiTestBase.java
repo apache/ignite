@@ -175,7 +175,7 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
     protected IgniteOutClosure<DiscoverySpiNodeAuthenticator> auth;
 
     /** Node certificates added to the node attributes when {@link #auth} is set. */
-    protected Certificate[] nodeCerts;
+    @Nullable protected Certificate[] nodeCerts;
 
     /** */
     protected String zkRootPath;
@@ -382,7 +382,9 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
 
-        ZookeeperDiscoverySpi zkSpi = auth != null ? new TestAuthZookeeperDiscoverySpi(nodeCerts) : new TestZookeeperDiscoverySpi();
+        ZookeeperDiscoverySpi zkSpi = auth != null
+            ? new TestAuthZookeeperDiscoverySpi(nodeCerts)
+            : new TestZookeeperDiscoverySpi();
 
         if (joinTimeout != 0)
             zkSpi.setJoinTimeout(joinTimeout);

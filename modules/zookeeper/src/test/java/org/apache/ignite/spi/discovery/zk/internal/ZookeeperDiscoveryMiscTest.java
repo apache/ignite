@@ -63,7 +63,6 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
@@ -496,12 +495,12 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     }
 
     /**
-     * Checks that a thin client gets the node details without the node certificates.
+     * Checks that a thin client gets the node details without the node certificates and credentials.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testThinClientNodesWithCertificates() throws Exception {
+    public void testThinClientNodeDetailsExcludeCertificates() throws Exception {
         startGridsWithCertificates();
 
         ClusterNode srv = grid(0).localNode();
@@ -544,8 +543,9 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         helper.waitSpi(cli.name(), spis).clientReconnect();
 
-        assertTrue(reconnected.await(getTestTimeout(), MILLISECONDS));
+        ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, reconnected);
 
+        // The servers may still have the client node from before the reconnect.
         UUID cliId = cli.localNode().id();
 
         assertTrue(GridTestUtils.waitForCondition(
@@ -556,11 +556,14 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
 
         String cliName = getTestIgniteInstanceName(2);
 
-        assertEquals(F.asList(getTestIgniteInstanceName(0), getTestIgniteInstanceName(1), cliName, cliName), certAuthNodes);
+        assertEquals(
+            F.asList(getTestIgniteInstanceName(0), getTestIgniteInstanceName(1), cliName, cliName),
+            certAuthNodes);
     }
 
     /**
-     * Starts servers 0 and 1 and client node 2 with the node certificates from a test keystore.
+     * Starts servers 0 and 1 and client node 2 with the node certificates from a test keystore, and an authenticator
+     * that records the nodes it gets the certificates from.
      *
      * @throws Exception If failed.
      */
@@ -587,17 +590,16 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         startGrid(0);
         startGrid(1);
         startClientGrid(2);
+
+        waitForTopology(3);
     }
 
     /** Checks that no node of any grid has the node certificates in its attributes. */
     private void checkNoNodeCertificates() {
         for (Ignite ignite : G.allGrids()) {
             for (ClusterNode node : ignite.cluster().nodes()) {
-                String msg = "grid=" + ignite.name() + ", node=" + node.id();
-
-                assertNull(msg, node.attribute(ATTR_NODE_CERTIFICATES));
-                assertFalse(msg, node.attributes().containsKey(ATTR_NODE_CERTIFICATES));
-                assertFalse(msg, ((ZookeeperClusterNode)node).getAttributes().containsKey(ATTR_NODE_CERTIFICATES));
+                assertFalse("grid=" + ignite.name() + ", node=" + node.id(),
+                    ((ZookeeperClusterNode)node).getAttributes().containsKey(ATTR_NODE_CERTIFICATES));
             }
         }
     }

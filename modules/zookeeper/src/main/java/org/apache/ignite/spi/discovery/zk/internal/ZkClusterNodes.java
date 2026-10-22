@@ -82,13 +82,14 @@ public class ZkClusterNodes {
     }
 
     /**
+     * Adds a node to the topology and removes its certificates: only authentication needs them, and it is done by now.
+     *
      * @param node New node.
      */
     void addNode(ZookeeperClusterNode node) {
         assert node.id() != null : node;
         assert node.order() > 0 : node;
 
-        // Only node authentication needs the certificates, and it is done before the node joins.
         if (node.getAttributes().containsKey(ATTR_NODE_CERTIFICATES)) {
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
