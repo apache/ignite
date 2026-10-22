@@ -159,9 +159,33 @@ include::{javaFile}[tag=disable-validation,indent=0]
 ----
 --
 
+[[reload-or-restart]]
+== Reload or Restart
+
+Use link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] after manually replacing a node's certificate or trust store.
+For automatically delivered certificates, see <<Renewing Certificates Automatically>>.
+
+[cols="2,3",opts="header"]
+|===
+|What changed |How to apply it
+|Contents of the key or trust store used by `SslContextFactory`
+|Run reload. The factory reads the configured files again.
+|Store path, password, store type, protocols, cipher suites or other factory settings
+|Update the node configuration and restart the node. Reload uses the settings the node started with.
+|HTTP REST certificates configured directly in Jetty XML
+|Restart the node. To support reload, first link:restapi#https-and-certificate-reload[move the TLS configuration to `httpSslFactory`].
+|Stores used by thin clients or JDBC and ODBC applications
+|Load them in the applications as described in <<1. Trust the New Certificates,stage 1 below>>. The node reload command does not update applications.
+|===
+
+If `trustManagers` is configured on the factory, it controls trust instead of a trust store file. Reload keeps those managers. Follow their implementation's procedure to change which certificates they accept.
+
+Reload checks the validity dates of the certificate chain supplied by the factory. An expired or not yet valid certificate is rejected, and the previous context stays in use.
+You must check that peers trust the replacement and that protocols, cipher suites and client authentication settings remain compatible. Reload does not test connections or undo a successful replacement if connections later fail.
+
 == Upgrading Certificates
 
-You can replace certificates without stopping the whole cluster. Choose the stages that apply to your change:
+You can replace certificates without stopping the whole cluster. Check <<Reload or Restart>> for your configuration, then choose the stages that apply to your change:
 
 [cols="2,3",opts="header"]
 |===
@@ -171,8 +195,6 @@ You can replace certificates without stopping the whole cluster. Choose the stag
 |New CA or new self-signed certificates
 |Add trust → replace certificates → remove old trust if required (stages 1–3).
 |===
-
-Before starting, check peer trust, protocols, cipher suites and client authentication. `control.sh --ssl reload` does not test TLS connections or roll back a context if new connections fail.
 
 === 1. Trust the New Certificates
 
@@ -208,8 +230,6 @@ Before removing old trust, also replace any application client certificate that 
 
 *If a connection fails:* stop the rollout. Correct peer trust and TLS settings, or restore the old key store and run `control.sh --ssl reload` again. The restored chain must still be valid. If the command cannot reach the node, restore its configuration and restart it.
 
-*HTTP REST configured in Jetty XML:* restart the node to load its new HTTP REST certificate. To use reload for future replacements, move its TLS setup to `ConnectorConfiguration.httpSslFactory`, see link:restapi#configuration[REST API configuration].
-
 === 3. Remove the Old Trust
 
 *When:* all affected nodes and applications use the new certificates, and the old CA or self-signed certificates must no longer be trusted. Skip this stage if the old CA must remain trusted.
@@ -221,27 +241,49 @@ Reload leaves existing connections open. If you are replacing certificates after
 
 == Renewing Certificates Automatically
 
-Use automatic renewal when an external system delivers updated key store files to the nodes, or when a <<Custom SSL Context Factories,custom factory>> retrieves new certificates from a service. If you replace JKS or other key store files manually, run `control.sh --ssl reload` after replacing them and check the result as described in <<Upgrading Certificates>>.
+Automatic renewal lets a node pick up certificates delivered by another system before its current certificate expires.
+Use it when a service updates key store files or a <<Custom SSL Context Factories,custom factory>> retrieves certificates from a service.
+For manual file replacement, use <<Upgrading Certificates>> and run reload after making the change.
 
-Before enabling renewal, make sure the factory supplies the X.509 certificate chain with each SSL context. Without this information, the node cannot determine when to renew the certificate and will not start with `renewalEnabled=true`.
+=== Prepare Certificate Delivery
 
-To enable automatic renewal, set `renewalEnabled` to `true` on each SSL context factory that should renew its certificates, then restart the nodes one at a time. Renewal is disabled by default.
+The delivery system must make a valid replacement available before renewal is due. Ignite reads the files when renewal is due, not when they change.
+The replacement chain must expire later than the current chain. If a CA certificate expires first, replace it too.
 
-To change when renewal starts, use `renewBeforeFraction`, described in the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory Javadoc]. Changes to renewal settings require a node restart.
+With `SslContextFactory`, keep exactly one private key and its X.509 certificate chain in each key store.
+A custom factory must supply the chain with each SSL context. Without it, a node with automatic renewal enabled cannot start because it cannot determine when renewal is due.
 
-Besides `IgniteConfiguration.sslContextFactory`, a node may use `ClientConnectorConfiguration.sslContextFactory` with `useIgniteSslContextFactory=false`, `ConnectorConfiguration.sslFactory` and `ConnectorConfiguration.httpSslFactory`.
+Nodes and applications must trust the replacement certificates before they are loaded. For a new CA, follow the stages in <<Upgrading Certificates>>.
+Automatic renewal does not apply a trust store change on its own. Run `control.sh --ssl reload` after updating trust stores.
 
-Transports configured with the same factory object get the new certificate together. HTTP REST certificates configured in the Jetty XML file are not renewed automatically.
+=== Enable Renewal
 
-For `SslContextFactory`, configure the delivery system to update the key store files before the renewal window starts. Ignite reads them when renewal is due, not when the files change.
+Set `renewalEnabled` to `true` on each SSL context factory that should renew certificates, then restart the nodes one at a time.
+Configure the factory used by each connection type:
 
-Use a valid certificate chain that expires later than the one in use. A chain expires as soon as any certificate in it expires. Renew the CA certificate too if it expires first.
+[cols="2,3",opts="header"]
+|===
+|Connections |Factory setting
+|Between cluster nodes
+|`IgniteConfiguration.sslContextFactory`
+|Thin clients and JDBC/ODBC
+|The node's factory, or `ClientConnectorConfiguration.sslContextFactory` with `useIgniteSslContextFactory=false`
+|Binary REST
+|The node's factory, or `ConnectorConfiguration.sslFactory`
+|HTTP REST
+|`ConnectorConfiguration.httpSslFactory`
+|===
 
-Prepare trust stores so that nodes and clients accept both old and new certificates during rollout. Renewal does not test peer trust or TLS compatibility. To move to a new certificate authority, follow <<Upgrading Certificates>>.
+Connection types that share one factory renew together. HTTP REST certificates configured directly in Jetty XML cannot renew automatically.
 
-Automatic renewal does not apply changes to the trust store alone. Use `control.sh --ssl reload` for those changes.
+To change how early renewal starts, set `renewBeforeFraction` as described in the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html#setRenewBeforeFraction(double)[AbstractSslContextFactory Javadoc]. Changes to these settings take effect after a node restart.
 
-If renewal finds the same chain or cannot load or accept a new one, the node keeps its current context and retries. Check the node logs and the link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric for unsuccessful attempts. `control.sh --ssl status` shows when the next attempt is due.
+=== Check Renewal
+
+Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to check the loaded certificate and the next attempt time.
+
+If the source still returns the current certificate, or loading the replacement fails, the node keeps its current context and retries.
+The link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric counts these unsuccessful attempts. Check the node log for the cause, fix certificate delivery or configuration, and use reload if you need to apply the correction immediately.
 
 == SslContextFactory Properties
 
@@ -290,8 +332,11 @@ If renewal finds the same chain or cannot load or accept a new one, the node kee
 
 == Custom SSL Context Factories
 
-To load certificates from a custom source, such as a PKI service, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory].
+This section is for developers integrating a certificate source, such as a PKI service.
+Extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory] to support manual reload and automatic renewal. See its Javadoc for the creation and reload contracts.
 
-Return the single X.509 chain together with the key managers from the same certificate load, through `createKeyMaterial()`. Ignite uses this chain for certificate status and automatic renewal. If the factory builds the SSL context directly, attach the chain with link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SSLContextWrapper.html[SSLContextWrapper].
+Return the key managers and their single X.509 chain from the same certificate load through `createKeyMaterial()`. Ignite needs the chain to report certificate dates and schedule renewal.
+If the factory builds the SSL context directly, attach the chain with link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SSLContextWrapper.html[SSLContextWrapper].
 
-A plain `Factory<SSLContext>` supports link:tools/control-script#reloading-certificates[manual reload] only and must return a new context on every call. Without chain metadata, Ignite cannot report or check certificate dates.
+A plain `Factory<SSLContext>` supports manual reload only and must return a new context on every call. Returning the context already in use makes reload fail.
+Without chain metadata, Ignite cannot check or report certificate dates. Automatic renewal requires this metadata both at startup and on every reload.

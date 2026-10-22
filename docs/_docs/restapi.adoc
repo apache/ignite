@@ -86,17 +86,12 @@ The following table describes the properties of link:https://ignite.apache.org/r
 |`null`
 
 |`setHttpSslFactory(Factory<SSLContext>)`
-|SSL context factory for HTTPS, used by the built-in Jetty connector or the connector in the Jetty configuration file.
-The node does not start if the connector from the Jetty configuration file sets up TLS itself or uses the PROXY protocol.
-
-Supports `control.sh --ssl reload` and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] without a restart.
+|SSL context factory for HTTPS. Supports certificate reload and automatic renewal. See <<HTTPS and Certificate Reload>>.
 |Yes
 |`null`
 
 |`setHttpSslClientAuth(boolean)`
-|Whether HTTP REST requires a client certificate trusted by `httpSslFactory`.
-
-Without `httpSslFactory`, the node does not start with this property set to `true`. For TLS set up in the Jetty configuration file, set `needClientAuth` in that file instead.
+|Whether HTTP REST requires a client certificate trusted by `httpSslFactory`. Requires `httpSslFactory` to be configured.
 |Yes
 |`false`
 
@@ -106,17 +101,27 @@ Without `httpSslFactory`, the node does not start with this property set to `tru
 |`null`
 |=======
 
-To move the TLS setup of HTTP REST to `httpSslFactory`:
+[[https-and-certificate-reload]]
+==== HTTPS and Certificate Reload
 
-. Remove the `SslConnectionFactory` from the Jetty configuration file.
-. Configure an `org.apache.ignite.ssl.SslContextFactory` with the HTTP REST key store and trust store, then assign it to `httpSslFactory`.
-Ignite's `SslContextFactory` cannot pick a key by alias, so keep only one private key in the HTTP REST key store.
-The private key must have the same password as the key store, because the factory has one password for both.
-. Set `protocols` and `cipherSuites` of Ignite's `SslContextFactory` to the protocols and cipher suites that the Jetty SSL context factory enables. Otherwise, HTTP REST uses the defaults of the JVM.
-Jetty's default cipher exclusions still apply.
-. If the Jetty configuration file sets `needClientAuth` to `true`, set `httpSslClientAuth` to `true` too. Otherwise, clients without a certificate can connect.
-. Ignite keeps the `SecureRequestCustomizer` from the Jetty configuration file, with its settings. Set its `sniHostCheck` to `false` only if clients send requests to a host name or IP address not in the certificate.
-. Restart the nodes one at a time.
+To enable HTTPS, configure `ConnectorConfiguration.httpSslFactory` with the HTTP REST certificate and trust store.
+Ignite applies it to the built-in Jetty connector or the connector in your Jetty XML file.
+To require client certificates, also set `httpSslClientAuth` to `true`.
+
+With this configuration, HTTP REST supports link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] and link:security/ssl-tls#renewing-certificates-automatically[automatic renewal].
+If your Jetty XML file configures TLS directly, replacing those certificates requires a node restart. You can migrate that configuration using the steps below.
+
+If you keep TLS configured directly in Jetty XML, configure client authentication with `needClientAuth` there. Setting `httpSslClientAuth=true` without `httpSslFactory` prevents the node from starting.
+
+===== Migrate TLS from Jetty XML
+
+. Remove `SslConnectionFactory` from the Jetty XML file. The connector must not configure its own TLS or use the PROXY protocol when `httpSslFactory` is set, otherwise the node will not start.
+. Configure an `org.apache.ignite.ssl.SslContextFactory` with the HTTP REST key store and trust store, and assign it to `httpSslFactory`.
+Keep only one private key in this key store because the factory cannot select a key by alias. Use the same password for the private key and the store.
+. Copy the enabled protocols and cipher suites from the Jetty SSL context factory to the Ignite factory's `protocols` and `cipherSuites` properties. Without them, HTTP REST uses JVM defaults. Jetty's default cipher exclusions still apply.
+. If Jetty had `needClientAuth=true`, set `httpSslClientAuth=true`. Otherwise, the migrated connector will accept clients without a certificate.
+. Keep any `SecureRequestCustomizer` and its settings in the Jetty XML file. Set `sniHostCheck=false` only if clients use a host name or IP address not listed in the certificate.
+. Restart nodes one at a time. After each restart, check HTTPS using the host names and client certificates your applications use.
 
 ==== Example Jetty XML Configuration
 

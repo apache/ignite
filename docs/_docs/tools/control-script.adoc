@@ -1750,67 +1750,54 @@ control.sh|bat --event list --enabled
 
 == TLS Certificates
 
+Use `--ssl reload` to load replacement certificates and `--ssl status` to check the certificates currently in use.
+Both commands run on every server and client node in the current topology. With security enabled, they require the `ADMIN_OPS` system permission.
+
 === Reloading Certificates
+
+After preparing replacement certificates or updating trust stores, run:
 
 [source, shell]
 ----
 control.sh|bat --ssl reload [--yes]
 ----
 
-The command requests new SSL contexts from the configured factories on every server and client node in the topology.
-See link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] for the order of steps when you replace certificates or a certificate authority.
-With security enabled, `--ssl reload` and `--ssl status` need the `ADMIN_OPS` system permission.
+The command asks for confirmation. Add `--yes` to skip the prompt when running from a script. It does not bypass certificate or permission checks.
 
-The command asks for confirmation before reloading certificates on all nodes.
-Add `--yes` to skip this prompt, for example when running the command from a script.
-Certificate and permission checks still apply.
+Before replacing certificates, follow link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] to prepare trust stores and check the change on one node first.
+Reload does not test connections or roll back changes if new connections fail.
 
-The built-in `SslContextFactory` reads its key and trust stores again, with the settings the node started with.
-To change a path, a password, a store type, protocols or cipher suites, restart the node.
-If the factory has `trustManagers` set, the node keeps them and reads no trust store.
+==== What Is Updated
 
-A node that is not in the topology when the command runs, such as a reconnecting client node, keeps the stores it read before.
-The command output does not list nodes that are not in the topology.
-Run the command again when the node is back in the topology, or restart the node if it cannot reconnect.
+Reload covers communication, discovery, the client connector, binary REST, and HTTP REST configured with `ConnectorConfiguration.httpSslFactory`.
+New connections use the reloaded certificates. Existing connections stay open with their current SSL context.
 
-The reload covers communication, discovery, the client connector, binary REST, and HTTP REST if it takes its certificates from `ConnectorConfiguration.httpSslFactory`. New connections use the new SSL context. Established connections stay open and keep their existing context.
+The command does not update thin clients or JDBC and ODBC applications. HTTP REST configured directly in Jetty XML also needs a restart.
+See link:security/ssl-tls#reload-or-restart[Reload or Restart] for changes that reload can apply.
 
-The command does not make thin clients or JDBC and ODBC drivers read their stores again, see link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
+Nodes absent from the topology, such as reconnecting client nodes, are neither updated nor listed in the output.
+Run reload again after they rejoin. If a node cannot reconnect, restart it after updating its certificate configuration.
 
-A successful reload means that the node has installed the factory's new SSL context. If the factory provides the certificate chain, Ignite checks its validity dates before installation.
+==== Checking the Result
 
-Before reloading, make sure nodes and clients trust the new certificates and use compatible protocols, cipher suites and client authentication settings. Reload does not test connections or roll back the change if new connections fail.
+Each result line lists the transports that share an SSL context factory and are updated together.
+If that update fails, those transports keep their previous context. Successful updates stay in use, even on a node where another factory failed.
 
-The reload fails and all transports using the factory keep their old context if:
+The command lists failed nodes first and exits with an error if any update failed.
+Correct the reported cause and run reload again. Every node also records its result in the log, including the user's login and network address when security is enabled.
 
-* a certificate in the chain supplied by the factory is expired or not yet valid
-* automatic renewal is enabled and the new context provides no certificate chain
-* the factory is a custom one that returns the same SSL context on every call, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories]
-* the factory fails, for example because it cannot read a store
-
-For each node, the command prints one line per SSL context factory, with all transports that use it.
-If some nodes fail, the others keep the new contexts.
-The command then lists the failed nodes first, in a separate block, and ends with an error:
-
-[source,text]
-----
-Failed on 1 node(s):
-46db5416-d199-48d6-a807-88b7f1300000 [consistentId=node02]: failed on client connector, communication, discovery (The new certificate chain is not valid now [subject=CN=node02, issuer=CN=newca, serial=5f3a91c2e8, notBefore=2025-10-04T09:00:00Z, notAfter=2026-10-04T09:00:00Z, now=2026-10-05T09:00:02.347Z])
-
-Succeeded on 1 node(s):
-e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: reloaded client connector, communication, discovery; loaded subject=CN=node01, issuer=CN=newca, serial=5f3a91c2e7, notBefore=2026-10-05T09:00:00Z, notAfter=2027-10-05T09:00:00Z
-----
-
-Every node logs the reload result. With security enabled, the entry also identifies the user's login and network address.
+A successful result means the new SSL context is in use for new connections. Use `--ssl status` to check the loaded certificate, then test new connections as described in link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
 
 === Checking Certificates
+
+Use this command after a replacement or when investigating an automatic renewal failure. It shows what each node has loaded without reading store files again or requesting certificates from a service:
 
 [source, shell]
 ----
 control.sh|bat --ssl status
 ----
 
-For each node, the command shows the certificate loaded by each factory, the transports that use it and the last reload result. If link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] is scheduled, it also shows the next attempt time:
+For each factory, the output lists its transports, loaded certificate and last reload result. If automatic renewal is scheduled, it also shows the next attempt time:
 
 [source,text]
 ----
@@ -1820,13 +1807,21 @@ e1e18f84-0fb5-484d-a623-15ffe3800000 [consistentId=node01]: client connector, co
     next automatic renewal at 2027-08-11T15:00:00Z
 ----
 
-Status reads the metadata supplied when the factory built the SSL context. It does not reread a keystore, contact PKI or perform a TLS connection test. If the factory supplied no chain, status shows `certificate metadata is unavailable`. Missing metadata alone does not make the status command fail.
+Check the certificate's identity and expiry date in the `loaded` line. If a CA certificate in its chain expires sooner, `chainNotAfter` gives that earlier date.
+Status does not test connections or verify that other nodes and clients trust this certificate.
 
-A node without an SSL context factory prints `no SSL context factory is configured` without making `--ssl reload` or `--ssl status` fail.
+[cols="2,3",opts="header"]
+|===
+|Output |Meaning and next action
+|`last reload failed N time(s) in a row`
+|Check the reason and time on this line, correct the cause, and run reload again. The line includes automatic renewal errors, but not attempts that found only the certificate already in use. Use the link:monitoring-metrics/new-metrics#ssl[renewal metric] and node logs to investigate those attempts.
+|`PROBLEM: the loaded certificate is not valid now`
+|A certificate in the loaded chain has expired or is not yet valid. Install a valid chain and run reload.
+|`certificate metadata is unavailable`
+|The factory did not supply certificate details. Check its certificate source directly. The command cannot check its dates.
+|`no SSL context factory is configured`
+|This node has no certificates managed by these commands. This message does not make either command fail.
+|===
 
-If a CA certificate in the chain expires before the node's certificate, the `loaded` line also shows the chain's earliest expiry as `chainNotAfter`.
-
-After a failed reload, the `last reload` line shows `last reload failed N time(s) in a row`, with the time and reason of the last failure.
-Automatic renewals also update this line, except attempts that find only the certificate already in use.
-
-If a certificate in the loaded chain is expired or not yet valid, the block shows `PROBLEM: the loaded certificate is not valid now`. The command ends with an error only if it finds such a node or cannot run on a node, for example because the node left. It lists these nodes first, under `Failed on N node(s)`.
+Status exits with an error if it finds an invalid certificate or cannot run on a node, for example because the node left the topology. Those nodes appear first under `Failed on N node(s)`.
+Unavailable metadata and previous reload failures do not by themselves make status fail.
