@@ -33,7 +33,10 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +47,13 @@ import org.junit.jupiter.api.Test;
 public class PlannerTimeoutTest extends AbstractPlannerTest {
     /** */
     private static final long PLANNER_TIMEOUT = 1_000;
+
+    /** */
+    @BeforeAll
+    static void init() {
+        // Each running node holds a gridCnt slot, plus one slot for the test clock.
+        assertEquals(G.allGrids().size() + 1, (int)GridTestUtils.getFieldValue(CommonUtils.class, "gridCnt"));
+    }
 
     /** */
     @Test
