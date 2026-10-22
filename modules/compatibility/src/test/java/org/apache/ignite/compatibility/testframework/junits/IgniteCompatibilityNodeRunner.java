@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.security.AnyTypePermission;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
@@ -259,7 +260,11 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
     @SuppressWarnings("unchecked")
     public static <T> IgniteInClosure<T> readClosureFromFileAndDelete(String fileName) throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(fileName), StandardCharsets.UTF_8)) {
-            return (IgniteInClosure<T>)new XStream().fromXML(reader);
+            XStream xstream = new XStream();
+
+            xstream.addPermission(AnyTypePermission.ANY);
+
+            return (IgniteInClosure<T>)xstream.fromXML(reader);
         }
         finally {
             U.delete(new File(fileName));
