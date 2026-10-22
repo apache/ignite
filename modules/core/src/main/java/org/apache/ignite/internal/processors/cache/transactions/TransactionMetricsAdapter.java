@@ -71,8 +71,8 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Metric name for maximum duration of cache futures currently in progress on node. */
     public static final String METRIC_MAX_CACHE_FUTURE_DURATION = "MaxCacheFutureDuration";
 
-    /** Metric name for the number of long running cache futures currently in progress on node. */
-    public static final String METRIC_LONG_RUNNING_CACHE_FUTURES_NUMBER = "LongRunningCacheFuturesNumber";
+    /** Metric name for count of long running cache futures currently in progress on node. */
+    public static final String METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT = "LongRunningCacheFuturesCount";
 
     /** Metric name for explicit lock hold time histogram on node. */
     public static final String METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM = "ExplicitLockHoldTimeHistogram";
@@ -174,9 +174,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             this::maxCacheFutureDuration,
             "Maximum duration of cache futures currently in progress on the node, in milliseconds.");
 
-        mreg.register(METRIC_LONG_RUNNING_CACHE_FUTURES_NUMBER,
-            this::longRunningCacheFuturesNumber,
-            "The number of cache futures currently in progress on the node whose duration exceeds " +
+        mreg.register(METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT,
+            this::longRunningCacheFuturesCount,
+            "The count of cache futures currently in progress on the node whose duration exceeds " +
                 "the long operations dump timeout.");
 
         mreg.register("OwnerTransactionsNumber",
@@ -486,8 +486,8 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         return max;
     }
 
-    /** @return Number of cache futures currently in progress whose duration exceeds longOperationsDumpTimeout. */
-    private long longRunningCacheFuturesNumber() {
+    /** @return Count of cache futures currently in progress whose duration exceeds longOperationsDumpTimeout. */
+    private long longRunningCacheFuturesCount() {
         GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
 
         if (mvccMgr == null)
