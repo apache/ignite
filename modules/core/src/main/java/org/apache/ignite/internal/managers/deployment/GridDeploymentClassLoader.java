@@ -651,7 +651,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                         ", nodeId=" + node.id() + ", clsLdrId=" + ldrId + ", classLoadersHierarchy=" + clsLdrHierarchy +
                         ", reason=" + res.errorMessage() + ']';
 
-                    LT.warn(log, msg);
+                    if (log.isDebugEnabled())
+                        log.debug(msg);
 
                     clsReqExceptions.add(new IgniteException(msg));
 

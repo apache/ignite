@@ -153,6 +153,75 @@ public class GridP2PClientDeploymentSourceTest extends GridCommonAbstractTest {
         assertFalse("Class was requested from a node that does not have it", clsNotFoundLsnr.check());
     }
 
+    /**
+     * Same as {@link #testNeighbourClientWithoutJobClass()} but the clients deploy in the opposite order, so the client
+     * lacking the job class is the first participant of the shared deployment and is asked first:
+     * <ol>
+     *     <li>Client 2 (has task 2 only) executes task 2 on the server and creates the shared deployment.</li>
+     *     <li>Client 1 (has task 1, job 1 and task 2) executes task 2 and joins that deployment after client 2.</li>
+     *     <li>Client 1 executes task 1. The server asks client 2 for job 1 first, gets "not found" and must go on
+     *     to client 1 instead of giving up on the first miss.</li>
+     * </ol>
+     */
+    @Test
+    public void testNeighbourClientWithoutJobClassAskedFirst() throws Exception {
+        depMode = SHARED;
+
+        IgniteEx srv = startGrid(SRV);
+        IgniteEx fullCli = startClientGrid(FULL_CLI);
+        IgniteEx partialCli = startClientGrid(PARTIAL_CLI);
+
+        UUID srvId = srv.localNode().id();
+        String partialCliId = partialCli.localNode().id().toString();
+
+        // The log abbreviates packages, so match on the simple names. The trailing comma keeps the task name from
+        // matching its job.
+        String task1SimpleName = TASK1_CLS_NAME.substring(TASK1_CLS_NAME.lastIndexOf('.') + 1);
+        String job1SimpleName = JOB1_CLS_NAME.substring(JOB1_CLS_NAME.lastIndexOf('.') + 1);
+
+        // Client 2 has neither task 1 nor job 1. The server reports each miss on client 2 exactly once and then
+        // goes on to the next node.
+        LogListener taskMissedOnPartialLsnr = LogListener.matches(s -> s.contains(CLS_NOT_FOUND_MSG)
+            && s.contains(task1SimpleName + ',')
+            && s.contains(partialCliId)).times(1).build();
+
+        LogListener jobMissedOnPartialLsnr = LogListener.matches(s -> s.contains(CLS_NOT_FOUND_MSG)
+            && s.contains(job1SimpleName + ',')
+            && s.contains(partialCliId)).times(1).build();
+
+        // No other class is ever reported missing: task 2 is served by client 2, task 1 and job 1 by client 1.
+        LogListener otherMissLsnr = LogListener.matches(s -> s.contains(CLS_NOT_FOUND_MSG)
+            && !s.contains(task1SimpleName)).build();
+
+        srvLog.registerListener(taskMissedOnPartialLsnr);
+        srvLog.registerListener(jobMissedOnPartialLsnr);
+        srvLog.registerListener(otherMissLsnr);
+
+        Class task2Partial = partialLdr.loadClass(TASK2_CLS_NAME);
+        Class task2Full = fullLdr.loadClass(TASK2_CLS_NAME);
+        Class task1Full = fullLdr.loadClass(TASK1_CLS_NAME);
+
+        Integer ldr2Partial = (Integer)partialCli.compute().execute(task2Partial, srvId);
+        Integer ldr2Full = (Integer)fullCli.compute().execute(task2Full, srvId);
+
+        // Client 1 joined the deployment created by client 2.
+        assertEquals(ldr2Partial, ldr2Full);
+
+        // Job 1 exists on client 1 only. The server asks client 2 first and must fall through to client 1.
+        Integer ldr1Full = (Integer)fullCli.compute().execute(task1Full, srvId);
+
+        assertEquals(ldr2Partial, ldr1Full);
+
+        assertTrue("Task class was not requested from the first participant before the owner",
+            taskMissedOnPartialLsnr.check());
+
+        assertTrue("Job class was not requested from the first participant before the owner",
+            jobMissedOnPartialLsnr.check());
+
+        assertFalse("A class other than the job class was requested from a node that does not have it",
+            otherMissLsnr.check());
+    }
+
     /** */
     @Test
     public void testSharedMode() throws Exception {
