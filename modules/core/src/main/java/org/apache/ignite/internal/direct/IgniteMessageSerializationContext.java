@@ -136,27 +136,23 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
 
         int c = locCmpFeatures.version().compareTo(rmtCmpFeatures.version());
 
-        if (c == 0) {
-            assert locCmpFeatures.features().equals(rmtCmpFeatures.features());
+        IgniteComponentFeatureSet src = c <= 0 ? locCmpFeatures : rmtCmpFeatures;
+        IgniteComponentFeatureSet target = c <= 0 ? rmtCmpFeatures : locCmpFeatures;
 
-            // Newly introduced fields are included. Deprecated fields are excluded. A deprecated field holding a
-            // non-default value is written to the raw-field suffix instead.
-            return new ComponentMessageSerializationContext(rmtCmpFeatures.features(), rmtCmpFeatures.features());
+        assert c != 0 || src.features().equals(target.features());
+
+        if (!src.isUpgradableTo(target)) {
+            throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
+                " [component=" + cmpName +
+                ", locComponent=" + locCmpFeatures +
+                ", rmtComponent=" + rmtCmpFeatures + ']');
         }
-        else {
-            IgniteComponentFeatureSet src = c < 0 ? locCmpFeatures : rmtCmpFeatures;
-            IgniteComponentFeatureSet target = c < 0 ? rmtCmpFeatures : locCmpFeatures;
 
-            if (!src.isUpgradableTo(target)) {
-                throw new UnsupportedNodeVersionException("Remote node component versions are not supported" +
-                    " [component=" + cmpName +
-                    ", locComponent=" + locCmpFeatures +
-                    ", rmtComponent=" + rmtCmpFeatures + ']');
-            }
-
-            // The old version dictates the serialization rules.
-            return new ComponentMessageSerializationContext(src.features(), src.features());
-        }
+        // The older version dictates the serialization rules, either one when the versions are equal. Fields introduced
+        // by its features are included in the positional part, fields deprecated by its features are excluded from it.
+        // If a field excluded from the positional part holds a non-default value, it is written to the raw-field suffix
+        // instead.
+        return new ComponentMessageSerializationContext(src.features(), src.features());
     }
 
     /** {@inheritDoc} */
