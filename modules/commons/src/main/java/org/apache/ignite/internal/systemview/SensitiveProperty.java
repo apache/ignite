@@ -25,8 +25,7 @@ import java.lang.annotation.Target;
 
 /**
  * Attach this annotation to a getter of a configuration property to indicate that the property value is sensitive
- * (password, secret key, etc.) and <b>should not</b> be exposed, e.g. in the configuration system view,
- * unless {@link org.apache.ignite.internal.util.tostring.GridToStringBuilder#includeSensitive()} is {@code true}.
+ * (password, secret key, etc.) and <b>should not</b> be exposed, e.g. in the configuration system view.
  * <p>
  * Note, that this annotation doesn't affect {@code toString()} output.
  */

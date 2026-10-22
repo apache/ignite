@@ -49,8 +49,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
  * Responsibility of this class it to recursively iterate {@link IgniteConfiguration} object
  * and expose all properties in form of String pairs.
  * Properties of configuration classes are collected via reflection once, the configuration is iterated on each iteration.
- * Properties marked as {@link SensitiveProperty} and {@code char[]} properties (usually passwords) are exposed
- * only if {@link S#includeSensitive()} is {@code true}.
+ * Properties marked as {@link SensitiveProperty} and {@code char[]} properties (usually passwords) are never exposed.
  * Cyclic references are not iterated: such a property is exposed as a plain value, such an array element is skipped.
  * An array without elements to iterate (empty, or with {@code null} and cyclic elements only) is exposed as a plain value.
  */
@@ -215,7 +214,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     }
 
     /**
-     * Sensitive properties are skipped if {@link S#includeSensitive()} is {@code false}.
+     * Sensitive properties are skipped.
      *
      * @param cls Class to find properties.
      * @return Object properties sorted by name: names and getters.
@@ -239,8 +238,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             }
         }
 
-        if (!S.includeSensitive())
-            props.values().removeIf(IgniteConfigurationIterable::isSensitive);
+        props.values().removeIf(IgniteConfigurationIterable::isSensitive);
 
         return props;
     }

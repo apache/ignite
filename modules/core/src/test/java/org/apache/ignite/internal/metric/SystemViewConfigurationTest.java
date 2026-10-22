@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -89,24 +90,10 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         }
     }
 
-    /** */
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "false")
-    public void testSensitivePropertiesExcluded() throws Exception {
-        checkSensitive(false);
-    }
-
-    /** */
+    /** Tests that sensitive properties are excluded regardless of {@link S#includeSensitive()}. */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
-    public void testSensitivePropertiesIncluded() throws Exception {
-        checkSensitive(true);
-    }
-
-    /**
-     * @param includeSensitive {@code True} if sensitive properties are expected to be exposed.
-     */
-    private void checkSensitive(boolean includeSensitive) throws Exception {
+    public void testSensitivePropertiesExcluded() throws Exception {
         String secretKey = "my-secret-key";
 
         IgniteConfiguration icfg = getConfiguration()
@@ -122,9 +109,9 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
             assertTrue(viewContent.containsKey("SslContextFactory.KeyStoreFilePath"));
             assertTrue(viewContent.containsKey("ConnectorConfiguration.Port"));
 
-            assertEquals(includeSensitive, viewContent.containsKey("SslContextFactory.KeyStorePassword"));
-            assertEquals(includeSensitive, viewContent.containsKey("SslContextFactory.TrustStorePassword"));
-            assertEquals(includeSensitive, viewContent.containsKey("ConnectorConfiguration.SecretKey"));
+            assertFalse(viewContent.containsKey("SslContextFactory.KeyStorePassword"));
+            assertFalse(viewContent.containsKey("SslContextFactory.TrustStorePassword"));
+            assertFalse(viewContent.containsKey("ConnectorConfiguration.SecretKey"));
         }
     }
 
