@@ -3013,7 +3013,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         CacheObjectValueContext coctx = ctx.cacheObjectContext();
 
-        int cacheId = ctx.group().storeCacheIdInDataPage() ? ctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+        boolean storeCacheId = ctx.group().storeCacheIdInDataPage();
 
         long sumRowSize = 0;
 
@@ -3027,7 +3027,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // CacheVersionIO.SIZE_V2 is the maximum of both version protocols (V1 is smaller), so this is an upper
             // bound: the actual rows can not be larger than estimated.
-            sumRowSize += rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, cacheId);
+            sumRowSize += rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, storeCacheId);
         }
 
         if (sumRowSize == 0)

@@ -255,6 +255,6 @@ public class FreeListReservedPagesSelfTest extends GridCommonAbstractTest {
         keyObj.valueBytes(cctx.cacheObjectContext());
         valObj.valueBytes(cctx.cacheObjectContext());
 
-        return new DataRow(keyObj, valObj, new GridCacheVersion(), 0, 0L, cctx.cacheId());
+        return new DataRow(keyObj, valObj, new GridCacheVersion(), 0, 0L, cctx.cacheId(), false);
     }
 }

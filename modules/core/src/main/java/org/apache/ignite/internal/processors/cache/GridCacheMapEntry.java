@@ -3628,9 +3628,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws IgniteCheckedException If failed.
      */
     private int rowSize(@Nullable CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
-        int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-        return CacheDataRowAdapter.rowSize(key, val, CacheVersionIO.size(ver, false), cctx.cacheObjectContext(), cacheId);
+        return CacheDataRowAdapter.rowSize(key, val, CacheVersionIO.size(ver, false), cctx.cacheObjectContext(),
+            cctx.group().storeCacheIdInDataPage());
     }
 
     /**
