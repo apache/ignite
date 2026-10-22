@@ -228,6 +228,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             List<IgniteException> acceptableExcs = new ArrayList<>();
             // Unacceptable exception that disrupts the job
             IgniteException unacceptableEx = null;
+            boolean interrupted = false;
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
@@ -270,7 +271,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     if (t instanceof InterruptedException || t instanceof ExecutionException) {
                         if (t instanceof InterruptedException)
-                            Thread.currentThread().interrupt();
+                            interrupted = true;
 
                         if (t.getCause() instanceof IgniteException && !(t.getCause() instanceof GridNotIdleException)) {
                             acceptableExcs.add((IgniteException)t.getCause());
@@ -305,8 +306,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 }
             }
 
-            if (unacceptableEx != null)
+            if (unacceptableEx != null) {
+                if (interrupted)
+                    Thread.currentThread().interrupt();
+
                 throw unacceptableEx;
+            }
 
             if (log.isInfoEnabled())
                 log.info("Idle verify procedure has finished.");
