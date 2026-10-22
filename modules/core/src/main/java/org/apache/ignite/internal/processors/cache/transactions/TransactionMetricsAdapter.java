@@ -440,12 +440,10 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         if (mvccMgr == null)
             return 0;
 
-        long now = U.currentTimeMillis();
-
         long max = 0;
 
         for (GridCacheExplicitLockSpan span : mvccMgr.activeExplicitLocks())
-            max = Math.max(max, span.maxHoldTime(now));
+            max = Math.max(max, span.maxHoldTime());
 
         return max;
     }
