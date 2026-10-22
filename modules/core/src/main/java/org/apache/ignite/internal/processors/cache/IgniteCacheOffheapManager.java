@@ -413,7 +413,7 @@ public interface IgniteCacheOffheapManager {
     /**
      * Tries to lock the manager against stopping.
      *
-     * @return {@code true} if entered the 'stop-unallowed' state. {@code False} if the manager is already stopping.
+     * @return {@code true} if successful, {@code false} if the manager is already stopping.
      * @see #allowStopping()
      */
     public boolean preventStopping();

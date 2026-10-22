@@ -226,9 +226,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             long lastProgressLogTs = U.currentTimeMillis();
 
             for (int i = 0; i < partHashCalcFuts.size(); ) {
-                if (isCancelled())
-                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
                 try {
@@ -286,8 +283,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 try {
                     futs.get(i).get();
                 }
-                catch (Exception ignored) {
-                    // No-op: we are already cancelling due to an exception.
+                catch (InterruptedException | ExecutionException e) {
+
                 }
             }
         }
@@ -569,14 +566,17 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         }
 
         /**
-         * Checks whether the cancellation is required. If is required and the exception is requested, throws it.
+         * Checks whether the work should be stopped: the task was cancelled, the local node is stopping,
+         * or the cache group is stopping or being destroyed.
          *
-         * @return {@code True} if {@code throwIfCancelled} is {@code false} and: the cancelation is request,
-         * or local node is stopping, or the cache group is stopping/being destroing.
+         * @param cancelled Supplier that returns {@code true} if the task cancellation was requested.
+         * @param gctx Cache group context.
+         * @param throwIfCancelled If {@code true}, throws a cancellation exception instead of returning {@code true}.
+         * @return {@code true} if the work should be stopped.
          */
-        private boolean checkCancelledOrStopped(BooleanSupplier canceled, CacheGroupContext gctx,
-            boolean throwIfCancelled) {
-            boolean res = canceled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+
+        private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx, boolean throwIfCancelled) {
+            boolean res = cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
 
             if (res && throwIfCancelled)
                 throw cancellationException();
@@ -586,7 +586,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
         /** */
         private static IgniteException cancellationException() {
-            return new IgniteException("Partition hash calculation has been cancelled: the cache group is stopping.");
+            return new IgniteException("Partition hash calculation has been cancelled: the task has been cancelled, " +
+                "or the node or the cache group is stopping.");
         }
     }
 }

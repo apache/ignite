@@ -2209,7 +2209,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * concurrently updated.
      *
      * @param ig Ignite instance.
-     * @param checkCrc Flag to enable the CRC checking.
+     * @param checkCrc Whether to check the CRC sums of partition pages.
      * @param caches Cache names (if null, all user caches will be verified).
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.

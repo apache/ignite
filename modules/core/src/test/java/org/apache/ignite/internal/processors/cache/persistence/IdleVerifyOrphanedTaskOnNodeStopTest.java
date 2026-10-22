@@ -46,7 +46,10 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_IDLE
 /** */
 @RunWith(Parameterized.class)
 public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest {
-    /** May affect {@link IdleVerifyUtility#checkPartitionsPageCrcSum(IgniteThrowableSupplier, int, byte, BooleanSupplier)}. */
+    /**
+     * Whether to check the CRC sums, see:
+     * {@link IdleVerifyUtility#checkPartitionsPageCrcSum(IgniteThrowableSupplier, int, byte, BooleanSupplier)}.
+     */
     @Parameterized.Parameter
     public boolean checkCrc;
 
@@ -123,7 +126,7 @@ public class IdleVerifyOrphanedTaskOnNodeStopTest extends GridCommonAbstractTest
 
         AtomicBoolean stopUpdatingFlag = new AtomicBoolean();
 
-        // Keeps updating of one partition.
+        // Continuously updates one partition
         IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(() -> {
             for (int i = 0; !stopUpdatingFlag.get(); i++)
                 cache.put(keyUnderLoad, i);
