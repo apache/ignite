@@ -30,12 +30,12 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.TreeMap;
-import java.util.function.BiFunction;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
@@ -85,26 +85,27 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
     /** {@inheritDoc} */
     @Override public Iterator<ConfigurationView> iterator() {
-        return iterator0((name, val) -> new ConfigurationView(
-            name,
-            val != null && val.getClass().isArray()
-                ? S.arrayToString(val)
-                : U.toStringSafe(val)
-        ));
+        return F.iterator(rawIterator(), t -> {
+            Object val = t.get2();
+
+            return new ConfigurationView(
+                t.get1(),
+                val != null && val.getClass().isArray()
+                    ? S.arrayToString(val)
+                    : U.toStringSafe(val));
+        }, true);
     }
 
     /**
-     * @param trans Transformer of a property full name and raw value to an iteration element.
-     * @param <T> Type of iteration elements.
-     * @return Iterator of configuration properties transformed by {@code trans}.
+     * @return Iterator of configuration properties.
      */
-    protected <T> Iterator<T> iterator0(BiFunction<String, Object, T> trans) {
+    public Iterator<T3<String, Object, Class<?>>> rawIterator() {
         Queue<Node> iters = new LinkedList<>();
 
         iters.add(new Node(cfg, objectProperties(cfg), "", null));
 
-        return new Iterator<T>() {
-            private T next;
+        return new Iterator<>() {
+            private T3<String, Object, Class<?>> next;
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
@@ -129,12 +130,14 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
                         String name = curr.prefix.isEmpty() ? prop.getKey() : metricName(curr.prefix, prop.getKey());
 
-                        Object val = prop.getValue().invoke(curr.obj);
+                        Method getter = prop.getValue();
+
+                        Object val = getter.invoke(curr.obj);
 
                         if (addToQueue(iters, val, name, curr))
                             return;
 
-                        next = trans.apply(name, val);
+                        next = new T3<>(name, val, getter.getReturnType());
                     }
                     catch (IllegalAccessException | InvocationTargetException e) {
                         throw new IgniteException(e);
@@ -143,11 +146,11 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             }
 
             /** {@inheritDoc} */
-            @Override public T next() {
+            @Override public T3<String, Object, Class<?>> next() {
                 while (next == null && !iters.isEmpty())
                     advance();
 
-                T next0 = next;
+                T3<String, Object, Class<?>> next0 = next;
 
                 if (next0 == null)
                     throw new NoSuchElementException();
