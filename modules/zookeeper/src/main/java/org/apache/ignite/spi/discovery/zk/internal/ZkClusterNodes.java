@@ -19,12 +19,16 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgnitePredicate;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
 
 /**
  * Zk Cluster Nodes.
@@ -83,6 +87,15 @@ public class ZkClusterNodes {
     void addNode(ZookeeperClusterNode node) {
         assert node.id() != null : node;
         assert node.order() > 0 : node;
+
+        // Only node authentication needs the certificates, and it is done before the node joins.
+        if (node.getAttributes().containsKey(ATTR_NODE_CERTIFICATES)) {
+            Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+            attrs.remove(ATTR_NODE_CERTIFICATES);
+
+            node.setAttributes(attrs);
+        }
 
         ZookeeperClusterNode old = nodesById.put(node.id(), node);
 
