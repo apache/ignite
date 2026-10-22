@@ -40,6 +40,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -1212,7 +1213,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table logging/nologing.
      */
     @Test
-    public void alterTableLogging() {
+    public void alterTableLogging() throws IgniteInterruptedCheckedException {
         String cacheName = "cache";
 
         client.getOrCreateCache(new CacheConfiguration<>(cacheName)
@@ -1222,11 +1223,11 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         sql("alter table \"" + cacheName + "\".Integer nologging");
 
-        assertFalse(client.cluster().isWalEnabled(cacheName));
+        assertTrue(GridTestUtils.waitForCondition(() -> !client.cluster().isWalEnabled(cacheName), 1_000));
 
         sql("alter table \"" + cacheName + "\".Integer logging");
 
-        assertTrue(client.cluster().isWalEnabled(cacheName));
+        assertTrue(GridTestUtils.waitForCondition(() -> client.cluster().isWalEnabled(cacheName), 1_000));
     }
 
     /**

@@ -53,6 +53,8 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                     if (!writer.writeString(msg.oldFld))
                         return false;
                 }
+                else if (ctx.includeRawFields() && msg.oldFld != null)
+                    writer.addPendingRawField(TestFeatureRegistry.FIRST_FEATURE.id(), w -> w.writeString(msg.oldFld));
 
                 writer.incrementState();
 
@@ -77,6 +79,16 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 writer.incrementState();
 
             case 4:
+                if (ctx.includeFieldDeprecatedBy(TestFeatureRegistry.FOURTH_FEATURE)) {
+                    if (!writer.writeInt(msg.oldCnt))
+                        return false;
+                }
+                else if (ctx.includeRawFields() && msg.oldCnt != 0)
+                    writer.addPendingRawField(TestFeatureRegistry.FOURTH_FEATURE.id(), w -> w.writeInt(msg.oldCnt));
+
+                writer.incrementState();
+
+            case 5:
                 if (ctx.includeRawFields()) {
                     if (!writer.writeRawFields(msg.rawFields()))
                         return false;
@@ -130,6 +142,16 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                 reader.incrementState();
 
             case 4:
+                if (ctx.includeFieldDeprecatedBy(TestFeatureRegistry.FOURTH_FEATURE)) {
+                    msg.oldCnt = reader.readInt();
+
+                    if (!reader.isLastRead())
+                        return false;
+                }
+
+                reader.incrementState();
+
+            case 5:
                 if (ctx.includeRawFields()) {
                     List<RawField> rawFields = reader.readRawFields();
 
@@ -150,6 +172,12 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
 
     /** */
     private static boolean consumeKnownField(TestRollingUpgradeAwareMessage msg, RawField f, MessageReader reader, MessageSerializationContext ctx) {
+        if (f.tag() == TestFeatureRegistry.FIRST_FEATURE.id()) {
+            msg.oldFld = reader.deserializeRawField(f, in -> in.readString());
+
+            return true;
+        }
+
         if (f.tag() == TestFeatureRegistry.SECOND_FEATURE.id()) {
             msg.newFld = reader.deserializeRawField(f, in -> in.readString());
 
@@ -158,6 +186,12 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
 
         if (f.tag() == TestFeatureRegistry.THIRD_FEATURE.id()) {
             msg.newCnt = reader.deserializeRawField(f, in -> in.readLong());
+
+            return true;
+        }
+
+        if (f.tag() == TestFeatureRegistry.FOURTH_FEATURE.id()) {
+            msg.oldCnt = reader.deserializeRawField(f, in -> in.readInt());
 
             return true;
         }
@@ -172,6 +206,7 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
         assert msg.oldFld == null : "A field gated by a feature must have no initial value [field=oldFld]";
         assert msg.newFld == null : "A field gated by a feature must have no initial value [field=newFld]";
         assert msg.newCnt == 0 : "A field gated by a feature must have no initial value [field=newCnt]";
+        assert msg.oldCnt == 0 : "A field gated by a feature must have no initial value [field=oldCnt]";
 
         return msg;
     }
