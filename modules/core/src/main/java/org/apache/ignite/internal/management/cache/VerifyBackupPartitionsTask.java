@@ -245,7 +245,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 try {
                     Map<PartitionKey, PartitionHashRecord> partHash = fut.get(PARTITION_FUTURE_TIMEOUT, TimeUnit.MILLISECONDS);
 
-                    if (jobFailure)
+                    if (!jobFailure)
                         res.putAll(partHash);
                 }
                 catch (Throwable t) {
