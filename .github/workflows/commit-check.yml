@@ -173,20 +173,22 @@ jobs:
 
   check-ducktape:
     name: Check ducktape on ${{ matrix.cfg.toxenv }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.cfg.os }}
     strategy:
       fail-fast: false
       matrix:
         cfg:
-          - { python: "3.8", toxenv: "py38" }
-          - { python: "3.9", toxenv: "py39" }
-          - { python: "3.9", toxenv: "codestyle" }
+          # setup-python has no 3.8 and 3.9 builds for Ubuntu 26.04, the current ubuntu-latest.
+          - { python: "3.8", toxenv: "py38", os: "ubuntu-24.04" }
+          - { python: "3.9", toxenv: "py39", os: "ubuntu-24.04" }
+          - { python: "3.12", toxenv: "py312", os: "ubuntu-latest" }
+          - { python: "3.12", toxenv: "codestyle", os: "ubuntu-latest" }
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.cfg.python }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.cfg.python}}
