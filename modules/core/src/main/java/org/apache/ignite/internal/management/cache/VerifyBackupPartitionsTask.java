@@ -502,9 +502,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (!part.reserve())
                     return res;
 
-                // Cache group stop guard (offheap busy lock).
-                boolean memLocked = false;
-
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
@@ -522,25 +519,26 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
+                    PartitionHashRecord hash;
+
                     // The cache group can be destroyed concurrently.
-                    if (gctx.offheap().enterBusy())
-                        memLocked = true;
-                    else
+                    if (!gctx.offheap().enterBusy())
                         throw cancellationException();
 
-                    PartitionHashRecord hash = calculatePartitionHash(
-                        key,
-                        updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
-                        ignite.context().discovery().localNode().consistentId(),
-                        part.state(),
-                        part.primary(gctx.topology().readyTopologyVersion()),
-                        part.dataStore().fullSize(),
-                        gctx.offheap().partitionIterator(part.id()),
-                        () -> checkCancelledOrStopped(cancelled, gctx, false)
-                    );
-
-                    gctx.offheap().leaveBusy();
-                    memLocked = false;
+                    try {
+                        hash = calculatePartitionHash(
+                            key,
+                            updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
+                            ignite.context().discovery().localNode().consistentId(),
+                            part.state(),
+                            part.primary(gctx.topology().readyTopologyVersion()),
+                            part.dataStore().fullSize(),
+                            gctx.offheap().partitionIterator(part.id()),
+                            () -> checkCancelledOrStopped(cancelled, gctx, false)
+                        );
+                    } finally {
+                        gctx.offheap().leaveBusy();
+                    }
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
@@ -562,9 +560,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     throw new IgniteException(msg, e);
                 }
                 finally {
-                    if (memLocked)
-                        gctx.offheap().leaveBusy();
-
                     part.release();
                 }
 
