@@ -342,6 +342,24 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Annotation processors are listed explicitly because javac does not run classpath-discovered processors
+                     since JDK 23. Configured in pluginManagement, not in build/plugins, because declaring the plugin in
+                     build/plugins makes Maven reorder the initialize-phase executions that the fmpp parser generation
+                     depends on. org.immutables.processor.ProxyProcessor generates the Immutable* classes used by the module. -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <annotationProcessors>
+                            <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
+                            <annotationProcessor>org.immutables.processor.ProxyProcessor</annotationProcessor>
+                        </annotationProcessors>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
