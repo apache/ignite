@@ -42,7 +42,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     public static final String NO_SNAPSHOTS = "No snapshots found.";
 
     /** */
-    private static final String PATTERN_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
+    private static final String PATTERN_FORMAT = "yyyy-MM-dd HH:mm:ss (XXX)";
 
     /** */
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(PATTERN_FORMAT).withZone(ZoneId.systemDefault());
@@ -103,12 +103,10 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 }
 
                 if (incs != null) {
-                    printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s (%db), modified='%s' (epoch=%d)".formatted(
+                    printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s, modified='%s'".formatted(
                         incs.number(),
                         U.humanReadableByteCount(incs.size()),
-                        incs.size(),
-                        DATE_FORMATTER.format(Instant.ofEpochMilli(incs.date())),
-                        incs.date()
+                        DATE_FORMATTER.format(Instant.ofEpochMilli(incs.date()))
                     ));
                 }
             });
@@ -124,7 +122,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 long date1 = s1.incrementals() == null ? s1.date() : s1.incrementals().date();
                 long date2 = s2.incrementals() == null ? s2.date() : s2.incrementals().date();
 
-                return Long.compare(date1, date2);
+                return Long.compare(date2, date1);
             }
         };
 
