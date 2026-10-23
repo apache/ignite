@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
@@ -28,6 +30,10 @@ import org.openjdk.jmh.annotations.Param;
 /** {@code putAll} and {@code getAll} on batches of consecutive keys, created in setup with their values. */
 @SuppressWarnings("unchecked")
 public class JmhCacheBatchAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
+    /** Atomicity mode. */
+    @Param("ATOMIC")
+    private CacheAtomicityMode atomicity;
+
     /** Keys in a batch. */
     @Param("10")
     private int batch;
@@ -61,6 +67,11 @@ public class JmhCacheBatchAllocationBenchmark extends JmhCacheAllocationAbstract
             batches[b].keySet();
             batches[b].values();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        return super.cacheConfiguration().setAtomicityMode(atomicity);
     }
 
     /** Replaces the values of a batch with the same values. */

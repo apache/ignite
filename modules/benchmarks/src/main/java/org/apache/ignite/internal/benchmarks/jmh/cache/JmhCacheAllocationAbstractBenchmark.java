@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -65,10 +64,6 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
     /** Node that calls the cache. */
     @Param("THICK")
     private Client client;
-
-    /** Atomicity mode. */
-    @Param("ATOMIC")
-    private CacheAtomicityMode atomicity;
 
     /** Backups. */
     @Param("1")
@@ -184,7 +179,6 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
         return super.cacheConfiguration()
-            .setAtomicityMode(atomicity)
             .setBackups(backups)
             .setWriteSynchronizationMode(writeSync)
             .setCacheMode(cacheMode)

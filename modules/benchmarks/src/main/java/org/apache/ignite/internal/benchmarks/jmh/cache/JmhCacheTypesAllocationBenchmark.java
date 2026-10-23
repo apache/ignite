@@ -34,7 +34,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
@@ -288,6 +290,10 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         }
     }
 
+    /** Atomicity mode. */
+    @Param("ATOMIC")
+    private CacheAtomicityMode atomicity;
+
     /** Key type. */
     @Param("INT")
     private KeyType keyType;
@@ -335,6 +341,11 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
 
         for (int i = 0; i < keySets.length; i++)
             keySets[i] = new LinkedHashSet<>(Arrays.asList(keys).subList(i * GET_ALL_KEYS, (i + 1) * GET_ALL_KEYS));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        return super.cacheConfiguration().setAtomicityMode(atomicity);
     }
 
     /** Replaces the value of a key with the same value: an update, not an insert. */

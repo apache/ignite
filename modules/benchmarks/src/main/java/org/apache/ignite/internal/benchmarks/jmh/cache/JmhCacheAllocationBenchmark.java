@@ -19,6 +19,7 @@ package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,6 +36,10 @@ import org.openjdk.jmh.runner.options.TimeValue;
 /** Single-key cache operations on keys and values created in setup, so measured allocations are Ignite's. */
 @SuppressWarnings("unchecked")
 public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
+    /** Atomicity mode. */
+    @Param("ATOMIC")
+    private CacheAtomicityMode atomicity;
+
     /** SQL index on the value's field. */
     @Param("false")
     private boolean sqlIdx;
@@ -70,7 +75,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = super.cacheConfiguration();
+        CacheConfiguration cfg = super.cacheConfiguration().setAtomicityMode(atomicity);
 
         if (sqlIdx) {
             cfg.setQueryEntities(List.of(new QueryEntity(Integer.class.getName(), IntValue.class.getName())

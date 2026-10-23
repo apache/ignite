@@ -238,16 +238,18 @@ writes every key before measuring, so the operations work on existing entries.
 | `JmhCacheAllocationBenchmark` | `put`, `get`, `getAndPut`, `putIfAbsent`, `replace`, `putRemove`, `invoke`, `putAsync`, `getAsync` | Single-key operations. `putIfAbsent` finds the key and writes nothing; `putRemove` inserts a key the setup didn't write and removes it; `invoke` runs an entry processor that writes the value back |
 | `JmhCacheBatchAllocationBenchmark` | `putAll`, `getAll` | Operations on a batch of keys |
 | `JmhCacheTypesAllocationBenchmark` | `put`, `get`, `getAll`, `invoke` | Put, get, `getAll` of 10 consecutive keys and an entry processor that writes the value back, by key type, value type and value size. With the histogram profiler, the copies of a `byte[]` value show as rows of its size range |
-| `JmhCacheTxAllocationBenchmark` | `twoPuts` | An explicit transaction of two puts |
+| `JmhCacheTxAllocationBenchmark` | `txPut` | Puts `txKeys` consecutive keys in an explicit transaction |
+| `JmhCacheQueryAllocationBenchmark` | `scanQuery`, `indexQuery` | A scan query of one partition, about a hundred entries, and an index query of one entry by its value's indexed field |
+| `JmhStreamerAllocationBenchmark` | `addData` | A data streamer adds 10 000 keys the cache doesn't have, then flushes. Each iteration is one such call (single shot), results are per key, and the cache grows by 10 000 keys per iteration. The client's streamer threads and, with `allowOverwrite=true` and `PRIMARY_SYNC`, the backups finish a batch after the flush returns, so each iteration ends with a 500 ms wait outside the timed call |
 
 Each parameter has one default value, and a run without `-p` uses it. `-p <name>=<value>` sets
 another value, `-p <name>=<value>,<value>` runs several. The parameters of
-`JmhCacheAllocationAbstractBenchmark` apply to every class that extends it: the first three above.
+`JmhCacheAllocationAbstractBenchmark` apply to every class that extends it: all the classes above.
 
 | Parameter | Classes | Default | Other values | What it changes |
 |---|---|---|---|---|
 | `client` | `JmhCacheAllocationAbstractBenchmark` | `THICK` | `SERVER`, `NEAR` | The node that calls the cache: a client node, a server node, or a client node with a near cache |
-| `atomicity` | `JmhCacheAllocationAbstractBenchmark` | `ATOMIC` | `TRANSACTIONAL` | Atomicity mode |
+| `atomicity` | `JmhCacheAllocationBenchmark`, `JmhCacheBatchAllocationBenchmark`, `JmhCacheTypesAllocationBenchmark` | `ATOMIC` | `TRANSACTIONAL` | Atomicity mode. `JmhCacheTxAllocationBenchmark` always uses `TRANSACTIONAL` |
 | `backups` | `JmhCacheAllocationAbstractBenchmark` | `1` | `0` | Backups |
 | `writeSync` | `JmhCacheAllocationAbstractBenchmark` | `PRIMARY_SYNC` | `FULL_SYNC`, `FULL_ASYNC` | Write synchronization mode |
 | `cacheMode` | `JmhCacheAllocationAbstractBenchmark` | `PARTITIONED` | `REPLICATED` | Cache mode. With two servers and `backups=1`, both modes keep every key on both servers |
@@ -261,6 +263,10 @@ another value, `-p <name>=<value>,<value>` runs several. The parameters of
 | `keyType` | `JmhCacheTypesAllocationBenchmark` | `INT` | `STRING`, `UUID`, `AFFINITY_POJO`, `BYTES` | Key class: `Integer`, `String`, `UUID`, a class with an affinity key field, `byte[16]` |
 | `valType` | `JmhCacheTypesAllocationBenchmark` | `POJO` | `BYTE`, `SHORT`, `INT`, `LONG`, `FLOAT`, `DOUBLE`, `CHAR`, `BOOLEAN`, `STRING`, `STRING_CYRILLIC`, `UUID`, `BIG_DECIMAL`, `DATE`, `TIMESTAMP`, `BYTES`, `INTS`, `LONGS`, `OBJECTS`, `LIST`, `MAP`, `POJO8`, `NESTED_POJO`, `BINARYLIZABLE`, `EXTERNALIZABLE`, `ENUM`, `BINARY_OBJECT` | Value class, see `JmhCacheTypesAllocationBenchmark.ValueType` |
 | `valSize` | `JmhCacheTypesAllocationBenchmark` | `100` | `10`, `1000`, `10000`, `100000` | Length of string, array and collection values. For every value type, it also sets how many keys the setup writes |
+| `concurrency` | `JmhCacheTxAllocationBenchmark` | `PESSIMISTIC` | `OPTIMISTIC` | Transaction concurrency |
+| `isolation` | `JmhCacheTxAllocationBenchmark` | `REPEATABLE_READ` | `READ_COMMITTED`, `SERIALIZABLE` | Transaction isolation |
+| `txKeys` | `JmhCacheTxAllocationBenchmark` | `2` | `1`, `10` | Keys per transaction |
+| `allowOverwrite` | `JmhStreamerAllocationBenchmark` | `false` | `true` | Whether the streamer writes every key as a put does, or only the keys the cache doesn't have |
 
 - With `storage=PERSISTENT` or `cdc=true`, the servers write a WAL; each node preallocates several
   hundred megabytes of WAL segments. The nodes keep their data, WAL and change data capture files in

@@ -24,18 +24,32 @@ import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
-/** A transaction of two puts from a client node; two servers, one backup, {@code PRIMARY_SYNC}. */
+/** Puts in an explicit transaction, by concurrency, isolation and keys per transaction. */
 @SuppressWarnings("unchecked")
-public class JmhCacheTxAllocationBenchmark extends JmhCacheAbstractBenchmark {
+public class JmhCacheTxAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
+    /** Transaction concurrency. */
+    @Param("PESSIMISTIC")
+    private TransactionConcurrency concurrency;
+
+    /** Transaction isolation. */
+    @Param("REPEATABLE_READ")
+    private TransactionIsolation isolation;
+
+    /** Keys per transaction. */
+    @Param("2")
+    private int txKeys;
+
     /** Keys. */
     private Integer[] keys;
 
@@ -58,31 +72,18 @@ public class JmhCacheTxAllocationBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /** {@inheritDoc} */
-    @Override protected int dataNodes() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean clientMode() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
-        return super.cacheConfiguration()
-            .setAtomicityMode(TRANSACTIONAL)
-            .setBackups(1)
-            .setWriteSynchronizationMode(PRIMARY_SYNC);
+        return super.cacheConfiguration().setAtomicityMode(TRANSACTIONAL);
     }
 
-    /** Updates two neighboring preloaded keys in a transaction with the default concurrency and isolation. */
+    /** Replaces the values of {@link #txKeys} consecutive keys with the same values in a transaction. */
     @Benchmark
-    public void twoPuts() {
-        int i = ThreadLocalRandom.current().nextInt(CNT - 1);
+    public void txPut() {
+        int first = ThreadLocalRandom.current().nextInt(CNT - txKeys + 1);
 
-        try (Transaction tx = node.transactions().txStart()) {
-            cache.put(keys[i], vals[i]);
-            cache.put(keys[i + 1], vals[i + 1]);
+        try (Transaction tx = node.transactions().txStart(concurrency, isolation)) {
+            for (int i = first; i < first + txKeys; i++)
+                cache.put(keys[i], vals[i]);
 
             tx.commit();
         }
