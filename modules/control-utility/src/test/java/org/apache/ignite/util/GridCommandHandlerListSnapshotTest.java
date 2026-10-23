@@ -62,7 +62,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
     private @Nullable String[] extStoragePaths;
 
     /** Node consistent id postfix if required. */
-    private @Nullable String cstIdPostfix = "";
+    private String cstIdPostfix = "";
 
     /** Flag to use the custom paths for the test snapshots. */
     @Parameter(1)
@@ -251,11 +251,10 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
             fromIdx = idx0 + "testSnapshot0".length();
         }
 
-        // Let's add an incremental part to 'testSnapshot0'. That will change its modification data.
-
         // Ensures a noticeable difference in the times.
         U.sleep(500L);
 
+        // Let's add an incremental part to 'testSnapshot0'. That will change its modification date.
         try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int val = entriesCnt * 2; val < entriesCnt * 3; val++)
                 ds.addData(val, val);

@@ -125,7 +125,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
             assert !ignite.localNode().isClient();
 
             if (ignite.context().isStopping())
-                throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Node is stopping."));
+                throw new IgniteException("Won't search for local snapshots.", new NodeStoppingException("Local node is stopping."));
 
             // Read local snapshots.
             List<T2<SnapshotFileTree, Long>> locSnps = findLocalSnapshots(arg.src());
@@ -263,7 +263,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         private void checkNodeIsStopping() {
             if (ignite.context().isStopping()) {
                 throw new IgniteException(
-                    "Won't search for local snapshots due to the local node stoppage.",
+                    "Won't search for local snapshots due to the local node stopping.",
                     new NodeStoppingException("Local node is stopping.")
                 );
             }

@@ -135,7 +135,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
         if (hasIncrementals)
             res.addAll(F.asList(DATE, NUMBER, STRING));
 
-        // Optional columns of experimental external storages: total size (formatted string).
+        // Optional column of external storages: total size (formatted string).
         if (hasExtStorages)
             res.add(STRING);
 
@@ -160,10 +160,11 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 // Optional columns of incremental parts: last modification date, count, total size (formatted string).
                 SnapshotListJobResult.SnapshotInfo inc = s.incrementals();
 
+                // Empty strings instead of nulls to avoid 'null' in empty table cells.
                 row.addAll(F.asList(
-                    inc == null ? null : Date.from(Instant.ofEpochMilli(inc.date())), // Modification date.
-                    inc == null ? null : inc.number(), // Count.
-                    inc == null ? null : U.humanReadableByteCount(inc.size()) // Total size.
+                    inc == null ? "" : Date.from(Instant.ofEpochMilli(inc.date())), // Modification date.
+                    inc == null ? "" : inc.number(), // Count.
+                    inc == null ? "" : U.humanReadableByteCount(inc.size()) // Total size.
                 ));
             }
 
@@ -171,7 +172,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 // Optional column of external storages size.
                 SnapshotListJobResult.SnapshotInfo ext = s.externalStorages();
 
-                row.add(ext == null ? null : U.humanReadableByteCount(ext.size())); // Total size of all external storages.
+                row.add(ext == null ? "" : U.humanReadableByteCount(ext.size())); // Total size of all external storages.
             }
 
             table.add(row);
@@ -202,6 +203,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
         return rawResults.entrySet()
             .stream()
             .sorted(Map.Entry.comparingByValue(cmp))
+            // Always-accepting filter: sets the optional-column flags while collecting, in one pass.
             .filter(e -> {
                 if (e.getValue().incrementals() != null)
                     hasIncrementals.set(true);

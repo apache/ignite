@@ -29,8 +29,7 @@ public class SnapshotListCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Order(0)
-    @Argument(example = "path/to/snapshots", optional = true, description = "Path to the snapshot location directory. " +
-        "If not specified, the default configured snapshot directory will be used")
+    @Argument(example = "path/to/snapshots", optional = true, description = SnapshotRestoreCommandArg.SRC_PATH_DESCRIPTION)
     @Nullable String src;
 
     /** */

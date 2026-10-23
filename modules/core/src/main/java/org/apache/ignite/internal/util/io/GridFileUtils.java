@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -128,12 +127,9 @@ public class GridFileUtils {
      */
     public static long sizeOfDirectory(File path) throws IOException {
         AtomicLong size = new AtomicLong(0);
-        AtomicBoolean entered = new AtomicBoolean();
 
         Files.walkFileTree(path.toPath(), new SimpleFileVisitor<>() {
             @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                entered.compareAndSet(false, true);
-
                 if (attrs.isRegularFile())
                     size.addAndGet(attrs.size());
 
@@ -142,7 +138,7 @@ public class GridFileUtils {
 
             @Override public FileVisitResult visitFileFailed(Path file, IOException err) throws IOException {
                 // Cannot enter directory at all.
-                if (!entered.get() && file.toFile().equals(path))
+                if (file.toFile().equals(path))
                     throw err;
 
                 return FileVisitResult.CONTINUE;

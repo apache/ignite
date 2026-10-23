@@ -694,7 +694,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             assertTrue(info.date() > time0);
         }
 
-        // "Wait for a while to let the timestamps differ.
+        // Wait for a while to let the timestamps differ.
         U.sleep(300L);
 
         long time1 = U.currentTimeMillis();
