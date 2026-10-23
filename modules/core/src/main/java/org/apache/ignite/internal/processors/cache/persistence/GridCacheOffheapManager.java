@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1547,6 +1548,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public boolean storeCacheId() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long link() {
             return 0;
         }
@@ -2374,7 +2380,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public void update(
-            GridCacheContext cctx,
+            GridCacheContext<?, ?> cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime
+        ) throws IgniteCheckedException {
+            assert grp.shared().database().checkpointLockIsHeldByThread();
+
+            CacheDataStore delegate = init0(false);
+
+            delegate.update(cctx, key, val, ver, expireTime);
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheDataRow updateRow(
+            GridCacheContext<?, ?> cctx,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
@@ -2385,27 +2406,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             CacheDataStore delegate = init0(false);
 
-            delegate.update(cctx, key, val, ver, expireTime, oldRow);
+            return delegate.updateRow(cctx, key, val, ver, expireTime, oldRow);
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDataRow createRow(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            assert grp.shared().database().checkpointLockIsHeldByThread();
-
-            CacheDataStore delegate = init0(false);
-
-            return delegate.createRow(cctx, key, val, ver, expireTime, oldRow);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void insertRows(Collection<DataRowCacheAware> rows,
-            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+        @Override public void insertRows(
+            Collection<DataRow> rows,
+            IgnitePredicateX<CacheDataRow> initPred
+        ) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
             delegate.insertRows(rows, initPred);
