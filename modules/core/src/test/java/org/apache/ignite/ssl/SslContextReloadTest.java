@@ -29,7 +29,6 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -60,6 +59,7 @@ import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
+import static org.apache.ignite.ssl.SslTestUtils.assertClientAuthentication;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
 import static org.apache.ignite.ssl.SslTestUtils.node;
 import static org.apache.ignite.ssl.SslTestUtils.place;
@@ -408,8 +408,9 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one. New connections accept
-     * clients of the new authority and reject the old one; the nodes reconnect and a node of the new authority joins.
+     * The authority is replaced in steps: trust the new one, present its certificates, drop the old one. Every TCP transport
+     * accepts certificates from the new authority and rejects old certificates and clients without certificates. The nodes
+     * reconnect and a node of the new authority joins.
      */
     @Test
     public void testCertificateAuthorityReplaced() throws Exception {
@@ -417,10 +418,14 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         IgniteEx g0 = startGrid(0, cfg -> {
             cfg.getClientConnectorConfiguration().setSslClientAuth(true);
+            cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(true).setSslClientAuth(true));
         });
         IgniteEx g1 = startGrid(1, cfg -> {
             cfg.getClientConnectorConfiguration().setSslClientAuth(true);
+            cfg.setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(true).setSslClientAuth(true));
         });
+
+        assertTransportClientAuthentication(g0, "node01", "node02");
 
         placeTrust("trustboth");
         reload(g0, g1);
@@ -440,12 +445,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         for (IgniteEx node : List.of(g0, g1)) {
             assertClientConnected(node, "node02");
-
-            GridTestUtils.assertThrows(log, () -> {
-                assertClientConnected(node, "node01");
-
-                return null;
-            }, ClientConnectionException.class, null);
+            assertTransportClientAuthentication(node, "node02", "node01");
         }
 
         ConnectionClientPool pool = U.field(g0.configuration().getCommunicationSpi(), "clientPool");
@@ -523,6 +523,17 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         assertContains(log, reload(g), node(g) + ": no SSL context factory is configured");
         assertContains(log, status(g), node(g) + ": no SSL context factory is configured");
+    }
+
+    /** Checks client authentication on discovery, communication, the client connector and binary REST. */
+    private void assertTransportClientAuthentication(IgniteEx node, String trustedKey, String untrustedKey) throws Exception {
+        for (int port : new int[] {
+            discoveryPort(node),
+            ((TcpCommunicationSpi)node.configuration().getCommunicationSpi()).boundPort(),
+            node.context().clientListener().port(),
+            node.localNode().attribute(ATTR_REST_TCP_PORT)
+        })
+            assertClientAuthentication(port, trustedKey, untrustedKey);
     }
 
     /** Opens a new authenticated client connection; its own trust store accepts both test authorities. */

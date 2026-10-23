@@ -18,25 +18,14 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyStore;
-import java.security.Principal;
-import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509KeyManager;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -50,6 +39,8 @@ import org.junit.Test;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.HTTP_REST;
+import static org.apache.ignite.ssl.SslTestUtils.assertClientAuthentication;
+import static org.apache.ignite.ssl.SslTestUtils.clientContext;
 import static org.apache.ignite.ssl.SslTestUtils.place;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
 import static org.apache.ignite.ssl.SslTestUtils.reloadFailure;
@@ -57,7 +48,6 @@ import static org.apache.ignite.ssl.SslTestUtils.servedSubject;
 import static org.apache.ignite.ssl.SslTestUtils.status;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
-import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 
 /** Tests HTTP REST certificate reload through {@link ConnectorConfiguration#setHttpSslFactory}. */
 public class JettySslContextReloadTest extends GridCommonAbstractTest {
@@ -75,6 +65,9 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
     /** Key store HTTP REST runs on; replaced on disk to rotate the certificate. */
     private Path keyStore;
+
+    /** Trust store HTTP REST runs on; replaced on disk to rotate the trusted authority. */
+    private Path trustStore;
 
     /** Jetty configuration, {@code null} for the built-in one. */
     private String jettyPath;
@@ -94,7 +87,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
         factory.setKeyStoreFilePath(keyStore.toString());
         factory.setKeyStorePassword(keyStorePassword().toCharArray());
-        factory.setTrustStoreFilePath(keyStorePath("trustboth"));
+        factory.setTrustStoreFilePath(trustStore.toString());
         factory.setTrustStorePassword(keyStorePassword().toCharArray());
 
         if (protocols != null)
@@ -108,8 +101,10 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         keyStore = Files.createTempFile("ignite-jetty-ssl-reload-", ".jks");
+        trustStore = Files.createTempFile("ignite-jetty-ssl-trust-", ".jks");
 
         place("node01", keyStore);
+        place("trustboth", trustStore);
     }
 
     /** {@inheritDoc} */
@@ -118,6 +113,9 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
         if (keyStore != null)
             Files.deleteIfExists(keyStore);
+
+        if (trustStore != null)
+            Files.deleteIfExists(trustStore);
     }
 
     /**
@@ -150,7 +148,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             assertVersionResponse(byIp, "127.0.0.1");
         }
 
-        try (SSLSocket anonymous = socket(anonymousClient(), port(g))) {
+        try (SSLSocket anonymous = socket(clientContext(null), port(g))) {
             assertVersionResponse(anonymous, "node02");
         }
 
@@ -224,38 +222,32 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             "applies only to TLS set up with httpSslFactory");
     }
 
-    /**
-     * Client authentication refuses untrusted and anonymous clients. A trusted client still gets an HTTP response after those
-     * refusals.
-     */
+    /** Client authentication uses the reloaded trust store and remains required after replacing the server certificate. */
     @Test
     public void testClientAuth() throws Exception {
         clientAuth = true;
 
-        int port = port(startGrid(0));
+        place("trustone", trustStore);
 
-        assertHandshakeRefused(untrustedClient(), port);
-        assertHandshakeRefused(anonymousClient(), port);
+        IgniteEx g = startGrid(0);
+        int port = port(g);
 
-        try (SSLSocket sock = tls12Socket(trustedClient(), port)) {
+        assertClientAuthentication(port, "node01", "node02");
+
+        try (SSLSocket sock = socket(clientContext("node01"), port)) {
             assertVersionResponse(sock, "node01");
         }
-    }
 
-    /**
-     * @param cli Context to connect with.
-     * @param port Port to connect to.
-     */
-    private static void assertHandshakeRefused(SSLContext cli, int port) throws Exception {
-        try (SSLSocket sock = tls12Socket(cli, port)) {
-            try {
-                sock.startHandshake();
+        place("node02", keyStore);
+        place("trusttwo", trustStore);
 
-                fail("HTTP REST must require a trusted client certificate");
-            }
-            catch (SSLException | SocketException expected) {
-                // A TLS alert or a connection reset is a refusal; a timeout must fail the test.
-            }
+        assertContains(log, reload(g), ": reloaded " + HTTP_REST);
+
+        assertClientAuthentication(port, "node02", "node01");
+
+        try (SSLSocket sock = socket(clientContext("node02"), port)) {
+            assertEquals("CN=node02", serverSubject(sock));
+            assertVersionResponse(sock, "node02");
         }
     }
 
@@ -264,95 +256,9 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         return GridTestUtils.sslTrustedFactory("node01", "trustboth").create();
     }
 
-    /** @return A client that presents no certificate, regardless of the default JVM key store. */
-    private static SSLContext anonymousClient() throws Exception {
-        return clientContext();
-    }
-
-    /** @return A client that presents its untrusted certificate even when the server asks for another authority. */
-    private static SSLContext untrustedClient() throws Exception {
-        KeyStore keys = store("connectorClient");
-
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-
-        kmf.init(keys, keyStorePassword().toCharArray());
-
-        X509KeyManager km = (X509KeyManager)kmf.getKeyManagers()[0];
-
-        String alias = keys.aliases().nextElement();
-
-        X509KeyManager always = new X509KeyManager() {
-            @Override public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket sock) {
-                return alias;
-            }
-
-            @Override public String[] getClientAliases(String keyType, Principal[] issuers) {
-                return new String[] {alias};
-            }
-
-            @Override public String[] getServerAliases(String keyType, Principal[] issuers) {
-                return km.getServerAliases(keyType, issuers);
-            }
-
-            @Override public String chooseServerAlias(String keyType, Principal[] issuers, Socket sock) {
-                return km.chooseServerAlias(keyType, issuers, sock);
-            }
-
-            @Override public X509Certificate[] getCertificateChain(String alias) {
-                return km.getCertificateChain(alias);
-            }
-
-            @Override public PrivateKey getPrivateKey(String alias) {
-                return km.getPrivateKey(alias);
-            }
-        };
-
-        return clientContext(always);
-    }
-
-    /** @param name Test store. */
-    private static KeyStore store(String name) throws Exception {
-        KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
-
-        try (InputStream in = Files.newInputStream(Path.of(keyStorePath(name)))) {
-            store.load(in, keyStorePassword().toCharArray());
-        }
-
-        return store;
-    }
-
-    /**
-     * @param keyManagers Key managers supplying the client certificate, or an empty array for an anonymous client.
-     * @return A client context that trusts both test authorities.
-     */
-    private static SSLContext clientContext(KeyManager... keyManagers) throws Exception {
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-
-        tmf.init(store("trustboth"));
-
-        SSLContext ctx = SSLContext.getInstance("TLS");
-
-        ctx.init(keyManagers, tmf.getTrustManagers(), null);
-
-        return ctx;
-    }
-
     /** @return HTTP REST port of the node. */
     private static int port(IgniteEx g) {
         return g.localNode().attribute(ATTR_REST_JETTY_PORT);
-    }
-
-    /**
-     * @param probe Context to connect with.
-     * @param port Port to connect to.
-     * @return Socket limited to TLS 1.2, where the server refuses a client certificate during the handshake.
-     */
-    private static SSLSocket tls12Socket(SSLContext probe, int port) throws Exception {
-        SSLSocket sock = socket(probe, port);
-
-        sock.setEnabledProtocols(new String[] {"TLSv1.2"});
-
-        return sock;
     }
 
     /**

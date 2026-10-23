@@ -18,18 +18,29 @@
 package org.apache.ignite.ssl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.KeyStore;
+import java.security.Principal;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509KeyManager;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -37,9 +48,16 @@ import org.apache.ignite.internal.management.ssl.AbstractSslTask;
 import org.apache.ignite.internal.management.ssl.SslReloadTask;
 import org.apache.ignite.internal.management.ssl.SslStatusTask;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /** Runs the {@code --ssl} commands the way control.sh does, probes what the transports serve, and places the test stores. */
 public class SslTestUtils {
@@ -97,6 +115,145 @@ public class SslTestUtils {
      */
     public static String servedSubject(int port) throws Exception {
         return servedCertificate(GridTestUtils.sslTrustedFactory("node01", "trustboth").create(), port).getSubjectX500Principal().getName();
+    }
+
+    /**
+     * Checks that the server accepts a trusted client and rejects both an untrusted certificate and no certificate.
+     * Each probe uses a fresh context to prevent session resumption. TLS 1.2 completes the handshake only after the server
+     * has checked the client certificate.
+     *
+     * @param port Server port.
+     * @param trustedKey Test key store trusted by the server.
+     * @param untrustedKey Test key store not trusted by the server.
+     */
+    public static void assertClientAuthentication(int port, String trustedKey, String untrustedKey) throws Exception {
+        try (SSLSocket sock = tls12Socket(clientContext(trustedKey), port)) {
+            sock.startHandshake();
+        }
+        catch (IOException e) {
+            throw new AssertionError("Trusted client must connect [port=" + port + ", client=" + trustedKey + ']', e);
+        }
+
+        assertHandshakeRefused(untrustedKey, port);
+        assertHandshakeRefused(null, port);
+    }
+
+    /**
+     * Creates a client that trusts both test authorities and presents the selected certificate even if the server does not
+     * advertise its authority. This lets tests distinguish an untrusted certificate from a missing certificate.
+     *
+     * @param keyStore Single-key test store, or {@code null} for a client without a certificate.
+     * @return Fresh client context.
+     */
+    public static SSLContext clientContext(@Nullable String keyStore) throws Exception {
+        KeyManager[] keyManagers = new KeyManager[0];
+
+        if (keyStore != null) {
+            KeyStore keys = store(keyStore);
+
+            KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+
+            kmf.init(keys, keyStorePassword().toCharArray());
+
+            X509KeyManager km = (X509KeyManager)kmf.getKeyManagers()[0];
+
+            String alias = keys.aliases().nextElement();
+
+            assertNotNull("No private key in test store " + keyStore, km.getPrivateKey(alias));
+
+            X509KeyManager always = new X509KeyManager() {
+                @Override public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket sock) {
+                    return alias;
+                }
+
+                @Override public String[] getClientAliases(String keyType, Principal[] issuers) {
+                    return new String[] {alias};
+                }
+
+                @Override public String[] getServerAliases(String keyType, Principal[] issuers) {
+                    return km.getServerAliases(keyType, issuers);
+                }
+
+                @Override public String chooseServerAlias(String keyType, Principal[] issuers, Socket sock) {
+                    return km.chooseServerAlias(keyType, issuers, sock);
+                }
+
+                @Override public X509Certificate[] getCertificateChain(String alias) {
+                    return km.getCertificateChain(alias);
+                }
+
+                @Override public PrivateKey getPrivateKey(String alias) {
+                    return km.getPrivateKey(alias);
+                }
+            };
+
+            keyManagers = new KeyManager[] {always};
+        }
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+        tmf.init(store("trustboth"));
+
+        SSLContext ctx = SSLContext.getInstance("TLS");
+
+        ctx.init(keyManagers, tmf.getTrustManagers(), null);
+
+        return ctx;
+    }
+
+    /** @param name Test store. */
+    private static KeyStore store(String name) throws Exception {
+        KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
+
+        try (InputStream in = Files.newInputStream(Path.of(keyStorePath(name)))) {
+            store.load(in, keyStorePassword().toCharArray());
+        }
+
+        return store;
+    }
+
+    /**
+     * @param keyStore Untrusted test store, or {@code null} for a client without a certificate.
+     * @param port Server port.
+     */
+    private static void assertHandshakeRefused(@Nullable String keyStore, int port) throws Exception {
+        String client = keyStore == null ? "no certificate" : keyStore;
+
+        try (SSLSocket sock = tls12Socket(clientContext(keyStore), port)) {
+            try {
+                sock.startHandshake();
+
+                fail("Server must refuse the client [port=" + port + ", client=" + client + ']');
+            }
+            catch (SSLException | SocketException expected) {
+                // A TLS alert or a connection reset is a refusal. A timeout must fail the test.
+            }
+        }
+        catch (IOException e) {
+            throw new AssertionError("Client refusal check failed [port=" + port + ", client=" + client + ']', e);
+        }
+    }
+
+    /**
+     * @param ctx Client context.
+     * @param port Server port.
+     * @return Connected socket limited to TLS 1.2.
+     */
+    private static SSLSocket tls12Socket(SSLContext ctx, int port) throws IOException {
+        SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket();
+
+        try {
+            sock.setEnabledProtocols(new String[] {"TLSv1.2"});
+            sock.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), SOCKET_TIMEOUT);
+            sock.setSoTimeout(SOCKET_TIMEOUT);
+
+            return sock;
+        }
+        catch (IOException | RuntimeException e) {
+            U.closeQuiet(sock);
+
+            throw e;
+        }
     }
 
     /** @return Node UUID and consistent ID in command output format. */
