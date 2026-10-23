@@ -21,6 +21,7 @@ import java.net.Socket;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -212,6 +213,7 @@ public class ConnectorConfiguration {
      * @see IgniteSystemProperties#IGNITE_JETTY_HOST
      * @see IgniteSystemProperties#IGNITE_JETTY_PORT
      */
+    @SensitiveProperty
     @Nullable public String getSecretKey() {
         return secretKey;
     }
