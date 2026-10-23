@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.util.GridCommandHandlerDeleteSnapshotTest;
+import org.apache.ignite.util.GridCommandHandlerListSnapshotTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -26,7 +27,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCommandHandlerDeleteSnapshotTest.class
+    GridCommandHandlerDeleteSnapshotTest.class,
+    GridCommandHandlerListSnapshotTest.class
 })
 public class IgniteControlUtilityTestSuite6 {
 }
