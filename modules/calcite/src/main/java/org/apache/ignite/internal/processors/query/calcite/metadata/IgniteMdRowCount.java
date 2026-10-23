@@ -214,8 +214,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
         double baseRowCnt = 0.0;
         Double percentageAdjustment = null;
         if (joinCtx.joinType() == JoiningRelationType.PK_ON_PK) {
-            postFiltrationAdjustment = 1.0;
-
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
                 postFiltrationAdjustment = EQUI_COEFF;
                 // Assume we have two fact tables SALES and RETURNS sharing the same primary key. Every item
