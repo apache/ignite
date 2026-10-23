@@ -28,8 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -37,11 +39,14 @@ import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 
-/** Cache put and get by key type, value type and value size; every key holds one value created in setup. */
+/** Cache put, get, getAll and invoke by key type, value type and value size; every key holds one value from setup. */
 @SuppressWarnings("unchecked")
 public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
     /** Keys times {@link #valSize} the setup writes, at most; {@code valSize} sets the key count for every type. */
     private static final int DATA_SIZE = 10_000_000;
+
+    /** Keys per {@link #getAll()}. */
+    private static final int GET_ALL_KEYS = 10;
 
     /** Key type. */
     public enum KeyType {
@@ -301,6 +306,9 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
     /** The value of every key. */
     private Object val;
 
+    /** Sets of {@link #GET_ALL_KEYS} consecutive keys. */
+    private Set<Object>[] keySets;
+
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
@@ -322,6 +330,11 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         }
 
         populate(keys, vals);
+
+        keySets = new Set[keys.length / GET_ALL_KEYS];
+
+        for (int i = 0; i < keySets.length; i++)
+            keySets[i] = new LinkedHashSet<>(Arrays.asList(keys).subList(i * GET_ALL_KEYS, (i + 1) * GET_ALL_KEYS));
     }
 
     /** Replaces the value of a key with the same value: an update, not an insert. */
@@ -334,6 +347,18 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
     @Benchmark
     public Object get() {
         return cache.get(keys[ThreadLocalRandom.current().nextInt(keys.length)]);
+    }
+
+    /** @return Values of {@link #GET_ALL_KEYS} consecutive keys. */
+    @Benchmark
+    public Object getAll() {
+        return cache.getAll(keySets[ThreadLocalRandom.current().nextInt(keySets.length)]);
+    }
+
+    /** Runs an entry processor that writes the value back. */
+    @Benchmark
+    public void invoke() {
+        cache.invoke(keys[ThreadLocalRandom.current().nextInt(keys.length)], SAME_VALUE);
     }
 
     /** Key with an affinity key field. */

@@ -19,8 +19,6 @@ package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import javax.cache.processor.MutableEntry;
-import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -37,9 +35,6 @@ import org.openjdk.jmh.runner.options.TimeValue;
 /** Single-key cache operations on keys and values created in setup, so measured allocations are Ignite's. */
 @SuppressWarnings("unchecked")
 public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
-    /** Entry processor of {@link #invoke()}. */
-    private static final CacheEntryProcessor<Integer, IntValue, Object> SAME_VALUE = new SameValueProcessor();
-
     /** SQL index on the value's field. */
     @Param("false")
     private boolean sqlIdx;
@@ -177,18 +172,5 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
             .build();
 
         new Runner(opts).run();
-    }
-
-    /** Writes the entry's value back, so the entry changes as with a put of the same value. */
-    private static class SameValueProcessor implements CacheEntryProcessor<Integer, IntValue, Object> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry<Integer, IntValue> entry, Object... args) {
-            entry.setValue(entry.getValue());
-
-            return null;
-        }
     }
 }

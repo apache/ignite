@@ -237,7 +237,7 @@ writes every key before measuring, so the operations work on existing entries.
 |---|---|---|
 | `JmhCacheAllocationBenchmark` | `put`, `get`, `getAndPut`, `putIfAbsent`, `replace`, `putRemove`, `invoke`, `putAsync`, `getAsync` | Single-key operations. `putIfAbsent` finds the key and writes nothing; `putRemove` inserts a key the setup didn't write and removes it; `invoke` runs an entry processor that writes the value back |
 | `JmhCacheBatchAllocationBenchmark` | `putAll`, `getAll` | Operations on a batch of keys |
-| `JmhCacheTypesAllocationBenchmark` | `put`, `get` | Put and get by key type, value type and value size. With the histogram profiler, the copies of a `byte[]` value show as rows of its size range |
+| `JmhCacheTypesAllocationBenchmark` | `put`, `get`, `getAll`, `invoke` | Put, get, `getAll` of 10 consecutive keys and an entry processor that writes the value back, by key type, value type and value size. With the histogram profiler, the copies of a `byte[]` value show as rows of its size range |
 | `JmhCacheTxAllocationBenchmark` | `twoPuts` | An explicit transaction of two puts |
 
 Each parameter has one default value, and a run without `-p` uses it. `-p <name>=<value>` sets

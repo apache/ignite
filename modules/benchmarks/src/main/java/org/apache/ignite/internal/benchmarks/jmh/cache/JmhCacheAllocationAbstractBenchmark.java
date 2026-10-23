@@ -19,9 +19,11 @@ package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -36,6 +38,9 @@ import org.openjdk.jmh.annotations.Param;
 
 /** Base of the cache allocation benchmarks: two server nodes and, unless {@code client=SERVER}, a client node. */
 public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstractBenchmark {
+    /** Entry processor of the {@code invoke} benchmarks. */
+    protected static final CacheEntryProcessor<Object, Object, Object> SAME_VALUE = new SameValueProcessor();
+
     /** Node that calls the cache. */
     public enum Client {
         /** A server node. */
@@ -185,5 +190,18 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
             .setCacheMode(cacheMode)
             .setCopyOnRead(copyOnRead)
             .setOnheapCacheEnabled(onHeap);
+    }
+
+    /** Writes the entry's value back, so the entry changes as with a put of the same value. */
+    private static class SameValueProcessor implements CacheEntryProcessor<Object, Object, Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Object, Object> entry, Object... args) {
+            entry.setValue(entry.getValue());
+
+            return null;
+        }
     }
 }
