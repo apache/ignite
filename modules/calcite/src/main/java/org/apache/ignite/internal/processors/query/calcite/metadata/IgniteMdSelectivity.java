@@ -309,6 +309,9 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         else
             return null;
 
+        if (origin.getOriginColumnOrdinal() < 0)
+            return null;
+
         String colName = extactFieldName(origin);
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
