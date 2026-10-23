@@ -510,6 +510,22 @@ Register name: `rest.client`
 
 NOTE: `RejectedSslSessionsCount` and `SslHandshakeDurationHistogram` are registered only when SSL is enabled.
 
+== SSL
+
+Use this metric to detect unsuccessful link:security/ssl-tls#renewing-certificates-automatically[automatic renewal] attempts. Check link:tools/control-script#checking-certificates[`control.sh --ssl status`] and the node log to find the affected connections and cause.
+
+Register name: `ssl`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|ConsecutiveRenewalFailures | integer | Sum of consecutive unsuccessful automatic renewal attempts across the node's SSL context factories. An unchanged certificate chain, a loading error or a rejected certificate counts as an unsuccessful attempt. A shared factory is counted once.
+|===
+
+When automatic renewal or manual reload installs a chain with a later expiry, that factory's count resets to zero. The first certificate to expire determines the chain's expiry. Other factories' counts stay unchanged. Failed manual reloads do not increase the metric.
+
+Nodes without automatic renewal report zero.
+
 == Discovery IO
 
 Register name: `io.discovery`

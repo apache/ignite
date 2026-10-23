@@ -52,12 +52,14 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -68,6 +70,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestHandler.IGNITE_CMD_PATH;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.HTTP_REST;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
 /**
@@ -158,6 +161,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         AbstractNetworkConnector connector = getJettyConnector();
 
+        if (config().isHttpSslClientAuth() && config().getHttpSslFactory() == null) {
+            throw new IgniteCheckedException("ConnectorConfiguration.httpSslClientAuth applies only to TLS set up with httpSslFactory: " +
+                "set httpSslFactory, or turn httpSslClientAuth off and set needClientAuth in the Jetty configuration");
+        }
+
+        if (config().getHttpSslFactory() != null)
+            addTls(connector);
+
         try {
             host = InetAddress.getByName(connector.getHost());
         }
@@ -188,6 +199,32 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         U.warn(log, "Failed to start Jetty REST server (possibly all ports in range are in use) " +
             "[firstPort=" + initPort + ", lastPort=" + lastPort + ']');
+    }
+
+    /**
+     * Adds TLS to an HTTP connector using {@code httpSslFactory}. New connections use the current SSL context.
+     *
+     * @param connector Jetty connector.
+     * @throws IgniteCheckedException If the connector already has TLS or its default connection factory does not handle HTTP.
+     */
+    private void addTls(AbstractNetworkConnector connector) throws IgniteCheckedException {
+        if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory http)
+            || connector.getConnectionFactory(SslConnectionFactory.class) != null) {
+            throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory sets up TLS for HTTP REST, so the Jetty connector " +
+                "must have no SSL connection factory of its own and must pass connections to HTTP first, with no PROXY protocol in " +
+                "front [jettyPath=" + config().getJettyPath() + ", protocols=" + connector.getProtocols() + ']');
+        }
+
+        SslContextFactory.Server ssl = new SslContextFactory.Server();
+
+        ssl.setSslContext(ctx.sslContexts().register(config().getHttpSslFactory(), HTTP_REST));
+        ssl.setNeedClientAuth(config().isHttpSslClientAuth());
+
+        connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, http.getProtocol()));
+
+        // Allow HTTP Host values absent from the certificate, such as an IP or load-balancer name.
+        if (http.getHttpConfiguration().getCustomizer(SecureRequestCustomizer.class) == null)
+            http.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer(false));
     }
 
     /**
