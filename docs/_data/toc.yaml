@@ -476,6 +476,8 @@
       url: tools/pentaho
     - title: Index Reader
       url: tools/index-reader
+    - title: Cache Dump Reader
+      url: tools/cache-dump-reader
 - title: Security
   url: security/index
   items:
