@@ -28,6 +28,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.util.SqlValueUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -261,8 +262,8 @@ public abstract class DistributionFunction {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
             }
 
-            AffinityAdapter<Row> aff = new AffinityAdapter<>(affSrvc.affinity(CU.UNDEFINED_CACHE_ID), k.toIntArray(),
-                ctx.rowHandler());
+            AffinityAdapter<Row> aff = new AffinityAdapter<>(val -> U.safeAbs(SqlValueUtils.deepHashCode(val)),
+                k.toIntArray(), ctx.rowHandler());
 
             return new Partitioned<>(assignments, aff);
         }
