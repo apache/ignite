@@ -26,9 +26,19 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext.QUERY_TX_VER;
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
@@ -122,7 +132,7 @@ public class IgniteStatisticsImpl implements Statistic {
     private void refreshStatsIfNeededEx() {
         if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
             try {
-                primaryRowCnt = desc.cacheInfo().cacheContext().cache().sizeLong(new CachePeekMode[] {CachePeekMode.PRIMARY});
+                primaryRowCnt = localCacheSize(desc.cacheInfo().cacheContext());
             }
             catch (IgniteCheckedException ignore) {
                 // No-op.
@@ -135,5 +145,23 @@ public class IgniteStatisticsImpl implements Statistic {
         refreshStatsIfNeededEx();
 
         return primaryRowCnt;
+    }
+
+    /** */
+    private static long localCacheSize(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+        AffinityTopologyVersion txTopVer = txTopVer(cctx);
+        CachePeekMode[] peekModes = {CachePeekMode.PRIMARY};
+        GridCacheAdapter<?, ?> cache = cctx.cache();
+
+        IgniteInternalFuture<Long> fut = txTopVer == null ? cache.sizeLongAsync(peekModes) : cache.sizeLongAsync(peekModes, txTopVer);
+        return fut.get();
+    }
+
+    /** */
+    private static @Nullable AffinityTopologyVersion txTopVer(GridCacheContext<?, ?> cctx) {
+        GridCacheVersion txVer = OperationContext.get(QUERY_TX_VER);
+
+        IgniteInternalTx tx = txVer == null ? null : cctx.tm().tx(txVer);
+        return tx == null ? null : tx.topologyVersion();
     }
 }

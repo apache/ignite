@@ -99,7 +99,8 @@ public class OperationContextAttribute<T> {
      * {@link #MAX_ATTR_CNT} for implementation reasons.
      * </p>
      */
-    public static <T> OperationContextAttribute<T> newInstance(T initVal) {
+    // TODO: IGNITE-29198 Support more operation context attributes
+    public static <T> OperationContextAttribute<T> newInstance(@Nullable T initVal) {
         int id = ID_GEN.getAndIncrement();
 
         assert id < MAX_ATTR_CNT : "Exceeded maximum supported number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
