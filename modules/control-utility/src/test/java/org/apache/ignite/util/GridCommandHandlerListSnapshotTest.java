@@ -123,7 +123,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         cfg.setWorkDirectory(workDir);
 
-        cfg.getDataStorageConfiguration().setWalCompactionEnabled(incrementalsCnt > 0);
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(true);
 
         if (extStorage) {
             cfg.getDataStorageConfiguration().setExtraStoragePaths(
@@ -201,12 +201,79 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         doTestSnapshotsLists(1, snapshotsCreatedLsnr);
     }
 
-    /** Tests that snapshots are listed respecting their dates. */
+    /** Test scenario for snapshots list order. */
     @Test
     public void testSnapshotsOrder() throws Exception {
         // Is not so important here, speeds up the tests.
         assumeFalse(customPath);
+        // We process incremental snapshots manually here.
+        assumeTrue(incrementalsCnt == 0);
 
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(GRIDS_CNT);
+        ig.cluster().state(ACTIVE);
+
+        int entriesCnt = 10;
+        int partitions = 4;
+
+        createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);
+
+        // Create the snapshots in an order by theri names. The sorting order should differ from the alphabetical order.
+        // 'testSnapshot0' is created first (earliest date).
+        snp(ig).createSnapshot("testSnapshot0", null, false, false).get(getTestTimeout());
+
+        // Ensures a noticeable difference in the creation times.
+        U.sleep(500L);
+
+        // Next snapshot hast the latest date.
+        snp(ig).createSnapshot("testSnapshot1", null, false, false).get(getTestTimeout());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list"));
+
+        String out = testOut.toString();
+
+        int fromIdx = 0;
+
+        // In descending date order testSnapshot1 (laster) must appear before testSnapshot0 (earlier).
+        // The checking is for every node, so n times.
+        for (int n = 0; n < GRIDS_CNT; ++n) {
+            int idx1 = out.indexOf("Snapshot 'testSnapshot1'", fromIdx);
+            int idx0 = out.indexOf("Snapshot 'testSnapshot0'", fromIdx);
+
+            assertTrue(idx1 < idx0);
+
+            fromIdx = idx0 + "Snapshot 'testSnapshot0'".length();
+        }
+
+        // Let's add an incremental part to 'testSnapshot0'. That will change its modifiaction data.
+
+        // Ensures a noticeable difference in the times.
+        U.sleep(500L);
+
+        try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int val = entriesCnt; val < entriesCnt * 2; val++)
+                ds.addData(val, val);
+        }
+
+        snp(ig).createSnapshot("testSnapshot0", null, true, false).get(getTestTimeout());
+
+        testOut.reset();
+        fromIdx = 0;
+
+        assertEquals(EXIT_CODE_OK, execute(newCommandHandler(createTestLogger()), "--snapshot", "list"));
+
+        out = testOut.toString();
+
+        // Now, 'testSnapshot0' is expected to be first.
+        for (int n = 0; n < GRIDS_CNT; ++n) {
+            int idx0 = out.indexOf("Snapshot 'testSnapshot0'", fromIdx);
+            int idx1 = out.indexOf("Snapshot 'testSnapshot1'", fromIdx);
+
+            assertTrue(idx0 < idx1);
+
+            fromIdx = idx1 + "Snapshot 'testSnapshot1'".length();
+        }
     }
 
     /**
@@ -233,9 +300,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
      *
      * @param snapshotsCnt Number of the test snapshots to create before calling the snapshots list command.
      * @param snapshotsCreatedLsnr Optional listener. Is called after the test snapshots creation.
-     * @return The command output.
      */
-    private String doTestSnapshotsLists(int snapshotsCnt, @Nullable Runnable snapshotsCreatedLsnr) throws Exception {
+    private void doTestSnapshotsLists(int snapshotsCnt, @Nullable Runnable snapshotsCreatedLsnr) throws Exception {
         // A custom snapshot path actually puts snapshots in a shared directory. This skews the results when dedicated
         // work directories are set.
         assumeFalse(customPath && separatedWorkDir);
@@ -308,7 +374,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
             assertEquals(GRIDS_CNT, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
-            return out;
+            return;
         }
 
         // Step 7: Find the test snapshots in the output.
@@ -325,13 +391,11 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         // If the incremental snapshots are configured, find the info about them.
         if (incrementalsCnt > 0)
             assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "incremental snapshots: cnt=" + incrementalsCnt));
-
-        return out;
     }
 
     /** {@link #doTestSnapshotsLists(int, Runnable)} with {@code snapshotsCreatedLsnr}. */
-    private String doTestSnapshotsLists(int snapshotsCnt) throws Exception {
-        return doTestSnapshotsLists(snapshotsCnt, null);
+    private void doTestSnapshotsLists(int snapshotsCnt) throws Exception {
+        doTestSnapshotsLists(snapshotsCnt, null);
     }
 
     /** @return Number of the test entries in the original text. */
