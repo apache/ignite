@@ -36,7 +36,7 @@ Apache Ignite prefer to use [consensus to make decisions](http://community.apach
 
 ## Contributing Documentation
 RFCs are stored in the [rfcs directory](rfcs). See the
-[draft RFC on public API scope and review](rfcs/IGNITE-29201-public-api-and-rfc-process.md) for the proposed process.
+[RFC on public API scope and review](rfcs/IGNITE-29201-public-api-and-rfc-process.md) for the review process.
 
 Documentation can be contributed to
  - End-User documentation https://ignite.apache.org/docs/latest/ . Its sources are in the [docs](docs) directory, see [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).

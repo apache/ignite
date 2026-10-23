@@ -17,8 +17,6 @@ limitations under the License.
 
 # Public API changes through tickets and PRs
 
-Status: Draft
-
 Ticket: [IGNITE-29201](https://issues.apache.org/jira/browse/IGNITE-29201)
 
 ## Why
