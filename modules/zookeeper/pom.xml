@@ -168,20 +168,6 @@
     </dependencies>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <!-- Annotation processors are listed explicitly because javac does not run classpath-discovered processors since JDK 23. -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <annotationProcessors>
-                            <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
-                        </annotationProcessors>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
