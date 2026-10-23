@@ -1,8 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot$GroupStateSnapshot",
-  "fields": [
-    {"order": 0, "type": "int[]", "name": "parts"},
-    {"order": 1, "type": "long[]", "name": "cnts"},
-    {"order": 2, "type": "int", "name": "size"}
-  ]
-}
