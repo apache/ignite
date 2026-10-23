@@ -51,6 +51,10 @@ import org.openjdk.jmh.results.Result;
 import org.openjdk.jmh.runner.IterationType;
 
 import static java.nio.file.StandardOpenOption.APPEND;
+import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.clients;
+import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.group;
+import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.result;
+import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.writeRunDescription;
 
 /**
  * Objects and bytes allocated per operation for each class, by node and thread pool as in
@@ -129,7 +133,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         this.dir = dir;
         this.frameCnt = frameCnt;
 
-        JmhAllocationProfiler.writeRunDescription(dir);
+        writeRunDescription(dir);
 
         JmhNodeStopHook.set(JmhAllocationHistogramProfiler.class, this::stop);
     }
@@ -183,12 +187,46 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
         stop();
 
-        // Group to row (the class, size and frames columns) to objects and bytes; a group of a live thread without
-        // allocations reports zeros.
+        Map<String, Map<String, long[]>> hist = histogram();
+
+        long ops = res.getMetadata().getAllOps();
+
+        if (ops == 0)
+            return List.of();
+
+        String iter = iterParams.getType() == IterationType.WARMUP
+            ? "warmup-" + ++warmups
+            : String.valueOf(++measurements);
+
+        writeTable(hist, iter, ops);
+
+        return results(hist, ops);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getDescription() {
+        return "Objects and bytes allocated per operation for each class, by node and thread pool. Needs -XX:-UseTLAB.";
+    }
+
+    /**
+     * Stops the recording and reads the client flags of the nodes, which start only after the first iteration has
+     * begun. Runs before the nodes stop in the last iteration and at the end of the others.
+     */
+    private void stop() {
+        if (rec != null && rec.getState() == RecordingState.RUNNING) {
+            rec.stop();
+
+            clients = clients();
+        }
+    }
+
+    /** @return Group to row (the class, size and frames columns) to objects and bytes, from the recording. */
+    private Map<String, Map<String, long[]>> histogram() {
         Map<String, Map<String, long[]>> hist = new TreeMap<>();
 
+        // A group of a live thread without allocations reports zeros.
         for (String name : liveThreads)
-            hist.put(JmhAllocationProfiler.group(name, clients), new TreeMap<>());
+            hist.put(group(name, clients), new TreeMap<>());
 
         try {
             Path jfr = Files.createTempFile("jmh-alloc-", ".jfr");
@@ -206,74 +244,60 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
             throw new UncheckedIOException(e);
         }
 
-        long ops = res.getMetadata().getAllOps();
+        return hist;
+    }
 
-        if (ops == 0)
-            return List.of();
-
-        String iter = iterParams.getType() == IterationType.WARMUP
-            ? "warmup-" + ++warmups
-            : String.valueOf(++measurements);
-
-        List<Result> out = new ArrayList<>();
-
-        long totalObjs = 0;
-        long totalBytes = 0;
-
+    /** Appends the rows of an iteration to the per-class file. */
+    private void writeTable(Map<String, Map<String, long[]>> hist, String iter, long ops) {
         boolean first = warmups + measurements == 1;
 
         // The first iteration of a fork replaces a file left by an earlier run with the same process ID.
         try (Writer w = first ? Files.newBufferedWriter(file) : Files.newBufferedWriter(file, APPEND)) {
             if (first)
-                w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "")
-                    + "iteration\tobjects/op\tbytes/op\n");
+                w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "") +
+                    "iteration\tobjects/op\tbytes/op\n");
 
             for (Map.Entry<String, Map<String, long[]>> grp : hist.entrySet()) {
-                long objs = 0;
-                long bytes = 0;
-
                 for (Map.Entry<String, long[]> row : grp.getValue().entrySet()) {
                     long[] cnt = row.getValue();
-
-                    objs += cnt[0];
-                    bytes += cnt[1];
 
                     w.write(grp.getKey() + '\t' + row.getKey() + '\t' + iter + '\t' + (double)cnt[0] / ops + '\t' +
                         (double)cnt[1] / ops + '\n');
                 }
-
-                totalObjs += objs;
-                totalBytes += bytes;
-
-                out.add(JmhAllocationProfiler.result("jfr.objs.norm:" + grp.getKey(), objs, ops, "objs/op"));
-                out.add(JmhAllocationProfiler.result("jfr.bytes.norm:" + grp.getKey(), bytes, ops, "B/op"));
             }
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
 
-        out.add(JmhAllocationProfiler.result("jfr.objs.norm:total", totalObjs, ops, "objs/op"));
-        out.add(JmhAllocationProfiler.result("jfr.bytes.norm:total", totalBytes, ops, "B/op"));
+    /** @return Objects and bytes per operation of each group and of all of them. */
+    private static List<Result> results(Map<String, Map<String, long[]>> hist, long ops) {
+        List<Result> out = new ArrayList<>();
+
+        long totalObjs = 0;
+        long totalBytes = 0;
+
+        for (Map.Entry<String, Map<String, long[]>> grp : hist.entrySet()) {
+            long objs = 0;
+            long bytes = 0;
+
+            for (long[] cnt : grp.getValue().values()) {
+                objs += cnt[0];
+                bytes += cnt[1];
+            }
+
+            totalObjs += objs;
+            totalBytes += bytes;
+
+            out.add(result("jfr.objs.norm:" + grp.getKey(), objs, ops, "objs/op"));
+            out.add(result("jfr.bytes.norm:" + grp.getKey(), bytes, ops, "B/op"));
+        }
+
+        out.add(result("jfr.objs.norm:total", totalObjs, ops, "objs/op"));
+        out.add(result("jfr.bytes.norm:total", totalBytes, ops, "B/op"));
 
         return out;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getDescription() {
-        return "Objects and bytes allocated per operation for each class, by node and thread pool. Needs -XX:-UseTLAB.";
-    }
-
-    /**
-     * Stops the recording and reads the client flags of the nodes, which start only after the first iteration has
-     * begun. Runs before the nodes stop in the last iteration and at the end of the others.
-     */
-    private void stop() {
-        if (rec != null && rec.getState() == RecordingState.RUNNING) {
-            rec.stop();
-
-            clients = JmhAllocationProfiler.clients();
-        }
     }
 
     /**
@@ -314,7 +338,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                     continue;
 
                 String grp = t == null ? "other.unknown" : grps.computeIfAbsent(t.getJavaThreadId(),
-                    id -> JmhAllocationProfiler.group(t.getJavaName(), clients));
+                    id -> group(t.getJavaName(), clients));
 
                 long size = ev.getLong("allocationSize");
                 String name = cls == null ? "<unknown>" : cls.getName();
