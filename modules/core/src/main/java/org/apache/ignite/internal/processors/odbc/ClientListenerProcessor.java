@@ -104,11 +104,11 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
     public static final String METRIC_ACTIVE = "ActiveSessions";
 
-    /** Peak number of active user compute tasks per thin client connection. */
-    public static final String METRIC_PEAK_ACTIVE_COMPUTE_TASKS = "PeakActiveComputeTasksPerConnection";
+    /** */
+    public static final String METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS = "MaxCurrentActiveComputeTasksPerConnection";
 
-    /** Default time interval of the {@link #METRIC_PEAK_ACTIVE_COMPUTE_TASKS} metric in milliseconds. */
-    public static final long DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL = 90_000L;
+    /** Default time interval of the {@link #METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS} metric in milliseconds. */
+    public static final long DFLT_MAX_CURRENT_ACTIVE_COMPUTE_TASKS_INTERVAL = 90_000L;
 
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
@@ -131,8 +131,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Metrics. */
     private ClientListenerMetrics metrics;
 
-    /** Peak of active user compute tasks per thin client connection. */
-    private PeakWithCurrentMetric peakActiveComputeTasks;
+    /** */
+    private MaxWithCurrentValueMetric maxCurActiveComputeTasks;
 
     /** Executor service. */
     private ExecutorService execSvc;
@@ -371,22 +371,22 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             : thinCfg.getMaxActiveComputeTasksPerConnection();
 
         // Registered before the server is started, since connections update it.
-        peakActiveComputeTasks = new PeakWithCurrentMetric(
-            metricName(mreg.name(), METRIC_PEAK_ACTIVE_COMPUTE_TASKS),
+        maxCurActiveComputeTasks = new MaxWithCurrentValueMetric(
+            metricName(mreg.name(), METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS),
             "Maximum number of active user compute tasks per thin client connection over the configured time " +
                 "interval, but not less than the current value. The upper limit is the " +
                 "ThinClientConfiguration.maxActiveComputeTasksPerConnection configuration parameter.",
-            DFLT_PEAK_ACTIVE_COMPUTE_TASKS_INTERVAL,
+            DFLT_MAX_CURRENT_ACTIVE_COMPUTE_TASKS_INTERVAL,
             DFLT_SIZE,
             maxActiveComputeTasks,
-            this::peakActiveComputeTasks
+            this::currentMaxActiveComputeTasks
         );
 
-        mreg.register(peakActiveComputeTasks);
+        mreg.register(maxCurActiveComputeTasks);
     }
 
-    /** @return Current peak number of active user compute tasks across thin client connections. */
-    private long peakActiveComputeTasks() {
+    /** @return Maximum of active user compute tasks across thin client connections. */
+    private long currentMaxActiveComputeTasks() {
         long max = 0;
 
         for (GridNioSession ses : srv.sessions()) {
@@ -663,13 +663,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         return metrics;
     }
 
-    /**
-     * Updates the peak of active user compute tasks per thin client connection.
-     *
-     * @param activeTasksCnt Number of active user compute tasks of the connection, capped by the limit.
-     */
-    public void updatePeakActiveComputeTasks(int activeTasksCnt) {
-        peakActiveComputeTasks.update(activeTasksCnt);
+    /** @param activeTasksCnt Number of active user compute tasks of a connection. */
+    public void updateMaxCurrentActiveComputeTasks(int activeTasksCnt) {
+        maxCurActiveComputeTasks.update(activeTasksCnt);
     }
 
     /**
@@ -912,22 +908,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /** Maximum value over the time interval, but not less than the current value. */
-    private static class PeakWithCurrentMetric extends MaxValueMetric {
-        /** Upper limit of the value. */
+    private static class MaxWithCurrentValueMetric extends MaxValueMetric {
+        /** */
         private final long limit;
 
-        /** Current value supplier. */
+        /** */
         private final LongSupplier cur;
 
-        /**
-         * @param name Name.
-         * @param desc Description.
-         * @param timeInterval Time interval in milliseconds.
-         * @param size Number of buckets.
-         * @param limit Upper limit of the value.
-         * @param cur Current value supplier.
-         */
-        PeakWithCurrentMetric(String name, String desc, long timeInterval, int size, long limit, LongSupplier cur) {
+        /** */
+        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, long limit, LongSupplier cur) {
             super(name, desc, timeInterval, size);
 
             this.limit = limit;
@@ -936,10 +925,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public long value() {
-            long peak = super.value();
+            long val = super.value();
 
             // The current value can not exceed the limit, so there is no need to calculate it.
-            return peak >= limit ? peak : Math.max(peak, cur.getAsLong());
+            return val >= limit ? val : Math.max(val, cur.getAsLong());
         }
     }
 }
