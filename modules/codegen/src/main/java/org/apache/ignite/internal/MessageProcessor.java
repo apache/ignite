@@ -115,10 +115,14 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
 
-    /** Messages with no fields. A serializer generation intentionally skipped. */
+    /** */
+    static final String OP_CTX_SNAPSHOT_MESSAGE_CLASS = "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage";
+
+    /** Messages with no fields, or with a hand-written serializer. A serializer generation intentionally skipped. */
     static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
+        OP_CTX_SNAPSHOT_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage",
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
     };
@@ -184,7 +188,7 @@ public class MessageProcessor extends AbstractProcessor {
                     clazz);
             }
 
-            if (!checkConstructors(clazz) || !checkFeatureGatedFields(clazz, fields))
+            if (!checkConstructors(clazz) || !checkFeatureGatedFields(processingEnv, clazz, fields))
                 continue;
 
             msgFields.put(clazz, fields);
@@ -217,8 +221,12 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    private boolean checkFeatureGatedFields(TypeElement clazz, List<VariableElement> fields) {
-        boolean isSchemaImmutable = isSchemaImmutable(processingEnv, clazz);
+    public static boolean checkFeatureGatedFields(
+        ProcessingEnvironment env,
+        TypeElement clazz,
+        Collection<VariableElement> fields
+    ) {
+        boolean isSchemaImmutable = isSchemaImmutable(env, clazz);
         String reg = null;
         Map<String, VariableElement> gatedFields = new HashMap<>();
 
@@ -232,7 +240,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (isSchemaImmutable) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
                     "A message with an immutable schema must not have fields gated by features [cls=" + clazz + ", field=" + field + ']');
 
@@ -245,7 +253,7 @@ public class MessageProcessor extends AbstractProcessor {
                 reg = fieldReg;
             else if (!reg.equals(fieldReg)) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
                     "All fields gated by features in one message hierarchy must resolve to the same feature registry" +
                         " [expected=" + reg + ", actual=" + fieldReg + ']');
@@ -255,7 +263,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (!order.introducedBy().isEmpty() && !order.deprecatedBy().isEmpty()) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
                     "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it" +
                         " is retired" +
@@ -271,7 +279,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             if (otherField != null) {
                 printError(
-                    processingEnv,
+                    env,
                     field,
                     "A feature can gate only one field of a message class hierarchy" +
                         " [cls=" + clazz +

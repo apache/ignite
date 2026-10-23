@@ -20,12 +20,15 @@ package org.apache.ignite.internal.visor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
+import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logFinish;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
@@ -86,6 +89,11 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter implements Public
      * @throws IgniteException In case of error.
      */
     protected abstract R run(@Nullable A arg) throws IgniteException;
+
+    /** */
+    protected @Nullable IgniteNodeFeatureSet initiatorFeatures() {
+        return OperationContext.get(OP_FEATURES_ATTR);
+    }
 
     /** {@inheritDoc} */
     @Override public SecurityPermissionSet requiredPermissions() {

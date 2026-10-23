@@ -78,6 +78,8 @@ import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatusSnapshot;
 import org.apache.ignite.internal.systemview.ComputeTaskViewWalker;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -108,6 +110,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
@@ -717,64 +720,9 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             if (dep == null || !dep.acquire())
                 handleException(new IgniteDeploymentCheckedException("Task not deployed: " + ses.getTaskName()), fut);
             else {
-                GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
-                    ctx,
-                    arg,
-                    ses,
-                    fut,
-                    taskCls,
-                    task,
-                    dep,
-                    new TaskEventListener(),
-                    opts,
-                    securitySubjectId(ctx));
-
-                GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
-
-                assert taskWorker0 == null : "Session ID is not unique: " + sesId;
-
-                if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
-                    VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
-
-                    Event evt = new ManagementTaskEvent(
-                        ctx.discovery().localNode(),
-                        visorTaskArg != null && visorTaskArg.getArgument() != null
-                            ? visorTaskArg.getArgument().toString() : "[]",
-                        EVT_MANAGEMENT_TASK_STARTED,
-                        ses.getId(),
-                        taskName,
-                        taskCls == null ? null : taskCls.getName(),
-                        false,
-                        securitySubjectId(ctx),
-                        visorTaskArg
-                    );
-
-                    ctx.event().record(evt);
+                try (Scope ignored = withTaskInitiatorFeatures(arg)) {
+                    startTaskWorker(taskName, taskCls, task, sesId, arg, opts, ses, dep, fut);
                 }
-
-                if (!ctx.clientDisconnected()) {
-                    if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
-                        try {
-                            // Start task execution in another thread.
-                            if (opts.isSystemTask())
-                                ctx.pools().getSystemExecutorService().execute(taskWorker);
-                            else
-                                ctx.pools().getExecutorService().execute(taskWorker);
-                        }
-                        catch (RejectedExecutionException e) {
-                            tasks.remove(sesId);
-
-                            release(dep);
-
-                            handleException(new ComputeExecutionRejectedException("Failed to execute task " +
-                                "due to thread pool execution rejection: " + taskName, e), fut);
-                        }
-                    }
-                    else
-                        taskWorker.run();
-                }
-                else
-                    taskWorker.finishTask(null, disconnectedError(null));
             }
         }
         else {
@@ -785,6 +733,85 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         }
 
         return fut;
+    }
+
+    /** */
+    private <T, R> void startTaskWorker(
+        @Nullable String taskName,
+        @Nullable Class<?> taskCls,
+        @Nullable ComputeTask<T, R> task,
+        IgniteUuid sesId,
+        @Nullable T arg,
+        TaskExecutionOptions opts,
+        GridTaskSessionImpl ses,
+        GridDeployment dep,
+        ComputeTaskInternalFuture<R> fut
+    ) {
+        GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
+            ctx,
+            arg,
+            ses,
+            fut,
+            taskCls,
+            task,
+            dep,
+            new TaskEventListener(),
+            opts,
+            securitySubjectId(ctx));
+
+        GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
+
+        assert taskWorker0 == null : "Session ID is not unique: " + sesId;
+
+        if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
+            VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
+
+            Event evt = new ManagementTaskEvent(
+                ctx.discovery().localNode(),
+                visorTaskArg != null && visorTaskArg.getArgument() != null
+                    ? visorTaskArg.getArgument().toString() : "[]",
+                EVT_MANAGEMENT_TASK_STARTED,
+                ses.getId(),
+                taskName,
+                taskCls == null ? null : taskCls.getName(),
+                false,
+                securitySubjectId(ctx),
+                visorTaskArg
+            );
+
+            ctx.event().record(evt);
+        }
+
+        if (!ctx.clientDisconnected()) {
+            if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {
+                try {
+                    // Start task execution in another thread.
+                    if (opts.isSystemTask())
+                        ctx.pools().getSystemExecutorService().execute(taskWorker);
+                    else
+                        ctx.pools().getExecutorService().execute(taskWorker);
+                }
+                catch (RejectedExecutionException e) {
+                    tasks.remove(sesId);
+
+                    release(dep);
+
+                    handleException(new ComputeExecutionRejectedException("Failed to execute task " +
+                        "due to thread pool execution rejection: " + taskName, e), fut);
+                }
+            }
+            else
+                taskWorker.run();
+        }
+        else
+            taskWorker.finishTask(null, disconnectedError(null));
+    }
+
+    /** */
+    private static Scope withTaskInitiatorFeatures(@Nullable Object arg) {
+        return arg instanceof VisorTaskArgument
+            ? OperationContext.set(OP_FEATURES_ATTR, ((VisorTaskArgument<?>)arg).initiatorFeatures())
+            : Scope.NOOP_SCOPE;
     }
 
     /**
