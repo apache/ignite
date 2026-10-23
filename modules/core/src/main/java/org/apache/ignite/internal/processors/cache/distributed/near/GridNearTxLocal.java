@@ -1205,6 +1205,24 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Returns a string representation of the given key for use in error messages, falling back to a
+     * representation that does not require key deserialization when deserialization fails, so that the
+     * original error is not masked (for example, if the key is a binary object without a Java class).
+     *
+     * @param cacheKey Key.
+     * @param cacheCtx Cache context.
+     * @return String representation of the key.
+     */
+    private static String safeKeyValue(KeyCacheObject cacheKey, GridCacheContext cacheCtx) {
+        try {
+            return String.valueOf(CU.value(cacheKey, cacheCtx, false));
+        }
+        catch (Throwable ignore) {
+            return cacheKey.toString();
+        }
+    }
+
+    /**
      * @param cacheCtx Cache context.
      * @param cacheKey Key.
      * @param val Value.
@@ -1271,7 +1289,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                         entry.lockedByThread(threadId, xidVer)) {
                         throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
-                            "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
+                            "externally held [key=" + safeKeyValue(cacheKey, cacheCtx) +
                             ", entry=" + entry +
                             ", xidVer=" + xidVer +
                             ", threadId=" + threadId +
@@ -1506,7 +1524,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else {
             if (entryProc == null && txEntry.op() == TRANSFORM)
                 throw new IgniteCheckedException("Failed to enlist write value for key (cannot have update value in " +
-                    "transaction after EntryProcessor is applied): " + CU.value(cacheKey, cacheCtx, false));
+                    "transaction after EntryProcessor is applied): " + safeKeyValue(cacheKey, cacheCtx));
 
             GridCacheEntryEx entry = txEntry.cached();
 
