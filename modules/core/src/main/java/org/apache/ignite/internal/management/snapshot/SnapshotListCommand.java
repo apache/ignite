@@ -20,15 +20,24 @@ package org.apache.ignite.internal.management.snapshot;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.internal.management.SystemViewCommand;
+import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
 /** Snapshot list command. */
 public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCommandArg, SnapshotListTaskResult> {
@@ -71,10 +80,15 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             .sorted(Comparator.comparing(idx -> res.consistentIds()[idx]))
             .toArray(Integer[]::new);
 
+        // Flag whether the node's result has at least one incremental snapshot.
+        AtomicBoolean hasIncrementals = new AtomicBoolean();
+        // Flag whether the node's result has at least one external storage.
+        AtomicBoolean hasExtStorages = new AtomicBoolean();
+
         for (int nodeIdx : nodesOrder) {
             printer.accept("");
 
-            printer.accept("\tNode '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
+            printer.accept("Node '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
 
             SnapshotListJobResult nodeResult = res.nodesSnapshots()[nodeIdx];
 
@@ -84,39 +98,101 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 continue;
             }
 
-            sortResults(nodeResult.snapshots()).forEach((snpName, snpInfo) -> {
-                printer.accept("\t\tSnapshot '%s': totalSize=%s, created='%s'".formatted(
-                    snpName,
-                    U.humanReadableByteCount(snpInfo.size()),
-                    DATE_FORMATTER.format(Instant.ofEpochMilli(snpInfo.date()))
-                ));
+            Map<String, SnapshotListJobResult.SnapshotInfo> sortedResults = prepareResults(
+                nodeResult.snapshots(),
+                hasIncrementals,
+                hasExtStorages
+            );
 
-                SnapshotListJobResult.SnapshotInfo extStors = snpInfo.externalStorages();
-                SnapshotListJobResult.SnapshotInfo incs = snpInfo.incrementals();
-
-                if (extStors != null) {
-                    printer.accept("\t\t\texternal storages: cnt=%d, size=%s (%db)".formatted(
-                        extStors.number(),
-                        U.humanReadableByteCount(extStors.size()),
-                        extStors.size()
-                    ));
-                }
-
-                if (incs != null) {
-                    printer.accept("\t\t\tincremental snapshots: cnt=%d, size=%s, modified='%s'".formatted(
-                        incs.number(),
-                        U.humanReadableByteCount(incs.size()),
-                        DATE_FORMATTER.format(Instant.ofEpochMilli(incs.date()))
-                    ));
-                }
-            });
+            SystemViewCommand.printTable(
+                perNodeTableTitles(hasIncrementals.get(), hasExtStorages.get()),
+                perNodeTableTypes(hasIncrementals.get(), hasExtStorages.get()),
+                perNodeTableRows(sortedResults, hasIncrementals.get(), hasExtStorages.get()),
+                printer
+            );
         }
 
         printer.accept("");
     }
 
-    /** Sorts the snapshots by most recent creation or update date. */
-    private static Map<String, SnapshotListJobResult.SnapshotInfo> sortResults(Map<String, SnapshotListJobResult.SnapshotInfo> rawResults) {
+    /** */
+    private static List<String> perNodeTableTitles(boolean hasIncrementals, boolean hasExtStorages) {
+        List<String> res = new ArrayList<>(7);
+
+        res.addAll(F.asList("Name", "Total size", "Creation date"));
+
+        if (hasIncrementals)
+            res.addAll(F.asList("Last incremental date", "Incremental parts", "Icremental parts size"));
+
+        if (hasExtStorages)
+            res.addAll(F.asList("External storages size"));
+
+        return res;
+    }
+
+    /** */
+    private static List<SystemViewTask.SimpleType> perNodeTableTypes(boolean hasIncrementals, boolean hasExtStorages) {
+        List<SystemViewTask.SimpleType> res = new ArrayList<>(7);
+
+        // Main and minimal snapshot info: name, size (formatted string), creation date (formatted string).
+        res.addAll(F.asList(STRING, STRING, STRING));
+
+        // Optional info of incremental parts: last modification date, number of incremental parts, total size (formatted string).
+        if (hasIncrementals)
+            res.addAll(F.asList(STRING, NUMBER, STRING));
+
+        // Optional info of experimental external storages: total size (formatted string).
+        if (hasExtStorages)
+            res.add(STRING);
+
+        return res;
+    }
+
+
+    /** */
+    private static List<List<?>> perNodeTableRows(
+        Map<String, SnapshotListJobResult.SnapshotInfo> results,
+        boolean includeIncrementals,
+        boolean includeExtStorages
+    ) {
+        List<List<?>> table = new ArrayList<>(results.size());
+        List<Object> row = new ArrayList<>(7);
+
+        results.forEach((name, s) -> {
+            row.clear();
+
+            // Main and minimal snapshot info: name, size (formatted string), creation date (formatted string).
+            row.addAll(F.asList(name, U.humanReadableByteCount(s.size()), DATE_FORMATTER.format(Instant.ofEpochMilli(s.date()))));
+
+            if (includeIncrementals) {
+                // Optional info of incremental parts: last modification date, number of incremental parts, total size (formatted string).
+                SnapshotListJobResult.SnapshotInfo inc = s.incrementals();
+
+                row.addAll(F.asList(
+                    inc == null ? null : DATE_FORMATTER.format(Instant.ofEpochMilli(inc.date())), // Modification date.
+                    inc == null ? null : inc.number(), // Number of incremental parts.
+                    inc == null ? null : U.humanReadableByteCount(inc.size()) // Total size of all incremental parts.
+                ));
+            }
+
+            if (includeExtStorages) {
+                SnapshotListJobResult.SnapshotInfo ext = s.externalStorages();
+
+                row.add(ext == null ? null : U.humanReadableByteCount(ext.size())); // Total size of all external storages.
+            }
+
+            table.add(row);
+        });
+
+        return table;
+    }
+
+    /** Prepares the results: sorts, finds optional data to hide if it doesn't present. */
+    private static Map<String, SnapshotListJobResult.SnapshotInfo> prepareResults(
+        Map<String, SnapshotListJobResult.SnapshotInfo> rawResults,
+        AtomicBoolean hasIncrementals,
+        AtomicBoolean hasExtStorages
+    ) {
         Comparator<SnapshotListJobResult.SnapshotInfo> cmp = new Comparator<>() {
             @Override public int compare(SnapshotListJobResult.SnapshotInfo s1, SnapshotListJobResult.SnapshotInfo s2) {
                 long date1 = s1.incrementals() == null ? s1.date() : s1.incrementals().date();
@@ -126,10 +202,22 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             }
         };
 
+        hasIncrementals.set(false);
+        hasExtStorages.set(false);
+
         // Sorted by the creation or modification date.
         return rawResults.entrySet()
             .stream()
             .sorted(Map.Entry.comparingByValue(cmp))
+            .filter(e -> {
+                if (e.getValue().incrementals() != null)
+                    hasIncrementals.set(true);
+
+                if (e.getValue().externalStorages() != null)
+                    hasExtStorages.set(true);
+
+                return true;
+            })
             .collect(Collectors.toMap(
                 Map.Entry::getKey,
                 Map.Entry::getValue,
