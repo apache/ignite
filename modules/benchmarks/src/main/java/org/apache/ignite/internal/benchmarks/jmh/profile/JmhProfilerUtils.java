@@ -63,28 +63,37 @@ final class JmhProfilerUtils {
      * @return Group label.
      */
     static String group(String name, Map<String, Boolean> clients) {
-        int last = name.lastIndexOf('%');
-        int prev = last > 0 ? name.lastIndexOf('%', last - 1) : -1;
+        String node = nodeOf(name);
 
-        if (prev < 0 || last != name.length() - 1)
+        if (node == null)
             return label(name.contains("jmh-worker") ? BENCHMARK : "other." + name.replaceAll("-?\\d+$", ""));
 
-        String node = name.substring(prev + 1, last);
-
-        int poolEnd = name.indexOf('%');
-        int hash = name.indexOf("-#");
-
-        if (hash >= 0 && hash < poolEnd)
-            poolEnd = hash;
-
-        String pool = name.substring(0, poolEnd).replaceAll("-\\[.*?]", "").replaceAll("-\\d+$", "");
-
+        String pool = poolOf(name);
         Boolean client = clients.get(node);
 
         if (client == null)
             return label(name.contains("thin-client") ? "thin." + pool : "other." + node + '.' + pool);
 
         return label((client ? "client." : "server.") + node + '.' + pool);
+    }
+
+    /** @return Node from the last {@code %...%} pair that ends a thread name, or {@code null} if there is none. */
+    private static String nodeOf(String name) {
+        int last = name.lastIndexOf('%');
+        int prev = last > 0 ? name.lastIndexOf('%', last - 1) : -1;
+
+        return prev >= 0 && last == name.length() - 1 ? name.substring(prev + 1, last) : null;
+    }
+
+    /** @return Pool of a node's thread: the name before {@code -#} or {@code %}, without {@code -[...]} and index. */
+    private static String poolOf(String name) {
+        int end = name.indexOf('%');
+        int hash = name.indexOf("-#");
+
+        if (hash >= 0 && hash < end)
+            end = hash;
+
+        return name.substring(0, end).replaceAll("-\\[.*?]", "").replaceAll("-\\d+$", "");
     }
 
     /**

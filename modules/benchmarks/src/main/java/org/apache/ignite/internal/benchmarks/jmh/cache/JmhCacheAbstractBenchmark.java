@@ -155,6 +155,20 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      * @throws Exception If failed.
      */
     protected void populate(Object[] keys, Object[] vals) throws Exception {
+        int passes = passes(keys);
+
+        for (int pass = 0; pass < passes; pass++) {
+            try (IgniteDataStreamer<Object, Object> streamer = node.dataStreamer(cache.getName())) {
+                streamer.allowOverwrite(pass > 0);
+
+                for (int i = 0; i < keys.length; i++)
+                    streamer.addData(keys[i], vals[i]);
+            }
+        }
+    }
+
+    /** @return Passes over the keys after which every partition that holds one has had more than 127 updates. */
+    private int passes(Object[] keys) {
         Affinity<Object> aff = node.affinity(cache.getName());
 
         int[] keysPerPart = new int[aff.partitions()];
@@ -164,14 +178,8 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         int min = Arrays.stream(keysPerPart).filter(n -> n > 0).min().orElse(1);
 
-        for (int pass = 0; pass < (128 + min - 1) / min; pass++) {
-            try (IgniteDataStreamer<Object, Object> streamer = node.dataStreamer(cache.getName())) {
-                streamer.allowOverwrite(pass > 0);
-
-                for (int i = 0; i < keys.length; i++)
-                    streamer.addData(keys[i], vals[i]);
-            }
-        }
+        // A partition with the fewest keys gets min updates per pass; rounded up.
+        return (128 + min - 1) / min;
     }
 
     /** @return Number of server nodes. */

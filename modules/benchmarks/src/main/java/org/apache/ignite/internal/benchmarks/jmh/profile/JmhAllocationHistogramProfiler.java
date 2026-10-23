@@ -115,14 +115,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         for (String opt : initLine.split(";")) {
             if (opt.startsWith("dir="))
                 dir = Paths.get(opt.substring("dir=".length()));
-            else if (opt.startsWith("site=")) {
-                try {
-                    frameCnt = Integer.parseInt(opt.substring("site=".length()));
-                }
-                catch (NumberFormatException e) {
-                    throw new ProfilerException("Expected site=<frames>: " + opt);
-                }
-            }
+            else if (opt.startsWith("site="))
+                frameCnt = siteFrames(opt);
             else if (!opt.isEmpty())
                 throw new ProfilerException("Unknown option, expected dir=<path>;site=<frames>: " + opt);
         }
@@ -140,40 +134,13 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
     /** {@inheritDoc} */
     @Override public void beforeIteration(BenchmarkParams benchParams, IterationParams iterParams) {
-        if (file == null) {
-            HotSpotDiagnosticMXBean hotspot = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class);
+        if (file == null)
+            init(benchParams);
 
-            if (Boolean.parseBoolean(hotspot.getVMOption("UseTLAB").getValue())) {
-                throw new IllegalStateException(
-                    "Run the benchmark with -XX:-UseTLAB: the profiler counts only allocations outside TLABs.");
-            }
-
-            file = dir.resolve(fileName(benchParams));
-        }
-
-        liveThreads = new ArrayList<>();
-
-        for (Thread t : Thread.getAllStackTraces().keySet()) {
-            if (t != Thread.currentThread())
-                liveThreads.add(t.getName());
-        }
-
+        liveThreads = threadNames();
         nodesAtStart = !Ignition.allGrids().isEmpty();
 
-        rec = new Recording();
-
-        // The first warmup iteration also starts the nodes, and stacks then make JFR drop events or run the fork out of
-        // heap; no warmup iteration records them.
-        stacks = frameCnt > 0 && iterParams.getType() == IterationType.MEASUREMENT;
-
-        if (stacks)
-            rec.enable(ALLOC_EVENT).withStackTrace();
-        else
-            rec.enable(ALLOC_EVENT).withoutStackTrace();
-
-        rec.enable(DATA_LOSS_EVENT);
-
-        rec.start();
+        startRecording(iterParams);
     }
 
     /** {@inheritDoc} */
@@ -206,6 +173,48 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** {@inheritDoc} */
     @Override public String getDescription() {
         return "Objects and bytes allocated per operation for each class, by node and thread pool. Needs -XX:-UseTLAB.";
+    }
+
+    /** Checks that TLABs are off and names the file; not in the constructor, which JMH also runs in its own JVM. */
+    private void init(BenchmarkParams benchParams) {
+        HotSpotDiagnosticMXBean hotspot = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class);
+
+        if (Boolean.parseBoolean(hotspot.getVMOption("UseTLAB").getValue())) {
+            throw new IllegalStateException(
+                "Run the benchmark with -XX:-UseTLAB: the profiler counts only allocations outside TLABs.");
+        }
+
+        file = dir.resolve(fileName(benchParams));
+    }
+
+    /** @return Names of the live threads other than the current one. */
+    private static List<String> threadNames() {
+        List<String> names = new ArrayList<>();
+
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            if (t != Thread.currentThread())
+                names.add(t.getName());
+        }
+
+        return names;
+    }
+
+    /** Starts recording allocations, with stacks in measurement iterations if {@code site} is set. */
+    private void startRecording(IterationParams iterParams) {
+        rec = new Recording();
+
+        // The first warmup iteration also starts the nodes, and stacks then make JFR drop events or run the fork out of
+        // heap; no warmup iteration records them.
+        stacks = frameCnt > 0 && iterParams.getType() == IterationType.MEASUREMENT;
+
+        if (stacks)
+            rec.enable(ALLOC_EVENT).withStackTrace();
+        else
+            rec.enable(ALLOC_EVENT).withoutStackTrace();
+
+        rec.enable(DATA_LOSS_EVENT);
+
+        rec.start();
     }
 
     /**
@@ -330,9 +339,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                 if (!ALLOC_EVENT.equals(type))
                     continue;
 
-                // JFR sometimes records an allocation without its thread or class.
+                // JFR sometimes records an allocation without its thread.
                 RecordedThread t = ev.getThread();
-                RecordedClass cls = ev.getClass("objectClass");
 
                 if (t != null && t.getJavaThreadId() == self)
                     continue;
@@ -340,22 +348,31 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                 String grp = t == null ? "other.unknown" : grps.computeIfAbsent(t.getJavaThreadId(),
                     id -> group(t.getJavaName(), clients));
 
-                long size = ev.getLong("allocationSize");
-                String name = cls == null ? "<unknown>" : cls.getName();
-
-                String row = javaName(name) + '\t' + (name.startsWith("[") ? sizeRange(size) : "");
-
-                if (stacks)
-                    row += '\t' + stackTexts.computeIfAbsent(ev.getStackTrace(), this::frames);
-                else if (frameCnt > 0)
-                    row += '\t';
-
-                long[] cnt = hist.computeIfAbsent(grp, g -> new TreeMap<>()).computeIfAbsent(row, r -> new long[2]);
+                long[] cnt = hist.computeIfAbsent(grp, g -> new TreeMap<>())
+                    .computeIfAbsent(row(ev, stackTexts), r -> new long[2]);
 
                 cnt[0]++;
-                cnt[1] += size;
+                cnt[1] += ev.getLong("allocationSize");
             }
         }
+    }
+
+    /**
+     * @param ev Allocation event.
+     * @param stackTexts Stack to its frames text, shared by the events of a recording.
+     * @return Row of the allocation: its class, the size range of an array and, with {@code site}, the top frames.
+     */
+    private String row(RecordedEvent ev, Map<RecordedStackTrace, String> stackTexts) {
+        // JFR sometimes records an allocation without its class.
+        RecordedClass cls = ev.getClass("objectClass");
+        String name = cls == null ? "<unknown>" : cls.getName();
+
+        String row = javaName(name) + '\t' + (name.startsWith("[") ? sizeRange(ev.getLong("allocationSize")) : "");
+
+        if (stacks)
+            return row + '\t' + stackTexts.computeIfAbsent(ev.getStackTrace(), this::frames);
+
+        return frameCnt > 0 ? row + '\t' : row;
     }
 
     /**
@@ -425,7 +442,20 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
      */
     private static String fileName(BenchmarkParams benchParams) {
         String bench = benchParams.getBenchmark();
-        String cls = bench.substring(0, bench.lastIndexOf('.'));
+        Map<String, String> dflts = defaultParams(bench.substring(0, bench.lastIndexOf('.')));
+
+        StringBuilder sb = new StringBuilder(bench);
+
+        for (String key : benchParams.getParamsKeys()) {
+            if (!benchParams.getParam(key).equals(dflts.get(key)))
+                sb.append('-').append(key).append('=').append(benchParams.getParam(key));
+        }
+
+        return sb.toString().replaceAll("[^A-Za-z0-9._=-]", "_") + '-' + ProcessHandle.current().pid() + ".tsv";
+    }
+
+    /** @return Name to value of the {@code @Param} fields with one value, in a class and its parents. */
+    private static Map<String, String> defaultParams(String cls) {
         Map<String, String> dflts = new HashMap<>();
 
         try {
@@ -442,13 +472,16 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
             // A nested benchmark class: its name keeps every parameter.
         }
 
-        StringBuilder sb = new StringBuilder(bench);
+        return dflts;
+    }
 
-        for (String key : benchParams.getParamsKeys()) {
-            if (!benchParams.getParam(key).equals(dflts.get(key)))
-                sb.append('-').append(key).append('=').append(benchParams.getParam(key));
+    /** @return Stack frames of the {@code site=<frames>} option. */
+    private static int siteFrames(String opt) throws ProfilerException {
+        try {
+            return Integer.parseInt(opt.substring("site=".length()));
         }
-
-        return sb.toString().replaceAll("[^A-Za-z0-9._=-]", "_") + '-' + ProcessHandle.current().pid() + ".tsv";
+        catch (NumberFormatException e) {
+            throw new ProfilerException("Expected site=<frames>: " + opt);
+        }
     }
 }
