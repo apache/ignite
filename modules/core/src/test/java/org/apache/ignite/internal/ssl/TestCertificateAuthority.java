@@ -84,19 +84,18 @@ class TestCertificateAuthority {
      * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
      */
     KeyStore issue(String cn, long notBefore, long notAfter) throws Exception {
-        return issue(cn, new X500Principal("CN=" + cn), notBefore, notAfter);
+        return issue(cn, new X500Principal("CN=" + cn), keyPair(), notBefore, notAfter);
     }
 
     /**
      * @param alias Alias for the private key and certificate chain.
      * @param subject Subject of the certificate.
+     * @param pair Key pair of the certificate owner.
      * @param notBefore Time it becomes valid; rounded down to a second.
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
      */
-    KeyStore issue(String alias, X500Principal subject, long notBefore, long notAfter) throws Exception {
-        KeyPair pair = keyPair();
-
+    KeyStore issue(String alias, X500Principal subject, KeyPair pair, long notBefore, long notAfter) throws Exception {
         X509Certificate leaf = sign(subject, pair, notBefore, notAfter, false);
 
         KeyStore store = emptyStore();
