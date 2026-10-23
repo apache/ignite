@@ -349,9 +349,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testEmptySnapshotPath() throws Exception {
-        // Doesn't matter here, speeds up the tests.
-        assumeTrue(snpThrdPoolSz > 1);
-
         startGrids(3);
 
         File path = new File(U.defaultWorkDirectory(), "not_snapshots");
@@ -728,8 +725,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
     public void testSnapshotListsSizes() throws Exception {
         // Incremental snapshots do not support the only-primary mode or encryption.
         assumeFalse(onlyPrimary || encryption);
-        // Speeds up the tests.
-        assumeTrue(snpThrdPoolSz > 1);
 
         int grids = 3;
 
