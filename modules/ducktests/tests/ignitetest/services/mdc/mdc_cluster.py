@@ -16,39 +16,46 @@
 """
 MDC test fixture.
 
-    mdc = MdcCluster(self, ignite_version, srv_per_dc=3, runners_per_dc=1)
+    mdc = MdcCluster(self, ignite_version, dcs=DCS_3, srv_per_dc=2, runners_per_dc=1)
 
     with cross_dc_network(self.logger, mdc, delay_ms=20) as net:
         mdc.start_servers()
-        mdc.generate_data(DC_1, CACHE, 0, 1000, backups=1)
+        mdc.generate_data(DC_1, CACHE, 0, 1000, backups=2)
         mdc.verify_cache_distribution(CACHE, copies_per_dc=1)
 
         net.enable_network_partition(DC_1, DC_2)
         ...
+
+Globals:
+
+    mdc_cache_topology_validator - whether the MDC caches are created with the cache level
+    MdcTopologyValidator, default true.
 """
-from typing import Dict, List, Optional, Union
+from itertools import combinations
+from typing import Dict, List, Optional, Sequence, Union
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.mdc.mdc_utils import DATA_CENTER_ATTR, dc_jvm_opts, per_dc, \
+    assert_cross_dc_distribution_by_attribute
 from ignitetest.services.network_group.configuration import NetworkGroupStore, CrossNetworkGroupConfiguration
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
-from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
-    from_ignite_services
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, TcpDiscoveryVmIpFinder
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils.version import IgniteVersion
 
 DC_1 = "DC1"
 DC_2 = "DC2"
-DCS = (DC_1, DC_2)
+DC_3 = "DC3"
+
+DCS_2 = (DC_1, DC_2)
+DCS_3 = (DC_1, DC_2, DC_3)
 
 IGNITE_STARTUP_TIMEOUT_SEC = 90
 
-DATA_CENTER_ATTR = "IGNITE_DATA_CENTER_ID"
-IGNITE_SQL_RETRY_TIMEOUT_ATTR = "IGNITE_SQL_RETRY_TIMEOUT"
-
-IGNITE_SQL_RETRY_TIMEOUT_MS = 1_000
+CACHE_TOP_VALIDATOR_GLOBAL = "mdc_cache_topology_validator"
 
 _APP_PKG = "org.apache.ignite.internal.ducktest.tests.mdc."
 
@@ -68,20 +75,6 @@ ASSERTION_ERROR_PATTERN = "AssertionError"
 ALL_LOGS_GLOB = "ignite*.log*"
 
 
-def dc_jvm_opts(dc: str) -> List[str]:
-    """
-    :return: JVM options assigning a node to the given data center.
-    """
-    return [f"-D{DATA_CENTER_ATTR}={dc}", f"-D{IGNITE_SQL_RETRY_TIMEOUT_ATTR}={IGNITE_SQL_RETRY_TIMEOUT_MS}"]
-
-
-def _per_dc(value: Union[int, Dict[str, int]]) -> Dict[str, int]:
-    """
-    Normalizes an int-or-dict per-DC count into a dict, e.g. 3 -> {DC1: 3, DC2: 3}.
-    """
-    return dict(value) if isinstance(value, dict) else {dc: value for dc in DCS}
-
-
 class MdcCluster:
     """
     Owns the per-DC Ignite services and reusable application services of an MDC test,
@@ -89,57 +82,55 @@ class MdcCluster:
 
     :param test: The ducktape test instance.
     :param ignite_version: Ignite version string.
+    :param dcs: Data centers the cluster spans; the first one is the main DC of an even DC set.
     :param srv_per_dc: Servers per DC, an int or a per-DC dict (asymmetric DCs).
     :param runners_per_dc: Reusable run-to-completion app services per DC (generator,
            checkers, load bursts). An int or a per-DC dict.
     :param loaders_per_dc: Dedicated background load app services per DC. They run
            concurrently with runner apps, hence separate containers.
     :param client_connector: Whether to expose the thin client connector on servers.
+    :param network_timeout: Network timeout of the nodes, in ms.
+    :param discovery_network_timeout: Network timeout of the discovery SPI, in ms.
     """
-    def __init__(self, test, ignite_version: str, srv_per_dc: Union[int, Dict[str, int]] = 3,
+    def __init__(self, test, ignite_version: str, dcs: Sequence[str] = DCS_2,
+                 srv_per_dc: Union[int, Dict[str, int]] = 3,
                  runners_per_dc: Union[int, Dict[str, int]] = 1,
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
                  client_connector: bool = False,
-                 network_timeout: int = 5_000,
-                 tcp_connect_timeout: int = 5_000):
+                 network_timeout: Optional[int] = None,
+                 discovery_network_timeout: Optional[int] = None):
         self.test_context = test.test_context
         self.logger = test.logger
 
-        # A single discovery SPI (hence a single ip finder) shared by both DCs' server
-        # services is what makes the two DCs form ONE cluster: prepare_on_start()
-        # memoizes the addresses of the first started DC into the shared ip finder, so
-        # the second DC discovers through the first DC's nodes, and restart() re-joins
-        # the same way. Restarting the first started DC itself is the one case this
-        # breaks - see sync_service_discovery().
-        cfg_kwargs = {
-            "version": IgniteVersion(ignite_version),
-            "discovery_spi": TcpDiscoverySpi(),
-            "network_timeout": network_timeout,
-            "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout)
-        }
+        self.dcs = tuple(dcs)
 
-        if client_connector:
-            cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()
+        self.discovery_network_timeout = discovery_network_timeout
 
-        self.ignite_config = IgniteConfiguration(**cfg_kwargs)
+        self.ignite_config = self._ignite_config(ignite_version, client_connector, network_timeout)
 
-        self.srv_per_dc = _per_dc(srv_per_dc)
+        self.srv_per_dc = per_dc(srv_per_dc, self.dcs)
 
         self.servers: Dict[str, IgniteService] = {
             dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc),
                               startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
             for dc, num in self.srv_per_dc.items() if num > 0}
 
+        # Servers of every DC join through the servers of all DCs, so any DC can restart and rejoin.
+        server_spi = self._discovery_spi([node for svc in self.servers.values() for node in svc.nodes])
+
+        for svc in self.servers.values():
+            svc.config = svc.config._replace(discovery_spi=server_spi)
+
         self.runners: Dict[str, List[IgniteApplicationService]] = {
             dc: [self._app_service(dc) for _ in range(num)]
-            for dc, num in _per_dc(runners_per_dc).items()}
+            for dc, num in per_dc(runners_per_dc, self.dcs).items()}
 
         self.loaders: Dict[str, List[IgniteApplicationService]] = {
             dc: [self._app_service(dc) for _ in range(num)]
-            for dc, num in _per_dc(loaders_per_dc).items()}
+            for dc, num in per_dc(loaders_per_dc, self.dcs).items()}
 
         # Extra services (e.g. thin clients) registered into a DC's network group.
-        self.extras: Dict[str, List] = {dc: [] for dc in DCS}
+        self.extras: Dict[str, List] = {dc: [] for dc in self.dcs}
 
         # App services that have been started at least once: the first start is clean,
         # subsequent ones preserve work dirs (and logs - hence unique result prefixes).
@@ -148,23 +139,49 @@ class MdcCluster:
         # Admissibility checks run on reusable services, so each check needs a unique result prefix.
         self._adm_checks = 0
 
-    def sync_service_discovery(self):
+    @staticmethod
+    def _ignite_config(ignite_version: str, client_connector: bool,
+                       network_timeout: Optional[int]) -> IgniteConfiguration:
         """
-        Points every server service at a discovery SPI covering all DCs.
-
-        Required before restarting the FIRST started DC: the shared ip finder holds only
-        that DC's addresses, so after a full stop its nodes would seed off themselves and
-        form a separate cluster instead of rejoining the surviving DC.
+        :return: Configuration shared by the servers and clients of every DC.
         """
-        discovery_spi = from_ignite_services(list(self.servers.values()))
+        cfg_kwargs = {"version": IgniteVersion(ignite_version)}
 
-        for service in self.servers.values():
-            service.config = service.config._replace(discovery_spi=discovery_spi)
+        if network_timeout is not None:
+            cfg_kwargs["network_timeout"] = network_timeout
+
+        if client_connector:
+            cfg_kwargs["client_connector_configuration"] = ClientConnectorConfiguration()
+
+        return IgniteConfiguration(**cfg_kwargs)
+
+    def _discovery_spi(self, nodes) -> TcpDiscoverySpi:
+        """
+        :return: Discovery SPI that joins through the given nodes, one port per host.
+        """
+        return TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(nodes), port_range=0,
+                               network_timeout=self.discovery_network_timeout)
 
     def _app_service(self, dc: str) -> IgniteApplicationService:
-        client_cfg = self.ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.servers[dc]))
+        client_cfg = self.ignite_config._replace(client_mode=True,
+                                                 discovery_spi=self._discovery_spi(self.servers[dc].nodes))
 
         return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
+
+    def _cache_params(self) -> dict:
+        """
+        :return: Parameters of an MDC cache that match the cluster's DCs.
+        """
+        params = {"dcsNum": len(self.dcs),
+                  "topologyValidator": self.test_context.globals.get(CACHE_TOP_VALIDATOR_GLOBAL, True)}
+
+        # The validator checks an odd DC set by majority and an even one by the main DC.
+        if len(self.dcs) % 2 == 1:
+            params["datacenters"] = list(self.dcs)
+        else:
+            params["mainDc"] = self.dcs[0]
+
+        return params
 
     def register(self, dc: str, service):
         """
@@ -180,7 +197,7 @@ class MdcCluster:
         """
         registry = {}
 
-        for dc in DCS:
+        for dc in self.dcs:
             services = []
 
             if dc in self.servers:
@@ -208,7 +225,7 @@ class MdcCluster:
         """
         lines = ["DATA CENTERS"]
 
-        for dc in DCS:
+        for dc in self.dcs:
             roles = [(label, [node.account.hostname for svc in services for node in svc.nodes])
                      for label, services in (("server", [self.servers[dc]] if dc in self.servers else []),
                                              ("runner", self.runners.get(dc, [])),
@@ -251,7 +268,7 @@ class MdcCluster:
     def restart(self, dc: str, clean: bool = False, await_rebalance: bool = True):
         """
         Restarts a whole DC preserving its persistence (the pattern used to rejoin a
-        read-only half-ring back into the main cluster after a partition heals).
+        read-only segment back into the main cluster after a partition heals).
         """
         self.servers[dc].stop()
         self.servers[dc].start(clean=clean)
@@ -276,7 +293,7 @@ class MdcCluster:
         if java_class is not None:
             svc.java_class_name = java_class
 
-        svc.params = params
+        svc.params = {**self._cache_params(), **params}
 
         svc.start(clean=self._first_start(svc))
         svc.wait()
@@ -293,7 +310,7 @@ class MdcCluster:
         svc = self.loaders[dc][loader]
 
         svc.java_class_name = java_class
-        svc.params = params
+        svc.params = {**self._cache_params(), **params}
 
         svc.start(clean=self._first_start(svc))
 
@@ -318,13 +335,13 @@ class MdcCluster:
         return first
 
     def generate_data(self, dc: str, cache_name: str, from_idx: int, to_idx: int, backups: int,
-                      main_dc: str = DC_1, sql_mode: bool = False, **cache_params) -> IgniteApplicationService:
+                      sql_mode: bool = False, **cache_params) -> IgniteApplicationService:
         """
         Creates the MDC cache (if absent) and populates keys ``[from_idx, to_idx)``.
         Extra cache parameters (``atomicity``, ``writeSync``, ``readFromBackup``,
         ``partitions``, ...) are passed through to the cache configuration builder.
         """
-        params = {"cacheName": cache_name, "backups": backups, "mainDc": main_dc,
+        params = {"cacheName": cache_name, "backups": backups,
                   "from": from_idx, "to": to_idx, "sqlMode": sql_mode, **cache_params}
 
         return self.run_app(dc, GENERATOR_APP, params)
@@ -347,13 +364,9 @@ class MdcCluster:
     def check_put_admissibility(self, dc: str, cache_name: str, admissible: bool,
                                 key_offset: int = 1_000_000, probes: int = 100) -> IgniteApplicationService:
         """
-        Verifies that put load from the given DC is admissible (primary DC visible) or
-        rejected by the topology validator (read-only DC). A PUT burst of the load
-        application: an admissible check fails fast on the first rejected put, an
-        inadmissible check fails if any of the probe puts succeeds.
-
-        Probe keys start at ``key_offset`` (defaults to 1_000_000) so they never intersect
-        with the data set verified by ``check_data``.
+        Verifies that puts from the given DC are accepted by the topology validator, or
+        rejected by it. An admissible check fails on the first rejected put, an inadmissible
+        one if any put succeeds.
         """
         self._adm_checks += 1
 
@@ -387,77 +400,57 @@ class MdcCluster:
         distribution = self.control(dc).cache_distribution(cache_names=cache_name, user_attributes=DATA_CENTER_ATTR)
 
         assert_cross_dc_distribution_by_attribute(distribution, dc_attr=DATA_CENTER_ATTR,
-                                                  expected_dcs=DCS, copies_per_dc=copies_per_dc)
+                                                  expected_dcs=self.dcs, copies_per_dc=copies_per_dc)
 
         return distribution
 
-    def verify_split_brain(self):
+    def verify_split_brain(self, *segments: Union[str, Sequence[str]]):
         """
-        Verifies that after the network partition the cluster has split into two independent
-        half-rings: their baselines don't intersect and each half elected its own coordinator.
+        Verifies that the cluster split into exactly the given segments, one per DC by default.
+        A segment is a DC or a tuple of DCs that still see each other.
         """
-        for dc in DCS:
-            self.verify_half_ring_healthy(dc)
+        segments = [(seg,) if isinstance(seg, str) else tuple(seg) for seg in segments or self.dcs]
 
-        state = {dc: self.control(dc).cluster_state() for dc in DCS}
+        baselines = {seg: {node.consistent_id for node in self.verify_segment_healthy(*seg).baseline}
+                     for seg in segments}
 
-        baselines = {dc: {node.consistent_id for node in state[dc].baseline} for dc in DCS}
+        for seg_a, seg_b in combinations(segments, 2):
+            common_nodes = baselines[seg_a] & baselines[seg_b]
 
-        common_nodes = baselines[DC_1] & baselines[DC_2]
+            assert not common_nodes, \
+                f"Segment baselines should not intersect [common={sorted(common_nodes)}, " \
+                f"{seg_a}={sorted(baselines[seg_a])}, {seg_b}={sorted(baselines[seg_b])}]"
 
-        assert not common_nodes, \
-            f"Half-ring baselines should not intersect " \
-            f"[common={sorted(common_nodes)}, dc1={sorted(baselines[DC_1])}, dc2={sorted(baselines[DC_2])}]"
-
-        for dc in DCS:
-            coordinator = state[dc].coordinator
-
-            assert coordinator, f"Coordinator is not found in {dc} half-ring baseline output!"
-
-            assert coordinator.consistent_id in baselines[dc], \
-                f"{dc} coordinator should belong to its own half-ring baseline " \
-                f"[coordinator={coordinator.consistent_id}, baseline={sorted(baselines[dc])}]"
-
-        assert state[DC_1].coordinator.consistent_id != state[DC_2].coordinator.consistent_id, \
-            f"Half-rings should have different coordinators " \
-            f"[coordinator={state[DC_1].coordinator.consistent_id}]"
-
-    def verify_half_ring_healthy(self, dc: str):
+    def verify_segment_healthy(self, *dcs: str):
         """
-        Verifies that a half-ring is fully alive, ACTIVE, and its baseline matches its size.
+        Verifies that the servers of the given DCs are alive and form an ACTIVE cluster whose
+        baseline holds exactly them.
+
+        :return: The cluster state read from the segment.
         """
-        exp_alive_nodes = self.srv_per_dc[dc]
-        act_alive_nodes = len(self.servers[dc].alive_nodes)
+        exp_alive_nodes = sum(self.srv_per_dc.get(dc, 0) for dc in dcs)
+        act_alive_nodes = sum(len(self.servers[dc].alive_nodes) for dc in dcs if dc in self.servers)
 
         assert act_alive_nodes == exp_alive_nodes, \
-            f"{exp_alive_nodes} nodes should be alive in {dc}! [actual={act_alive_nodes}]"
+            f"{exp_alive_nodes} nodes should be alive in {dcs}! [actual={act_alive_nodes}]"
 
-        cluster_state = self.control(dc).cluster_state()
+        cluster_state = self.control(dcs[0]).cluster_state()
 
         assert "ACTIVE" == cluster_state.state, \
-            f"{dc} half-ring state should remain ACTIVE [actual={cluster_state.state}]"
+            f"{dcs} segment state should remain ACTIVE [actual={cluster_state.state}]"
 
         assert len(cluster_state.baseline) == exp_alive_nodes, \
-            f"{dc} half-ring baseline is not expected " \
+            f"{dcs} segment baseline is not expected " \
             f"[exp={exp_alive_nodes}, actual_baseline={cluster_state.baseline}]"
+
+        return cluster_state
 
     def verify_whole_cluster_healthy(self):
         """
-        Verifies that both DCs form a single ACTIVE cluster: every server node is alive
-        and the baseline seen from DC1 covers all servers of both DCs.
+        Verifies that all DCs form a single ACTIVE cluster: every server node is alive
+        and the baseline covers all servers of every DC.
         """
-        exp_total = sum(self.srv_per_dc.values())
-
-        act_alive = sum(len(self.servers[dc].alive_nodes) for dc in self.servers)
-
-        assert act_alive == exp_total, f"All {exp_total} server nodes should be alive [actual={act_alive}]"
-
-        cluster_state = self.control(DC_1).cluster_state()
-
-        assert "ACTIVE" == cluster_state.state, f"Cluster should be ACTIVE [actual={cluster_state.state}]"
-
-        assert len(cluster_state.baseline) == exp_total, \
-            f"Cluster baseline should cover both DCs [exp={exp_total}, actual={cluster_state.baseline}]"
+        self.verify_segment_healthy(*self.dcs)
 
     def verify_servers_log_clean(self):
         """
@@ -509,8 +502,8 @@ class MdcCluster:
 def cross_dc_network(logger, mdc: MdcCluster, delay_ms: Optional[int] = None,
                      loss: Optional[float] = None) -> NetworkGroupManager:
     """
-    Builds a :class:`NetworkGroupManager` (context manager) for the cluster with symmetric
-    DC1 <-> DC2 impairments. With no impairments the manager still owns partition
+    Builds a :class:`NetworkGroupManager` (context manager) for the cluster with the same
+    impairments on every DC pair. With no impairments the manager still owns partition
     enable/disable and the final network cleanup.
 
     :param delay_ms: One-way cross-DC latency in milliseconds (the effective RTT is twice
@@ -522,68 +515,7 @@ def cross_dc_network(logger, mdc: MdcCluster, delay_ms: Optional[int] = None,
     cfg = CrossNetworkGroupConfiguration(delay=f"{delay_ms}ms" if delay_ms is not None else None, loss=loss)
 
     if not cfg.is_empty:
-        store.set_config(DC_1, DC_2, cfg)
+        for dc_a, dc_b in combinations(mdc.dcs, 2):
+            store.set_config(dc_a, dc_b, cfg)
 
     return NetworkGroupManager(logger, store, mdc.network_registry())
-
-
-def assert_cross_dc_distribution_by_attribute(distribution, dc_attr, expected_dcs, owning_only=True,
-                                              copies_per_dc=None):
-    """
-    Asserts that every partition of every cache group has at least one copy in every DC,
-    using a node attribute (requested via --user-attributes) as the DC marker.
-
-    :param distribution: CacheDistribution returned by ControlUtility.cache_distribution(),
-                         requested with user_attributes=[dc_attr].
-    :param dc_attr: Attribute name holding the DC id, e.g. "IGNITE_DATA_CENTER_ID".
-    :param expected_dcs: Collection of DC ids that must own a copy of every partition.
-    :param owning_only: Count only copies in OWNING state as present.
-    :param copies_per_dc: If set, each DC must hold exactly this many copies of every
-                          partition - the MdcAffinityBackupFilter guarantee
-                          ``(backups + 1) / dcsNum``.
-    """
-    def dc_of(copy):
-        return copy.user_attributes.get(dc_attr)
-
-    _assert_cross_dc(distribution, set(expected_dcs), dc_of, owning_only, copies_per_dc,
-                     layout_hint=f"DC attribute: {dc_attr}, expected DCs: {sorted(expected_dcs)}")
-
-
-def _assert_cross_dc(distribution, expected_dcs, dc_of, owning_only, copies_per_dc, layout_hint):
-    violations = []
-
-    for group in distribution.groups.values():
-        for part, copies in sorted(group.partitions.items()):
-            counted = [c for c in copies if not owning_only or c.state == "OWNING"]
-
-            per_dc = {dc: 0 for dc in expected_dcs}
-
-            for copy in counted:
-                dc = dc_of(copy)
-
-                if dc in per_dc:
-                    per_dc[dc] += 1
-
-            missing = {dc for dc, cnt in per_dc.items() if cnt == 0}
-
-            unbalanced = {} if copies_per_dc is None else \
-                {dc: cnt for dc, cnt in per_dc.items() if cnt != copies_per_dc}
-
-            if missing or unbalanced:
-                copies_dump = ", ".join(
-                    f"{c.node_id}({'P' if c.primary else 'B'},{c.state},dc={dc_of(c)},{c.node_addresses})"
-                    for c in copies)
-
-                problems = []
-
-                if missing:
-                    problems.append(f"missing DCs={sorted(missing)}")
-
-                if unbalanced:
-                    problems.append(f"copies per DC != {copies_per_dc}: {unbalanced}")
-
-                violations.append(f"group={group.name}(id={group.group_id}), partition={part}, "
-                                  f"{', '.join(problems)}, copies=[{copies_dump}]")
-
-    assert not violations, \
-        "Partition distribution is not cross-DC:\n  " + "\n  ".join(violations) + "\n" + layout_hint
