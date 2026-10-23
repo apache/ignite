@@ -38,22 +38,34 @@ import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolic
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDisabledEvictionReadThroughOomSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionEnsureFreeSpaceThresholdTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionGuardOomTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMetricTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionPagesRecyclingAndReusingTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughReservedPagesSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionRowSizeBinaryObjectTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionConcurrentWritesTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionPutLargeObjectsTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionSizeAwareTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionWithExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruNearEnabledPageEvictionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionConcurrentWritesTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionDataStreamerTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionPutLargeObjectsTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionSizeAwareTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListReservedPagesSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -100,11 +112,32 @@ public class IgniteCacheEvictionSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionPutLargeObjectsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionPutLargeObjectsTest.class, ignoredTests);
 
+        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionSizeAwareTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionSizeAwareTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionWithExpiryPolicyTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionWithExpiryPolicyTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionConcurrentWritesTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionConcurrentWritesTest.class, ignoredTests);
+
         GridTestUtils.addTestIfNeeded(suite, PageEvictionMetricTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionGuardOomTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, PageEvictionPagesRecyclingAndReusingTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, DhtAndNearEvictionTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, FreeListReservedPagesSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionReadThroughReservedPagesSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionRowSizeBinaryObjectTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionEnsureFreeSpaceThresholdTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionDisabledEvictionReadThroughOomSelfTest.class, ignoredTests);
 
         return suite;
     }

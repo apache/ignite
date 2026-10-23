@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
-/**
- */
+/** */
 public interface FreeList<T extends Storable> {
     /**
      * @param row Row.
@@ -63,4 +63,33 @@ public interface FreeList<T extends Storable> {
      * @param log Logger.
      */
     public void dumpStatistics(IgniteLogger log);
+
+    /**
+     * Reserves pages for a row of the given size before the entry lock is acquired. Runs blocking eviction when
+     * necessary (the caller must not hold any entry or page locks).
+     *
+     * @param rowSize Size of the row to be inserted.
+     * @return Number of reserved pages to be released via {@link #releaseReserved(long)} once the row insert
+     * completes, or {@code 0} if the reservation is not engaged for this free list (persistent data region or disabled page eviction).
+     * @throws IgniteOutOfMemoryException If the row cannot fit into the region, or eviction makes no progress.
+     * @throws IgniteCheckedException If failed to evict data pages.
+     */
+    public long reserve(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException;
+
+    /**
+     * Releases the unconsumed portion of a reservation made by {@link #reserve(int)}.
+     *
+     * @param pages Number of pages to release (must not be negative).
+     */
+    public void releaseReserved(long pages);
+
+    /**
+     * Early out-of-memory check for an in-memory data region with disabled page eviction: verifies that the region
+     * still has room for a row of the given size with a safety margin for free-list bookkeeping pages.
+     * No-op for persistent regions or regions with eviction enabled.
+     *
+     * @param rowSize Row size in bytes.
+     * @throws IgniteOutOfMemoryException If the region is near exhaustion.
+     */
+    public void checkFitsForInsert(int rowSize) throws IgniteOutOfMemoryException;
 }
