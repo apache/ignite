@@ -20,9 +20,13 @@ package org.apache.ignite.internal.idto;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.RoundEnvironment;
@@ -34,10 +38,12 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.MessageJsonGenerator;
+import org.apache.ignite.internal.Order;
 
 import static org.apache.ignite.internal.MessageCompanionGenerator.NL;
 import static org.apache.ignite.internal.MessageCompanionGenerator.TAB;
@@ -130,12 +136,14 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return;
 
         try {
-            IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
+            List<VariableElement> fields = fields(clazz);
+
+            IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz, fields);
 
             if (gen.generate()) {
                 genSerDes.put(clazz, gen.serializerFQN());
 
-                jsonGen.generate(clazz, gen.fields());
+                jsonGen.generate(clazz, fields);
             }
         }
         catch (Exception e) {
@@ -145,6 +153,46 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
                 clazz
             );
         }
+    }
+
+    /** @return List of non-static and non-transient field for given {@code type}. */
+    private List<VariableElement> fields(TypeElement type) {
+        SortedMap<Integer, VariableElement> flds = new TreeMap<>();
+
+        while (type != null) {
+            for (Element el: type.getEnclosedElements()) {
+                if (el.getKind() != ElementKind.FIELD)
+                    continue;
+
+                if (el.getModifiers().contains(Modifier.STATIC) || el.getModifiers().contains(Modifier.TRANSIENT))
+                    continue;
+
+                Order order = el.getAnnotation(Order.class);
+
+                if (order == null) {
+                    throw new IllegalStateException("Please, add @Order " +
+                        "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + "]");
+                }
+
+                VariableElement prev = flds.put(order.value(), (VariableElement)el);
+
+                if (prev != null) {
+                    throw new IllegalStateException("Duplicate @Order for " + type.getQualifiedName() + ": " +
+                        "[order=" + order.value() + ", fld1=" + prev.getSimpleName() + ", fld2 = " + el.getSimpleName() + ']');
+                }
+            }
+
+            Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
+
+            type = (TypeElement)superType;
+        }
+
+        for (int i = 0; i < flds.size(); i++) {
+            if (!flds.containsKey(i))
+                throw new IllegalStateException("@Order not found: " + i);
+        }
+
+        return new ArrayList<>(flds.values());
     }
 
     /**
