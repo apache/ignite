@@ -53,7 +53,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
-        CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
+        CacheMapHolder hld = entriesMapIfExists(ctx.cacheId());
 
         key = (KeyCacheObject)ctx.kernalContext().cacheObjects().prepareForCache(key, ctx);
 
@@ -87,7 +87,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
         final boolean skipReserve
     ) {
         if (hld == null)
-            hld = entriesMapIfExists(ctx.cacheIdBoxed());
+            hld = entriesMapIfExists(ctx.cacheId());
 
         GridCacheMapEntry cur = null;
         GridCacheMapEntry created = null;
@@ -247,7 +247,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
      * @param cacheId Cache ID.
      * @return Map for given cache ID.
      */
-    @Nullable protected abstract CacheMapHolder entriesMapIfExists(Integer cacheId);
+    @Nullable protected abstract CacheMapHolder entriesMapIfExists(int cacheId);
 
     /**
      *
@@ -279,7 +279,7 @@ public abstract class GridCacheConcurrentMapImpl implements GridCacheConcurrentM
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
         GridCacheContext ctx = entry.context();
 
-        CacheMapHolder hld = entriesMapIfExists(ctx.cacheIdBoxed());
+        CacheMapHolder hld = entriesMapIfExists(ctx.cacheId());
 
         boolean rmv = hld != null && hld.map.remove(entry.key(), entry);
 
