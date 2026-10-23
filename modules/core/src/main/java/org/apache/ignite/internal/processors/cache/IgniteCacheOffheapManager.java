@@ -409,6 +409,21 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
+     * Tries to lock the manager against stopping.
+     *
+     * @return {@code true} if successful, {@code false} if the manager is already stopping.
+     * @see #allowStopping()
+     */
+    public boolean preventStopping();
+
+    /**
+     * Releases the 'stop-unallowed' state and allows the manager to stop.
+     *
+     * @see #preventStopping()
+     */
+    public void allowStopping();
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {

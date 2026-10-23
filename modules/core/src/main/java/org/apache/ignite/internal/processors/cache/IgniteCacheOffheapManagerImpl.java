@@ -191,6 +191,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public boolean preventStopping() {
+        return busyLock.enterBusy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void allowStopping() {
+        busyLock.leaveBusy();
+    }
+
+    /** {@inheritDoc} */
     @Override public void stopCache(int cacheId, boolean destroy) {
         if (destroy && grp.affinityNode())
             removeCacheData(cacheId);

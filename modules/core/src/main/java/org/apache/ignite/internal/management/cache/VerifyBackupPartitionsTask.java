@@ -85,6 +85,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int PARTITION_FUTURE_TIMEOUT = 100;
+
+    /** */
+    private static final long LOG_PROGRESS_TIMEOUT = 3 * 60 * 1000L;
+
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
@@ -201,8 +207,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 ignite.context().cache().context().database().waitForCheckpoint(CP_REASON);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(
-                    "Failed to wait for checkpoint before executing verify backup partitions task", e);
+                throw new IgniteException("Failed to wait for checkpoint before executing verify backup partitions task", e);
             }
 
             if (isCancelled())
@@ -217,75 +222,107 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts =
-                calcPartitionHashAsync(grpIds);
+            // Overall failure flag: there is no need to process the remaining jobs.
+            boolean jobFailure = false;
+            // Acceptable exceptions to collect.
+            List<IgniteException> acceptableExcs = new ArrayList<>();
+            // Unacceptable exception that disrupts the job.
+            IgniteException unacceptableEx = null;
+            // The current thread's interruption flag.
+            boolean interrupted = false;
+            // The cancellation flag. If it is set, no need to store the acceptable exceptions from the futures.
+            boolean cancelled = false;
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
-            List<IgniteException> exceptions = new ArrayList<>();
-
+            // Start time of the current log-timeout interval.
             long lastProgressLogTs = U.currentTimeMillis();
 
-            for (int i = 0; i < partHashCalcFuts.size(); ) {
-                if (isCancelled()) {
-                    cancelFuts(i, partHashCalcFuts);
+            // Launch the partition jobs.
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
 
-                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-                }
-
+            // Iterate over the per-partition futures. We wait for all of them to finish.
+            for (int i = 0; i < partHashCalcFuts.size(); i++) {
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
                 try {
-                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
+                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(PARTITION_FUTURE_TIMEOUT, TimeUnit.MILLISECONDS);
 
-                    res.putAll(partHash);
-
-                    i++;
+                    if (!jobFailure)
+                        res.putAll(partHash);
                 }
-                catch (InterruptedException | ExecutionException e) {
-                    if (e.getCause() instanceof IgniteException && !(e.getCause() instanceof GridNotIdleException)) {
-                        exceptions.add((IgniteException)e.getCause());
+                catch (Exception e) {
+                    if (isCancelled())
+                        cancelled = true;
 
-                        i++;
+                    // A timeout of a particular future is not a problem. We just log that the progress is still on.
+                    if (e instanceof TimeoutException) {
+                        // Log the progress status periodically.
+                        if (U.currentTimeMillis() - lastProgressLogTs > LOG_PROGRESS_TIMEOUT) {
+                            lastProgressLogTs = U.currentTimeMillis();
+
+                            log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
+                                partHashCalcFuts.size() + " local partitions");
+                        }
+
+                        // Do not proceed to the next future, wait for the current one.
+                        --i;
 
                         continue;
                     }
 
-                    cancelFuts(i, partHashCalcFuts);
+                    if (e instanceof InterruptedException || e instanceof ExecutionException) {
+                        if (e instanceof InterruptedException)
+                            interrupted = true;
 
-                    if (e instanceof InterruptedException)
-                        throw new IgniteInterruptedException((InterruptedException)e);
-                    else
-                        throw new IgniteException(e.getCause());
-                }
-                catch (TimeoutException ignored) {
-                    if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
-                        lastProgressLogTs = U.currentTimeMillis();
+                        if (e.getCause() instanceof IgniteException && !(e.getCause() instanceof GridNotIdleException)) {
+                            if (!cancelled)
+                                acceptableExcs.add((IgniteException)e.getCause());
 
-                        log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
-                            partHashCalcFuts.size() + " local partitions");
+                            // Current future is processed with an acceptable exception.
+                            continue;
+                        }
+                    }
+
+                    // Raise a failure of the entire job.
+                    if (!jobFailure) {
+                        jobFailure = true;
+
+                        // Propagate the cancellation to the futures.
+                        cancel();
+
+                        // Store an unacceptable exception to rethrow after all the futures stop.
+                        if (e instanceof InterruptedException)
+                            unacceptableEx = new IgniteInterruptedException((InterruptedException)e);
+                        else if (e.getCause() instanceof IgniteException ie)
+                            unacceptableEx = ie;
+                        else
+                            unacceptableEx = new IgniteException(e.getCause());
+                    }
+                    else if (log.isDebugEnabled()) {
+                        log.debug("Idle verify stopping with the exception: '" + unacceptableEx.getMessage() +
+                            "'. Another exception appeared during the stopping of the partition hash calculations: '" +
+                            e.getMessage() + "'.");
                     }
                 }
             }
 
+            if (interrupted)
+                Thread.currentThread().interrupt();
+
+            if (unacceptableEx != null)
+                throw unacceptableEx;
+
             if (log.isInfoEnabled())
                 log.info("Idle verify procedure has finished.");
 
-            if (!F.isEmpty(exceptions))
-                throw new IdleVerifyException(exceptions);
+            if (cancelled)
+                throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
+
+            if (!F.isEmpty(acceptableExcs))
+                throw new IdleVerifyException(acceptableExcs);
 
             return res;
-        }
-
-        /**
-         * Cancels futures from given index.
-         *
-         * @param start Index to start from.
-         * @param partHashCalcFuts Partitions hash calculation futures to cancel.
-         */
-        private void cancelFuts(int start, List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts) {
-            for (int i = start; i < partHashCalcFuts.size(); i++)
-                partHashCalcFuts.get(i).cancel(false);
         }
 
         /**
@@ -489,6 +526,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
+                checkCancelledOrStopped(cancelled, gctx, true);
+
                 Map<PartitionKey, PartitionHashRecord> res = emptyMap();
 
                 if (!part.reserve())
@@ -499,28 +538,39 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
                     if (arg.checkCrc() && gctx.persistenceEnabled()) {
-                        FilePageStoreManager pageStoreMgr =
-                            (FilePageStoreManager)ignite.context().cache().context().pageStore();
+                        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
                         checkPartitionsPageCrcSum(
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            cancelled
+                            () -> checkCancelledOrStopped(cancelled, gctx, false)
                         );
                     }
 
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
-                    PartitionHashRecord hash = calculatePartitionHash(key,
-                        updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
-                        ignite.context().discovery().localNode().consistentId(),
-                        part.state(),
-                        part.primary(gctx.topology().readyTopologyVersion()),
-                        part.dataStore().fullSize(),
-                        gctx.offheap().partitionIterator(part.id()),
-                        cancelled
-                    );
+                    PartitionHashRecord hash;
+
+                    // The cache group can be destroyed concurrently.
+                    if (!gctx.offheap().preventStopping())
+                        throw cancellationException();
+
+                    try {
+                        hash = calculatePartitionHash(
+                            key,
+                            updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
+                            ignite.context().discovery().localNode().consistentId(),
+                            part.state(),
+                            part.primary(gctx.topology().readyTopologyVersion()),
+                            part.dataStore().fullSize(),
+                            gctx.offheap().partitionIterator(part.id()),
+                            () -> checkCancelledOrStopped(cancelled, gctx, false)
+                        );
+                    }
+                    finally {
+                        gctx.offheap().allowStopping();
+                    }
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
@@ -534,7 +584,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
+                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
+                        ", cause=" + e.getMessage() + ']';
 
                     U.error(log, msg, e);
 
@@ -548,6 +599,30 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 return res;
             });
+        }
+
+        /**
+         * Checks whether the work should be stopped: the task was cancelled, the local node is stopping,
+         * or the cache group is stopping or being destroyed.
+         *
+         * @param cancelled Supplier that returns {@code true} if the task cancellation was requested.
+         * @param gctx Cache group context.
+         * @param throwIfCancelled If {@code true}, throws a cancellation exception instead of returning {@code true}.
+         * @return {@code true} if the work should be stopped.
+         */
+        private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx, boolean throwIfCancelled) {
+            boolean res = cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+
+            if (res && throwIfCancelled)
+                throw cancellationException();
+
+            return res;
+        }
+
+        /** */
+        private static IgniteException cancellationException() {
+            return new IgniteException("Partition hash calculation has been cancelled: the task has been cancelled, " +
+                "or the node or the cache group is stopping.");
         }
     }
 }
