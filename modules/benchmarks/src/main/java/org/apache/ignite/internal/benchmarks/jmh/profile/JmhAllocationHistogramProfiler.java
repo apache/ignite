@@ -40,6 +40,7 @@ import jdk.jfr.consumer.RecordedFrame;
 import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordingFile;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -51,7 +52,6 @@ import org.openjdk.jmh.results.Result;
 import org.openjdk.jmh.runner.IterationType;
 
 import static java.nio.file.StandardOpenOption.APPEND;
-import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.clients;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.group;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.result;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.writeRunDescription;
@@ -89,7 +89,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** Names of the threads alive at the start of the iteration. */
     private List<String> liveThreads;
 
-    /** Whether Ignite nodes ran at the start of the iteration. */
+    /** Whether named nodes ran at the start of the iteration. */
     private boolean nodesAtStart;
 
     /** Warmup iterations so far. */
@@ -132,7 +132,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
             init(benchParams);
 
         liveThreads = threadNames();
-        nodesAtStart = !Ignition.allGrids().isEmpty();
+        nodesAtStart = !clients().isEmpty();
 
         startRecording(iterParams);
     }
@@ -143,10 +143,10 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         IterationParams iterParams,
         IterationResult res
     ) {
-        if (rec.getState() == RecordingState.RUNNING && nodesAtStart && Ignition.allGrids().isEmpty())
-            throw new IllegalStateException(JmhNodeStopHook.NOT_CALLED);
-
         stop();
+
+        if (nodesAtStart && clients.isEmpty())
+            throw new IllegalStateException(JmhNodeStopHook.NOT_CALLED);
 
         Map<String, Map<String, long[]>> hist = histogram();
 
@@ -217,6 +217,18 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
             clients = clients();
         }
+    }
+
+    /** @return Client flag per node name, for the named nodes of this JVM. */
+    private static Map<String, Boolean> clients() {
+        Map<String, Boolean> clients = new HashMap<>();
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            if (ignite.name() != null)
+                clients.put(ignite.name(), ignite.cluster().localNode().isClient());
+        }
+
+        return clients;
     }
 
     /** @return Group to row (the class, size and frames columns) to objects and bytes, from the recording. */

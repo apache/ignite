@@ -357,7 +357,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         /** Value. */
         private final int val;
 
-        /** @param val Value. */
+        /** */
         Pojo(int val) {
             this.val = val;
         }
@@ -418,7 +418,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
             // No-op.
         }
 
-        /** @param val Value. */
+        /** */
         ExternalizableValue(int val) {
             this.val = val;
         }

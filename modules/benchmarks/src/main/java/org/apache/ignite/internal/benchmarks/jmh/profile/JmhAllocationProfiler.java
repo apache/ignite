@@ -106,7 +106,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
     ) {
         Snapshot end = beforeStop != null ? beforeStop : Snapshot.take();
 
-        if (beforeStop == null && !start.clients.isEmpty() && end.clients.isEmpty())
+        if (!start.clients.isEmpty() && end.clients.isEmpty())
             throw new IllegalStateException(JmhNodeStopHook.NOT_CALLED);
 
         // Bytes are counted from before to after the iteration: all its operations, not only the measured ones.

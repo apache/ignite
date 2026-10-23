@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.openjdk.jmh.profile.ProfilerException;
 import org.openjdk.jmh.results.AggregationPolicy;
 import org.openjdk.jmh.results.ScalarResult;
@@ -44,7 +41,7 @@ final class JmhProfilerUtils {
         // No-op.
     }
 
-    /** @return Group of a thread by name: node and pool without the index, such as {@code server.node0.sys-stripe}. */
+    /** @return Group of a thread by name: {@code server.node0.sys-stripe} for {@code sys-stripe-3-#12%node0%}. */
     static String group(String name, Map<String, Boolean> clients) {
         String node = nodeOf(name);
 
@@ -60,7 +57,7 @@ final class JmhProfilerUtils {
         return label((client ? "client." : "server.") + node + '.' + pool);
     }
 
-    /** @return Node from the name's last {@code %...%} pair, since some names repeat it, or {@code null} if none. */
+    /** @return Node from the last {@code %...%} pair ({@code wal-file-archiver%node0-#5%node0%}), or {@code null}. */
     private static String nodeOf(String name) {
         int last = name.lastIndexOf('%');
         int prev = last > 0 ? name.lastIndexOf('%', last - 1) : -1;
@@ -87,18 +84,6 @@ final class JmhProfilerUtils {
     /** @return Result of a value per operation. */
     static ScalarResult result(String lbl, long val, long ops, String unit) {
         return new ScalarResult(lbl, (double)val / ops, unit, AggregationPolicy.AVG);
-    }
-
-    /** @return Client flag per node name, for the named nodes of this JVM. */
-    static Map<String, Boolean> clients() {
-        Map<String, Boolean> clients = new HashMap<>();
-
-        for (Ignite ignite : Ignition.allGrids()) {
-            if (ignite.name() != null)
-                clients.put(ignite.name(), ignite.cluster().localNode().isClient());
-        }
-
-        return clients;
     }
 
     /** Writes the JDK and OS of the run to {@code <dir>/run.properties}. */

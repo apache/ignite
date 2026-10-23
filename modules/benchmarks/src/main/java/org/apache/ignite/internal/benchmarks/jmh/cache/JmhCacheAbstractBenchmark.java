@@ -177,7 +177,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         int min = Arrays.stream(keysPerPart).filter(n -> n > 0).min().orElse(1);
 
-        // A partition with the fewest keys gets min updates per pass; rounded up.
+        // ceil(128 / min): the partition with the fewest keys gets min updates per pass.
         return (128 + min - 1) / min;
     }
 
