@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.SetStateCommandArg",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cluster.ClusterState", "name": "state"},
+    {"order": 1, "type": "boolean", "name": "force"},
+    {"order": 2, "type": "java.lang.String", "name": "clusterName"}
+  ]
+}

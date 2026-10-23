@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheValidateIndexesCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "value"},
+    {"order": 1, "type": "java.lang.String", "name": "value2"},
+    {"order": 2, "type": "java.lang.String[]", "name": "caches"},
+    {"order": 3, "type": "java.util.UUID[]", "name": "nodeIds"},
+    {"order": 4, "type": "int", "name": "checkFirst"},
+    {"order": 5, "type": "int", "name": "checkThrough"},
+    {"order": 6, "type": "boolean", "name": "checkCrc"},
+    {"order": 7, "type": "boolean", "name": "checkSizes"}
+  ]
+}

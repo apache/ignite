@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.configuration.DiskPageCompression",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.configuration.DiskPageCompression", "name": "DISABLED"},
+    {"order": 1, "type": "org.apache.ignite.configuration.DiskPageCompression", "name": "SKIP_GARBAGE"},
+    {"order": 2, "type": "org.apache.ignite.configuration.DiskPageCompression", "name": "ZSTD"},
+    {"order": 3, "type": "org.apache.ignite.configuration.DiskPageCompression", "name": "LZ4"},
+    {"order": 4, "type": "org.apache.ignite.configuration.DiskPageCompression", "name": "SNAPPY"}
+  ]
+}

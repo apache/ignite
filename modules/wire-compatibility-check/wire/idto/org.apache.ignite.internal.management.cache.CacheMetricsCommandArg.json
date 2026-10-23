@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheMetricsCommandArg",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.cache.CacheMetricsOperation", "name": "operation"},
+    {"order": 1, "type": "java.lang.String[]", "name": "caches"},
+    {"order": 2, "type": "boolean", "name": "allCaches"}
+  ]
+}

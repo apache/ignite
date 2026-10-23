@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.wal.WalStateCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "groups"}
+  ]
+}

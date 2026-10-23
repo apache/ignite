@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.meta.MetadataListResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Collection<org.apache.ignite.internal.binary.BinaryMetadata>", "name": "meta"}
+  ]
+}

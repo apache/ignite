@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxKeyLockType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.tx.TxKeyLockType", "name": "NO_LOCK"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.tx.TxKeyLockType", "name": "AWAITS_LOCK"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.tx.TxKeyLockType", "name": "OWNS_LOCK"}
+  ]
+}

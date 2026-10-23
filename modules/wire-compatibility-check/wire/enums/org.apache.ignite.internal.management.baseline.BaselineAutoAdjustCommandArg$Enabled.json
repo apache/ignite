@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg$Enabled",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg$Enabled", "name": "DISABLE"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg$Enabled", "name": "ENABLE"}
+  ]
+}
