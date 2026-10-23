@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.MessageProcessor.GRID_H2_NULL;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGate;
+import static org.apache.ignite.internal.MessageProcessor.gatingFeature;
 import static org.apache.ignite.internal.MessageProcessor.isSchemaImmutable;
 import static org.apache.ignite.internal.MessageProcessor.resolveFeatureRegistry;
 
@@ -418,7 +419,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         indent++;
 
         for (VariableElement field : fields) {
-            if (!gatedByFeature(field))
+            if (gatingFeature(field) == null)
                 continue;
 
             rawFieldsConsumerCode.add(indentedLine("if (f.tag() == %s) {", tagExpression(field)));
@@ -446,14 +447,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static boolean hasGatedFields(List<VariableElement> fields) {
-        return fields.stream().anyMatch(MessageSerializerGenerator::gatedByFeature);
-    }
-
-    /** */
-    private static boolean gatedByFeature(VariableElement field) {
-        Order order = field.getAnnotation(Order.class);
-
-        return !order.introducedBy().isEmpty() || !order.deprecatedBy().isEmpty();
+        return fields.stream().anyMatch(field -> gatingFeature(field) != null);
     }
 
     /** */
@@ -471,13 +465,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static String tagExpression(VariableElement field) {
-        Order order = field.getAnnotation(Order.class);
-
         String reg = resolveFeatureRegistry(field.getEnclosingElement());
 
-        String feature = order.introducedBy().isEmpty() ? order.deprecatedBy() : order.introducedBy();
-
-        return reg.substring(reg.lastIndexOf('.') + 1) + '.' + feature + ".id()";
+        return reg.substring(reg.lastIndexOf('.') + 1) + '.' + gatingFeature(field) + ".id()";
     }
 
     /** */

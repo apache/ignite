@@ -20,18 +20,20 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeleteRollingUpgradeTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeleteTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListRollingUpgradeTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListRollingUpgradeTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
-/** Detached from {@link IgniteSnapshotTestSuite8} to reduce the single-suite runtime in CI. */
+/** Split off from {@link IgniteSnapshotTestSuite8} to reduce the single-suite runtime in CI. */
 @RunWith(DynamicSuite.class)
 public class IgniteSnapshotTestSuite9 {
-    /**
-     * @return Test suite.
-     */
+    /** @return Test suite. */
     public static List<Class<?>> suite() {
         return suite(null);
     }
@@ -43,6 +45,8 @@ public class IgniteSnapshotTestSuite9 {
     public static List<Class<?>> suite(Collection<Class> ignoredTests) {
         List<Class<?>> suite = new ArrayList<>();
 
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotDeleteRollingUpgradeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotDeleteTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotListTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotListRollingUpgradeTest.class, ignoredTests);
 

@@ -232,7 +232,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             assertTrue(snpDir.renameTo(tmpSnpDir));
 
-            cleanPersistenceDir();
+            cleanPersistenceDir(false);
 
             assertTrue(tmpSnpDir.renameTo(snpDir));
 
