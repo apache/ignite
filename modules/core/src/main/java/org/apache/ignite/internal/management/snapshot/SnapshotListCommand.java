@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.management.snapshot;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.DATE;
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.STRING;
 
@@ -49,12 +49,6 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
     /** */
     public static final String NO_SNAPSHOTS = "No snapshots found.";
-
-    /** */
-    private static final String PATTERN_FORMAT = "yyyy-MM-dd HH:mm:ss (XXX)";
-
-    /** */
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(PATTERN_FORMAT).withZone(ZoneId.systemDefault());
 
     /** {@inheritDoc} */
     @Override public String description() {
@@ -93,12 +87,12 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             SnapshotListJobResult nodeResult = res.nodesSnapshots()[nodeIdx];
 
             if (nodeResult.snapshots().isEmpty()) {
-                printer.accept("\t\t" + NO_SNAPSHOTS);
+                printer.accept(NO_SNAPSHOTS);
 
                 continue;
             }
 
-            Map<String, SnapshotListJobResult.SnapshotInfo> sortedResults = prepareResults(
+            Map<String, SnapshotListJobResult.SnapshotInfo> perNodeResults = prepareResults(
                 nodeResult.snapshots(),
                 hasIncrementals,
                 hasExtStorages
@@ -107,7 +101,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             SystemViewCommand.printTable(
                 perNodeTableTitles(hasIncrementals.get(), hasExtStorages.get()),
                 perNodeTableTypes(hasIncrementals.get(), hasExtStorages.get()),
-                perNodeTableRows(sortedResults, hasIncrementals.get(), hasExtStorages.get()),
+                perNodeTableRows(perNodeResults, hasIncrementals.get(), hasExtStorages.get()),
                 printer
             );
         }
@@ -122,7 +116,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
         res.addAll(F.asList("Name", "Total size", "Creation date"));
 
         if (hasIncrementals)
-            res.addAll(F.asList("Last incremental date", "Incremental parts", "Icremental parts size"));
+            res.addAll(F.asList("Last incremental date", "Incremental parts", "Incremental parts size"));
 
         if (hasExtStorages)
             res.addAll(F.asList("External storages size"));
@@ -134,20 +128,19 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     private static List<SystemViewTask.SimpleType> perNodeTableTypes(boolean hasIncrementals, boolean hasExtStorages) {
         List<SystemViewTask.SimpleType> res = new ArrayList<>(7);
 
-        // Main and minimal snapshot info: name, size (formatted string), creation date (formatted string).
-        res.addAll(F.asList(STRING, STRING, STRING));
+        // Main columns: name, size (formatted string), creation date (formatted string).
+        res.addAll(F.asList(STRING, STRING, DATE));
 
-        // Optional info of incremental parts: last modification date, number of incremental parts, total size (formatted string).
+        // Optional columns of incremental parts: last modification date, number of incremental parts, total size (formatted string).
         if (hasIncrementals)
-            res.addAll(F.asList(STRING, NUMBER, STRING));
+            res.addAll(F.asList(DATE, NUMBER, STRING));
 
-        // Optional info of experimental external storages: total size (formatted string).
+        // Optional columns of experimental external storages: total size (formatted string).
         if (hasExtStorages)
             res.add(STRING);
 
         return res;
     }
-
 
     /** */
     private static List<List<?>> perNodeTableRows(
@@ -156,26 +149,26 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
         boolean includeExtStorages
     ) {
         List<List<?>> table = new ArrayList<>(results.size());
-        List<Object> row = new ArrayList<>(7);
 
         results.forEach((name, s) -> {
-            row.clear();
+            List<Object> row = new ArrayList<>(7);
 
-            // Main and minimal snapshot info: name, size (formatted string), creation date (formatted string).
-            row.addAll(F.asList(name, U.humanReadableByteCount(s.size()), DATE_FORMATTER.format(Instant.ofEpochMilli(s.date()))));
+            // Main columns: name, size (formatted string), creation date (formatted string).
+            row.addAll(F.asList(name, U.humanReadableByteCount(s.size()), Date.from(Instant.ofEpochMilli(s.date()))));
 
             if (includeIncrementals) {
-                // Optional info of incremental parts: last modification date, number of incremental parts, total size (formatted string).
+                // Optional columns of incremental parts: last modification date, count, total size (formatted string).
                 SnapshotListJobResult.SnapshotInfo inc = s.incrementals();
 
                 row.addAll(F.asList(
-                    inc == null ? null : DATE_FORMATTER.format(Instant.ofEpochMilli(inc.date())), // Modification date.
-                    inc == null ? null : inc.number(), // Number of incremental parts.
-                    inc == null ? null : U.humanReadableByteCount(inc.size()) // Total size of all incremental parts.
+                    inc == null ? null : Date.from(Instant.ofEpochMilli(inc.date())), // Modification date.
+                    inc == null ? null : inc.number(), // Count.
+                    inc == null ? null : U.humanReadableByteCount(inc.size()) // Total size.
                 ));
             }
 
             if (includeExtStorages) {
+                // Optional column of external storages size.
                 SnapshotListJobResult.SnapshotInfo ext = s.externalStorages();
 
                 row.add(ext == null ? null : U.humanReadableByteCount(ext.size())); // Total size of all external storages.

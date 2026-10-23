@@ -205,7 +205,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
      * Represents lightweight type descriptors.
      */
     public enum SimpleType {
-        /** Date. */
+        /** Unformatted Date (as number/long). */
         DATE,
 
         /** Number. */

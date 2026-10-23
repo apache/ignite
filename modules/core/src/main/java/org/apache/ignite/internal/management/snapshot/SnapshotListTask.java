@@ -296,7 +296,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
         /** @return Snapshot file trees and related snapshots' creation times from the snapshot metadata. */
         private List<T2<SnapshotFileTree, Long>> findLocalSnapshots(@Nullable String snpPath) {
-            // The tree is used only to obtain the snapshots root directory. The snapshot name is irrelevant here
+            // The tree is used only to obtain the snapshots root directory. The snapshot name is irrelevant here.
             File[] dirsToParse = new SnapshotFileTree(ignite.context(), "snp", snpPath).root().getParentFile().listFiles();
 
             if (F.isEmpty(dirsToParse))
@@ -320,7 +320,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
                     if (metas.isEmpty())
                         return null;
 
-                    // "Get the metadata of the most recently created snapshot.
+                    // Get the metadata of the most recently created snapshot.
                     SnapshotMetadata snpMeta = metas.stream().max(Comparator.comparingLong(SnapshotMetadata::snapshotTime)).get();
 
                     // Snapshot file tree based on its metadata. Holds the real snapshot consistent ID and corresponding

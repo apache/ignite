@@ -217,14 +217,19 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);
 
-        // Create the snapshots in an order by theri names. The sorting order should differ from the alphabetical order.
+        // Create the snapshots in an order by their names. The sorting order should differ from the alphabetical order.
         // 'testSnapshot0' is created first (earliest date).
         snp(ig).createSnapshot("testSnapshot0", null, false, false).get(getTestTimeout());
+
+        try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int val = entriesCnt; val < entriesCnt * 2; val++)
+                ds.addData(val, val);
+        }
 
         // Ensures a noticeable difference in the creation times.
         U.sleep(500L);
 
-        // Next snapshot hast the latest date.
+        // Next snapshot has the latest date.
         snp(ig).createSnapshot("testSnapshot1", null, false, false).get(getTestTimeout());
 
         injectTestSystemOut();
@@ -235,24 +240,24 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         int fromIdx = 0;
 
-        // In descending date order testSnapshot1 (laster) must appear before testSnapshot0 (earlier).
+        // In descending date order testSnapshot1 (later) must appear before testSnapshot0 (earlier).
         // The checking is for every node, so n times.
         for (int n = 0; n < GRIDS_CNT; ++n) {
-            int idx1 = out.indexOf("Snapshot 'testSnapshot1'", fromIdx);
-            int idx0 = out.indexOf("Snapshot 'testSnapshot0'", fromIdx);
+            int idx1 = out.indexOf("testSnapshot1", fromIdx);
+            int idx0 = out.indexOf("testSnapshot0", fromIdx);
 
             assertTrue(idx1 < idx0);
 
-            fromIdx = idx0 + "Snapshot 'testSnapshot0'".length();
+            fromIdx = idx0 + "testSnapshot0".length();
         }
 
-        // Let's add an incremental part to 'testSnapshot0'. That will change its modifiaction data.
+        // Let's add an incremental part to 'testSnapshot0'. That will change its modification data.
 
         // Ensures a noticeable difference in the times.
         U.sleep(500L);
 
         try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int val = entriesCnt; val < entriesCnt * 2; val++)
+            for (int val = entriesCnt * 2; val < entriesCnt * 3; val++)
                 ds.addData(val, val);
         }
 
@@ -267,12 +272,12 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         // Now, 'testSnapshot0' is expected to be first.
         for (int n = 0; n < GRIDS_CNT; ++n) {
-            int idx0 = out.indexOf("Snapshot 'testSnapshot0'", fromIdx);
-            int idx1 = out.indexOf("Snapshot 'testSnapshot1'", fromIdx);
+            int idx0 = out.indexOf("testSnapshot0", fromIdx);
+            int idx1 = out.indexOf("testSnapshot1", fromIdx);
 
             assertTrue(idx0 < idx1);
 
-            fromIdx = idx1 + "Snapshot 'testSnapshot1'".length();
+            fromIdx = idx1 + "testSnapshot1".length();
         }
     }
 
@@ -292,9 +297,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
      *     <li>Step 6: If {@code snapshotsCnt} == 0, ensures that the output says there are no snapshots on any node and quits.</li>
      *     <li>
      *         Step 7: If {@code snapshotsCnt} &gt; 0, checks the snapshots list of each node in the output.
-     *         <p>If {@link #extStorage} is set, also checks that the output's snapshots list of every node contains a proper
-     *         description of the current snapshot's external storage.</p>
-     *         <p>If {@link #incrementalsCnt} &gt; 0, also verifies the total number of incremental snapshots found in the output.</p>
+     *         <p>If {@link #extStorage} is set, also verifies that external storages are noted in the output.</p>
+     *         <p>If {@link #incrementalsCnt} &gt; 0, also verifies that the incremental snapshots are noted in the output.</p>
      *     </li>
      * </ul>
      *
@@ -370,7 +374,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         // Step 6: Ensure that there are no snapshots if none are expected and exit.
         if (snapshotsCnt == 0) {
-            assertFalse(out.contains("Snapshot '"));
+            assertFalse(out.contains("Total size"));
+            assertFalse(out.contains("Creation date"));
 
             assertEquals(GRIDS_CNT, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
@@ -381,16 +386,18 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         assertEquals(0, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
 
         for (int snpIdx = 0; snpIdx < snapshotsCnt; snpIdx++) {
-            assertEquals(GRIDS_CNT, countEntries(out, "Snapshot 'testSnapshot" + snpIdx + "'"));
+            assertEquals(GRIDS_CNT, countEntries(out, "testSnapshot" + snpIdx));
 
-            // If the external storage is configured, find the info about it.
+            // If the external storage is configured, find their titles.
             if (extStorage)
-                assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "external storages: cnt=1, size="));
+                assertEquals(GRIDS_CNT, countEntries(out, "External storages size"));
         }
 
-        // If the incremental snapshots are configured, find the info about them.
-        if (incrementalsCnt > 0)
-            assertEquals(GRIDS_CNT * snapshotsCnt, countEntries(out, "incremental snapshots: cnt=" + incrementalsCnt));
+        // If the incremental snapshots are configured, find their titles.
+        if (incrementalsCnt > 0) {
+            assertEquals(GRIDS_CNT, countEntries(out, "Last incremental date"));
+            assertEquals(GRIDS_CNT, countEntries(out, "Incremental parts size"));
+        }
     }
 
     /** {@link #doTestSnapshotsLists(int, Runnable)} with {@code snapshotsCreatedLsnr}. */
