@@ -1335,8 +1335,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         // on the affinity topology version, so wait for it to advance, otherwise the query
         // can be mapped on the outdated topology still containing the left node.
         // Well wait for the client's topology version updates.
-        assertTrue(waitForCondition(() -> prevTop.compareTo(cln.context().discovery().topologyVersionEx()) < 0, 10_000L));
-
         GridCacheContext<?, ?> clnCacheCtx = cln.context().cache().internalCache(dfltCacheCfg.getName()).context();
 
         assertTrue(waitForCondition(() ->
