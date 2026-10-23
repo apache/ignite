@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.RoundEnvironment;
@@ -155,44 +154,36 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         }
     }
 
-    /** @return List of non-static and non-transient field for given {@code type}. */
+    /** @return Fields in the serialization order. */
     private List<VariableElement> fields(TypeElement type) {
-        SortedMap<Integer, VariableElement> flds = new TreeMap<>();
+        List<VariableElement> flds = new ArrayList<>();
 
-        while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
-                if (el.getKind() != ElementKind.FIELD)
+        for (; type != null; type = (TypeElement)processingEnv.getTypeUtils().asElement(type.getSuperclass())) {
+            for (Element el : type.getEnclosedElements()) {
+                if (el.getKind() != ElementKind.FIELD
+                    || el.getModifiers().contains(Modifier.STATIC)
+                    || el.getModifiers().contains(Modifier.TRANSIENT))
                     continue;
 
-                if (el.getModifiers().contains(Modifier.STATIC) || el.getModifiers().contains(Modifier.TRANSIENT))
-                    continue;
-
-                Order order = el.getAnnotation(Order.class);
-
-                if (order == null) {
+                if (el.getAnnotation(Order.class) == null) {
                     throw new IllegalStateException("Please, add @Order " +
-                        "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + "]");
+                        "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + ']');
                 }
 
-                VariableElement prev = flds.put(order.value(), (VariableElement)el);
-
-                if (prev != null) {
-                    throw new IllegalStateException("Duplicate @Order for " + type.getQualifiedName() + ": " +
-                        "[order=" + order.value() + ", fld1=" + prev.getSimpleName() + ", fld2 = " + el.getSimpleName() + ']');
-                }
+                flds.add((VariableElement)el);
             }
-
-            Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
-
-            type = (TypeElement)superType;
         }
+
+        flds.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
 
         for (int i = 0; i < flds.size(); i++) {
-            if (!flds.containsKey(i))
-                throw new IllegalStateException("@Order not found: " + i);
+            if (flds.get(i).getAnnotation(Order.class).value() != i) {
+                throw new IllegalStateException("Annotation @Order must be a sequence from 0 to " + (flds.size() - 1) +
+                    " [field=" + flds.get(i).getSimpleName() + ", cls=" + flds.get(i).getEnclosingElement() + ']');
+            }
         }
 
-        return new ArrayList<>(flds.values());
+        return flds;
     }
 
     /**
