@@ -108,7 +108,7 @@ die() {
 }
 
 _extend_json() {
-    python - "$1" "$2" <<EOF
+    python3 - "$1" "$2" <<EOF
 import sys
 import json
 

@@ -603,7 +603,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> snp(ignite).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(),
             IgniteException.class,
-            "Snapshot with given name already exists on local node.");
+            "Snapshot with given name already exists on local node");
 
         stopAllGrids();
 
@@ -613,6 +613,44 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
+    }
+
+    /**
+     * Tests that snapshot delete operation detects concurrent deletion of the same sanpshot.
+     */
+    @Test
+    public void testConcurrentSnapshotDeleteOperation() throws Exception {
+        String snapshotName = caseInsensitiveFs ? SNAPSHOT_NAME.toLowerCase() : SNAPSHOT_NAME;
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+                snp(grid(2)).createSnapshot(snapshotName).get();
+            },
+            () -> snp(grid(2)).deleteSnapshot(snapshotName, null).get(),
+            e -> e.getMessage().contains("Deletion of the snapshot has already started"),
+            false
+        );
+    }
+
+    /**
+     * Tests that a concurrent deletion of a same-named snapshot is allowed if it has a different path.
+     */
+    @Test
+    public void testConcurrentSnapshotDeleteOperationWithDifferentPath() throws Exception {
+        String snpPath = new File(U.defaultWorkDirectory(), "ex_snapshots").getAbsolutePath();
+
+        doConcurrentSnapshotOperationWhenDeletionIsActive(
+            () -> {
+                startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+                snp(grid(2)).createSnapshot(SNAPSHOT_NAME).get();
+            },
+            () -> snp(grid(2)).createSnapshot(SNAPSHOT_NAME, snpPath, false, false).get(),
+            null,
+            false
+        );
     }
 
     /** @throws Exception If fails. */

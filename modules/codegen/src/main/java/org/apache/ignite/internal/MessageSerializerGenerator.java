@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.MessageProcessor.GRID_H2_NULL;
 import static org.apache.ignite.internal.MessageProcessor.KEY_CACHE_OBJECT_CLS;
 import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
 import static org.apache.ignite.internal.MessageProcessor.buildFieldFeatureGate;
+import static org.apache.ignite.internal.MessageProcessor.gatingFeature;
 import static org.apache.ignite.internal.MessageProcessor.isSchemaImmutable;
 import static org.apache.ignite.internal.MessageProcessor.resolveFeatureRegistry;
 
@@ -154,7 +155,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     @Override protected void generateBody(List<VariableElement> fields) throws Exception {
         generateMethods(fields);
 
-        if (!isSchemaImmutable(env, type) && hasIntroducedFields(fields))
+        if (!isSchemaImmutable(env, type) && hasGatedFields(fields))
             generateRawFieldsConsumer(fields);
 
         // Include superclass types in imports so generated code can cast to them for inherited fields.
@@ -386,7 +387,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
         code.add(EMPTY);
 
-        if (hasIntroducedFields(fields)) {
+        if (hasGatedFields(fields)) {
             code.add(indentedLine("rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));"));
             code.add(EMPTY);
         }
@@ -418,7 +419,7 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         indent++;
 
         for (VariableElement field : fields) {
-            if (!introducedByFeature(field))
+            if (gatingFeature(field) == null)
                 continue;
 
             rawFieldsConsumerCode.add(indentedLine("if (f.tag() == %s) {", tagExpression(field)));
@@ -445,13 +446,8 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
     }
 
     /** */
-    private static boolean hasIntroducedFields(List<VariableElement> fields) {
-        return fields.stream().anyMatch(MessageSerializerGenerator::introducedByFeature);
-    }
-
-    /** */
-    private static boolean introducedByFeature(VariableElement field) {
-        return !field.getAnnotation(Order.class).introducedBy().isEmpty();
+    private static boolean hasGatedFields(List<VariableElement> fields) {
+        return fields.stream().anyMatch(field -> gatingFeature(field) != null);
     }
 
     /** */
@@ -469,13 +465,9 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
 
     /** */
     private static String tagExpression(VariableElement field) {
-        Order order = field.getAnnotation(Order.class);
-
         String reg = resolveFeatureRegistry(field.getEnclosingElement());
 
-        String feature = order.introducedBy().isEmpty() ? order.deprecatedBy() : order.introducedBy();
-
-        return reg.substring(reg.lastIndexOf('.') + 1) + '.' + feature + ".id()";
+        return reg.substring(reg.lastIndexOf('.') + 1) + '.' + gatingFeature(field) + ".id()";
     }
 
     /** */
@@ -527,9 +519,6 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
             indent--;
 
             write.add(indentedLine("}"));
-        }
-
-        if (introducedByFeature(field)) {
             write.add(indentedLine("else if (ctx.includeRawFields() && %s)", defaultValueCondition(field)));
 
             indent++;

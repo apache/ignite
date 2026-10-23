@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.util.GridCommandHandlerDeleteSnapshotTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
- * all nodes in the cluster.
+ * Test suite for control utility.
  */
-public class DistributedAttributeIdRegistry {
-    /** ID Reserved for {@link SecurityContext} propagation. */
-    public static final byte SECURITY = 0;
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    GridCommandHandlerDeleteSnapshotTest.class
+})
+public class IgniteControlUtilityTestSuite6 {
 }

@@ -40,7 +40,7 @@
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
-            <version>1.1.1</version>
+            <version>${commons.logging.version}</version>
         </dependency>
 
         <dependency>
