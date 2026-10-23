@@ -1962,9 +1962,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * Note, there can be snapshots from other nodes.
-     * This method will read all the metadata.
-     * Some instances can return {@link SnapshotMetadata#folderName()} and {@link SnapshotMetadata#consistentId()} that differ
-     * from the local one.
+     * This method will read all metadata.
+     * Some instances can return {@link SnapshotMetadata#folderName()} and {@link SnapshotMetadata#consistentId()} that differs from local.
      *
      * @param sft Snapshot file tree.
      * @return List of snapshot metadata for the given snapshot name on local node.
