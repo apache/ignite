@@ -142,7 +142,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private volatile boolean metricsEnabled;
 
     /** */
-    private boolean persistenceEnabled;
+    private volatile boolean persistenceEnabled;
 
     /** */
     private final int subInts;
@@ -287,6 +287,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("EvictionsStarted", evictionsStarted::get,
             "True if page eviction was triggered due to data region memory pressure.");
+
+        mreg.register("PersistenceEnabled", () -> persistenceEnabled,
+            "True if persistence is enabled for the data region, false if the data region is in-memory.");
 
         if (persistenceEnabled) {
             // Reserve 1 sec, page ts can be slightly lower than currentTimeMillis, due to applied to ts mask. This
@@ -885,6 +888,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public boolean isEvictionsStarted() {
         return evictionsStarted.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
     }
 
     /** @return {@code True} if eviction has started for the first time. */

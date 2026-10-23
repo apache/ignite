@@ -50,6 +50,7 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
         "DirtyPages",
         "EvictionRate",
         "PagesWritten",
+        "PersistenceEnabled",
         "TotalAllocatedPages",
         "PagesReplaceAge",
         "PhysicalMemoryPages",
