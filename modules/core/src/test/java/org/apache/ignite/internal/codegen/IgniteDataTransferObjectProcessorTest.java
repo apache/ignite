@@ -77,6 +77,15 @@ public class IgniteDataTransferObjectProcessorTest {
     }
 
     /** */
+    @Test
+    public void testWrongOrderEnumerationFailed() {
+        Compilation compilation = compile(new IgniteDataTransferObjectProcessor(), "idto/WrongOrderIgniteDataTransferObject.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Annotation @Order must be a sequence from 0 to 1 [field=str");
+    }
+
+    /** */
     private void assertJson(Compilation compilation, String cls, String expected) {
         assertThat(compilation)
             .generatedFile(CLASS_OUTPUT, "META-INF/ignite-wire/idto/org.apache.ignite.internal." + cls + ".json")
