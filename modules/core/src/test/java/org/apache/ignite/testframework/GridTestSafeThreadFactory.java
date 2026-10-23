@@ -194,7 +194,7 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
 
         U.interrupt(all);
 
-        U.joinThreads(all, log);
+        U.joinThreads(all, 0L, log);
 
         Iterator<Thread> it = all.iterator();
 

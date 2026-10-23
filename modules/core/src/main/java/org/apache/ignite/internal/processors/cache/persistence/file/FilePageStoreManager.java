@@ -990,7 +990,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
          * Cancels async tasks.
          */
         public void awaitAsyncTaskCompletion(boolean cancel) {
-            workerPool.join(cancel);
+            workerPool.join(cancel, -1L);
         }
     }
 

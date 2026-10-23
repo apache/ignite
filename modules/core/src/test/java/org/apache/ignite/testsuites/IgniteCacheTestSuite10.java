@@ -93,6 +93,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessag
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessageWriteTimeoutTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSystemTransactionsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxMessageRecoveryTest;
+import org.apache.ignite.internal.processors.cache.distributed.MutallyDependentCacheUpdateFailureAtNodesStoppageTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedTxExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheGlobalLoadTest;
@@ -133,6 +134,7 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTransactionalStopBusySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicNearCacheSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheAtomicNearUpdateTopologyChangeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MutallyDependentCacheUpdateFailureAtNodesStoppageTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheTxNearUpdateTopologyChangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedStorePutSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapMultiThreadedUpdateSelfTest.class, ignoredTests);
