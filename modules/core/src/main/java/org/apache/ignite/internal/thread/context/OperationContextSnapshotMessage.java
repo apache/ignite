@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.internal.Order;
+import java.util.Arrays;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -30,13 +30,11 @@ public class OperationContextSnapshotMessage extends AbstractMessage {
     /** Maximal number of supported distributed attributes. */
     static final int MAX_ATTRS_CNT = Byte.SIZE;
 
-    /** Values of operation context attributes, in ascending id order. */
-    @Order(0)
-    Message[] attrs;
-
     /** Bitmap of attributes ids. */
-    @Order(1)
     byte idBitmap;
+
+    /** Values of operation context attributes, in ascending id order. */
+    Message[] attrs;
 
     /** Empty constructor for serialization purposes. */
     public OperationContextSnapshotMessage() {
@@ -56,6 +54,22 @@ public class OperationContextSnapshotMessage extends AbstractMessage {
         assert contains(idBitmap, attrId);
 
         return attrs[valueIndex(attrId)];
+    }
+
+    /** */
+    void setValue(int attrId, Message val) {
+        assert !contains(idBitmap, attrId);
+
+        int valIdx = valueIndex(attrId);
+
+        Message[] res = Arrays.copyOf(attrs, attrs.length + 1);
+
+        System.arraycopy(attrs, valIdx, res, valIdx + 1, attrs.length - valIdx);
+
+        res[valIdx] = val;
+
+        attrs = res;
+        idBitmap = set(idBitmap, attrId);
     }
 
     /** */

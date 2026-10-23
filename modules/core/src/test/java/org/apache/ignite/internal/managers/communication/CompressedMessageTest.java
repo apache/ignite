@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.zip.Deflater;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
@@ -38,19 +37,16 @@ import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /** Test for {@link CompressedMessage}. */
-public class CompressedMessageTest {
+public class CompressedMessageTest extends GridCommonAbstractTest {
     /** */
-    private static final MessageFactory MSG_FACTORY = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{
-        new CoreMessagesProvider()});
+    private static final MessageFactory MSG_FACTORY = createExtendedMessageFactory();
 
     /** */
     @Test

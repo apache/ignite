@@ -129,9 +129,6 @@ public class IgniteMock implements IgniteEx {
     /** */
     private final GridKernalContext kernalCtx;
 
-    /** */
-    private final MessageFactory msgFactory;
-
     /**
      * Mock values
      *
@@ -152,11 +149,12 @@ public class IgniteMock implements IgniteEx {
         this.name = name;
         this.staticCfg = staticCfg;
 
-        msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[] {
-            new CoreMessagesProvider()});
-
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
+                /** */
+                private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
+                    new MessageFactoryProvider[] {new CoreMessagesProvider(this)});
+
                 @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
                     return new GridInternalSubscriptionProcessor(this);
                 }

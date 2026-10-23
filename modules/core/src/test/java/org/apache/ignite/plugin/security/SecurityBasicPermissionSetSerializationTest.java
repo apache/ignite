@@ -22,14 +22,11 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -49,8 +46,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 /** Test for serialization round-trip of {@link SecurityBasicPermissionSet}. */
 public class SecurityBasicPermissionSetSerializationTest extends GridCommonAbstractTest {
     /** */
-    private final MessageFactory<? extends Message> msgFactory = new IgniteMessageFactoryImpl<>(
-        new MessageFactoryProvider[] {new CoreMessagesProvider()});
+    private final MessageFactory<? extends Message> msgFactory = createExtendedMessageFactory();
 
     /** */
     @Test
