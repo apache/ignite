@@ -292,7 +292,7 @@ public class JdbcThinTcpIo {
             writer.writeString(DEFAULT_NESTED_TX_MODE);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
-            writer.writeByte(nullableBooleanToByte(connProps.isDataPageScanEnabled()));
+            writer.writeByte(nullableBooleanToByte(null));
 
             JdbcUtils.writeNullableInteger(writer, connProps.getUpdateBatchSize());
         }

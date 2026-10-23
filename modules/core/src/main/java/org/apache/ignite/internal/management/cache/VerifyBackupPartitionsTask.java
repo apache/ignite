@@ -180,7 +180,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         private IgniteLogger log;
 
         /** Idle verify arguments. */
-        private CacheIdleVerifyCommandArg arg;
+        private final CacheIdleVerifyCommandArg arg;
 
         /** Counter of processed partitions. */
         private final AtomicInteger completionCntr = new AtomicInteger(0);
@@ -291,15 +291,15 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         /**
          * Class that processes cache filtering chain.
          */
-        private class CachesFiltering {
+        private static class CachesFiltering {
             /**
              * Initially all cache descriptors are included.
              */
-            private final Set<CacheGroupContext> filteredCacheGroups;
+            private final Set<CacheGroupContext> filteredCacheGrps;
 
             /** */
-            public CachesFiltering(Collection<CacheGroupContext> cacheGroups) {
-                filteredCacheGroups = new HashSet<>(cacheGroups);
+            public CachesFiltering(Collection<CacheGroupContext> cacheGrps) {
+                filteredCacheGrps = new HashSet<>(cacheGrps);
             }
 
             /**
@@ -309,7 +309,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
              * @return this
              */
             public CachesFiltering filter(IgniteInClosure<Set<CacheGroupContext>> closure) {
-                closure.apply(filteredCacheGroups);
+                closure.apply(filteredCacheGrps);
 
                 return this;
             }
@@ -322,7 +322,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             public Set<Integer> result() {
                 Set<Integer> res = new HashSet<>();
 
-                for (CacheGroupContext cacheGrp : filteredCacheGroups)
+                for (CacheGroupContext cacheGrp : filteredCacheGrps)
                     res.add(cacheGrp.groupId());
 
                 return res;
@@ -413,7 +413,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @return boolean result
          */
         private boolean doesGrpMatchFilter(CacheGroupContext grp) {
-            for (GridCacheContext cacheCtx : grp.caches()) {
+            for (GridCacheContext<?, ?> cacheCtx : grp.caches()) {
                 DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheCtx.name());
 
                 if (isCacheMatchFilter(desc))
@@ -436,7 +436,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grp.name() != null && pattern.matcher(grp.name()).matches())
                     return true;
 
-                for (GridCacheContext cacheCtx : grp.caches())
+                for (GridCacheContext<?, ?> cacheCtx : grp.caches())
                     if (cacheCtx.name() != null && pattern.matcher(cacheCtx.name()).matches())
                         return true;
             }
@@ -450,30 +450,17 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         private boolean isCacheMatchFilter(DynamicCacheDescriptor desc) {
             DataStorageConfiguration dsCfg = ignite.context().config().getDataStorageConfiguration();
 
-            CacheConfiguration cc = desc.cacheConfiguration();
+            CacheConfiguration<?, ?> cc = desc.cacheConfiguration();
 
-            switch (arg.cacheFilter()) {
-                case DEFAULT:
-                    return desc.cacheType().userCache() || !F.isEmpty(arg.caches());
-
-                case USER:
-                    return desc.cacheType().userCache();
-
-                case SYSTEM:
-                    return !desc.cacheType().userCache();
-
-                case NOT_PERSISTENT:
-                    return desc.cacheType().userCache() && !GridCacheUtils.isPersistentCache(cc, dsCfg);
-
-                case PERSISTENT:
-                    return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsCfg);
-
-                case ALL:
-                    return true;
-
-                default:
-                    throw new IgniteException("Illegal cache filter: " + arg.cacheFilter());
-            }
+            return switch (arg.cacheFilter()) {
+                case DEFAULT -> desc.cacheType().userCache() || !F.isEmpty(arg.caches());
+                case USER -> desc.cacheType().userCache();
+                case SYSTEM -> !desc.cacheType().userCache();
+                case NOT_PERSISTENT -> desc.cacheType().userCache() && !GridCacheUtils.isPersistentCache(cc, dsCfg);
+                case PERSISTENT -> desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsCfg);
+                case ALL -> true;
+                default -> throw new IgniteException("Illegal cache filter: " + arg.cacheFilter());
+            };
         }
 
         /**

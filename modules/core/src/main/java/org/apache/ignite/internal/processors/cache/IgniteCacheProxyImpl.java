@@ -476,7 +476,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         TransactionChanges<Object> txChanges = ctx.transactionChanges(scanQry.getPartition());
 
         final CacheQuery<R> qry = ctx.queries().createScanQuery(
-            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), null, txChanges.changedKeys());
+            p, transformer, scanQry.getPartition(), isKeepBinary, scanQry.isLocal(), txChanges.changedKeys());
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());

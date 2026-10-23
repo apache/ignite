@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -175,10 +174,9 @@ class MapQueryResult {
     /**
      * @param rows Collection to fetch into.
      * @param pageSize Page size.
-     * @param dataPageScanEnabled If data page scan is enabled.
      * @return {@code true} If there are no more rows available.
      */
-    boolean fetchNextPage(List<Value[]> rows, int pageSize, Boolean dataPageScanEnabled) {
+    boolean fetchNextPage(List<Value[]> rows, int pageSize) {
         assert lock.isHeldByCurrentThread();
 
         if (closed)
@@ -192,72 +190,65 @@ class MapQueryResult {
 
         page++;
 
-        h2.enableDataPageScan(dataPageScanEnabled);
+        for (int i = 0; i < pageSize; i++) {
+            if (!res.res.next())
+                return true;
 
-        try {
-            for (int i = 0; i < pageSize; i++) {
-                if (!res.res.next())
-                    return true;
+            Value[] row = res.res.currentRow();
 
-                Value[] row = res.res.currentRow();
+            if (cpNeeded) {
+                boolean copied = false;
 
-                if (cpNeeded) {
-                    boolean copied = false;
+                for (int j = 0; j < row.length; j++) {
+                    Value val = row[j];
 
-                    for (int j = 0; j < row.length; j++) {
-                        Value val = row[j];
+                    if (val instanceof GridH2ValueCacheObject) {
+                        GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
 
-                        if (val instanceof GridH2ValueCacheObject) {
-                            GridH2ValueCacheObject valCacheObj = (GridH2ValueCacheObject)val;
+                        row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
+                            @Override public Object getObject() {
+                                return getObject(true);
+                            }
+                        };
 
-                            row[j] = new GridH2ValueCacheObject(valCacheObj.getCacheObject(), h2.objectContext()) {
-                                @Override public Object getObject() {
-                                    return getObject(true);
-                                }
-                            };
-
-                            copied = true;
-                        }
+                        copied = true;
                     }
-
-                    if (i == 0 && !copied)
-                        cpNeeded = false; // No copy on read caches, skip next checks.
                 }
 
-                assert row != null;
-
-                if (readEvt) {
-                    GridKernalContext ctx = h2.kernalContext();
-
-                    ctx.event().record(new CacheQueryReadEvent<>(
-                        ctx.discovery().localNode(),
-                        "SQL fields query result set row read.",
-                        EVT_CACHE_QUERY_OBJECT_READ,
-                        CacheQueryType.SQL.name(),
-                        cctx.name(),
-                        null,
-                        qry.query(),
-                        null,
-                        null,
-                        params,
-                        qrySrcNodeId,
-                        null,
-                        null,
-                        null,
-                        null,
-                        row(row)));
-                }
-
-                rows.add(res.res.currentRow());
-
-                res.resultSetChecker.checkOnFetchNext();
+                if (i == 0 && !copied)
+                    cpNeeded = false; // No copy on read caches, skip next checks.
             }
 
-            return !res.res.hasNext();
+            assert row != null;
+
+            if (readEvt) {
+                GridKernalContext ctx = h2.kernalContext();
+
+                ctx.event().record(new CacheQueryReadEvent<>(
+                    ctx.discovery().localNode(),
+                    "SQL fields query result set row read.",
+                    EVT_CACHE_QUERY_OBJECT_READ,
+                    CacheQueryType.SQL.name(),
+                    cctx.name(),
+                    null,
+                    qry.query(),
+                    null,
+                    null,
+                    params,
+                    qrySrcNodeId,
+                    null,
+                    null,
+                    null,
+                    null,
+                    row(row)));
+            }
+
+            rows.add(res.res.currentRow());
+
+            res.resultSetChecker.checkOnFetchNext();
         }
-        finally {
-            CacheDataTree.setDataPageScanEnabled(false);
-        }
+
+        return !res.res.hasNext();
     }
 
     /**

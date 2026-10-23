@@ -645,7 +645,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             qry.partition(),
             false,
             true,
-            qry.isDataPageScanEnabled(),
             null);
 
         return scanQueryLocal(qry0, false);
@@ -700,8 +699,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 locPart = locPart0;
 
-                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part,
-                    qry.isDataPageScanEnabled());
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part);
             }
             else {
                 locPart = null;
@@ -715,8 +713,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
                 }
 
-                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
-                    qry.isDataPageScanEnabled());
+                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer);
             }
 
             final Set<KeyCacheObject> skipKeys = qry.skipKeys() == null ? Collections.emptySet() : new HashSet<>(qry.skipKeys());
@@ -2386,7 +2383,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local scan.
-     * @param dataPageScanEnabled Flag to enable data page scan.
      * @param skipKeys Set of keys that must be skiped during iteration.
      * @return Created query.
      */
@@ -2397,7 +2393,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled,
         Set<KeyCacheObject> skipKeys
     ) {
         return new CacheQuery(cctx,
@@ -2407,7 +2402,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             part,
             keepBinary,
             forceLocal,
-            dataPageScanEnabled,
             skipKeys);
     }
 
@@ -2435,7 +2429,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
-            null,
             null,
             null)
             .limit(limit)

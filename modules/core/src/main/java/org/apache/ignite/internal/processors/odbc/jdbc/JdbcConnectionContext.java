@@ -191,12 +191,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Nested transactions are not supported!");
         }
 
-        Boolean dataPageScanEnabled = null;
         Integer updateBatchSize = null;
         EnumSet<JdbcThinFeature> features = EnumSet.noneOf(JdbcThinFeature.class);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
-            dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+            // Obsolete data page scan flag.
+            nullableBooleanFromByte(reader.readByte());
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
         }
@@ -269,9 +269,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, loc, skipReducerOnUpdate, qryEngine,
-            dataPageScanEnabled, updateBatchSize,
-            concurrency, isolation, timeout, lb,
-            ver, this);
+            updateBatchSize, concurrency, isolation, timeout, lb, ver, this);
     }
 
     /** {@inheritDoc} */
