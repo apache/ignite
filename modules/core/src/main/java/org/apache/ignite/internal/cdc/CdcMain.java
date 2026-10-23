@@ -257,6 +257,9 @@ public class CdcMain implements Runnable {
     /** Already processed segments. */
     private final Set<Path> processedSegments = new HashSet<>();
 
+    /** Destroyed caches state. */
+    private Map<Long, Set<Integer>> destroyedCachesState;
+
     /**
      * @param cfg Ignite configuration.
      * @param ctx Spring resource context.
@@ -331,7 +334,8 @@ public class CdcMain implements Runnable {
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
-                cachesState = state.loadCaches();
+                cachesState = state.loadCaches(ft.cdcCachesState());
+                destroyedCachesState = state.loadCaches(ft.cdcDestroyedCachesState());
                 cdcModeState = state.loadCdcMode();
 
                 if (walState != null) {
@@ -339,7 +343,27 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
+                Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
+                    .readCachesData(
+                        ft,
+                        kctx.marshallerContext().jdkMarshaller(),
+                        igniteCfg)
+                    .entrySet().stream()
+                    .map(data -> {
+                        int cacheId = data.getValue().cacheId();
+                        long lastModified = data.getKey().lastModified();
+
+                        Long lastModified0 = cachesState.get(cacheId);
+
+                        if (lastModified0 != null && lastModified0 == lastModified)
+                            return (CdcCacheEvent)data.getValue();
+
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .iterator();
+
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheEvts);
 
                 started = true;
 
@@ -568,6 +592,17 @@ public class CdcMain implements Runnable {
         else
             consumeSegmentActively(builder);
 
+        Set<Integer> destroyed = destroyedCachesState.remove(segmentIdx);
+
+        if (destroyed != null) {
+            Iterator<Integer> destroyedIter = destroyed.iterator();
+
+            consumer.onCacheDestroyEvents(destroyedIter);
+
+            if (destroyedIter.hasNext())
+                throw new IllegalStateException("Consumer should handle all cache destroy events");
+        }
+
         segmentConsumingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
@@ -744,6 +779,7 @@ public class CdcMain implements Runnable {
             if (ft.allStorages().noneMatch(File::exists))
                 return;
 
+            //TODO: Need to remove destroyed caches from cachesState
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
@@ -776,15 +812,13 @@ public class CdcMain implements Runnable {
                 throw new IllegalStateException("Consumer should handle all cache change events");
 
             if (!destroyed.isEmpty()) {
-                Iterator<Integer> destroyedIter = destroyed.iterator();
+                long segment = kctx.cache().context().wal(true).currentSegment();
 
-                consumer.onCacheDestroyEvents(destroyedIter);
-
-                if (destroyedIter.hasNext())
-                    throw new IllegalStateException("Consumer should handle all cache destroy events");
+                destroyedCachesState.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
             }
 
-            state.saveCaches(cachesState);
+            state.saveCaches(cachesState, ft.tmpCdcCachesState(), ft.cdcCachesState());
+            state.saveCaches(destroyedCachesState, ft.tmpCdcDestroyedCachesState(), ft.cdcDestroyedCachesState());
         }
         catch (IOException e) {
             throw new IgniteException(e);

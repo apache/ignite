@@ -159,13 +159,13 @@ public class CdcConsumerState {
      *
      * @return Saved state.
      */
-    public Map<Integer, Long> loadCaches() {
-        Map<Integer, Long> state = loadOrDefaultIfCorrupted(ft.cdcCachesState(), HashMap::new, true);
+    public <K, V> Map<K, V> loadCaches(Path path) {
+        Map<K, V> state = loadOrDefaultIfCorrupted(path, HashMap::new, true);
 
         log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
 
         if (log.isDebugEnabled()) {
-            for (Map.Entry<Integer, Long> entry : state.entrySet())
+            for (Map.Entry<K, V> entry : state.entrySet())
                 log.debug("Cache [cacheId=" + entry.getKey() + ", lastModified=" + entry.getValue() + ']');
         }
 
@@ -176,8 +176,8 @@ public class CdcConsumerState {
      * Saves caches state to file.
      * @param cachesState State of caches.
      */
-    public void saveCaches(Map<Integer, Long> cachesState) throws IOException {
-        save(cachesState, ft.tmpCdcCachesState(), ft.cdcCachesState());
+    public <K, V> void saveCaches(Map<K, V> cachesState, Path temp, Path path) throws IOException {
+        save(cachesState, temp, path);
     }
 
     /**
