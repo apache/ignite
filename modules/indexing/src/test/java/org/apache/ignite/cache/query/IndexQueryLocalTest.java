@@ -17,11 +17,14 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.List;
 import java.util.Objects;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -97,6 +100,44 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         }
 
         assertEquals(CNT / 2, resultSize);
+    }
+
+    /** Should return deserialized values for a cache that is not in keep-binary mode. */
+    @Test
+    public void testLocalQueryReturnsDeserializedValues() {
+        IgniteCache<Long, Person> cache = crd.createCache(ccfg(CacheMode.REPLICATED));
+
+        insertData(crd, cache);
+
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX)
+            .setCriteria(lt("id", CNT / 2));
+
+        List<Cache.Entry<Long, Person>> res = cache.query(qry.setLocal(true)).getAll();
+
+        for (Cache.Entry<Long, Person> e : res)
+            assertEquals(new Person(e.getKey().intValue()), e.getValue());
+
+        assertEquals(CNT / 2, res.size());
+    }
+
+    /** Should keep binary values for a cache in keep-binary mode. */
+    @Test
+    public void testLocalQueryKeepBinaryReturnsBinaryValues() {
+        IgniteCache<Long, Person> cache = crd.createCache(ccfg(CacheMode.REPLICATED));
+
+        insertData(crd, cache);
+
+        IgniteCache<Long, BinaryObject> binCache = cache.withKeepBinary();
+
+        IndexQuery<Long, BinaryObject> qry = new IndexQuery<Long, BinaryObject>(Person.class, IDX)
+            .setCriteria(lt("id", CNT / 2));
+
+        List<Cache.Entry<Long, BinaryObject>> res = binCache.query(qry.setLocal(true)).getAll();
+
+        for (Cache.Entry<Long, BinaryObject> e : res)
+            assertEquals(new Person(e.getKey().intValue()), e.getValue().deserialize());
+
+        assertEquals(CNT / 2, res.size());
     }
 
     /** Should fail as no data on nodes. */
