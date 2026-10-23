@@ -289,6 +289,7 @@ another value, `-p <name>=<value>,<value>` runs several. The parameters of
   threads by its name.
 - Call `JmhNodeStopHook.run()` first in the teardown that stops the nodes. JMH runs this teardown
   before profilers read the last iteration, and the hook lets them read it while the nodes still run.
+  Without the hook, both allocation profilers fail the benchmark.
 - Create keys and values outside the measured method when they aren't part of the operation.
   Otherwise their cost and allocation count as Ignite's.
 - Bring the cache to the state of a cluster that has run for a while before measuring. Ignite boxes

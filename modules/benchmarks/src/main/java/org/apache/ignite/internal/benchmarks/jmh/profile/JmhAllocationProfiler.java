@@ -95,7 +95,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
     private Snapshot start;
 
     /** Snapshot taken before the benchmark stopped its nodes, if it did in this iteration. */
-    private volatile Snapshot beforeStop;
+    private Snapshot beforeStop;
 
     /** Counter results reported in an iteration of this run. */
     private final Set<String> reported = new HashSet<>();
@@ -126,6 +126,9 @@ public class JmhAllocationProfiler implements InternalProfiler {
         IterationResult res
     ) {
         Snapshot end = beforeStop != null ? beforeStop : Snapshot.take();
+
+        if (beforeStop == null && !start.clients.isEmpty() && end.clients.isEmpty())
+            throw new IllegalStateException(JmhNodeStopHook.NOT_CALLED);
 
         // Bytes are counted from before to after the iteration: all its operations, not only the measured ones.
         long ops = res.getMetadata().getAllOps();

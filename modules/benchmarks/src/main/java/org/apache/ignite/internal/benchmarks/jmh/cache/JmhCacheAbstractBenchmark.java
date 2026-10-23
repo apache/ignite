@@ -140,6 +140,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
+        // Profilers read the last iteration while the nodes still run.
         JmhNodeStopHook.run();
 
         Ignition.stopAll(true);

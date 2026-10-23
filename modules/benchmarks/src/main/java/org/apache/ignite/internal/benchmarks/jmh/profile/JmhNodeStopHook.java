@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.profile;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -28,11 +27,15 @@ import java.util.Map;
  * profiler would see the nodes already stopped.
  */
 public final class JmhNodeStopHook {
+    /** Error of a profiler whose benchmark stopped the nodes without the hook. */
+    static final String NOT_CALLED = "The benchmark stopped its Ignite nodes without calling JmhNodeStopHook.run() " +
+        "first, so the profiler can't count the last iteration.";
+
     /**
      * Action per owner, in the order the owners first set one, which is the profilers' order in JMH's options; a new
      * profiler instance replaces its class's action in place.
      */
-    private static final Map<Class<?>, Runnable> ACTIONS = Collections.synchronizedMap(new LinkedHashMap<>());
+    private static final Map<Class<?>, Runnable> ACTIONS = new LinkedHashMap<>();
 
     /** */
     private JmhNodeStopHook() {
@@ -49,8 +52,6 @@ public final class JmhNodeStopHook {
 
     /** Runs the actions; benchmarks call it first thing in their teardown. */
     public static void run() {
-        synchronized (ACTIONS) {
-            ACTIONS.values().forEach(Runnable::run);
-        }
+        ACTIONS.values().forEach(Runnable::run);
     }
 }

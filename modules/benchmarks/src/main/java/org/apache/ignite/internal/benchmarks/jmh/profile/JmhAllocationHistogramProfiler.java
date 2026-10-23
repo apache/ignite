@@ -40,6 +40,7 @@ import jdk.jfr.consumer.RecordedFrame;
 import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordingFile;
+import org.apache.ignite.Ignition;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.IterationParams;
@@ -85,10 +86,13 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     private boolean stacks;
 
     /** Client flag per node name, read when the recording stops. */
-    private volatile Map<String, Boolean> clients;
+    private Map<String, Boolean> clients;
 
     /** Names of the threads alive at the start of the iteration. */
     private List<String> liveThreads;
+
+    /** Whether Ignite nodes ran at the start of the iteration. */
+    private boolean nodesAtStart;
 
     /** Warmup iterations so far. */
     private int warmups;
@@ -150,6 +154,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                 liveThreads.add(t.getName());
         }
 
+        nodesAtStart = !Ignition.allGrids().isEmpty();
+
         rec = new Recording();
 
         // The first warmup iteration also starts the nodes, and stacks then make JFR drop events or run the fork out of
@@ -172,6 +178,9 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         IterationParams iterParams,
         IterationResult res
     ) {
+        if (rec.getState() == RecordingState.RUNNING && nodesAtStart && Ignition.allGrids().isEmpty())
+            throw new IllegalStateException(JmhNodeStopHook.NOT_CALLED);
+
         stop();
 
         // Group to row (the class, size and frames columns) to objects and bytes; a group of a live thread without
