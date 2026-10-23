@@ -161,49 +161,58 @@ public class MultiDcSplitBrainRebalanceTest extends IgniteCacheTopologySplitAbst
      */
     @Test
     public void testNetworkPartitionMinorityBecomesReadOnly() throws Exception {
-        pds = true;
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite3 = startGrid(3);
-
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        cacheCfg.setTopologyValidator(new MainDcOnlyTopologyValidator());
-        IgniteCache<Object, Object> cache0 = ignite0.createCache(cacheCfg);
-
-        startGrid(1);
-        startGrid(2);
-        awaitServers(4, ignite0);
-
-        for (int i = 0; i < 1000; i++)
-            cache0.put(i, i);
-
-        forceCheckpoint();
+        IgniteCache<Object, Object> cache0 = startSplitBrainCluster(new MainDcOnlyTopologyValidator());
 
         splitAndWait();
 
-        IgniteCache<Object, Object> c0 = ignite0.cache(DEFAULT_CACHE_NAME);
-
-        c0.put(1000, 1000);
-
-        Object majorVal = c0.get(1000);
-        assertEquals(1000, majorVal);
+        cache0.put(1000, 1000);
+        assertEquals(1000, cache0.get(1000));
 
         assertFalse("Minority DC2 must reject writes while partitioned",
-            tryPut(ignite3, 2000, 2000));
+            tryPut(grid(3), 2000, 2000));
 
         unsplit();
 
         logRebalanceAfterHeal("MainDcOnly");
 
         for (int i = 0; i <= 1000; i += 500) {
-            Object v = c0.get(i);
+            Object v = cache0.get(i);
             assertEquals(i, v);
         }
+    }
+
+    /**
+     * Starts a 4-node MDC cluster (node0,1,2 in DC1, node3 in DC2) in ACTIVE state with
+     * baseline auto-adjustment disabled, creates a cache with backups=1 and the given
+     * topology validator (or none), writes 1000 base entries, and forces a checkpoint.
+     *
+     * @param validator Topology validator to apply, or {@code null} for no validator.
+     * @return The cache on node0.
+     */
+    private IgniteCache<Object, Object> startSplitBrainCluster(TopologyValidator validator) throws Exception {
+        pds = true;
+
+        startGrid(0);
+        startGrid(3);
+        grid(0).cluster().state(ClusterState.ACTIVE);
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        cacheCfg.setBackups(1);
+        if (validator != null)
+            cacheCfg.setTopologyValidator(validator);
+        IgniteCache<Object, Object> cache = grid(0).createCache(cacheCfg);
+
+        startGrid(1);
+        startGrid(2);
+        awaitServers(4, grid(0));
+
+        for (int i = 0; i < 1000; i++)
+            cache.put(i, i);
+
+        forceCheckpoint();
+
+        return cache;
     }
 
     /** */
@@ -271,36 +280,15 @@ public class MultiDcSplitBrainRebalanceTest extends IgniteCacheTopologySplitAbst
      */
     @Test
     public void testNetworkPartitionBothHalvesReadOnly() throws Exception {
-        pds = true;
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite3 = startGrid(3);
-
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        cacheCfg.setTopologyValidator(new BothDcsTopologyValidator());
-        IgniteCache<Object, Object> cache0 = ignite0.createCache(cacheCfg);
-
-        startGrid(1);
-        startGrid(2);
-        awaitServers(4, ignite0);
-
-        for (int i = 0; i < 1000; i++)
-            cache0.put(i, i);
-
-        forceCheckpoint();
+        startSplitBrainCluster(new BothDcsTopologyValidator());
 
         splitAndWait();
 
         assertFalse("Majority DC1 must reject writes without DC2",
-            tryPut(ignite0, 1000, 1000));
+            tryPut(grid(0), 1000, 1000));
 
         assertFalse("Minority DC2 must reject writes without DC1",
-            tryPut(ignite3, 2000, 2000));
+            tryPut(grid(3), 2000, 2000));
 
         unsplit();
 
@@ -316,40 +304,15 @@ public class MultiDcSplitBrainRebalanceTest extends IgniteCacheTopologySplitAbst
      */
     @Test
     public void testNetworkPartitionMajorityKeepsQuorum() throws Exception {
-        pds = true;
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite3 = startGrid(3);
-
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        cacheCfg.setTopologyValidator(new MinServerCountTopologyValidator(3));
-        IgniteCache<Object, Object> cache0 = ignite0.createCache(cacheCfg);
-
-        startGrid(1);
-        startGrid(2);
-        awaitServers(4, ignite0);
-
-        for (int i = 0; i < 1000; i++)
-            cache0.put(i, i);
-
-        forceCheckpoint();
+        IgniteCache<Object, Object> cache0 = startSplitBrainCluster(new MinServerCountTopologyValidator(3));
 
         splitAndWait();
 
-        IgniteCache<Object, Object> c0 = ignite0.cache(DEFAULT_CACHE_NAME);
-
-        c0.put(1000, 1000);
-
-        Object majorVal = c0.get(1000);
-        assertEquals(1000, majorVal);
+        cache0.put(1000, 1000);
+        assertEquals(1000, cache0.get(1000));
 
         assertFalse("Minority DC2 must reject writes without quorum",
-            tryPut(ignite3, 2000, 2000));
+            tryPut(grid(3), 2000, 2000));
 
         unsplit();
 
@@ -366,42 +329,17 @@ public class MultiDcSplitBrainRebalanceTest extends IgniteCacheTopologySplitAbst
      */
     @Test
     public void testNetworkPartitionNoValidatorBothWritable() throws Exception {
-        pds = true;
-
-        IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite3 = startGrid(3);
-
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        IgniteCache<Object, Object> cache0 = ignite0.createCache(cacheCfg);
-
-        startGrid(1);
-        startGrid(2);
-        awaitServers(4, ignite0);
-
-        for (int i = 0; i < 1000; i++)
-            cache0.put(i, i);
-
-        forceCheckpoint();
+        IgniteCache<Object, Object> cache0 = startSplitBrainCluster(null);
 
         splitAndWait();
 
-        IgniteCache<Object, Object> c0 = ignite0.cache(DEFAULT_CACHE_NAME);
-        IgniteCache<Object, Object> c3 = ignite3.cache(DEFAULT_CACHE_NAME);
+        cache0.put(1000, 1000);
+        assertEquals(1000, cache0.get(1000));
 
-        c0.put(1000, 1000);
+        IgniteCache<Object, Object> cache3 = grid(3).cache(DEFAULT_CACHE_NAME);
 
-        Object majorVal = c0.get(1000);
-        assertEquals(1000, majorVal);
-
-        c3.put(2000, 2000);
-
-        Object minorVal = c3.get(2000);
-        assertEquals(2000, minorVal);
+        cache3.put(2000, 2000);
+        assertEquals(2000, cache3.get(2000));
 
         unsplit();
 

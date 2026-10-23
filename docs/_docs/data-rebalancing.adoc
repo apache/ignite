@@ -28,7 +28,7 @@ In pure in-memory clusters, the default behavior is to start rebalancing immedia
 In clusters with persistence, the baseline topology has to be changed manually (default behavior), or can be changed automatically when link:clustering/baseline-topology#baseline-topology-autoadjustment[automatic baseline adjustment] is enabled.
 ====
 
-== Rebalance Strategy [[rebalance-strategy]]
+== Rebalancing Strategy [[rebalance-strategy]]
 
 When a node joins or rejoins the cluster, each partition is restored using one of two strategies:
 
@@ -62,7 +62,7 @@ A node reports counters only for partitions it has written to. If the dataset is
 
 [NOTE]
 ====
-*Historical rebalance requires the delta to be present in the WAL of the source node.* If the WAL segments that contain the delta were already archived or deleted by the time the node rejoins — for example, the node was absent for a long time, or WAL history and archiving are configured with a small retention — the source node cannot read the delta. In that case Ignite does not lose data: the supplier detects the failure to iterate over the WAL, marks the last checkpoint as not applicable for WAL rebalance, marks the affected partitions as missed, and the node falls back to a *full rebalance*.
+*Historical rebalance requires the delta to be present in the WAL of the source node.* If the WAL segments that contain the delta were already archived or deleted by the time the node rejoins — for example, the node was absent for a long time, or WAL history and archiving are configured with a small retention — the source node cannot supply the delta. In that case Ignite does not lose data: the supplier detects the failure to iterate over the WAL, marks the last checkpoint as not applicable for WAL rebalance, marks the affected partitions as missed, and the node falls back to a *full rebalance*.
 ====
 
 [CAUTION]

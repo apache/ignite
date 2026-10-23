@@ -122,14 +122,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoRebalanceWhenNoDelta() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startTwoNodeCluster(1);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);
@@ -154,14 +147,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBelowThresholdForcesFull() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startTwoNodeCluster(1);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
@@ -191,14 +177,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSkipZerosReducesRebalancedPartitions() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startTwoNodeCluster(1);
 
         for (int i = 0; i < 10; i++)
             cache.put(i, i);
@@ -229,16 +208,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testDcNodeDownHistoricalRebalance() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -249,7 +219,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         for (int i = 10_000; i < 20_000; i++)
             cache.put(i, i);
 
-        IgniteCache<Object, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 20_000; i < 30_000; i++)
             cache2.put(i, i);
@@ -275,16 +245,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testDcNodeDownNoDataLoss() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -295,7 +256,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         for (int i = 10_000; i < 20_000; i++)
             cache.put(i, i);
 
-        IgniteCache<Object, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 20_000; i < 30_000; i++)
             cache2.put(i, i);
@@ -322,16 +283,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDcNodeDownBelowThresholdFullRebalance() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, i);
@@ -342,7 +294,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         for (int i = 100; i < 200; i++)
             cache.put(i, i);
 
-        IgniteCache<Object, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 200; i < 300; i++)
             cache2.put(i, i);
@@ -369,16 +321,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDcNodeDownLargeDeltaFullRebalance() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);
@@ -389,7 +332,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         for (int i = 1000; i < 21_000; i++)
             cache.put(i, i);
 
-        IgniteCache<Object, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 21_000; i < 41_000; i++)
             cache2.put(i, i);
@@ -416,16 +359,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testDcNodeDownOneSourceNodeSurvives() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -433,7 +367,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         forceCheckpoint();
         stopGrid(1);
         stopGrid(0);
-        IgniteCache<Object, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 10_000; i < 20_000; i++)
             cache2.put(i, i);
@@ -467,16 +401,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testConcurrentWritesDuringRecovery() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -490,7 +415,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
         resetBaselineTopology();
-        IgniteCache<Object, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 20_000; i < 25_000; i++)
             cache2.put(i, i);
@@ -517,15 +442,8 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testAffinityReassignmentMixedRebalance() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(1);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startTwoNodeCluster(1);
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -618,16 +536,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testMultipleRestartsNoDataLoss() throws Exception {
-        pds = true;
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -686,17 +595,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testWalTruncatedForcesFull() throws Exception {
-        pds = true;
-
-        IgniteEx ignite0 = startGrid(0, DC1);
-        startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
-        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cacheCfg.setBackups(2);
-        IgniteCache<Object, Object> cache = ignite0.createCache(cacheCfg);
+        IgniteCache<Object, Object> cache = startThreeNodeCluster(2);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -709,11 +608,11 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        int grpId = ((GridCacheProxyImpl<Object, Object>)ignite0.cachex(DEFAULT_CACHE_NAME))
+        int grpId = ((GridCacheProxyImpl<Object, Object>)grid(0).cachex(DEFAULT_CACHE_NAME))
             .context().group().groupId();
 
-        markWalRebalanceInapplicable(ignite0, grpId);
-        markWalRebalanceInapplicable(ignite2, grpId);
+        markWalRebalanceInapplicable(grid(0), grpId);
+        markWalRebalanceInapplicable(grid(2), grpId);
 
         IgniteEx ignite1 = startGrid(1, DC2);
         resetBaselineTopology();
@@ -730,6 +629,45 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
             Object val = cache1.get(i);
             assertEquals(i, val);
         }
+    }
+
+    /**
+     * Starts a 2-node MDC cluster (node0 in DC1, node1 in DC2) in ACTIVE state
+     * and creates a cache with the given number of backups.
+     *
+     * @param backups Number of backups for the cache.
+     * @return The created cache.
+     */
+    private IgniteCache<Object, Object> startTwoNodeCluster(int backups) throws Exception {
+        pds = true;
+        startGrid(0, DC1);
+        startGrid(1, DC2);
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        cacheCfg.setBackups(backups);
+        return grid(0).createCache(cacheCfg);
+    }
+
+    /**
+     * Starts a 3-node MDC cluster (node0 in DC1, node1 in DC2, node2 in DC1) in
+     * ACTIVE state with baseline auto-adjustment disabled, and creates a cache
+     * with the given number of backups.
+     *
+     * @param backups Number of backups for the cache.
+     * @return The created cache.
+     */
+    private IgniteCache<Object, Object> startThreeNodeCluster(int backups) throws Exception {
+        pds = true;
+        startGrid(0, DC1);
+        startGrid(1, DC2);
+        startGrid(2, DC1);
+        grid(0).cluster().state(ClusterState.ACTIVE);
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        cacheCfg.setBackups(backups);
+        return grid(0).createCache(cacheCfg);
     }
 
     /** */
