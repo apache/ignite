@@ -17,24 +17,35 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.lang.gridfunc.PredicateMapView;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -52,8 +63,12 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
@@ -62,6 +77,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
 public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     /** */
     private CacheConfiguration ccfg;
+
+    /** Names of the nodes authenticated with {@link #nodeCerts}, in the order of authentication. */
+    private final List<String> certAuthNodes = new CopyOnWriteArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -472,6 +490,118 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
                 );
 
                 assertEquals(node.attribute(ATTR_IGNITE_INSTANCE_NAME), ((ZkTestNodeAuthenticator.TestSecurityContext)secCtx).nodeName);
+            }
+        }
+    }
+
+    /**
+     * Checks that a thin client gets the node details without the node certificates.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testThinClientNodeDetailsExcludeCertificates() throws Exception {
+        startGridsWithCertificates();
+
+        ClusterNode srv = grid(0).localNode();
+
+        ClientConfiguration cliCfg = new ClientConfiguration()
+            .setAddresses(F.first(srv.addresses()) + ':' + srv.attribute(CLIENT_LISTENER_PORT));
+
+        try (IgniteClient cli = Ignition.startClient(cliCfg)) {
+            Collection<ClusterNode> nodes = cli.cluster().nodes();
+
+            assertEquals(3, nodes.size());
+
+            for (ClusterNode node : nodes)
+                assertFalse(node.id().toString(), node.attributes().containsKey(ATTR_NODE_CERTIFICATES));
+        }
+    }
+
+    /**
+     * Checks that node authentication gets the node certificates and no node keeps them or the credentials after
+     * the join.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeSensitiveDataRemovedAfterJoin() throws Exception {
+        startGridsWithCertificates();
+
+        checkNoNodeSensitiveData();
+
+        IgniteEx cli = grid(2);
+
+        CountDownLatch reconnected = new CountDownLatch(1);
+
+        cli.events().localListen(evt -> {
+            reconnected.countDown();
+
+            return false;
+        }, EVT_CLIENT_NODE_RECONNECTED);
+
+        helper.waitSpi(cli.name(), spis).clientReconnect();
+
+        ZookeeperDiscoverySpiTestHelper.waitReconnectEvent(log, reconnected);
+
+        UUID cliId = cli.localNode().id();
+
+        // Servers add the client under its new id after the client sees the reconnect.
+        assertTrue("Client " + cliId + " is missing on some grid", GridTestUtils.waitForCondition(
+            () -> G.allGrids().stream().allMatch(ignite -> ignite.cluster().node(cliId) != null),
+            getTestTimeout()));
+
+        checkNoNodeSensitiveData();
+
+        String cliName = getTestIgniteInstanceName(2);
+
+        assertEquals(
+            F.asList(getTestIgniteInstanceName(0), getTestIgniteInstanceName(1), cliName, cliName),
+            certAuthNodes);
+    }
+
+    /**
+     * Starts servers 0 and 1 and client node 2 with the node certificates from a test keystore, and an authenticator
+     * that records the nodes it gets the certificates from.
+     *
+     * @throws Exception If failed.
+     */
+    private void startGridsWithCertificates() throws Exception {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+
+        try (InputStream in = new FileInputStream(GridTestUtils.keyStorePath("node01"))) {
+            keyStore.load(in, GridTestUtils.keyStorePassword().toCharArray());
+        }
+
+        nodeCerts = keyStore.getCertificateChain(keyStore.aliases().nextElement());
+
+        auth = () -> new ZkTestNodeAuthenticator(Collections.emptyList()) {
+            @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) {
+                Certificate[] certs = node.attribute(ATTR_NODE_CERTIFICATES);
+
+                if (Arrays.equals(nodeCerts, certs))
+                    certAuthNodes.add(node.attribute(ATTR_IGNITE_INSTANCE_NAME));
+
+                return super.authenticateNode(node, cred);
+            }
+        };
+
+        startGrid(0);
+        startGrid(1);
+        startClientGrid(2);
+
+        waitForTopology(3);
+    }
+
+    /** Checks that no node of any grid has the node certificates or credentials in its attributes. */
+    private void checkNoNodeSensitiveData() {
+        for (Ignite ignite : G.allGrids()) {
+            for (ClusterNode node : ignite.cluster().nodes()) {
+                Map<String, Object> attrs = ((ZookeeperClusterNode)node).getAttributes();
+                String msg = "grid=" + ignite.name() + ", node=" + node.id();
+
+                assertFalse(msg, attrs.containsKey(ATTR_NODE_CERTIFICATES));
+                assertFalse(msg, attrs.containsKey(ATTR_SECURITY_CREDENTIALS));
             }
         }
     }

@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
@@ -92,6 +93,7 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
 import static org.apache.zookeeper.client.ZKClientConfig.ZOOKEEPER_CLIENT_CNXN_SOCKET;
@@ -171,6 +173,9 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
     /** */
     protected IgniteOutClosure<DiscoverySpiNodeAuthenticator> auth;
+
+    /** Node certificates added to the node attributes when {@link #auth} is set. */
+    @Nullable protected Certificate[] nodeCerts;
 
     /** */
     protected String zkRootPath;
@@ -377,7 +382,9 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         if (!dfltConsistenId)
             cfg.setConsistentId(igniteInstanceName);
 
-        ZookeeperDiscoverySpi zkSpi = auth != null ? new TestAuthZookeeperDiscoverySpi() : new TestZookeeperDiscoverySpi();
+        ZookeeperDiscoverySpi zkSpi = auth != null
+            ? new TestAuthZookeeperDiscoverySpi(nodeCerts)
+            : new TestZookeeperDiscoverySpi();
 
         if (joinTimeout != 0)
             zkSpi.setJoinTimeout(joinTimeout);
@@ -934,13 +941,24 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
 
     /** */
     private static class TestAuthZookeeperDiscoverySpi extends TestZookeeperDiscoverySpi {
+        /** Node certificates, or {@code null} if the node has none. */
+        @Nullable private final Certificate[] certs;
+
+        /** @param certs Node certificates, or {@code null} if the node has none. */
+        TestAuthZookeeperDiscoverySpi(@Nullable Certificate[] certs) {
+            this.certs = certs;
+        }
+
         /** {@inheritDoc} */
         @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-            Map<String, Object> attrsWithCreds = new HashMap<>(attrs);
+            Map<String, Object> authAttrs = new HashMap<>(attrs);
 
-            attrsWithCreds.put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
+            authAttrs.put(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials(null, null, igniteInstanceName));
 
-            super.setNodeAttributes(attrsWithCreds, ver);
+            if (certs != null)
+                authAttrs.put(ATTR_NODE_CERTIFICATES, certs);
+
+            super.setNodeAttributes(authAttrs, ver);
         }
     }
 }
