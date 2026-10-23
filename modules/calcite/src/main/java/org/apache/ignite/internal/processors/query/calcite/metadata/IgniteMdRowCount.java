@@ -249,8 +249,14 @@ public class IgniteMdRowCount extends RelMdRowCount {
                     return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
                 }
 
-                baseRowCnt = rightRowCnt + leftRowCnt;
-                percentageAdjustment = 1.0 - selectivity;
+                Double leftPercentage = mq.getPercentageOriginalRows(rel.getLeft());
+                Double rightPercentage = mq.getPercentageOriginalRows(rel.getRight());
+                leftPercentage = leftPercentage == null ? 1.0 : leftPercentage;
+                rightPercentage = rightPercentage == null ? 1.0 : rightPercentage;
+
+                double intersection = Math.min(leftRowCnt * rightPercentage, rightRowCnt * leftPercentage);
+
+                return leftRowCnt + rightRowCnt - intersection;
             }
         }
         else if (joinCtx.joinType() == JoiningRelationType.FK_ON_PK) {
@@ -315,7 +321,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /** */
-    private static Map<Integer, KeyColumnOrigin> resolveOrigins(RelMetadataQuery mq, RelNode joinShoulder, ImmutableIntList keys) {
+    private static Map<Integer, KeyColumnOrigin> resolveOrigins(RelMetadataQuery mq, RelNode joinSide, ImmutableIntList keys) {
         GridLeanMap<Integer, KeyColumnOrigin> origins = new GridLeanMap<>();
 
         for (int i : keys) {
@@ -323,7 +329,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 continue;
             }
 
-            RelColumnOrigin origin = mq.getColumnOrigin(joinShoulder, i);
+            RelColumnOrigin origin = mq.getColumnOrigin(joinSide, i);
             if (origin == null) {
                 continue;
             }
