@@ -288,19 +288,7 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
             return res;
         }
 
-        ImmutableBitSet requiredColumns = rel.requiredColumns();
-        RelOptTable table = rel.getTable();
-
-        if (requiredColumns != null) {
-            Mappings.TargetMapping trimming = Commons.projectedMapping(requiredColumns, table.getRowType().getFieldCount());
-
-            iOutputColumn = trimming.getSourceOpt(iOutputColumn);
-
-            if (iOutputColumn == -1)
-                return null;
-        }
-
-        return Set.of(new RelColumnOrigin(table, iOutputColumn, false));
+        return Collections.singleton(rel.columnOriginsByRelLocalRef(iOutputColumn));
     }
 
     /**
