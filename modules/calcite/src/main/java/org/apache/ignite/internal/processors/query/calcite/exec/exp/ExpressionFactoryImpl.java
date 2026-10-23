@@ -39,6 +39,7 @@ import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -257,8 +258,21 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     @SuppressWarnings("rawtypes")
     private static int compare(Object o1, Object o2, int nullComparison) {
+        if (o1 == o2)
+            return 0;
+        else if (o1 == null)
+            return nullComparison;
+        else if (o2 == null)
+            return -nullComparison;
+
         if (BinaryUtils.isBinaryObjectImpl(o1))
             return compareBinary(o1, o2, nullComparison);
+
+        if (o1 instanceof List && o2 instanceof List)
+            return Functions.compareLists((List<?>)o1, (List<?>)o2);
+
+        if (o1 instanceof Object[] && o2 instanceof Object[])
+            return Functions.compareObjectArrays((Object[])o1, (Object[])o2);
 
         final Comparable c1 = (Comparable)o1;
         final Comparable c2 = (Comparable)o2;
