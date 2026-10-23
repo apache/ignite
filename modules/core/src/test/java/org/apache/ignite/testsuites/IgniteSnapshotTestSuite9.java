@@ -24,8 +24,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCl
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeleteTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListRollingUpgradeTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListRollingUpgradeTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
