@@ -46,7 +46,6 @@ import org.openjdk.jmh.profile.ProfilerException;
 import org.openjdk.jmh.results.IterationResult;
 import org.openjdk.jmh.results.Result;
 
-import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.clients;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.group;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.label;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.result;
@@ -232,7 +231,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
         final Map<Counter, Map<String, Long>> counters = new EnumMap<>(Counter.class);
 
         /** Node name to client flag. */
-        final Map<String, Boolean> clients = clients();
+        final Map<String, Boolean> clients = new HashMap<>();
 
         /** */
         private Snapshot() {
@@ -247,7 +246,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
             s.readThreads();
 
             for (Ignite ignite : Ignition.allGrids()) {
-                // An unnamed node can't be told apart in labels, so it gets no counters.
+                // An unnamed node can't be told apart in labels, so the snapshot leaves it out.
                 if (ignite.name() != null)
                     s.readNode((IgniteEx)ignite);
             }
@@ -269,9 +268,12 @@ public class JmhAllocationProfiler implements InternalProfiler {
             }
         }
 
-        /** Reads the counters of a node. */
+        /** Reads the client flag and the counters of a node. */
         private void readNode(IgniteEx ignite) {
             String node = ignite.name();
+
+            clients.put(node, ignite.cluster().localNode().isClient());
+
             GridMetricManager mmgr = ignite.context().metric();
             ReadOnlyMetricRegistry comm = mmgr.registry(COMMUNICATION_METRICS_GROUP_NAME);
 
