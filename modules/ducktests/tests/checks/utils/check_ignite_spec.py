@@ -17,13 +17,14 @@
 Checks Spec class that describes config and command line to start Ignite-aware service.
 """
 import os
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.gc_params import CLIENT_ROLE, SERVER_ROLE
-from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec, IgniteNodeSpec, service_role
+from ignitetest.services.utils.ignite_spec import IgniteApplicationSpec, IgniteNodeSpec, IgniteNodeSpecFileOutput, \
+    service_role
 from ignitetest.services.utils.jvm_utils import GC_PROFILES, GC_G1, MultipleGcSelectedError
 from ignitetest.utils.ignite_test import JFR_ENABLED
 
@@ -287,3 +288,18 @@ def check_heap_override__from_jvm_opts__still_wins(service):
     assert "-Xms4G" in spec.jvm_opts
     assert "-Xmx1G" not in spec.jvm_opts
     assert "-Xms1G" not in spec.jvm_opts
+
+
+"""
+Checks the shell redirection of a node's output.
+"""
+
+
+def check_node_spec_file_output__appends_stdout_and_stderr_to_console_log(service):
+    service.log_dir = "/logs"
+
+    with patch.object(IgniteNodeSpecFileOutput, "envs", return_value={}):
+        cmd = IgniteNodeSpecFileOutput(service).command(None)
+
+    assert cmd.endswith(f" >> {os.path.join(service.log_dir, 'console.log')} 2>&1 &")
+    assert "tee" not in cmd

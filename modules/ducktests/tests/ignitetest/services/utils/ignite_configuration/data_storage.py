@@ -42,6 +42,7 @@ class DataStorageConfiguration(NamedTuple):
     """
     Ignite DataStorage configuration
     """
+    cdc_wal_directory_max_size: int = None
     cdc_wal_path: str = None
     checkpoint_frequency: int = None
     default: DataRegionConfiguration = DataRegionConfiguration()
@@ -50,6 +51,7 @@ class DataStorageConfiguration(NamedTuple):
     metrics_rate_time_interval: int = None
     page_size: int = None
     regions: list = []
+    storage_path: str = None
     wal_archive_path: str = None
     wal_buffer_size: int = None
     wal_compaction_enabled: bool = None
