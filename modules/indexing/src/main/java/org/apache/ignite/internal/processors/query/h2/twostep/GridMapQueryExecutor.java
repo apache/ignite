@@ -52,6 +52,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Part
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
@@ -92,6 +95,9 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridMapQueryExecutor {
+    /** Registry name for tree corruption query failure metrics. */
+    static final String TREE_CORRUPTION_REG_NAME = "sql.queries.treeCorruption";
+
     /** */
     private IgniteLogger log;
 
@@ -107,6 +113,9 @@ public class GridMapQueryExecutor {
     /** */
     private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap<>();
 
+    /** Counter for queries that failed due to B+Tree cursor corruption. */
+    private AtomicLongMetric treeCorruptionFailCnt;
+
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -119,6 +128,11 @@ public class GridMapQueryExecutor {
         qryCtxRegistry = h2.queryContextRegistry();
 
         log = ctx.log(GridMapQueryExecutor.class);
+
+        MetricRegistryImpl mreg = ctx.metric().registry(TREE_CORRUPTION_REG_NAME);
+
+        treeCorruptionFailCnt = mreg.longMetric("count",
+            "Number of queries that failed due to B+Tree cursor corruption (AssertionError during iteration).");
     }
 
     /**
@@ -621,6 +635,9 @@ public class GridMapQueryExecutor {
                         if (qryRetryErr != null)
                             sendError(node, reqId, qryRetryErr);
                         else {
+                            if (X.cause(e, CorruptedTreeException.class) != null)
+                                treeCorruptionFailCnt.increment();
+
                             if (e instanceof Error) {
                                 U.error(log, "Failed to execute local query.", e);
 
@@ -936,6 +953,9 @@ public class GridMapQueryExecutor {
             catch (Exception e) {
                 if (res.qryInfo() != null)
                     h2.heavyQueriesTracker().stopTracking(res.qryInfo(), e);
+
+                if (X.cause(e, CorruptedTreeException.class) != null)
+                    treeCorruptionFailCnt.increment();
 
                 QueryRetryException retryEx = X.cause(e, QueryRetryException.class);
 
