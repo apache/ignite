@@ -110,7 +110,10 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /** Input stream. */
     private final BinaryInputStream in;
 
-    /** Class loaded. */
+    /**
+     * Class loader to resolve classes with: custom loader or {@link BinaryContext#classLoader()}, resolved once here.
+     * {@code null} only when {@link #ctx} is {@code null}; such readers can read primitives only.
+     */
     private final ClassLoader ldr;
 
     /** */
@@ -166,61 +169,22 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Class loader.
-     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
-     */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
-        this(ctx,
-            in,
-            ldr,
-            null,
-            forUnmarshal);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Context.
-     * @param in Input stream.
-     * @param ldr Class loader.
-     * @param hnds Context.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
-     */
-    public BinaryReaderExImpl(BinaryContext ctx,
-        BinaryInputStream in,
-        ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds,
-        boolean forUnmarshal) {
-        this(ctx,
-            in,
-            ldr,
-            hnds,
-            false,
-            forUnmarshal);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Context.
-     * @param in Input stream.
-     * @param ldr Class loader.
-     * @param hnds Context.
+     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
+     * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param skipHdrCheck Whether to skip header check.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     public BinaryReaderExImpl(BinaryContext ctx,
         BinaryInputStream in,
-        ClassLoader ldr,
+        @Nullable ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds,
         boolean skipHdrCheck,
         boolean forUnmarshal) {
-        // Initialize base members.
         super(hnds);
 
         this.ctx = ctx;
         this.in = in;
-        this.ldr = ldr;
+        this.ldr = ctx == null ? ldr : ctx.resolveClassLoader(ldr);
 
         start = in.position();
 
@@ -1318,7 +1282,16 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null), true, deserialize);
+        BinaryReaderHandles prevHnds = hnds;
+
+        hnds = null;
+
+        try {
+            return unmarshal(in, ctx, ldr, this, true, deserialize);
+        }
+        finally {
+            hnds = prevHnds;
+        }
     }
 
     /** {@inheritDoc} */
@@ -2069,61 +2042,61 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return BinaryUtils.doReadString(in());
 
             case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(in());
+                return doReadDecimal(in);
 
             case GridBinaryMarshaller.UUID:
-                return doReadUuid(in());
+                return doReadUuid(in);
 
             case GridBinaryMarshaller.TIME:
-                return doReadTime(in());
+                return doReadTime(in);
 
             case GridBinaryMarshaller.TIMESTAMP:
-                return doReadTimestamp(in());
+                return doReadTimestamp(in);
 
             case GridBinaryMarshaller.DATE:
-                return doReadDate(in());
+                return doReadDate(in);
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(in());
+                return doReadBooleanArray(in);
 
             case GridBinaryMarshaller.BYTE_ARR:
                 return BinaryUtils.doReadByteArray(in());
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(in());
+                return doReadCharArray(in);
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(in());
+                return doReadShortArray(in);
 
             case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(in());
+                return doReadIntArray(in);
 
             case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(in());
+                return doReadLongArray(in);
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(in());
+                return doReadFloatArray(in);
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(in());
+                return doReadDoubleArray(in);
 
             case GridBinaryMarshaller.STRING_ARR:
                 return BinaryUtils.doReadStringArray(in());
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(in());
+                return doReadDecimalArray(in);
 
             case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(in());
+                return doReadUuidArray(in);
 
             case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(in());
+                return doReadTimeArray(in);
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(in());
+                return doReadTimestampArray(in);
 
             case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(in());
+                return doReadDateArray(in);
 
             default:
                 in().position(in().position() - 1);
@@ -2846,8 +2819,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /**
      * Read binary enum.
      *
-     * @param in Input stream.
-     * @param ctx Binary context.
      * @return Enum.
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
@@ -2947,6 +2918,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static boolean[] doReadBooleanArray(BinaryInputStream in) {
@@ -2956,6 +2928,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static short[] doReadShortArray(BinaryInputStream in) {
@@ -2965,6 +2938,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static char[] doReadCharArray(BinaryInputStream in) {
@@ -2974,6 +2948,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static int[] doReadIntArray(BinaryInputStream in) {
@@ -2983,6 +2958,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static long[] doReadLongArray(BinaryInputStream in) {
@@ -2992,6 +2968,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static float[] doReadFloatArray(BinaryInputStream in) {
@@ -3001,6 +2978,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static double[] doReadDoubleArray(BinaryInputStream in) {
@@ -3010,6 +2988,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static BigDecimal doReadDecimal(BinaryInputStream in) {
@@ -3030,6 +3009,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static UUID doReadUuid(BinaryInputStream in) {
@@ -3037,6 +3017,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static Date doReadDate(BinaryInputStream in) {
@@ -3046,6 +3027,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static Timestamp doReadTimestamp(BinaryInputStream in) {
@@ -3060,6 +3042,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      */
     private static Time doReadTime(BinaryInputStream in) {
@@ -3069,6 +3052,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3094,6 +3078,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3119,6 +3104,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3144,6 +3130,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3169,6 +3156,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3194,6 +3182,8 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
      * @return Value.
      */
     private static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
@@ -3222,8 +3212,8 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
+     * @param in Input stream.
+     * @param ctx Context.
      * @param ldr Class loader.
      * @return Class object specified at the input stream.
      * @throws BinaryObjectException If failed.
@@ -3234,8 +3224,8 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
+     * @param in Input stream.
+     * @param ctx Context.
      * @param ldr Class loader.
      * @param deserialize Doesn't load the class when the flag is {@code false}. Class information is skipped.
      * @return Class object specified at the input stream if {@code deserialize == true}. Otherwise returns {@code null}
@@ -3257,11 +3247,14 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @return Value.
      */
     @SuppressWarnings("ConstantConditions")
-    private static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles) {
+    private static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, BinaryReaderHandlesHolder handles) {
         Class<?>[] intfs = new Class<?>[in.readInt()];
 
         for (int i = 0; i < intfs.length; i++)
@@ -3269,7 +3262,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
         InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
 
-        return Proxy.newProxyInstance(ldr != null ? ldr : CommonUtils.gridClassLoader(), intfs, ih);
+        return Proxy.newProxyInstance(ldr, intfs, ih);
     }
 
     /**
@@ -3291,8 +3284,8 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
+     * @param in Input stream.
+     * @param ctx Context.
      * @param ldr Class loader.
      * @param typeId Type id.
      * @return Class object specified at the input stream.
@@ -3326,26 +3319,25 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      * Read binary enum.
      *
      * @param in Input stream.
-     * @param ctx Binary context.
+     * @param ctx Context.
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
-        EnumType type) {
-        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
+    private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx, EnumType type) {
+        return BinaryUtils.binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
      * Read binary enum array.
      *
      * @param in Input stream.
-     * @param ctx Binary context.
+     * @param ctx Context.
      * @return Enum array.
      */
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
+        Object[] arr = (Object[])Array.newInstance(BinaryUtils.binariesFactory.binaryEnumClass(), len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -3360,38 +3352,73 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private static Object doReadObject(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles) throws BinaryObjectException {
+    @Nullable private static Object doReadObject(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles
+    ) throws BinaryObjectException {
         return new BinaryReaderExImpl(ctx, in, ldr, handles.handles(), false, true).deserialize();
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
+    /**
+     * Unmarshals the value at the current stream position without deserialization of user types.
+     *
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
         throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null));
+        return unmarshal(in, ctx, ctx.resolveClassLoader(ldr), new BinaryReaderHandlesHolder(null), false, false);
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Resolved class loader.
+     * @param handles Handles holder.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles) throws BinaryObjectException {
+    @Nullable private static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr, BinaryReaderHandlesHolder handles)
+        throws BinaryObjectException {
         return unmarshal(in, ctx, ldr, handles, false, false);
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable private static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
+    @Nullable private static Object unmarshal(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize
+    ) throws BinaryObjectException {
         int start = in.position();
 
         byte flag = in.readByte();
@@ -3574,17 +3601,23 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
+     * @param in Input stream.
+     * @param ctx Context.
      * @param ldr Class loader.
-     * @param handles Holder for handles.
+     * @param handles Handles holder.
      * @param detach Detach flag.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private static Object[] doReadObjectArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
+    private static Object[] doReadObjectArray(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize
+    ) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
         Class compType = doReadClass(in, ctx, ldr, deserialize);
@@ -3610,17 +3643,24 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Binary input stream.
-     * @param ctx Binary context.
+     * @param in Input stream.
+     * @param ctx Context.
      * @param ldr Class loader.
-     * @param handles Holder for handles.
+     * @param handles Handles holder.
      * @param detach Detach flag.
      * @param deserialize Deep flag.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
-    private static BinaryArray doReadBinaryArray(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, boolean isEnumArray) {
+    private static BinaryArray doReadBinaryArray(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize,
+        boolean isEnumArray
+    ) {
         int hPos = positionForHandle(in);
 
         int compTypeId = in.readInt();
@@ -3646,15 +3686,25 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @param deserialize Deep flag.
      * @param factory Collection factory.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private static Collection<?> doReadCollection(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryCollectionFactory factory)
-        throws BinaryObjectException {
+    private static Collection<?> doReadCollection(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize,
+        BinaryCollectionFactory factory
+    ) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
         int size = in.readInt();
@@ -3718,15 +3768,25 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @param deserialize Deep flag.
      * @param factory Map factory.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private static Map<?, ?> doReadMap(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize, BinaryMapFactory factory)
-        throws BinaryObjectException {
+    private static Map<?, ?> doReadMap(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize,
+        BinaryMapFactory factory
+    ) throws BinaryObjectException {
         int hPos = positionForHandle(in);
 
         int size = in.readInt();
@@ -3776,17 +3836,28 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /**
      * Deserialize or unmarshal the object.
      *
+     * @param in Input stream.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @param handles Handles holder.
      * @param deserialize Deserialize.
      * @return Result.
      */
-    private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
-        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
+    private static Object deserializeOrUnmarshal(
+        BinaryInputStream in,
+        BinaryContext ctx,
+        ClassLoader ldr,
+        BinaryReaderHandlesHolder handles,
+        boolean detach,
+        boolean deserialize
+    ) {
         return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach, deserialize);
     }
 
     /**
      * Get position to be used for handle. We assume here that the hdr byte was read, hence subtract -1.
      *
+     * @param in Input stream.
      * @return Position for handle.
      */
     private static int positionForHandle(BinaryInputStream in) {

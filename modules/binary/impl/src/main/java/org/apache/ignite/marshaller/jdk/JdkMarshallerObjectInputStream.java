@@ -22,13 +22,14 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines custom JDK object input stream.
  */
 class JdkMarshallerObjectInputStream extends ObjectInputStream {
     /** */
-    private final ClassLoader clsLdr;
+    private final @Nullable ClassLoader clsLdr;
 
     /**
      * @param in Parent input stream.
@@ -37,8 +38,6 @@ class JdkMarshallerObjectInputStream extends ObjectInputStream {
      */
     JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
         super(in);
-
-        assert clsLdr != null;
 
         this.clsLdr = clsLdr;
 

@@ -61,7 +61,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
             byte[] objRawBytes = rawReader.extractObject();
 
             try (BinaryReaderEx binReader
-                     = BinaryUtils.reader(ctx, BinaryStreams.inputStream(objRawBytes), null, false)) {
+                     = BinaryUtils.reader(ctx, BinaryStreams.inputStream(objRawBytes), false)) {
                 Object deserializedObj = binReader.readObject();
 
                 if (testObj instanceof Proxy)

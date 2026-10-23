@@ -413,7 +413,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Stop warmup. */
     private static final short OP_STOP_WARMUP = 10000;
 
-    /** Binary context. */
+    /** Marshaller. */
     private final BinaryContext bctx;
 
     /** Client connection context */
@@ -441,7 +441,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
-        BinaryReaderEx reader = BinaryUtils.reader(bctx, inStream, null, true, true);
+        BinaryReaderEx reader = BinaryUtils.reader(bctx, inStream);
 
         ClientListenerRequest req = decode(reader);
 
