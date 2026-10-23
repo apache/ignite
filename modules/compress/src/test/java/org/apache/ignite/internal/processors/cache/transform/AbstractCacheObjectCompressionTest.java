@@ -23,7 +23,7 @@ import java.util.Objects;
 import com.github.luben.zstd.Zstd;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4FastDecompressor;
+import net.jpountz.lz4.LZ4SafeDecompressor;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
@@ -97,7 +97,7 @@ public abstract class AbstractCacheObjectCompressionTest extends AbstractCacheOb
         private static final LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
 
         /** */
-        static final LZ4FastDecompressor lz4Decompressor = lz4Factory.fastDecompressor();
+        static final LZ4SafeDecompressor lz4Decompressor = lz4Factory.safeDecompressor();
 
         /** */
         static final LZ4Compressor lz4Compressor = lz4Factory.highCompressor(1);
