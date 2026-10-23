@@ -21,23 +21,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 
-/**
- * Cache operations on a batch of keys, for allocation runs with {@link JmhAllocationProfiler}. The setup writes the
- * keys and splits them into batches of consecutive keys, created up front with their values, in key order, as a
- * transactional {@code putAll} expects.
- */
+/** {@code putAll} and {@code getAll} on batches of consecutive keys, created in setup with their values. */
 @SuppressWarnings("unchecked")
 public class JmhCacheBatchAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
     /** Keys in a batch. */
     @Param("10")
     private int batch;
 
-    /** Batches: keys in order, with their values. */
+    /** Batches of consecutive keys and their values, sorted as a transactional {@code putAll} expects. */
     private Map<Integer, IntValue>[] batches;
 
     /** {@inheritDoc} */
@@ -62,7 +57,7 @@ public class JmhCacheBatchAllocationBenchmark extends JmhCacheAllocationAbstract
             for (int i = b * batch; i < (b + 1) * batch; i++)
                 batches[b].put(keys[i], vals[i]);
 
-            // A map creates its key and value views on first use; Ignite and getAll() use them.
+            // A map creates these views on first use, which would otherwise fall into the measurement.
             batches[b].keySet();
             batches[b].values();
         }

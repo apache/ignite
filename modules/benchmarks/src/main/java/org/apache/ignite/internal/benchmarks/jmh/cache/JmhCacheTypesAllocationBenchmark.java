@@ -33,17 +33,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 
-/**
- * Cache put and get by key type, value type and value size, for allocation runs with
- * {@link JmhAllocationHistogramProfiler}, which shows the copies of a value by its class and size. Keys and one value
- * are created up front; every key holds that value. With large values the setup writes fewer keys, so the data stays
- * about the same size.
- */
+/** Cache put and get by key type, value type and value size; every key holds one value created in setup. */
 @SuppressWarnings("unchecked")
 public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
     /** Keys times {@link #valSize} the setup writes, at most; {@code valSize} sets the key count for every type. */
@@ -66,10 +60,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         /** {@code byte[16]}. */
         BYTES;
 
-        /**
-         * @param i Index.
-         * @return Key.
-         */
+        /** @return Key number {@code i} of this type. */
         Object key(int i) {
             switch (this) {
                 case INT:
@@ -85,8 +76,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
                     return new AffinityPojoKey(i, i / 10);
 
                 case BYTES:
-                    // Ignite hashes a byte[] key with Arrays.hashCode(), which spreads the keys over the partitions
-                    // evenly when the index is in the last bytes, big-endian.
+                    // Ignite hashes byte[] keys with Arrays.hashCode(): an index in the last bytes spreads them evenly.
                     return ByteBuffer.allocate(16).putInt(12, i).array();
 
                 default:
@@ -178,10 +168,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         /** {@link #POJO8} as a binary object, through the cache with {@code keepBinary}. */
         BINARY_OBJECT;
 
-        /**
-         * @param size Value size.
-         * @return Value.
-         */
+        /** @return Value of this type; {@code size} is the length of strings, arrays and collections. */
         Object value(int size) {
             switch (this) {
                 case BYTE:
@@ -358,10 +345,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         @AffinityKeyMapped
         private final int affId;
 
-        /**
-         * @param id Id.
-         * @param affId Affinity key.
-         */
+        /** */
         AffinityPojoKey(int id, int affId) {
             this.id = id;
             this.affId = affId;
@@ -414,10 +398,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         /** Nested object. */
         private final Pojo8 nested;
 
-        /**
-         * @param val Value.
-         * @param nested Nested object.
-         */
+        /** */
         NestedPojo(int val, Pojo8 nested) {
             this.val = val;
             this.nested = nested;

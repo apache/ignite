@@ -34,12 +34,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.openjdk.jmh.annotations.Param;
 
-/**
- * Base class of the cache allocation benchmarks: two server nodes and, unless the benchmark calls the cache through a
- * server, a client node, all in the benchmark JVM, set up by single-value {@code @Param}s. The nodes keep their data,
- * WAL and change data capture files in a new temporary directory, deleted after the nodes stop, so a persistent run
- * never starts on the data of an earlier one.
- */
+/** Base of the cache allocation benchmarks: two server nodes and, unless {@code client=SERVER}, a client node. */
 public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstractBenchmark {
     /** Node that calls the cache. */
     public enum Client {
@@ -102,7 +97,7 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
     @Param("false")
     private boolean cdc;
 
-    /** Directory of the nodes' data, WAL and change data capture files. */
+    /** Nodes' data, WAL and CDC files: a new temporary directory per run, so a persistent run starts empty. */
     private Path storeDir;
 
     /** {@inheritDoc} */
@@ -132,9 +127,7 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
     }
 
     /**
-     * Writes the keys as the base class does, then brings the cache to the state the measured operations should find:
-     * with persistence, the servers checkpoint what was written, so the checkpoint doesn't fall into the measurement;
-     * with a near cache, every key is read once, so the operations find it in the near cache.
+     * Writes the keys, then checkpoints them with persistence and reads each into the near cache if there is one.
      *
      * @param keys Keys.
      * @param vals Values.
@@ -144,6 +137,7 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
         super.populate(keys, vals);
 
         if (storage == Storage.PERSISTENT) {
+            // Otherwise the checkpoint of the written keys falls into the measurement.
             for (Ignite ignite : Ignition.allGrids()) {
                 if (!ignite.cluster().localNode().isClient())
                     ((IgniteEx)ignite).context().cache().context().database().waitForCheckpoint("populate");

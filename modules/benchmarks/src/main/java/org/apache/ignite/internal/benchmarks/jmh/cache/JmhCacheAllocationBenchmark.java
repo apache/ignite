@@ -34,11 +34,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-/**
- * Single-key cache operations, for allocation runs with {@link JmhAllocationProfiler}. Keys and values are created up
- * front, so the benchmark thread allocates only what Ignite does. Every operation but {@link #putRemove()} works on a
- * random key the setup wrote.
- */
+/** Single-key cache operations on keys and values created in setup, so measured allocations are Ignite's. */
 @SuppressWarnings("unchecked")
 public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
     /** Entry processor of {@link #invoke()}. */
@@ -128,10 +124,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
         return cache.replace(keys[i], vals[i]);
     }
 
-    /**
-     * Inserts a key the setup didn't write, then removes it. The keys go in order: an atomic cache keeps a removed
-     * entry in memory for a while, and a random key could land on it.
-     */
+    /** Inserts a new key and removes it; keys go in order, since an atomic cache keeps removed entries for a while. */
     @Benchmark
     public void putRemove() {
         int i = newKeyIdx++ % CNT;
@@ -140,10 +133,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
         cache.remove(newKeys[i]);
     }
 
-    /**
-     * Runs an entry processor that writes the value back. The call creates an empty array for the processor's
-     * arguments, as a user's call does.
-     */
+    /** Runs an entry processor that writes the value back. */
     @Benchmark
     public void invoke() {
         cache.invoke(keys[ThreadLocalRandom.current().nextInt(CNT)], SAME_VALUE);
@@ -164,8 +154,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
     }
 
     /**
-     * Runs put and get on an atomic and a transactional cache with the allocation profiler and escape analysis off, so
-     * that runs repeat, and writes the results to {@code JmhCacheAllocationBenchmark.json}.
+     * Runs put and get, atomic and transactional, with the allocation profiler; writes {@code <class name>.json}.
      *
      * @param args Arguments.
      * @throws Exception If failed.

@@ -56,13 +56,7 @@ import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.result;
 import static org.apache.ignite.internal.benchmarks.jmh.profile.JmhProfilerUtils.writeRunDescription;
 
-/**
- * Objects and bytes allocated per operation for each class, by node and thread pool as in
- * {@link JmhAllocationProfiler}, recorded with JFR. Needs {@code -XX:-UseTLAB}: the profiler counts only allocations
- * outside TLABs. Writes the totals per group to the JMH results and the per-class table to {@code dir=<path>}. With
- * {@code site=<n>}, the table also has the top {@code n} stack frames of each allocation, recorded in measurement
- * iterations.
- */
+/** Objects and bytes per operation by class, node and thread pool, recorded with JFR; needs {@code -XX:-UseTLAB}. */
 public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** JFR event of an allocation outside a TLAB: with TLABs off, of every allocation. */
     private static final String ALLOC_EVENT = "jdk.ObjectAllocationOutsideTLAB";
@@ -105,7 +99,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     private int measurements;
 
     /**
-     * @param initLine Profiler options.
+     * @param initLine {@code dir=<path>} for the per-class table, then optionally {@code ;site=<frames>} for stacks.
      * @throws ProfilerException If the options are wrong.
      */
     public JmhAllocationHistogramProfiler(String initLine) throws ProfilerException {
@@ -203,8 +197,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     private void startRecording(IterationParams iterParams) {
         rec = new Recording();
 
-        // The first warmup iteration also starts the nodes, and stacks then make JFR drop events or run the fork out of
-        // heap; no warmup iteration records them.
+        // Warmup records no stacks: during node start, stacks make JFR drop events or the fork run out of heap.
         stacks = frameCnt > 0 && iterParams.getType() == IterationType.MEASUREMENT;
 
         if (stacks)
@@ -217,10 +210,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         rec.start();
     }
 
-    /**
-     * Stops the recording and reads the client flags of the nodes, which start only after the first iteration has
-     * begun. Runs before the nodes stop in the last iteration and at the end of the others.
-     */
+    /** Stops the recording and reads the client flags of the nodes, which may have started during the iteration. */
     private void stop() {
         if (rec != null && rec.getState() == RecordingState.RUNNING) {
             rec.stop();
@@ -309,14 +299,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         return out;
     }
 
-    /**
-     * Adds the allocations of a recording to a histogram, except those of the profiler's own thread.
-     *
-     * @param jfr Recording file.
-     * @param hist Group to row to objects and bytes.
-     * @throws IOException If the file can't be read.
-     * @throws IllegalStateException If JFR dropped events.
-     */
+    /** Adds a recording's allocations, except the profiler thread's, to a histogram; fails if JFR dropped events. */
     private void read(Path jfr, Map<String, Map<String, long[]>> hist) throws IOException {
         long self = Thread.currentThread().getId();
 
@@ -357,11 +340,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         }
     }
 
-    /**
-     * @param ev Allocation event.
-     * @param stackTexts Stack to its frames text, shared by the events of a recording.
-     * @return Row of the allocation: its class, the size range of an array and, with {@code site}, the top frames.
-     */
+    /** @return Row of an allocation: its class, an array's size range and, with {@code site}, the top frames. */
     private String row(RecordedEvent ev, Map<RecordedStackTrace, String> stackTexts) {
         // JFR sometimes records an allocation without its class.
         RecordedClass cls = ev.getClass("objectClass");
@@ -375,10 +354,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         return frameCnt > 0 ? row + '\t' : row;
     }
 
-    /**
-     * @param st Stack trace, {@code null} if JFR has none.
-     * @return The top frames, from the allocating method outwards, as {@code Class.method:line < Class.method:line}.
-     */
+    /** @return Top frames of a stack, allocating method first: {@code Class.method:line < ...}; empty for none. */
     private String frames(RecordedStackTrace st) {
         if (st == null)
             return "";
@@ -400,10 +376,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         return sb.toString();
     }
 
-    /**
-     * @param name Class name as JFR gives it, with arrays as descriptors: {@code [B}, {@code [Ljava.lang.Object;}.
-     * @return Class name as Java writes it: {@code byte[]}, {@code java.lang.Object[]}.
-     */
+    /** @return Java name of a class name from JFR, such as {@code byte[]} for {@code [B}. */
     private static String javaName(String name) {
         int dims = 0;
 
@@ -420,10 +393,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         return elem + "[]".repeat(dims);
     }
 
-    /**
-     * @param size Array size in bytes, header included.
-     * @return Power-of-two range of the size: {@code <=16}, {@code <=32}, {@code <=64}, ...
-     */
+    /** @return Power-of-two range of an array's size in bytes, header included: {@code <=16}, {@code <=32}, ... */
     private static String sizeRange(long size) {
         long bound = 16;
 
@@ -433,13 +403,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         return "<=" + bound;
     }
 
-    /**
-     * A benchmark with many parameters would get a name longer than a file system allows, so the name keeps only the
-     * parameters that differ from their default, the single value of their {@code @Param}.
-     *
-     * @param benchParams Benchmark parameters.
-     * @return File name with the benchmark, its parameters other than the defaults and the process ID of the fork.
-     */
+    /** @return File name: benchmark, non-default parameters, fork PID; with every parameter, names get too long. */
     private static String fileName(BenchmarkParams benchParams) {
         String bench = benchParams.getBenchmark();
         Map<String, String> dflts = defaultParams(bench.substring(0, bench.lastIndexOf('.')));

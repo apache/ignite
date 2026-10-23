@@ -44,24 +44,7 @@ final class JmhProfilerUtils {
         // No-op.
     }
 
-    /**
-     * Group of a thread, from its name. Ignite names a pool thread {@code <pool>-<index>-#<id>%<node>%}, for example
-     * {@code sys-stripe-3-#12%node0%}. The group keeps the node and the pool and drops the index, so the threads of a
-     * pool on a node add up: {@code server.node0.sys-stripe}. Groups:
-     * <ul>
-     *     <li>{@code server.<node>.<pool>}, {@code client.<node>.<pool>}: a server or client node of this JVM;</li>
-     *     <li>{@code thin.<pool>}: a thin client;</li>
-     *     <li>{@code other.<node>.<pool>}: a node the profiler doesn't know, for example one already stopped;</li>
-     *     <li>{@code benchmark}: a JMH worker thread;</li>
-     *     <li>{@code other.<name>}: any other thread.</li>
-     * </ul>
-     * The node comes from the last {@code %...%} pair, since some names repeat it
-     * ({@code wal-file-archiver%node0-#5%node0%}), and the {@code -[...]} part of discovery thread names is dropped.
-     *
-     * @param name Thread name.
-     * @param clients Client flag per node name.
-     * @return Group label.
-     */
+    /** @return Group of a thread by name: node and pool without the index, such as {@code server.node0.sys-stripe}. */
     static String group(String name, Map<String, Boolean> clients) {
         String node = nodeOf(name);
 
@@ -77,7 +60,7 @@ final class JmhProfilerUtils {
         return label((client ? "client." : "server.") + node + '.' + pool);
     }
 
-    /** @return Node from the last {@code %...%} pair that ends a thread name, or {@code null} if there is none. */
+    /** @return Node from the name's last {@code %...%} pair, since some names repeat it, or {@code null} if none. */
     private static String nodeOf(String name) {
         int last = name.lastIndexOf('%');
         int prev = last > 0 ? name.lastIndexOf('%', last - 1) : -1;
@@ -96,12 +79,7 @@ final class JmhProfilerUtils {
         return name.substring(0, end).replaceAll("-\\[.*?]", "").replaceAll("-\\d+$", "");
     }
 
-    /**
-     * JMH's JSON writer breaks lines at brackets, so labels keep to a safe set of characters.
-     *
-     * @param s Label.
-     * @return Label with other characters replaced.
-     */
+    /** @return Label with characters outside {@code [A-Za-z0-9._:%-]} replaced: JMH's JSON breaks lines at brackets. */
     static String label(String s) {
         return s.replaceAll("[^A-Za-z0-9._:%-]", "_");
     }
@@ -123,12 +101,7 @@ final class JmhProfilerUtils {
         return clients;
     }
 
-    /**
-     * Writes the JDK and OS of the run to {@code <dir>/run.properties}.
-     *
-     * @param dir Directory.
-     * @throws ProfilerException If the file can't be written.
-     */
+    /** Writes the JDK and OS of the run to {@code <dir>/run.properties}. */
     static void writeRunDescription(Path dir) throws ProfilerException {
         Properties props = new Properties();
 

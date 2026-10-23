@@ -33,11 +33,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
-/**
- * An explicit transaction of two puts through a client node with two servers, one backup and {@code PRIMARY_SYNC},
- * for allocation runs with {@link JmhAllocationHistogramProfiler} and {@link JmhAllocationProfiler}. Keys and values
- * are created up front, so the benchmark thread allocates only what Ignite does.
- */
+/** A transaction of two puts from a client node; two servers, one backup, {@code PRIMARY_SYNC}. */
 @SuppressWarnings("unchecked")
 public class JmhCacheTxAllocationBenchmark extends JmhCacheAbstractBenchmark {
     /** Keys. */
@@ -93,9 +89,7 @@ public class JmhCacheTxAllocationBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /**
-     * Runs the benchmark with both allocation profilers, TLABs and escape analysis off. Writes the results to
-     * {@code JmhCacheTxAllocationBenchmark.json} and the per-class tables to the {@code JmhCacheTxAllocationBenchmark}
-     * directory.
+     * Runs the benchmark with both profilers; writes {@code <class name>.json} and the tables to {@code <class name>/}.
      *
      * @param args Arguments.
      * @throws Exception If failed.

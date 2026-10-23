@@ -147,8 +147,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     }
 
     /**
-     * Writes the keys until every partition that holds one has had more than 127 updates (README, "Writing a
-     * benchmark").
+     * Writes the keys until every partition with a key has had more than 127 updates, past the {@code Long} cache.
      *
      * @param keys Keys.
      * @param vals Values.

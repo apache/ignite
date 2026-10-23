@@ -20,21 +20,13 @@ package org.apache.ignite.internal.benchmarks.jmh.profile;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Actions that profilers run right before a benchmark stops its Ignite nodes.
- * <p>
- * JMH runs the trial teardown before it calls {@code afterIteration} of the last iteration, so without this hook a
- * profiler would see the nodes already stopped.
- */
+/** Profiler actions run before the nodes stop: JMH runs the teardown before the last {@code afterIteration}. */
 public final class JmhNodeStopHook {
     /** Error of a profiler whose benchmark stopped the nodes without the hook. */
     static final String NOT_CALLED = "The benchmark stopped its Ignite nodes without calling JmhNodeStopHook.run() " +
         "first, so the profiler can't count the last iteration.";
 
-    /**
-     * Action per owner, in the order the owners first set one, which is the profilers' order in JMH's options; a new
-     * profiler instance replaces its class's action in place.
-     */
+    /** Action per profiler class, in JMH's {@code -prof} order; a new instance replaces its class's action in place. */
     private static final Map<Class<?>, Runnable> ACTIONS = new LinkedHashMap<>();
 
     /** */

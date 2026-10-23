@@ -58,12 +58,7 @@ import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.RECEIV
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_BY_TYPE_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.SENT_MESSAGES_METRIC_NAME;
 
-/**
- * Bytes allocated per operation by the benchmark threads, the thin client and each thread pool of the Ignite nodes
- * running in the benchmark JVM. For each node, also per operation: communication messages and bytes sent, messages
- * sent by message class, messages received, tasks completed by each thread pool and discovery messages processed.
- * With {@code dir=<path>} the profiler also writes the JDK and OS of the run to {@code <path>/run.properties}.
- */
+/** Bytes allocated per operation by thread group, and messages and tasks per operation by node. */
 public class JmhAllocationProfiler implements InternalProfiler {
     /** */
     private static final ThreadMXBean THREADS = (ThreadMXBean)ManagementFactory.getThreadMXBean();
@@ -85,7 +80,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
     private final Set<String> reported = new HashSet<>();
 
     /**
-     * @param initLine Profiler options.
+     * @param initLine Empty, or {@code dir=<path>} to write the JDK and OS of the run to {@code <path>/run.properties}.
      * @throws ProfilerException If the options are wrong.
      */
     public JmhAllocationProfiler(String initLine) throws ProfilerException {
