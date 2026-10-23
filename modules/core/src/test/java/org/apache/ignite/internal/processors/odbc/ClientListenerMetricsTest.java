@@ -203,8 +203,8 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that the active compute tasks metric reports the maximum of the busiest connection (not the sum), keeps it
-     * during the time interval and drops it after the time interval.
+     * Check that the active compute tasks metric reports the maximum among all connections and keeps it
+     * during the time interval.
      */
     @Test
     public void testComputeTasksMetrics() throws Exception {
@@ -234,23 +234,16 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             checkMaxComputeTasks(MAX_TASKS);
             assertEquals(5, activeComputeTasksCount());
 
+            // Metric should not exceed limit after a rejected task.
             assertComputeTaskRejected(client2);
-
-            // A rejected task counts as the 'MaxActiveComputeTasksPerConnection' limit.
             checkMaxComputeTasks(MAX_TASKS);
             assertEquals(5, activeComputeTasksCount());
 
-            // Finished tasks are released by the connections, but the metric keeps the maximum during the time interval.
-            finishTasks(2);
+            // Finished tasks should not reset the maximum.
+            finishTasks(0, 1, 2, 3, 4);
             checkMaxComputeTasks(MAX_TASKS);
 
-            finishTasks(0, 1);
-            checkMaxComputeTasks(MAX_TASKS);
-
-            finishTasks(3, 4);
-            checkMaxComputeTasks(MAX_TASKS);
-
-            // The maximum expires after the time interval.
+            // "Wait" for expiration.
             shiftTime(LONG_INTERVAL);
             assertEquals(0, computeTasksMetric().value());
 
@@ -263,7 +256,6 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             shiftTime(2 * LONG_INTERVAL);
             checkMaxComputeTasks(0);
 
-            // Wait for all results before clients are closed.
             for (IgniteInternalFuture<Object> fut : futs)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
@@ -272,10 +264,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Check that the metric is not less than the current value, so it reports long-running tasks after their maximum has
-     * expired.
-     */
+    /** Check that the metric is not less than the current maximum, when metric has expired. */
     @Test
     public void testComputeTasksMetricOnLongRunningTasks() throws Exception {
         startGridWithCompute();
@@ -285,16 +274,14 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
 
             checkMaxComputeTasks(MAX_TASKS);
 
-            // The maximum expires after the time interval.
+            // "Wait" for expiration.
             shiftTime(LONG_INTERVAL);
             assertEquals(MAX_TASKS, computeTasksMetric().value());
 
             finishTasks(IntStream.range(0, MAX_TASKS).toArray());
 
-            // Finished tasks do not update the maximum, so the metric drops to the current value at once.
             assertEquals(0, computeTasksMetric().value());
 
-            // Wait for all results before the client is closed.
             for (IgniteInternalFuture<Object> fut : futs)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
@@ -316,18 +303,18 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
 
             checkMaxComputeTasks(MAX_TASKS);
 
-            // The maximum expires after the time interval. The time stays shifted, so the expired maximum is not counted.
+            // "Wait" for expiration.
             shiftTime(LONG_INTERVAL);
 
             assertComputeTaskRejected(client);
 
-            // The metric keeps the limit from the rejected task, though the current value is less.
             finishTasks(0);
+
+            // The metric keeps the max limit, though the current value is less.
             checkMaxComputeTasks(MAX_TASKS);
 
             finishTasks(IntStream.range(1, MAX_TASKS).toArray());
 
-            // Wait for all results before the client is closed.
             for (IgniteInternalFuture<Object> fut : futs)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
@@ -356,10 +343,9 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 assertEquals(3, activeComputeTasksCount());
             }
 
-            // Tasks of the closed connection are released on disconnect.
-            assertEquals(1, activeComputeTasksCount());
+            // Tasks of the closed client should be released on disconnect
+            assertTrue(waitForCondition(() -> activeComputeTasksCount() == 1, getTestTimeout()));
 
-            // Cancellation does not interrupt 'reduce()', so unblock the tasks of 'client2'.
             TestComputeTask.finish(1);
             TestComputeTask.finish(2);
 
