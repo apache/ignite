@@ -44,10 +44,12 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -61,6 +63,9 @@ import org.junit.Test;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_MAX_CACHE_FUTURE_DURATION;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 
 /**
  * Test exchange manager warnings.
@@ -229,6 +234,18 @@ public class GridCachePartitionExchangeManagerWarningsTest extends GridCommonAbs
         }
 
         doSleep(timeout * 2);
+
+        long longRunningFutNum = 0;
+
+        for (int i = 0; i < 2; i++) {
+            MetricRegistry mreg = grid(i).context().metric().registry(TX_METRICS);
+
+            assertTrue(mreg.<LongMetric>findMetric(METRIC_MAX_CACHE_FUTURE_DURATION).value() > timeout);
+
+            longRunningFutNum += mreg.<LongMetric>findMetric(METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT).value();
+        }
+
+        assertEquals(longRunFuturesCnt, longRunningFutNum);
 
         stopAllGrids();
 
