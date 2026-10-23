@@ -42,7 +42,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Store and key password of the test fixtures. */
     private static final char[] PASSWORD = "123456".toCharArray();
 
-    /** A reload loads once, leaves the cached context intact and keeps each context's own chain. */
+    /** {@code createNew()} loads the store once, preserves the cached context and attaches the new chain to the new context. */
     @Test
     public void testMetadataUsesOneLoadAndStaysWithContext() throws Exception {
         KeyStore firstStore = loadStore("node01");
@@ -172,7 +172,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertArrayEquals(new String[] {"TLSv1.2"}, outer.createSSLEngine().getEnabledProtocols());
     }
 
-    /** A wrapper with metadata alone preserves the engine peer and native socket factories. */
+    /** Adding metadata without TLS parameters preserves the engine's peer address, default settings and socket factory classes. */
     @Test
     public void testMetadataWrapperPreservesContextBehavior() throws Exception {
         SSLContext delegate = SSLContext.getInstance("TLS");

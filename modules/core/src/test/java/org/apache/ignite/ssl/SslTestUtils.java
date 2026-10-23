@@ -52,7 +52,7 @@ public class SslTestUtils {
     }
 
     /**
-     * @param nodes Nodes to reload certificates on, the command submitted from the first one.
+     * @param nodes Nodes whose certificates are reloaded. The first node submits the command.
      * @return Report of the command.
      */
     public static String reload(IgniteEx... nodes) throws Exception {
@@ -60,7 +60,7 @@ public class SslTestUtils {
     }
 
     /**
-     * @param nodes Nodes to report, the command submitted from the first one.
+     * @param nodes Nodes whose certificate status is requested. The first node submits the command.
      * @return Report of the command.
      */
     public static String status(IgniteEx... nodes) throws Exception {
@@ -68,8 +68,8 @@ public class SslTestUtils {
     }
 
     /**
-     * @param nodes Nodes to reload certificates on, the command submitted from the first one.
-     * @return Report of the failed command, with the whole chain of causes, so that it does not depend on how compute wraps them.
+     * @param nodes Nodes whose certificates are reloaded. The first node submits the command.
+     * @return Exception stack trace with all causes, including any wrappers added by compute.
      */
     public static String reloadFailure(IgniteEx... nodes) {
         return X.getFullStackTrace(GridTestUtils.assertThrows(null, () -> reload(nodes), Exception.class, null));
@@ -99,7 +99,7 @@ public class SslTestUtils {
         return servedCertificate(GridTestUtils.sslTrustedFactory("node01", "trustboth").create(), port).getSubjectX500Principal().getName();
     }
 
-    /** @return Node as the reports of the commands name it. */
+    /** @return Node UUID and consistent ID in command output format. */
     public static String node(IgniteEx node) {
         return node.localNode().id() + " [consistentId=" + node.localNode().consistentId() + ']';
     }

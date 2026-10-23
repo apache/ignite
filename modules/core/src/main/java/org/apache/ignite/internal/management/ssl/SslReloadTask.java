@@ -53,13 +53,13 @@ public class SslReloadTask extends AbstractSslTask {
         @Serial
         private static final long serialVersionUID = 0L;
 
-        /** Node the command came through. */
+        /** Node that received the management command. */
         private final UUID originNodeId;
 
         /**
          * @param arg Argument.
          * @param debug Debug flag.
-         * @param originNodeId Node the command came through.
+         * @param originNodeId Node that received the management command.
          */
         private SslReloadJob(NoArg arg, boolean debug, UUID originNodeId) {
             super(arg, debug);
@@ -108,7 +108,7 @@ public class SslReloadTask extends AbstractSslTask {
             return new IgniteBiTuple<>(!failed, String.join("\n", lines));
         }
 
-        /** @return Who asked for the reload, as the node log names it. */
+        /** @return Reload initiator details for the node log. */
         private String initiator() {
             IgniteSecurity security = ignite.context().security();
 

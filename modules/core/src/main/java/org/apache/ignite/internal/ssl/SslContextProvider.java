@@ -58,7 +58,7 @@ public class SslContextProvider {
     /** Automatic renewal, attached before this provider is registered. */
     private @Nullable SslRenewal renewal;
 
-    /** Outcome of the reloads: the last success and the failures since it. */
+    /** Snapshot of the last successful reload and subsequent failures. */
     private volatile ReloadOutcome outcome = new ReloadOutcome(0, 0, null, 0);
 
     /** Failed automatic attempts since a chain with a later expiry was put in use. */
@@ -96,7 +96,7 @@ public class SslContextProvider {
         transports.add(transport);
     }
 
-    /** @return Transports served, comma-separated, as the commands and the node log name them. */
+    /** @return Comma-separated transport names used in command output and node logs. */
     public String transports() {
         return String.join(", ", transports);
     }
@@ -131,14 +131,14 @@ public class SslContextProvider {
     }
 
     /**
-     * Builds a new context from the factory, puts it in use for new connections and records the outcome. The new context is put into use
-     * only if every certificate of the known chain is valid now and the loaded material is not known to lack a private key.
+     * Builds and installs a new context for new connections, recording success or failure. Rejects key material known to have no
+     * private key. If a certificate chain is supplied, every certificate must be within its validity period.
      * Certificate metadata is required when automatic renewal is enabled.
      * The administrator must ensure that peers trust the new certificates and can connect with the new context.
      *
      * @return Certificate installed by this reload, or {@code null} if its metadata is unavailable.
-     * @throws IgniteCheckedException If the new context fails a check or the factory returns the context in use. The context in use
-     *      stays, as it does when the factory itself throws.
+     * @throws IgniteCheckedException If the new context fails a check or the factory returns the context in use. On any failure,
+     *      including a factory exception, the current context is retained.
      */
     public synchronized @Nullable X509Certificate reload() throws IgniteCheckedException {
         try {
@@ -166,8 +166,8 @@ public class SslContextProvider {
     }
 
     /**
-     * Puts in use a context built anew, provided its chain expires later than the one in use. A renewal that does not move the expiry
-     * would be due again at once. Returning the chain in use counts as an unsuccessful attempt and leaves the context unchanged.
+     * Installs a new context only if its chain expires later than the current chain. Otherwise, renewal would immediately be due again.
+     * Returning the current chain counts as an unsuccessful attempt and leaves the context unchanged.
      *
      * @param expected Context the renewal was planned for.
      * @return Certificate installed by this attempt, or {@code null} if the factory returned the chain in use or the planned
@@ -256,7 +256,7 @@ public class SslContextProvider {
     /**
      * @param next Chain loaded with the new context, {@code null} if it is unknown.
      * @param requireChain Whether automatic renewal requires a known chain.
-     * @throws IgniteCheckedException If it fails a check {@link #reload()} lists.
+     * @throws IgniteCheckedException If the chain is required but missing, or a certificate is outside its validity period.
      */
     private void check(@Nullable X509Certificate[] next, boolean requireChain) throws IgniteCheckedException {
         if (next == null && requireChain)
@@ -287,7 +287,7 @@ public class SslContextProvider {
         outcome = new ReloadOutcome(o.successTime(), System.currentTimeMillis(), SslCertificates.reason(e), o.failures() + 1);
     }
 
-    /** @return Outcome of the reloads, as one snapshot. */
+    /** @return Snapshot of the last successful reload and subsequent failures. */
     public ReloadOutcome reloadOutcome() {
         return outcome;
     }
@@ -298,7 +298,7 @@ public class SslContextProvider {
     }
 
     /**
-     * Outcome of the reloads, as one snapshot.
+     * Snapshot of the last successful reload and subsequent failures.
      *
      * @param successTime Time of the last successful reload, {@code 0} if there was none.
      * @param failureTime Time of the last failed reload since the last successful one, {@code 0} if there was none.

@@ -114,7 +114,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--ssl", "reload"), "Failed to initialize key store");
     }
 
-    /** @return Transports of the node, all on the factory of the node; binary REST does not start on a client node. */
+    /** @return Transports sharing the node's factory. Client nodes do not run binary REST. */
     private static String transports(IgniteEx node) {
         return (node.localNode().isClient() ? "" : "binary REST, ") + "client connector, communication, discovery";
     }

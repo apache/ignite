@@ -28,9 +28,9 @@ import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-/** SSL context that passes every call to the context in use at that moment, so that new connections get reloaded certificates. */
+/** Delegates to the current SSL context so that new connections use reloaded certificates. */
 class CurrentSslContext extends SSLContext {
-    /** @param ctx Context in use at the moment it is asked. */
+    /** @param ctx Supplier of the context currently in use. */
     CurrentSslContext(Supplier<SSLContext> ctx) {
         super(new Spi(ctx), ctx.get().getProvider(), ctx.get().getProtocol());
     }
@@ -40,7 +40,7 @@ class CurrentSslContext extends SSLContext {
         /** */
         private final Supplier<SSLContext> ctx;
 
-        /** @param ctx Context in use at the moment it is asked. */
+        /** @param ctx Supplier of the context currently in use. */
         private Spi(Supplier<SSLContext> ctx) {
             this.ctx = ctx;
         }
@@ -81,9 +81,9 @@ class CurrentSslContext extends SSLContext {
         }
 
         /**
-         * Parameters of a new engine. Jetty enables the protocols and cipher suites it finds here on every engine. A context of
-         * {@link org.apache.ignite.ssl.SslContextFactory} applies the configured ones only to the engines it creates. Its default
-         * parameters are those of the JVM.
+         * Returns a new engine's parameters so Jetty uses the factory's configured protocols and cipher suites.
+         * {@link org.apache.ignite.ssl.SslContextFactory} applies these settings to engines, but its context's default parameters
+         * are the JVM defaults.
          */
         @Override protected SSLParameters engineGetDefaultSSLParameters() {
             return ctx.get().createSSLEngine().getSSLParameters();

@@ -30,7 +30,7 @@ public class SslCertificates {
 
     /**
      * @param chain Chain, own certificate first.
-     * @return The earliest time a certificate in the loaded chain expires.
+     * @return Earliest expiry in the chain, in milliseconds since the epoch.
      */
     public static long chainNotAfter(X509Certificate[] chain) {
         long res = Long.MAX_VALUE;
@@ -43,7 +43,7 @@ public class SslCertificates {
 
     /**
      * @param chain Chain.
-     * @param time Time.
+     * @param time Time to check, in milliseconds since the epoch.
      * @return First certificate of the chain that is not valid at that time, {@code null} if all are.
      */
     public static @Nullable X509Certificate invalidAt(X509Certificate[] chain, long time) {
@@ -67,8 +67,7 @@ public class SslCertificates {
 
     /**
      * @param e Failure.
-     * @return Messages along its chain of causes, each once; a failure out of a user-supplied factory may carry none and is then named by
-     *      its type.
+     * @return Non-repeated messages from the exception and its causes, or {@link Throwable#toString()} if none are available.
      */
     public static String reason(Throwable e) {
         StringBuilder sb = new StringBuilder();

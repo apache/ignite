@@ -553,7 +553,7 @@ public class ConnectorConfiguration {
 
     /**
      * Sets whether HTTP REST served with {@link #setHttpSslFactory(Factory)} requires a certificate from clients.
-     * HTTP REST then refuses a client if the trust store of that factory does not accept its certificate.
+     * The trust managers in the factory's SSL context must accept the client certificate.
      * If you turn this on without {@link #setHttpSslFactory(Factory)}, the node does not start. Off by default.
      *
      * @param httpSslClientAuth Whether HTTP REST requires a certificate from clients.

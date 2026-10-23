@@ -202,12 +202,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Puts TLS on the certificates of {@code httpSslFactory} in front of the connector: each new connection gets the certificates in
-     * use at that moment.
+     * Adds TLS to an HTTP connector using {@code httpSslFactory}. New connections use the current SSL context.
      *
      * @param connector Jetty connector.
-     * @throws IgniteCheckedException If the connector has an SSL connection factory of its own, or passes connections to something
-     *      other than HTTP first, such as the PROXY protocol, which TLS in front of it would break.
+     * @throws IgniteCheckedException If the connector already has TLS or its default connection factory does not handle HTTP.
      */
     private void addTls(AbstractNetworkConnector connector) throws IgniteCheckedException {
         if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory http)
@@ -224,8 +222,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, http.getProtocol()));
 
-        // REST serves one certificate whatever the Host header says, so the SNI host check of Jetty would only refuse requests by
-        // a host name or IP address the certificate does not name, such as a load balancer name or a Kubernetes probe by pod IP.
+        // Allow HTTP Host values absent from the certificate, such as an IP or load-balancer name.
         if (http.getHttpConfiguration().getCustomizer(SecureRequestCustomizer.class) == null)
             http.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer(false));
     }

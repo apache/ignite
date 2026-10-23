@@ -79,7 +79,7 @@ class TestCertificateAuthority {
      * @param cn Common name of the certificate.
      * @param notBefore Time it becomes valid; rounded down to a second.
      * @param notAfter Time it expires; rounded down to a second.
-     * @return Key store with the certificate, its key and the authority behind it.
+     * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
      */
     KeyStore issue(String cn, long notBefore, long notAfter) throws Exception {
         KeyPair pair = keyPair();
@@ -114,7 +114,7 @@ class TestCertificateAuthority {
     /**
      * @param keyStore Store with the certificate to present.
      * @param trustStore Store with the authorities to trust.
-     * @return Context that presents and trusts them.
+     * @return Context using the supplied key and trust stores, with certificate metadata attached.
      */
     static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws Exception {
         SSLContext ctx = SSLContext.getInstance("TLS");

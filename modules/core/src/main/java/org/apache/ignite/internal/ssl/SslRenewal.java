@@ -33,23 +33,22 @@ import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Renews the certificate of one context built by a factory with {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal
- * enabled}, before it expires. Everything but {@link #replan()} runs in the renewal thread.
+ * Renews one factory's certificates before expiry when {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal is enabled}.
+ * Renewal planning and attempts run in the node's renewal thread.
  */
 class SslRenewal {
     /** How the node log names an automatic renewal in {@code initiator=}. */
     private static final String INITIATOR = "automatic renewal";
 
     /**
-     * How often the node repeats that the factory has no newer certificates; it also logs at once when the ones in use come to expire
-     * soon and when they expire.
+     * Interval between warnings that the factory has no newer certificates. A change in expiry status bypasses this interval.
      */
     private static final long WAIT_LOG_INTERVAL = TimeUnit.DAYS.toMillis(1);
 
-    /** Pause after the first attempt that puts nothing in use, in milliseconds, and the shortest time between two attempts. */
+    /** Initial retry pause and minimum interval between renewal attempts, in milliseconds. */
     private static long minPause = 60_000L;
 
-    /** Longest pause between attempts that put nothing in use, in milliseconds. */
+    /** Maximum retry pause before adding jitter, in milliseconds. */
     private static long maxPause = 3_600_000L;
 
     /** */
@@ -76,7 +75,7 @@ class SslRenewal {
     /** How long before {@link #chainNotAfter} the renewal window opens. */
     private long window;
 
-    /** Pause after the last attempt that put nothing in use, without the random part; {@link #plan()} resets it to {@code 0}. */
+    /** Current retry pause before adding jitter; {@link #plan()} resets it to {@code 0}. */
     private long pause;
 
     /** When the node last logged that the factory has no newer certificates; {@link #plan()} resets it to {@code 0}. */
@@ -108,7 +107,7 @@ class SslRenewal {
         submit(this::plan, 0);
     }
 
-    /** Plans the next renewal by the certificate in use. */
+    /** Plans the next renewal from the current certificate chain's expiry. */
     private void plan() {
         pause = waitLogTime = 0;
 
@@ -130,7 +129,7 @@ class SslRenewal {
     }
 
     /**
-     * Puts a renewed certificate in use; a failure, or the factory returning the certificates in use, plans another attempt.
+     * Attempts renewal and schedules a retry if the factory fails or returns unchanged certificates.
      *
      * @param planned Context in use when the attempt was planned.
      */
@@ -151,10 +150,9 @@ class SslRenewal {
     }
 
     /**
-     * Plans another attempt after a pause that doubles with every attempt that puts nothing in use, and logs why. An exception is logged
-     * every time. The factory returning the certificates in use, as when their files are not replaced yet, is logged once a day,
-     * and at once when the certificates in use come to expire soon and when they expire. Once the node stops, nothing is
-     * planned or logged: the stop interrupts the attempt in progress, and that is no failure.
+     * Schedules a retry with exponential backoff and logs why renewal did not succeed. Exceptions are logged on every attempt.
+     * Unchanged certificates are logged once a day, or sooner if an attempt finds they are close to expiry or expired.
+     * Does nothing during shutdown, since stopping the node interrupts the current attempt.
      *
      * @param planned Context the attempt was planned for.
      * @param e Why the attempt failed, {@code null} if the factory returned the certificates in use.
@@ -209,8 +207,8 @@ class SslRenewal {
     }
 
     /**
-     * Runs the task in the renewal thread in the operation context of the node, never of whoever caused it, such as an operator
-     * running {@code --ssl reload} under their security subject.
+     * Runs the task in the renewal thread under the node's operation context. This prevents automatic renewal from inheriting
+     * the security subject of an operator who ran {@code --ssl reload}.
      *
      * @param task Task.
      * @param delay Delay, in milliseconds.

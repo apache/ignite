@@ -416,7 +416,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL context of the connections opened and accepted, {@code null} if SSL is disabled. */
+    /** SSL context used for new discovery connections, {@code null} if SSL is disabled. */
     @GridToStringExclude
     private SSLContext sslCtx;
 
@@ -1678,8 +1678,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * @param sock Socket accepted by the server.
-     * @return Server-side SSL socket over it on the SSL context in use, or the socket itself if SSL is disabled.
-     * @throws IOException If TLS cannot be set up on it.
+     * @return Socket wrapped for server-side TLS using the current SSL context, or the original socket if SSL is disabled.
+     * @throws IOException If TLS setup fails.
      */
     Socket acceptedSocket(Socket sock) throws IOException {
         if (!isSslEnabled())

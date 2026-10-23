@@ -447,7 +447,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    /** A node whose factory names a cipher suite the JVM does not know does not start, and a client with such a suite does not connect. */
+    /** An unknown cipher suite prevents a node from starting or a client from connecting. */
     @Test
     public void testInvalidCustomCipher() throws Exception {
         setSslCtxFactoryToCli = true;

@@ -52,8 +52,8 @@ public class SslContextRegistry extends GridProcessorAdapter {
     private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
 
     /**
-     * The one thread all renewals of the node run in, so that a renewal waiting for a slow factory takes no thread from a shared pool.
-     * It starts with the first renewal.
+     * Single-threaded executor for all renewals on this node, so a slow factory does not block a shared pool thread.
+     * Its thread starts with the first renewal.
      */
     private final ScheduledExecutorService renewalExec;
 
@@ -74,8 +74,8 @@ public class SslContextRegistry extends GridProcessorAdapter {
     /**
      * @param factory Factory the transport is configured with.
      * @param transport Transport, one of the names above.
-     * @return Context that passes every call to the one in use at that moment. Transports configured with the same factory share it,
-     *      so that a reload cannot leave them on certificates read at different moments.
+     * @return Context that delegates to the factory's current context. Transports configured with the same factory object share it,
+     *      so reload updates the context for all of them.
      */
     public synchronized SSLContext register(Factory<SSLContext> factory, String transport) {
         SslContextProvider provider = providers.stream().filter(p -> p.factory() == factory).findFirst().orElse(null);

@@ -30,10 +30,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.ssl.SslCertificates.reason;
 
 /**
- * Task of an {@code --ssl} command. A failed node does not cut the report short: the command waits for every node, then fails
- * and lists the failed nodes first.
- * A job returns whether its node passed and the node's report. An exception in a job result means the job did not finish on
- * that node, for example because the node left.
+ * Collects {@code --ssl} command results from all mapped nodes, listing failures first.
+ * Each job returns a success flag and a report. If any job reports a failure or throws an exception, the task fails with
+ * a report containing both failed and successful results.
  */
 public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, IgniteBiTuple<Boolean, String>> {
     /** */
@@ -42,7 +41,7 @@ public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, 
 
     /**
      * @param node Node.
-     * @return Node as the report names it.
+     * @return Node UUID and consistent ID for command output.
      */
     static String node(ClusterNode node) {
         return node.id() + " [consistentId=" + node.consistentId() + ']';

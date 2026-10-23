@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 
-/** Subcommand of --ssl: runs on every node and prints the report of every node. */
+/** Base class for {@code --ssl} commands that run on all cluster nodes. */
 public abstract class AbstractSslCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public Class<NoArg> argClass() {

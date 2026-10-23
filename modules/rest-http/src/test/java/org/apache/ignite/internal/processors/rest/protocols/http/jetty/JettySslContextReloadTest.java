@@ -59,7 +59,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 
-/** Tests HTTP REST served on the certificates of {@link ConnectorConfiguration#setHttpSslFactory}. */
+/** Tests HTTP REST certificate reload through {@link ConnectorConfiguration#setHttpSslFactory}. */
 public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** Bounds connection, handshake and response reads on the loopback probes. */
     private static final int SOCKET_TIMEOUT = 30_000;
@@ -121,9 +121,9 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * HTTP REST answers on the rotated certificate, a connection opened before the reload keeps answering, a client does not resume
-     * a session of the old certificate, a client without a certificate passes while client authentication is off, and a key store
-     * HTTP REST cannot read leaves it on the last good one.
+     * New HTTP REST connections use the renewed certificate without resuming old TLS sessions. Existing connections stay open,
+     * and clients without certificates can connect when client authentication is disabled. A failed reload keeps the last
+     * working context.
      */
     @Test
     public void testReload() throws Exception {
@@ -322,7 +322,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param keyManagers Certificates the client can present; empty for an anonymous client.
+     * @param keyManagers Key managers supplying the client certificate, or an empty array for an anonymous client.
      * @return A client context that trusts both test authorities.
      */
     private static SSLContext clientContext(KeyManager... keyManagers) throws Exception {

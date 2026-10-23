@@ -130,9 +130,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Sets whether a node builds its SSL context again before the certificate expires. This lets the node pick up a new certificate
-     * from wherever the factory takes certificates. A file-based factory reads its files again, so replace the files yourself.
-     * If the factory provides no certificate chain metadata, the node does not start. Disabled by default.
+     * Sets whether a node calls {@link #createNew()} before the certificate expires to pick up a new certificate.
+     * A file-based factory rereads its files. It does not replace them.
+     * When enabled, the factory must provide certificate chain metadata or the node does not start. Disabled by default.
      * Set this before starting the node; changing it on a running node takes effect after a restart.
      *
      * @param renewalEnabled Whether renewal is enabled.
@@ -270,10 +270,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * context in its own {@link #create()} must override this method too and build the context from the same sources. Otherwise,
      * this method builds the context without the code in that {@link #create()}.
      * <p>
-     * If a subclass overrides {@link #create()} and this method, both must return the loaded chain with the context, using
-     * {@link SSLContextWrapper#SSLContextWrapper(SSLContext, SSLParameters, X509Certificate[])}. Without the chain, the node cannot
-     * report certificate dates or renew the certificate automatically. A subclass that only changes the certificate source can
-     * override {@link #createKeyMaterial()} instead.
+     * To let the node check and report certificate dates or renew automatically, both overrides must return the loaded chain with the
+     * context using {@link SSLContextWrapper#SSLContextWrapper(SSLContext, SSLParameters, X509Certificate[])}. A subclass that only
+     * changes the certificate source can override {@link #createKeyMaterial()} instead.
      * <p>
      * Reload and renewal calls to the same factory on one node never overlap. Calls to different factories may run at the same
      * time. A subclass that fetches certificates from a remote source must limit how long a call takes and stop when its thread is

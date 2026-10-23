@@ -71,8 +71,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 
 /**
- * Tests {@code --ssl reload} and {@code --ssl status} on running nodes. Every node runs on a key store and a trust store of its own, so
- * that nodes can be rotated and broken one by one. node01 is issued by oneca; node02, node03 and the expired node02old by twoca.
+ * Tests {@code --ssl reload} and {@code --ssl status} on running nodes. Each node has separate key and trust stores so that tests
+ * can replace or corrupt them independently. node01 is signed by the old CA (oneca); node02, node03 and the expired node02old
+ * are signed by the new CA (twoca).
  */
 public class SslContextReloadTest extends GridCommonAbstractTest {
     /** Transports of a node whose client connector shares the factory of the node. */
@@ -135,7 +136,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         nodeLog.registerListener(logged);
 
-        // Trusts oneca only: it cannot connect again once the node serves node02.
+        // The client trusts only the old CA, so it cannot reconnect after the node switches to a certificate from the new CA.
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration()
             .setAddresses("127.0.0.1:" + g0.context().clientListener().port())
             .setSslMode(SslMode.REQUIRED).setSslContextFactory(GridTestUtils.sslTrustedFactory("node01", "trustone"))
@@ -497,7 +498,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertTrue(expired.check());
     }
 
-    /** A node whose job did not finish is named in the report like the others. */
+    /** A failed job result still identifies the node by UUID and consistent ID. */
     @Test
     public void testFailedJobNamesNode() {
         GridTestNode n = new GridTestNode(UUID.randomUUID());
@@ -514,7 +515,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, e.getMessage(), "Failed on 1 node(s):\n" + n.id() + " [consistentId=cid]: node left");
     }
 
-    /** Both commands say so on a node without SSL. */
+    /** Both commands report that no SSL context factory is configured. */
     @Test
     public void testWithoutSsl() throws Exception {
         IgniteEx g = startGrid(getTestIgniteInstanceName(0), cfg -> cfg.setSslContextFactory(null)
