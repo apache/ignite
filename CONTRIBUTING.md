@@ -35,6 +35,9 @@ Apache Ignite follows [Apache Code of Conduct](https://www.apache.org/foundation
 Apache Ignite prefer to use [consensus to make decisions](http://community.apache.org/committers/consensusBuilding.html), but in case something is going wrong please see [Escalation Guide](https://www.apache.org/board/escalation)
 
 ## Contributing Documentation
+RFCs are stored in the [rfcs directory](rfcs). See the
+[RFC on public API scope and review](rfcs/IGNITE-29201-public-api-and-rfc-process.md) for the review process.
+
 Documentation can be contributed to
  - End-User documentation https://ignite.apache.org/docs/latest/ . Its sources are in the [docs](docs) directory, see [How To Document](https://cwiki.apache.org/confluence/display/IGNITE/How+to+Document).
  - Developer documentation, design documents, IEPs [Apache Wiki](https://cwiki.apache.org/confluence/display/IGNITE). Ask at [Dev List](https://lists.apache.org/list.html?dev@ignite.apache.org) to be added as editor.
