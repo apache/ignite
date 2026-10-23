@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -122,6 +123,14 @@ public interface IgniteCacheOffheapManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public CacheDataRow read(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param key Key.
+     * @return {@code True} if row was found and written, {@code false} otherwise.
+     * @throws IgniteCheckedException If failed.
+     */
+    public boolean readTo(GridCacheContext cctx, KeyCacheObject key, BinaryWriterEx writer) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -600,6 +609,15 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+
+        /**
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param writer Writer to copy data to.
+         * @return {@code True} if key was found, {@code false} otherwise.
+         * @throws IgniteCheckedException If failed.
+         */
+        public boolean findTo(GridCacheContext cctx, KeyCacheObject key, BinaryWriterEx writer) throws IgniteCheckedException;
 
         /**
          * @return Data cursor.
