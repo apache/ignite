@@ -25,7 +25,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static java.lang.String.format;
 
@@ -146,10 +145,5 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
     /** */
     public void cacheFilter(CacheFilterEnum cacheFilter) {
         this.cacheFilter = cacheFilter;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(CacheIdleVerifyCommandArg.class, this);
     }
 }
