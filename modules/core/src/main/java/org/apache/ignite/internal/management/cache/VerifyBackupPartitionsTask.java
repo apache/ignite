@@ -294,11 +294,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         else
                             unacceptableEx = new IgniteException(e.getCause());
                     }
-                    else if (log.isDebugEnabled()) {
-                        log.debug("Idle verify stopping with the exception: '" + unacceptableEx.getMessage() +
-                            "'. Another exception appeared during the stopping of the partition hash calculations: '" +
-                            e.getMessage() + "'.");
-                    }
+                    else
+                        unacceptableEx.addSuppressed(e);
                 }
             }
 
