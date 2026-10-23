@@ -37,6 +37,13 @@ import org.junit.Test;
  * object without a Java class.
  */
 public class IgniteBinaryTxPutAfterInvokeSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * Ensures that a {@code put()} after an {@code invoke()} for a binary key, that has no Java class,
      * fails with the "cannot have update value" error instead of the binary key deserialization error.

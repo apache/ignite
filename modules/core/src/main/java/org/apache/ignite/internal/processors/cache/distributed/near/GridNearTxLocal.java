@@ -1205,8 +1205,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Returns a string representation of the given key, that does not require key deserialization, so that the
-     * original error is not masked if the key is a binary object that cannot be deserialized to a Java class.
+     * Returns a string representation of the given key for use in error messages, falling back to a
+     * representation that does not require key deserialization when deserialization fails, so that the
+     * original error is not masked (for example, if the key is a binary object without a Java class).
      *
      * @param cacheKey Key.
      * @param cacheCtx Cache context.
@@ -1216,7 +1217,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             return String.valueOf(CU.value(cacheKey, cacheCtx, false));
         }
-        catch (Exception ignore) {
+        catch (Throwable ignore) {
             return cacheKey.toString();
         }
     }
@@ -1288,7 +1289,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                         entry.lockedByThread(threadId, xidVer)) {
                         throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
-                            "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
+                            "externally held [key=" + safeKeyValue(cacheKey, cacheCtx) +
                             ", entry=" + entry +
                             ", xidVer=" + xidVer +
                             ", threadId=" + threadId +
