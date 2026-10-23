@@ -49,9 +49,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
  * and expose all properties in form of String pairs.
  * Properties of a class are collected via reflection once.
  * {@link SensitiveProperty} and {@code char[]} properties are never exposed.
- * Only objects of classes from the configured packages are iterated, for an array each element is checked.
+ * Only objects of classes from the configured packages are iterated, for an array the component type is checked.
  * Cyclic references are not iterated: a property is exposed as a plain value, an array element is skipped
- * (as well as {@code null} and foreign elements). An array without elements to iterate is exposed as a plain value.
+ * (as well as {@code null} elements). An array without elements to iterate is exposed as a plain value.
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
     /** Properties of classes: names and getters. */
@@ -67,9 +67,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     /** Configuration to iterate. */
     private final IgniteConfiguration cfg;
 
-    /**
-     * @param cfg Configuration to iterate.
-     */
+    /** @param cfg Configuration to iterate. */
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
         String pkgsProp = IgniteSystemProperties.getString(IGNITE_CONFIGURATION_VIEW_PACKAGES);
 
@@ -96,9 +94,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         }, true);
     }
 
-    /**
-     * @return Iterator of configuration properties.
-     */
+    /** @return Iterator of configuration properties. */
     public Iterator<T3<String, Object, Class<?>>> rawIterator() {
         Queue<Node> iters = new LinkedList<>();
 
@@ -177,7 +173,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         Class<?> cls = val.getClass();
 
         if (cls.isArray()) {
-            if (cls.getComponentType().isPrimitive())
+            if (!checkPkg(cls.getComponentType().getName()))
                 return false;
 
             int length = Array.getLength(val);
@@ -187,7 +183,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             for (int i = 0; i < length; i++) {
                 Object el = Array.get(val, i);
 
-                if (checkObjectPackage(el) && !Node.contains(parent, el)) {
+                if (el != null && !Node.contains(parent, el)) {
                     iters.add(new Node(el, objectProperties(el), prefix + '[' + i + ']', parent));
 
                     added = true;
@@ -203,14 +199,6 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         iters.add(new Node(val, objectProperties(val), prefix, parent));
 
         return true;
-    }
-
-    /**
-     * @param val Array element.
-     * @return {@code True} if {@code val} is a configuration bean that must be recursively exposed by the view.
-     */
-    private boolean checkObjectPackage(@Nullable Object val) {
-        return val != null && !val.getClass().isEnum() && checkPkg(val.getClass().getName());
     }
 
     /** @return Iterator of {@code obj} properties: names and getters. */

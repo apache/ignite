@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteSystemProperties;
@@ -170,35 +169,6 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         assertEquals("[]", viewContent.get("PluginConfigurations[2].Ref"));
     }
 
-    /** Tests that the package is checked for each array element rather than for the array component type. */
-    @Test
-    public void testArrayElementPackage() throws Exception {
-        // Proxy class is not from the Ignite package, although the array component type is.
-        TestBean foreign = (TestBean)Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class<?>[] {TestBean.class}, (proxy, mtd, args) -> null);
-
-        TestPluginConfiguration foreignArr = new TestPluginConfiguration();
-        foreignArr.setRef(new TestBean[] {foreign});
-
-        // Element from the Ignite package, although the array component type is not.
-        TestPluginConfiguration objArr = new TestPluginConfiguration();
-        objArr.setRef(new Object[] {"str", new TestPluginConfiguration()});
-
-        TestPluginConfiguration enumArr = new TestPluginConfiguration();
-        enumArr.setRef(new CacheAtomicityMode[] {CacheAtomicityMode.ATOMIC});
-
-        Map<String, String> viewContent = viewContent(
-            getConfiguration().setPluginConfigurations(foreignArr, objArr, enumArr));
-
-        assertTrue(viewContent.containsKey("PluginConfigurations[0].Ref"));
-        assertFalse(viewContent.containsKey("PluginConfigurations[0].Ref[0].Ref"));
-
-        assertFalse(viewContent.containsKey("PluginConfigurations[1].Ref"));
-        assertTrue(viewContent.containsKey("PluginConfigurations[1].Ref[1].Ref"));
-
-        assertEquals("[ATOMIC]", viewContent.get("PluginConfigurations[2].Ref"));
-    }
-
     /**
      * @param icfg Configuration.
      * @return Configuration view content: property names and values.
@@ -220,27 +190,18 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         return viewContent;
     }
 
-    /** Bean with a reference to another object. */
-    public interface TestBean {
-        /** @return Reference. */
-        Object getRef();
-
-        /** @param ref Reference. */
-        void setRef(Object ref);
-    }
-
     /** Plugin configuration with a reference to another object. */
-    public static class TestPluginConfiguration implements PluginConfiguration, TestBean {
+    public static class TestPluginConfiguration implements PluginConfiguration {
         /** Reference. */
         private Object ref;
 
-        /** {@inheritDoc} */
-        @Override public Object getRef() {
+        /** @return Reference. */
+        public Object getRef() {
             return ref;
         }
 
-        /** {@inheritDoc} */
-        @Override public void setRef(Object ref) {
+        /** @param ref Reference. */
+        public void setRef(Object ref) {
             this.ref = ref;
         }
     }
