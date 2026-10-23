@@ -19,7 +19,6 @@ package org.apache.ignite.internal.metric;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,11 +27,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
 import org.apache.ignite.spi.systemview.view.SystemView;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
@@ -88,28 +85,23 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
         }
     }
 
-    /** Tests that sensitive properties are excluded regardless of {@link S#includeSensitive()}. */
+    /** Tests that sensitive properties are excluded even if {@code toString()} includes sensitive data (default). */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE, value = "true")
     public void testSensitivePropertiesExcluded() throws Exception {
         String secretKey = "my-secret-key";
 
-        IgniteConfiguration icfg = getConfiguration()
+        Map<String, String> viewContent = viewContent(getConfiguration()
             .setSslContextFactory(sslFactory())
-            .setConnectorConfiguration(new TestConnectorConfiguration().setSecretKey(secretKey));
+            .setConnectorConfiguration(new TestConnectorConfiguration().setSecretKey(secretKey)));
 
-        try (IgniteEx ignite = startGrid(icfg)) {
-            Map<String, String> viewContent = viewContent(ignite.context().systemView().<ConfigurationView>view(CFG_VIEW));
+        assertTrue(viewContent.containsKey("SslContextFactory.KeyStoreFilePath"));
+        assertTrue(viewContent.containsKey("ConnectorConfiguration.Port"));
 
-            assertTrue(viewContent.containsKey("SslContextFactory.KeyStoreFilePath"));
-            assertTrue(viewContent.containsKey("ConnectorConfiguration.Port"));
+        assertFalse(viewContent.containsKey("SslContextFactory.KeyStorePassword"));
+        assertFalse(viewContent.containsKey("SslContextFactory.TrustStorePassword"));
+        assertFalse(viewContent.containsKey("ConnectorConfiguration.SecretKey"));
 
-            assertFalse(viewContent.containsKey("SslContextFactory.KeyStorePassword"));
-            assertFalse(viewContent.containsKey("SslContextFactory.TrustStorePassword"));
-            assertFalse(viewContent.containsKey("ConnectorConfiguration.SecretKey"));
-
-            assertTrue(viewContent.values().stream().noneMatch(val -> val != null && val.contains(secretKey)));
-        }
+        assertTrue(viewContent.values().stream().noneMatch(val -> val != null && val.contains(secretKey)));
     }
 
     /** */
@@ -174,17 +166,9 @@ public class SystemViewConfigurationTest extends SystemViewAbstractTest {
      * @return Configuration view content: property names and values.
      */
     private static Map<String, String> viewContent(IgniteConfiguration icfg) {
-        return viewContent(new IgniteConfigurationIterable(icfg));
-    }
-
-    /**
-     * @param view Configuration view.
-     * @return Configuration view content: property names and values.
-     */
-    private static Map<String, String> viewContent(Iterable<ConfigurationView> view) {
         Map<String, String> viewContent = new HashMap<>();
 
-        for (ConfigurationView row : view)
+        for (ConfigurationView row : new IgniteConfigurationIterable(icfg))
             viewContent.put(row.name(), row.value());
 
         return viewContent;

@@ -47,11 +47,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 /**
  * Responsibility of this class it to recursively iterate {@link IgniteConfiguration} object
  * and expose all properties in form of String pairs.
- * Properties of a class are collected via reflection once.
  * {@link SensitiveProperty} and {@code char[]} properties are never exposed.
- * Only objects of classes from the configured packages are iterated, for an array the component type is checked.
- * Cyclic references are not iterated: a property is exposed as a plain value, an array element is skipped
- * (as well as {@code null} elements). An array without elements to iterate is exposed as a plain value.
+ * Cyclic references and {@code null} array elements are not iterated.
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
     /** Properties of classes: names and getters. */
@@ -98,15 +95,14 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
     public Iterator<T3<String, Object, Class<?>>> rawIterator() {
         Queue<Node> iters = new LinkedList<>();
 
-        iters.add(new Node(cfg, objectProperties(cfg), "", null));
+        iters.add(new Node(cfg, "", null));
 
         return new Iterator<>() {
             private T3<String, Object, Class<?>> next;
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
-                while (next == null && !iters.isEmpty())
-                    advance();
+                advance();
 
                 return next != null;
             }
@@ -130,8 +126,11 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
                         Object val = getter.invoke(curr.obj);
 
-                        if (addToQueue(iters, val, name, curr))
+                        if (addToQueue(iters, val, name, curr)) {
+                            advance();
+
                             return;
+                        }
 
                         next = new T3<>(name, val, getter.getReturnType());
                     }
@@ -143,7 +142,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
             /** {@inheritDoc} */
             @Override public T3<String, Object, Class<?>> next() {
-                while (next == null && !iters.isEmpty())
+                if (next == null)
                     advance();
 
                 T3<String, Object, Class<?>> next0 = next;
@@ -162,8 +161,6 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
      * If {@code val} is configuration bean that must be recursively exposed by the view then
      * it will be added to the {@code iters} queue.
      *
-     * @param prefix Name prefix of the value properties.
-     * @param parent Entry of the object the value belongs to.
      * @return {@code True} if {@code val} was added to {@code iters} queue, {@code false} otherwise.
      */
     private boolean addToQueue(Queue<Node> iters, Object val, String prefix, Node parent) {
@@ -172,10 +169,15 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
         Class<?> cls = val.getClass();
 
-        if (cls.isArray()) {
-            if (!checkPkg(cls.getComponentType().getName()))
-                return false;
+        boolean isArr = cls.isArray();
 
+        if (isArr)
+            cls = cls.getComponentType();
+
+        if (!checkPkg(cls.getName()))
+            return false;
+
+        if (isArr) {
             int length = Array.getLength(val);
 
             boolean added = false;
@@ -184,7 +186,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
                 Object el = Array.get(val, i);
 
                 if (el != null && !Node.contains(parent, el)) {
-                    iters.add(new Node(el, objectProperties(el), prefix + '[' + i + ']', parent));
+                    iters.add(new Node(el, prefix + '[' + i + ']', parent));
 
                     added = true;
                 }
@@ -193,17 +195,12 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             return added;
         }
 
-        if (!checkPkg(cls.getName()) || Node.contains(parent, val))
+        if (Node.contains(parent, val))
             return false;
 
-        iters.add(new Node(val, objectProperties(val), prefix, parent));
+        iters.add(new Node(val, prefix, parent));
 
         return true;
-    }
-
-    /** @return Iterator of {@code obj} properties: names and getters. */
-    private Iterator<Map.Entry<String, Method>> objectProperties(Object obj) {
-        return PROPS.get(obj.getClass()).entrySet().iterator();
     }
 
     /**
@@ -292,11 +289,12 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         @Nullable private final Node parent;
 
         /** */
-        private Node(Object obj, Iterator<Map.Entry<String, Method>> props, String prefix, @Nullable Node parent) {
+        private Node(Object obj, String prefix, @Nullable Node parent) {
             this.obj = obj;
-            this.props = props;
             this.prefix = prefix;
             this.parent = parent;
+
+            props = PROPS.get(obj.getClass()).entrySet().iterator();
         }
 
         /** @return {@code True} if {@code obj} is the object of {@code node} or of any of its parents. */
