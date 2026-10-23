@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.systemview.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -128,6 +129,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** @see BinaryMetadataView */
     public static final String BINARY_METADATA_DESC = "Binary metadata";
+
+    /** Binary errors metrics registry name. */
+    public static final String BINARY_ERRORS_METRICS = metricName("binary", "errors");
+
+    /** Name of the "missing metadata count" metric within {@link #BINARY_ERRORS_METRICS}. */
+    static final String MISSING_METADATA_CNT = "MissingMetadataCount";
 
     /** */
     private volatile boolean discoveryStarted;
@@ -249,7 +256,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         };
 
-        binaryCtx = U.binaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class));
+        AtomicLongMetric missingMetaCnt = ctx.metric().registry(BINARY_ERRORS_METRICS).longMetric(MISSING_METADATA_CNT,
+            "The number of 'Cannot find metadata for object with compact footer' errors occurred during binary object reading.");
+
+        binaryCtx = U.binaryContext(metaHnd, marsh, ctx.config(), ctx.log(BinaryContext.class), missingMetaCnt::increment);
 
         marsh.setBinaryContext(binaryCtx);
 
