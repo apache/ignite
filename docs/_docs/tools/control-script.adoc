@@ -1095,7 +1095,8 @@ Command [METRIC] finished with code: 0
 
 == Metric configure command
 
-The metrics command configure bounds of histogram metrics or rate time interval of hitrate metric.
+The metrics command configure bounds of histogram metrics, rate time interval of hitrate metric or time interval of max value metric.
+Time intervals are set in milliseconds.
 
 [tabs]
 --
@@ -1104,12 +1105,14 @@ tab:Unix[]
 ----
 control.sh --metric --configure-histogram histogram-metric-name 1,2,3
 control.sh --metric --configure-hitrate hitrate-metric-name 1000
+control.sh --metric --configure-max-value max-value-metric-name 60000
 ----
 tab:Windows[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.bat --metric --configure-histogram histogram-metric-name 1,2,3
 control.bat --metric --configure-hitrate hitrate-metric-name 1000
+control.bat --metric --configure-max-value max-value-metric-name 60000
 ----
 --
 
