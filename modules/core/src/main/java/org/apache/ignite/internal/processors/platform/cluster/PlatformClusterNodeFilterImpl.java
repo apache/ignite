@@ -72,6 +72,8 @@ public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate imp
      */
     @IgniteInstanceResource
     public void setIgniteInstance(Ignite ignite) {
+        ignite.log().warning(">>>>>> PlatformClusterNodeFilterImpl#setIgniteInstance");
+
         ctx = PlatformUtils.platformContext(ignite);
     }
 
