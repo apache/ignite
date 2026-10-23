@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectInput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
+import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,13 +45,13 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Header magic number {@code IgniteDataTransferObject#MAGIC}. */
-    private static final int MAGIC = 0x42BEEF00;
+    static final int MAGIC = 0x42BEEF00;
 
     /** Last snapshot's checkpoint timestamp. */
-    private Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
+    Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
 
     /** Ids of checkpoints present at the time of the snapshot capture. */
-    private Set<UUID> checkpointIds;
+    Set<UUID> checkpointIds;
 
     /** Constructor. */
     public EarliestCheckpointMapSnapshot(
@@ -124,9 +126,22 @@ public class EarliestCheckpointMapSnapshot implements Externalizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         readHeader(in);
 
-        try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
-            data = U.readMap(dtin);
-            checkpointIds = U.readSet(dtin);
+        byte[] payload = U.readByteArray(in);
+
+        try (ObjectInputStream ois = new ObjectInputStream(new GridByteArrayInputStream(payload))) {
+            data = U.readMap(ois);
+            checkpointIds = U.readSet(ois);
+        }
+        catch (IOException | ClassNotFoundException e) {
+            // The file could be written by a build with the generated serializer, see EarliestCheckpointMapSnapshotSerializer.
+            try (ObjectInputStream ois = new ObjectInputStream(new GridByteArrayInputStream(payload))) {
+                new EarliestCheckpointMapSnapshotSerializer().readExternal(this, ois);
+            }
+            catch (IOException | ClassNotFoundException e1) {
+                e1.addSuppressed(e);
+
+                throw e1;
+            }
         }
     }
 

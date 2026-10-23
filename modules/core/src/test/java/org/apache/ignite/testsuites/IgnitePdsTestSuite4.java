@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRemoveDu
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRestartAfterFailedToWriteMetaPageTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSpuriousRebalancingOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshotSerializationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageReplacementDuringPartitionClearTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
@@ -94,6 +95,7 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, ReleaseSegmentOnHistoricalRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, AutoReleaseSegmentSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointMapSnapshotTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, EarliestCheckpointMapSnapshotSerializationTest.class, ignoredTests);
 
         return suite;
     }
