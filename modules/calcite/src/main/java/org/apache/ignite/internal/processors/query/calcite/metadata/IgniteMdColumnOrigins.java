@@ -309,10 +309,6 @@ public class IgniteMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Co
 
     /**
      * Provides column origins for a subset.
-     *
-     * <p>Origins are resolved through the original (logical) expression of the set rather than through the current best
-     * plan: the best expression changes during optimization, and metadata depending on it makes row count estimates
-     * of the same expression unstable, which in turn leads to inconsistent costs and cyclic best plans in Volcano memo.
      * Column origins are a property of the logical expression, so the original expression is a stable source of them.
      */
     public @Nullable Set<RelColumnOrigin> getColumnOrigins(RelSubset rel,

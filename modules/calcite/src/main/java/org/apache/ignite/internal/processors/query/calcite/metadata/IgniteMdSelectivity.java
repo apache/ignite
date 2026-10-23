@@ -121,7 +121,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      *
      * <p>Resolved through the original (logical) expression of the set rather than through the current best plan,
      * because the best expression changes during optimization and metadata depending on it makes estimates of the same
-     * expression unstable (see {@link IgniteMdColumnOrigins#getColumnOrigins(RelSubset, RelMetadataQuery, int)}).
+     * expression unstable (see {@link IgniteMdColumnOrigins#getColumnOrigins(RelSubset, RelMetadataQuery, int)}),
+     * which in turn leads to inconsistent costs and cyclic best plans in Volcano memo.
      */
     public Double getSelectivity(RelSubset rel, RelMetadataQuery mq, RexNode predicate) {
         RelNode original = rel.getOriginal();
