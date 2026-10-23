@@ -139,11 +139,10 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
 
             IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz, fields);
 
-            if (gen.generate()) {
+            if (gen.generate())
                 genSerDes.put(clazz, gen.serializerFQN());
 
-                jsonGen.generate(clazz, fields);
-            }
+            jsonGen.generate(clazz, fields);
         }
         catch (Exception e) {
             processingEnv.getMessager().printMessage(
