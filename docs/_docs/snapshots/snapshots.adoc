@@ -115,6 +115,10 @@ Ignite Persistence routines, it's suggested to store the snapshot and persistenc
 See the link:persistence/snapshot-directory#configuring-snapshot-directory[Configuring Snapshot Directory] page for
 configuration examples.
 
+NOTE: A full snapshot reads all the data and writes a separate stream of files, so on a shared device it adds a second full read and write pass on top of the traffic the cluster is serving.
+Incremental snapshot chains must be stored on the same file system as the WAL archive, because increments are hard links to archived WAL segments.
+See link:server-node-file-system-layout[Server Node File System Layout] for capacity and placement recommendations.
+
 === Snapshot Execution Pool
 
 By default, the snapshot thread pool size has a value of `4`. Decreasing the number of threads involved in the snapshot creation process 

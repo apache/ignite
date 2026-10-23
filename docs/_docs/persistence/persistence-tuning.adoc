@@ -63,6 +63,9 @@ tab:C++[unsupported]
 
 Consider using separate drives for data files and link:persistence/native-persistence#write-ahead-log[Write-Ahead-Logging (WAL)].
 Ignite actively writes to both the data and WAL files.
+Keeping the active WAL on its own device reduces the competition between checkpoint page writes and WAL writes, which helps keep write latency stable while a checkpoint is in progress.
+The durability guarantees differ by WAL mode: with the default `LOG_ONLY` mode the WAL is flushed to the operating system cache rather than forced to disk on every commit, while `FSYNC` waits for the disk.
+See link:server-node-file-system-layout[Server Node File System Layout] for the complete placement of data, WAL, the WAL archive, CDC, snapshots, logs, and diagnostic files.
 
 The example below shows how to configure separate paths for the data storage, WAL, and WAL archive:
 

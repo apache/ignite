@@ -35,7 +35,7 @@ When a node starts, it outputs start-up information to the console, including th
 | `IGNITE_LOG_INSTANCE_NAME` | If the property is set, Ignite includes its instance name in log messages. |  Not set
 | `IGNITE_QUIET` | Set to `false` to disable the quiet mode and enable the verbose mode.
 In the verbose mode, the node logs a lot more information. | `true`
-| `IGNITE_LOG_DIR` | The directory where Ignite writes log files. | `$IGNITE_HOME/
+| `IGNITE_LOG_DIR` | The directory where the built-in JUL logger writes log files. Set it as an environment variable of the node process; it does not affect Log4j2 appenders. | `$IGNITE_HOME/
 work/log`
 | `IGNITE_DUMP_THREADS_ON_FAILURE` | Set to `true` to output thread dumps to the log when a critical error is caught. | `true`
 |===
@@ -44,7 +44,12 @@ work/log`
 == Default Logging
 By default, Ignite uses the java.util.logging (JUL) framework.
 If you start Ignite using the `ignite.sh|bat` script from the distribution package, Ignite uses `$IGNITE_HOME/config/java.util.logging.properties` as the default logging configuration file and outputs all messages to log files in the `$IGNITE_HOME/work/log` directory.
-You can override the default logging directory by specifying the `IGNITE_LOG_DIR` system property.
+You can override the default logging directory by setting the `IGNITE_LOG_DIR` environment variable for the node process. This variable is read once at startup and applies to the built-in JUL logger only.
+
+NOTE: The default log directory is located inside the work directory, which Ignite also uses to store metadata and, by default, data files.
+For production server nodes, move the logs to a dedicated file system and bound their total retention, so that a log growth cannot exhaust the space required by checkpoints, WAL, and node startup.
+`IGNITE_LOG_DIR` is read as an environment variable of the node process and affects the built-in JUL logger only; if you use Log4j2, change the file paths in the Log4j2 configuration instead.
+See link:server-node-file-system-layout[Server Node File System Layout].
 
 If you use Ignite as a library in your application, the default logging configuration includes only console handler at INFO level.
 You can provide a custom configuration file via the `java.util.logging.config.file` system property.
@@ -75,6 +80,11 @@ tab:C++[unsupported]
 --
 
 In the above example, the path to `log4j2-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j2 configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j.xml`).
+
+NOTE: The configuration shipped in the distribution package writes to `$IGNITE_HOME/work/log` and rolls individual files by time and by size.
+Its file name contains both an index and a date, so the implicit default rollover strategy keeps a limited number of indexed archives of the current period, but archives left from previous dates are never removed, and its `consistency.log` appender is not rolled at all.
+Add a `Delete` action to `DefaultRolloverStrategy` to bound the directory as a whole and bound `consistency.log` separately.
+See link:server-node-file-system-layout#logs-and-diagnostic-output[Server Node File System Layout] for the recommended log placement and retention.
 
 NOTE: Log4j2 supports runtime reconfiguration, i.e. changes in the configuration file is applied without the need to restart the application.
 
