@@ -40,7 +40,9 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.ssl.SSLContextWrapper;
 import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
@@ -199,6 +201,9 @@ class TestCertificateAuthority {
 
         if (ca)
             builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+        else
+            builder.addExtension(Extension.extendedKeyUsage, false,
+                new ExtendedKeyUsage(new KeyPurposeId[] {KeyPurposeId.id_kp_serverAuth, KeyPurposeId.id_kp_clientAuth}));
 
         ContentSigner signer = new JcaContentSignerBuilder("SHA256withECDSA").build(keys.getPrivate());
 
