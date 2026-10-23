@@ -243,6 +243,24 @@ The nodes may be started on other hosts as well, forming a distributed caching c
 Be sure to specify the right network settings in Ignite configuration file for that.
 ====
 
+== Cache Configuration Templates
+
+You can use link:configuring-caches/configuration-overview#cache-templates[cache configuration templates] by creating a template for your @Cacheable entities.
+
+For example, the following configuration uses a single `transactional-cache` bean for multiple entities:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean parent="transactional-cache">
+    <property name="name" value="com.mycompany.*"/>
+</bean>
+----
+--
+
+
 == Query Cache
 
 In addition to L2 cache, Hibernate offers a query cache. This cache stores the results of queries (either HQL or Criteria)
