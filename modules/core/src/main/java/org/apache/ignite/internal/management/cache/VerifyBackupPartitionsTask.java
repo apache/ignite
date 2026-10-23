@@ -230,8 +230,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             IgniteException unacceptableEx = null;
             // The current thread's interruption flag.
             boolean interrupted = false;
-            // The cancellation flag. If it is set, no need to store the acceptable exceptions from the futures.
-            boolean cancelled = false;
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
@@ -252,9 +250,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         res.putAll(partHash);
                 }
                 catch (Exception e) {
-                    if (isCancelled())
-                        cancelled = true;
-
                     // A timeout of a particular future is not a problem. We just log that the progress is still on.
                     if (e instanceof TimeoutException) {
                         // Log the progress status periodically.
@@ -276,7 +271,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             interrupted = true;
 
                         if (e.getCause() instanceof IgniteException && !(e.getCause() instanceof GridNotIdleException)) {
-                            if (!cancelled)
+                            if (!isCancelled())
                                 acceptableExcs.add((IgniteException)e.getCause());
 
                             // Current future is processed with an acceptable exception.
