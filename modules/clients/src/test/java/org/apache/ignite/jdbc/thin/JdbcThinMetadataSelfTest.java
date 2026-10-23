@@ -231,6 +231,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assertTrue(rs.next());
             assertEquals(cacheName, rs.getString(MetadataColumn.TABLE_SCHEMA.columnName()));
+            // TODO: IGNITE-xxxxx-rowid-poc Потом посмотреть что это
             assertEquals(KEY_FIELD_NAME, rs.getString(MetadataColumn.COLUMN_NAME.columnName()));
 
             assertTrue(rs.next());
