@@ -1159,7 +1159,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 @Override protected Object onNext() throws IgniteCheckedException {
                     IgniteBiTuple<K, V> entry = iter.nextX();
 
-                    return new CacheEntryImpl<>(entry.getKey(), entry.getValue());
+                    return new CacheEntryImpl<>(
+                        cctx.unwrapBinaryIfNeeded(entry.getKey(), qry.keepBinary(), false, null),
+                        cctx.unwrapBinaryIfNeeded(entry.getValue(), qry.keepBinary(), false, null));
                 }
 
                 @Override protected boolean onHasNext() throws IgniteCheckedException {

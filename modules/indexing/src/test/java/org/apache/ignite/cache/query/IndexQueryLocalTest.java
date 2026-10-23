@@ -17,11 +17,14 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.List;
 import java.util.Objects;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -72,6 +75,45 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
             assertEquals(CNT / 2, result);
         }
+    }
+
+    /** Local index queries must return deserialized entries unless keep-binary mode is requested. */
+    @Test
+    public void testLocalQueryKeepBinary() {
+        IgniteCache<PersonKey, Person> cache = crd.createCache(new CacheConfiguration<PersonKey, Person>()
+            .setName(CACHE)
+            .setIndexedTypes(PersonKey.class, Person.class)
+            .setCacheMode(CacheMode.REPLICATED));
+
+        for (int i = 0; i < 3; i++)
+            cache.put(new PersonKey(i), new Person(i));
+
+        IndexQuery<PersonKey, Person> qry = new IndexQuery<PersonKey, Person>(Person.class, IDX)
+            .setCriteria(lt("id", 2));
+
+        List<Cache.Entry<PersonKey, Person>> entries = cache.query(qry.setLocal(true)).getAll();
+
+        assertEquals(2, entries.size());
+
+        for (Cache.Entry<PersonKey, Person> entry : entries)
+            assertEquals(entry.getKey().id, entry.getValue().id);
+
+        List<Cache.Entry<PersonKey, Person>> distributedEntries = cache.query(qry.setLocal(false)).getAll();
+
+        assertEquals(2, distributedEntries.size());
+        assertEquals(0, distributedEntries.get(0).getValue().id);
+        assertEquals(1, distributedEntries.get(1).getValue().id);
+
+        IndexQuery<BinaryObject, BinaryObject> binaryQry = new IndexQuery<BinaryObject, BinaryObject>(Person.class, IDX)
+            .setCriteria(lt("id", 2));
+
+        List<Cache.Entry<BinaryObject, BinaryObject>> binaryEntries = cache.withKeepBinary()
+            .query(binaryQry.setLocal(true)).getAll();
+
+        assertEquals(2, binaryEntries.size());
+
+        for (Cache.Entry<BinaryObject, BinaryObject> entry : binaryEntries)
+            assertEquals((int)entry.getKey().field("id"), (int)entry.getValue().field("id"));
     }
 
     /** Should return part of data only. */
@@ -143,6 +185,27 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
             .setIndexedTypes(Long.class, Person.class)
             .setCacheMode(cacheMode)
             .setBackups(2);
+    }
+
+    /** */
+    private static class PersonKey {
+        /** */
+        final int id;
+
+        /** */
+        PersonKey(int id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            return o instanceof PersonKey && ((PersonKey)o).id == id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
+        }
     }
 
     /** */
