@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
  * Implementation class for {@link RelMetadataQueryEx#fragmentMapping(RelNode, MappingQueryContext)} method call.
@@ -55,8 +54,9 @@ public class IgniteMdFragmentMapping implements MetadataHandler<FragmentMappingM
      * Metadata provider, responsible for nodes mapping request. It uses this implementation class under the hood.
      */
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(
-            IgniteMethod.FRAGMENT_MAPPING.method(), new IgniteMdFragmentMapping());
+        ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdFragmentMapping(),
+            FragmentMappingMetadata.Handler.class);
+
 
     /** {@inheritDoc} */
     @Override public MetadataDef<FragmentMappingMetadata> getDef() {
