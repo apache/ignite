@@ -286,12 +286,13 @@ class that extends it.
   stop leaves the directory: delete it by hand. Binary type metadata, a few hundred bytes per node,
   stays in the nodes' work directory with their logs.
 - With `storage=PERSISTENT`, the first write to a page after a checkpoint logs a copy of the whole
-  page to the WAL, and later writes log only the change. Writes allocate up to 4 KB more per server
+  page to the WAL, and later writes log only the change. Writes allocate a few KB more per server
   until most pages have been written since the last checkpoint. With the default `walMode` this
-  takes under a second. With `walMode=FSYNC`, at a few hundred writes per second, it takes tens of
-  seconds or more, and the next checkpoint, 3 minutes later by default, starts it again: warm up and
-  measure for minutes. With so few operations per iteration, the last one also shows the start of
-  the teardown, about 20 KB in the benchmark thread.
+  takes under a second for a key-value put and about 4 seconds for the SQL `update` of
+  `JmhSqlAllocationBenchmark`. With `walMode=FSYNC`, at a few hundred writes per second, it takes
+  tens of seconds or more, and the next checkpoint, 3 minutes later by default, starts it again: warm
+  up and measure for minutes. With so few operations per iteration, the last one also shows the
+  start of the teardown, about 20 KB in the benchmark thread.
 - `JmhCacheTypesAllocationBenchmark` writes fewer keys when `valSize` is large, so the data the
   setup writes stays about the same size.
 
