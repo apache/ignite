@@ -107,7 +107,7 @@ public class JmhCacheTxAllocationBenchmark extends JmhCacheAllocationAbstractBen
             .measurementTime(TimeValue.seconds(3))
             .benchmarks(name)
             .jvmArguments("-Xms2g", "-Xmx2g", "-XX:-DoEscapeAnalysis", "-XX:-UseTLAB",
-                "-XX:FlightRecorderOptions:memorysize=256m")
+                "-XX:FlightRecorderOptions:memorysize=512m")
             .optionsBuilder()
             .addProfiler(JmhAllocationHistogramProfiler.class, "dir=" + name)
             .addProfiler(JmhAllocationProfiler.class)

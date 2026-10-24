@@ -54,7 +54,7 @@ public class JmhThinClientTxAllocationBenchmark extends JmhThinClientAllocationA
         return super.cacheConfiguration().setAtomicityMode(TRANSACTIONAL);
     }
 
-    /** Replaces the values of two consecutive keys with the same values in a pessimistic repeatable-read transaction. */
+    /** Puts the values two consecutive keys already have, in a pessimistic repeatable read transaction. */
     @Benchmark
     public void txPut() {
         int i = ThreadLocalRandom.current().nextInt(CNT - 1);

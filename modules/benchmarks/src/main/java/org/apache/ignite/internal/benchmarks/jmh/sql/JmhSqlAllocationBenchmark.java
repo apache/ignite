@@ -30,7 +30,7 @@ import org.apache.ignite.internal.benchmarks.model.SqlValueType;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 
-/** SQL queries and DML on one table through a node's cache API; the queries and their arguments are created in setup. */
+/** SQL queries and DML on one table through a node's cache API; queries and arguments are created in setup. */
 @SuppressWarnings("unchecked")
 public class JmhSqlAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
     /** Rows of a range select. */
@@ -142,7 +142,11 @@ public class JmhSqlAllocationBenchmark extends JmhCacheAllocationAbstractBenchma
         return query(rangeSelects[ThreadLocalRandom.current().nextInt(RANGES)]);
     }
 
-    /** @return Rows updated: the indexed field of a key, set to the value it has. */
+    /**
+     * Sets the indexed field of a key to the value it has.
+     *
+     * @return One row with the number of rows updated.
+     */
     @Benchmark
     public List<List<?>> update() {
         return query(updates[ThreadLocalRandom.current().nextInt(CNT)]);

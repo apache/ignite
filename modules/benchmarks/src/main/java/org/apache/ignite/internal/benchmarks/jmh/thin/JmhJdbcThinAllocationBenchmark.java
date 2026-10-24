@@ -80,7 +80,12 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return conn;
     }
 
-    /** @return Row count, one: the row of a key. */
+    /**
+     * Selects the row of a key.
+     *
+     * @return Number of rows read: one.
+     * @throws SQLException If failed.
+     */
     @Benchmark
     public int selectByKey() throws SQLException {
         select.setObject(1, keys[ThreadLocalRandom.current().nextInt(CNT)]);
@@ -88,7 +93,12 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return read(select);
     }
 
-    /** @return Row count, {@link #RANGE}: rows by a range of the indexed field. */
+    /**
+     * Selects {@link #RANGE} rows by a range of the indexed field.
+     *
+     * @return Number of rows read.
+     * @throws SQLException If failed.
+     */
     @Benchmark
     public int selectRange() throws SQLException {
         int first = ThreadLocalRandom.current().nextInt(CNT - RANGE + 1);
@@ -99,7 +109,12 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return read(rangeSelect);
     }
 
-    /** @return Rows updated: the indexed field of a key, set to the value it has. */
+    /**
+     * Sets the indexed field of a key to the value it has.
+     *
+     * @return Number of rows updated: one.
+     * @throws SQLException If failed.
+     */
     @Benchmark
     public int update() throws SQLException {
         Integer key = keys[ThreadLocalRandom.current().nextInt(CNT)];
@@ -110,7 +125,11 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return update.executeUpdate();
     }
 
-    /** Inserts a row of a key the setup didn't write and deletes it, so the table keeps its size. */
+    /**
+     * Inserts a row of a key the setup didn't write and deletes it, so the table keeps its size.
+     *
+     * @throws SQLException If failed.
+     */
     @Benchmark
     public void insertDelete() throws SQLException {
         Object[] args = insertArgs[newKeyIdx++ % CNT];

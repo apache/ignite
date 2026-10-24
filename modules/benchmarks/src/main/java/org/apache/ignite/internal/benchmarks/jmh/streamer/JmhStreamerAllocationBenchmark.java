@@ -20,7 +20,6 @@ package org.apache.ignite.internal.benchmarks.jmh.streamer;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAllocationAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -74,26 +73,28 @@ public class JmhStreamerAllocationBenchmark extends JmhCacheAllocationAbstractBe
         streamer.allowOverwrite(allowOverwrite);
     }
 
-    /** Creates the keys of every iteration of the run, so that adding a key allocates no key object. */
+    /**
+     * Creates the keys of every iteration and thread of the run, so that adding a key allocates no key object.
+     *
+     * @param params Benchmark parameters.
+     */
     @Setup
     public void createNewKeys(BenchmarkParams params) {
         IterationParams w = params.getWarmup();
         IterationParams m = params.getMeasurement();
+        int calls = (w.getCount() * w.getBatchSize() + m.getCount() * m.getBatchSize()) * params.getThreads();
 
-        newKeys = new Integer[(w.getCount() * w.getBatchSize() + m.getCount() * m.getBatchSize()) * KEYS];
+        newKeys = new Integer[calls * KEYS];
 
         for (int i = 0; i < newKeys.length; i++)
             newKeys[i] = CNT + i;
     }
 
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        U.closeQuiet(streamer);
-
-        super.tearDown();
-    }
-
-    /** Waits for the client's streamer threads and the backups, which finish a batch after the flush returns. */
+    /**
+     * Waits for the client's streamer threads and the backups, which finish a batch after the flush returns.
+     *
+     * @throws InterruptedException If interrupted.
+     */
     @TearDown(Level.Iteration)
     public void awaitTail() throws InterruptedException {
         Thread.sleep(TAIL_WAIT_MS);

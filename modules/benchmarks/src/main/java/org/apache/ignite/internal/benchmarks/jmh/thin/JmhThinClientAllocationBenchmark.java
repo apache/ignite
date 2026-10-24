@@ -30,7 +30,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.openjdk.jmh.annotations.Benchmark;
 
-/** Cache operations and an SQL select through the thin client; keys, values, batches and queries are created in setup. */
+/** Cache operations and an SQL select through the thin client; their arguments are created in setup. */
 @SuppressWarnings("unchecked")
 public class JmhThinClientAllocationBenchmark extends JmhThinClientAllocationAbstractBenchmark {
     /** Keys in a batch. */

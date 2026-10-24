@@ -24,6 +24,9 @@ import org.apache.ignite.internal.benchmarks.jmh.profile.JmhNodeStopHook;
 import org.apache.ignite.internal.benchmarks.model.SqlValueType;
 import org.openjdk.jmh.annotations.Param;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+
 /** Base of the thin client and JDBC thin allocation benchmarks: two server nodes, no client node, a table of values. */
 public abstract class JmhThinClientAllocationAbstractBenchmark extends JmhCacheAbstractBenchmark {
     /** Whether the client sends a key's request to the key's primary server. */
@@ -78,7 +81,7 @@ public abstract class JmhThinClientAllocationAbstractBenchmark extends JmhCacheA
      */
     protected abstract AutoCloseable connect() throws Exception;
 
-    /** @return Client connector addresses: both servers with partition awareness, otherwise the first one, so runs agree. */
+    /** @return Both servers' client connectors with partition awareness, otherwise the first one's, so runs agree. */
     protected String[] addresses() {
         return partitionAwareness
             ? new String[] {"127.0.0.1:10800", "127.0.0.1:10801"}
@@ -91,8 +94,15 @@ public abstract class JmhThinClientAllocationAbstractBenchmark extends JmhCacheA
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean clientMode() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
         return super.cacheConfiguration()
+            .setAtomicityMode(ATOMIC)
+            .setWriteSynchronizationMode(PRIMARY_SYNC)
             .setBackups(1)
             .setSqlSchema("PUBLIC")
             .setIndexedTypes(Integer.class, valType.valueClass());

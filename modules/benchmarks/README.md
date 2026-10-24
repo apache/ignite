@@ -74,9 +74,8 @@ Benchmark settings:
 - JMH parameters (`@Param`), such as the SQL engine, are set with `-p <name>=<value>`.
 - `JmhCacheAbstractBenchmark` reads the cache setup from system properties with the
   `ignite.jmh.cache.` prefix: `backups`, `atomicityMode`, `writeSynchronizationMode`, `dataNodes` and
-  `clientMode`. Pass them as `-D` options in `-jvmArgs`. The benchmarks that extend
-  `JmhCacheAllocationAbstractBenchmark` take their setup as JMH parameters instead, see [Allocation
-  benchmarks](#allocation-benchmarks).
+  `clientMode`. Pass them as `-D` options in `-jvmArgs`. The allocation benchmarks ignore them and
+  take their setup as JMH parameters instead, see [Allocation benchmarks](#allocation-benchmarks).
 
 ## Measuring allocation
 
@@ -162,16 +161,17 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc' \
     -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
     -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-UseTLAB -XX:-DoEscapeAnalysis \
-    -XX:FlightRecorderOptions:memorysize=256m"
+    -XX:FlightRecorderOptions:memorysize=512m"
 ```
 
 `JmhCacheTxAllocationBenchmark.main()` runs a transaction of two puts with both profilers and these
 flags. It writes the results to `JmhCacheTxAllocationBenchmark.json` and the per-class tables to the
 `JmhCacheTxAllocationBenchmark` directory.
 
-- `-XX:FlightRecorderOptions:memorysize=256m` gives JFR room for the events it hasn't written to disk
-  yet. With the default 10 MB, JFR drops events when disk writes slow down, and the benchmark fails:
-  run it again with a larger value. With `-foe true`, the run stops with an error and writes no
+- `-XX:FlightRecorderOptions:memorysize=512m` gives JFR room for the events it hasn't written to disk
+  yet. With less, JFR drops events when disk writes slow down, and the benchmark fails: run it again
+  with a larger value. The default is 10 MB, and the scan query from a client with a near cache
+  dropped events with 256 MB. With `-foe true`, the run stops with an error and writes no
   results; without it, JMH prints `<failure>`, keeps the iterations before it and goes on.
 - When you run both profilers, list the histogram profiler first. JMH stops profilers in reverse
   order, so the time the histogram profiler spends reading its recording stays out of `alloc.norm`.
@@ -232,12 +232,11 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
 ### Allocation benchmarks
 
 These benchmarks in `jmh.cache`, `jmh.streamer`, `jmh.sql`, `jmh.thin`, `jmh.compute` and
-`jmh.sequence` are made for the allocation profilers. Each starts two server nodes. The ones that
-extend `JmhCacheAllocationAbstractBenchmark` also start a client node, unless they call the cache
-through a server, and so do the compute, service, messaging and data structure ones, which call from
-it; the thin client and JDBC thin ones start none and connect to the servers. Each creates its keys,
-values and other objects of the calls before measuring, and writes every key, so the operations work
-on existing entries.
+`jmh.sequence` are made for the allocation profilers. Each starts two server nodes and calls Ignite
+from a client node, from a server with `client=SERVER`, or, in the thin client and JDBC thin
+benchmarks, from a client connected to the servers' client connectors. Each creates the keys, values
+and other arguments of its calls before measuring. The benchmarks of a cache write every key first,
+so their operations work on existing entries.
 
 | Class | Methods | What it measures |
 |---|---|---|
@@ -250,12 +249,12 @@ on existing entries.
 | `JmhSqlAllocationBenchmark` | `selectByKey`, `selectRange`, `update`, `insertDelete` | SQL through a node's cache API: a select of one row by key, a select of 10 rows by a range of the indexed field `id`, an update of `id` to the value it has, and an insert of a row the setup didn't write followed by its delete. The queries and their arguments are created in setup |
 | `JmhThinClientAllocationBenchmark` | `put`, `get`, `putAll`, `getAll`, `sqlSelect` | Cache operations through the thin client, `putAll` and `getAll` of 10 consecutive keys, and an SQL select of one row by key |
 | `JmhThinClientTxAllocationBenchmark` | `txPut` | Puts of two consecutive keys in a pessimistic repeatable-read thin client transaction |
-| `JmhJdbcThinAllocationBenchmark` | `selectByKey`, `selectRange`, `update`, `insertDelete` | The queries of `JmhSqlAllocationBenchmark` through the JDBC thin driver, with statements prepared in setup |
+| `JmhJdbcThinAllocationBenchmark` | `selectByKey`, `selectRange`, `update`, `insertDelete` | The queries of `JmhSqlAllocationBenchmark` through the JDBC thin driver, with statements prepared in setup, on the default engine, H2 |
 | `JmhContinuousQueryAllocationBenchmark` | `putWithListener`, `putWithFilter` | A put to a cache with a continuous query of the calling node: with a local listener, which gets every update, or with a remote filter that drops every update on the servers |
 | `JmhComputeAllocationBenchmark` | `run`, `call`, `affinityCall`, `execute`, `broadcast`, `thinExecute` | Compute from the client node to the servers: a job on one server, a job that returns a value, a job on the primary server of a key, a task of one job, a job on each server, and the task started through the thin client. The jobs do nothing. The thin client's task also allocates in the JDK's common pool, the group `other.ForkJoinPool.commonPool-worker` |
 | `JmhServiceAllocationBenchmark` | `call`, `thinCall` | A call of a service deployed on each server, through the client node's proxy and through the thin client's |
 | `JmhMessagingAllocationBenchmark` | `send`, `sendOrdered` | A user message and an ordered one from the client node to one server. Each call waits until the server's listener has the message: sends that don't wait pile up in the queues and break the connection |
-| `JmhDataStructuresAllocationBenchmark` | `atomicLongIncrement`, `atomicSequenceIncrement`, `atomicReferenceCompareAndSet`, `queueOfferPoll`, `setAddRemove`, `semaphoreAcquireRelease`, `lockUnlock` | Operations of the data structures, called from the client node. The atomic sequence reserves a range of values at a time, so its increments send no messages |
+| `JmhDataStructuresAllocationBenchmark` | `atomicLongIncrement`, `atomicSequenceIncrement`, `atomicReferenceCompareAndSet`, `queueOfferPoll`, `setAddRemove`, `semaphoreAcquireRelease`, `lockUnlock` | Operations of the data structures, called from the client node. The atomic sequence reserves 1 000 values at a time by default, so one increment in 1 000 goes to the servers |
 
 Each parameter has one default value, and a run without `-p` uses it. `-p <name>=<value>` sets
 another value, `-p <name>=<value>,<value>` runs several. The parameters of a base class, such as

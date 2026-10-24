@@ -99,11 +99,11 @@ public enum SqlValueType {
 
         /** */
         @QuerySqlField
-        private UUID uuid = UUID.randomUUID();
+        private UUID uuid = new UUID(1L, 2L);
 
         /** */
         @QuerySqlField
-        private Timestamp ts = new Timestamp(System.currentTimeMillis());
+        private Timestamp ts = new Timestamp(1_000_000_000_000L);
 
         /** */
         @QuerySqlField

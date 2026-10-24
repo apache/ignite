@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.compute;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
@@ -31,6 +32,9 @@ public class JmhMessagingAllocationBenchmark extends JmhCacheAbstractBenchmark {
 
     /** Message. */
     private static final Integer MSG = 1_000_000;
+
+    /** Longest wait for a message to arrive. */
+    private static final long DELIVERY_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
     /** Messages the server's listener has received; the nodes run in this JVM. */
     private static final AtomicLong RCVD = new AtomicLong();
@@ -87,7 +91,14 @@ public class JmhMessagingAllocationBenchmark extends JmhCacheAbstractBenchmark {
     private void awaitDelivery() {
         sent++;
 
-        while (RCVD.get() < sent)
+        long deadline = System.nanoTime() + DELIVERY_TIMEOUT_NS;
+
+        while (RCVD.get() < sent) {
+            // A spin isn't interrupted by JMH's timeout, so a lost message fails the run instead of hanging it.
+            if (System.nanoTime() > deadline)
+                throw new IllegalStateException("The server's listener didn't get message " + sent);
+
             Thread.onSpinWait();
+        }
     }
 }

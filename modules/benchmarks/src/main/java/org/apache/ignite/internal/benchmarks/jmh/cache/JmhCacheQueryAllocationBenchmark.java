@@ -84,7 +84,7 @@ public class JmhCacheQueryAllocationBenchmark extends JmhCacheAllocationAbstract
         return read(cache.query(scans[ThreadLocalRandom.current().nextInt(scans.length)]));
     }
 
-    /** @return Number of entries, one, whose indexed field has the value, read with an index query. */
+    /** @return Number of entries an index query finds by the value of the indexed field: one. */
     @Benchmark
     public int indexQuery() {
         return read(cache.query(idxQueries[ThreadLocalRandom.current().nextInt(idxQueries.length)]));
