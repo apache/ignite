@@ -1968,11 +1968,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         if (res.size() > ADDRS_WARN_THRESHOLD)
-            LT.warn(log, "Long list of addresses resolved from IP finder [addrsCnt=" + res.size() +
-                "]. Connecting to an unavailable address usually blocks until socket timeout instead of failing fast " +
-                "(on Windows OS this may look like the node hangs for a while), so every unreachable address in the " +
-                "list slows down node join or reconnection. Make sure that all addresses in the IP finder are correct " +
-                "and reachable, and consider reducing the address list to speed up node startup.");
+            LT.warn(log, "Long list of addresses resolved from IP finder: connecting to an unavailable address " +
+                "usually blocks until socket timeout instead of failing fast (on Windows OS this may look like " +
+                "the node hangs for a while), so every unreachable address in the list slows down node join or " +
+                "reconnection. Make sure that all addresses are correct and reachable, consider reducing the " +
+                "address list or increasing 'joinTimeout' to bound the wait [addrsCnt=" + res.size() + "]");
 
         if (!res.isEmpty() && !skipAddrsRandomization)
             Collections.shuffle(res);

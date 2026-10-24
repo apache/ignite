@@ -58,7 +58,7 @@ public class TcpDiscoveryLongAddressListWarnSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * A warning must be printed when the resolved address list is longer than the threshold.
+     * @throws Exception If failed.
      */
     @Test
     public void testWarnOnLongAddressList() throws Exception {
@@ -77,7 +77,7 @@ public class TcpDiscoveryLongAddressListWarnSelfTest extends GridCommonAbstractT
     }
 
     /**
-     * No warning must be printed when the resolved address list is short.
+     * @throws Exception If failed.
      */
     @Test
     public void testNoWarnOnShortAddressList() throws Exception {
