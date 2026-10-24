@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
@@ -888,7 +889,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long reserved;
 
         try {
-            reserved = reserveEntrySpace(rowSize(ret, ver));
+            reserved = reserveEntrySpace(ret, ver, false);
 
             lockEntry();
 
@@ -992,7 +993,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         long updateCntr0;
 
-        long reserved = reserveEntrySpace(rowSize(val, ver));
+        // Best-effort: a refused commit is not safe, other entries of the transaction may already be committed.
+        long reserved = reserveEntrySpace(val, ver, true);
 
         lockListenerReadLock();
         lockEntry();
@@ -1454,9 +1456,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long reserved = 0;
 
         if (!primary && !isNear())
-            reserved = reserveEntrySpace(rowSize(
+            // Best-effort: a refused backup update is not safe, the primary has already applied it.
+            reserved = reserveEntrySpace(
                 op == GridCacheOperation.UPDATE && writeObj instanceof CacheObject ? (CacheObject)writeObj : null,
-                newVer));
+                newVer,
+                true);
 
         lockListenerReadLock();
         lockEntry();
@@ -2451,7 +2455,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !primary || !(preload || fromStore);
 
-        long reserved = reserveEntrySpace(rowSize(val, ver));
+        // A pre-created row (rebalancing) is already inserted into the free list, so there is nothing to reserve.
+        long reserved = row == null ? reserveEntrySpace(val, ver, false) : 0;
 
         boolean deferred = false;
         boolean obsolete = false;
@@ -2692,16 +2697,29 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
         @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        long reserved = reserveEntrySpace(rowSize(val, newVer != null ? newVer : ver));
+        long reserved = reserveEntrySpace(val, newVer != null ? newVer : ver, false);
 
         return versionedValue(val, curVer, newVer, loadExpiryPlc, readerArgs, reserved);
     }
 
-    /** {@inheritDoc} */
-    @Override public EntryGetResult versionedValue(
+    /**
+     * Sets new value if passed in version matches the current version (used for read-through only).
+     *
+     * @param val New value.
+     * @param curVer Version to match or {@code null} if match is not required.
+     * @param newVer Version to set.
+     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
+     * @param readerArgs Reader will be added if not null.
+     * @param reserved Number of pages reserved before acquiring the entry lock (released by this method), or
+     *     {@code 0} if no reservation was made (e.g. the caller already holds the entry lock).
+     * @return Current version and value.
+     * @throws IgniteCheckedException If index could not be updated.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public EntryGetResult versionedValue(
         CacheObject val,
-        GridCacheVersion curVer,
-        GridCacheVersion newVer,
+        @Nullable GridCacheVersion curVer,
+        @Nullable GridCacheVersion newVer,
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
         @Nullable ReaderArguments readerArgs,
         long reserved
@@ -3591,31 +3609,39 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Reserves pages for the row about to be inserted. Must be called before {@link #lockEntry()} — eviction may
      * block on other entries' locks.
      *
-     * @param rowSize Size of the row to be inserted.
-     * @return Number of reserved pages, or {@code 0} if reservation is not engaged.
+     * @param val Value of the row (maybe {@code null} if unknown - under-reserves safely).
+     * @param ver Version of the row.
+     * @param bestEffort {@code True} if the insert can not be safely refused (see {@code FreeList#reserve}).
+     * @return Number of reserved pages, or {@code 0} if nothing is reserved.
      * @throws IgniteCheckedException If failed.
      */
-    private long reserveEntrySpace(int rowSize) throws IgniteCheckedException {
+    private long reserveEntrySpace(
+        @Nullable CacheObject val,
+        GridCacheVersion ver,
+        boolean bestEffort
+    ) throws IgniteCheckedException {
         // Deadlock alert: evicting a data page locks all entries on it.
         assert !lock.isHeldByCurrentThread();
 
-        // Near entries keep values on heap and never write rows to the free list (storeValue is a no-op for them).
-        if (isNear())
+        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+
+        // Near entries keep values on heap (see GridNearCacheEntry#storeValue), so they are not reserved for.
+        // The row size is computed only if the reservation is engaged: it may require marshalling the value.
+        if (isNear() || !db.isReserveEnabled(cctx.dataRegion()))
             return 0;
 
-        return cctx.shared().database().reserveInRegion(cctx.dataRegion(), rowSize);
+        return db.reserveInRegion(cctx.dataRegion(), rowSize(val, ver), bestEffort);
     }
 
     /**
-     * Releases a reservation made by {@link #reserveEntrySpace(int)}. The whole claim is released as a unit:
-     * the insert does not consume the reservation page by page, so the release is exact on any outcome
-     * (including an exception in the middle of the row insert).
+     * Releases a reservation made by {@link #reserveEntrySpace(CacheObject, GridCacheVersion, boolean)}. The whole claim is
+     * released as a unit: the insert does not consume the reservation page by page, so the release is exact on any
+     * outcome (including an exception in the middle of the row insert).
      *
      * @param reserved Number of reserved pages.
      */
     private void releaseReserved(long reserved) {
-        if (reserved > 0)
-            cctx.shared().database().releaseInRegion(cctx.dataRegion(), reserved);
+        cctx.shared().database().releaseInRegion(cctx.dataRegion(), reserved);
     }
 
     /**

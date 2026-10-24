@@ -30,9 +30,6 @@ import org.junit.Test;
  *
  */
 public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbstractTest {
-    /** Number of entries, sized to fill the data region past the eviction threshold. */
-    private static final int MULTINODE_ENTRIES = 16_000;
-
     /** Cache modes. */
     private static final CacheMode[] CACHE_MODES = {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
@@ -89,7 +86,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     protected void createCacheAndTestEviction(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = clientGrid().getOrCreateCache(cfg);
 
-        for (int i = 1; i <= MULTINODE_ENTRIES; i++) {
+        for (int i = 1; i <= ENTRIES; i++) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
 
             if (r.nextInt() % 5 == 0)
@@ -104,7 +101,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
             else if (r.nextInt() % 13 == 0)
                 cache.put(r.nextInt(i), new TestObject(r.nextInt(PAGE_SIZE / 2))); // Update.
 
-            if (i % (MULTINODE_ENTRIES / 10) == 0)
+            if (i % (ENTRIES / 10) == 0)
                 System.out.println(">>> Entries put: " + i);
         }
 
@@ -113,7 +110,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
         System.out.println(">>> Resulting size: " + resultingSize);
 
         // Eviction started, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < MULTINODE_ENTRIES * 71 / 77);
+        assertTrue(resultingSize < ENTRIES * 71 / 77);
 
         clientGrid().destroyCache(cfg.getName());
     }

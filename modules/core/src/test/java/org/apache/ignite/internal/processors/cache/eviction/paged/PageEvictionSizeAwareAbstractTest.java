@@ -17,13 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -186,53 +197,149 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
         assertTrue("Value read back must equal the stored value", Arrays.equals(val, read));
     }
 
-    /** */
-    @Test
-    public void testRegionEvictsAtThreshold() throws Exception {
-        IgniteEx ignite = startGrid(1);
+    /** Atomic cache with a backup: primary batch and backup updates must evict at the same threshold. */
+    @Test(timeout = 300_000)
+    public void testAtomicBackupHonorsThreshold() throws Exception {
+        IgniteEx ignite = startGrids(2);
 
-        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = ignite.createCache(new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
 
-        long total = totalPages(ignite);
+        awaitPartitionMapExchange();
 
-        int cap = (int)total * 2;
+        byte[] val = new byte[pageSize(ignite) - 200];
 
-        byte[] small = new byte[pageSize(ignite) - 200];
+        int keys = (int)(totalPages(ignite) * 3);
 
-        for (int i = 0; i < cap; i++) {
-            cache.put(i, small);
-
-            if (isEvictionsStarted(ignite))
-                break;
-        }
-
-        assertTrue("Eviction must start once the region crosses the 0.9 threshold", isEvictionsStarted(ignite));
-        assertTrue("Region must reach at least ~85% before eviction engages", loadedPages(ignite) >= total * 0.85);
-
-        stopGrid(1);
-        ignite = startGrid(1);
-
-        assertEquals(0, loadedPages(ignite));
-
-        cache = createCache(ignite, DEFAULT_CACHE_NAME);
-
-        int batchSize = 100;
-
-        for (int base = 0; base < cap && !isEvictionsStarted(ignite); base += batchSize) {
+        for (int base = 0; base < keys; base += 100) {
             Map<Integer, Object> batch = new HashMap<>();
 
-            for (int i = 0; i < batchSize; i++)
-                batch.put(base + i, small);
+            for (int i = base; i < base + 100; i++)
+                batch.put(i, val);
 
             cache.putAll(batch);
         }
 
-        assertTrue("Eviction must start via putAll once the region crosses the 0.9 threshold", isEvictionsStarted(ignite));
-        assertTrue("Region must reach at least ~85% before eviction engages via putAll", loadedPages(ignite) >= total * 0.85);
+        assertHonorsThreshold(grid(0));
+        assertHonorsThreshold(grid(1));
     }
 
-    /** @return Loaded pages. */
-    private long loadedPages(IgniteEx ignite) throws IgniteCheckedException {
-        return defaultRegion(ignite).pageMemory().loadedPages();
+    /** Transactional cache: commits must evict at the threshold. */
+    @Test(timeout = 300_000)
+    public void testTransactionalHonorsThreshold() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, 0, true);
+
+        byte[] val = new byte[pageSize(ignite) - 200];
+
+        int keys = (int)(totalPages(ignite) * 3);
+
+        for (int i = 0; i < keys; i++)
+            cache.put(i, val);
+
+        assertHonorsThreshold(ignite);
+    }
+
+    /** A row that does not fit below the threshold together with the pool may use the space above it. */
+    @Test
+    public void testRowLargerThanThresholdFits() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
+
+        fillRegion(ignite, cache, 0.5);
+
+        int largeValSize = (int)(regionMaxSize(ignite) * EVICTION_THRESHOLD);
+
+        cache.put(-1, new byte[largeValSize]);
+
+        assertEquals(largeValSize, ((byte[])cache.get(-1)).length);
+    }
+
+    /**
+     * When no page can be evicted (all resident entries are locked), the eviction progress guard refuses an insert that
+     * can be refused (a primary atomic update) with an out-of-memory, while a best-effort reservation (backup update,
+     * transaction commit, rebalancing) gives up without an error, and repeated best-effort attempts do not wait again.
+     */
+    @Test(timeout = 180_000)
+    public void testGuardWhenAllEntriesLocked() throws Exception {
+        IgniteEx ignite = startGrid(1);
+
+        IgniteCache<Integer, Object> txCache = createCache(ignite, "tx-cache", 0, true);
+        IgniteCache<Integer, Object> atomicCache = createCache(ignite, DEFAULT_CACHE_NAME);
+
+        int fillEntries = fillRegion(ignite, txCache, 0.85);
+
+        Collection<Integer> keys = new ArrayList<>(fillEntries);
+
+        for (int i = 0; i < fillEntries; i++)
+            keys.add(i);
+
+        CountDownLatch ready = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockerFut = GridTestUtils.runAsync(() -> {
+            Lock lock = txCache.lockAll(keys);
+
+            lock.lock();
+
+            try {
+                ready.countDown();
+
+                release.await();
+            }
+            finally {
+                lock.unlock();
+            }
+        }, "size-aware-guard-locker");
+
+        try {
+            assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
+
+            int largeValSize = 4 * 1024 * 1024;
+
+            GridTestUtils.assertThrowsWithCause(
+                () -> atomicCache.put(0, new byte[largeValSize]),
+                IgniteOutOfMemoryException.class
+            );
+
+            IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
+
+            assertEquals(0, db.reserveInRegion(defaultRegion(ignite), largeValSize, true));
+
+            long start = System.currentTimeMillis();
+
+            assertEquals(0, db.reserveInRegion(defaultRegion(ignite), largeValSize, true));
+
+            assertTrue("Repeated best-effort reservation must not wait for the timeout again",
+                System.currentTimeMillis() - start < AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS / 2);
+        }
+        finally {
+            release.countDown();
+
+            lockerFut.get(10, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Asserts that the node evicted at the threshold: loaded pages reached it but do not exceed it by more than the
+     * empty pages pool and 1% of non-data pages (B+tree, free list metadata).
+     *
+     * @param ignite Node.
+     */
+    private static void assertHonorsThreshold(IgniteEx ignite) throws IgniteCheckedException {
+        assertTrue("Evictions must have started", isEvictionsStarted(ignite));
+
+        long total = totalPages(ignite);
+        long loaded = loadedPages(ignite);
+        long limit = (long)(EVICTION_THRESHOLD * total) + defaultRegion(ignite).config().getEmptyPagesPoolSize() + total / 100;
+
+        assertTrue("Loaded pages must reach the threshold [loaded=" + loaded + ", total=" + total + ']',
+            loaded >= total * 0.85);
+        assertTrue("Loaded pages exceed the threshold [node=" + ignite.name() + ", loaded=" + loaded +
+            ", limit=" + limit + ']', loaded <= limit);
     }
 }

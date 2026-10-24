@@ -103,7 +103,9 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache");
         IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL, false);
 
-        int smallEntries = fillRegion(ignite, plainCache, 0.80);
+        // Pre-fill + two 5% TTL rows + the empty pages pool must stay below the 0.9 eviction threshold, which applies
+        // to every insert including the size of the row being inserted.
+        int smallEntries = fillRegion(ignite, plainCache, 0.75);
 
         assertFalse("Eviction must not start during pre-fill", isEvictionsStarted(ignite));
 

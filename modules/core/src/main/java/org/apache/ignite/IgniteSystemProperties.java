@@ -1640,18 +1640,20 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
 
     /**
-     * Maximum time in milliseconds the size-aware eviction guard is willing to wait without either an eviction or a
-     * deficit decrease before failing with an out-of-memory. This is a liveness guard against a true deadlock (all
-     * evictable entries locked); a progressing eviction that is simply slow (e.g. a large putAll on a nearly-full
-     * region) is not killed by this timeout.
+     * Maximum time in milliseconds the size-aware eviction guard is willing to wait without a deficit decrease. This is
+     * a liveness guard against a true stall (all evictable entries locked); a progressing eviction that is simply slow
+     * (e.g. a large putAll on a nearly-full region) is not interrupted by this timeout. When it expires, an insert that
+     * can be refused (e.g. a primary atomic update) fails with an out-of-memory, while an insert that can not be safely
+     * refused (a backup update, a transaction commit, rebalancing) proceeds without a page reservation.
      * <p>
-     * {@code 0} or a negative value disables the grace period: OOM is thrown on the first no-progress iteration.
+     * {@code 0} or a negative value disables the grace period: the guard gives up on the first no-progress iteration.
      * <p>
-     * Default is {@code 1000} (1 second).
+     * Default is {@code 5000} (5 seconds).
      */
-    @SystemProperty(value = "Maximum time in milliseconds the size-aware eviction guard waits without progress " +
-        "before failing with out-of-memory. A progressing eviction is not killed by this timeout. 0 or a " +
-        "negative value disables the grace period", type = Long.class, defaults = "" + DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS)
+    @SystemProperty(value = "Maximum time in milliseconds the size-aware eviction guard waits without progress. " +
+        "Then an insert that can be refused fails with out-of-memory, other inserts proceed without a page " +
+        "reservation. 0 or a negative value disables the grace period", type = Long.class,
+        defaults = "" + DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS)
     public static final String IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = "IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS";
 
     /**

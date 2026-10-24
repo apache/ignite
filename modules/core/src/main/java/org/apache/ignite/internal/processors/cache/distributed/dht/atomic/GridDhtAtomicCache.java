@@ -166,13 +166,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private static final int DEFERRED_UPDATE_RESPONSE_TIMEOUT =
         Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT, DFLT_ATOMIC_DEFERRED_ACK_TIMEOUT);
 
-    /**
-     * Upper bound of a single batch reservation in bytes: caps the sum of row sizes passed to
-     * {@code FreeList.reserve} to keep its page arithmetic within {@code int}. Batches above the cap are silently
-     * under-reserved (they are pathological — default per-request size limits are far below it).
-     */
-    private static final int MAX_RESERVE_BATCH_BYTES = 1_000_000_000;
-
     /** */
     private final ThreadLocal<Map<UUID, GridDhtAtomicDeferredUpdateResponse>> defRes =
         new ThreadLocal<Map<UUID, GridDhtAtomicDeferredUpdateResponse>>() {
@@ -1820,8 +1813,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         long batchReserved = 0;
 
         try {
-            ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
-
             batchReserved = reserveBatchSpace(req);
 
             // If batch store update is enabled, we need to lock all entries.
@@ -1964,7 +1955,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
         finally {
-            releaseBatchSpace(batchReserved);
+            ctx.shared().database().releaseInRegion(ctx.dataRegion(), batchReserved);
 
             ctx.shared().database().checkpointReadUnlock();
         }
@@ -2998,17 +2989,25 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Reserves free-list pages for the <b>total</b> size of all rows in the batch: size-aware admission control for
      * the primary atomic path, which acquires entry locks via {@link #lockEntries} before {@code innerUpdate} and so
-     * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} guarantees every row of a
-     * batch with known value sizes can be inserted without an out-of-memory in {@code FreeList.insertDataRow}.
+     * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} makes room for the data pages
+     * of all rows of a batch with known value sizes, so their inserts are not expected to hit an out-of-memory in
+     * {@code FreeList.insertDataRow} (pages outside the reservation, e.g. B+tree pages, are covered by the empty pages
+     * pool).
+     * <p>
+     * The full row size is reserved for updates too: an update inserts the new row before removing the old one, unless
+     * it is done in place (same row size, no SQL indexes, unchanged expire time), which can't be known before the entry
+     * lock. For in-place updates near the eviction threshold this keeps extra empty pages free (up to the size of the
+     * rows being written concurrently) instead of using them for data; it is not a correctness issue.
      *
      * @param req Update request.
-     * @return Reserved pages to release via {@link #releaseBatchSpace}, or {@code 0} if reservation is not engaged.
+     * @return Reserved pages to release via {@code releaseInRegion}, or {@code 0} if reservation is not engaged.
      * @throws IgniteCheckedException If failed.
      */
     private long reserveBatchSpace(GridNearAtomicAbstractUpdateRequest req) throws IgniteCheckedException {
         DataRegion dataRegion = ctx.dataRegion();
 
-        if (dataRegion == null || dataRegion.config().isPersistenceEnabled())
+        // Skip computing the row sizes (it may require marshalling) if the reservation is not engaged for the region.
+        if (!ctx.shared().database().isReserveEnabled(dataRegion))
             return 0;
 
         CacheObjectValueContext coctx = ctx.cacheObjectContext();
@@ -3030,22 +3029,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             sumRowSize += rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, storeCacheId);
         }
 
-        if (sumRowSize == 0)
-            return 0;
-
-        int reserveSize = sumRowSize > MAX_RESERVE_BATCH_BYTES ? MAX_RESERVE_BATCH_BYTES : (int)sumRowSize;
-
-        return ctx.shared().database().reserveInRegion(dataRegion, reserveSize);
-    }
-
-    /**
-     * Releases the batch-level reservation made by {@link #reserveBatchSpace}.
-     *
-     * @param reserved Reserved pages.
-     */
-    private void releaseBatchSpace(long reserved) {
-        if (reserved != 0)
-            ctx.shared().database().releaseInRegion(ctx.dataRegion(), reserved);
+        return ctx.shared().database().reserveInRegion(dataRegion, sumRowSize, false);
     }
 
     /**

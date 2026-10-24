@@ -247,4 +247,14 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         return survived;
     }
+
+    /** @return Deterministic per-key value content. */
+    private static byte[] valueFor(int key, int size) {
+        byte[] val = new byte[size];
+
+        for (int i = 0; i < size; i++)
+            val[i] = (byte)(key * 31 + i);
+
+        return val;
+    }
 }

@@ -322,6 +322,9 @@ public final class DataRegionConfiguration implements Serializable {
     /**
      * Gets a threshold for memory pages eviction initiation. For instance, if the threshold is 0.9 it means that the
      * page memory will start the eviction only after 90% of the data region is occupied.
+     * The threshold applies to every insert into the region (primary and backup updates, transactions, rebalancing,
+     * data streaming): the eviction keeps the empty pages pool plus the space of the rows being inserted free once
+     * the threshold is reached. A row that does not fit below the threshold may use the space above it.
      *
      * @return Memory pages eviction threshold.
      */
@@ -347,9 +350,8 @@ public final class DataRegionConfiguration implements Serializable {
      * (key, value) pair is slightly larger than page size / 2.
      * Since size-aware eviction automatically frees additional pages when the row plus this pool exceeds the available
      * free pages, it is no longer required to increase this parameter up to the size of the largest cache entry.
-     * In addition, this value is the reservation margin for size-aware eviction: each row's reservation adds this many
-     * empty pages on top of the row's own requirement, covering concurrent writers until the margin is exhausted,
-     * after which the insert falls back to blocking eviction.
+     * In addition, size-aware eviction keeps this many empty pages free as a single region-wide margin on top of the
+     * pages reserved by in-flight inserts (the margin is not multiplied by the number of concurrent writers).
      *
      * @return Minimum number of empty pages in reuse list.
      */
@@ -363,9 +365,8 @@ public final class DataRegionConfiguration implements Serializable {
      * (key, value) pair is slightly larger than page size / 2.
      * Since size-aware eviction automatically frees additional pages when the row plus this pool exceeds the available
      * free pages, it is no longer required to increase this parameter up to the size of the largest cache entry.
-     * In addition, this value is the reservation margin for size-aware eviction: each row's reservation adds this many
-     * empty pages on top of the row's own requirement, covering concurrent writers until the margin is exhausted,
-     * after which the insert falls back to blocking eviction.
+     * In addition, size-aware eviction keeps this many empty pages free as a single region-wide margin on top of the
+     * pages reserved by in-flight inserts (the margin is not multiplied by the number of concurrent writers).
      *
      * @param emptyPagesPoolSize Empty pages pool size.
      * @return {@code this} for chaining.

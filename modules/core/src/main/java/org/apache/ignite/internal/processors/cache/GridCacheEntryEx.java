@@ -675,29 +675,6 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
-     * Sets new value if passed in version matches the current version (used for read-through only).
-     *
-     * @param val New value.
-     * @param curVer Version to match or {@code null} if match is not required.
-     * @param newVer Version to set.
-     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
-     * @param readerArgs Reader will be added if not null.
-     * @param reserved Number of pages reserved by a prior call to {@code reserveEntrySpace} (before acquiring the
-     *     entry lock), or {@code 0} if no reservation was made.
-     * @return Current version and value.
-     * @throws IgniteCheckedException If index could not be updated.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public EntryGetResult versionedValue(
-        CacheObject val,
-        @Nullable GridCacheVersion curVer,
-        @Nullable GridCacheVersion newVer,
-        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
-        @Nullable ReaderArguments readerArgs,
-        long reserved
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
-
-    /**
      * Checks if the candidate is either owner or pending.
      *
      * @param ver Candidate version to check.

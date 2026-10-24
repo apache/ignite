@@ -24,7 +24,8 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
-/** */
+/**
+ */
 public interface FreeList<T extends Storable> {
     /**
      * @param row Row.
@@ -69,27 +70,24 @@ public interface FreeList<T extends Storable> {
      * necessary (the caller must not hold any entry or page locks).
      *
      * @param rowSize Size of the row to be inserted.
+     * @param bestEffort {@code True} if the insert can not be safely refused (e.g. a backup update or a transaction
+     *      commit): if the row does not fit into the region or the eviction makes no progress, the row is admitted
+     *      without a reservation ({@code 0} is returned) and the page memory remains the hard limit. {@code False} if
+     *      the insert can be refused: an out-of-memory is thrown instead.
      * @return Number of reserved pages to be released via {@link #releaseReserved(long)} once the row insert
-     * completes, or {@code 0} if the reservation is not engaged for this free list (persistent data region or disabled page eviction).
-     * @throws IgniteOutOfMemoryException If the row cannot fit into the region, or eviction makes no progress.
+     * completes, or {@code 0} if nothing is reserved (persistent data region, disabled page eviction or a best-effort
+     * admission without a reservation).
+     * @throws IgniteOutOfMemoryException If the insert is not best-effort and the row cannot fit into the region or
+     *      eviction makes no progress. The exception is not reported to the failure handler: nothing has been changed
+     *      yet, so the caller decides how to handle the refusal.
      * @throws IgniteCheckedException If failed to evict data pages.
      */
-    public long reserve(int rowSize) throws IgniteOutOfMemoryException, IgniteCheckedException;
+    public long reserve(long rowSize, boolean bestEffort) throws IgniteOutOfMemoryException, IgniteCheckedException;
 
     /**
-     * Releases the unconsumed portion of a reservation made by {@link #reserve(int)}.
+     * Releases a reservation made by {@link #reserve(long, boolean)}.
      *
      * @param pages Number of pages to release (must not be negative).
      */
     public void releaseReserved(long pages);
-
-    /**
-     * Early out-of-memory check for an in-memory data region with disabled page eviction: verifies that the region
-     * still has room for a row of the given size with a safety margin for free-list bookkeeping pages.
-     * No-op for persistent regions or regions with eviction enabled.
-     *
-     * @param rowSize Row size in bytes.
-     * @throws IgniteOutOfMemoryException If the region is near exhaustion.
-     */
-    public void checkFitsForInsert(int rowSize) throws IgniteOutOfMemoryException;
 }

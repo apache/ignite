@@ -50,40 +50,13 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     }
 
     /**
-     * Small records below the eviction threshold must not trigger page eviction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNoEvictionBelowThreshold() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        DataRegionMetricsImpl metrics = defaultRegion(ignite).metrics();
-
-        metrics.enableMetrics();
-
-        CacheConfiguration<Object, Object> cfg = cacheConfig("no-evict-below-threshold", null,
-            CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-
-        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cfg);
-
-        for (int i = 1; i <= 500; i++)
-            cache.put(i, new TestObject(PAGE_SIZE / 6));
-
-        assertFalse("Page eviction must not start while the region is below the eviction threshold",
-            metrics.isEvictionsStarted());
-
-        assertEquals("Eviction rate must be zero while the region is below the eviction threshold",
-            0f, metrics.getEvictionRate(), 0f);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     private void checkPageEvictionMetric(CacheAtomicityMode atomicityMode) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        DataRegionMetricsImpl metrics = defaultRegion(ignite).metrics();
+        DataRegionMetricsImpl metrics =
+            ignite.context().cache().context().database().dataRegion(null).metrics();
 
         metrics.enableMetrics();
 

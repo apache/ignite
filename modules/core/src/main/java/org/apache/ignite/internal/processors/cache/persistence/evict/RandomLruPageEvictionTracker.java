@@ -60,7 +60,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         DataRegionConfiguration plcCfg,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
-        super((PageMemoryNoStoreImpl)pageMem, plcCfg, sharedCtx);
+        super((PageMemoryNoStoreImpl)pageMem, sharedCtx);
 
         DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 
@@ -109,7 +109,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictDataPage() throws IgniteCheckedException {
+    @Override public void evictDataPage() throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -149,7 +149,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                             if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
                                 LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
 
-                                return false;
+                                return;
                             }
 
                             continue;
@@ -173,19 +173,17 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
                     LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
 
-                    return false;
+                    return;
                 }
             }
 
             if (evictDataPage(pageIdx(lruTrackingIdx)))
-                return true;
+                return;
 
             evictAttemptsCnt++;
         }
 
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
-
-        return false;
     }
 
     /** {@inheritDoc} */
