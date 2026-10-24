@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
+import org.apache.ignite.internal.benchmarks.jmh.profile.JmhNodeStopHook;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -135,6 +136,9 @@ public abstract class JmhSqlAbstractBenchmark {
      */
     @TearDown
     public void tearDown() {
+        // Profilers read the last iteration while the nodes still run.
+        JmhNodeStopHook.run();
+
         client.close();
 
         for (Ignite ignite : servers)

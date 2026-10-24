@@ -14,8 +14,8 @@ Packages under `org.apache.ignite.internal.benchmarks`:
 | Package | What it measures | Run it after changing |
 |---|---|---|
 | `jmh.cache` | Cache put and get, locks, expiry, async listeners, allocation per operation | Cache operations, transactions, cache messages |
-| `jmh.sql`, `jmh.sql.tpch` | SQL scans, joins, aggregates, sorting, DML, user-defined functions and TPC-H queries, on the H2 and Calcite engines | Query engines, indexing |
-| `jmh.thin` | Cache put and get through the thin client | The thin client and its protocol |
+| `jmh.sql`, `jmh.sql.tpch` | SQL scans, joins, aggregates, sorting, DML, user-defined functions and TPC-H queries, on the H2 and Calcite engines; allocation per query | Query engines, indexing |
+| `jmh.thin` | Cache operations, transactions and SQL through the thin client and the JDBC thin driver, allocation per operation | The thin client, JDBC thin and their protocol |
 | `jmh.binary`, `jmh.direct` | Serialization of strings and maps, reading of communication messages | Binary marshalling, message serialization |
 | `jmh.streamer`, `jmh.sequence` | Data streamer loading, atomic sequence | The data streamer, atomic data structures |
 | `jmh.tree`, `jmh.misc`, `jmh.collections`, `jmh.diagnostic` | B+ tree and index lookups, partition update counters, page replacement lists, page lock tracking, small collections | B+ trees and indexes, partition counters, page memory |
@@ -131,8 +131,9 @@ threads, `GridExecutionExecutor` `pub`, `GridServicesExecutor` `svc`, `GridQuery
 and `GridThinClientExecutor` `client-connector`. With `dir=<path>`, the profiler also writes
 the JDK and OS of the run to `<path>/run.properties`.
 
-Both allocation profilers work with the benchmarks that extend `JmhCacheAbstractBenchmark` and keep
-its teardown. To use them with another benchmark, see [Writing a benchmark](#writing-a-benchmark).
+Both allocation profilers work with the benchmarks that extend `JmhCacheAbstractBenchmark`,
+`JmhSqlAbstractBenchmark` or `JmhThinClientAbstractBenchmark` and keep their teardown. To use them
+with another benchmark, see [Writing a benchmark](#writing-a-benchmark).
 
 To compare two builds:
 
@@ -229,9 +230,11 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
 
 ### Allocation benchmarks
 
-These benchmarks in `jmh.cache` are made for the allocation profilers. Each starts two server nodes
-and, unless it calls the cache through a server, a client node. It creates its keys and values and
-writes every key before measuring, so the operations work on existing entries.
+These benchmarks in `jmh.cache`, `jmh.streamer`, `jmh.sql` and `jmh.thin` are made for the
+allocation profilers. Each starts two server nodes. The ones that extend
+`JmhCacheAllocationAbstractBenchmark` also start a client node, unless they call the cache through a
+server; the thin client and JDBC thin ones start none and connect to the servers. Each creates its
+keys and values and writes every key before measuring, so the operations work on existing entries.
 
 | Class | Methods | What it measures |
 |---|---|---|
@@ -241,10 +244,15 @@ writes every key before measuring, so the operations work on existing entries.
 | `JmhCacheTxAllocationBenchmark` | `txPut` | Puts `txKeys` consecutive keys in an explicit transaction |
 | `JmhCacheQueryAllocationBenchmark` | `scanQuery`, `indexQuery` | A scan query of one partition, about a hundred entries, and an index query of one entry by its value's indexed field |
 | `JmhStreamerAllocationBenchmark` | `addData` | A data streamer adds 10 000 keys the cache doesn't have, then flushes. Each iteration is one such call (single shot), results are per key, and the cache grows by 10 000 keys per iteration. The client's streamer threads and, with `allowOverwrite=true` and `PRIMARY_SYNC`, the backups finish a batch after the flush returns, so each iteration ends with a 500 ms wait outside the timed call |
+| `JmhSqlAllocationBenchmark` | `selectByKey`, `selectRange`, `update`, `insertDelete` | SQL through a node's cache API: a select of one row by key, a select of 10 rows by a range of the indexed field `id`, an update of `id` to the value it has, and an insert of a row the setup didn't write followed by its delete. The queries and their arguments are created in setup |
+| `JmhThinClientAllocationBenchmark` | `put`, `get`, `putAll`, `getAll`, `sqlSelect` | Cache operations through the thin client, `putAll` and `getAll` of 10 consecutive keys, and an SQL select of one row by key |
+| `JmhThinClientTxAllocationBenchmark` | `txPut` | Puts of two consecutive keys in a pessimistic repeatable-read thin client transaction |
+| `JmhJdbcThinAllocationBenchmark` | `selectByKey`, `selectRange`, `update`, `insertDelete` | The queries of `JmhSqlAllocationBenchmark` through the JDBC thin driver, with statements prepared in setup |
 
 Each parameter has one default value, and a run without `-p` uses it. `-p <name>=<value>` sets
-another value, `-p <name>=<value>,<value>` runs several. The parameters of
-`JmhCacheAllocationAbstractBenchmark` apply to every class that extends it: all the classes above.
+another value, `-p <name>=<value>,<value>` runs several. The parameters of a base class, such as
+`JmhCacheAllocationAbstractBenchmark` or `JmhThinClientAllocationAbstractBenchmark`, apply to every
+class that extends it.
 
 | Parameter | Classes | Default | Other values | What it changes |
 |---|---|---|---|---|
@@ -267,6 +275,9 @@ another value, `-p <name>=<value>,<value>` runs several. The parameters of
 | `isolation` | `JmhCacheTxAllocationBenchmark` | `REPEATABLE_READ` | `READ_COMMITTED`, `SERIALIZABLE` | Transaction isolation |
 | `txKeys` | `JmhCacheTxAllocationBenchmark` | `2` | `1`, `10` | Keys per transaction |
 | `allowOverwrite` | `JmhStreamerAllocationBenchmark` | `false` | `true` | Whether the streamer writes every key as a put does, or only the keys the cache doesn't have |
+| `engine` | `JmhSqlAllocationBenchmark` | `H2` | `CALCITE` | SQL query engine |
+| `valType` | `JmhSqlAllocationBenchmark`, `JmhThinClientAllocationBenchmark`, `JmhThinClientTxAllocationBenchmark`, `JmhJdbcThinAllocationBenchmark` | `POJO` | `POJO8` | Value class, and so the table's columns: one `int` field, or eight fields of different types, see `SqlValueType` |
+| `partitionAwareness` | `JmhThinClientAllocationAbstractBenchmark` | `true` | `false` | Whether the thin client or the JDBC thin driver sends a key's request to the key's primary server. With `true` it connects to both servers, with `false` to the first one. The driver's own default is `false` |
 
 - With `storage=PERSISTENT` or `cdc=true`, the servers write a WAL; each node preallocates several
   hundred megabytes of WAL segments. The nodes keep their data, WAL and change data capture files in
@@ -288,14 +299,17 @@ another value, `-p <name>=<value>,<value>` runs several. The parameters of
 
 - Extend the base class of the area: `JmhCacheAbstractBenchmark`, `JmhSqlAbstractBenchmark`,
   `JmhThinClientAbstractBenchmark`, or `JmhAbstractBenchmark` for the rest. A cache benchmark for
-  the allocation profilers extends `JmhCacheAllocationAbstractBenchmark`, which brings the
-  parameters above. Give each new parameter one default value in `@Param` and list the others in
-  this README.
+  the allocation profilers extends `JmhCacheAllocationAbstractBenchmark`, a thin client or JDBC thin
+  one `JmhThinClientAllocationAbstractBenchmark`, which bring the parameters above. Give each new
+  parameter one default value in `@Param` and list the others in this README.
 - Start nodes in the benchmark JVM and give each one a name: the allocation profilers find a node's
   threads by its name.
 - Call `JmhNodeStopHook.run()` first in the teardown that stops the nodes. JMH runs this teardown
   before profilers read the last iteration, and the hook lets them read it while the nodes still run.
   Without the hook, both allocation profilers fail the benchmark.
+- Close thin clients and JDBC connections in that teardown too, after the hook. JMH runs the teardown
+  of a helper `@State` before it, and a thin client closed there stops its threads before the
+  counter profiler reads them, which drops their last iteration.
 - Create keys and values outside the measured method when they aren't part of the operation.
   Otherwise their cost and allocation count as Ignite's.
 - Bring the cache to the state of a cluster that has run for a while before measuring. Ignite boxes
