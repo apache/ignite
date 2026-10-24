@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.engine.Session;
@@ -76,6 +77,9 @@ public class H2QueryInfo implements TrackableQuery {
     /** Query initiator ID. */
     private final String initiatorId;
 
+    /** Query parameters. */
+    private final Object[] params;
+
     /** Query SQL plan. */
     private volatile String plan;
 
@@ -86,8 +90,17 @@ public class H2QueryInfo implements TrackableQuery {
      * @param nodeId Originator node id.
      * @param qryId Query id.
      * @param initiatorId Query initiator id.
+     * @param params Query parameters.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long qryId, String initiatorId) {
+    public H2QueryInfo(
+        QueryType type,
+        PreparedStatement stmt,
+        String sql,
+        UUID nodeId,
+        long qryId,
+        String initiatorId,
+        @Nullable Object[] params
+    ) {
         try {
             assert stmt != null;
 
@@ -96,6 +109,7 @@ public class H2QueryInfo implements TrackableQuery {
             this.nodeId = nodeId;
             this.qryId = qryId;
             this.initiatorId = initiatorId;
+            this.params = params;
 
             beginTs = U.currentTimeMillis();
 
@@ -210,8 +224,12 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", enforceJoinOrder=").append(enforceJoinOrder)
                 .append(", schema=").append(schema)
                 .append(", initiatorId=").append(initiatorId)
-                .append(", sql='").append(sql)
-                .append("', plan=").append(plan());
+                .append(", sql='").append(sql).append("'");
+
+        if (QueryUtils.INCLUDE_SENSITIVE && params != null && params.length != 0)
+            msgSb.append(", params=").append(S.arrayToString(params));
+
+        msgSb.append(", plan=").append(plan());
 
         printInfo(msgSb);
 

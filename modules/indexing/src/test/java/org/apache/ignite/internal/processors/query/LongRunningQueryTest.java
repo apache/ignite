@@ -505,6 +505,32 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
             LONG_QUERY_WARNING_TIMEOUT + 1);
     }
 
+    /**
+     * Verifies query parameters in logs.
+     */
+    @Test
+    @MultiNodeTest
+    public void testQueryParameters() throws InterruptedException {
+        ListeningTestLogger testLog = testLog();
+
+        boolean includeSensitive = QueryUtils.INCLUDE_SENSITIVE;
+
+        try {
+            for (boolean incl : new boolean[] {true, false}) {
+                QueryUtils.INCLUDE_SENSITIVE = incl;
+
+                checkParameters(testLog, "LOCAL", "SELECT sleep_func(?, 0)", incl);
+
+                checkParameters(testLog, "MAP", "SELECT val FROM test WHERE id = sleep_func(?, 0)", incl);
+
+                checkParameters(testLog, "REDUCE", "SELECT sleep_func(?, sum(val)) FROM test WHERE id + 1 = 1", incl);
+            }
+        }
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE = includeSensitive;
+        }
+    }
+
     /** Verifies map query information in long-query logs. */
     @Test
     @MultiNodeTest
@@ -544,6 +570,29 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         ignite.cache("test").query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(args)).getAll();
 
         assertTrue(lsnr.check());
+    }
+
+    /** */
+    private void checkParameters(
+        ListeningTestLogger log,
+        String type,
+        String sql,
+        boolean includeSensitive
+    ) throws InterruptedException {
+        int arg = LONG_QUERY_WARNING_TIMEOUT + 1;
+
+        LogListener paramsLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches("type=" + type)
+            .andMatches("params=[" + arg + "]").build();
+
+        LogListener finishedLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches("type=" + type).build();
+
+        log.registerListener(paramsLsnr);
+        log.registerListener(finishedLsnr);
+
+        ignite.cache("test").query(new SqlFieldsQuery(sql).setArgs(arg)).getAll();
+
+        assertTrue(finishedLsnr.check(1000));
+        assertEquals(includeSensitive, paramsLsnr.check());
     }
 
     /**
