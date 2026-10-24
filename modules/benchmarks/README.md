@@ -17,7 +17,8 @@ Packages under `org.apache.ignite.internal.benchmarks`:
 | `jmh.sql`, `jmh.sql.tpch` | SQL scans, joins, aggregates, sorting, DML, user-defined functions and TPC-H queries, on the H2 and Calcite engines; allocation per query | Query engines, indexing |
 | `jmh.thin` | Cache operations, transactions and SQL through the thin client and the JDBC thin driver, allocation per operation | The thin client, JDBC thin and their protocol |
 | `jmh.binary`, `jmh.direct` | Serialization of strings and maps, reading of communication messages | Binary marshalling, message serialization |
-| `jmh.streamer`, `jmh.sequence` | Data streamer loading, atomic sequence | The data streamer, atomic data structures |
+| `jmh.streamer`, `jmh.sequence` | Data streamer loading, atomic sequence; allocation per operation of the streamer and the data structures | The data streamer, data structures |
+| `jmh.compute` | Allocation per call of compute jobs and tasks, services and messaging | The compute grid, services, messaging |
 | `jmh.tree`, `jmh.misc`, `jmh.collections`, `jmh.diagnostic` | B+ tree and index lookups, partition update counters, page replacement lists, page lock tracking, small collections | B+ trees and indexes, partition counters, page memory |
 | `jmh.algo`, `jmh.encryption`, `jmh.future`, `jmh.notify` | CRC, keystore encryption, futures, thread wake-up strategies | Checksums, encryption, futures, thread hand-off |
 | `jol` | Heap size of internal structures, measured with JOL (Java Object Layout); plain Java programs, not JMH | The memory layout of these structures |
@@ -230,11 +231,13 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
 
 ### Allocation benchmarks
 
-These benchmarks in `jmh.cache`, `jmh.streamer`, `jmh.sql` and `jmh.thin` are made for the
-allocation profilers. Each starts two server nodes. The ones that extend
-`JmhCacheAllocationAbstractBenchmark` also start a client node, unless they call the cache through a
-server; the thin client and JDBC thin ones start none and connect to the servers. Each creates its
-keys and values and writes every key before measuring, so the operations work on existing entries.
+These benchmarks in `jmh.cache`, `jmh.streamer`, `jmh.sql`, `jmh.thin`, `jmh.compute` and
+`jmh.sequence` are made for the allocation profilers. Each starts two server nodes. The ones that
+extend `JmhCacheAllocationAbstractBenchmark` also start a client node, unless they call the cache
+through a server, and so do the compute, service, messaging and data structure ones, which call from
+it; the thin client and JDBC thin ones start none and connect to the servers. Each creates its keys,
+values and other objects of the calls before measuring, and writes every key, so the operations work
+on existing entries.
 
 | Class | Methods | What it measures |
 |---|---|---|
@@ -248,6 +251,11 @@ keys and values and writes every key before measuring, so the operations work on
 | `JmhThinClientAllocationBenchmark` | `put`, `get`, `putAll`, `getAll`, `sqlSelect` | Cache operations through the thin client, `putAll` and `getAll` of 10 consecutive keys, and an SQL select of one row by key |
 | `JmhThinClientTxAllocationBenchmark` | `txPut` | Puts of two consecutive keys in a pessimistic repeatable-read thin client transaction |
 | `JmhJdbcThinAllocationBenchmark` | `selectByKey`, `selectRange`, `update`, `insertDelete` | The queries of `JmhSqlAllocationBenchmark` through the JDBC thin driver, with statements prepared in setup |
+| `JmhContinuousQueryAllocationBenchmark` | `putWithListener`, `putWithFilter` | A put to a cache with a continuous query of the calling node: with a local listener, which gets every update, or with a remote filter that drops every update on the servers |
+| `JmhComputeAllocationBenchmark` | `run`, `call`, `affinityCall`, `execute`, `broadcast`, `thinExecute` | Compute from the client node to the servers: a job on one server, a job that returns a value, a job on the primary server of a key, a task of one job, a job on each server, and the task started through the thin client. The jobs do nothing. The thin client's task also allocates in the JDK's common pool, the group `other.ForkJoinPool.commonPool-worker` |
+| `JmhServiceAllocationBenchmark` | `call`, `thinCall` | A call of a service deployed on each server, through the client node's proxy and through the thin client's |
+| `JmhMessagingAllocationBenchmark` | `send`, `sendOrdered` | A user message and an ordered one from the client node to one server. Each call waits until the server's listener has the message: sends that don't wait pile up in the queues and break the connection |
+| `JmhDataStructuresAllocationBenchmark` | `atomicLongIncrement`, `atomicSequenceIncrement`, `atomicReferenceCompareAndSet`, `queueOfferPoll`, `setAddRemove`, `semaphoreAcquireRelease`, `lockUnlock` | Operations of the data structures, called from the client node. The atomic sequence reserves a range of values at a time, so its increments send no messages |
 
 Each parameter has one default value, and a run without `-p` uses it. `-p <name>=<value>` sets
 another value, `-p <name>=<value>,<value>` runs several. The parameters of a base class, such as
