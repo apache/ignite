@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.management.persistence.PersistenceTaskResult",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "inMaintenanceMode"},
+    {"order": 1, "type": "boolean", "name": "maintenanceTaskCompleted"},
+    {"order": 2, "type": "java.util.Collection<java.lang.String>", "name": "handledCaches"},
+    {"order": 3, "type": "java.util.Collection<java.lang.String>", "name": "failedToHandleCaches"},
+    {"order": 4, "type": "java.util.Map<java.lang.String,org.apache.ignite.lang.IgniteBiTuple<java.lang.Boolean,java.lang.Boolean>>", "name": "cachesInfo"}
+  ]
+}

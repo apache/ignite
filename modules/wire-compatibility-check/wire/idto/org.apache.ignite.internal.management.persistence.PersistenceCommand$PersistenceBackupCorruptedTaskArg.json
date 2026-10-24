@@ -1,0 +1,4 @@
+{
+  "class": "org.apache.ignite.internal.management.persistence.PersistenceCommand$PersistenceBackupCorruptedTaskArg",
+  "fields": []
+}

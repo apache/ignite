@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheScheduleIndexesRebuildCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "java.util.UUID[]", "name": "nodeIds"},
+    {"order": 2, "type": "boolean", "name": "allNodes"},
+    {"order": 3, "type": "java.lang.String", "name": "cacheNames"},
+    {"order": 4, "type": "java.lang.String[]", "name": "groupNames"},
+    {"order": 5, "type": "java.util.Map<java.lang.String,java.util.Set<java.lang.String>>", "name": "cacheToIndexes"}
+  ]
+}

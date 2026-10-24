@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.metric.MetricCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "name"},
+    {"order": 1, "type": "java.util.UUID", "name": "nodeId"}
+  ]
+}

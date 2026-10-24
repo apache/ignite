@@ -21,6 +21,6 @@ package org.apache.ignite.internal;
 @FeatureGated(registry = TestSecondFeatureRegistry.class)
 public class TestMixedRegistryMessage extends TestMixedRegistryBaseMessage {
     /** */
-    @Order(value = 1, introducedBy = "OTHER_FEATURE")
+    @Order(value = 0, introducedBy = "OTHER_FEATURE")
     int newFld;
 }

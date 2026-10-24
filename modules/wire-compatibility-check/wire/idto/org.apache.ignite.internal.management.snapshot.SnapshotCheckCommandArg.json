@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.snapshot.SnapshotCheckCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "snapshotName"},
+    {"order": 1, "type": "java.lang.String", "name": "src"},
+    {"order": 2, "type": "int", "name": "increment"}
+  ]
+}

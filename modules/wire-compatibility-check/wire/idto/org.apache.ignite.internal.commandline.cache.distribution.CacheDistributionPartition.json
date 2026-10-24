@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionPartition",
+  "fields": [
+    {"order": 0, "type": "int", "name": "partId"},
+    {"order": 1, "type": "boolean", "name": "primary"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState", "name": "state"},
+    {"order": 3, "type": "long", "name": "updateCntr"},
+    {"order": 4, "type": "long", "name": "size"}
+  ]
+}

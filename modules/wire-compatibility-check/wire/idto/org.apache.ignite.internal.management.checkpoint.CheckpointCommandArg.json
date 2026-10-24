@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.checkpoint.CheckpointCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "reason"},
+    {"order": 1, "type": "boolean", "name": "waitForFinish"},
+    {"order": 2, "type": "long", "name": "timeout"}
+  ]
+}

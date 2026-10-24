@@ -191,7 +191,7 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         if (jsonGen == null)
-            jsonGen = new MessageJsonGenerator(processingEnv);
+            jsonGen = new MessageJsonGenerator(processingEnv, "messages/");
 
         List<Supplier<MessageGenerator>> generators = List.of(
             () -> new MessageSerializerGenerator(processingEnv),
@@ -223,10 +223,12 @@ public class MessageProcessor extends AbstractProcessor {
         Map<String, VariableElement> gatedFields = new HashMap<>();
 
         for (VariableElement field : fields) {
-            Order order = field.getAnnotation(Order.class);
+            String feature = gatingFeature(field);
 
-            if (order.introducedBy().isEmpty() && order.deprecatedBy().isEmpty())
+            if (feature == null)
                 continue;
+
+            Order order = field.getAnnotation(Order.class);
 
             if (isSchemaImmutable) {
                 printError(
@@ -264,8 +266,6 @@ public class MessageProcessor extends AbstractProcessor {
 
                 return false;
             }
-
-            String feature = order.introducedBy().isEmpty() ? order.deprecatedBy() : order.introducedBy();
 
             VariableElement otherField = gatedFields.put(feature, field);
 
@@ -517,27 +517,32 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     @Nullable public static FieldFeatureGate buildFieldFeatureGate(ProcessingEnvironment env, VariableElement field) {
-        Order ann = field.getAnnotation(Order.class);
+        String feature = gatingFeature(field);
 
-        String introducingFeature = ann.introducedBy();
-        String deprecatingFeature = ann.deprecatedBy();
-
-        if (introducingFeature.isEmpty() && deprecatingFeature.isEmpty())
+        if (feature == null)
             return null;
 
         String regCls = resolveFeatureRegistry(field.getEnclosingElement());
 
         String regName = regCls.substring(regCls.lastIndexOf('.') + 1);
 
-        boolean introduced = !introducingFeature.isEmpty();
-
-        String feature = introduced ? introducingFeature : deprecatingFeature;
+        boolean introduced = !field.getAnnotation(Order.class).introducedBy().isEmpty();
 
         validateFeature(env, field, feature, regCls);
 
         return new FieldFeatureGate(
             regCls,
             (introduced ? "ctx.includeFieldIntroducedBy(" : "ctx.includeFieldDeprecatedBy(") + regName + '.' + feature + ')');
+    }
+
+    /** */
+    @Nullable public static String gatingFeature(VariableElement field) {
+        Order order = field.getAnnotation(Order.class);
+
+        if (!order.introducedBy().isEmpty())
+            return order.introducedBy();
+
+        return order.deprecatedBy().isEmpty() ? null : order.deprecatedBy();
     }
 
     /** */

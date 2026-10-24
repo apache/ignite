@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.management.io.IoTestCommunicationCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "long", "name": "warmup"},
+    {"order": 2, "type": "long", "name": "duration"},
+    {"order": 3, "type": "int", "name": "threads"},
+    {"order": 4, "type": "int", "name": "payloadSize"},
+    {"order": 5, "type": "boolean", "name": "processInNioThread"}
+  ]
+}
