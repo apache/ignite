@@ -14,7 +14,7 @@
 // limitations under the License.
 [width="100%",cols="1,3"]
 |===
-|JDK |Oracle JDK 17, Open JDK 17, IBM JDK 17
+|JDK |Oracle JDK, OpenJDK, IBM JDK: versions 17 and 21. Java 17 is the minimum required version.
 |.NET Framework |.NET 4.0+, .NET Core 2.0+
 //|IDE |Visual Studio 2010+, Rider, Visual Studio Code
 |===
