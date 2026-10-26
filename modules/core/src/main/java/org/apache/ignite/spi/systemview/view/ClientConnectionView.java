@@ -120,7 +120,10 @@ public class ClientConnectionView {
         return ctx == null ? null : ctx.attributes().get(IGNITE_DATA_CENTER_ID);
     }
 
-    /** @return Number of active user compute tasks of the thin client connection, {@code null} for other connection types. */
+    /**
+     * @return Number of active user compute tasks of the thin client connection,
+     * {@code null} for other connection types.
+     */
     @Order(7)
     @Nullable public Integer activeComputeTasks() {
         return ctx instanceof ClientConnectionContext ? ((ClientConnectionContext)ctx).activeTasksCount() : null;

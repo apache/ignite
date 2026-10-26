@@ -907,7 +907,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Maximum value over the time interval updated by the given operator on each read. */
     private static class MaxWithValueUpdateMetric extends MaxValueMetric {
-        /** Operator applied to the maximum value accumulated over the time interval. */
+        /** */
         private final LongUnaryOperator updater;
 
         /** */
