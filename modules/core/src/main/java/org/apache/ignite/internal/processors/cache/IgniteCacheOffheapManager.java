@@ -409,19 +409,19 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
-     * Tries to lock the manager against stopping.
+     * Tries to lock the manager against incompatible state like node or cache group stopping.
      *
-     * @return {@code true} if successful, {@code false} if the manager is already stopping.
-     * @see #allowStopping()
+     * @return {@code true} if successful, {@code false} if the manager is already in an incompatible state.
+     * @see #unguard()
      */
-    public boolean preventStopping();
+    public boolean quard();
 
     /**
-     * Releases the 'stop-unallowed' state and allows the manager to stop.
+     * Releases the 'guarded' state.
      *
-     * @see #preventStopping()
+     * @see #quard()
      */
-    public void allowStopping();
+    public void unguard();
 
     /**
      *

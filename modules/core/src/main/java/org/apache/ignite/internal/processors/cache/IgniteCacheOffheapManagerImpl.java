@@ -191,12 +191,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean preventStopping() {
+    @Override public boolean quard() {
         return busyLock.enterBusy();
     }
 
     /** {@inheritDoc} */
-    @Override public void allowStopping() {
+    @Override public void unguard() {
         busyLock.leaveBusy();
     }
 
