@@ -1590,6 +1590,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         else
             cache().metrics0().incrementResolverMergedCount();
 
+        if (ctx.isResolveFailed())
+            cache().metrics0().incrementResolverErrorsCount();
+
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
 

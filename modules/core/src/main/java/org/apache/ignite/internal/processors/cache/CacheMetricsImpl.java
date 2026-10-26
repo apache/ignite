@@ -250,6 +250,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
 
+    /** Conflict resolver errors count. */
+    private LongAdderMetric rslvrErrCnt;
+
     /** Affinity configuration MDC safe metric. */
     private volatile Boolean affCfgMdcSafe;
 
@@ -781,6 +784,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (rslvrMergedCnt != null)
             rslvrMergedCnt.reset();
+
+        if (rslvrErrCnt != null)
+            rslvrErrCnt.reset();
     }
 
     /** {@inheritDoc} */
@@ -1792,6 +1798,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         rslvrMergedCnt.increment();
     }
 
+    /** */
+    public void incrementResolverErrorsCount() {
+        rslvrErrCnt.increment();
+    }
+
     /** Registers metrics for conflict resolver. */
     public void registerResolverMetrics() {
         rslvrAcceptedCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
@@ -1802,6 +1813,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
+
+        rslvrErrCnt = mreg.longAdderMetric("ConflictResolverErrorsCount",
+            "Conflict resolver errors count");
     }
 
     /** Registers metric for partition distribution.  */
