@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.function.LongUnaryOperator;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
@@ -370,22 +370,19 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             ? ThinClientConfiguration.DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION
             : thinCfg.getMaxActiveComputeTasksPerConnection();
 
-        maxRunningComputeTasksMetric = new MaxWithValueUpdateMetric(
+        maxRunningComputeTasksMetric = new MaxWithCurrentValueMetric(
             metricName(mreg.name(), METRIC_MAX_RUNNING_COMPUTE_TASKS),
             "Maximum number of running user compute tasks per thin client connection over the configured time interval",
             DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL,
             DFLT_SIZE,
-            maxActiveComputeTasks > 0 ? this::maxRunningComputeTasks : l -> 0L);
+            maxActiveComputeTasks > 0 ? this::maxRunningComputeTasks : () -> 0L);
 
         mreg.register(maxRunningComputeTasksMetric);
     }
 
-    /**
-     * @param val Metric value.
-     * @return Maximum value derived from metric value and calculated one.
-     */
-    private long maxRunningComputeTasks(long val) {
-        long max = val;
+    /** @return Maximum number of currently running user compute tasks among all thin client connections. */
+    private long maxRunningComputeTasks() {
+        long max = 0;
 
         for (GridNioSession ses : srv.sessions()) {
             ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
@@ -905,21 +902,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** Maximum value over the time interval updated by the given operator on each read. */
-    private static class MaxWithValueUpdateMetric extends MaxValueMetric {
+    /** Maximum value over the time interval, or the current value if it is greater. */
+    private static class MaxWithCurrentValueMetric extends MaxValueMetric {
         /** */
-        private final LongUnaryOperator updater;
+        private final LongSupplier cur;
 
         /** */
-        MaxWithValueUpdateMetric(String name, String desc, long timeInterval, int size, LongUnaryOperator updater) {
+        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, LongSupplier cur) {
             super(name, desc, timeInterval, size);
 
-            this.updater = updater;
+            this.cur = cur;
         }
 
         /** {@inheritDoc} */
         @Override public long value() {
-            return updater.applyAsLong(super.value());
+            return Math.max(super.value(), cur.getAsLong());
         }
     }
 }
