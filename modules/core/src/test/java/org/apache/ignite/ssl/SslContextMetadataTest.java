@@ -197,7 +197,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertArrayEquals(new String[] {"TLSv1.2"}, outer.createSSLEngine().getEnabledProtocols());
     }
 
-    /** Adding metadata without TLS parameters preserves the default engine settings and socket factory classes. */
+    /** Adding metadata without TLS parameters preserves the peer address, default settings and socket factory classes. */
     @Test
     public void testMetadataWrapperPreservesContextBehavior() throws Exception {
         SSLContext delegate = SSLContext.getInstance("TLS");
@@ -205,8 +205,10 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         delegate.init(null, null, null);
 
         SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, chain(loadStore("node01"), "node01"));
-        SSLEngine engine = wrapper.createSSLEngine();
+        SSLEngine engine = wrapper.createSSLEngine("peer.example", 10800);
 
+        assertEquals("peer.example", engine.getPeerHost());
+        assertEquals(10800, engine.getPeerPort());
         assertArrayEquals(delegate.createSSLEngine().getEnabledProtocols(), engine.getEnabledProtocols());
         assertArrayEquals(delegate.createSSLEngine().getEnabledCipherSuites(), engine.getEnabledCipherSuites());
         assertEquals(delegate.getSocketFactory().getClass(), wrapper.getSocketFactory().getClass());

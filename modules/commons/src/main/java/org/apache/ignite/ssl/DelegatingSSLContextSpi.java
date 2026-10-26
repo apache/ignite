@@ -72,7 +72,7 @@ class DelegatingSSLContextSpi extends SSLContextSpi {
 
     /** {@inheritDoc} */
     @Override protected SSLEngine engineCreateSSLEngine(String s, int i) {
-        final SSLEngine engine = delegate.createSSLEngine();
+        final SSLEngine engine = delegate.createSSLEngine(s, i);
 
         if (parameters != null)
             engine.setSSLParameters(parameters);
