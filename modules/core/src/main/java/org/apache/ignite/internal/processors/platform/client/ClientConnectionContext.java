@@ -355,7 +355,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             activeTasksCnt.decrementAndGet();
 
             // A rejected task counts as the limit.
-            ctx.clientListener().updateMaxCurrentActiveComputeTasks(maxActiveComputeTasks);
+            ctx.clientListener().updateMaxRunningComputeTasks(maxActiveComputeTasks);
 
             throw new IgniteClientException(ClientStatus.TOO_MANY_COMPUTE_TASKS, "Active compute tasks per connection " +
                 "limit (" + maxActiveComputeTasks + ") exceeded. To start a new task you need to wait for some of " +
@@ -363,7 +363,7 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
                 "ThinClientConfiguration.MaxActiveComputeTasksPerConnection property.");
         }
 
-        ctx.clientListener().updateMaxCurrentActiveComputeTasks(cnt);
+        ctx.clientListener().updateMaxRunningComputeTasks(cnt);
     }
 
     /**

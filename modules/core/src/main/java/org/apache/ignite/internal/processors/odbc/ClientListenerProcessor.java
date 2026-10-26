@@ -132,7 +132,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     private ClientListenerMetrics metrics;
 
     /** */
-    private MaxWithCurrentValueMetric maxRunningComputeTasksMetric;
+    private MaxValueMetric maxRunningComputeTasksMetric;
 
     /** Executor service. */
     private ExecutorService execSvc;
@@ -370,14 +370,14 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             ? ThinClientConfiguration.DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION
             : thinCfg.getMaxActiveComputeTasksPerConnection();
 
-        maxRunningComputeTasksMetric = new MaxWithCurrentValueMetric(
-            metricName(mreg.name(), METRIC_MAX_RUNNING_COMPUTE_TASKS),
-            "Maximum number of running user compute tasks per thin client connection over the configured " +
-                "time interval",
-            DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL,
-            DFLT_SIZE,
-            maxActiveComputeTasks > 0 ? this::maxRunningComputeTasks : null
-        );
+        String name = metricName(mreg.name(), METRIC_MAX_RUNNING_COMPUTE_TASKS);
+        String desc = "Maximum number of running user compute tasks per thin client connection over the configured " +
+            "time interval";
+
+        maxRunningComputeTasksMetric = maxActiveComputeTasks > 0
+            ? new MaxWithCurrentValueMetric(name, desc, DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL, DFLT_SIZE,
+                this::maxRunningComputeTasks)
+            : new MaxValueMetric(name, desc, DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL, DFLT_SIZE);
 
         mreg.register(maxRunningComputeTasksMetric);
     }
@@ -660,9 +660,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         return metrics;
     }
 
-    /** @param activeTasksCnt Number of active user compute tasks of a connection. */
-    public void updateMaxCurrentActiveComputeTasks(int activeTasksCnt) {
-        maxRunningComputeTasksMetric.update(activeTasksCnt);
+    /** @param runningTasksCnt Number of running user compute tasks of a connection. */
+    public void updateMaxRunningComputeTasks(int runningTasksCnt) {
+        maxRunningComputeTasksMetric.update(runningTasksCnt);
     }
 
     /**
@@ -910,7 +910,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         private final LongSupplier cur;
 
         /** */
-        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, @Nullable LongSupplier cur) {
+        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, LongSupplier cur) {
             super(name, desc, timeInterval, size);
 
             this.cur = cur;
@@ -918,9 +918,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public long value() {
-            return cur == null ?
-                0 :
-                Math.max(super.value(), cur.getAsLong());
+            return Math.max(super.value(), cur.getAsLong());
         }
     }
 }
