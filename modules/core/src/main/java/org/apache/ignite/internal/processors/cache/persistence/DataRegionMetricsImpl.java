@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
-import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -95,16 +95,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** */
     private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
-    /**
-     * Cache group ID -> Cache group memory page metrics.
-     * <p>
-     * This is effectively a copy-on-write hash map, all write operations should create a new copy under the
-     * {@link #cacheGrpMetricsLock} lock.
-     */
-    private volatile IntMap<PageMetrics> cacheGrpMetrics = new IntHashMap<>();
-
-    /** Lock for the {@link #cacheGrpMetrics} field. */
-    private final Object cacheGrpMetricsLock = new Object();
+    /** Cache group ID -> Cache group memory page metrics. */
+    private final IntMap<PageMetrics> cacheGrpMetrics = new CopyOnWriteIntMap<>();
 
     /** Memory page metrics for the whole region. */
     private final PageMetrics dataRegionPageMetrics;
@@ -606,31 +598,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (pageMetrics != null)
             return pageMetrics;
 
-        synchronized (cacheGrpMetricsLock) {
-            IntMap<PageMetrics> locCacheGrpMetrics = cacheGrpMetrics;
-
-            // double check
-            PageMetrics doubleCheckPageMetrics = locCacheGrpMetrics.get(cacheGrpId);
-            if (doubleCheckPageMetrics != null)
-                return doubleCheckPageMetrics;
-
-            IntMap<PageMetrics> copy = new IntHashMap<>(locCacheGrpMetrics);
-
-            PageMetrics newMetrics = Optional.of(kernalCtx)
-                // both cache and group descriptor can be null
-                .map(GridKernalContext::cache)
-                .map(cache -> cache.cacheGroupDescriptors().get(cacheGrpId))
-                .map(decs -> createCacheGrpPageMetrics(decs.cacheOrGroupName()))
-                // return region-wide metrics for a non-existent cache group ID. This is needed in some scenarios
-                // when per-group data structures are used on a per-region basis and in tests.
-                .orElse(dataRegionPageMetrics);
-
-            copy.put(cacheGrpId, newMetrics);
-
-            cacheGrpMetrics = copy;
-
-            return newMetrics;
-        }
+        return cacheGrpMetrics.computeIfAbsent(cacheGrpId, id -> Optional.of(kernalCtx)
+            // both cache and group descriptor can be null
+            .map(GridKernalContext::cache)
+            .map(cache -> cache.cacheGroupDescriptors().get(id))
+            .map(decs -> createCacheGrpPageMetrics(decs.cacheOrGroupName()))
+            // return region-wide metrics for a non-existent cache group ID. This is needed in some scenarios
+            // when per-group data structures are used on a per-region basis and in tests.
+            .orElse(dataRegionPageMetrics));
     }
 
     /**
@@ -649,16 +624,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Removes all memory page metrics associated with the given cache group.
      */
-    public void removeCacheGrpPageMetrics(Integer grpId) {
-        PageMetrics rmvMetrics;
-
-        synchronized (cacheGrpMetricsLock) {
-            IntMap<PageMetrics> copy = new IntHashMap<>(cacheGrpMetrics);
-
-            rmvMetrics = copy.remove(grpId);
-
-            cacheGrpMetrics = copy;
-        }
+    public void removeCacheGrpPageMetrics(int grpId) {
+        PageMetrics rmvMetrics = cacheGrpMetrics.remove(grpId);
 
         // we don't decrease the total pages counter for historical reasons
         // (it hasn't been done in previous implementations)

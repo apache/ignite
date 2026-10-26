@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.cdc.CdcResendCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "caches"}
+  ]
+}

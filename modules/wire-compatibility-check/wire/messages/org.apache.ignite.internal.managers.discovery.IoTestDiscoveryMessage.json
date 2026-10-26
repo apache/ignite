@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.managers.discovery.IoTestDiscoveryMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "byte[]", "name": "payload"},
+    {"order": 2, "type": "java.util.List<java.util.UUID>", "name": "path"},
+    {"order": 3, "type": "long", "name": "hopSendTsMillis"},
+    {"order": 4, "type": "java.util.List<java.lang.Long>", "name": "hopTimesMillis"}
+  ]
+}

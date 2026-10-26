@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.plugin.extensions.communication.Message[]", "name": "attrs"},
+    {"order": 1, "type": "byte", "name": "idBitmap"}
+  ]
+}

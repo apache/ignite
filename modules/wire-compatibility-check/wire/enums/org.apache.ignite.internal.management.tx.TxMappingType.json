@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxMappingType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.tx.TxMappingType", "name": "NEAR"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.tx.TxMappingType", "name": "DHT"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.tx.TxMappingType", "name": "REMOTE"}
+  ]
+}

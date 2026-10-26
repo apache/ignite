@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.ClusterMetricsSnapshot>", "name": "nodesMetricsMsgs"}
+  ]
+}

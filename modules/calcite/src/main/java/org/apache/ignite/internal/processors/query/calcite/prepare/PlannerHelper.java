@@ -134,7 +134,7 @@ public class PlannerHelper {
             rel = planner.trimUnusedFields(root.withRel(rel)).rel;
 
             // The following pushed down project can erase top-level hints. We store them to reassign hints for join nodes.
-            // Clear the inherit pathes to consider the hints as not propogated ones.
+            // Clear the inherit paths to consider the hints as not propagated ones.
             List<RelHint> topHints = HintUtils.allRelHints(rel).stream().map(h -> h.inheritPath.isEmpty()
                 ? h
                 : h.copy(Collections.emptyList())).collect(Collectors.toList());

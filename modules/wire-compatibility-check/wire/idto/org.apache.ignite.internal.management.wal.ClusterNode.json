@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.wal.ClusterNode",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "consistentId"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.lang.Object>", "name": "attrs"},
+    {"order": 2, "type": "java.util.Collection<java.lang.String>", "name": "addrs"},
+    {"order": 3, "type": "java.util.Collection<java.lang.String>", "name": "hostNames"}
+  ]
+}

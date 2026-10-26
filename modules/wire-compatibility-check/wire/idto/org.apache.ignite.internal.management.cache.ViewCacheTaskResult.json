@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ViewCacheTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.List<org.apache.ignite.internal.management.cache.CacheInfo>", "name": "cacheInfos"}
+  ]
+}

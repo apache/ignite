@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "long", "name": "rcvCnt"},
+    {"order": 2, "type": "long", "name": "connectCnt"},
+    {"order": 3, "type": "int", "name": "connIdx"}
+  ]
+}

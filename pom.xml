@@ -73,6 +73,7 @@
         <module>modules/calcite</module>
         <module>modules/calcite-testing</module>
         <module>modules/compatibility</module>
+        <module>modules/wire-compatibility-check</module>
     </modules>
 
     <profiles>

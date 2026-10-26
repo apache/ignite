@@ -19,16 +19,14 @@ package org.apache.ignite.internal.processors.security;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.thread.context.DistributedAttributeIdRegistry;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
  * {@link SecurityContext} attribute value holder and message for {@link SecuritySubject}'s id.
  *
- * @see OperationContextDispatcher#createSnapshot()
- * @see DistributedAttributeIdRegistry#SECURITY
+ * @see DistributedOperationContext#createSnapshot()
  */
 public class SecurityContextWrapper extends AbstractMessage {
     /** A value of {@link SecuritySubject#id()} */

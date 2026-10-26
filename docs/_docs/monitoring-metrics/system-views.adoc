@@ -314,6 +314,7 @@ Explicit locks are acquired using the `Cache.lock(key)` API.
 |KEY | string | Locked key
 |THREAD_ID | long | ID of the thread that acquired the lock
 |XID | UUID | Lock ID (unique identifier)
+|DURATION | long | Hold duration in milliseconds, 0 until the lock is acquired
 |===
 
 == CACHE_LOCKS
