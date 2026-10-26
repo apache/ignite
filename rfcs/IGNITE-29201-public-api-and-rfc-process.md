@@ -33,7 +33,7 @@ Public API means supported interfaces and behavior that applications, integratio
 - User-facing configuration, including defaults.
 - Supported metrics, JMX interfaces, and system views.
 
-The same review requirement covers client and internode protocols and persistent data formats, including metadata, WAL, and snapshots.
+The same review requirement covers client and internode protocols and persistent data formats, including metadata, WAL, and snapshots. Changes to these formats can affect communication between versions and the ability to read existing data after an upgrade.
 
 An internal class does not become public API just because it has public methods. Missing documentation does not make an interface intended for external use internal.
 
@@ -43,21 +43,21 @@ Adding, changing, deprecating, or removing an interface or format listed above r
 
 Internal refactoring, optimizations, tests, documentation fixes, and ordinary log wording do not need an RFC if they preserve these contracts. Neither do bug fixes that restore established behavior without changing another contract. If unsure, explain the change in the ticket and discuss it with reviewers.
 
-## Ticket → RFC PR → implementation
+## Ticket → PR → merge
 
 1. Open a ticket describing the problem and proposed change.
-2. Open a PR adding `rfcs/IGNITE-<ticket>-<short-title>.md`. Link the ticket and PR to each other; use the ticket number instead of maintaining a separate RFC counter.
-3. Review the document in the PR. When ready for approval, share the proposed revision on the dev list and allow at least 72 hours for feedback. Keep the list informed of significant changes and concerns.
+2. Use one PR for the ticket, containing `rfcs/IGNITE-<ticket>-<short-title>.md` and the implementation. The PR can start with the RFC while the implementation is in progress. Link the ticket and PR to each other; use the ticket number instead of maintaining a separate RFC counter.
+3. Review the document in the PR. When ready for approval, share the RFC revision on the dev list and allow at least 72 hours for feedback. Keep the list informed of significant changes and concerns.
 4. Collect explicit approval of that revision from at least three different Ignite committers in the PR. Resolve outstanding technical objections and post the approval summary and outcome on the dev list before merging. Material revisions need renewed approval and review time.
-5. Merge the RFC before merging the public API changes. Implementation PRs link to it and follow normal code review and testing.
+5. Once the RFC is approved and normal code review and testing are complete, merge the RFC and implementation together as one commit for the ticket.
 
-One RFC can cover several implementation PRs; those PRs do not need three RFC approvals each. Changes to the agreed contract or compatibility plan need an updated RFC approved through the same process.
+One RFC can cover several implementation tickets. Merge it with the first implementation PR and link subsequent PRs to it. Those PRs do not need three RFC approvals each unless they change the agreed contract or compatibility plan. Such changes require an updated RFC approved through the same process.
 
 ## Keep the document useful
 
-Explain the problem, proposed API or format, alternatives, compatibility and migration, and how we will test and complete the work. Name the affected versions and clients. Keep it short when the change is small.
+Use roughly the same level of detail as an IEP. Explain the problem, proposed API or format, alternatives, compatibility and migration, and how we will test and complete the work. Name the affected versions and clients. Keep it short when the change is small.
 
-The ticket tracks implementation; the RFC records the agreed design. Existing IEPs can be referenced instead of copied.
+The RFC records the agreed design. Link all implementation tickets so readers can see what is complete and what remains. Existing IEPs can be referenced instead of copied.
 
 ## References
 
