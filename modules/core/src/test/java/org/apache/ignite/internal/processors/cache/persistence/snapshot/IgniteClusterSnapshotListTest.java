@@ -46,7 +46,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommandArg;
 import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -66,10 +65,8 @@ import org.junit.runners.Parameterized;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_THREAD_POOL_SIZE;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -807,67 +804,6 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
             assertTrue(info.externalStorages().size() > 0L ? info.size() > rootSize : info.size() == rootSize);
             assertEquals(rootSize + info.externalStorages().size(), info.size());
         }
-    }
-
-    /** */
-    @Test
-    public void testNodeStopDuringSnapshotList() throws Exception {
-        int grids = 3;
-        int testGridIdx = 1;
-
-        CountDownLatch snpLstBeginLatch = new CountDownLatch(grids);
-        CountDownLatch snpLstProceedLatch = new CountDownLatch(1);
-
-        // Delays snapshot reading.
-        pluginProvider = new AbstractTestPluginProvider() {
-            @Override public String name() {
-                return "TestSnpMgrProvider";
-            }
-
-            @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
-                if (IgniteSnapshotManager.class.isAssignableFrom(cls)) {
-                    return (T)new IgniteSnapshotManager(((IgniteEx)ctx.grid()).context()) {
-                        @Override public List<SnapshotMetadata> readSnapshotMetadatas(SnapshotFileTree sft, boolean failIfCantRead) {
-                            snpLstBeginLatch.countDown();
-
-                            if (((IgniteEx)ctx.grid()).localNode().order() == testGridIdx + 1) {
-                                try {
-                                    assertTrue(snpLstProceedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-                                }
-                                catch (InterruptedException e) {
-                                    throw new IllegalStateException(e);
-                                }
-                            }
-
-                            return super.readSnapshotMetadatas(sft, failIfCantRead);
-                        }
-                    };
-                }
-
-                return super.createComponent(ctx, cls);
-            }
-        };
-
-        startGridsWithSnapshot(grids, CACHE_KEYS_RANGE, true);
-
-        IgniteInternalFuture<SnapshotListTaskResult> lstOpFut = runAsync(() -> listSnapshots(grid(0)));
-
-        assertTrue(snpLstBeginLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(testGridIdx));
-
-        assertTrue(waitForCondition(() -> grid(testGridIdx).context().isStopping(), getTestTimeout()));
-
-        snpLstProceedLatch.countDown();
-
-        assertThrowsAnyCause(
-            null,
-            () -> lstOpFut.get(getTestTimeout()),
-            NodeStoppingException.class,
-            "Local node is stopping"
-        );
-
-        stopFut.get(getTestTimeout());
     }
 
     /** */

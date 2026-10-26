@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /** Accumulated result of the snapshot list task. */
 public final class SnapshotListTaskResult extends IgniteDataTransferObject {
@@ -38,16 +39,26 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
     @Order(2)
     SnapshotListJobResult[] nodesSnapshots;
 
+    /** Per-node errors. */
+    @Order(3)
+    @Nullable Throwable[] errors;
+
     /** Default constructor for serialization purposes. */
     public SnapshotListTaskResult() {
         // No-op.
     }
 
     /** */
-    public SnapshotListTaskResult(String[] consistentIds, UUID[] nodesIds, SnapshotListJobResult[] nodesSnapshots) {
+    public SnapshotListTaskResult(
+        String[] consistentIds,
+        UUID[] nodesIds,
+        SnapshotListJobResult[] nodesSnapshots,
+        @Nullable Throwable[] errors
+    ) {
         this.consistentIds = consistentIds;
         this.nodesIds = nodesIds;
         this.nodesSnapshots = nodesSnapshots;
+        this.errors = errors;
     }
 
     /** @return Nodes consistent IDs. */
@@ -63,5 +74,10 @@ public final class SnapshotListTaskResult extends IgniteDataTransferObject {
     /** @return Per-node results. */
     public SnapshotListJobResult[] nodesSnapshots() {
         return nodesSnapshots;
+    }
+
+    /** @return Per-node errors. */
+    public @Nullable Throwable[] errors() {
+        return errors;
     }
 }

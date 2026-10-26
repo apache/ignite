@@ -22,6 +22,9 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterNode;
@@ -29,11 +32,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.management.snapshot.SnapshotListCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotListTask;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -44,6 +50,9 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -212,8 +221,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         IgniteEx ig = (IgniteEx)startGridsMultiThreaded(GRIDS_CNT);
         ig.cluster().state(ACTIVE);
 
-        int entriesCnt = 10;
         int partitions = 4;
+        int entriesCnt = partitions * 3;
 
         createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);
 
@@ -280,6 +289,97 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         }
     }
 
+    /** Tests that a node stopping during the snapshots list is reported as a per-node error only. */
+    @Test
+    public void testNodeStoppedDuringSnapshotsList() throws Exception {
+        // Is not important here, speeds up the tests.
+        assumeTrue(incrementalsCnt == 0 && !customPath);
+
+        IgniteEx ig = (IgniteEx)startGridsMultiThreaded(GRIDS_CNT);
+
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, DEFAULT_CACHE_NAME, 410, 4, null);
+
+        snp(ig).createSnapshot("testSnapshot0", null, false, false).get(getTestTimeout());
+
+        // The node to stop concurrently with the list command.
+        int stoppedNodeIdx = GRIDS_CNT - 1;
+
+        IgniteEx stoppedIg = grid(stoppedNodeIdx);
+
+        String stoppedConsId = stoppedIg.cluster().localNode().consistentId().toString();
+
+        // Blocks the snapshot executor of the node to be stopped, so that its list job cannot complete
+        // before the node stops.
+        CountDownLatch blockedLatch = new CountDownLatch(stoppedIg.configuration().getSnapshotThreadPoolSize());
+        CountDownLatch unblockLatch = new CountDownLatch(1);
+
+        ExecutorService snpExec = stoppedIg.context().pools().getSnapshotExecutorService();
+
+        for (int i = 0; i < stoppedIg.configuration().getSnapshotThreadPoolSize(); i++) {
+            snpExec.execute(() -> {
+                blockedLatch.countDown();
+
+                try {
+                    unblockLatch.await();
+                }
+                catch (InterruptedException ignored) {
+                    // No-op: the node is stopping.
+                }
+            });
+        }
+
+        assertTrue(blockedLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        injectTestSystemOut();
+
+        IgniteInternalFuture<Integer> listFut = GridTestUtils.runAsync(() ->
+            execute(newCommandHandler(createTestLogger()), "--snapshot", "list"));
+
+        // Waits until the list job hangs on the blocked node. From this moment on, the node is guaranteed
+        // to report an error instead of a result, whatever happens to the job.
+        assertTrue(waitForCondition(() -> {
+            for (ComputeJobView job : stoppedIg.context().systemView().<ComputeJobView>view(JOBS_VIEW)) {
+                if (SnapshotListTask.class.getName().equals(job.taskClassName()))
+                    return true;
+            }
+
+            return false;
+        }, getTestTimeout()));
+
+        // The kernal stopping waits for all the jobs to finish. We've blocked one so that we have to use a future and
+        // wait for the flag.
+        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(stoppedNodeIdx));
+
+        assertTrue(waitForCondition(() -> grid(stoppedNodeIdx).context().isStopping(), getTestTimeout()));
+
+        unblockLatch.countDown();
+
+        // The command succeeds despite the failed node.
+        assertEquals(EXIT_CODE_OK, (int)listFut.get());
+
+        stopFut.get(getTestTimeout());
+
+        // Ensure the test node is stopped.
+        assertTrue(waitForCondition(() -> grid(0).cluster().nodes().size() == GRIDS_CNT - 1, getTestTimeout()));
+
+        String out = testOut.toString();
+
+        // The stopped node is reported with an error in the standard per-node format.
+        assertEquals(GRIDS_CNT, countEntries(out, "Node '"));
+        assertEquals(1, countEntries(out, "Node '" + stoppedConsId + "'"));
+
+        // The other nodes still list their snapshots.
+        assertEquals(0, countEntries(out, SnapshotListCommand.NO_SNAPSHOTS));
+
+        assertEquals(GRIDS_CNT - 1, countEntries(out, "testSnapshot0"));
+        assertEquals(GRIDS_CNT - 1, countEntries(out, "Total size"));
+
+        assertEquals(1, countEntries(out, SnapshotListCommand.EXCEPTION_PREF +
+            "Local node is stopping. [errorType=NodeStoppingException.class]"));
+    }
+
     /**
      * The main test scenario:
      * <ul>
@@ -322,8 +422,8 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
 
         // Step 2: Cache and snapshot creation, if any.
         if (snapshotsCnt > 0) {
-            int entriesCnt = 10;
             int partitions = 4;
+            int entriesCnt = partitions * 3;
 
             // Create cache.
             createCacheAndPreload(ig, DEFAULT_CACHE_NAME, entriesCnt, partitions, null);

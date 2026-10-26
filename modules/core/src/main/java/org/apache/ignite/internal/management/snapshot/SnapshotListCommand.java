@@ -50,6 +50,9 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     /** */
     public static final String NO_SNAPSHOTS = "No snapshots found.";
 
+    /** */
+    public static final String EXCEPTION_PREF = "ERROR: ";
+
     /** {@inheritDoc} */
     @Override public String description() {
         return DESC;
@@ -75,12 +78,21 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             .toArray(Integer[]::new);
 
         // Flag whether the node's result has at least one incremental snapshot and one external storage.
-        T2<Boolean, Boolean> hasIncsAndExtStrs = new T2<>();
+        T2<Boolean, Boolean> incsAndExtStors = new T2<>();
 
         for (int nodeIdx : nodesOrder) {
             printer.accept("");
 
             printer.accept("Node '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
+
+            Throwable nodeErr = res.errors() == null || res.errors()[nodeIdx] == null ? null : res.errors()[nodeIdx];
+
+            if (nodeErr != null) {
+                printer.accept(EXCEPTION_PREF + "%s [errorType=%s.class]"
+                    .formatted(nodeErr.getMessage(), nodeErr.getClass().getSimpleName()));
+
+                continue;
+            }
 
             SnapshotListJobResult nodeResult = res.nodesSnapshots()[nodeIdx];
 
@@ -90,15 +102,12 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
                 continue;
             }
 
-            Map<String, SnapshotListJobResult.SnapshotInfo> perNodeResults = prepareResults(
-                nodeResult.snapshots(),
-                hasIncsAndExtStrs
-            );
+            Map<String, SnapshotListJobResult.SnapshotInfo> perNodeResults = prepareResults(nodeResult.snapshots(), incsAndExtStors);
 
             SystemViewCommand.printTable(
-                perNodeTableTitles(hasIncsAndExtStrs.get1(), hasIncsAndExtStrs.get2()),
-                perNodeTableTypes(hasIncsAndExtStrs.get1(), hasIncsAndExtStrs.get2()),
-                perNodeTableRows(perNodeResults, hasIncsAndExtStrs.get1(), hasIncsAndExtStrs.get2()),
+                perNodeTableTitles(incsAndExtStors.get1(), incsAndExtStors.get2()),
+                perNodeTableTypes(incsAndExtStors.get1(), incsAndExtStors.get2()),
+                perNodeTableRows(perNodeResults, incsAndExtStors.get1(), incsAndExtStors.get2()),
                 printer
             );
         }
