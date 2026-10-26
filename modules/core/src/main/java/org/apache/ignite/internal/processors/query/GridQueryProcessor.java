@@ -3687,7 +3687,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     null,
                     Class.forName(col.typeName()),
                     false,
-                    null,
+                    col.alias(),
                     !col.isNullable(),
                     null,
                     col.precision(),
