@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillAllCommandArg$TargetType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.kill.KillAllCommandArg$TargetType", "name": "SQL"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.kill.KillAllCommandArg$TargetType", "name": "SCAN"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.kill.KillAllCommandArg$TargetType", "name": "INDEX"},
+    {"order": 3, "type": "org.apache.ignite.internal.management.kill.KillAllCommandArg$TargetType", "name": "CONTINUOUS"}
+  ]
+}

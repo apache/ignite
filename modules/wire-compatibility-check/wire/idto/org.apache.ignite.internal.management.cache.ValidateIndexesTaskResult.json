@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult$NodeInfo,java.lang.Exception>", "name": "exceptions"},
+    {"order": 1, "type": "java.util.Map<org.apache.ignite.internal.management.cache.ValidateIndexesTaskResult$NodeInfo,org.apache.ignite.internal.management.cache.ValidateIndexesJobResult>", "name": "results"}
+  ]
+}

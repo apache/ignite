@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.TestInheritedIgniteDataTransferObject",
+  "fields": [
+    {"order": 0, "type": "char[]", "name": "charArray"},
+    {"order": 1, "type": "int", "name": "intVal"},
+    {"order": 2, "type": "org.apache.ignite.transactions.TransactionIsolation", "name": "isolation"}
+  ]
+}

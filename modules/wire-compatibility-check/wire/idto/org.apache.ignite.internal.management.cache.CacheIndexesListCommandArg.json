@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheIndexesListCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "java.lang.String", "name": "groupName"},
+    {"order": 2, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 3, "type": "java.lang.String", "name": "indexName"}
+  ]
+}

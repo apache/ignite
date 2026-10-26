@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillSqlCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "queryId"},
+    {"order": 1, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 2, "type": "long", "name": "qryId"}
+  ]
+}

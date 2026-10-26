@@ -1187,6 +1187,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_EXPLICIT_LOCKS.KEY.null",
                 "SYS.CACHE_EXPLICIT_LOCKS.THREAD_ID.null",
                 "SYS.CACHE_EXPLICIT_LOCKS.XID.null",
+                "SYS.CACHE_EXPLICIT_LOCKS.DURATION.null",
                 "SYS.CACHE_LOCKS.CACHE_ID.null",
                 "SYS.CACHE_LOCKS.KEY.null",
                 "SYS.CACHE_LOCKS.NODE_ID.null",

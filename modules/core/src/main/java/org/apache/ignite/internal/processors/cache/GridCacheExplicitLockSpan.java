@@ -290,20 +290,33 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         }
     }
 
-    /**
-     * @param now Current time.
-     * @return Longest time a key of the span has been locked for, in milliseconds, or 0 if no lock is acquired yet.
-     */
-    public long maxHoldTime(long now) {
+    /** @return How long the key has been locked for, in milliseconds, or 0 if the lock is not acquired yet. */
+    public long holdTime(IgniteTxKey key) {
         lock();
 
         try {
+            KeyCandidates keyCands = cands.get(key);
+
+            return keyCands == null ? 0 : keyCands.holdTime(U.currentTimeMillis());
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /**
+     * @return Longest time a key of the span has been locked for, in milliseconds, or 0 if no lock is acquired yet.
+     */
+    public long maxHoldTime() {
+        lock();
+
+        try {
+            long now = U.currentTimeMillis();
+
             long max = 0;
 
-            for (KeyCandidates keyCands : cands.values()) {
-                if (keyCands.acquireTime > 0)
-                    max = Math.max(max, now - keyCands.acquireTime);
-            }
+            for (KeyCandidates keyCands : cands.values())
+                max = Math.max(max, keyCands.holdTime(now));
 
             return max;
         }
@@ -408,10 +421,14 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                 acquireTime = U.currentTimeMillis();
         }
 
+        /** */
+        long holdTime(long now) {
+            return acquireTime == 0 ? 0 : now - acquireTime;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(KeyCandidates.class, this,
-                "holdTime", acquireTime == 0 ? 0 : U.currentTimeMillis() - acquireTime, false);
+            return S.toString(KeyCandidates.class, this, "holdTime", holdTime(U.currentTimeMillis()), false);
         }
     }
 }
