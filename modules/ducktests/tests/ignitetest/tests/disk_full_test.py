@@ -218,6 +218,24 @@ class DiskFullTest(IgniteTest):
 
         load.stop()
 
+    @cluster(num_nodes=1)
+    @reproducer("disk_full_tests")
+    @ignite_versions(str(DEV_BRANCH))
+    def test_node_stops_on_wal_volume_smaller_than_its_segments(self, ignite_version):
+        """
+        The node formats its WAL segments at start, and they don't fit the volume.
+        """
+        ignite = self.__ignite(ignite_version)
+
+        # Ten 4 MB segments need 40 MB.
+        ignite.mount_tmpfs(os.path.join(ignite.persistent_root, "wal"), 16)
+
+        ignite.start_async()
+
+        ignite.await_event("Failed to format WAL segment file", 60, from_the_beginning=True)
+        check_stops(ignite)
+        check_failure(ignite, "CRITICAL_ERROR", "Failed to format WAL segment file")
+
     @cluster(num_nodes=2)
     @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
