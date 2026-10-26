@@ -60,9 +60,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static final double NON_EQUI_COEFF = 0.7;
 
     /** */
-    public static final double EQUI_COEFF = 0.8;
-
-    /** */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdRowCount(), BuiltInMetadata.RowCount.Handler.class);
 
@@ -215,7 +212,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
         Double percentageAdjustment = null;
         if (joinCtx.joinType() == JoiningRelationType.PK_ON_PK) {
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                postFiltrationAdjustment = EQUI_COEFF;
+                if (!joinInfo.isEqui())
+                    postFiltrationAdjustment = NON_EQUI_COEFF;
                 // Assume we have two fact tables SALES and RETURNS sharing the same primary key. Every item
                 // can be sold, but only items which were sold can be returned back, therefore
                 // size(SALES) > size(RETURNS). When joining SALES on RETURNS by primary key, the estimated
@@ -283,7 +281,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         else { // PK_ON_FK
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
-                baseRowCnt = rightRowCnt * selectivity;;
+                baseRowCnt = rightRowCnt * selectivity;
                 percentageAdjustment = mq.getPercentageOriginalRows(rel.getLeft());
             }
             else if (rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.LEFT) {
