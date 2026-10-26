@@ -232,7 +232,6 @@ class DiskFullTest(IgniteTest):
 
         ignite.start_async()
 
-        ignite.await_event("Failed to format WAL segment file", 60, from_the_beginning=True)
         check_stops(ignite)
         check_failure(ignite, "CRITICAL_ERROR", "Failed to format WAL segment file")
 
