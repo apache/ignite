@@ -30,6 +30,7 @@ import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -44,7 +45,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
@@ -71,7 +71,6 @@ import static org.apache.ignite.internal.util.GridTestClockTimer.DFLT_TIME_SUPPL
 import static org.apache.ignite.internal.util.GridTestClockTimer.timeSupplier;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -210,7 +209,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     public void testComputeTasksMetrics() throws Exception {
         startGridWithCompute();
 
-        List<IgniteInternalFuture<Object>> futs = new ArrayList<>();
+        List<IgniteClientFuture<?>> futs = new ArrayList<>();
 
         try (
             IgniteClient client1 = Ignition.startClient(getClientConfiguration());
@@ -226,7 +225,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             checkMaxComputeTasks(startCnt);
             assertEquals(startCnt, activeComputeTasksCount());
 
-            // The same number of tasks on the second one. Max metric should not change.
+            // The same number of tasks on the second connection. Max metric should not change.
             futs.addAll(startTasks(client2, startCnt));
             checkMaxComputeTasks(startCnt);
             assertEquals(startCnt * 2, activeComputeTasksCount());
@@ -260,7 +259,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             shiftTime(2 * LONG_INTERVAL);
             checkMaxComputeTasks(0);
 
-            for (IgniteInternalFuture<Object> fut : futs)
+            for (IgniteClientFuture<?> fut : futs)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
@@ -274,7 +273,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         startGridWithCompute();
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
-            List<IgniteInternalFuture<Object>> futs = startTasks(client, MAX_TASKS);
+            List<IgniteClientFuture<?>> futs = startTasks(client, MAX_TASKS);
 
             checkMaxComputeTasks(MAX_TASKS);
 
@@ -286,7 +285,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
 
             assertEquals(0, computeTasksMetric().value());
 
-            for (IgniteInternalFuture<Object> fut : futs)
+            for (IgniteClientFuture<?> fut : futs)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
@@ -294,16 +293,13 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Check that a task rejected by the limit updates the metric with the limit, even if the active tasks were started
-     * before the time interval.
-     */
+    /** */
     @Test
     public void testComputeTasksMetricOnRejectedTask() throws Exception {
         startGridWithCompute();
 
         try (IgniteClient client = Ignition.startClient(getClientConfiguration())) {
-            List<IgniteInternalFuture<Object>> futs = startTasks(client, MAX_TASKS);
+            List<IgniteClientFuture<?>> futs = startTasks(client, MAX_TASKS);
 
             checkMaxComputeTasks(MAX_TASKS);
 
@@ -319,7 +315,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
 
             finishTasks(IntStream.range(1, MAX_TASKS).toArray());
 
-            for (IgniteInternalFuture<Object> fut : futs)
+            for (IgniteClientFuture<?> fut : futs)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
         finally {
@@ -327,17 +323,17 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Check that closing the connection with unfinished tasks releases its tasks. */
+    /** */
     @Test
     public void testComputeTasksMetricsAfterClientDisconnect() throws Exception {
         startGridWithCompute();
 
         try (IgniteClient client1 = Ignition.startClient(getClientConfiguration())) {
-            List<IgniteInternalFuture<Object>> futs1 = startTasks(client1, 1);
+            List<IgniteClientFuture<?>> futs1 = startTasks(client1, 1);
 
             assertEquals(1, activeComputeTasksCount());
 
-            List<IgniteInternalFuture<Object>> futs2;
+            List<IgniteClientFuture<?>> futs2;
 
             try (IgniteClient client2 = Ignition.startClient(getClientConfiguration())) {
                 futs2 = startTasks(client2, 2);
@@ -347,26 +343,24 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 assertEquals(3, activeComputeTasksCount());
             }
 
-            // Tasks of the closed client should be released on disconnect
+            // Tasks of the closed client should not be counted in system views.
             assertTrue(waitForCondition(() -> activeComputeTasksCount() == 1, getTestTimeout()));
 
+            // Finish tasks of the closed client.
             TestComputeTask.finish(1);
             TestComputeTask.finish(2);
+
+            // Unfinished tasks of client2 fail.
+            for (IgniteClientFuture<?> fut : futs2)
+                assertThrowsWithCause(() -> fut.get(getTestTimeout(), TimeUnit.MILLISECONDS), ClientException.class);
+
+            // Finish task of alive client.
+            finishTasks(0);
 
             // The metric keeps the maximum during the time interval.
             checkMaxComputeTasks(2);
 
-            // Unfinished tasks fail on the client side. The error depends on whether the client received the execute
-            // response before the close.
-            for (IgniteInternalFuture<Object> fut : futs2)
-                assertThrowsWithCause(() -> fut.get(getTestTimeout(), TimeUnit.MILLISECONDS), ClientException.class);
-
-            // Last task of 'client1'.
-            finishTasks(0);
-            checkMaxComputeTasks(2);
-
-            // Wait for the result before the client is closed.
-            for (IgniteInternalFuture<Object> fut : futs1)
+            for (IgniteClientFuture<?> fut : futs1)
                 fut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
         }
     }
@@ -412,15 +406,16 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         );
     }
 
-    /** Starts tasks and waits for them to be started on the node. */
-    private List<IgniteInternalFuture<Object>> startTasks(IgniteClient client, int cnt) throws Exception {
+    /** */
+    private List<IgniteClientFuture<?>> startTasks(IgniteClient client, int cnt) throws Exception {
         int expTasks = TestComputeTask.TASKS.size() + cnt;
 
-        List<IgniteInternalFuture<Object>> futs = IntStream.range(0, cnt)
-            .mapToObj(i -> runAsync(() -> client.compute().execute(TestComputeTask.class.getName(), null)))
-            .toList();
+        List<IgniteClientFuture<?>> futs = new ArrayList<>();
 
-        // A task is registered in 'map()' after the counter is incremented. Wait for the tasks to keep their order.
+        for (int i = 0; i < cnt; i++)
+            futs.add(client.compute().executeAsync2(TestComputeTask.class.getName(), null));
+
+        // Waits for tasks to be started on the nodes.
         assertTrue(waitForCondition(() -> TestComputeTask.TASKS.size() == expTasks, getTestTimeout()));
 
         return futs;
