@@ -37,11 +37,13 @@ public class SSLContextWrapperTest {
 
         String[] protocols = {"TLSv1.2"};
         String[] ciphers = {"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"};
+        String host = "peer.example";
+        int port = 10800;
         SSLContext wrapper = new SSLContextWrapper(delegate, new SSLParameters(ciphers, protocols));
-        SSLEngine addressed = wrapper.createSSLEngine("peer.example", 10800);
+        SSLEngine addressed = wrapper.createSSLEngine(host, port);
 
-        assertEquals("peer.example", addressed.getPeerHost());
-        assertEquals(10800, addressed.getPeerPort());
+        assertEquals(host, addressed.getPeerHost());
+        assertEquals(port, addressed.getPeerPort());
         assertArrayEquals(protocols, addressed.getEnabledProtocols());
         assertArrayEquals(ciphers, addressed.getEnabledCipherSuites());
 
