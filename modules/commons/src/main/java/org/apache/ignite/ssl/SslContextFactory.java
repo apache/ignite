@@ -258,7 +258,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
         return new DisabledX509TrustManager();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * @deprecated Use {@link #createKeyMaterial()} to retain certificate metadata.
+     */
+    @Deprecated
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
         return createKeyMaterial().keyManagers();
     }

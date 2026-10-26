@@ -29,8 +29,10 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -146,7 +148,44 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(2, factory.trust);
     }
 
-    /** Neither the source arrays nor arrays returned to callers can replace the recorded key managers and chain. */
+    /** A subclass can still obtain key managers from the file factory's legacy hook. */
+    @Test
+    public void testLegacyKeyManagerAdapter() throws Exception {
+        StoreFactory factory = new StoreFactory(loadStore("node01"));
+        KeyManager[] mgrs = factory.legacyKeyManagers();
+
+        assertNotNull(mgrs);
+        assertTrue(mgrs.length > 0);
+        assertEquals(1, factory.loads);
+    }
+
+    /** A factory that implements neither key-material hook reports the missing implementation. */
+    @Test
+    public void testMissingKeyMaterialImplementation() {
+        AbstractSslContextFactory factory = new AbstractSslContextFactory() {
+            /** {@inheritDoc} */
+            @Override protected void checkParameters() {
+                // No parameters are required by this factory.
+            }
+
+            /** {@inheritDoc} */
+            @Override protected TrustManager[] createTrustManagers() {
+                return null;
+            }
+        };
+
+        String msg = "Subclass must override createKeyMaterial() or createKeyManagers()";
+
+        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, msg);
+
+        assertTrue(err.getCause() instanceof SSLException);
+
+        err = GridTestUtils.assertThrows(log, factory::createNew, IgniteException.class, msg);
+
+        assertTrue(err.getCause() instanceof SSLException);
+    }
+
+    /** A subclass can supply material directly, and callers cannot replace its recorded managers or chain through arrays. */
     @Test
     public void testKeyMaterialDefensiveCopies() throws Exception {
         KeyManager mgr = new KeyManager() { };
@@ -161,14 +200,25 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         assertSame(mgr, material.keyManagers()[0]);
 
-        LegacyFactory factory = new LegacyFactory() {
+        AbstractSslContextFactory factory = new AbstractSslContextFactory() {
+            /** {@inheritDoc} */
+            @Override protected void checkParameters() {
+                // No parameters are required by this factory.
+            }
+
             /** {@inheritDoc} */
             @Override protected KeyMaterial createKeyMaterial() {
                 return material;
             }
+
+            /** {@inheritDoc} */
+            @Override protected TrustManager[] createTrustManagers() {
+                return null;
+            }
         };
 
         assertArrayEquals(expected, chain(factory.create()));
+        assertArrayEquals(expected, chain(factory.createNew()));
     }
 
     /** Neither callers nor another parameters wrapper can replace a context's recorded chain. */
@@ -265,6 +315,12 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             loads++;
 
             return store;
+        }
+
+        /** @return Key managers supplied by the inherited legacy hook. */
+        @SuppressWarnings("deprecation")
+        private KeyManager[] legacyKeyManagers() throws SSLException {
+            return super.createKeyManagers();
         }
     }
 

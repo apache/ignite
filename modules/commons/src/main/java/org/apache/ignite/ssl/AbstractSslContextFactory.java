@@ -175,15 +175,20 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract void checkParameters() throws SSLException;
 
     /**
-     * @return Created Key Managers.
-     * @throws SSLException If Key Managers could not be created.
+     * Creates key managers without certificate metadata.
+     *
+     * @return Created key managers.
+     * @throws SSLException If this method is not overridden or key managers cannot be created.
+     * @deprecated Override {@link #createKeyMaterial()} to return key managers with their certificate chain.
      */
-    protected abstract KeyManager[] createKeyManagers() throws SSLException;
+    @Deprecated
+    protected KeyManager[] createKeyManagers() throws SSLException {
+        throw new SSLException("Subclass must override createKeyMaterial() or createKeyManagers()");
+    }
 
     /**
-     * Creates key managers and their certificate chain from the same load of the key material. The default calls
-     * {@link #createKeyManagers()} and leaves the chain unknown. Subclasses that can provide certificate metadata should
-     * override this method and supply the chain without loading the material again.
+     * Creates key managers and their certificate chain from the same load of the key material. New subclasses should
+     * override this method. The default calls the legacy {@link #createKeyManagers()} hook and leaves the chain unknown.
      *
      * @return Key managers and their chain, if known.
      * @throws SSLException If the key material could not be loaded.
