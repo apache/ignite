@@ -31,7 +31,6 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
-import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestCertificateAuthority;
@@ -53,36 +52,38 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         ca = new TestCertificateAuthority("metadata-ca");
     }
 
-    /** {@code createNew()} loads the store once, preserves the cached context and attaches the new chain to the new context. */
+    /** A fresh context loads the replacement store once and leaves the cached context's certificate metadata unchanged. */
     @Test
-    public void testMetadataUsesOneLoadAndStaysWithContext() throws Exception {
-        KeyStore firstStore = issueStore("first");
-        StoreFactory factory = new StoreFactory(firstStore);
+    public void testFreshContextUsesReplacementStoreAndPreservesCachedContext() throws Exception {
+        KeyStore originalKeys = keyStoreWithPrivateKey("original");
+        X509Certificate[] originalChain = storedChain(originalKeys, "original");
+        StoreFactory factory = new StoreFactory(originalKeys);
 
-        SSLContext first = factory.create();
+        SSLContext cached = factory.create();
 
-        assertArrayEquals(chain(firstStore, "first"), chain(first));
-        assertEquals(new X500Principal("CN=first"), chain(first)[0].getSubjectX500Principal());
-        assertFalse(privateKeyMissing(first));
         assertEquals(1, factory.loads);
+        assertArrayEquals(originalChain, reportedChain(cached));
 
-        factory.store = issueStore("next");
+        KeyStore replacementKeys = keyStoreWithPrivateKey("replacement");
+        X509Certificate[] replacementChain = storedChain(replacementKeys, "replacement");
 
-        SSLContext next = factory.createNew();
+        factory.store = replacementKeys;
 
-        assertNotSame(first, next);
-        assertSame(first, factory.create());
+        SSLContext fresh = factory.createNew();
+
+        assertNotSame(cached, fresh);
         assertEquals(2, factory.loads);
-        assertArrayEquals(chain(firstStore, "first"), chain(first));
-        assertArrayEquals(chain(factory.store, "next"), chain(next));
-        assertEquals(new X500Principal("CN=next"), chain(next)[0].getSubjectX500Principal());
-        assertFalse(privateKeyMissing(next));
+        assertArrayEquals(replacementChain, reportedChain(fresh));
+
+        assertSame(cached, factory.create());
+        assertArrayEquals(originalChain, reportedChain(cached));
+        assertEquals("Returning the cached context must not load the store again", 2, factory.loads);
     }
 
     /** Both factory methods retain certificate metadata when they also apply TLS parameters. */
     @Test
     public void testMetadataWithTlsParameters() throws Exception {
-        KeyStore store = issueStore("node");
+        KeyStore store = keyStoreWithPrivateKey("node");
         StoreFactory factory = new StoreFactory(store);
         String[] protocols = {"TLSv1.2"};
         String[] ciphers = {"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"};
@@ -91,7 +92,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         factory.setCipherSuites(ciphers);
 
         for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
-            assertArrayEquals(chain(store, "node"), chain(ctx));
+            assertArrayEquals(storedChain(store, "node"), reportedChain(ctx));
+            assertFalse("The loaded store contains a private key", reportsMissingPrivateKey(ctx));
 
             SSLEngine engine = ctx.createSSLEngine();
 
@@ -103,23 +105,23 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Multiple private keys leave the chain unknown but are not reported as missing. */
     @Test
     public void testMultiplePrivateKeysHaveUnknownChain() throws Exception {
-        KeyStore store = issueStore("first");
-        KeyStore other = issueStore("second");
+        KeyStore store = keyStoreWithPrivateKey("first");
+        KeyStore other = keyStoreWithPrivateKey("second");
 
         store.setKeyEntry("second", other.getKey("second", PASSWORD), PASSWORD, other.getCertificateChain("second"));
 
         StoreFactory factory = new StoreFactory(store);
 
         for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
-            assertNull(chain(ctx));
-            assertFalse(privateKeyMissing(ctx));
+            assertNull(reportedChain(ctx));
+            assertFalse("Two private keys are present even though the served chain is unknown", reportsMissingPrivateKey(ctx));
         }
     }
 
     /** Trusted certificates and secret keys do not count as private keys. */
     @Test
     public void testOnlyPrivateKeyEntriesCount() throws Exception {
-        KeyStore keys = issueStore("node");
+        KeyStore keys = keyStoreWithPrivateKey("node");
         KeyStore store = KeyStore.getInstance("JCEKS");
 
         store.load(null, PASSWORD);
@@ -131,15 +133,15 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         SSLContext withoutKey = factory.create();
 
-        assertNull(chain(withoutKey));
-        assertTrue(privateKeyMissing(withoutKey));
+        assertNull(reportedChain(withoutKey));
+        assertTrue("Neither the trusted certificate nor the secret key is a private key", reportsMissingPrivateKey(withoutKey));
 
         store.setKeyEntry("key", keys.getKey("node", PASSWORD), PASSWORD, keys.getCertificateChain("node"));
 
         SSLContext withKey = factory.createNew();
 
-        assertArrayEquals(chain(keys, "node"), chain(withKey));
-        assertFalse(privateKeyMissing(withKey));
+        assertArrayEquals(storedChain(keys, "node"), reportedChain(withKey));
+        assertFalse("The store now contains a private-key entry", reportsMissingPrivateKey(withKey));
     }
 
     /** Trust-only contexts can still be built for clients, and another parameters wrapper preserves the missing-key marker. */
@@ -148,12 +150,12 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         KeyStore store = KeyStore.getInstance("PKCS12");
 
         store.load(null, PASSWORD);
-        store.setCertificateEntry("trusted", issueStore("trusted").getCertificate("trusted"));
+        store.setCertificateEntry("trusted", keyStoreWithPrivateKey("trusted").getCertificate("trusted"));
 
         StoreFactory factory = new StoreFactory(store);
 
         for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
-            assertNull(chain(ctx));
+            assertNull(reportedChain(ctx));
             assertTrue(((SSLContextWrapper)ctx).isPrivateKeyMissing());
 
             SSLParameters params = new SSLParameters();
@@ -174,8 +176,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         SSLContext first = factory.create();
 
-        assertNull(chain(first));
-        assertFalse(privateKeyMissing(first));
+        assertNull(reportedChain(first));
+        assertFalse("Legacy hooks do not report whether a private key is available", reportsMissingPrivateKey(first));
         assertEquals(1, factory.checks);
         assertEquals(1, factory.keys);
         assertEquals(1, factory.trust);
@@ -189,8 +191,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         SSLContext next = factory.createNew();
 
         assertNotSame(first, next);
-        assertNull(chain(next));
-        assertFalse(privateKeyMissing(next));
+        assertNull(reportedChain(next));
+        assertFalse("Legacy hooks do not report whether a private key is available", reportsMissingPrivateKey(next));
         assertEquals(2, factory.checks);
         assertEquals(2, factory.keys);
         assertEquals(2, factory.trust);
@@ -199,7 +201,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** A subclass can still obtain key managers from the file factory's legacy hook. */
     @Test
     public void testLegacyKeyManagerAdapter() throws Exception {
-        StoreFactory factory = new StoreFactory(issueStore("node"));
+        StoreFactory factory = new StoreFactory(keyStoreWithPrivateKey("node"));
         KeyManager[] mgrs = factory.legacyKeyManagers();
 
         assertNotNull(mgrs);
@@ -238,7 +240,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     public void testKeyMaterialDefensiveCopies() throws Exception {
         KeyManager mgr = new KeyManager() { };
         KeyManager[] mgrs = {mgr};
-        X509Certificate[] expected = chain(issueStore("node"), "node");
+        X509Certificate[] expected = storedChain(keyStoreWithPrivateKey("node"), "node");
         X509Certificate[] input = expected.clone();
         AbstractSslContextFactory.KeyMaterial material = new AbstractSslContextFactory.KeyMaterial(mgrs, input);
 
@@ -265,14 +267,14 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             }
         };
 
-        assertArrayEquals(expected, chain(factory.create()));
-        assertArrayEquals(expected, chain(factory.createNew()));
+        assertArrayEquals(expected, reportedChain(factory.create()));
+        assertArrayEquals(expected, reportedChain(factory.createNew()));
     }
 
     /** Neither callers nor another parameters wrapper can replace a context's recorded chain. */
     @Test
     public void testWrapperPreservesAndCopiesChain() throws Exception {
-        X509Certificate[] expected = chain(issueStore("node"), "node");
+        X509Certificate[] expected = storedChain(keyStoreWithPrivateKey("node"), "node");
         X509Certificate[] input = expected.clone();
         SSLContext delegate = SSLContext.getInstance("TLS");
 
@@ -298,7 +300,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Explicit metadata takes precedence over the wrapped context's metadata. */
     @Test
     public void testExplicitWrapperMetadataOverridesDelegateMetadata() throws Exception {
-        X509Certificate[] expectedChain = chain(issueStore("node"), "node");
+        X509Certificate[] expectedChain = storedChain(keyStoreWithPrivateKey("node"), "node");
         SSLContext delegate = SSLContext.getInstance("TLS");
 
         delegate.init(null, null, null);
@@ -327,7 +329,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         delegate.init(null, null, null);
 
-        SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, chain(issueStore("node"), "node"));
+        SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, storedChain(keyStoreWithPrivateKey("node"), "node"));
         SSLEngine engine = wrapper.createSSLEngine("peer.example", 10800);
         SSLEngine delegateEngine = delegate.createSSLEngine();
 
@@ -353,26 +355,26 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     }
 
     /** @return In-memory store with one private key and its certificate chain. */
-    private KeyStore issueStore(String name) throws Exception {
+    private KeyStore keyStoreWithPrivateKey(String name) throws Exception {
         long now = System.currentTimeMillis();
 
         return ca.issue(name, now - TimeUnit.HOURS.toMillis(1), now + TimeUnit.DAYS.toMillis(1));
     }
 
     /** @return Chain stored for the alias. */
-    private static X509Certificate[] chain(KeyStore store, String alias) throws Exception {
+    private static X509Certificate[] storedChain(KeyStore store, String alias) throws Exception {
         Certificate[] chain = store.getCertificateChain(alias);
 
         return Arrays.copyOf(chain, chain.length, X509Certificate[].class);
     }
 
     /** @return Chain attached to the context, if known. */
-    private static X509Certificate[] chain(SSLContext ctx) {
+    private static X509Certificate[] reportedChain(SSLContext ctx) {
         return ctx instanceof SSLContextWrapper ? ((SSLContextWrapper)ctx).getCertificateChain() : null;
     }
 
-    /** @return Whether the context reports that its key material has no private key. */
-    private static boolean privateKeyMissing(SSLContext ctx) {
+    /** @return Whether the context reports that no private key was loaded. Unknown metadata does not set this marker. */
+    private static boolean reportsMissingPrivateKey(SSLContext ctx) {
         return ctx instanceof SSLContextWrapper && ((SSLContextWrapper)ctx).isPrivateKeyMissing();
     }
 
