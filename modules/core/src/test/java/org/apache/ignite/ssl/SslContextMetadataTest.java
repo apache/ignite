@@ -53,6 +53,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         SSLContext first = factory.create();
 
         assertArrayEquals(chain(firstStore, "node01"), chain(first));
+        assertFalse(privateKeyMissing(first));
         assertEquals(1, factory.loads);
 
         factory.store = loadStore("node02");
@@ -64,6 +65,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(2, factory.loads);
         assertArrayEquals(chain(firstStore, "node01"), chain(first));
         assertArrayEquals(chain(factory.store, "node02"), chain(next));
+        assertFalse(privateKeyMissing(next));
     }
 
     /** Both factory methods retain certificate metadata when they also apply TLS parameters. */
@@ -87,10 +89,15 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         }
     }
 
-    /** More than one private key leaves the chain unknown without preventing context creation. */
+    /** Multiple private keys leave the chain unknown but are not reported as missing. */
     @Test
     public void testMultiplePrivateKeysHaveUnknownChain() throws Exception {
-        assertNull(chain(new StoreFactory(loadStore("node0102")).create()));
+        StoreFactory factory = new StoreFactory(loadStore("node0102"));
+
+        for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
+            assertNull(chain(ctx));
+            assertFalse(privateKeyMissing(ctx));
+        }
     }
 
     /** Trusted certificates and secret keys do not count as private keys. */
@@ -106,11 +113,17 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         StoreFactory factory = new StoreFactory(store);
 
-        assertNull(chain(factory.create()));
+        SSLContext withoutKey = factory.create();
+
+        assertNull(chain(withoutKey));
+        assertTrue(privateKeyMissing(withoutKey));
 
         store.setKeyEntry("key", keys.getKey("node01", PASSWORD), PASSWORD, keys.getCertificateChain("node01"));
 
-        assertArrayEquals(chain(keys, "node01"), chain(factory.createNew()));
+        SSLContext withKey = factory.createNew();
+
+        assertArrayEquals(chain(keys, "node01"), chain(withKey));
+        assertFalse(privateKeyMissing(withKey));
     }
 
     /** Trust-only contexts can still be built for clients, and another parameters wrapper preserves the missing-key marker. */
@@ -290,6 +303,11 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** @return Chain attached to the context, if known. */
     private static X509Certificate[] chain(SSLContext ctx) {
         return ctx instanceof SSLContextWrapper ? ((SSLContextWrapper)ctx).getCertificateChain() : null;
+    }
+
+    /** @return Whether the context reports that its key material has no private key. */
+    private static boolean privateKeyMissing(SSLContext ctx) {
+        return ctx instanceof SSLContextWrapper && ((SSLContextWrapper)ctx).isPrivateKeyMissing();
     }
 
     /** A file factory whose existing store-loading hook supplies the test material. */
