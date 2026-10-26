@@ -222,7 +222,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            // Overall job failure. If present, there is no need to process the remaining jobs.
+            // Overall job failure. If presents, there is no need to process the remaining subjobs.
             IgniteException jobFailure = null;
             // Acceptable partition subjob exceptions to collect.
             List<IgniteException> exceptions = null;
