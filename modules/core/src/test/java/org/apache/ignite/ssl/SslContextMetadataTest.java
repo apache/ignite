@@ -18,7 +18,6 @@
 package org.apache.ignite.ssl;
 
 import java.io.InputStream;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
@@ -31,6 +30,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -146,16 +147,28 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         }
     }
 
-    /** A subclass that does not override createKeyMaterial() still supplies validation and managers on every build. */
+    /** Legacy hooks run for each new context, but not when create() returns its cached context. */
     @Test
-    public void testLegacyOverridesAreUsedWithoutMetadata() {
+    public void testLegacyHooksRunOncePerBuiltContext() {
         LegacyFactory factory = new LegacyFactory();
 
         SSLContext first = factory.create();
 
-        assertSame(first, factory.create());
-        assertNotSame(first, factory.createNew());
         assertNull(chain(first));
+        assertEquals(1, factory.checks);
+        assertEquals(1, factory.keys);
+        assertEquals(1, factory.trust);
+
+        assertSame(first, factory.create());
+
+        assertEquals(1, factory.checks);
+        assertEquals(1, factory.keys);
+        assertEquals(1, factory.trust);
+
+        SSLContext next = factory.createNew();
+
+        assertNotSame(first, next);
+        assertNull(chain(next));
         assertEquals(2, factory.checks);
         assertEquals(2, factory.keys);
         assertEquals(2, factory.trust);
@@ -260,7 +273,32 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertArrayEquals(new String[] {"TLSv1.2"}, outer.createSSLEngine().getEnabledProtocols());
     }
 
-    /** Adding metadata without TLS parameters preserves the peer address, default settings and socket factory classes. */
+    /** Explicit metadata takes precedence over the wrapped context's metadata. */
+    @Test
+    public void testExplicitWrapperMetadataOverridesDelegateMetadata() throws Exception {
+        X509Certificate[] expectedChain = chain(loadStore("node01"), "node01");
+        SSLContext delegate = SSLContext.getInstance("TLS");
+
+        delegate.init(null, null, null);
+
+        SSLContextWrapper keyless = new SSLContextWrapper(delegate, null, null, true);
+        SSLContextWrapper withChain = new SSLContextWrapper(keyless, null, expectedChain);
+
+        assertArrayEquals(expectedChain, withChain.getCertificateChain());
+        assertFalse(withChain.isPrivateKeyMissing());
+
+        SSLContextWrapper unknownChain = new SSLContextWrapper(withChain, null, null);
+
+        assertNull(unknownChain.getCertificateChain());
+        assertFalse(unknownChain.isPrivateKeyMissing());
+
+        SSLContextWrapper explicitlyKeyless = new SSLContextWrapper(withChain, null, null, true);
+
+        assertNull(explicitlyKeyless.getCertificateChain());
+        assertTrue(explicitlyKeyless.isPrivateKeyMissing());
+    }
+
+    /** Adding metadata without TLS parameters preserves peer addresses, TLS defaults and unconnected socket creation. */
     @Test
     public void testMetadataWrapperPreservesContextBehavior() throws Exception {
         SSLContext delegate = SSLContext.getInstance("TLS");
@@ -269,16 +307,26 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, chain(loadStore("node01"), "node01"));
         SSLEngine engine = wrapper.createSSLEngine("peer.example", 10800);
+        SSLEngine delegateEngine = delegate.createSSLEngine();
 
         assertEquals("peer.example", engine.getPeerHost());
         assertEquals(10800, engine.getPeerPort());
-        assertArrayEquals(delegate.createSSLEngine().getEnabledProtocols(), engine.getEnabledProtocols());
-        assertArrayEquals(delegate.createSSLEngine().getEnabledCipherSuites(), engine.getEnabledCipherSuites());
-        assertEquals(delegate.getSocketFactory().getClass(), wrapper.getSocketFactory().getClass());
-        assertEquals(delegate.getServerSocketFactory().getClass(), wrapper.getServerSocketFactory().getClass());
+        assertArrayEquals(delegateEngine.getEnabledProtocols(), engine.getEnabledProtocols());
+        assertArrayEquals(delegateEngine.getEnabledCipherSuites(), engine.getEnabledCipherSuites());
 
-        try (ServerSocket sock = wrapper.getServerSocketFactory().createServerSocket()) {
-            assertFalse(sock.isBound());
+        try (SSLSocket expected = (SSLSocket)delegate.getSocketFactory().createSocket();
+            SSLSocket actual = (SSLSocket)wrapper.getSocketFactory().createSocket()) {
+            assertFalse(actual.isConnected());
+            assertFalse(actual.isBound());
+            assertArrayEquals(expected.getEnabledProtocols(), actual.getEnabledProtocols());
+            assertArrayEquals(expected.getEnabledCipherSuites(), actual.getEnabledCipherSuites());
+        }
+
+        try (SSLServerSocket expected = (SSLServerSocket)delegate.getServerSocketFactory().createServerSocket();
+            SSLServerSocket actual = (SSLServerSocket)wrapper.getServerSocketFactory().createServerSocket()) {
+            assertFalse(actual.isBound());
+            assertArrayEquals(expected.getEnabledProtocols(), actual.getEnabledProtocols());
+            assertArrayEquals(expected.getEnabledCipherSuites(), actual.getEnabledCipherSuites());
         }
     }
 
