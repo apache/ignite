@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -201,9 +200,8 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      *
      * <p>Scenario: 3 nodes — node0 (DC1), node1 (DC2), node2 (DC1). All in baseline,
      * 10000 entries written. node1 (DC2) is stopped and writes nothing while down.
-     * The two DC1 nodes write 10000 more entries each. Then node1 restarts and
-     * {@code resetBaselineTopology()} is called as the recovery trigger. Node1 must
-     * get cross-DC historical rebalance with the delta from both DC1 nodes.
+     * The two DC1 nodes write 10000 more entries each. Then node1 restarts.
+     * Node1 must get cross-DC historical rebalance with the delta from both DC1 nodes.
      */
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
@@ -226,7 +224,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
         RebalanceAwareCommSPI spi = commSPI(ignite1);
         assertTrue(spi.rebalanceMsgCnt > 0);
@@ -263,7 +260,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
         IgniteCache<Object, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
@@ -301,7 +297,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
         RebalanceAwareCommSPI spi = commSPI(ignite1);
         assertTrue(spi.rebalanceMsgCnt > 0);
@@ -339,7 +334,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
         RebalanceAwareCommSPI spi = commSPI(ignite1);
         assertTrue(spi.rebalanceMsgCnt > 0);
@@ -374,7 +368,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
         RebalanceAwareCommSPI spi = commSPI(ignite1);
         assertTrue(spi.rebalanceMsgCnt > 0);
@@ -414,7 +407,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         IgniteCache<Object, Object> cache2 = grid(2).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 20_000; i < 25_000; i++)
@@ -436,14 +428,13 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
      *
      * <p>Scenario: 2 nodes initially. node1 (DC2) is stopped, DC1 writes delta.
      * Recovery: node1 restarts AND a new node (node2, DC1) joins simultaneously.
-     * The baseline reset triggers both historical rebalance (for DC2's old
+     * The topology change triggers both historical rebalance (for DC2's old
      * partitions) and full rebalance (for partitions reassigned to node2).
      */
     @Test
     @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
     public void testAffinityReassignmentMixedRebalance() throws Exception {
         IgniteCache<Object, Object> cache = startTwoNodeCluster(1);
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         for (int i = 0; i < 10_000; i++)
             cache.put(i, i);
@@ -456,12 +447,18 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        startGrid(2, DC1);
+        IgniteEx ignite2 = startGrid(2, DC1);
         resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
-        RebalanceAwareCommSPI spi = commSPI(ignite1);
-        assertTrue(spi.rebalanceMsgCnt > 0);
-        assertTrue(spi.historical);
+        waitRebalanceFinished(ignite2, DEFAULT_CACHE_NAME);
+
+        RebalanceAwareCommSPI spi1 = commSPI(ignite1);
+        assertTrue(spi1.rebalanceMsgCnt > 0);
+        assertTrue(spi1.historical);
+
+        RebalanceAwareCommSPI spi2 = commSPI(ignite2);
+        assertTrue("New node should receive full rebalance", spi2.full);
+
         IgniteCache<Object, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 20_000; i += 5000) {
@@ -488,10 +485,8 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         pds = true;
         IgniteEx ignite0 = startGrid(0, DC1);
         startGrid(1, DC2);
-        IgniteEx ignite2 = startGrid(2, DC1);
-        IgniteCluster cluster = ignite0.cluster();
-        cluster.state(ClusterState.ACTIVE);
-        cluster.baselineAutoAdjustEnabled(false);
+        startGrid(2, DC1);
+        ignite0.cluster().state(ClusterState.ACTIVE);
         CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setBackups(2);
         cacheCfg.setRebalanceDelay(3000);
@@ -511,8 +506,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         RebalanceAwareCommSPI spi = commSPI(ignite1);
 
         boolean demandSent = GridTestUtils.waitForCondition(() -> spi.rebalanceMsgCnt > 0, 30_000);
-        log.info(">>> IGNITE-14524: demandSent=" + demandSent
-            + ", historical=" + spi.historical + ", full=" + spi.full);
 
         assertTrue("No rebalance demand received within 30s", demandSent);
 
@@ -549,7 +542,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
 
         IgniteCache<Object, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
@@ -567,7 +559,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
         IgniteEx ignite1Restarted = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1Restarted, DEFAULT_CACHE_NAME);
 
         IgniteCache<Object, Object> cache1After = ignite1Restarted.cache(DEFAULT_CACHE_NAME);
@@ -615,10 +606,8 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         markWalRebalanceInapplicable(grid(2), grpId);
 
         IgniteEx ignite1 = startGrid(1, DC2);
-        resetBaselineTopology();
         waitRebalanceFinished(ignite1, DEFAULT_CACHE_NAME);
         RebalanceAwareCommSPI spi = commSPI(ignite1);
-        log.info(">>> WAL_TRUNCATED(simulated): historical=" + spi.historical + ", full=" + spi.full);
 
         assertTrue(spi.full);
         assertFalse(spi.historical);
@@ -651,8 +640,7 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
     /**
      * Starts a 3-node MDC cluster (node0 in DC1, node1 in DC2, node2 in DC1) in
-     * ACTIVE state with baseline auto-adjustment disabled, and creates a cache
-     * with the given number of backups.
+     * ACTIVE state and creates a cache with the given number of backups.
      *
      * @param backups Number of backups for the cache.
      * @return The created cache.
@@ -663,7 +651,6 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
         startGrid(1, DC2);
         startGrid(2, DC1);
         grid(0).cluster().state(ClusterState.ACTIVE);
-        grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         cacheCfg.setBackups(backups);
