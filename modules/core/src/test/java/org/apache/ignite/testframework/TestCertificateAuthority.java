@@ -238,7 +238,7 @@ public class TestCertificateAuthority {
 
     /** */
     private static KeyStore emptyStore() throws Exception {
-        KeyStore store = KeyStore.getInstance("PKCS12");
+        KeyStore store = KeyStore.getInstance("JKS");
 
         store.load(null, PWD);
 
