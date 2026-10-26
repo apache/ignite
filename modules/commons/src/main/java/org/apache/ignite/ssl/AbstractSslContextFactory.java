@@ -124,9 +124,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         checkParameters();
 
         KeyMaterial material = createKeyMaterial();
-        KeyManager[] keyMgrs = material == null ? createKeyManagers() : material.keyMgrs;
-        X509Certificate[] chain = material == null ? null : material.chain;
-        boolean privateKeyMissing = material != null && material.privateKeyMissing;
 
         TrustManager[] trustMgrs = createTrustManagers();
 
@@ -145,10 +142,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
                     sslParameters.setProtocols(protocols);
             }
 
-            if (sslParameters != null || chain != null || privateKeyMissing)
-                ctx = new SSLContextWrapper(ctx, sslParameters, chain, privateKeyMissing);
+            if (sslParameters != null || material.chain != null || material.privateKeyMissing)
+                ctx = new SSLContextWrapper(ctx, sslParameters, material.chain, material.privateKeyMissing);
 
-            ctx.init(keyMgrs, trustMgrs, null);
+            ctx.init(material.keyMgrs, trustMgrs, null);
 
             return ctx;
         }
@@ -190,14 +187,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Creates key managers and their certificate metadata from the same load. New subclasses must return the loaded material.
-     * The default returns {@code null} so existing subclasses can still supply keys through {@link #createKeyManagers()}.
+     * Creates key managers and their certificate metadata from the same load. New subclasses should override this method.
+     * The default adapts {@link #createKeyManagers()} for existing subclasses and leaves the certificate chain unknown.
      *
-     * @return Loaded key material, or {@code null} to use the legacy key-manager hook.
+     * @return Loaded key material.
      * @throws SSLException If the key material could not be loaded.
      */
-    protected @Nullable KeyMaterial createKeyMaterial() throws SSLException {
-        return null;
+    protected KeyMaterial createKeyMaterial() throws SSLException {
+        return new KeyMaterial(createKeyManagers(), null);
     }
 
     /**
