@@ -79,7 +79,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     /** */
-    private static final int MAX_TASKS = 3;
+    private static final int MAX_TASKS = 5;
 
     /** Metric time interval. Expiration is emulated by a time shift. */
     private static final long LONG_INTERVAL = 10 * 60_000L;
@@ -219,39 +219,43 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
             checkMaxComputeTasks(0);
             assertEquals(0, activeComputeTasksCount());
 
-            // Tasks 0, 1.
-            futs.addAll(startTasks(client1, 2));
-            checkMaxComputeTasks(2);
-            assertEquals(2, activeComputeTasksCount());
+            int startCnt = 2;
 
-            // Run tasks 2, 3. Metric should not change.
-            futs.addAll(startTasks(client2, 2));
-            checkMaxComputeTasks(2);
-            assertEquals(4, activeComputeTasksCount());
+            // Run tasks on the first connection.
+            futs.addAll(startTasks(client1, startCnt));
+            checkMaxComputeTasks(startCnt);
+            assertEquals(startCnt, activeComputeTasksCount());
 
-            // Task 4. Metric should increase.
-            futs.addAll(startTasks(client2, 1));
+            // The same number of tasks on the second one. Max metric should not change.
+            futs.addAll(startTasks(client2, startCnt));
+            checkMaxComputeTasks(startCnt);
+            assertEquals(startCnt * 2, activeComputeTasksCount());
+
+            // Run tasks on the second connection up to the limit.
+            futs.addAll(startTasks(client2, MAX_TASKS - startCnt));
             checkMaxComputeTasks(MAX_TASKS);
-            assertEquals(5, activeComputeTasksCount());
 
-            // Metric should not exceed limit after a rejected task.
+            int allTasksCnt = MAX_TASKS + startCnt;
+            assertEquals(allTasksCnt, activeComputeTasksCount());
+
+            // Max metric should not exceed limit after a rejected task.
             assertComputeTaskRejected(client2);
             checkMaxComputeTasks(MAX_TASKS);
-            assertEquals(5, activeComputeTasksCount());
+            assertEquals(allTasksCnt, activeComputeTasksCount());
 
             // Finished tasks should not reset the maximum.
-            finishTasks(0, 1, 2, 3, 4);
+            finishTasks(IntStream.range(0, allTasksCnt).toArray());
             checkMaxComputeTasks(MAX_TASKS);
 
             // "Wait" for expiration.
             shiftTime(LONG_INTERVAL);
             assertEquals(0, computeTasksMetric().value());
 
-            // Task 5.
+            // Run one more task.
             futs.addAll(startTasks(client1, 1));
             checkMaxComputeTasks(1);
 
-            finishTasks(5);
+            finishTasks(allTasksCnt);
 
             shiftTime(2 * LONG_INTERVAL);
             checkMaxComputeTasks(0);
