@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
@@ -86,7 +85,7 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
         UUID[] nodesIds = new UUID[nodesJobsResults.size()];
         SnapshotListJobResult[] nodesResults = new SnapshotListJobResult[nodesJobsResults.size()];
         // Errors aren't expected by default.
-        Throwable[] errors = null;
+        IgniteException[] errors = null;
 
         for (int i = 0; i < nodesJobsResults.size(); i++) {
             ComputeJobResult nodeJobRes = nodesJobsResults.get(i);
@@ -96,22 +95,9 @@ public class SnapshotListTask extends VisorMultiNodeTask<SnapshotListCommandArg,
 
             if (nodeJobRes.getException() != null) {
                 if (errors == null)
-                    errors = new Exception[nodesJobsResults.size()];
+                    errors = new IgniteException[nodesJobsResults.size()];
 
-                Throwable cause = null;
-
-                // Extract the cause respecting the most important exception types order. Raised by Ignite go first.
-                for (Class<? extends Throwable> errType : F.asList(IgniteCheckedException.class, IgniteException.class,
-                    Exception.class, Throwable.class)) {
-                    cause = X.cause(nodeJobRes.getException(), errType);
-
-                    if (cause != null)
-                        break;
-                }
-
-                assert cause != null;
-
-                errors[i] = cause;
+                errors[i] = nodeJobRes.getException();
 
                 continue;
             }

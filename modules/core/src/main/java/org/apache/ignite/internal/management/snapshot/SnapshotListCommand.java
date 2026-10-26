@@ -27,12 +27,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.DATE;
@@ -85,11 +88,16 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
             printer.accept("Node '%s' [uuid=%s]:".formatted(res.consistentIds()[nodeIdx], res.nodesIds()[nodeIdx]));
 
-            Throwable nodeErr = res.errors() == null || res.errors()[nodeIdx] == null ? null : res.errors()[nodeIdx];
+            IgniteException nodeErr = res.errors() == null || res.errors()[nodeIdx] == null ? null : res.errors()[nodeIdx];
 
             if (nodeErr != null) {
+                Throwable cause = X.cause(nodeErr, IgniteCheckedException.class);
+
+                if (cause == null)
+                    cause = nodeErr;
+
                 printer.accept(EXCEPTION_PREF + "%s [errorType=%s.class]"
-                    .formatted(nodeErr.getMessage(), nodeErr.getClass().getSimpleName()));
+                    .formatted(cause.getMessage(), cause.getClass().getSimpleName()));
 
                 continue;
             }
