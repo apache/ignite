@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ValidateIndexesJobResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.management.cache.ValidateIndexesPartitionResult>", "name": "partRes"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.management.cache.ValidateIndexesPartitionResult>", "name": "idxRes"},
+    {"order": 2, "type": "java.util.Collection<org.apache.ignite.internal.management.cache.IndexIntegrityCheckIssue>", "name": "integrityCheckFailures"},
+    {"order": 3, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeResult>", "name": "checkSizeRes"}
+  ]
+}

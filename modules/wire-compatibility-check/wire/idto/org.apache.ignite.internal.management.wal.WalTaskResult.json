@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.wal.WalTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,java.lang.Exception>", "name": "exceptions"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.util.Collection<java.lang.String>>", "name": "results"},
+    {"order": 2, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.management.wal.ClusterNode>", "name": "nodesInfo"}
+  ]
+}

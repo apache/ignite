@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.DeactivateCommandArg",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "force"},
+    {"order": 1, "type": "java.lang.String", "name": "clusterName"}
+  ]
+}
