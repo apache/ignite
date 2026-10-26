@@ -624,7 +624,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Removes all memory page metrics associated with the given cache group.
      */
-    public void removeCacheGrpPageMetrics(Integer grpId) {
+    public void removeCacheGrpPageMetrics(int grpId) {
         PageMetrics rmvMetrics = cacheGrpMetrics.remove(grpId);
 
         // we don't decrease the total pages counter for historical reasons
