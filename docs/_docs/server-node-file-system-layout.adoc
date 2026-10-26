@@ -115,7 +115,7 @@ Do not disable the WAL to stop unexpected volume growth: disabling or enabling i
 See link:persistence/native-persistence#disabling-wal[Disabling WAL].
 
 Archiving can be disabled by setting `walPath` to the same value as `walArchivePath`.
-In that mode segments are written to the WAL directory under their absolute indexes instead of being copied into a separate directory, and the retained segments are still removed according to `maxWalArchiveSize`.
+In that mode segments are written to the WAL directory under their absolute indexes instead of being copied into a separate directory, and the retained segments are still removed according to `minWalArchiveSize` and `maxWalArchiveSize`.
 The removal runs asynchronously, stops at the last completed checkpoint and at the segments reserved by a running checkpoint or by a reader, and can be forced past the reservations when the archive exceeds the limit, so the directory can temporarily occupy more or, after a forced release, less than the configured value.
 Plan the capacity of that file system like the capacity of a data volume, because it holds both the active and the retained segments.
 Consumers do not behave the same way in this mode: incremental snapshots require the WAL archive to be enabled, and CDC receives its links from the archiver, so standalone CDC does not capture new changes without an archive.
@@ -124,10 +124,11 @@ See link:persistence/native-persistence#disabling-wal-archive[Disabling WAL Arch
 
 == Sizing the WAL Archive
 
-By default, the size of the archive is limited by `maxWalArchiveSize`, whose default value is 1 GiB.
-Cleanup starts when the archive exceeds this limit and removes the oldest segments, stopping at the last completed checkpoint and at the segments reserved by a running checkpoint or by a reader, and it removes whole segments until the archive reaches `minWalArchiveSize`, which is a target rather than a guaranteed remaining size.
+The archive is controlled by two thresholds. `minWalArchiveSize` starts the cleanup and is half of `maxWalArchiveSize` by default, that is 512 MiB. `maxWalArchiveSize` is the upper threshold, 1 GiB by default, at which the reservations are forcibly released.
+Cleanup starts as soon as the archive reaches `minWalArchiveSize`, not `maxWalArchiveSize`. The cleaner waits for the lower threshold, then removes the oldest segments, stopping at the last completed checkpoint and at the segments reserved by a running checkpoint or by a reader, and removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
+The archive reaches `maxWalArchiveSize` only when segments cannot be removed, for example because a checkpoint or a reader still holds them. At this upper threshold Ignite forcibly releases those reservations, so that the cleanup can delete the segments despite them.
 Removing an archived segment also does not release its disk blocks while a CDC or snapshot hard link still points to it, so the footprint of the file system is larger than the archive bookkeeping suggests.
-Reducing the limit below the default is allowed but should be tested, because it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
+Reducing the thresholds below their defaults is allowed but should be tested: the typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
 CDC is not affected: it keeps its own hard link to each captured segment, so its history is retained independently of the archive cleanup and is bounded by `cdcWalDirectoryMaxSize` instead.
 See link:persistence/native-persistence#wal-archive[WAL Archive].
 

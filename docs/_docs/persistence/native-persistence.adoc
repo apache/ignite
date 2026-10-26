@@ -216,9 +216,11 @@ The WAL archive is used to store WAL segments that may be needed to recover the 
 
 By default, the maximum size of the WAL archive is `maxWalArchiveSize`, whose default value is 1 GiB. You can change that value in the <<Configuration Properties,configuration>>.
 
-The limit triggers the removal of the oldest segments; it is not a hard bound on the directory size. Removal runs asynchronously, stops at the last completed checkpoint and at the segments that are reserved by a running checkpoint or by a reader, and can be forced past the reservations when the archive exceeds the limit. `minWalArchiveSize` defines the target amount of history left after cleanup, by default half of `maxWalArchiveSize`; because segments are removed as whole files, the remaining size can end up below this target.
+Cleanup is triggered by `minWalArchiveSize`, not by `maxWalArchiveSize`. By default, it is half of `maxWalArchiveSize`, that is 512 MiB. The cleaner waits for the archive to reach this lower threshold, then removes the oldest segments, stopping at the last completed checkpoint and at the segments that are reserved by a running checkpoint or by a reader. It removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
 
-CAUTION: Setting the WAL archive size to a value lower than the default shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing, and should be tested before being used in production.
+`maxWalArchiveSize` is the upper threshold, and it is not a hard bound on the directory size. The archive reaches it only when segments cannot be removed, for example because a checkpoint or a reader still holds them. At this upper threshold Ignite forcibly releases those reservations, so that the cleanup can delete the segments despite them.
+
+CAUTION: Setting these thresholds to values lower than the defaults should be tested before being used in production. The typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
 CDC is not affected: it keeps its own hard link to each captured segment, so its history is retained independently of the archive cleanup and is bounded by `cdcWalDirectoryMaxSize` instead.
 
 NOTE: `walHistorySize` is deprecated and ignored. The archive is controlled by `maxWalArchiveSize` and `minWalArchiveSize` only.
@@ -289,7 +291,7 @@ WARNING: If WAL is disabled and you restart a node, all data is removed from the
 
 === WAL Archive Compaction
 You can enable WAL Archive compaction to reduce the space occupied by the WAL Archive.
-Compaction applies to the segments that are already archived; how much history is kept is defined by `maxWalArchiveSize`, not by a checkpoint count.
+Compaction applies to the segments that are already archived; how much history is kept is defined by `minWalArchiveSize` and `maxWalArchiveSize`, not by a checkpoint count.
 If compaction is enabled, all archived segments that are 1 checkpoint old are compressed in ZIP format.
 If the segments are needed (for example, to re-balance data between nodes), they are uncompressed to RAW format.
 
@@ -378,8 +380,8 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 |`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
 
 | `walCompactionLevel` | WAL archive compression level. `1` indicates the fastest speed, and `9` indicates the best compression. | `1`
-|`maxWalArchiveSize`  | The maximum size (in bytes) of the WAL archive. Cleanup starts when the archive exceeds this value, stops at the last completed checkpoint and at the reserved segments, and can be forced past the reservations when the limit is exceeded. | 1 GiB
-|`minWalArchiveSize` | The target size (in bytes) of the WAL archive after cleanup. Segments are removed as whole files, so the remaining size can be below this value. | Half of `maxWalArchiveSize`
+|`maxWalArchiveSize`  | The upper threshold (in bytes) of the WAL archive. When the archive reaches it, Ignite forcibly releases the segments reserved by a running checkpoint or by a reader, so that the cleanup can delete them. It is not a hard bound on the directory size. | 1 GiB
+|`minWalArchiveSize` | The threshold (in bytes) that starts the cleanup of the WAL archive. The cleanup removes the oldest segments while the archive stays above this value. Segments are removed as whole files, so the remaining size can be below it. | Half of `maxWalArchiveSize`
 |`walSegments` | The number of active WAL segments. The volume that holds the active WAL has to fit that many segments of `walSegmentSize` plus a rotation reserve. | `10`
 |`checkpointFrequency` | The interval between checkpoints, in milliseconds. A value that is too small produces frequent checkpoints and a large number of checkpoint markers. | `180000` (3 minutes)
 |=======================================================================
