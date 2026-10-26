@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +32,8 @@ public final class SqlValueUtils {
     }
 
     /** Compares ROWs, ARRAYs and MAPs recursively, using scalar equality at the leaves. */
-    // TODO: Replace calls to this method with Functions.deepEquals when upgrading to Calcite 1.43.0.
+    // TODO https://issues.apache.org/jira/browse/IGNITE-29207
+    // Replace calls to this method with Functions.deepEquals when upgrading to Calcite 1.43.0.
     public static boolean deepEquals(@Nullable Object left, @Nullable Object right) {
         if (left == right)
             return true;
@@ -95,7 +97,8 @@ public final class SqlValueUtils {
     }
 
     /** Hash consistent with {@link #deepEquals}. */
-    // TODO: Replace calls with Functions.deepHashCode when upgrading to Calcite 1.43.0.
+    // TODO https://issues.apache.org/jira/browse/IGNITE-29207
+    // Replace calls with Functions.deepHashCode when upgrading to Calcite 1.43.0.
     public static int deepHashCode(@Nullable Object val) {
         if (val == null)
             return 0x789d;
@@ -126,10 +129,20 @@ public final class SqlValueUtils {
         return val.hashCode();
     }
 
-    /** Views the internal ROW or ARRAY representation as a sequence. */
+    /**
+     * Views the internal ROW ({@code Object[]}) or ARRAY ({@link List}) representation as a sequence.
+     * Other {@link Iterable} implementations and {@link Iterator} are not supported.
+     *
+     * @param val SQL value to inspect.
+     * @return List view for ROW or ARRAY values, or {@code null} for other values, including scalars,
+     *     maps and primitive arrays.
+     */
     private static @Nullable List<?> asList(Object val) {
         if (val instanceof List)
             return (List<?>)val;
+
+        assert !(val instanceof Iterable) && !(val instanceof Iterator)
+            : "Unsupported SQL sequence representation: " + val.getClass().getName();
 
         return val instanceof Object[] ? Arrays.asList((Object[])val) : null;
     }
