@@ -105,10 +105,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     public static final String METRIC_ACTIVE = "ActiveSessions";
 
     /** */
-    public static final String METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS = "MaxCurrentActiveComputeTasksPerConnection";
+    public static final String METRIC_MAX_RUNNING_COMPUTE_TASKS = "MaxRunningComputeTasksPerConnection";
 
-    /** Default time interval of the {@link #METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS} metric in milliseconds. */
-    public static final long DFLT_MAX_CURRENT_ACTIVE_COMPUTE_TASKS_INTERVAL = 90_000L;
+    /** Default time interval of the {@link #METRIC_MAX_RUNNING_COMPUTE_TASKS} metric in milliseconds. */
+    public static final long DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL = 60_000L;
 
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
@@ -132,7 +132,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     private ClientListenerMetrics metrics;
 
     /** */
-    private MaxWithCurrentValueMetric maxCurActiveComputeTasks;
+    private MaxWithCurrentValueMetric maxRunningComputeTasksMetric;
 
     /** Executor service. */
     private ExecutorService execSvc;
@@ -370,23 +370,20 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             ? ThinClientConfiguration.DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION
             : thinCfg.getMaxActiveComputeTasksPerConnection();
 
-        // Registered before the server is started, since connections update it.
-        maxCurActiveComputeTasks = new MaxWithCurrentValueMetric(
-            metricName(mreg.name(), METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS),
-            "Maximum number of active user compute tasks per thin client connection over the configured time " +
-                "interval, but not less than the current value. The upper limit is the " +
-                "ThinClientConfiguration.maxActiveComputeTasksPerConnection configuration parameter.",
-            DFLT_MAX_CURRENT_ACTIVE_COMPUTE_TASKS_INTERVAL,
+        maxRunningComputeTasksMetric = new MaxWithCurrentValueMetric(
+            metricName(mreg.name(), METRIC_MAX_RUNNING_COMPUTE_TASKS),
+            "Maximum number of running user compute tasks per thin client connection over the configured " +
+                "time interval",
+            DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL,
             DFLT_SIZE,
-            maxActiveComputeTasks,
-            this::currentMaxActiveComputeTasks
+            maxActiveComputeTasks > 0 ? this::maxRunningComputeTasks : null
         );
 
-        mreg.register(maxCurActiveComputeTasks);
+        mreg.register(maxRunningComputeTasksMetric);
     }
 
-    /** @return Maximum of active user compute tasks across thin client connections. */
-    private long currentMaxActiveComputeTasks() {
+    /** @return Maximum of running user compute tasks across thin client connections. */
+    private long maxRunningComputeTasks() {
         long max = 0;
 
         for (GridNioSession ses : srv.sessions()) {
@@ -665,7 +662,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** @param activeTasksCnt Number of active user compute tasks of a connection. */
     public void updateMaxCurrentActiveComputeTasks(int activeTasksCnt) {
-        maxCurActiveComputeTasks.update(activeTasksCnt);
+        maxRunningComputeTasksMetric.update(activeTasksCnt);
     }
 
     /**
@@ -910,25 +907,20 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Maximum value over the time interval, but not less than the current value. */
     private static class MaxWithCurrentValueMetric extends MaxValueMetric {
         /** */
-        private final long limit;
-
-        /** */
         private final LongSupplier cur;
 
         /** */
-        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, long limit, LongSupplier cur) {
+        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, @Nullable LongSupplier cur) {
             super(name, desc, timeInterval, size);
 
-            this.limit = limit;
             this.cur = cur;
         }
 
         /** {@inheritDoc} */
         @Override public long value() {
-            long val = super.value();
-
-            // The current value can not exceed the limit, so there is no need to calculate it.
-            return val >= limit ? val : Math.max(val, cur.getAsLong());
+            return cur == null ?
+                0 :
+                Math.max(super.value(), cur.getAsLong());
         }
     }
 }

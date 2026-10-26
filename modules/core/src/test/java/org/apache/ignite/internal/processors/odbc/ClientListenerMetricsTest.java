@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.M
 import static org.apache.ignite.internal.processors.odbc.ClientListenerMetrics.METRIC_REJECTED_TOTAL;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.METRIC_ACTIVE;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.METRIC_MAX_RUNNING_COMPUTE_TASKS;
 import static org.apache.ignite.internal.util.GridTestClockTimer.DFLT_TIME_SUPPLIER;
 import static org.apache.ignite.internal.util.GridTestClockTimer.timeSupplier;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -203,7 +203,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check that the active compute tasks metric reports the maximum among all connections and keeps it
+     * Check that the running compute tasks metric reports the maximum among all connections and keeps it
      * during the time interval.
      */
     @Test
@@ -446,7 +446,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     /** */
     private MaxValueMetric computeTasksMetric() {
         return grid(0).context().metric().registry(CLIENT_CONNECTOR_METRICS)
-            .findMetric(METRIC_MAX_CURRENT_ACTIVE_COMPUTE_TASKS);
+            .findMetric(METRIC_MAX_RUNNING_COMPUTE_TASKS);
     }
 
     /** Shifts the time returned by {@link U#currentTimeMillis()} relative to the system time. */
