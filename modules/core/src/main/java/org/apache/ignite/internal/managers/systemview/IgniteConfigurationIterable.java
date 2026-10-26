@@ -205,7 +205,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
     /**
      * @param cls Class to find properties.
-     * @return Unmodifiable non-sensitive properties sorted by name: names and getters.
+     * @return Non-sensitive sorted properties.
      */
     private static Map<String, Method> props(Class<?> cls) {
         Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted.
@@ -228,7 +228,7 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
         props.values().removeIf(IgniteConfigurationIterable::isSensitive);
 
-        return Collections.unmodifiableMap(props);
+        return props;
     }
 
     /**
