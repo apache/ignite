@@ -260,8 +260,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         }
                     }
                     else if (jobFailure == null) {
-                        jobFailure = new IgniteException("Failed to execute a partition hash calculation: " +
-                            e.getCause().getMessage(), e.getCause());
+                        jobFailure = new IgniteException("Failed to execute a partition hash calculation [reason=" +
+                            e.getCause().getMessage() + ']', e.getCause());
 
                         cancel();
                     }
@@ -272,7 +272,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     interrupted = true;
 
                     if (jobFailure == null) {
-                        jobFailure = new IgniteInterruptedException("Failed to execute a partition hash calculation: interrupted.", e);
+                        jobFailure = new IgniteInterruptedException("Partition hash calculation has been interrupted.", e);
 
                         cancel();
                     }
@@ -512,7 +512,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
-                checkCancelledOrStopped(cancelled, gctx, true);
+                if (checkCancelledOrStopped(cancelled, gctx))
+                    throw cancellationException(gctx, part);
 
                 Map<PartitionKey, PartitionHashRecord> res = emptyMap();
 
@@ -530,7 +531,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            () -> checkCancelledOrStopped(cancelled, gctx, false)
+                            () -> checkCancelledOrStopped(cancelled, gctx)
                         );
                     }
 
@@ -540,7 +541,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     // The cache group can be destroyed concurrently.
                     if (!gctx.offheap().preventStopping())
-                        throw cancellationException();
+                        throw cancellationException(gctx, part);
 
                     try {
                         hash = calculatePartitionHash(
@@ -551,7 +552,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             part.primary(gctx.topology().readyTopologyVersion()),
                             part.dataStore().fullSize(),
                             gctx.offheap().partitionIterator(part.id()),
-                            () -> checkCancelledOrStopped(cancelled, gctx, false)
+                            () -> checkCancelledOrStopped(cancelled, gctx)
                         );
                     }
                     finally {
@@ -592,22 +593,17 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          *
          * @param cancelled Supplier that returns {@code true} if the task cancellation was requested.
          * @param gctx Cache group context.
-         * @param throwIfCancelled If {@code true}, throws a cancellation exception instead of returning {@code true}.
          * @return {@code true} if the work should be stopped.
          */
-        private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx, boolean throwIfCancelled) {
-            boolean res = cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
-
-            if (res && throwIfCancelled)
-                throw cancellationException();
-
-            return res;
+        private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
+            return cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
         }
 
         /** */
-        private static IgniteException cancellationException() {
-            return new IgniteException("Partition hash calculation has been cancelled: the task has been cancelled, " +
-                "or the node or the cache group is stopping.");
+        private static IgniteException cancellationException(CacheGroupContext gctx, GridDhtLocalPartition part) {
+            return new IgniteException("Partition hash calculation has been cancelled. The task has been cancelled, " +
+                "or the local node is stopping, or the cache group is stopping [groupId=" + gctx.groupId() +
+                ", groupName=" + gctx.cacheOrGroupName() + ", partId=" + part.id() + "].");
         }
     }
 }
