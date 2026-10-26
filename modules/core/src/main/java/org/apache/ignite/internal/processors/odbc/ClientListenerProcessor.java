@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.function.LongSupplier;
+import java.util.function.LongUnaryOperator;
 import java.util.function.Predicate;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
@@ -370,21 +370,22 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             ? ThinClientConfiguration.DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION
             : thinCfg.getMaxActiveComputeTasksPerConnection();
 
-        String name = metricName(mreg.name(), METRIC_MAX_RUNNING_COMPUTE_TASKS);
-        String desc = "Maximum number of running user compute tasks per thin client connection over the configured " +
-            "time interval";
-
-        maxRunningComputeTasksMetric = maxActiveComputeTasks > 0
-            ? new MaxWithCurrentValueMetric(name, desc, DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL, DFLT_SIZE,
-                this::maxRunningComputeTasks)
-            : new MaxValueMetric(name, desc, DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL, DFLT_SIZE);
+        maxRunningComputeTasksMetric = new MaxWithValueUpdateMetric(
+            metricName(mreg.name(), METRIC_MAX_RUNNING_COMPUTE_TASKS),
+            "Maximum number of running user compute tasks per thin client connection over the configured time interval",
+            DFLT_MAX_RUNNING_COMPUTE_TASKS_INTERVAL,
+            DFLT_SIZE,
+            maxActiveComputeTasks > 0 ? this::maxRunningComputeTasks : l -> 0L);
 
         mreg.register(maxRunningComputeTasksMetric);
     }
 
-    /** @return Maximum of running user compute tasks across thin client connections. */
-    private long maxRunningComputeTasks() {
-        long max = 0;
+    /**
+     * @param val Metric value.
+     * @return Maximum value derived from metric value and calculated one.
+     */
+    private long maxRunningComputeTasks(long val) {
+        long max = val;
 
         for (GridNioSession ses : srv.sessions()) {
             ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
@@ -904,21 +905,21 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** Maximum value over the time interval, but not less than the current value. */
-    private static class MaxWithCurrentValueMetric extends MaxValueMetric {
-        /** */
-        private final LongSupplier cur;
+    /** Maximum value over the time interval updated by the given operator on each read. */
+    private static class MaxWithValueUpdateMetric extends MaxValueMetric {
+        /** Operator applied to the maximum value accumulated over the time interval. */
+        private final LongUnaryOperator updater;
 
         /** */
-        MaxWithCurrentValueMetric(String name, String desc, long timeInterval, int size, LongSupplier cur) {
+        MaxWithValueUpdateMetric(String name, String desc, long timeInterval, int size, LongUnaryOperator updater) {
             super(name, desc, timeInterval, size);
 
-            this.cur = cur;
+            this.updater = updater;
         }
 
         /** {@inheritDoc} */
         @Override public long value() {
-            return Math.max(super.value(), cur.getAsLong());
+            return updater.applyAsLong(super.value());
         }
     }
 }
