@@ -42,7 +42,6 @@ class DataStorageConfiguration(NamedTuple):
     """
     Ignite DataStorage configuration
     """
-    cdc_wal_directory_max_size: int = None
     cdc_wal_path: str = None
     checkpoint_frequency: int = None
     default: DataRegionConfiguration = DataRegionConfiguration()
