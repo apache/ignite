@@ -323,7 +323,7 @@ public class CompressedMessageTest {
         try (CompressedMessage.Compressor compressor = new CompressedMessage.Compressor(Deflater.BEST_SPEED)) {
             compressor.compress(buf);
 
-            return compressor.finish();
+            return compressor.message();
         }
     }
 

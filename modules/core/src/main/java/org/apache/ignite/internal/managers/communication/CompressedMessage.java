@@ -194,7 +194,7 @@ public class CompressedMessage extends AbstractMessage implements NonMarshallabl
         }
 
         /** @return Message with the compressed data. */
-        public CompressedMessage finish() {
+        public CompressedMessage message() {
             CompressedMessage msg = new CompressedMessage();
 
             msg.dataSize = dataSize;
