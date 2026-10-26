@@ -94,8 +94,8 @@ public class TestCertificateAuthority {
     }
 
     /** @return Store with one private key and a currently valid certificate whose name is irrelevant to the test. */
-    public KeyStore issue() throws Exception {
-        return issue(DEFAULT_NAME);
+    public KeyStore keyStoreWithPrivateKey() throws Exception {
+        return keyStoreWithPrivateKey(DEFAULT_NAME);
     }
 
     /**
@@ -104,10 +104,10 @@ public class TestCertificateAuthority {
      * @param cn Common name, also used as the key alias.
      * @return Store with the private key and certificate chain.
      */
-    public KeyStore issue(String cn) throws Exception {
+    public KeyStore keyStoreWithPrivateKey(String cn) throws Exception {
         long now = System.currentTimeMillis();
 
-        return issue(cn, now - TimeUnit.HOURS.toMillis(1), now + TimeUnit.DAYS.toMillis(1));
+        return keyStoreWithPrivateKey(cn, now - TimeUnit.HOURS.toMillis(1), now + TimeUnit.DAYS.toMillis(1));
     }
 
     /**
@@ -115,8 +115,8 @@ public class TestCertificateAuthority {
      * @param notAfter Time it expires; rounded down to a second.
      * @return Store with one private key and a certificate with the requested validity dates.
      */
-    public KeyStore issue(long notBefore, long notAfter) throws Exception {
-        return issue(DEFAULT_NAME, notBefore, notAfter);
+    public KeyStore keyStoreWithPrivateKey(long notBefore, long notAfter) throws Exception {
+        return keyStoreWithPrivateKey(DEFAULT_NAME, notBefore, notAfter);
     }
 
     /**
@@ -125,8 +125,8 @@ public class TestCertificateAuthority {
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
      */
-    public KeyStore issue(String cn, long notBefore, long notAfter) throws Exception {
-        return issue(cn, new X500Principal("CN=" + cn), keyPair(), notBefore, notAfter);
+    public KeyStore keyStoreWithPrivateKey(String cn, long notBefore, long notAfter) throws Exception {
+        return keyStoreWithPrivateKey(cn, new X500Principal("CN=" + cn), keyPair(), notBefore, notAfter);
     }
 
     /**
@@ -137,7 +137,8 @@ public class TestCertificateAuthority {
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
      */
-    public KeyStore issue(String alias, X500Principal subject, KeyPair pair, long notBefore, long notAfter) throws Exception {
+    public KeyStore keyStoreWithPrivateKey(String alias, X500Principal subject, KeyPair pair, long notBefore, long notAfter)
+        throws Exception {
         X509Certificate leaf = sign(subject, pair, notBefore, notAfter, false);
 
         KeyStore store = emptyStore();

@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.TestCertificateAuthority.certificateChain;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /** Tests that certificate metadata belongs to the key material used to create a context. */
 public class SslContextMetadataTest extends GridCommonAbstractTest {
@@ -53,36 +54,38 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** A fresh context loads the replacement store once and leaves the cached context's certificate metadata unchanged. */
     @Test
     public void testFreshContextUsesReplacementStoreAndPreservesCachedContext() throws Exception {
-        KeyStore originalKeys = ca.issue();
+        KeyStore originalKeys = ca.keyStoreWithPrivateKey();
         X509Certificate[] originalChain = certificateChain(originalKeys);
-        StoreFactory factory = new StoreFactory(originalKeys);
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(originalKeys);
 
         SSLContext cached = factory.create();
 
-        assertEquals(1, factory.loads);
+        assertEquals(1, factory.loadKeyStoreCalls);
         assertArrayEquals(originalChain, reportedChain(cached));
 
-        KeyStore replacementKeys = ca.issue();
+        KeyStore replacementKeys = ca.keyStoreWithPrivateKey();
         X509Certificate[] replacementChain = certificateChain(replacementKeys);
+
+        assertNotEquals(originalChain[0], replacementChain[0]);
 
         factory.store = replacementKeys;
 
         SSLContext fresh = factory.createNew();
 
         assertNotSame(cached, fresh);
-        assertEquals(2, factory.loads);
+        assertEquals(2, factory.loadKeyStoreCalls);
         assertArrayEquals(replacementChain, reportedChain(fresh));
 
         assertSame(cached, factory.create());
         assertArrayEquals(originalChain, reportedChain(cached));
-        assertEquals("Returning the cached context must not load the store again", 2, factory.loads);
+        assertEquals("Returning the cached context must not load the store again", 2, factory.loadKeyStoreCalls);
     }
 
     /** Both factory methods retain certificate metadata when they also apply TLS parameters. */
     @Test
     public void testMetadataWithTlsParameters() throws Exception {
-        KeyStore store = ca.issue();
-        StoreFactory factory = new StoreFactory(store);
+        KeyStore store = ca.keyStoreWithPrivateKey();
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(store);
         String[] protocols = {"TLSv1.2"};
         String[] ciphers = {"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"};
 
@@ -103,13 +106,14 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Multiple private keys leave the chain unknown but are not reported as missing. */
     @Test
     public void testMultiplePrivateKeysHaveUnknownChain() throws Exception {
+        String firstKey = "first-key";
         String secondKey = "second-key";
-        KeyStore store = ca.issue();
-        KeyStore other = ca.issue(secondKey);
+        KeyStore store = ca.keyStoreWithPrivateKey(firstKey);
+        KeyStore other = ca.keyStoreWithPrivateKey(secondKey);
 
         store.setKeyEntry(secondKey, other.getKey(secondKey, PASSWORD), PASSWORD, other.getCertificateChain(secondKey));
 
-        StoreFactory factory = new StoreFactory(store);
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(store);
 
         for (SSLContext ctx : new SSLContext[] {factory.create(), factory.createNew()}) {
             assertNull(reportedChain(ctx));
@@ -121,7 +125,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     @Test
     public void testOnlyPrivateKeyEntriesCount() throws Exception {
         String keyAlias = "private-key";
-        KeyStore keys = ca.issue(keyAlias);
+        KeyStore keys = ca.keyStoreWithPrivateKey(keyAlias);
 
         // JCEKS can hold both private keys and secret keys.
         KeyStore store = KeyStore.getInstance("JCEKS");
@@ -131,7 +135,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         store.setEntry("secret", new KeyStore.SecretKeyEntry(KeyGenerator.getInstance("AES").generateKey()),
             new KeyStore.PasswordProtection(PASSWORD));
 
-        StoreFactory factory = new StoreFactory(store);
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(store);
 
         SSLContext withoutKey = factory.create();
 
@@ -149,7 +153,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Trust-only contexts can still be built for clients, and another parameters wrapper preserves the missing-key marker. */
     @Test
     public void testTrustOnlyContextCreation() throws Exception {
-        StoreFactory factory = new StoreFactory(ca.trustStore());
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.trustStore());
         String[] protocols = {"TLSv1.2"};
         SSLParameters params = new SSLParameters();
 
@@ -175,35 +179,35 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         assertNull(reportedChain(first));
         assertFalse("Legacy hooks do not report whether a private key is available", reportsMissingPrivateKey(first));
-        assertEquals(1, factory.checks);
-        assertEquals(1, factory.keys);
-        assertEquals(1, factory.trust);
+        assertEquals(1, factory.parameterChecks);
+        assertEquals(1, factory.keyManagerCalls);
+        assertEquals(1, factory.trustManagerCalls);
 
         assertSame(first, factory.create());
 
-        assertEquals(1, factory.checks);
-        assertEquals(1, factory.keys);
-        assertEquals(1, factory.trust);
+        assertEquals(1, factory.parameterChecks);
+        assertEquals(1, factory.keyManagerCalls);
+        assertEquals(1, factory.trustManagerCalls);
 
         SSLContext next = factory.createNew();
 
         assertNotSame(first, next);
         assertNull(reportedChain(next));
         assertFalse("Legacy hooks do not report whether a private key is available", reportsMissingPrivateKey(next));
-        assertEquals(2, factory.checks);
-        assertEquals(2, factory.keys);
-        assertEquals(2, factory.trust);
+        assertEquals(2, factory.parameterChecks);
+        assertEquals(2, factory.keyManagerCalls);
+        assertEquals(2, factory.trustManagerCalls);
     }
 
     /** A subclass can still obtain key managers from the file factory's legacy hook. */
     @Test
     public void testLegacyKeyManagerAdapter() throws Exception {
-        StoreFactory factory = new StoreFactory(ca.issue());
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
         KeyManager[] mgrs = factory.legacyKeyManagers();
 
         assertNotNull(mgrs);
         assertTrue(mgrs.length > 0);
-        assertEquals(1, factory.loads);
+        assertEquals(1, factory.loadKeyStoreCalls);
     }
 
     /** A factory that implements neither key-material hook reports the missing implementation. */
@@ -235,7 +239,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** A subclass can supply material directly, and callers cannot replace its recorded managers or chain through arrays. */
     @Test
     public void testKeyMaterialDefensiveCopies() throws Exception {
-        KeyStore keys = ca.issue();
+        KeyStore keys = ca.keyStoreWithPrivateKey();
         KeyManager[] mgrs = TestCertificateAuthority.keyManagers(keys);
         KeyManager mgr = mgrs[0];
         X509Certificate[] expected = certificateChain(keys);
@@ -272,7 +276,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Neither callers nor another parameters wrapper can replace a context's recorded chain. */
     @Test
     public void testWrapperPreservesAndCopiesChain() throws Exception {
-        X509Certificate[] expected = certificateChain(ca.issue());
+        X509Certificate[] expected = certificateChain(ca.keyStoreWithPrivateKey());
         X509Certificate[] input = expected.clone();
         SSLContext delegate = SSLContext.getInstance("TLS");
 
@@ -299,7 +303,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Explicit metadata takes precedence over the wrapped context's metadata. */
     @Test
     public void testExplicitWrapperMetadataOverridesDelegateMetadata() throws Exception {
-        X509Certificate[] expectedChain = certificateChain(ca.issue());
+        X509Certificate[] expectedChain = certificateChain(ca.keyStoreWithPrivateKey());
         SSLContext delegate = SSLContext.getInstance("TLS");
 
         delegate.init(null, null, null);
@@ -328,7 +332,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         delegate.init(null, null, null);
 
-        SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, certificateChain(ca.issue()));
+        SSLContextWrapper wrapper = new SSLContextWrapper(delegate, null, certificateChain(ca.keyStoreWithPrivateKey()));
         String host = "peer.example";
         int port = 10800;
         SSLEngine engine = wrapper.createSSLEngine(host, port);
@@ -366,15 +370,15 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     }
 
     /** A file factory whose existing store-loading hook supplies the test material. */
-    private static class StoreFactory extends SslContextFactory {
+    private static class InMemoryStoreFactory extends SslContextFactory {
         /** */
         private KeyStore store;
 
         /** */
-        private int loads;
+        private int loadKeyStoreCalls;
 
         /** */
-        StoreFactory(KeyStore store) {
+        InMemoryStoreFactory(KeyStore store) {
             this.store = store;
 
             setKeyStoreType(store.getType());
@@ -385,7 +389,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected KeyStore loadKeyStore(String type, String path, char[] pwd) {
-            loads++;
+            loadKeyStoreCalls++;
 
             return store;
         }
@@ -400,29 +404,29 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** A subclass that implements the manager hooks without overriding createKeyMaterial(). */
     private static class LegacyFactory extends AbstractSslContextFactory {
         /** */
-        private int checks;
+        private int parameterChecks;
 
         /** */
-        private int keys;
+        private int keyManagerCalls;
 
         /** */
-        private int trust;
+        private int trustManagerCalls;
 
         /** {@inheritDoc} */
         @Override protected void checkParameters() {
-            checks++;
+            parameterChecks++;
         }
 
         /** {@inheritDoc} */
         @Override protected KeyManager[] createKeyManagers() {
-            keys++;
+            keyManagerCalls++;
 
             return null;
         }
 
         /** {@inheritDoc} */
         @Override protected TrustManager[] createTrustManagers() {
-            trust++;
+            trustManagerCalls++;
 
             return null;
         }
