@@ -223,9 +223,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache ID. */
     private int cacheId;
 
-    /** Cache ID. */
-    private Integer cacheIdBoxed;
-
     /** Cache type. */
     private CacheType cacheType;
 
@@ -403,8 +400,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         cacheName = cacheCfg.getName();
 
         cacheId = CU.cacheId(cacheName);
-
-        cacheIdBoxed = cacheId;
 
         plc = cacheType.ioPolicy();
 
@@ -594,13 +589,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @return Cache ID.
-     */
-    public Integer cacheIdBoxed() {
-        return cacheIdBoxed;
     }
 
     /**

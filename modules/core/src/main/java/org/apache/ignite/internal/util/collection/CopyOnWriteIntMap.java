@@ -107,7 +107,14 @@ public class CopyOnWriteIntMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized @Nullable V computeIfAbsent(int key, IntFunction<? extends V> mappingFunction) {
+    @Override public @Nullable V computeIfAbsent(int key, IntFunction<? extends V> mappingFunction) {
+        V val = get(key);
+
+        return val != null ? val : computeIfAbsentUnderLock(key, mappingFunction);
+    }
+
+    /** Slow path of {@link #computeIfAbsent}: the mapping function runs under the map lock. */
+    private synchronized V computeIfAbsentUnderLock(int key, IntFunction<? extends V> mappingFunction) {
         // The default implementation is a lookup followed by a put, the lock makes the pair atomic.
         return IntMap.super.computeIfAbsent(key, mappingFunction);
     }
