@@ -40,8 +40,8 @@ public class SSLContextWrapper extends SSLContext {
      * @param sslParameters Extended SSL parameters.
      */
     public SSLContextWrapper(SSLContext delegate, SSLParameters sslParameters) {
-        this(delegate, sslParameters, delegate instanceof SSLContextWrapper
-            ? ((SSLContextWrapper)delegate).getCertificateChain() : null,
+        this(delegate, sslParameters,
+            delegate instanceof SSLContextWrapper ? ((SSLContextWrapper)delegate).getCertificateChain() : null,
             delegate instanceof SSLContextWrapper && ((SSLContextWrapper)delegate).isPrivateKeyMissing());
     }
 
