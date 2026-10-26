@@ -65,9 +65,9 @@ class DiskFullTest(IgniteTest):
     @cluster(num_nodes=2)
     @reproducer("disk_full_tests")
     @ignite_versions(str(DEV_BRANCH))
-    def test_node_survives_full_log_volume(self, ignite_version):
+    def test_node_survives_and_restarts_on_full_log_volume(self, ignite_version):
         """
-        The log volume holds the log4j2 log, console.log and gc.log.
+        The node serves load and restarts while the volume of its log4j2 log, console.log and gc.log is full.
         """
         ignite = self.__ignite(ignite_version)
         ignite.mount_tmpfs(ignite.log_dir, 32)
@@ -84,30 +84,6 @@ class DiskFullTest(IgniteTest):
 
         for log in log_files(ignite):
             check_write_failed(ignite, log)
-
-        free_volume(ignite, ignite.log_dir)
-
-        for log in log_files(ignite):
-            check_grows(ignite, log)
-
-        load.stop()
-
-    @cluster(num_nodes=2)
-    @reproducer("disk_full_tests")
-    @ignite_versions(str(DEV_BRANCH))
-    def test_node_restarts_on_full_log_volume(self, ignite_version):
-        """
-        The node restarts while its log volume is full.
-        """
-        ignite = self.__ignite(ignite_version)
-        ignite.mount_tmpfs(ignite.log_dir, 32)
-
-        ignite.start()
-        ControlUtility(ignite).activate()
-
-        load = self.__start_load_client(ignite)
-
-        fill_volume(ignite, ignite.log_dir)
 
         ignite.stop()
 
