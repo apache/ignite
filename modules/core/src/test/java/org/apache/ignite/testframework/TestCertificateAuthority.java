@@ -57,6 +57,9 @@ public class TestCertificateAuthority {
     /** Password of every store made here. */
     public static final char[] PWD = "123456".toCharArray();
 
+    /** Name used when certificate identity is not part of the test. */
+    private static final String DEFAULT_NAME = "test-certificate";
+
     /** Certificate serial numbers must be positive and unique within this authority. */
     private final AtomicLong serial = new AtomicLong();
 
@@ -92,7 +95,7 @@ public class TestCertificateAuthority {
 
     /** @return Store with one private key and a currently valid certificate whose name is irrelevant to the test. */
     public KeyStore issue() throws Exception {
-        return issue("test-certificate");
+        return issue(DEFAULT_NAME);
     }
 
     /**
@@ -105,6 +108,15 @@ public class TestCertificateAuthority {
         long now = System.currentTimeMillis();
 
         return issue(cn, now - TimeUnit.HOURS.toMillis(1), now + TimeUnit.DAYS.toMillis(1));
+    }
+
+    /**
+     * @param notBefore Time the certificate becomes valid; rounded down to a second.
+     * @param notAfter Time it expires; rounded down to a second.
+     * @return Store with one private key and a certificate with the requested validity dates.
+     */
+    public KeyStore issue(long notBefore, long notAfter) throws Exception {
+        return issue(DEFAULT_NAME, notBefore, notAfter);
     }
 
     /**
