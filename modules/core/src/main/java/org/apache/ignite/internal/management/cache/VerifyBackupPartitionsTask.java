@@ -300,7 +300,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw jobFailure;
 
             if (isCancelled())
-                throw new IgniteException("Failed to execute a partition hash calculation: cancelled.");
+                throw new IgniteException("Partition hash calculation has been cancelled.");
 
             if (log.isInfoEnabled())
                 log.info("Idle verify procedure has finished.");
@@ -512,7 +512,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
-                if (checkCancelledOrStopped(cancelled, gctx))
+                if (isCancelledOrStopped(cancelled, gctx))
                     throw cancellationException(gctx, part);
 
                 Map<PartitionKey, PartitionHashRecord> res = emptyMap();
@@ -531,7 +531,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                             part.id(),
                             FLAG_DATA,
-                            () -> checkCancelledOrStopped(cancelled, gctx)
+                            () -> isCancelledOrStopped(cancelled, gctx)
                         );
                     }
 
@@ -552,7 +552,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             part.primary(gctx.topology().readyTopologyVersion()),
                             part.dataStore().fullSize(),
                             gctx.offheap().partitionIterator(part.id()),
-                            () -> checkCancelledOrStopped(cancelled, gctx)
+                            () -> isCancelledOrStopped(cancelled, gctx)
                         );
                     }
                     finally {
@@ -595,7 +595,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @param gctx Cache group context.
          * @return {@code true} if the work should be stopped.
          */
-        private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
+        private boolean isCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
             return cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
         }
 
