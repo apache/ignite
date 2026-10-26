@@ -165,10 +165,7 @@ public class IgniteClusterSnapshotListRollingUpgradeTest extends AbstractRolling
     private void ensureSnapshotListSucceeds() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++) {
             for (int k = 0; k < ALL_GRIDS; k++) {
-                int i0 = i;
-                int k0 = k;
-
-                SnapshotListTaskResult listOpRes = launchSnapshotsListCommand(i0, grid(k0).localNode().id());
+                SnapshotListTaskResult listOpRes = launchSnapshotsListCommand(i, grid(k).localNode().id());
 
                 assertEquals(3, listOpRes.nodesSnapshots().length);
 

@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.management.SystemViewTask;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.DATE;
@@ -74,10 +74,8 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             .sorted(Comparator.comparing(idx -> res.consistentIds()[idx]))
             .toArray(Integer[]::new);
 
-        // Flag whether the node's result has at least one incremental snapshot.
-        AtomicBoolean hasIncrementals = new AtomicBoolean();
-        // Flag whether the node's result has at least one external storage.
-        AtomicBoolean hasExtStorages = new AtomicBoolean();
+        // Flag whether the node's result has at least one incremental snapshot and one external storage.
+        T2<Boolean, Boolean> hasIncsAndExtStrs = new T2<>();
 
         for (int nodeIdx : nodesOrder) {
             printer.accept("");
@@ -94,14 +92,13 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
 
             Map<String, SnapshotListJobResult.SnapshotInfo> perNodeResults = prepareResults(
                 nodeResult.snapshots(),
-                hasIncrementals,
-                hasExtStorages
+                hasIncsAndExtStrs
             );
 
             SystemViewCommand.printTable(
-                perNodeTableTitles(hasIncrementals.get(), hasExtStorages.get()),
-                perNodeTableTypes(hasIncrementals.get(), hasExtStorages.get()),
-                perNodeTableRows(perNodeResults, hasIncrementals.get(), hasExtStorages.get()),
+                perNodeTableTitles(hasIncsAndExtStrs.get1(), hasIncsAndExtStrs.get2()),
+                perNodeTableTypes(hasIncsAndExtStrs.get1(), hasIncsAndExtStrs.get2()),
+                perNodeTableRows(perNodeResults, hasIncsAndExtStrs.get1(), hasIncsAndExtStrs.get2()),
                 printer
             );
         }
@@ -184,8 +181,7 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
     /** Prepares the results: sorts, finds optional data to hide if it doesn't present. */
     private static Map<String, SnapshotListJobResult.SnapshotInfo> prepareResults(
         Map<String, SnapshotListJobResult.SnapshotInfo> rawResults,
-        AtomicBoolean hasIncrementals,
-        AtomicBoolean hasExtStorages
+        T2<Boolean, Boolean> hasIncsAndExtStrs
     ) {
         Comparator<SnapshotListJobResult.SnapshotInfo> cmp = new Comparator<>() {
             @Override public int compare(SnapshotListJobResult.SnapshotInfo s1, SnapshotListJobResult.SnapshotInfo s2) {
@@ -196,8 +192,8 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             }
         };
 
-        hasIncrementals.set(false);
-        hasExtStorages.set(false);
+        hasIncsAndExtStrs.set1(false);
+        hasIncsAndExtStrs.set2(false);
 
         // Sorted by the creation or modification date.
         return rawResults.entrySet()
@@ -206,10 +202,10 @@ public class SnapshotListCommand extends AbstractSnapshotCommand<SnapshotListCom
             // Always-accepting filter: sets the optional-column flags while collecting, in one pass.
             .filter(e -> {
                 if (e.getValue().incrementals() != null)
-                    hasIncrementals.set(true);
+                    hasIncsAndExtStrs.set1(true);
 
                 if (e.getValue().externalStorages() != null)
-                    hasExtStorages.set(true);
+                    hasIncsAndExtStrs.set2(true);
 
                 return true;
             })

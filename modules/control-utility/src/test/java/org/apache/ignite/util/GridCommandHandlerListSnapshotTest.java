@@ -227,7 +227,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         }
 
         // Ensures a noticeable difference in the creation times.
-        U.sleep(500L);
+        U.sleep(50L);
 
         // Next snapshot has the latest date.
         snp(ig).createSnapshot("testSnapshot1", null, false, false).get(getTestTimeout());
@@ -252,7 +252,7 @@ public class GridCommandHandlerListSnapshotTest extends GridCommandHandlerAbstra
         }
 
         // Ensures a noticeable difference in the times.
-        U.sleep(500L);
+        U.sleep(50L);
 
         // Let's add an incremental part to 'testSnapshot0'. That will change its modification date.
         try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {

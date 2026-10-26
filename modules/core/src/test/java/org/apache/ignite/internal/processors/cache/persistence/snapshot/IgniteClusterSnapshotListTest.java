@@ -672,10 +672,7 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ig = startGridsWithCache(grids, txCacheConfig(defaultCacheConfiguration()), CACHE_KEYS_RANGE);
 
-        long time0 = U.currentTimeMillis();
-
-        // Wait so that the timestamps differ.
-        U.sleep(300L);
+        long beforeSnpCreationTime = U.currentTimeMillis();
 
         snp(ig).createSnapshot(SNAPSHOT_NAME, null, false, onlyPrimary).get(getTestTimeout());
 
@@ -688,13 +685,10 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
             SnapshotListJobResult.SnapshotInfo info = snps.get(SNAPSHOT_NAME);
 
-            assertTrue(info.date() > time0);
+            assertTrue(info.date() >= beforeSnpCreationTime);
         }
 
-        // Wait for a while to let the timestamps differ.
-        U.sleep(300L);
-
-        long time1 = U.currentTimeMillis();
+        long beforeIncrementalCreationTime = U.currentTimeMillis();
 
         try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
             for (int kv = CACHE_KEYS_RANGE; kv < CACHE_KEYS_RANGE * 2; kv++)
@@ -714,9 +708,10 @@ public class IgniteClusterSnapshotListTest extends AbstractSnapshotSelfTest {
 
             assertNotNull(info.incrementals());
 
-            assertTrue(info.date() < time1);
-            assertTrue(info.date() < info.incrementals().date());
-            assertTrue(info.incrementals().date() > time1);
+            assertTrue(info.date() >= beforeSnpCreationTime);
+            assertTrue(info.date() <= beforeIncrementalCreationTime);
+            assertTrue(info.date() <= info.incrementals().date());
+            assertTrue(info.incrementals().date() >= beforeIncrementalCreationTime);
         }
     }
 
