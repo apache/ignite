@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -44,6 +45,7 @@ public class LitmusCheckIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** {@inheritDoc} */
+    @AfterAll
     @Override protected void afterTestsStopped() throws Exception {
         // Restore the level, otherwise every test executed later in the same JVM plans with the litmus checks enabled.
         Configurator.setLevel(PLANNER_LOG_NAME, prevLevel);
