@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
@@ -32,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -49,14 +49,16 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
- * Certificate authority for tests that need explicit keys, trust relationships and certificate validity periods.
+ * Issues JKS stores protected by {@link #PWD}, each with an EC P-256 private key and its certificate chain.
+ * Certificates use SHA256withECDSA signatures. Issued leaf certificates allow both server and client authentication,
+ * so the same material works for node-to-node TLS. Tests choose the issuer and validity dates when those are part of the scenario.
  */
 public class TestCertificateAuthority {
     /** Password of every store made here. */
     public static final char[] PWD = "123456".toCharArray();
 
-    /** */
-    private static final SecureRandom RND = new SecureRandom();
+    /** Certificate serial numbers must be positive and unique within this authority. */
+    private final AtomicLong serial = new AtomicLong();
 
     /** */
     private final X500Principal name;
@@ -67,7 +69,11 @@ public class TestCertificateAuthority {
     /** */
     private final X509Certificate cert;
 
-    /** @param cn Common name of the authority. */
+    /**
+     * Creates an authority valid from yesterday until a year from now.
+     *
+     * @param cn Common name of the authority.
+     */
     public TestCertificateAuthority(String cn) throws Exception {
         this(cn, System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1), System.currentTimeMillis() + TimeUnit.DAYS.toMillis(365));
     }
@@ -84,8 +90,25 @@ public class TestCertificateAuthority {
         cert = sign(name, keys, notBefore, notAfter, true);
     }
 
+    /** @return Store with one private key and a currently valid certificate whose name is irrelevant to the test. */
+    public KeyStore issue() throws Exception {
+        return issue("test-certificate");
+    }
+
     /**
-     * @param cn Common name of the certificate.
+     * Issues a certificate valid from an hour ago until a day from now, for tests that do not check expiry.
+     *
+     * @param cn Common name, also used as the key alias.
+     * @return Store with the private key and certificate chain.
+     */
+    public KeyStore issue(String cn) throws Exception {
+        long now = System.currentTimeMillis();
+
+        return issue(cn, now - TimeUnit.HOURS.toMillis(1), now + TimeUnit.DAYS.toMillis(1));
+    }
+
+    /**
+     * @param cn Common name of the certificate, also used as the key alias.
      * @param notBefore Time it becomes valid; rounded down to a second.
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
@@ -151,7 +174,7 @@ public class TestCertificateAuthority {
         X509Certificate[] chain = null;
 
         for (String alias : Collections.list(keyStore.aliases())) {
-            if (!keyStore.isKeyEntry(alias))
+            if (!keyStore.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class))
                 continue;
 
             if (chain != null)
@@ -210,7 +233,7 @@ public class TestCertificateAuthority {
     private X509Certificate sign(X500Principal subj, KeyPair subjKeys, long notBefore, long notAfter, boolean ca) throws Exception {
         JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
             name,
-            new BigInteger(Long.SIZE, RND).add(BigInteger.ONE),
+            BigInteger.valueOf(serial.incrementAndGet()),
             new Date(notBefore),
             new Date(notAfter),
             subj,
