@@ -18,7 +18,12 @@
 package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
@@ -28,11 +33,11 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
- * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
- * {@link AbstractSslContextFactory#create()}} method.
+ * Base SSL context factory that caches the result of the first successful {@link #create()} call.
+ * Use {@link #createNew()} to build another context without changing the cached one.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -118,26 +123,29 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     private SSLContext createSslContext() throws SSLException {
         checkParameters();
 
-        KeyManager[] keyMgrs = createKeyManagers();
+        KeyMaterial material = createKeyMaterial();
 
         TrustManager[] trustMgrs = createTrustManagers();
 
         try {
             SSLContext ctx = SSLContext.getInstance(proto);
 
+            SSLParameters sslParameters = null;
+
             if (cipherSuites != null || protocols != null) {
-                SSLParameters sslParameters = new SSLParameters();
+                sslParameters = new SSLParameters();
 
                 if (cipherSuites != null)
                     sslParameters.setCipherSuites(cipherSuites);
 
                 if (protocols != null)
                     sslParameters.setProtocols(protocols);
-
-                ctx = new SSLContextWrapper(ctx, sslParameters);
             }
 
-            ctx.init(keyMgrs, trustMgrs, null);
+            if (sslParameters != null || material.chain != null || material.privateKeyMissing)
+                ctx = new SSLContextWrapper(ctx, sslParameters, material.chain, material.privateKeyMissing);
+
+            ctx.init(material.keyMgrs, trustMgrs, null);
 
             return ctx;
         }
@@ -173,6 +181,18 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract KeyManager[] createKeyManagers() throws SSLException;
 
     /**
+     * Creates key managers and their certificate chain from the same load of the key material. The default calls
+     * {@link #createKeyManagers()} and leaves the chain unknown. Subclasses that can provide certificate metadata should
+     * override this method and supply the chain without loading the material again.
+     *
+     * @return Key managers and their chain, if known.
+     * @throws SSLException If the key material could not be loaded.
+     */
+    protected KeyMaterial createKeyMaterial() throws SSLException {
+        return new KeyMaterial(createKeyManagers(), null);
+    }
+
+    /**
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
@@ -195,5 +215,110 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
 
         return ctx;
+    }
+
+    /**
+     * Builds a new SSL context from the current factory settings without reading or replacing the context cached by
+     * {@link #create()}.
+     * <p>
+     * A subclass that builds its context in its own {@link #create()} must override this method too and build the context from
+     * the same sources. This implementation calls {@link #checkParameters()}, {@link #createKeyMaterial()} and
+     * {@link #createTrustManagers()}; it does not call {@link #create()}.
+     * <p>
+     * A subclass that only changes the key source can override {@link #createKeyMaterial()} instead. When building a context
+     * through another mechanism, attach its loaded certificate chain, if known, using
+     * {@link SSLContextWrapper#SSLContextWrapper(SSLContext, SSLParameters, X509Certificate[])}.
+     *
+     * @return New initialized SSL context.
+     * @throws IgniteException If the context could not be created.
+     */
+    public SSLContext createNew() {
+        try {
+            return createSslContext();
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Key managers and the certificate chain loaded with them. */
+    protected static final class KeyMaterial {
+        /** */
+        private final KeyManager[] keyMgrs;
+
+        /** */
+        private final X509Certificate[] chain;
+
+        /** Whether the loaded store is known to contain no private key. */
+        private final boolean privateKeyMissing;
+
+        /**
+         * @param keyMgrs Key managers, or {@code null} to use the provider's defaults.
+         * @param chain Chain of the single private key, own certificate first, or {@code null} if unknown.
+         */
+        public KeyMaterial(@Nullable KeyManager[] keyMgrs, @Nullable X509Certificate[] chain) {
+            this(keyMgrs, chain, false);
+        }
+
+        /**
+         * @param keyMgrs Key managers.
+         * @param chain Certificate chain, if known.
+         * @param privateKeyMissing Whether the loaded store contains no private key.
+         */
+        private KeyMaterial(@Nullable KeyManager[] keyMgrs, @Nullable X509Certificate[] chain, boolean privateKeyMissing) {
+            this.keyMgrs = keyMgrs == null ? null : keyMgrs.clone();
+            this.chain = chain == null || chain.length == 0 ? null : chain.clone();
+            this.privateKeyMissing = privateKeyMissing;
+        }
+
+        /** @return Key managers, or {@code null} to use the provider's defaults. */
+        public @Nullable KeyManager[] keyManagers() {
+            return keyMgrs == null ? null : keyMgrs.clone();
+        }
+
+        /**
+         * Takes the chain from the store used to create the key managers. A store with one private key and an X.509 chain
+         * supplies that chain. More than one private key, or a chain containing a non-X.509 certificate, leaves the chain
+         * unknown. A store without a private key records that fact separately from an unknown chain.
+         *
+         * @param keyMgrs Key managers initialized from the store.
+         * @param store Already loaded key store.
+         * @return Key managers and the chain of the single private key, if known.
+         * @throws KeyStoreException If the store cannot be read.
+         */
+        public static KeyMaterial fromKeyStore(KeyManager[] keyMgrs, KeyStore store) throws KeyStoreException {
+            String keyAlias = null;
+
+            for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
+                String alias = aliases.nextElement();
+
+                if (!store.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class))
+                    continue;
+
+                if (keyAlias != null)
+                    return new KeyMaterial(keyMgrs, null);
+
+                keyAlias = alias;
+            }
+
+            if (keyAlias == null)
+                return new KeyMaterial(keyMgrs, null, true);
+
+            Certificate[] certs = store.getCertificateChain(keyAlias);
+
+            if (certs == null || certs.length == 0)
+                return new KeyMaterial(keyMgrs, null);
+
+            X509Certificate[] chain = new X509Certificate[certs.length];
+
+            for (int i = 0; i < certs.length; i++) {
+                if (!(certs[i] instanceof X509Certificate))
+                    return new KeyMaterial(keyMgrs, null);
+
+                chain[i] = (X509Certificate)certs[i];
+            }
+
+            return new KeyMaterial(keyMgrs, chain);
+        }
     }
 }

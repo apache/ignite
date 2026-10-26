@@ -260,6 +260,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+        return createKeyMaterial().keyManagers();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected final KeyMaterial createKeyMaterial() throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
@@ -267,7 +272,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            return keyMgrFactory.getKeyManagers();
+            return KeyMaterial.fromKeyStore(keyMgrFactory.getKeyManagers(), keyStore);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
