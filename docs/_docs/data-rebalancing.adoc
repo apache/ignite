@@ -70,7 +70,7 @@ A node reports counters only for partitions it has written to. If the dataset is
 The `rebalanceDelay` (deprecated) setting also prevents a historical rebalance: when a delay is configured, the rebalance is scheduled outside of the partition map exchange context, and the historical path (which is tied to that context) is never taken — every partition is restored with a full rebalance regardless of the delta size and regardless of `IGNITE_PREFER_WAL_REBALANCE`.
 ====
 
-In a link:clustering/multi-data-center[multi-data-center] setup, the preloader prefers a node from the same data center that holds a copy of the partition. If no such node is available, it falls back to a node from a remote data center. This behavior applies to both full and historical rebalance.
+In a link:clustering/multi-data-center[multi-data-center] setup, the node requesting the data prefers a source from the same data center that holds a copy of the partition. If no such node is available, it falls back to a node from a remote data center. This behavior applies to both full and historical rebalance.
 
 == Historical Rebalance: Internal Mechanism
 
