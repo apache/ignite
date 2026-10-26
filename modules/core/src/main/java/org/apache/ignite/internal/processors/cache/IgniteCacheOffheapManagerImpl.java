@@ -1226,7 +1226,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final LongAdder storageSize = new LongAdder();
 
         /** */
-        private final IntMap<AtomicLong> cacheSizes = new CopyOnWriteIntMap<>();
+        private final IntMap<AtomicLong> cacheSizes;
 
         /** */
         private final IgniteLogger log;
@@ -1264,6 +1264,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.grp = grp;
             this.busyLock = busyLock;
             this.log = log;
+
+            cacheSizes = grp.sharedGroup() ? new CopyOnWriteIntMap<>() : null;
 
             PartitionUpdateCounter delegate = !grp.persistenceEnabled() || grp.hasAtomicCaches() ?
                 new PartitionUpdateCounterVolatileImpl(grp) :
