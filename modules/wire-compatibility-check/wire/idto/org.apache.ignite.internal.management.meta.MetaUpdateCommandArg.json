@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.meta.MetaUpdateCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "in"},
+    {"order": 1, "type": "byte[]", "name": "metaMarshalled"}
+  ]
+}

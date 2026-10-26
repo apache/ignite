@@ -31,16 +31,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -52,7 +48,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -173,6 +168,9 @@ public class IDTOSerializerGenerator {
     /** Type to generated serializer for. */
     private final TypeElement type;
 
+    /** Fields in the serialization order. */
+    private final List<VariableElement> orderedFlds;
+
     /** Serializer imports. */
     private final Set<String> imports = new HashSet<>();
 
@@ -185,10 +183,12 @@ public class IDTOSerializerGenerator {
     /**
      * @param env Environment.
      * @param type Type to generate serializer for.
+     * @param orderedFlds Fields in the serialization order.
      */
-    public IDTOSerializerGenerator(ProcessingEnvironment env, TypeElement type) {
+    public IDTOSerializerGenerator(ProcessingEnvironment env, TypeElement type, List<VariableElement> orderedFlds) {
         this.env = env;
         this.type = type;
+        this.orderedFlds = orderedFlds;
 
         serializableCls = env.getElementUtils().getTypeElement(Serializable.class.getName()).asType();
         dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
@@ -257,10 +257,8 @@ public class IDTOSerializerGenerator {
         if (type.getNestingKind() != NestingKind.TOP_LEVEL)
             imports.add(type.getQualifiedName().toString());
 
-        Collection<VariableElement> flds = fields(type);
-
-        List<String> write = generateWrite(flds);
-        List<String> read = generateRead(flds);
+        List<String> write = generateWrite(orderedFlds);
+        List<String> read = generateRead(orderedFlds);
 
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer);
@@ -686,46 +684,6 @@ public class IDTOSerializerGenerator {
             "${len}", withLevel("len"),
             "${i}", withLevel("i")
         )));
-    }
-
-    /** @return List of non-static and non-transient field for given {@code type}. */
-    private Collection<VariableElement> fields(TypeElement type) {
-        SortedMap<Integer, VariableElement> flds = new TreeMap<>();
-
-        while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
-                if (el.getKind() != ElementKind.FIELD)
-                    continue;
-
-                if (el.getModifiers().contains(Modifier.STATIC) || el.getModifiers().contains(Modifier.TRANSIENT))
-                    continue;
-
-                Order order = el.getAnnotation(Order.class);
-
-                if (order == null) {
-                    throw new IllegalStateException("Please, add @Order " +
-                        "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + "]");
-                }
-
-                VariableElement prev = flds.put(order.value(), (VariableElement)el);
-
-                if (prev != null) {
-                    throw new IllegalStateException("Duplicate @Order for " + type.getQualifiedName() + ": " +
-                        "[order=" + order.value() + ", fld1=" + prev.getSimpleName() + ", fld2 = " + el.getSimpleName() + ']');
-                }
-            }
-
-            Element superType = env.getTypeUtils().asElement(type.getSuperclass());
-
-            type = (TypeElement)superType;
-        }
-
-        for (int i = 0; i < flds.size(); i++) {
-            if (!flds.containsKey(i))
-                throw new IllegalStateException("@Order not found: " + i);
-        }
-
-        return flds.values();
     }
 
     /** @return Serializer class name. */

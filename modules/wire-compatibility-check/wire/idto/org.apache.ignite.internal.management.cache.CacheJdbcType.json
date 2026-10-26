@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheJdbcType",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "dbSchema"},
+    {"order": 1, "type": "java.lang.String", "name": "dbTbl"},
+    {"order": 2, "type": "java.lang.String", "name": "keyType"},
+    {"order": 3, "type": "java.lang.String", "name": "valType"},
+    {"order": 4, "type": "java.util.List<org.apache.ignite.internal.management.cache.CacheJdbcTypeField>", "name": "keyFields"},
+    {"order": 5, "type": "java.util.List<org.apache.ignite.internal.management.cache.CacheJdbcTypeField>", "name": "valFields"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillServiceCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "name"}
+  ]
+}
