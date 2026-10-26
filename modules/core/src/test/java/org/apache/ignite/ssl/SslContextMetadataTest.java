@@ -148,8 +148,10 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
     /** A subclass that does not override createKeyMaterial() still supplies validation and managers on every build. */
     @Test
-    public void testLegacyOverridesAreUsedWithoutMetadata() {
+    public void testLegacyOverridesAreUsedWithoutMetadata() throws Exception {
         LegacyFactory factory = new LegacyFactory();
+
+        assertNull(factory.createKeyMaterial());
 
         SSLContext first = factory.create();
 
