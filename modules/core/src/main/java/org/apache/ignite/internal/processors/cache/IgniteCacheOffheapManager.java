@@ -412,16 +412,16 @@ public interface IgniteCacheOffheapManager {
      * Tries to lock the manager against incompatible state like node or cache group stopping.
      *
      * @return {@code true} if successful, {@code false} if the manager is already in an incompatible state.
-     * @see #unguard()
+     * @see #leaveBusy()
      */
-    public boolean quard();
+    public boolean enterBusy();
 
     /**
-     * Releases the 'guarded' state.
+     * Releases the 'busy' state.
      *
-     * @see #quard()
+     * @see #enterBusy()
      */
-    public void unguard();
+    public void leaveBusy();
 
     /**
      *

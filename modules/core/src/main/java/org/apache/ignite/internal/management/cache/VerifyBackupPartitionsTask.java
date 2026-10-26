@@ -540,7 +540,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     PartitionHashRecord hash;
 
                     // The cache group can be destroyed concurrently.
-                    if (!gctx.offheap().quard())
+                    if (!gctx.offheap().enterBusy())
                         throw cancellationException(gctx, part);
 
                     try {
@@ -556,7 +556,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         );
                     }
                     finally {
-                        gctx.offheap().unguard();
+                        gctx.offheap().leaveBusy();
                     }
 
                     if (hash != null)
