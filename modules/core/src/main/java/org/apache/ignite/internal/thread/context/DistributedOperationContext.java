@@ -17,8 +17,10 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage.nextAttributeId;
@@ -45,6 +47,9 @@ import static org.apache.ignite.internal.thread.context.OperationContextSnapshot
  * @see OperationContextSnapshotMessage
  */
 public class DistributedOperationContext {
+    /** */
+    private static final OperationContextAttribute<List<RawField>> RAW_VALS_HOLDER_ATTR = OperationContextAttribute.newInstance();
+
     /** Registered distributed attributes by their cluster-wide id. */
     private volatile DistributedAttribute[] distrAttrs = new DistributedAttribute[0];
 
@@ -123,10 +128,16 @@ public class DistributedOperationContext {
             idBitmap = set(idBitmap, id);
         }
 
-        if (attrs == null)
+        List<RawField> rawAttrs = OperationContext.get(RAW_VALS_HOLDER_ATTR);
+
+        if (attrs == null && rawAttrs == null)
             return null;
 
-        return new OperationContextSnapshotMessage(idBitmap, cnt == attrs.length ? attrs : Arrays.copyOf(attrs, cnt));
+        OperationContextSnapshotMessage snp = new OperationContextSnapshotMessage(idBitmap, shrink(attrs, cnt));
+
+        snp.rawFields(rawAttrs);
+
+        return snp;
     }
 
     /** Restores {@link OperationContextAttribute} values received from a remote node. */
@@ -145,7 +156,18 @@ public class DistributedOperationContext {
             ctxRestorer.add((OperationContextAttribute<Message>)locDistrAttrs[attrId].attr, snp.getValue(attrId));
         }
 
+        if (snp.rawFields() != null)
+            ctxRestorer.add(RAW_VALS_HOLDER_ATTR, snp.rawFields());
+
         return ctxRestorer.restore();
+    }
+
+    /** */
+    private static Message[] shrink(@Nullable Message[] attrs, int cnt) {
+        if (attrs == null)
+            return new Message[0];
+
+        return cnt == attrs.length ? attrs : Arrays.copyOf(attrs, cnt);
     }
 
     /** Restricts further registration of distributed attributes. */

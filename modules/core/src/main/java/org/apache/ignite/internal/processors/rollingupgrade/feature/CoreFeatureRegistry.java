@@ -111,4 +111,18 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the snapshot list command. */
     public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
+
+    /**
+     * Feature that makes distributed operation context attributes Rolling Upgrade-compatible. It introduces:
+     *
+     * <ul>
+     *     <li>The ability to specify the feature that introduced a distributed attribute.</li>
+     *     <li>Delivery of a distributed attribute through nodes that do not know it to the nodes that do.</li>
+     *     <li>A more compact serialized form of the operation context snapshot.</li>
+     * </ul>
+     */
+    public static final IgniteFeature RU_AWARE_DISTRIBUTED_OP_CTX_FEATURE = new IgniteCoreFeature(5);
+
+    /** */
+    public static final IgniteFeature OP_FEATURES_PROPAGATION_FEATURE = new IgniteCoreFeature(6);
 }

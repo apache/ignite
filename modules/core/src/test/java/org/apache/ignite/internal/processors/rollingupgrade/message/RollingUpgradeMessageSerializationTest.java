@@ -154,7 +154,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         IgniteEx newVerCli = startClientGrid(2, "2.20.0");
         IgniteEx oldVerCli = startClientGrid(3, "2.19.0");
 
-        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
+        Map<String, Received<TestDiscoveryMessage>> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCli.name()));
         assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerCli.name()));
@@ -223,7 +223,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         startGrid(1, "2.20.0");
         startGrid(2, "2.20.0");
 
-        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
+        Map<String, Received<TestDiscoveryMessage>> receivedMsgs = sendOverDiscovery(grid(1), CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(grid(2).name()));
         assertFields(A, B, C, D, null, null, receivedMsgs.get(grid(0).name()));
@@ -244,7 +244,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         IgniteEx newVerSrv = startGrid(3, "2.20.0");
         IgniteEx newVerSrvAfterOld = startGrid(4, "2.20.0");
 
-        Map<String, TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(newVerSrv, CORE_MSG);
+        Map<String, Received<TestDiscoveryMessage>> receivedMsgs = sendOverDiscovery(newVerSrv, CORE_MSG);
 
         assertFields(A, B, C, D, E, null, receivedMsgs.get(newVerCrd.name()));
         assertFields(A, B, C, D, null, null, receivedMsgs.get(oldVerSrv.name()));
@@ -450,17 +450,17 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testRawFieldKeptByOldNodeAndResent() throws Exception {
         startServerNodes("2.20.0", "2.20.1");
 
-        TestMessage rcvd = send(grid(1), grid(0), CORE_MSG);
+        TestMessage rcvd = send(grid(1), grid(0), CORE_MSG).message();
 
         assertEquals(TestCoreMessage_2_20_0.class, rcvd.getClass());
         assertEquals(1, rcvd.rawFields().size());
         assertEquals(VER_2_20_1_ID_6_FEATURE.id(), rcvd.rawFields().get(0).tag());
 
-        assertEquals(F, send(grid(0), grid(1), rcvd).fldF());
+        assertEquals(F, send(grid(0), grid(1), rcvd).message().fldF());
         assertEquals(1, rcvd.rawFields().size());
-        assertEquals(F, send(grid(0), grid(1), rcvd).fldF());
+        assertEquals(F, send(grid(0), grid(1), rcvd).message().fldF());
 
-        assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
+        assertNull(send(grid(0), grid(1), CORE_MSG).message().rawFields());
     }
 
     /** */
@@ -473,14 +473,14 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         upgradeNodeVersion(1, "2.20.0", "2.20.1");
 
-        TestMessage rcvd = send(grid(1), grid(0), CORE_MSG);
+        TestMessage rcvd = send(grid(1), grid(0), CORE_MSG).message();
 
         assertEquals(TestCoreMessage_2_20_0.class, rcvd.getClass());
         assertEquals(1, rcvd.rawFields().size());
 
         upgradeNodeVersion(1, "2.20.0", "2.21.0");
 
-        rcvd = send(grid(0), grid(1), rcvd);
+        rcvd = send(grid(0), grid(1), rcvd).message();
 
         assertEquals(TestCoreMessage_2_21_0.class, rcvd.getClass());
         assertFields(A, null, null, null, E, F, rcvd);
@@ -492,13 +492,13 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testRawFieldRelayedOverDiscoveryRing() throws Exception {
         startServerNodes("2.20.0", "2.20.1", "2.20.0", "2.20.1");
 
-        Map<String, TestDiscoveryMessage> rcvd = sendOverDiscovery(grid(1), CORE_MSG);
+        Map<String, Received<TestDiscoveryMessage>> rcvd = sendOverDiscovery(grid(1), CORE_MSG);
 
-        assertEquals(F, rcvd.get(grid(3).name()).fldF());
-        assertNull(rcvd.get(grid(3).name()).rawFields());
+        assertEquals(F, rcvd.get(grid(3).name()).message().fldF());
+        assertNull(rcvd.get(grid(3).name()).message().rawFields());
 
-        assertEquals(1, rcvd.get(grid(0).name()).rawFields().size());
-        assertEquals(1, rcvd.get(grid(2).name()).rawFields().size());
+        assertEquals(1, rcvd.get(grid(0).name()).message().rawFields().size());
+        assertEquals(1, rcvd.get(grid(2).name()).message().rawFields().size());
     }
 
     /** */
@@ -506,9 +506,9 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testRawFieldsOfNestedMessagesResent() throws Exception {
         startServerNodes("2.20.0", "2.21.0", "2.21.0");
 
-        TestMessage onOld = send(grid(1), grid(0), CONTAINER_MSG);
+        TestMessage onOld = send(grid(1), grid(0), CONTAINER_MSG).message();
 
-        TestContainerMessage_2_21_0 resent = (TestContainerMessage_2_21_0)send(grid(0), grid(2), onOld);
+        TestContainerMessage_2_21_0 resent = (TestContainerMessage_2_21_0)send(grid(0), grid(2), onOld).message();
 
         for (TestMessage nestedMsg : resent.nestedMessages())
             assertFields(A, null, null, null, E, F, nestedMsg);
@@ -527,17 +527,17 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertFields(A, null, null, null, E, F, send(grid(1), grid(2), CORE_MSG));
 
-        TestContainerMessage_2_21_0 container = (TestContainerMessage_2_21_0)send(grid(1), grid(2), CONTAINER_MSG);
+        TestContainerMessage_2_21_0 container = (TestContainerMessage_2_21_0)send(grid(1), grid(2), CONTAINER_MSG).message();
 
         assertFields(A, null, null, null, E, F, container.compressedContainer.msg);
 
-        TestMessage coreOnOld = send(grid(1), grid(0), CORE_MSG);
+        TestMessage coreOnOld = send(grid(1), grid(0), CORE_MSG).message();
 
         assertFields(A, null, null, null, E, null, coreOnOld);
         assertEquals(1, coreOnOld.rawFields().size());
         assertEquals(VER_2_21_0_ID_6_FEATURE.id(), coreOnOld.rawFields().get(0).tag());
 
-        TestMessage containerOnOld = send(grid(1), grid(0), CONTAINER_MSG);
+        TestMessage containerOnOld = send(grid(1), grid(0), CONTAINER_MSG).message();
 
         assertEquals(1, containerOnOld.rawFields().size());
         assertEquals(VER_2_21_0_ID_6_FEATURE.id(), containerOnOld.rawFields().get(0).tag());
@@ -548,9 +548,9 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testNestedAndCompressedRawFields() throws Exception {
         startServerNodes("2.20.0", "2.21.0", "2.20.0", "2.21.0");
 
-        Map<String, TestDiscoveryMessage> rcvd = sendOverDiscovery(grid(1), CONTAINER_MSG);
+        Map<String, Received<TestDiscoveryMessage>> rcvd = sendOverDiscovery(grid(1), CONTAINER_MSG);
 
-        TestContainerMessage_2_21_0 onNew = (TestContainerMessage_2_21_0)rcvd.get(grid(3).name());
+        TestContainerMessage_2_21_0 onNew = (TestContainerMessage_2_21_0)rcvd.get(grid(3).name()).message();
 
         for (TestMessage nestedMsg : onNew.nestedMessages())
             assertFields(A, null, null, null, E, F, nestedMsg);
@@ -561,7 +561,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         assertNull(onNew.compressedContainer.compressedContainer);
         assertNull(onNew.compressedContainer.rawFields());
 
-        TestContainerMessage_2_20_0 onOld = (TestContainerMessage_2_20_0)rcvd.get(grid(2).name());
+        TestContainerMessage_2_20_0 onOld = (TestContainerMessage_2_20_0)rcvd.get(grid(2).name()).message();
 
         for (TestMessage nestedMsg : onOld.nestedMessages()) {
             assertFields(A, null, null, null, E, null, nestedMsg);
@@ -576,8 +576,8 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testPeerWithoutRawFields() throws Exception {
         startServerNodes("2.18.0", "2.19.0");
 
-        assertNull(send(grid(1), grid(0), CORE_MSG).rawFields());
-        assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
+        assertNull(send(grid(1), grid(0), CORE_MSG).message().rawFields());
+        assertNull(send(grid(0), grid(1), CORE_MSG).message().rawFields());
     }
 
     /** */
@@ -589,7 +589,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, null, null);
         checkMutualCoreMessageSend(grid(0), grid(2), A, B, null, D, null, null);
 
-        TestContainerMessage_2_20_0 rcvd = (TestContainerMessage_2_20_0)send(grid(1), grid(2), CONTAINER_MSG);
+        TestContainerMessage_2_20_0 rcvd = (TestContainerMessage_2_20_0)send(grid(1), grid(2), CONTAINER_MSG).message();
 
         assertEquals(7, rcvd.oldCnt);
         assertFields(A, B, null, D, E, null, rcvd.oldCompressedMsg);
@@ -604,7 +604,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         msg.fldB = "";
 
-        assertEquals("", send(grid(1), grid(2), msg).fldB());
+        assertEquals("", send(grid(1), grid(2), msg).message().fldB());
     }
 
     /** */
@@ -614,7 +614,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         TestDiscoveryMessage msg = CORE_MSG.build("2.20.1", feature -> false);
 
-        TestMessage held = send(grid(0), grid(1), msg);
+        TestMessage held = send(grid(0), grid(1), msg).message();
 
         assertEquals(TestCoreMessage_2_21_0.class, held.getClass());
         assertFields(A, null, null, null, E, F, held);
@@ -622,12 +622,12 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertFields(A, B, C, D, E, F, send(grid(1), grid(0), held));
 
-        Map<String, TestDiscoveryMessage> rcvd = sendOverDiscovery(grid(0), msg);
+        Map<String, Received<TestDiscoveryMessage>> rcvd = sendOverDiscovery(grid(0), msg);
 
-        assertEquals(3, rcvd.get(grid(1).name()).rawFields().size());
+        assertEquals(3, rcvd.get(grid(1).name()).message().rawFields().size());
 
         assertFields(A, B, C, D, E, F, rcvd.get(grid(2).name()));
-        assertNull(rcvd.get(grid(2).name()).rawFields());
+        assertNull(rcvd.get(grid(2).name()).message().rawFields());
     }
 
     /** */
@@ -637,8 +637,8 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, F);
 
-        assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
-        assertNull(sendOverDiscovery(grid(0), CORE_MSG).get(grid(1).name()).rawFields());
+        assertNull(send(grid(0), grid(1), CORE_MSG).message().rawFields());
+        assertNull(sendOverDiscovery(grid(0), CORE_MSG).get(grid(1).name()).message().rawFields());
     }
 
     /** */
@@ -700,9 +700,9 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expE,
         String expF
     ) throws Exception {
-        Collection<TestDiscoveryMessage> receivedMsgs = sendOverDiscovery(from, CORE_MSG).values();
+        Collection<Received<TestDiscoveryMessage>> receivedMsgs = sendOverDiscovery(from, CORE_MSG).values();
 
-        for (TestDiscoveryMessage rcvd : receivedMsgs)
+        for (Received<TestDiscoveryMessage> rcvd : receivedMsgs)
             assertFields(expA, expB, expC, expD, expE, expF, rcvd);
     }
 
@@ -751,8 +751,8 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
         String expF
     ) throws Exception {
         List<TestMessage> receivedMsgs = List.of(
-            send(from, to, CONTAINER_MSG),
-            sendOverDiscovery(from, CONTAINER_MSG).get(to.name())
+            send(from, to, CONTAINER_MSG).message(),
+            sendOverDiscovery(from, CONTAINER_MSG).get(to.name()).message()
         );
 
         for (TestMessage rcvd : receivedMsgs) {
@@ -768,6 +768,19 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     /** */
     private static UUID routerId(IgniteEx cli) {
         return ((TcpDiscoveryNode)cli.localNode()).clientRouterNodeId();
+    }
+
+    /** */
+    private static void assertFields(
+        String expA,
+        String expB,
+        String expC,
+        String expD,
+        String expE,
+        String expF,
+        Received<? extends TestMessage> rcvd
+    ) {
+        assertFields(expA, expB, expC, expD, expE, expF, rcvd.message());
     }
 
     /** */

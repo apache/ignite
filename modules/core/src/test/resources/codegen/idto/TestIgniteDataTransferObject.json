@@ -1,6 +1,8 @@
 {
   "class": "org.apache.ignite.internal.TestIgniteDataTransferObject",
   "fields": [
-    {"order": 0, "type": "char[]", "name": "charArray"}
+    {"order": 0, "type": "char[]", "name": "charArray"},
+    {"order": 1, "type": "java.lang.String", "name": "deprecatedFld", "annotations": ["@org.apache.ignite.internal.Order(value=1, deprecatedBy=\"ROLLING_UPGRADE_FEATURE\")"]},
+    {"order": 2, "type": "java.lang.String", "name": "introducedFld", "annotations": ["@org.apache.ignite.internal.Order(value=2, introducedBy=\"RAW_FIELDS_FEATURE\")"]}
   ]
 }

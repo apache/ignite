@@ -73,6 +73,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -93,6 +95,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
+import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -115,6 +118,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CANCELLED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
+import static org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor.OP_FEATURES_ATTR;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
@@ -594,6 +598,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             if (node == null)
                 throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
+            validateArgumentIsSupportedByDestinationNode(node);
+
             authorizeSystemTaskJob(job);
 
             IgniteUuid jobId = IgniteUuid.fromUuid(ctx.localNodeId());
@@ -679,6 +685,64 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         }
 
         processDelayedResponses();
+    }
+
+    /** */
+    private void validateArgumentIsSupportedByDestinationNode(ClusterNode destNode) throws IgniteCheckedException {
+        IgniteNodeFeatureSet initiatorFeatures = OperationContext.get(OP_FEATURES_ATTR);
+
+        if (initiatorFeatures == null)
+            return;
+
+        IgniteNodeFeatureSet destNodeFeatures;
+
+        try {
+            destNodeFeatures = ctx.discovery().resolveNodeFeatures(destNode);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            throw new IgniteCheckedException("Failed to resolve remote node features [nodeId=" + destNode.id() + ']', e);
+        }
+
+        if (destNodeFeatures == null) {
+            throw new UnsupportedNodeVersionException(
+                "Failed to validate remote node features. The remote node's feature set is unavailable [nodeId=" + destNode.id() + ']');
+        }
+
+        for (IgniteComponentFeatureSet initiatorCmpFeatures : initiatorFeatures.values()) {
+            IgniteComponentFeatureSet destCmpFeatures = destNodeFeatures.componentFeatures(initiatorCmpFeatures.componentName());
+
+            if (destCmpFeatures == null) {
+                throw new IgniteCheckedException(
+                    "The Ignite Management API command cannot be executed on a remote node because the remote node lacks" +
+                        " a component of the command initiator" +
+                        " [component=" + initiatorCmpFeatures.componentName() +
+                        ", nodeId=" + destNode.id() +
+                        ", nodeVer=" + destNode.version() + ']'
+                );
+            }
+
+            if (destCmpFeatures.version().compareTo(initiatorCmpFeatures.version()) < 0) {
+                throw new IgniteCheckedException(
+                    "The Ignite Management API command cannot be executed on a remote node because the command initiator's" +
+                        " Ignite version is not yet supported. Retry the operation after the Rolling Upgrade has completed" +
+                        " [component=" + initiatorCmpFeatures.componentName() +
+                        ", initiatorVer=" + initiatorCmpFeatures.version() +
+                        ", nodeId=" + destNode.id() +
+                        ", nodeVer=" + destNode.version() + ']'
+                );
+            }
+
+            if (!initiatorCmpFeatures.isUpgradableTo(destCmpFeatures)) {
+                throw new IgniteCheckedException(
+                    "The Ignite Management API command cannot be executed on a remote node because the command initiator's" +
+                        " Ignite version is not supported. Update binary version of the Ignite Management API" +
+                        " [component=" + initiatorCmpFeatures.componentName() +
+                        ", initiatorVer=" + initiatorCmpFeatures.version() +
+                        ", nodeId=" + destNode.id() +
+                        ", nodeVer=" + destNode.version() + ']'
+                );
+            }
+        }
     }
 
     /**
@@ -1241,7 +1305,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param res Execution response.
      * @param jobRes Job result.
      * @param node New target node.
-     * @return {@code True} if new target node is not null.
+     * @return {@code True} if new target node is not null and supports the task argument.
      */
     private boolean checkTargetNode(GridJobExecuteResponse res, GridJobResultImpl jobRes, ClusterNode node) {
         if (node == null) {
@@ -1253,6 +1317,15 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
 
+            finishTask(null, e);
+
+            return false;
+        }
+
+        try {
+            validateArgumentIsSupportedByDestinationNode(node);
+        }
+        catch (IgniteCheckedException e) {
             finishTask(null, e);
 
             return false;
