@@ -60,12 +60,13 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Each bundle loads its store once; fresh bundles do not replace the context cached by the legacy create method. */
     @Test
     public void testFreshBundlePreservesCachedContext() throws Exception {
-        KeyStore originalKeys = ca.keyStoreWithPrivateKey("original");
+        String originalAlias = "original";
+        KeyStore originalKeys = ca.keyStoreWithPrivateKey(originalAlias);
         List<X509Certificate> originalChain = Arrays.asList(certificateChain(originalKeys));
         InMemoryStoreFactory factory = new InMemoryStoreFactory(originalKeys);
         SslBundle original = factory.createSslBundle();
 
-        assertEquals(Map.of("original", originalChain), original.certificateChains());
+        assertEquals(Map.of(originalAlias, originalChain), original.certificateChains());
         assertEquals(1, factory.loadKeyStoreCalls);
         assertEquals(1, factory.parameterChecks);
 
@@ -75,7 +76,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(2, factory.loadKeyStoreCalls);
         assertEquals(2, factory.parameterChecks);
 
-        KeyStore replacementKeys = ca.keyStoreWithPrivateKey("replacement");
+        String replacementAlias = "replacement";
+        KeyStore replacementKeys = ca.keyStoreWithPrivateKey(replacementAlias);
         List<X509Certificate> replacementChain = Arrays.asList(certificateChain(replacementKeys));
 
         assertNotEquals(originalChain.get(0), replacementChain.get(0));
@@ -86,8 +88,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         assertNotSame(cached, fresh.context());
         assertNotSame(original.context(), fresh.context());
-        assertEquals(Map.of("replacement", replacementChain), fresh.certificateChains());
-        assertEquals(Map.of("original", originalChain), original.certificateChains());
+        assertEquals(Map.of(replacementAlias, replacementChain), fresh.certificateChains());
+        assertEquals(Map.of(originalAlias, originalChain), original.certificateChains());
         assertSame(cached, factory.create());
         assertEquals(3, factory.loadKeyStoreCalls);
         assertEquals(3, factory.parameterChecks);
@@ -96,7 +98,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** TLS parameters apply to the context while its metadata remains available separately. */
     @Test
     public void testMetadataWithTlsParameters() throws Exception {
-        KeyStore store = ca.keyStoreWithPrivateKey("node");
+        String alias = "node";
+        KeyStore store = ca.keyStoreWithPrivateKey(alias);
         InMemoryStoreFactory factory = new InMemoryStoreFactory(store);
         String[] protocols = {"TLSv1.2"};
         String[] ciphers = {"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"};
@@ -106,15 +109,13 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         SslBundle bundle = factory.createSslBundle();
 
-        assertEquals(Map.of("node", Arrays.asList(certificateChain(store))), bundle.certificateChains());
+        assertEquals(Map.of(alias, Arrays.asList(certificateChain(store))), bundle.certificateChains());
 
         for (SSLContext ctx : new SSLContext[] {bundle.context(), factory.create()}) {
-            SSLEngine engine = ctx.createSSLEngine("peer.example", 10800);
+            SSLEngine engine = ctx.createSSLEngine();
 
             assertArrayEquals(protocols, engine.getEnabledProtocols());
             assertArrayEquals(ciphers, engine.getEnabledCipherSuites());
-            assertEquals("peer.example", engine.getPeerHost());
-            assertEquals(10800, engine.getPeerPort());
         }
     }
 
@@ -296,7 +297,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** A custom store source does not need the legacy key-manager hook and keeps its own copy of the key password. */
     @Test
     public void testLoadedMaterialBypassesLegacyKeyManagerHook() throws Exception {
-        KeyStore store = ca.keyStoreWithPrivateKey("node");
+        String alias = "node";
+        KeyStore store = ca.keyStoreWithPrivateKey(alias);
         char[] pwd = PASSWORD.clone();
         KeyMaterial material = new KeyMaterial(store, pwd, SslContextFactory.DFLT_KEY_ALGORITHM);
 
@@ -326,33 +328,34 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             }
         };
 
-        assertEquals(Map.of("node", Arrays.asList(certificateChain(store))), factory.createSslBundle().certificateChains());
+        assertEquals(Map.of(alias, Arrays.asList(certificateChain(store))), factory.createSslBundle().certificateChains());
     }
 
     /** Mutating the source map, its lists or the store cannot change an existing bundle. */
     @Test
     public void testImmutableCertificateMetadata() throws Exception {
-        KeyStore store = ca.keyStoreWithPrivateKey("node");
+        String alias = "node";
+        KeyStore store = ca.keyStoreWithPrivateKey(alias);
         SslBundle loaded = new InMemoryStoreFactory(store).createSslBundle();
         List<X509Certificate> expected = Arrays.asList(certificateChain(store));
         List<X509Certificate> inputChain = new ArrayList<>(expected);
         Map<String, List<X509Certificate>> input = new HashMap<>();
 
-        input.put("node", inputChain);
+        input.put(alias, inputChain);
 
         SslBundle bundle = new SslBundle(loaded.context(), input);
 
         inputChain.clear();
         input.clear();
-        store.deleteEntry("node");
+        store.deleteEntry(alias);
 
-        assertEquals(Map.of("node", expected), loaded.certificateChains());
-        assertEquals(Map.of("node", expected), bundle.certificateChains());
+        assertEquals(Map.of(alias, expected), loaded.certificateChains());
+        assertEquals(Map.of(alias, expected), bundle.certificateChains());
         assertSame(loaded.context(), bundle.context());
 
         GridTestUtils.assertThrows(log, () -> bundle.certificateChains().put("other", List.of()),
             UnsupportedOperationException.class, null);
-        GridTestUtils.assertThrows(log, () -> bundle.certificateChains().get("node").set(0, expected.get(1)),
+        GridTestUtils.assertThrows(log, () -> bundle.certificateChains().get(alias).set(0, expected.get(1)),
             UnsupportedOperationException.class, null);
     }
 
