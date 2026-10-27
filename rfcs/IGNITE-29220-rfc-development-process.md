@@ -21,7 +21,7 @@ Ticket: [IGNITE-29220](https://issues.apache.org/jira/browse/IGNITE-29220)
 
 ## When an RFC is required
 
-An RFC is required to add, change, deprecate, or remove a [public contract](IGNITE-29219-public-api-and-compatibility.md), including compatible additions.
+An RFC is required to add, change, deprecate, or remove a public contract defined in [IGNITE-29219](https://issues.apache.org/jira/browse/IGNITE-29219), including compatible additions.
 
 Refactoring, optimizations, tests, documentation fixes, and bug fixes that restore supported behavior need no RFC if they preserve all contracts. If unsure, discuss the change in the ticket.
 
