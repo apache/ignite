@@ -37,17 +37,21 @@ These interfaces are designed and supported for external use:
 - **Programming APIs:** language and client APIs, plugins, and SPIs.
 - **SQL:** syntax, types, and functions.
 - **REST and CLI:** endpoints, commands, options, exit codes, and supported machine-readable output.
-- **Configuration:** user settings, including system properties, environment variables, and distributed properties, plus their default values.
+- **Configuration:** user settings and their defaults, including system properties, environment variables, and distributed properties.
 - **Monitoring:** supported metrics, JMX interfaces, system views, and documented structured events.
 - **Client protocols:** client protocols and external serialization formats.
 
-A compatible change keeps existing supported calls, queries, commands, configurations, and integrations valid. Their names, signatures, and schemas stay compatible, and their public behavior is preserved.
+A compatible change keeps existing supported calls, queries, commands, configurations, and integrations valid. Their names, signatures, and schemas stay compatible.
 
 - **Source compatibility:** existing application and plugin source code still compiles.
 - **Binary compatibility:** compiled applications and plugins still work without rebuilding.
 - **Client/server compatibility:** supported combinations of client and server versions keep working.
 
-An interface remains public even if its documentation is missing or we know of no external users. Experimental public interfaces follow their stated stability limits.
+An interface remains public even if its documentation is missing or we know of no external users.
+
+A class in an internal package can still be part of the public API. Public methods or public error codes alone do not make a class part of the public API.
+
+Experimental public interfaces follow their stated stability limits.
 
 ## Stored data
 
@@ -67,10 +71,7 @@ Document supported client/server version combinations, data upgrade paths, and J
 
 ## Outside the contract
 
-- **Implementation details:** classes outside the public API, internal algorithms, and undocumented implementation details.
-- **Diagnostics:** stack traces, plus log wording that the interface does not guarantee.
+- **Implementation details:** classes outside the public API and internal algorithms.
+- **Node-to-node protocols:** internal communication and discovery protocols.
+- **Diagnostics:** stack traces and log wording that the interface does not guarantee.
 - **Timing:** execution timing that the interface does not guarantee.
-
-A class in an internal package can still be part of the public API. The same compatibility rules apply to it.
-
-Public methods or public error codes alone do not make a class part of the public API.
