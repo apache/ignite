@@ -38,6 +38,8 @@ These contracts include names, signatures, schemas, accepted inputs, results, er
 
 ## Observable behavior
 
+Public behavior is what a supported interface guarantees: its results, side effects, errors, and when it calls overridden methods or callbacks. Changing this behavior can break compatibility even if method signatures stay the same. A contract remains public even if we know of no external users.
+
 The contract includes guarantees such as transaction semantics, ordering, retries, and cancellation. For example, a timeout contract should explain whether the operation can still complete after the caller receives a timeout. How timers are tracked internally is an implementation detail.
 
 Externally exposed SQLState values and error codes belong to the contract even when produced by an internal exception class. The class itself remains internal unless it is part of a supported external interface.
