@@ -286,7 +286,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @return Loaded store with its key password and manager algorithm.
      * @throws SSLException If the store cannot be loaded.
      */
-    protected KeyMaterial loadKeyMaterial() throws SSLException {
+    private KeyMaterial loadKeyMaterial() throws SSLException {
         return new KeyMaterial(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
     }
 
