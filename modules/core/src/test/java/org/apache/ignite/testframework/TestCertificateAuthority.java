@@ -138,7 +138,7 @@ public class TestCertificateAuthority {
      * @param notAfter Time it expires; rounded down to a second.
      * @return Key store with the private key and a chain containing the issued certificate and this authority's certificate.
      */
-    public KeyStore keyStoreWithPrivateKey(String alias, X500Principal subject, KeyPair pair, long notBefore, long notAfter)
+    private KeyStore keyStoreWithPrivateKey(String alias, X500Principal subject, KeyPair pair, long notBefore, long notAfter)
         throws Exception {
         X509Certificate leaf = sign(subject, pair, notBefore, notAfter, false);
 

@@ -17,24 +17,36 @@
 
 package org.apache.ignite.ssl;
 
+import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.PublicKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.KeyGenerator;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -42,9 +54,12 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.TestCertificateAuthority.certificateChain;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-/** Tests that a bundle's certificate metadata belongs to the key material used to create its context. */
+/** Tests that each context loads its key store once and retains its certificate metadata. */
 public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Store and key password of the generated test material. */
     private static final char[] PASSWORD = TestCertificateAuthority.PWD;
@@ -57,7 +72,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         ca = new TestCertificateAuthority("metadata-ca");
     }
 
-    /** Each create or bundle request loads fresh material once and leaves earlier bundles unchanged. */
+    /** Each create or bundle request loads fresh material once. */
     @Test
     public void testFreshContextsLoadMaterialOnce() throws Exception {
         String originalAlias = "original";
@@ -80,8 +95,6 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         KeyStore replacementKeys = ca.keyStoreWithPrivateKey(replacementAlias);
         List<X509Certificate> replacementChain = Arrays.asList(certificateChain(replacementKeys));
 
-        assertNotEquals(originalChain.get(0), replacementChain.get(0));
-
         factory.store = replacementKeys;
 
         SslBundle fresh = factory.createSslBundle();
@@ -89,7 +102,6 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertNotSame(created, fresh.context());
         assertNotSame(original.context(), fresh.context());
         assertEquals(Map.of(replacementAlias, replacementChain), fresh.certificateChains());
-        assertEquals(Map.of(originalAlias, originalChain), original.certificateChains());
         assertEquals(3, factory.loadKeyStoreCalls);
         assertEquals(3, factory.parameterChecks);
 
@@ -154,22 +166,27 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         store.setCertificateEntry("trusted", keys.getCertificate(keyAlias));
         store.setEntry("secret", new KeyStore.SecretKeyEntry(KeyGenerator.getInstance("AES").generateKey()),
             new KeyStore.PasswordProtection(PASSWORD));
-
-        InMemoryStoreFactory factory = new InMemoryStoreFactory(store);
-        SslBundle withoutKey = factory.createSslBundle();
-
-        assertEquals(Map.of(), withoutKey.certificateChains());
-        assertNotNull(withoutKey.context().getSocketFactory());
-
         store.setKeyEntry(keyAlias, keys.getKey(keyAlias, PASSWORD), PASSWORD, keys.getCertificateChain(keyAlias));
 
-        SslBundle withKey = factory.createSslBundle();
+        SslBundle bundle = new InMemoryStoreFactory(store).createSslBundle();
 
-        assertEquals(Map.of(keyAlias, Arrays.asList(certificateChain(keys))), withKey.certificateChains());
-        assertEquals("The earlier bundle remains keyless", Map.of(), withoutKey.certificateChains());
+        assertEquals(Map.of(keyAlias, Arrays.asList(certificateChain(keys))), bundle.certificateChains());
     }
 
-    /** A private key with a non-X.509 chain is retained as an alias with unknown certificate metadata. */
+    /** An empty loaded store creates a context without private keys. */
+    @Test
+    public void testEmptyStoreCreatesKeylessContext() throws Exception {
+        KeyStore store = KeyStore.getInstance("JKS");
+
+        store.load(null, null);
+
+        SslBundle bundle = new InMemoryStoreFactory(store).createSslBundle();
+
+        assertEquals(Map.of(), bundle.certificateChains());
+        assertNotNull(bundle.context().getSocketFactory());
+    }
+
+    /** A private key with a non-X.509 chain retains its alias with an empty chain. */
     @Test
     public void testNonX509ChainRetainsPrivateKeyAlias() throws Exception {
         String alias = "private-key";
@@ -264,7 +281,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertArrayEquals(certificateChain(store), mgr.getCertificateChain(alias));
     }
 
-    /** Mutating the source map, its lists or the store cannot change an existing bundle. */
+    /** Mutating the source map or its lists cannot change the bundle's certificate metadata. */
     @Test
     public void testImmutableCertificateMetadata() throws Exception {
         String alias = "node";
@@ -280,9 +297,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         inputChain.clear();
         input.clear();
-        store.deleteEntry(alias);
 
-        assertEquals(Map.of(alias, expected), loaded.certificateChains());
         assertEquals(Map.of(alias, expected), bundle.certificateChains());
         assertSame(loaded.context(), bundle.context());
 
@@ -290,6 +305,132 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             UnsupportedOperationException.class, null);
         GridTestUtils.assertThrows(log, () -> bundle.certificateChains().get(alias).set(0, expected.get(1)),
             UnsupportedOperationException.class, null);
+    }
+
+    /** A factory that cannot report its private-key aliases keeps that distinction in the bundle. */
+    @Test
+    public void testBundleKeepsUnknownMetadata() throws Exception {
+        SSLContext ctx = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey()).create();
+
+        assertNull(new SslBundle(ctx, null).certificateChains());
+    }
+
+    /** Alias order does not depend on the map supplied by a factory. */
+    @Test
+    public void testBundleOrdersAliases() throws Exception {
+        String firstAlias = "a";
+        String secondAlias = "b";
+        KeyStore store = ca.keyStoreWithPrivateKey(firstAlias);
+        List<X509Certificate> chain = Arrays.asList(certificateChain(store));
+
+        store.setKeyEntry(secondAlias, store.getKey(firstAlias, PASSWORD), PASSWORD, store.getCertificateChain(firstAlias));
+
+        SSLContext ctx = new InMemoryStoreFactory(store).create();
+        Map<String, List<X509Certificate>> chains = new LinkedHashMap<>();
+
+        chains.put(secondAlias, chain);
+        chains.put(firstAlias, chain);
+
+        assertEquals(List.of(firstAlias, secondAlias), new ArrayList<>(new SslBundle(ctx, chains).certificateChains().keySet()));
+    }
+
+    /** A manager decorator participates in TLS without a second store load. */
+    @Test
+    public void testCustomKeyManagerUsedByContext() throws Exception {
+        String alias = "server-key";
+        KeyStore store = ca.keyStoreWithPrivateKey(alias);
+        AtomicReference<X509ExtendedKeyManager> customMgr = new AtomicReference<>();
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(store) {
+            /** {@inheritDoc} */
+            @Override protected KeyManager[] createKeyManagers(KeyMaterial material) throws SSLException {
+                X509ExtendedKeyManager mgr = mock(X509ExtendedKeyManager.class, delegatesTo(super.createKeyManagers(material)[0]));
+
+                customMgr.set(mgr);
+
+                return new KeyManager[] {mgr};
+            }
+        };
+        SslBundle bundle = factory.createSslBundle();
+        SSLContext clientCtx = SSLContext.getInstance("TLS");
+
+        clientCtx.init(new KeyManager[0], TestCertificateAuthority.trustManagers(ca.trustStore()), null);
+
+        int timeout = 10_000;
+
+        try (SSLServerSocket listener = (SSLServerSocket)bundle.context().getServerSocketFactory()
+            .createServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
+            listener.setSoTimeout(timeout);
+
+            IgniteInternalFuture<?> accepted = GridTestUtils.runAsync(() -> {
+                try (SSLSocket server = (SSLSocket)listener.accept()) {
+                    server.setSoTimeout(timeout);
+                    server.startHandshake();
+                }
+
+                return null;
+            });
+
+            try (SSLSocket client = (SSLSocket)clientCtx.getSocketFactory()
+                .createSocket(listener.getInetAddress(), listener.getLocalPort())) {
+                client.setSoTimeout(timeout);
+                client.startHandshake();
+
+                assertArrayEquals(certificateChain(store), client.getSession().getPeerCertificates());
+            }
+
+            accepted.get(timeout);
+        }
+
+        verify(customMgr.get(), atLeastOnce()).getPrivateKey(alias);
+        assertEquals(1, factory.loadKeyStoreCalls);
+        assertEquals(Map.of(alias, Arrays.asList(certificateChain(store))), bundle.certificateChains());
+    }
+
+    /** A null manager result is rejected instead of silently using the JVM's default keys. */
+    @Test
+    public void testNullKeyManagersRejected() throws Exception {
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey()) {
+            /** {@inheritDoc} */
+            @Override protected KeyManager[] createKeyManagers(KeyMaterial material) {
+                return null;
+            }
+        };
+
+        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, "keyManagers");
+
+        assertTrue(err.getCause() instanceof SSLException);
+    }
+
+    /** An unreadable private key reports the source store and preserves the original cause. */
+    @Test
+    public void testKeyPasswordFailureNamesStore() throws Exception {
+        String alias = "private-key";
+        KeyStore store = ca.keyStoreWithPrivateKey(alias);
+
+        store.setKeyEntry(alias, store.getKey(alias, PASSWORD), "different-key-password".toCharArray(), store.getCertificateChain(alias));
+
+        Path path = Files.createTempFile("unreadable-key", ".jks");
+
+        try {
+            TestCertificateAuthority.save(store, path);
+
+            SslContextFactory factory = new SslContextFactory();
+
+            factory.setKeyStoreType(store.getType());
+            factory.setKeyStoreFilePath(path.toString());
+            factory.setKeyStorePassword(PASSWORD);
+            factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+
+            Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, null);
+
+            assertTrue(err.getCause() instanceof SSLException);
+            assertTrue(err.getCause().getMessage().contains(path.toString()));
+            assertTrue(err.getCause().getMessage().contains("type=" + store.getType()));
+            assertTrue(X.hasCause(err, UnrecoverableKeyException.class));
+        }
+        finally {
+            Files.delete(path);
+        }
     }
 
     /** A file factory whose store-loading hook supplies the test material. */

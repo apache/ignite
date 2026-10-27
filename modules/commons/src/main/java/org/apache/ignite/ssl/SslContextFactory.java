@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -264,6 +265,16 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** {@inheritDoc} */
+    @Override protected KeyManager[] createKeyManagers(KeyMaterial material) throws SSLException {
+        try {
+            return super.createKeyManagers(material);
+        }
+        catch (SSLException e) {
+            throw new SSLException(e.getMessage() + " [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected final TrustManager[] createTrustManagers() throws SSLException {
         if (trustMgrs != null)
             return trustMgrs;
@@ -341,7 +352,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @param keyStoreType Type of key store.
      * @param storeFilePath Path to key store file.
      * @param keyStorePwd Store password.
-     * @return Initialized key store.
+     * @return Initialized key store, never {@code null}. Return an empty loaded store for a context without private keys.
      * @throws SSLException If key store could not be initialized.
      */
     protected KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)

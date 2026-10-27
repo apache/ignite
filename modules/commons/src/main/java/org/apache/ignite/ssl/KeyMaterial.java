@@ -37,7 +37,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * A loaded key store and the settings needed to create its key managers. Both managers and certificate metadata are read from
- * this store without loading it again. The caller must not modify the store while building a context and its metadata.
+ * this store without loading it again. Do not modify the store while any context created from it is in use: key managers
+ * such as PKIX read it during handshakes. Load replacement material into a separate store.
  */
 public final class KeyMaterial {
     /** */
@@ -50,7 +51,8 @@ public final class KeyMaterial {
     private final String algorithm;
 
     /**
-     * @param store Loaded key store.
+     * @param store Loaded key store, never {@code null}. For a context without private keys, initialize an empty store with
+     *      {@code KeyStore.load(null, null)}.
      * @param keyPwd Password for its private keys, or {@code null} if the store requires no password.
      * @param algorithm Key manager algorithm.
      */
