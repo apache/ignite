@@ -35,6 +35,8 @@ Internal refactoring, optimizations, tests, and documentation fixes do not need 
 
 One RFC may cover several implementation tickets. Merge it with the first implementation PR and link subsequent PRs to it. Those PRs do not need three additional RFC approvals unless they change the agreed contract or compatibility plan. Such changes require an updated RFC approved through the same process.
 
+For an incompatible change, explain how existing users can migrate. If you propose skipping deprecation, say so and explain why. Describe the expected impact and the evidence behind it. Skipping deprecation needs explicit approval through the RFC process. Having no known users is not enough on its own.
+
 ## Keep the document useful
 
 Use roughly the same level of detail as an IEP. Explain the problem, proposed API or format, alternatives, compatibility and migration, and how we will test and complete the work. Name the affected versions and clients. Keep it short when the change is small.
