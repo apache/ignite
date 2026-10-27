@@ -31,11 +31,9 @@ Explain why this approach was chosen. Compare other realistic options where rele
 
 ## Compatibility and migration
 
-Name the affected clients and versions. Explain what changes for existing applications, configurations, integrations, or stored data.
+Name the affected clients and versions. Explain what changes for existing applications, configurations, integrations, or stored data. State whether the change is compatible and explain why.
 
 If the change affects supported versions or data upgrade paths, state what is supported before and after the change. Link the relevant user documentation and describe the required updates.
-
-State whether the change is compatible and explain why.
 
 For a breaking change, name the release that announces deprecation and the first release with the breaking change. Describe how users can migrate and how they will be notified. The deprecation period is agreed as part of the RFC.
 
@@ -43,4 +41,4 @@ If you propose skipping deprecation, say so. Explain the reason, expected impact
 
 ## Implementation and checks
 
-Link all implementation tickets. List the work and tests or other checks needed to consider the work complete. Include checks for the proposed behavior and compatibility.
+Link all implementation tickets. List the work and tests or other checks needed for the proposed behavior and compatibility.
