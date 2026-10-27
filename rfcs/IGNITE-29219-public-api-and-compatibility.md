@@ -28,7 +28,7 @@ A compatible change preserves supported functionality and its guarantees. This a
 - **Errors:** errors, including error codes and SQLState values.
 - **Extensions:** guarantees about calls to overridden methods and callbacks.
 
-When documentation is incomplete, use tests and existing usage to help identify the public behavior. A test alone does not make an implementation detail part of the public contract.
+When documentation is incomplete, use tests and existing usage to clarify public behavior.
 
 ## External interfaces
 
