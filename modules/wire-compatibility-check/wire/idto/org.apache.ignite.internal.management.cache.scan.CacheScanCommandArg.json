@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.scan.CacheScanCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 1, "type": "java.lang.String", "name": "outputFormat"},
+    {"order": 2, "type": "int", "name": "limit"}
+  ]
+}

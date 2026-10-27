@@ -153,7 +153,7 @@
         <dependency>
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>common-junit48</artifactId>
-            <version>${surefire.version}</version>
+            <version>3.5.6</version>
         </dependency>
     </dependencies>
 </project>

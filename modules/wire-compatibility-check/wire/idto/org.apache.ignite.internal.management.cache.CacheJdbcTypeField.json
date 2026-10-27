@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheJdbcTypeField",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "dbName"},
+    {"order": 1, "type": "int", "name": "dbType"},
+    {"order": 2, "type": "java.lang.String", "name": "javaName"},
+    {"order": 3, "type": "java.lang.String", "name": "javaType"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.diagnostic.Operation",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.diagnostic.Operation", "name": "DUMP"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.diagnostic.Operation", "name": "DUMP_LOG"}
+  ]
+}

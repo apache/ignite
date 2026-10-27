@@ -55,7 +55,7 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheMapHolder entriesMapIfExists(Integer cacheId) {
+    @Nullable @Override protected CacheMapHolder entriesMapIfExists(int cacheId) {
         return entryMap;
     }
 

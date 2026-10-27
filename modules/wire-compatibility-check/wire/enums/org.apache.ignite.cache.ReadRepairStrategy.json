@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.cache.ReadRepairStrategy",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.ReadRepairStrategy", "name": "LWW"},
+    {"order": 1, "type": "org.apache.ignite.cache.ReadRepairStrategy", "name": "PRIMARY"},
+    {"order": 2, "type": "org.apache.ignite.cache.ReadRepairStrategy", "name": "RELATIVE_MAJORITY"},
+    {"order": 3, "type": "org.apache.ignite.cache.ReadRepairStrategy", "name": "REMOVE"},
+    {"order": 4, "type": "org.apache.ignite.cache.ReadRepairStrategy", "name": "CHECK_ONLY"}
+  ]
+}

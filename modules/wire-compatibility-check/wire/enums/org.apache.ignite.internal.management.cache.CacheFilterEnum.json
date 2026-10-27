@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheFilterEnum",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.cache.CacheFilterEnum", "name": "DEFAULT"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.cache.CacheFilterEnum", "name": "SYSTEM"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.cache.CacheFilterEnum", "name": "PERSISTENT"},
+    {"order": 3, "type": "org.apache.ignite.internal.management.cache.CacheFilterEnum", "name": "NOT_PERSISTENT"},
+    {"order": 4, "type": "org.apache.ignite.internal.management.cache.CacheFilterEnum", "name": "USER"},
+    {"order": 5, "type": "org.apache.ignite.internal.management.cache.CacheFilterEnum", "name": "ALL"}
+  ]
+}

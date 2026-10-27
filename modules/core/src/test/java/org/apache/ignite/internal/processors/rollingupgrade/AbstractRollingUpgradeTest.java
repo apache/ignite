@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,10 +51,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCompon
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_18_0;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginComponentFeatureSetProvider;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.TestPluginFeature;
@@ -299,7 +295,6 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
         startClientGrid(2, ver);
 
         checkVersionUpgradeInactive(ver);
-        checkPreviousClusterFeatures(null);
     }
 
     /** */
@@ -387,34 +382,6 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
             logicalVersions.containsPlugin() ? readDeclaredPluginFeatures(logicalVersions.pluginVersion()) : Collections.emptyList(),
             targetVersions.containsPlugin() ? readDeclaredPluginFeatures(targetVersions.pluginVersion()) : Collections.emptyList())
         );
-    }
-
-    /** */
-    protected void checkPreviousClusterFeatures(@Nullable String expVer) throws Exception {
-        TestVersions expVersions = expVer == null ? null : TestVersions.parse(expVer);
-
-        IgniteCoreFeatureSet expPrevCoreFeatures = expVersions != null ? createCoreFeatureSet(expVersions.coreVersion()) : null;
-
-        IgnitePluginFeatureSet expPrevPluginFeatures = expVersions != null && expVersions.containsPlugin()
-            ? new IgnitePluginFeatureSet(
-                TestPluginFeature.COMPONENT_NAME,
-                IgniteProductVersion.fromString(expVersions.pluginVersion()),
-                IgniteFeatureSet.buildFrom(readDeclaredPluginFeatures(expVersions.pluginVersion())))
-            : null;
-
-        for (Ignite ignite : Ignition.allGrids()) {
-            IgniteNodeFeatureSet prevFeatures = ru(ignite).features().previousActiveFeatures();
-
-            if (expVersions == null)
-                assertNull(prevFeatures);
-            else {
-                assertNotNull(prevFeatures);
-                assertEquals(expPrevCoreFeatures, prevFeatures.componentFeatures(IgniteCoreFeature.COMPONENT_NAME));
-
-                if (expVersions.containsPlugin())
-                    assertEquals(expPrevPluginFeatures, prevFeatures.componentFeatures(TestPluginFeature.COMPONENT_NAME));
-            }
-        }
     }
 
     /** */
@@ -534,18 +501,9 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
 
     /** */
     protected void finalizeClusterVersion(int nodeIdx, String expVer) throws Exception {
-        IgniteFeatureManager featureMgr = ru(nodeIdx).features();
-
-        String prevLogicalVer = featureMgr.localVersionFeatures().equals(featureMgr.activeFeatures())
-            ? null // No actual version upgrade was performed.
-            : resolveCompoundVersion(ru(nodeIdx).features().activeFeatures());
-
-        checkPreviousClusterFeatures(prevLogicalVer);
-
         ru(nodeIdx).finalizeClusterVersion();
 
         checkVersionUpgradeInactive(expVer);
-        checkPreviousClusterFeatures(prevLogicalVer);
     }
 
     /** */
@@ -578,14 +536,6 @@ public abstract class AbstractRollingUpgradeTest extends GridCommonAbstractTest 
     /** */
     protected String nodeComponentVersions(Ignite node) {
         return node.cluster().localNode().attribute(COMPONENT_VERSIONS_ATTRIBUTE);
-    }
-
-    /** */
-    protected String resolveCompoundVersion(IgniteNodeFeatureSet features) {
-        return Arrays.stream(features.values())
-            .sorted(Comparator.comparing(IgniteComponentFeatureSet::componentName))
-            .map(f -> IGNITE_VERSION.equals(f.version()) ? MASTER_VER_REF : semanticVersion(f.version()))
-            .collect(Collectors.joining(" | "));
     }
 
     /** */

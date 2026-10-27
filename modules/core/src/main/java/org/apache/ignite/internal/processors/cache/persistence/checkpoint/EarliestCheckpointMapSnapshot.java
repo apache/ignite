@@ -17,30 +17,39 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectInput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Earliest checkpoint map snapshot.
  * Speeds up construction of the earliestCp map in the {@link CheckpointHistory}.
+ *
+ * <b>The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}),
+ * so its binary format must stay readable across versions.</b>
  */
-public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
+public class EarliestCheckpointMapSnapshot implements Externalizable {
     /** Serial version UUID. */
     private static final long serialVersionUID = 0L;
 
+    /** Header magic number {@code IgniteDataTransferObject#MAGIC}. */
+    private static final int MAGIC = 0x42BEEF00;
+
     /** Last snapshot's checkpoint timestamp. */
-    @Order(0)
-    Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
+    private Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
 
     /** Ids of checkpoints present at the time of the snapshot capture. */
-    @Order(1)
-    Set<UUID> checkpointIds;
+    private Set<UUID> checkpointIds;
 
     /** Constructor. */
     public EarliestCheckpointMapSnapshot(
@@ -95,22 +104,55 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         return checkpointIds.contains(checkpointId);
     }
 
+    /**
+     * <b>The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}),
+     * so its binary format must stay readable across versions.</b>
+     */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeInt(MAGIC);
+
+        try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
+            U.writeMap(dtout, data);
+            U.writeCollection(dtout, checkpointIds);
+        }
+    }
+
+    /**
+     * <b>The snapshot is stored on disk ({@link CheckpointMarkersStorage#EARLIEST_CP_SNAPSHOT_FILE}),
+     * so its binary format must stay readable across versions.</b>
+     */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        readHeader(in);
+
+        try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
+            data = U.readMap(dtin);
+            checkpointIds = U.readSet(dtin);
+        }
+    }
+
+    /** */
+    private static void readHeader(ObjectInput in) throws IOException {
+        int hdr = in.readInt();
+
+        if ((hdr & MAGIC) != MAGIC) {
+            throw new IOException("Unexpected earliest checkpoint map snapshot header " +
+                "[actual=" + Integer.toHexString(hdr) + ", expected=" + Integer.toHexString(MAGIC) + "]");
+        }
+    }
+
     /** {@link CheckpointEntry.GroupState} snapshot. */
-    public static class GroupStateSnapshot extends IgniteDataTransferObject {
+    static class GroupStateSnapshot implements Externalizable {
         /** Serial version UUID. */
         private static final long serialVersionUID = 0L;
 
         /** Partition ids. */
-        @Order(0)
-        int[] parts;
+        private int[] parts;
 
         /** Partition counters which corresponds to partition ids. */
-        @Order(1)
-        long[] cnts;
+        private long[] cnts;
 
         /** Partitions count. */
-        @Order(2)
-        int size;
+        private int size;
 
         /**
          * @param parts Partitions' ids.
@@ -148,6 +190,28 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
          */
         public int size() {
             return size;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(MAGIC);
+
+            try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
+                U.writeIntArray(dtout, parts);
+                U.writeLongArray(dtout, cnts);
+                dtout.writeInt(size);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            readHeader(in);
+
+            try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
+                parts = U.readIntArray(dtin);
+                cnts = U.readLongArray(dtin);
+                size = dtin.readInt();
+            }
         }
     }
 }

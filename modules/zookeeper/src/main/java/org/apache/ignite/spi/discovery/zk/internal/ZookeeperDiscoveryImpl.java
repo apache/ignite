@@ -66,7 +66,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
@@ -229,7 +229,7 @@ public class ZookeeperDiscoveryImpl {
     private final DiscoveryMessageParser msgParser;
 
     /** */
-    private final OperationContextDispatcher opCtxDispatcher;
+    private final DistributedOperationContext distrOpCtx;
 
     /**
      * @param spi Discovery SPI.
@@ -282,7 +282,7 @@ public class ZookeeperDiscoveryImpl {
 
         msgParser = new DiscoveryMessageParser(msgFactory, ((IgniteEx)spi.ignite()).context());
 
-        opCtxDispatcher = ((IgniteEx)spi.ignite()).context().operationContextDispatcher();
+        distrOpCtx = ((IgniteEx)spi.ignite()).context().distributedOperationContext();
     }
 
     /**
@@ -667,7 +667,7 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     public void sendCustomEvent(DiscoverySpiCustomMessage msg) {
-        OperationContextSnapshotMessage opCtxSnp = opCtxDispatcher.createSnapshot();
+        OperationContextSnapshotMessage opCtxSnp = distrOpCtx.createSnapshot();
 
         if (opCtxSnp != null)
             sendCustomMessage(new ZkOperationContextAwareCustomMessage(msg, opCtxSnp));
@@ -3543,7 +3543,7 @@ public class ZookeeperDiscoveryImpl {
 
         IgniteFuture<?> fut;
 
-        try (Scope ignored = opCtxDispatcher.restoreSnapshot(opCtxSnp)) {
+        try (Scope ignored = distrOpCtx.restoreSnapshot(opCtxSnp)) {
             fut = lsnr.onDiscovery(
                 new DiscoveryNotification(
                     DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,

@@ -1275,7 +1275,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
+            msg.attachOperationContextSnapshot(distrOpCtx.createSnapshot());
 
             synchronized (mux) {
                 queue.add(msg);
@@ -2083,7 +2083,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** */
         protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
-            try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+            try (Scope ignored = distrOpCtx.restoreSnapshot(msg.opCtxSnp)) {
                 processDiscoveryMessage0(msg);
             }
         }

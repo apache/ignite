@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.visor.VisorTaskArgument",
+  "fields": [
+    {"order": 0, "type": "java.util.List<java.util.UUID>", "name": "nodes"},
+    {"order": 1, "type": "A extends java.lang.Object", "name": "arg"},
+    {"order": 2, "type": "boolean", "name": "debug"}
+  ]
+}

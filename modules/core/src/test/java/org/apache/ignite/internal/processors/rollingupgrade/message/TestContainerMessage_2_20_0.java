@@ -23,10 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.Compress;
+import org.apache.ignite.internal.FeatureGated;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0;
+
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0.VER_2_20_0_ID_3_FEATURE;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.TestIgniteReleaseFeatures_2_20_0.VER_2_20_0_ID_5_FEATURE;
 
 /** */
+@FeatureGated(registry = TestIgniteReleaseFeatures_2_20_0.class)
 public class TestContainerMessage_2_20_0 extends TestDiscoveryMessage {
     /** */
     @Order(0)
@@ -54,6 +60,15 @@ public class TestContainerMessage_2_20_0 extends TestDiscoveryMessage {
     @Order(5)
     Map<Integer, TestCoreMessage_2_20_0> compressedMap;
 
+    /** */
+    @Order(value = 6, deprecatedBy = "VER_2_20_0_ID_3_FEATURE")
+    int oldCnt;
+
+    /** */
+    @Compress
+    @Order(value = 7, deprecatedBy = "VER_2_20_0_ID_5_FEATURE")
+    TestCoreMessage_2_20_0 oldCompressedMsg;
+
     /** {@inheritDoc} */
     @Override public void fill(Predicate<IgniteFeature> featureStatusProvider) {
         msg = nestedMessage(featureStatusProvider);
@@ -62,6 +77,12 @@ public class TestContainerMessage_2_20_0 extends TestDiscoveryMessage {
         arr = new TestCoreMessage_2_20_0[] {nestedMessage(featureStatusProvider)};
         compressedMsg = nestedMessage(featureStatusProvider);
         compressedMap = Map.of(0, nestedMessage(featureStatusProvider));
+
+        if (!featureStatusProvider.test(VER_2_20_0_ID_3_FEATURE))
+            oldCnt = 7;
+
+        if (!featureStatusProvider.test(VER_2_20_0_ID_5_FEATURE))
+            oldCompressedMsg = nestedMessage(featureStatusProvider);
     }
 
     /** {@inheritDoc} */
