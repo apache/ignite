@@ -27,25 +27,17 @@ Refactoring, optimizations, tests, documentation fixes, and bug fixes that resto
 
 ## RFC contents
 
-- **Proposal:** the problem, proposed change, and other options.
-- **Impact:** affected versions and clients, compatibility, and migration.
-- **Delivery:** tests and what must be done to complete the work.
-
-Link all implementation tickets to track progress. Existing IEPs can be linked instead of copied.
+Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. It covers the problem, proposed change, compatibility and migration, and implementation and checks. Link to existing IEPs instead of copying them where useful.
 
 ## Review and merge
 
 1. Create a ticket describing the problem and change. Open one PR containing the implementation and `rfcs/IGNITE-<ticket>-<short-title>.md`. Link them to each other. The ticket number identifies the RFC. The implementation may be added later.
 2. Announce the RFC version on the dev list for approval. Allow at least 72 hours for feedback, starting with that message. Report changes to the proposal and concerns to the list.
-3. Get explicit approval of that version from at least three different Ignite committers in the PR. The author can count if they are a committer and explicitly approve it. Resolve technical objections. Post the approval summary and decision on the dev list before merging.
+3. Get explicit approval of that version from at least three different Ignite committers in the PR. The author can count if they are a committer and explicitly approve it. Any request to skip deprecation must be explicitly approved. Resolve technical objections. Post the approval summary and decision on the dev list before merging.
 4. Changes to the proposal or compatibility plan require a new announcement, a new 72-hour review period, and new approvals. Wording-only edits do not restart review.
 5. After RFC approval, code review, and testing, merge the RFC and implementation as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
 
 One RFC may cover several tickets. Merge it with the first implementation PR and link later PRs to it. Repeat RFC approval only if they change the agreed contract or compatibility plan; update the RFC first.
-
-## Breaking changes
-
-Describe migration for existing users. Skipping deprecation requires reasons, evidence about the expected impact, and explicit approval through this process. Having no known users is not enough.
 
 ## References
 
