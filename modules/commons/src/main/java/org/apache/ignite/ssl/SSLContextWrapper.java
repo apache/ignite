@@ -21,7 +21,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
 
 /**
- * Wrapper for {@link SSLContext} that extends the source context with custom SSL parameters.
+ * Wrapper for {@link SSLContext} that extend source context with custom SSL parameters.
  */
 public class SSLContextWrapper extends SSLContext {
     /**
