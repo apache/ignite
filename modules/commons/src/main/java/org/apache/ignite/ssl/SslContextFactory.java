@@ -27,22 +27,19 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
  *
- * This factory caches the result of the first successful attempt to create an {@link SSLContext} and always returns it
- * as a result of further invocations of the {@link SslContextFactory#create()}} method.
+ * Each call loads the stores again and builds a fresh context. The component using it should retain the context between
+ * connections.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
@@ -262,50 +259,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
         return new DisabledX509TrustManager();
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @deprecated Use {@link #createSslBundle()} to obtain a context with its certificate chains.
-     */
-    @Deprecated
-    @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        try {
-            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
-
-            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            return keyMgrFactory.getKeyManagers();
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
-        }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
-                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
-        }
-    }
-
     /** {@inheritDoc} */
-    @Override public SslBundle createSslBundle() {
-        try {
-            checkParameters();
-
-            return createSslBundle(loadKeyMaterial());
-        }
-        catch (SSLException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * Loads the key store once for both key managers and certificate metadata.
-     *
-     * @return Loaded store with its key password and manager algorithm.
-     * @throws SSLException If the store cannot be loaded.
-     */
-    private KeyMaterial loadKeyMaterial() throws SSLException {
+    @Override protected KeyMaterial loadKeyMaterial() throws SSLException {
         return new KeyMaterial(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
     }
 

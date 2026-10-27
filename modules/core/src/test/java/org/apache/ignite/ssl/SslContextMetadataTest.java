@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import javax.crypto.KeyGenerator;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509KeyManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestCertificateAuthority;
@@ -57,9 +57,9 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         ca = new TestCertificateAuthority("metadata-ca");
     }
 
-    /** Each bundle loads its store once; fresh bundles do not replace the context cached by the legacy create method. */
+    /** Each create or bundle request loads fresh material once and leaves earlier bundles unchanged. */
     @Test
-    public void testFreshBundlePreservesCachedContext() throws Exception {
+    public void testFreshContextsLoadMaterialOnce() throws Exception {
         String originalAlias = "original";
         KeyStore originalKeys = ca.keyStoreWithPrivateKey(originalAlias);
         List<X509Certificate> originalChain = Arrays.asList(certificateChain(originalKeys));
@@ -70,9 +70,9 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(1, factory.loadKeyStoreCalls);
         assertEquals(1, factory.parameterChecks);
 
-        SSLContext cached = factory.create();
+        SSLContext created = factory.create();
 
-        assertSame(cached, factory.create());
+        assertNotSame(original.context(), created);
         assertEquals(2, factory.loadKeyStoreCalls);
         assertEquals(2, factory.parameterChecks);
 
@@ -86,13 +86,17 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         SslBundle fresh = factory.createSslBundle();
 
-        assertNotSame(cached, fresh.context());
+        assertNotSame(created, fresh.context());
         assertNotSame(original.context(), fresh.context());
         assertEquals(Map.of(replacementAlias, replacementChain), fresh.certificateChains());
         assertEquals(Map.of(originalAlias, originalChain), original.certificateChains());
-        assertSame(cached, factory.create());
         assertEquals(3, factory.loadKeyStoreCalls);
         assertEquals(3, factory.parameterChecks);
+
+        assertNotSame(fresh.context(), factory.create());
+        assertEquals(4, factory.loadKeyStoreCalls);
+        assertEquals(4, factory.parameterChecks);
+        assertEquals(4, factory.bundleCalls);
     }
 
     /** TLS parameters apply to the context while its metadata remains available separately. */
@@ -205,71 +209,6 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(Map.of(alias, List.of()), material.certificateChains());
     }
 
-    /** Legacy creation stays cached; requesting a bundle does not invoke the old hooks. */
-    @Test
-    public void testLegacyHooksRunOncePerBuiltContext() {
-        LegacyFactory factory = new LegacyFactory();
-        SSLContext first = factory.create();
-
-        assertSame(first, factory.create());
-        assertEquals(1, factory.parameterChecks);
-        assertEquals(1, factory.keyManagerCalls);
-        assertEquals(1, factory.trustManagerCalls);
-
-        GridTestUtils.assertThrows(log, (Callable<SslBundle>)factory::createSslBundle,
-            UnsupportedOperationException.class, "Subclass must override createSslBundle()");
-
-        assertSame(first, factory.create());
-        assertEquals(1, factory.parameterChecks);
-        assertEquals(1, factory.keyManagerCalls);
-        assertEquals(1, factory.trustManagerCalls);
-    }
-
-    /** Existing subclasses can still populate the protected cache before the first create call. */
-    @Test
-    public void testLegacyProtectedCache() throws Exception {
-        LegacyFactory factory = new LegacyFactory();
-        SSLContext prepared = TestCertificateAuthority.context(ca.keyStoreWithPrivateKey(), ca.trustStore());
-
-        factory.sslCtx.set(prepared);
-
-        assertSame(prepared, factory.create());
-        assertEquals(0, factory.parameterChecks);
-        assertEquals(0, factory.keyManagerCalls);
-        assertEquals(0, factory.trustManagerCalls);
-    }
-
-    /** A subclass can still obtain key managers from the file factory's legacy hook. */
-    @Test
-    public void testLegacyKeyManagerAdapter() throws Exception {
-        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
-        KeyManager[] mgrs = factory.legacyKeyManagers();
-
-        assertNotNull(mgrs);
-        assertTrue(mgrs.length > 0);
-        assertEquals(1, factory.loadKeyStoreCalls);
-    }
-
-    /** Legacy store loaders can still pass null to JSSE to initialize key managers without a store. */
-    @Test
-    public void testLegacyNullKeyStore() {
-        SslContextFactory factory = new SslContextFactory() {
-            /** {@inheritDoc} */
-            @Override protected KeyStore loadKeyStore(String type, String path, char[] pwd) {
-                return null;
-            }
-        };
-
-        factory.setKeyStoreFilePath("unused-by-custom-loader");
-        factory.setKeyStorePassword(PASSWORD);
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-
-        SSLContext ctx = factory.create();
-
-        assertNotNull(ctx.createSSLEngine());
-        assertSame(ctx, factory.create());
-    }
-
     /** Invalid parameters are reported before loading the store. */
     @Test
     public void testInvalidParametersDoNotLoadStore() throws Exception {
@@ -284,34 +223,34 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(0, factory.loadKeyStoreCalls);
     }
 
-    /** A factory implementing neither a bundle builder nor the legacy key-manager hook reports the missing implementation. */
+    /** A failed load is reported instead of reusing an earlier context, and the next request can recover. */
     @Test
-    public void testMissingKeyMaterialImplementation() {
-        AbstractSslContextFactory factory = new AbstractSslContextFactory() {
-            /** {@inheritDoc} */
-            @Override protected void checkParameters() {
-                // No parameters are required by this factory.
-            }
+    public void testFailedLoadCanBeRetried() throws Exception {
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
+        SSLContext original = factory.create();
+        String failure = "Key material is unavailable";
 
-            /** {@inheritDoc} */
-            @Override protected TrustManager[] createTrustManagers() {
-                return null;
-            }
-        };
+        factory.loadFailure = failure;
 
-        String msg = "Subclass must override createKeyManagers() to use create()";
-
-        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, msg);
+        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, failure);
 
         assertTrue(err.getCause() instanceof SSLException);
 
-        GridTestUtils.assertThrows(log, (Callable<SslBundle>)factory::createSslBundle,
-            UnsupportedOperationException.class, "Subclass must override createSslBundle()");
+        GridTestUtils.assertThrows(log, (Callable<SslBundle>)factory::createSslBundle, IgniteException.class, failure);
+
+        factory.loadFailure = null;
+
+        SSLContext recovered = factory.create();
+
+        assertNotSame(original, recovered);
+        assertNotNull(recovered.createSSLEngine());
+        assertEquals(4, factory.loadKeyStoreCalls);
+        assertEquals(4, factory.parameterChecks);
     }
 
-    /** Bundle creation needs no legacy key-manager hook; create() still does. Loaded material copies its key password. */
+    /** Mutating the caller's password does not change how loaded material opens its private keys. */
     @Test
-    public void testLoadedMaterialBypassesLegacyKeyManagerHook() throws Exception {
+    public void testLoadedMaterialCopiesKeyPassword() throws Exception {
         String alias = "node";
         KeyStore store = ca.keyStoreWithPrivateKey(alias);
         char[] pwd = PASSWORD.clone();
@@ -319,61 +258,10 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         Arrays.fill(pwd, '?');
 
-        AbstractSslContextFactory factory = new AbstractSslContextFactory() {
-            /** {@inheritDoc} */
-            @Override public SslBundle createSslBundle() {
-                try {
-                    checkParameters();
+        X509KeyManager mgr = (X509KeyManager)material.keyManagers()[0];
 
-                    return createSslBundle(material);
-                }
-                catch (SSLException e) {
-                    throw new IgniteException(e);
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override protected void checkParameters() {
-                // The test supplies already loaded material.
-            }
-
-            /** {@inheritDoc} */
-            @Override protected TrustManager[] createTrustManagers() {
-                return null;
-            }
-        };
-
-        SslBundle bundle = factory.createSslBundle();
-
-        assertEquals(Map.of(alias, Arrays.asList(certificateChain(store))), bundle.certificateChains());
-
-        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class,
-            "Subclass must override createKeyManagers() to use create()");
-
-        assertTrue(err.getCause() instanceof SSLException);
-        assertNotSame(bundle.context(), factory.createSslBundle().context());
-    }
-
-    /** A bundle override does not change the legacy creation path or its cached context. */
-    @Test
-    public void testLegacyCreationIsIndependentOfBundleCreation() {
-        String failure = "Certificate source failed";
-        LegacyFactory factory = new LegacyFactory() {
-            /** {@inheritDoc} */
-            @Override public SslBundle createSslBundle() {
-                throw new UnsupportedOperationException(failure);
-            }
-        };
-
-        SSLContext cached = factory.create();
-
-        GridTestUtils.assertThrows(log, (Callable<SslBundle>)factory::createSslBundle,
-            UnsupportedOperationException.class, failure);
-
-        assertSame(cached, factory.create());
-        assertEquals(1, factory.parameterChecks);
-        assertEquals(1, factory.keyManagerCalls);
-        assertEquals(1, factory.trustManagerCalls);
+        assertNotNull(mgr.getPrivateKey(alias));
+        assertArrayEquals(certificateChain(store), mgr.getCertificateChain(alias));
     }
 
     /** Mutating the source map, its lists or the store cannot change an existing bundle. */
@@ -404,7 +292,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             UnsupportedOperationException.class, null);
     }
 
-    /** A file factory whose existing store-loading hook supplies the test material. */
+    /** A file factory whose store-loading hook supplies the test material. */
     private static class InMemoryStoreFactory extends SslContextFactory {
         /** */
         private KeyStore store;
@@ -414,6 +302,12 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         /** */
         private int parameterChecks;
+
+        /** */
+        private int bundleCalls;
+
+        /** Failure to report while the store is unavailable. */
+        private String loadFailure;
 
         /** */
         InMemoryStoreFactory(KeyStore store) {
@@ -426,6 +320,13 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public SslBundle createSslBundle() {
+            bundleCalls++;
+
+            return super.createSslBundle();
+        }
+
+        /** {@inheritDoc} */
         @Override protected void checkParameters() throws SSLException {
             parameterChecks++;
 
@@ -433,47 +334,13 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected KeyStore loadKeyStore(String type, String path, char[] pwd) {
+        @Override protected KeyStore loadKeyStore(String type, String path, char[] pwd) throws SSLException {
             loadKeyStoreCalls++;
 
+            if (loadFailure != null)
+                throw new SSLException(loadFailure);
+
             return store;
-        }
-
-        /** @return Key managers supplied by the inherited legacy hook. */
-        @SuppressWarnings("deprecation")
-        private KeyManager[] legacyKeyManagers() throws SSLException {
-            return super.createKeyManagers();
-        }
-    }
-
-    /** A subclass that implements only the legacy manager hooks. */
-    private static class LegacyFactory extends AbstractSslContextFactory {
-        /** */
-        private int parameterChecks;
-
-        /** */
-        private int keyManagerCalls;
-
-        /** */
-        private int trustManagerCalls;
-
-        /** {@inheritDoc} */
-        @Override protected void checkParameters() {
-            parameterChecks++;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected KeyManager[] createKeyManagers() {
-            keyManagerCalls++;
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected TrustManager[] createTrustManagers() {
-            trustManagerCalls++;
-
-            return null;
         }
     }
 }
