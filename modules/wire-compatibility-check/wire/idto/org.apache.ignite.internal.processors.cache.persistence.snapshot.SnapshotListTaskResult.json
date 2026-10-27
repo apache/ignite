@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "consistentIds"},
+    {"order": 1, "type": "java.util.UUID[]", "name": "nodesIds"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult[]", "name": "nodesSnapshots"},
+    {"order": 3, "type": "org.apache.ignite.IgniteException[]", "name": "errors"}
+  ]
+}
