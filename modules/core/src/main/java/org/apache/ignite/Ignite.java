@@ -196,9 +196,9 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Creates a new {@link ExecutorService} which will execute all submitted
-     * {@link Callable} and {@link Runnable} jobs on all cluster nodes.
-     * This essentially creates a <b><i>Distributed Thread Pool</i></b> that can
-     * be used as a replacement for local thread pools.
+     * {@link Callable} and {@link Runnable} jobs on all cluster nodes started in
+     * server mode. This essentially creates a <b><i>Distributed Thread Pool</i></b>
+     * that can be used as a replacement for local thread pools.
      *
      * @return Grid-enabled {@code ExecutorService}.
      */
