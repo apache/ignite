@@ -43,7 +43,8 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
- * Issues JKS stores protected by {@link #PWD}, each with an EC P-256 private key and its certificate chain.
+ * Issues JKS stores protected by {@link #PWD}. Key stores hold EC P-256 private keys with their certificate chains, and trust
+ * stores hold authority certificates.
  * Certificates use SHA256withECDSA signatures. Issued leaf certificates allow both server and client authentication,
  * so the same material works for node-to-node TLS.
  */
@@ -115,33 +116,28 @@ public class TestCertificateAuthority {
     }
 
     /**
-     * @param keyStore Store with at most one private key.
-     * @return Its certificate chain, or {@code null} if the store has no private key.
+     * @param keyStore Store with exactly one private key.
+     * @return Its certificate chain in the form certificate metadata uses.
      */
-    public static X509Certificate[] certificateChain(KeyStore keyStore) throws Exception {
-        X509Certificate[] chain = null;
+    public static List<X509Certificate> chain(KeyStore keyStore) throws Exception {
+        List<X509Certificate> chain = null;
 
         for (String alias : Collections.list(keyStore.aliases())) {
             if (!keyStore.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class))
                 continue;
 
             if (chain != null)
-                throw new IllegalArgumentException("The test key store must contain at most one private key");
+                throw new IllegalArgumentException("The test key store must contain exactly one private key");
 
             Certificate[] certs = keyStore.getCertificateChain(alias);
 
-            chain = Arrays.copyOf(certs, certs.length, X509Certificate[].class);
+            chain = List.of(Arrays.copyOf(certs, certs.length, X509Certificate[].class));
         }
 
-        return chain;
-    }
+        if (chain == null)
+            throw new IllegalArgumentException("The test key store must contain exactly one private key");
 
-    /**
-     * @param keyStore Store with exactly one private key.
-     * @return Its certificate chain in the form certificate metadata uses.
-     */
-    public static List<X509Certificate> chain(KeyStore keyStore) throws Exception {
-        return List.of(certificateChain(keyStore));
+        return chain;
     }
 
     /**

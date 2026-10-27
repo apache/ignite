@@ -85,9 +85,9 @@ public final class KeyMaterial {
     }
 
     /**
-     * @return Immutable X.509 chains by private-key alias, own certificate first. An empty map means there are no private keys.
-     *      An empty list retains an alias whose chain is absent or contains a non-X.509 certificate; key managers never present
-     *      such a key.
+     * @return Immutable X.509 chains by private-key alias, own certificate first. An empty map means the store lists no private
+     *      keys. JKS lists a private key stored without a chain as a secret key, so such a key is not included. An empty list
+     *      retains an alias whose chain is absent or contains a non-X.509 certificate; key managers never present such a key.
      * @throws SSLException If the loaded store cannot be read.
      */
     public Map<String, List<X509Certificate>> certificateChains() throws SSLException {
