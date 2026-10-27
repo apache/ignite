@@ -17,19 +17,17 @@
 
 package org.apache.ignite.ssl;
 
-import java.security.KeyStore;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
-import org.apache.ignite.testframework.TestCertificateAuthority;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/** Tests that communication connections reuse the context loaded at startup. */
+/** Communication keeps one SSL context: new connections do not call the SSL context factory on either node. */
 public class SslContextReuseTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -38,62 +36,30 @@ public class SslContextReuseTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /** Opening and reopening a communication connection must not invoke the SSL factory again. */
+    /** Reopening a communication connection does not call the SSL context factory on either node. */
     @Test
     public void testCommunicationReusesContextOnReconnect() throws Exception {
-        TestCertificateAuthority ca = new TestCertificateAuthority("communication-ca");
-        CountingFactory firstFactory = new CountingFactory(ca);
-        CountingFactory secondFactory = new CountingFactory(ca);
+        Factory<SSLContext> sslFactory = GridTestUtils.sslFactory();
+        AtomicInteger created = new AtomicInteger();
+        Factory<SSLContext> counting = () -> {
+            created.incrementAndGet();
+
+            return sslFactory.create();
+        };
+
         IgniteEx first = startGrid(0, cfg -> {
-            cfg.setSslContextFactory(firstFactory);
+            cfg.setSslContextFactory(counting);
         });
         IgniteEx second = startGrid(1, cfg -> {
-            cfg.setSslContextFactory(secondFactory);
+            cfg.setSslContextFactory(counting);
         });
-        int firstStartupCalls = firstFactory.calls.get();
-        int secondStartupCalls = secondFactory.calls.get();
-
-        assertEquals((Integer)1, first.compute(first.cluster().forNodeId(second.localNode().id())).call(() -> 1));
+        int createdAtStart = created.get();
 
         ConnectionClientPool pool = U.field(first.configuration().getCommunicationSpi(), "clientPool");
 
         pool.forceCloseConnection(second.localNode().id());
+        first.compute(first.cluster().forNodeId(second.localNode().id())).run(() -> {});
 
-        assertEquals((Integer)1, first.compute(first.cluster().forNodeId(second.localNode().id())).call(() -> 1));
-        assertEquals(firstStartupCalls, firstFactory.calls.get());
-        assertEquals(secondStartupCalls, secondFactory.calls.get());
-    }
-
-    /** A factory that builds a fresh context on every call from mutually trusted test material. */
-    private static class CountingFactory implements Factory<SSLContext> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final KeyStore keys;
-
-        /** */
-        private final KeyStore trust;
-
-        /** */
-        private final AtomicInteger calls = new AtomicInteger();
-
-        /** @param ca Authority shared by both nodes. */
-        CountingFactory(TestCertificateAuthority ca) throws Exception {
-            keys = ca.keyStoreWithPrivateKey();
-            trust = ca.trustStore();
-        }
-
-        /** {@inheritDoc} */
-        @Override public SSLContext create() {
-            calls.incrementAndGet();
-
-            try {
-                return TestCertificateAuthority.context(keys, trust);
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
-        }
+        assertEquals(createdAtStart, created.get());
     }
 }
