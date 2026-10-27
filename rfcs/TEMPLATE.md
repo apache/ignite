@@ -33,6 +33,8 @@ Explain why this approach was chosen. Compare other realistic options where rele
 
 Name the affected clients and versions. Explain what changes for existing applications, configurations, integrations, or stored data.
 
+If the change affects supported versions or data upgrade paths, state what is supported before and after the change. Link the relevant user documentation and describe the required updates.
+
 State whether the change is compatible and explain why.
 
 For a breaking change, name the release that announces deprecation and the first release with the breaking change. Describe how users can migrate and how they will be notified. The deprecation period is agreed as part of the RFC.
