@@ -375,6 +375,7 @@ The NODE_ATTRIBUTES view contains the attributes of all nodes.
 
 
 The CONFIGURATION view contains the configuration properties of node.
+Sensitive properties (passwords, secret keys, etc.) are not exposed.
 
 [{table_opts}]
 |===
