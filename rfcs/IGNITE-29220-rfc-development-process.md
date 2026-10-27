@@ -29,17 +29,23 @@ Fixes for undisclosed vulnerabilities follow the [ASF security process](https://
 
 ## RFC contents
 
-Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. It covers the problem, proposed change, compatibility and migration, and implementation and checks. Link to existing IEPs instead of copying them where useful.
+Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. Link to relevant existing IEPs instead of copying them.
 
 ## Review and merge
 
-1. Create a ticket describing the problem and change. Open one PR containing the implementation and `rfcs/IGNITE-<ticket>-<short-title>.md`. Link them to each other. The ticket number identifies the RFC. The implementation may be added later.
+1. Create a ticket describing the problem and change. Open one PR with the implementation and either a new RFC or an update to an existing RFC. Name new RFCs `rfcs/IGNITE-<ticket>-<short-title>.md`. Link the ticket and PR. The implementation may be added later.
 2. Review the RFC in the PR. When it is ready, start a `[VOTE]` on `dev@ignite.apache.org` with links to the PR and the RFC version being voted on. Include any unresolved concerns in the vote thread. Keep the vote open for at least 72 hours.
 3. Get explicit `+1` votes from at least three different Ignite committers on the dev list. The author can count if they are a committer and vote explicitly. Any request to skip deprecation must be explicitly approved. Resolve technical objections. A valid technical veto on a code change blocks merging until withdrawn.
-4. Changes to the proposal or compatibility plan require a new `[VOTE]`, another 72-hour period, and new votes. Code changes and wording-only edits do not restart voting if they preserve the agreed proposal and compatibility plan.
-5. Publish `[RESULT]` on the dev list and link it from the PR. Review and test the implementation separately. Once the RFC is approved and the implementation passes review and tests, merge them as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
+4. Publish `[RESULT]` on the dev list and link it from the PR.
+5. The implementation must pass code review and tests. Merge it with the approved RFC as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
 
-One RFC may cover several tickets. Merge it with the first implementation PR and link later PRs to it. Repeat RFC approval only if they change the agreed contract or compatibility plan; update the RFC first.
+One RFC may cover several tickets. Merge it with the first implementation PR and link later PRs to it.
+
+## Changes to an RFC
+
+An approved RFC can be updated through a new ticket and PR. Edit the existing RFC file and merge the update with any related code changes.
+
+After voting starts, changes to the proposal or compatibility plan require a new `[VOTE]`, another 72-hour period, and new votes. Code changes and wording-only edits do not restart voting if they preserve the agreed proposal and compatibility plan.
 
 ## References
 
