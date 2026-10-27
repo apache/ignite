@@ -61,6 +61,10 @@ This covers published artifact names and coordinates, and supported JDK and oper
 
 A compatible change keeps supported build and deployment setups working.
 
+## Supported versions
+
+Document supported client/server version combinations, data upgrade paths, and JDK and operating system versions in the relevant user documentation. If this information is incomplete, clarify it in the RFC. Missing documentation does not remove existing guarantees.
+
 ## Outside the contract
 
 - **Implementation details:** classes outside the public API, internal algorithms, and undocumented implementation details.
