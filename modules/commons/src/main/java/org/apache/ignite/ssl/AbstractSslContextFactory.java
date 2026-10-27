@@ -202,7 +202,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     @Deprecated
     protected KeyManager[] createKeyManagers() throws SSLException {
-        throw new SSLException("Subclass must override createSslBundle() or createKeyManagers()");
+        throw new SSLException("Subclass must override createKeyManagers() to use create()");
     }
 
     /**
@@ -212,7 +212,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Returns the cached context, building it through the subclass's bundle method or its legacy key-manager hook.
+     * Returns the cached context, building it through the legacy key-manager hook.
+     * Overriding {@link #createSslBundle()} does not change this method's behavior.
      *
      * @return Cached context.
      * @deprecated Use {@link #createSslBundle()} and keep the context in the component that uses it.
@@ -223,15 +224,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
         if (ctx == null) {
             try {
-                if (getClass().getMethod("createSslBundle").getDeclaringClass() == AbstractSslContextFactory.class) {
-                    checkParameters();
+                checkParameters();
 
-                    ctx = createSslContext(createKeyManagers());
-                }
-                else
-                    ctx = createSslBundle().context();
+                ctx = createSslContext(createKeyManagers());
             }
-            catch (NoSuchMethodException | SSLException e) {
+            catch (SSLException e) {
                 throw new IgniteException(e);
             }
 

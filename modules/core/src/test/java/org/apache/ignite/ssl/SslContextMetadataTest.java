@@ -279,7 +279,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             }
         };
 
-        String msg = "Subclass must override createSslBundle() or createKeyManagers()";
+        String msg = "Subclass must override createKeyManagers() to use create()";
 
         Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, msg);
 
@@ -289,7 +289,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             UnsupportedOperationException.class, "Subclass must override createSslBundle()");
     }
 
-    /** A custom store source does not need the legacy key-manager hook and keeps its own copy of the key password. */
+    /** Bundle creation needs no legacy key-manager hook; create() still does. Loaded material copies its key password. */
     @Test
     public void testLoadedMaterialBypassesLegacyKeyManagerHook() throws Exception {
         String alias = "node";
@@ -323,17 +323,20 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             }
         };
 
-        assertEquals(Map.of(alias, Arrays.asList(certificateChain(store))), factory.createSslBundle().certificateChains());
+        SslBundle bundle = factory.createSslBundle();
 
-        SSLContext cached = factory.create();
+        assertEquals(Map.of(alias, Arrays.asList(certificateChain(store))), bundle.certificateChains());
 
-        assertSame(cached, factory.create());
-        assertNotSame(cached, factory.createSslBundle().context());
+        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class,
+            "Subclass must override createKeyManagers() to use create()");
+
+        assertTrue(err.getCause() instanceof SSLException);
+        assertNotSame(bundle.context(), factory.createSslBundle().context());
     }
 
-    /** Failure in a new factory must not fall back to legacy key managers. */
+    /** A bundle override does not change the legacy creation path or its cached context. */
     @Test
-    public void testBundleFailureDoesNotUseLegacyManagers() {
+    public void testLegacyCreationIsIndependentOfBundleCreation() {
         String failure = "Certificate source failed";
         LegacyFactory factory = new LegacyFactory() {
             /** {@inheritDoc} */
@@ -342,11 +345,15 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             }
         };
 
-        GridTestUtils.assertThrows(log, factory::create, UnsupportedOperationException.class, failure);
+        SSLContext cached = factory.create();
 
-        assertEquals(0, factory.parameterChecks);
-        assertEquals(0, factory.keyManagerCalls);
-        assertEquals(0, factory.trustManagerCalls);
+        GridTestUtils.assertThrows(log, (Callable<SslBundle>)factory::createSslBundle,
+            UnsupportedOperationException.class, failure);
+
+        assertSame(cached, factory.create());
+        assertEquals(1, factory.parameterChecks);
+        assertEquals(1, factory.keyManagerCalls);
+        assertEquals(1, factory.trustManagerCalls);
     }
 
     /** Mutating the source map, its lists or the store cannot change an existing bundle. */
