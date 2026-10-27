@@ -30,6 +30,10 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
+    /** Common description of the snapshot source path argument. */
+    public static final String SRC_PATH_DESCRIPTION = "Path to the directory where the snapshot files are located. " +
+        "If not specified, the default configured snapshot directory will be used";
+
     /** */
     @Order(0)
     @Positional
@@ -50,9 +54,7 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Order(3)
-    @Argument(example = "path", optional = true,
-        description = "Path to the directory where the snapshot files are located. " +
-            "If not specified, the default configured snapshot directory will be used")
+    @Argument(example = "path", optional = true, description = SRC_PATH_DESCRIPTION)
     String src;
 
     /** */

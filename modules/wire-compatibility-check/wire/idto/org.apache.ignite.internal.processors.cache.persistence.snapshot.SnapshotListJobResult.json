@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult$SnapshotInfo>", "name": "snapshots"}
+  ]
+}
