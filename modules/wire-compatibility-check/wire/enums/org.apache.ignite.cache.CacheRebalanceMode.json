@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.cache.CacheRebalanceMode",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.CacheRebalanceMode", "name": "SYNC"},
+    {"order": 1, "type": "org.apache.ignite.cache.CacheRebalanceMode", "name": "ASYNC"},
+    {"order": 2, "type": "org.apache.ignite.cache.CacheRebalanceMode", "name": "NONE"}
+  ]
+}

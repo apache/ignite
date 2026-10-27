@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.QueryIndex",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "name"},
+    {"order": 1, "type": "org.apache.ignite.cache.QueryIndexType", "name": "type"},
+    {"order": 2, "type": "java.util.List<org.apache.ignite.internal.management.cache.QueryIndexField>", "name": "fields"}
+  ]
+}

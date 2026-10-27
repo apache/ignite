@@ -17,11 +17,14 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.List;
 import java.util.Objects;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -99,6 +102,51 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         assertEquals(CNT / 2, resultSize);
     }
 
+    /** Should return deserialized values for a cache that is not in keep-binary mode. */
+    @Test
+    public void testLocalQueryReturnsDeserializedValues() {
+        IgniteCache<PersonId, Person> cache = crd.createCache(ccfgObjectKey(CacheMode.REPLICATED));
+
+        insertDataWithPersonIdKey(crd, cache);
+
+        IndexQuery<PersonId, Person> qry = new IndexQuery<PersonId, Person>(Person.class, IDX)
+            .setCriteria(lt("id", CNT / 2));
+
+        List<Cache.Entry<PersonId, Person>> res = cache.query(qry.setLocal(true)).getAll();
+
+        for (Cache.Entry<PersonId, Person> e : res) {
+            assertEquals(new PersonId(e.getValue().id), e.getKey());
+            assertEquals(new Person(e.getKey().id), e.getValue());
+        }
+
+        assertEquals(CNT / 2, res.size());
+    }
+
+    /** Should keep binary keys and values for a cache in keep-binary mode. */
+    @Test
+    public void testLocalQueryKeepBinaryReturnsBinaryValues() {
+        IgniteCache<PersonId, Person> cache = crd.createCache(ccfgObjectKey(CacheMode.REPLICATED));
+
+        insertDataWithPersonIdKey(crd, cache);
+
+        IgniteCache<BinaryObject, BinaryObject> binCache = cache.withKeepBinary();
+
+        IndexQuery<BinaryObject, BinaryObject> qry = new IndexQuery<BinaryObject, BinaryObject>(Person.class, IDX)
+            .setCriteria(lt("id", CNT / 2));
+
+        List<Cache.Entry<BinaryObject, BinaryObject>> res = binCache.query(qry.setLocal(true)).getAll();
+
+        for (Cache.Entry<BinaryObject, BinaryObject> e : res) {
+            PersonId key = e.getKey().deserialize();
+            Person val = e.getValue().deserialize();
+
+            assertEquals(new PersonId(val.id), key);
+            assertEquals(new Person(key.id), val);
+        }
+
+        assertEquals(CNT / 2, res.size());
+    }
+
     /** Should fail as no data on nodes. */
     @Test
     public void testClientNodeReplicatedCache() throws Exception {
@@ -137,10 +185,27 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private void insertDataWithPersonIdKey(Ignite ignite, IgniteCache<PersonId, Person> cache) {
+        try (IgniteDataStreamer<PersonId, Person> streamer = ignite.dataStreamer(cache.getName())) {
+            for (int i = 0; i < CNT; i++)
+                streamer.addData(new PersonId(i), new Person(i));
+        }
+    }
+
+    /** */
     private CacheConfiguration<Long, Person> ccfg(CacheMode cacheMode) {
         return new CacheConfiguration<Long, Person>()
             .setName(CACHE)
             .setIndexedTypes(Long.class, Person.class)
+            .setCacheMode(cacheMode)
+            .setBackups(2);
+    }
+
+    /** */
+    private CacheConfiguration<PersonId, Person> ccfgObjectKey(CacheMode cacheMode) {
+        return new CacheConfiguration<PersonId, Person>()
+            .setName(CACHE)
+            .setIndexedTypes(PersonId.class, Person.class)
             .setCacheMode(cacheMode)
             .setBackups(2);
     }
@@ -171,6 +236,39 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
             Person person = (Person)o;
 
             return Objects.equals(id, person.id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id);
+        }
+    }
+
+    /** */
+    private static class PersonId {
+        /** */
+        final int id;
+
+        /** */
+        PersonId(int id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "PersonId[id=" + id + "]";
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            PersonId personId = (PersonId)o;
+
+            return Objects.equals(id, personId.id);
         }
 
         /** {@inheritDoc} */

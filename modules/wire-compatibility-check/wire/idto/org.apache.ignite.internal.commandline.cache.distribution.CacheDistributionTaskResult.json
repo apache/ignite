@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.List<org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionNode>", "name": "nodeResList"},
+    {"order": 1, "type": "java.util.Map<java.util.UUID,java.lang.Exception>", "name": "exceptions"}
+  ]
+}

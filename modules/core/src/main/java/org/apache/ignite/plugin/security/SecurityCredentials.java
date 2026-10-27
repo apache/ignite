@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Objects;
+import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -120,6 +121,7 @@ public class SecurityCredentials implements Externalizable {
      *
      * @return Password.
      */
+    @SensitiveProperty
     public Object getPassword() {
         return password;
     }
