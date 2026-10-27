@@ -32,10 +32,10 @@ Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. It covers 
 ## Review and merge
 
 1. Create a ticket describing the problem and change. Open one PR containing the implementation and `rfcs/IGNITE-<ticket>-<short-title>.md`. Link them to each other. The ticket number identifies the RFC. The implementation may be added later.
-2. Announce the RFC version on the dev list for approval. Allow at least 72 hours for feedback, starting with that message. Report changes to the proposal and concerns to the list.
-3. Get explicit approval of that version from at least three different Ignite committers in the PR. The author can count if they are a committer and explicitly approve it. Any request to skip deprecation must be explicitly approved. Resolve technical objections. Post the approval summary and decision on the dev list before merging.
-4. Changes to the proposal or compatibility plan require a new announcement, a new 72-hour review period, and new approvals. Wording-only edits do not restart review.
-5. After RFC approval, code review, and testing, merge the RFC and implementation as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
+2. Review the RFC in the PR. When it is ready, start a `[VOTE]` on `dev@ignite.apache.org` with links to the PR and the RFC version being voted on. Include any unresolved concerns in the vote thread. Keep the vote open for at least 72 hours.
+3. Get explicit `+1` votes from at least three different Ignite committers on the dev list. The author can count if they are a committer and vote explicitly. Any request to skip deprecation must be explicitly approved. Resolve technical objections. A valid technical veto on a code change blocks merging until withdrawn.
+4. Changes to the proposal or compatibility plan require a new `[VOTE]`, another 72-hour period, and new votes. Code changes and wording-only edits do not restart voting if they preserve the agreed proposal and compatibility plan.
+5. Publish `[RESULT]` on the dev list and link it from the PR. Review and test the implementation separately. Once the RFC is approved and the implementation passes review and tests, merge them as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
 
 One RFC may cover several tickets. Merge it with the first implementation PR and link later PRs to it. Repeat RFC approval only if they change the agreed contract or compatibility plan; update the RFC first.
 
@@ -44,3 +44,4 @@ One RFC may cover several tickets. Merge it with the first implementation PR and
 - [Apache Hudi RFC process](https://hudi.apache.org/contribute/rfc-process/)
 - [TiDB design documents](https://github.com/pingcap/tidb/blob/master/docs/design/README.md)
 - [Apache guidance on public decisions](https://www.apache.org/dev/pmc.html#mailing-list)
+- [Apache voting and veto rules](https://www.apache.org/foundation/voting.html)
