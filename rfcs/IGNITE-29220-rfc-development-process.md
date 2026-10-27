@@ -21,27 +21,27 @@ Ticket: [IGNITE-29220](https://issues.apache.org/jira/browse/IGNITE-29220)
 
 ## When to use an RFC
 
-Use an RFC to agree on changes covered by [Public API and compatibility contracts](IGNITE-29219-public-api-and-compatibility.md) before merging them. Adding, changing, deprecating, or removing a covered contract requires an RFC; backward-compatible additions count too.
+Use an RFC to agree on changes to the contracts defined in [Public API and compatibility contracts](IGNITE-29219-public-api-and-compatibility.md) before merging them. You need an RFC to add, change, deprecate, or remove any of these contracts. This includes additions that do not break compatibility.
 
-Internal refactoring, optimizations, tests, and documentation fixes do not need an RFC when they preserve these contracts. Neither do bug fixes that restore established behavior without changing another contract. If unsure, explain the change in the ticket and discuss it with reviewers.
+Internal refactoring, optimizations, tests, and documentation fixes do not need an RFC if they keep these contracts unchanged. The same applies to bug fixes that restore previously supported behavior without changing another contract. If unsure, explain the change in the ticket and discuss it with reviewers.
 
 ## Ticket, review, and merge
 
-1. Open a ticket describing the problem and proposed change.
-2. Use one PR for the ticket, containing `rfcs/IGNITE-<ticket>-<short-title>.md` and the implementation. The PR may start with the RFC while implementation is in progress. Link the ticket and PR to each other; the ticket number identifies the RFC.
-3. Review the document in the PR. When ready for approval, share the RFC revision on the dev list and allow at least 72 hours for feedback. Keep the list informed of significant changes and concerns.
-4. Collect explicit approval of that revision from at least three distinct Ignite committers in the PR. Resolve outstanding technical objections and post the approval summary and outcome on the dev list before merging. Material revisions need renewed approval and review time.
-5. Once the RFC is approved and normal code review and testing are complete, merge the RFC and implementation together as one commit for the ticket. For RFCs that change only documentation or the development process, merge the document change itself; no separate code implementation is required.
+1. Open a ticket with the problem and proposed change.
+2. Use one PR for the ticket. Include the implementation and `rfcs/IGNITE-<ticket>-<short-title>.md`. You can open the PR with just the RFC and add the implementation later. Link the ticket and PR to each other. Use the ticket number to identify the RFC.
+3. Review the document in the PR. When it is ready for approval, share that version of the RFC on the dev list. Allow at least 72 hours for feedback. Tell the list about significant changes and concerns.
+4. Get explicit approval for that version from at least three different Ignite committers in the PR. Resolve any technical objections. Before merging, post the approval summary and decision on the dev list. Significant changes to the RFC need another review period and new approvals.
+5. When the RFC is approved and normal code review and testing are complete, merge the RFC and implementation together as one commit for the ticket. If the RFC changes only documentation or the development process, merge the document changes. No separate code changes are needed.
 
-One RFC may cover several implementation tickets. Merge it with the first implementation PR and link subsequent PRs to it. Those PRs do not need three additional RFC approvals unless they change the agreed contract or compatibility plan. Such changes require an updated RFC approved through the same process.
+One RFC can cover several implementation tickets. Merge it with the first implementation PR and link later PRs to it. Those PRs do not need three more RFC approvals unless they change the agreed contract or compatibility plan. If they do, update the RFC and get approval through the same process.
 
-For an incompatible change, explain how existing users can migrate. If you propose skipping deprecation, say so and explain why. Describe the expected impact and the evidence behind it. Skipping deprecation needs explicit approval through the RFC process. Having no known users is not enough on its own.
+For a change that breaks compatibility, explain how existing users can migrate. If you propose skipping deprecation, say so and explain why. Describe the expected impact and the evidence behind it. Skipping deprecation needs explicit approval through the RFC process. Having no known users is not enough on its own.
 
 ## Keep the document useful
 
-Use roughly the same level of detail as an IEP. Explain the problem, proposed API or format, alternatives, compatibility and migration, and how we will test and complete the work. Name the affected versions and clients. Keep it short when the change is small.
+Use about the same level of detail as an IEP. Explain the problem, proposed API or format, other options, compatibility, and migration. Describe how to test the change and what needs to be done to complete the work. List the affected versions and clients. Keep it short when the change is small.
 
-The RFC records the agreed design. Link all implementation tickets so readers can see what is complete and what remains. Existing IEPs can be referenced instead of copied.
+The RFC records the agreed design. Link all implementation tickets so readers can see what is done and what remains. You can link to existing IEPs instead of copying them.
 
 ## References
 
