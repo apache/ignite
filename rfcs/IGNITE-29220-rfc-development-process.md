@@ -25,6 +25,8 @@ An RFC is required to add, change, deprecate, or remove a public contract define
 
 Refactoring, optimizations, tests, documentation fixes, and bug fixes that restore supported behavior need no RFC if they preserve all contracts. If unsure, discuss the change in the ticket.
 
+Fixes for undisclosed vulnerabilities follow the [ASF security process](https://www.apache.org/security/committers.html#work-in-private) instead of this public RFC process. After disclosure, document any public contract changes and migration steps in the user documentation. The fix does not need a separate RFC after disclosure.
+
 ## RFC contents
 
 Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. It covers the problem, proposed change, compatibility and migration, and implementation and checks. Link to existing IEPs instead of copying them where useful.
