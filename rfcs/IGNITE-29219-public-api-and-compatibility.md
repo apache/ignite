@@ -21,37 +21,37 @@ Ticket: [IGNITE-29219](https://issues.apache.org/jira/browse/IGNITE-29219)
 
 ## Purpose
 
-Define what users and integrations can rely on in Apache Ignite, without changing approval or deprecation rules.
+This document defines what users and integrations can rely on in Apache Ignite. It does not change the rules for approval or deprecation.
 
 ## Public API
 
-Public API comprises interfaces intended and supported for external use:
+Public API includes interfaces designed and supported for external use:
 
 - Language and client APIs, including supported plugins and SPIs.
-- SQL syntax, types, functions, and semantics.
+- SQL syntax, types, functions, and behavior.
 - REST endpoints, CLI commands and options, and supported machine-readable output.
-- User-facing configuration, including defaults.
+- Configuration available to users, including default values.
 - Supported metrics, JMX interfaces, and system views.
-- Client protocols and externally consumed serialization formats.
+- Client protocols and serialization formats used by external systems.
 
-These contracts include names, signatures, schemas, accepted inputs, results, error codes, and supported behavior. Missing documentation does not make an interface intended for external use internal. Conversely, a public method on an internal class does not automatically become public API.
+The contract covers names, signatures, schemas, accepted inputs, results, error codes, and supported behavior. An interface designed for external use is not internal just because its documentation is missing. A public method in an internal class is not automatically part of the public API.
 
 ## Observable behavior
 
 Public behavior is what a supported interface guarantees: its results, side effects, errors, and when it calls overridden methods or callbacks. Changing this behavior can break compatibility even if method signatures stay the same. A contract remains public even if we know of no external users.
 
-The contract includes guarantees such as transaction semantics, ordering, retries, and cancellation. For example, a timeout contract should explain whether the operation can still complete after the caller receives a timeout. How timers are tracked internally is an implementation detail.
+These guarantees include transaction behavior, ordering, retries, and cancellation. For example, the contract should say whether an operation can still finish after the caller receives a timeout. How the implementation manages timers is an internal detail.
 
-Externally exposed SQLState values and error codes belong to the contract even when produced by an internal exception class. The class itself remains internal unless it is part of a supported external interface.
+SQLState values and error codes returned to users are part of the contract, even if they come from an internal exception class. The class itself remains internal unless it is part of a supported external interface.
 
 ## Compatibility contracts
 
-Internode protocols and persistent formats are separate from external APIs, but changes can affect compatibility. This includes communication, discovery, and internal management messages, as well as stored data, metadata, WAL, and snapshots.
+Protocols between nodes and stored data formats are separate from external APIs. They also have compatibility requirements. These cover communication, discovery, and internal management messages, as well as stored data, metadata, WAL, and snapshots.
 
-Compatibility is assessed for supported client/server combinations and upgrade, recovery, and data-reading paths. This does not promise interoperability between arbitrary versions or introduce rolling-upgrade support. Source and binary API compatibility, wire compatibility, and persistent-data compatibility are distinct concerns.
+We check compatibility for supported combinations of clients and servers, and for supported ways to upgrade, recover, and read stored data. This does not mean that any two versions can work together or that rolling upgrades are supported. Source and binary API compatibility, protocol compatibility, and stored data compatibility are separate concerns.
 
 ## Outside the contract
 
-Internal algorithms and classes, incidental log wording, stack traces, incidental execution timings, and undocumented implementation details are not contracts. Documented structured events remain covered.
+The contract does not cover internal algorithms and classes, stack traces, or undocumented implementation details. It also does not cover log wording or execution timing that the interface does not guarantee. Documented structured events remain part of the contract.
 
-A bug fix that restores established behavior does not redefine the contract. Calling a change a bug fix does not exempt a deliberate change to supported behavior. Experimental interfaces remain public where intended for external use, with their explicitly stated stability limits.
+A bug fix that restores previously supported behavior does not change the contract. If a fix deliberately changes supported behavior, it changes the contract too. Experimental interfaces designed for external use are still public, but their stated stability limits apply.
