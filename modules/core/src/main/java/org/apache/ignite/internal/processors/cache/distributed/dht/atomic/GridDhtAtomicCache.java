@@ -2497,7 +2497,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         try {
                             GridCacheVersion ver = entry.version();
 
-                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null, null, 0L);
+                            entry.versionedValue(ctx.toCacheObject(v), null, ver, null, null);
                         }
                         catch (GridCacheEntryRemovedException e) {
                             assert false : "Entry should not get obsolete while holding lock [entry=" + entry +
@@ -2998,6 +2998,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * it is done in place (same row size, no SQL indexes, unchanged expire time), which can't be known before the entry
      * lock. For in-place updates near the eviction threshold this keeps extra empty pages free (up to the size of the
      * rows being written concurrently) instead of using them for data; it is not a correctness issue.
+     * <p>
+     * Nothing is reserved for a remove: it inserts no rows. For a transform the result is unknown before the entry
+     * processor runs under the entry lock, so only a row without a value (key, version and row header) is reserved.
      *
      * @param req Update request.
      * @return Reserved pages to release via {@code releaseInRegion}, or {@code 0} if reservation is not engaged.
@@ -3007,7 +3010,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         DataRegion dataRegion = ctx.dataRegion();
 
         // Skip computing the row sizes (it may require marshalling) if the reservation is not engaged for the region.
-        if (!ctx.shared().database().isReserveEnabled(dataRegion))
+        if (req.operation() == GridCacheOperation.DELETE || !ctx.shared().database().isReserveEnabled(dataRegion))
             return 0;
 
         CacheObjectValueContext coctx = ctx.cacheObjectContext();
@@ -3019,10 +3022,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         for (int i = 0; i < req.size(); i++) {
             KeyCacheObject key = req.key(i);
 
-            CacheObject val = req.writeValue(i);
-
-            if (val == null && req.operation() == GridCacheOperation.UPDATE)
-                val = req.value(i);
+            // The value of a transform is unknown before the entry processor runs, a row without a value is reserved.
+            CacheObject val = req.operation() == GridCacheOperation.UPDATE ? req.value(i) : null;
 
             // CacheVersionIO.SIZE_V2 is the maximum of both version protocols (V1 is smaller), so this is an upper
             // bound: the actual rows can not be larger than estimated.

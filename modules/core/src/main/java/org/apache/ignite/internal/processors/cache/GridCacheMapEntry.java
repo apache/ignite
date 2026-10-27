@@ -1455,12 +1455,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         long reserved = 0;
 
-        if (!primary && !isNear())
+        if (!primary && !isNear() && op == GridCacheOperation.UPDATE)
             // Best-effort: a refused backup update is not safe, the primary has already applied it.
-            reserved = reserveEntrySpace(
-                op == GridCacheOperation.UPDATE && writeObj instanceof CacheObject ? (CacheObject)writeObj : null,
-                newVer,
-                true);
+            reserved = reserveEntrySpace(writeObj instanceof CacheObject ? (CacheObject)writeObj : null, newVer, true);
 
         lockListenerReadLock();
         lockEntry();
@@ -2690,40 +2687,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public EntryGetResult versionedValue(
-        CacheObject val,
+    @Override public EntryGetResult versionedValue(CacheObject val,
         GridCacheVersion curVer,
         GridCacheVersion newVer,
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
         @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        long reserved = reserveEntrySpace(val, newVer != null ? newVer : ver, false);
+        // The atomic cache reloads values while holding the entry locks, a reservation is not possible then.
+        long reserved = lockedByCurrentThread() ? 0 : reserveEntrySpace(val, newVer != null ? newVer : ver, false);
 
-        return versionedValue(val, curVer, newVer, loadExpiryPlc, readerArgs, reserved);
-    }
-
-    /**
-     * Sets new value if passed in version matches the current version (used for read-through only).
-     *
-     * @param val New value.
-     * @param curVer Version to match or {@code null} if match is not required.
-     * @param newVer Version to set.
-     * @param loadExpiryPlc Expiry policy if entry is loaded from store.
-     * @param readerArgs Reader will be added if not null.
-     * @param reserved Number of pages reserved before acquiring the entry lock (released by this method), or
-     *     {@code 0} if no reservation was made (e.g. the caller already holds the entry lock).
-     * @return Current version and value.
-     * @throws IgniteCheckedException If index could not be updated.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public EntryGetResult versionedValue(
-        CacheObject val,
-        @Nullable GridCacheVersion curVer,
-        @Nullable GridCacheVersion newVer,
-        @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
-        @Nullable ReaderArguments readerArgs,
-        long reserved
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         lockEntry();
 
         try {

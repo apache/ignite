@@ -19,14 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -577,8 +575,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.evictionTracker = dataRegion.evictionTracker();
 
-        reserveEnabled = !dataRegion.config().isPersistenceEnabled() &&
-            dataRegion.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+        reserveEnabled = ctx.cache().context().database().isReserveEnabled(dataRegion);
 
         this.dataRegion = dataRegion;
         this.reuseList = reuseList == null ? this : reuseList;
@@ -1277,7 +1274,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
-        long lastProgressNanos = System.nanoTime();
+        long lastProgressMillis = U.currentTimeMillis();
+
+        // Deficit before the last eviction attempt, 0 until the first one.
+        long prevDeficit = 0;
 
         while (true) {
             long reserved = reservedPages.get();
@@ -1290,6 +1290,34 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 continue;
             }
 
+            if (prevDeficit > 0) {
+                if (deficit < prevDeficit) {
+                    lastProgressMillis = U.currentTimeMillis();
+
+                    backoffNanos = EVICTION_BACKOFF_START_NANOS;
+                }
+                else if (recentStall)
+                    return 0;
+                else if (U.currentTimeMillis() - lastProgressMillis > EVICTION_NO_PROGRESS_TIMEOUT_MILLIS) {
+                    if (!bestEffort)
+                        throw outOfMemory();
+
+                    lastStallMillis = U.currentTimeMillis();
+
+                    LT.warn(log, "Page eviction made no progress, the row is inserted without a page reservation " +
+                        "[region=" + dataRegion.config().getName() + ", timeout=" + EVICTION_NO_PROGRESS_TIMEOUT_MILLIS + "ms]");
+
+                    return 0;
+                }
+                else {
+                    LockSupport.parkNanos(backoffNanos);
+
+                    backoffNanos = Math.min(backoffNanos << 1, EVICTION_BACKOFF_MAX_NANOS);
+                }
+            }
+
+            prevDeficit = deficit;
+
             if (memMetrics.onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
@@ -1298,30 +1326,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             evictionTracker.evictDataPage();
 
             memMetrics.updateEvictionRate();
-
-            if (deficit(claimPages, limitPages, reservedPages.get()) < deficit) {
-                lastProgressNanos = System.nanoTime();
-
-                backoffNanos = EVICTION_BACKOFF_START_NANOS;
-            }
-            else if (recentStall)
-                return 0;
-            else if (System.nanoTime() - lastProgressNanos > TimeUnit.MILLISECONDS.toNanos(EVICTION_NO_PROGRESS_TIMEOUT_MILLIS)) {
-                if (!bestEffort)
-                    throw outOfMemory();
-
-                lastStallMillis = U.currentTimeMillis();
-
-                LT.warn(log, "Page eviction made no progress, the row is inserted without a page reservation " +
-                    "[region=" + dataRegion.config().getName() + ", timeout=" + EVICTION_NO_PROGRESS_TIMEOUT_MILLIS + "ms]");
-
-                return 0;
-            }
-            else {
-                LockSupport.parkNanos(backoffNanos);
-
-                backoffNanos = Math.min(backoffNanos << 1, EVICTION_BACKOFF_MAX_NANOS);
-            }
         }
     }
 
