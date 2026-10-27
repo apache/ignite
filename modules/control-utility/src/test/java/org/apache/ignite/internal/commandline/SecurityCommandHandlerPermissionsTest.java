@@ -67,6 +67,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -193,6 +194,18 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         svcs = ignite.services().serviceDescriptors();
         assertEquals(0, svcs.size());
+    }
+
+    /** Reloading TLS certificates requires administrative permission. */
+    @Test
+    public void testSslReload() throws Exception {
+        checkCommandPermissions(asList("--ssl", "reload"), systemPermissions(ADMIN_OPS));
+    }
+
+    /** Reading TLS certificate status requires administrative permission. */
+    @Test
+    public void testSslStatus() throws Exception {
+        checkCommandPermissions(asList("--ssl", "status"), systemPermissions(ADMIN_OPS));
     }
 
     /** */

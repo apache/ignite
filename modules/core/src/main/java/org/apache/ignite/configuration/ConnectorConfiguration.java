@@ -116,6 +116,12 @@ public class ConnectorConfiguration {
     /** SSL context factory for rest binary server. */
     private Factory<SSLContext> sslFactory;
 
+    /** SSL context factory for HTTP REST. */
+    private Factory<SSLContext> httpSslFactory;
+
+    /** Whether HTTP REST requires a certificate from clients. */
+    private boolean httpSslClientAuth;
+
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
 
@@ -158,6 +164,8 @@ public class ConnectorConfiguration {
         sslClientAuth = cfg.isSslClientAuth();
         sslEnabled = cfg.isSslEnabled();
         sslFactory = cfg.getSslFactory();
+        httpSslFactory = cfg.getHttpSslFactory();
+        httpSslClientAuth = cfg.isHttpSslClientAuth();
         idleQryCurTimeout = cfg.getIdleQueryCursorTimeout();
         idleQryCurCheckFreq = cfg.getIdleQueryCursorCheckFrequency();
     }
@@ -502,6 +510,57 @@ public class ConnectorConfiguration {
      */
     public ConnectorConfiguration setSslFactory(Factory<SSLContext> sslFactory) {
         this.sslFactory = sslFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets the SSL context factory for HTTP REST.
+     *
+     * @return SSL context factory, or {@code null} if HTTP REST takes its TLS settings from the Jetty configuration only.
+     */
+    public Factory<SSLContext> getHttpSslFactory() {
+        return httpSslFactory;
+    }
+
+    /**
+     * Sets the SSL context factory for HTTP REST. HTTP REST then serves HTTPS with the certificates of this factory.
+     * {@code control.sh --ssl reload}, {@code --ssl status} and automatic renewal cover these certificates like those of the other
+     * transports of the node. Protocols and cipher suites come from the factory, except the cipher suites Jetty turns off by default.
+     * Client authentication comes from {@link #setHttpSslClientAuth(boolean)}.
+     * <p>
+     * Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty XML file that {@link #setJettyPath(String)}
+     * points to. The node does not start if that connector sets up TLS itself or uses the PROXY protocol. Unless the Jetty XML file
+     * sets a {@code SecureRequestCustomizer} of its own, HTTP REST answers requests to any host name or IP address.
+     *
+     * @param httpSslFactory SSL context factory.
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setHttpSslFactory(Factory<SSLContext> httpSslFactory) {
+        this.httpSslFactory = httpSslFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets whether HTTP REST requires a certificate from clients.
+     *
+     * @return Whether HTTP REST requires a certificate from clients.
+     */
+    public boolean isHttpSslClientAuth() {
+        return httpSslClientAuth;
+    }
+
+    /**
+     * Sets whether HTTP REST served with {@link #setHttpSslFactory(Factory)} requires a certificate from clients.
+     * The trust managers in the factory's SSL context must accept the client certificate.
+     * If you turn this on without {@link #setHttpSslFactory(Factory)}, the node does not start. Off by default.
+     *
+     * @param httpSslClientAuth Whether HTTP REST requires a certificate from clients.
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setHttpSslClientAuth(boolean httpSslClientAuth) {
+        this.httpSslClientAuth = httpSslClientAuth;
 
         return this;
     }
