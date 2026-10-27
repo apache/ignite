@@ -33,7 +33,9 @@ Explain why this approach was chosen. Compare other realistic options where rele
 
 Name the affected clients and versions. Explain what changes for existing applications, configurations, integrations, or stored data.
 
-State whether the change is compatible and explain why. For a breaking change, describe the steps users must take and the deprecation and migration plan.
+State whether the change is compatible and explain why.
+
+For a breaking change, name the release that announces deprecation and the first release with the breaking change. Describe how users can migrate and how they will be notified. The deprecation period is agreed as part of the RFC.
 
 If you propose skipping deprecation, say so. Explain the reason, expected impact, and supporting evidence. Having no known users is not enough.
 
