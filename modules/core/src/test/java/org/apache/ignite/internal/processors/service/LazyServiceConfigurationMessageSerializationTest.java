@@ -23,15 +23,12 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.DiscoveryMarshalling;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,8 +45,7 @@ public class LazyServiceConfigurationMessageSerializationTest extends GridCommon
         "Has the number of fields in the `LazyServiceConfiguration` class changed?";
 
     /** */
-    private final MessageFactory msgFactory = new IgniteMessageFactoryImpl(
-        new MessageFactoryProvider[] {new CoreMessagesProvider()});
+    private final MessageFactory msgFactory = createExtendedMessageFactory();
 
     /**
      * ServiceConfiguration declares {@code svc}, {@code nodeFilter}, {@code interceptors} as non-transient,

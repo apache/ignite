@@ -30,15 +30,13 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -193,8 +191,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
     /** @return Entry read back from the bytes {@code e} is written to. */
     private CacheContinuousQueryEntry roundTrip(CacheContinuousQueryEntry e) throws Exception {
-        IgniteMessageFactoryImpl msgFactory =
-            new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new CoreMessagesProvider()});
+        MessageFactory msgFactory = createExtendedMessageFactory();
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
         DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
