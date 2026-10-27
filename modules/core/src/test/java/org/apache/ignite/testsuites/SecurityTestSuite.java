@@ -81,6 +81,7 @@ import org.apache.ignite.plugin.security.SecurityBasicPermissionSetSerialization
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.ssl.SSLContextWrapperTest;
 import org.apache.ignite.ssl.SslContextMetadataTest;
+import org.apache.ignite.ssl.SslContextReuseTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -145,6 +146,7 @@ import org.junit.runners.Suite;
     MultipleSSLContextsTest.class,
     SSLContextWrapperTest.class,
     SslContextMetadataTest.class,
+    SslContextReuseTest.class,
     MaintenanceModeNodeSecurityTest.class,
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,
