@@ -15,33 +15,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Public API, observable behavior, and compatibility contracts
+# Public API, public behavior, and compatibility contracts
 
 Ticket: [IGNITE-29219](https://issues.apache.org/jira/browse/IGNITE-29219)
 
-## Covered contracts
+## Public behavior
 
-This RFC covers interfaces designed and supported for external use, plus formats with compatibility requirements across versions:
+A compatible change preserves supported functionality and its guarantees. This applies to both contract groups below:
+
+- **Results and effects:** accepted inputs, guarantees about results, and side effects.
+- **Operations:** guarantees about transactions, ordering, retries, and cancellation.
+- **Errors:** errors, including error codes and SQLState values.
+- **Extensions:** guarantees about calls to overridden methods and callbacks.
+
+## External interfaces
+
+These interfaces are designed and supported for external use:
 
 - **Programming APIs:** language and client APIs, plugins, and SPIs.
-- **SQL:** syntax, types, functions, and behavior.
+- **SQL:** syntax, types, and functions.
 - **REST and CLI:** endpoints, commands, options, and supported machine-readable output.
 - **Configuration:** user settings and default values.
 - **Monitoring:** supported metrics, JMX interfaces, system views, and documented structured events.
-- **Client protocols:** client protocols and external serialization formats, including compatibility for supported combinations of client and server versions.
-- **Stored data:** data, metadata, WAL, and snapshot formats needed to read or migrate existing data during supported upgrades and recovery.
+- **Client protocols:** client protocols and external serialization formats.
+
+A compatible change keeps existing supported calls, queries, commands, configurations, and integrations valid. Their names, signatures, and schemas stay compatible, and their public behavior is preserved.
+
+- **Source compatibility:** existing application and plugin source code still compiles.
+- **Binary compatibility:** compiled applications and plugins still work without rebuilding.
+- **Client/server compatibility:** supported combinations of client and server versions keep working.
 
 An interface remains public even if its documentation is missing or we know of no external users. Experimental public interfaces follow their stated stability limits.
 
-## Contract guarantees
+## Stored data
 
-These contracts cover:
+This covers data, metadata, WAL, and snapshot formats used during supported upgrades and recovery.
 
-- **Structure:** names, signatures, and schemas.
-- **Inputs and results:** accepted inputs and results.
-- **Behavior:** side effects and guarantees about transactions, ordering, retries, and cancellation.
-- **Errors:** errors, including error codes and SQLState values.
-- **Extension points:** guarantees about calls to overridden methods and callbacks.
+A compatible change preserves the ability to read and recover existing data with the same meaning and durability guarantees. The physical format may change through a documented migration.
 
 ## Outside the contract
 
