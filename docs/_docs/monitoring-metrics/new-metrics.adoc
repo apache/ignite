@@ -124,7 +124,7 @@ Register name: `cache.{cache_name}.{near}`
 |EntryProcessorPuts | long | The total number of cache invocations, caused update.
 |EntryProcessorReadOnlyInvocations | long | The total number of cache invocations, caused no updates.
 |EntryProcessorRemovals | long | The total number of cache invocations, caused removals.
-|EstimatedRebalancingKeys | long | Number estimated to rebalance keys.
+|EstimatedRebalancingKeys | long | Number estimated to rebalance keys, known once the supplier starts sending.
 |EvictingPartitionsLeft | long | The number of non-affinity partitions scheduled for eviction.
 |GetAllTime | histogram | GetAll time for which this node is the initiator, in nanoseconds.
 |GetTime | histogram | Get time for which this node is the initiator, in nanoseconds.

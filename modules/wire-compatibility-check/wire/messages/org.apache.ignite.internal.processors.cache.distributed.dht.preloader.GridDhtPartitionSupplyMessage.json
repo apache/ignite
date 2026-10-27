@@ -11,6 +11,7 @@
     {"order": 7, "type": "java.util.Collection<java.lang.Integer>", "name": "missed"},
     {"order": 8, "type": "java.util.Map<java.lang.Integer,java.util.List<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo>>", "name": "infos"},
     {"order": 9, "type": "int", "name": "msgSize"},
-    {"order": 10, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+    {"order": 10, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"order": 11, "type": "java.util.Map<java.lang.Integer,java.lang.Long>", "name": "partSizes", "annotations": ["@org.apache.ignite.internal.Order(value=7, introducedBy=\"PARTITION_SIZES_IN_SUPPLY_FEATURE\")"]}
   ]
 }

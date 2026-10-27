@@ -161,6 +161,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PARTITION_SIZES_IN_SUPPLY_FEATURE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
@@ -1341,6 +1342,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         Map<Integer, Map<Integer, Long>> partsSizes = new HashMap<>();
 
+        boolean sizesFromSupplier = cctx.kernalContext().rollingUpgrade().features().isActive(PARTITION_SIZES_IN_SUPPLY_FEATURE);
+
         for (CacheGroupContext grp : grps) {
             if (exchId != null) {
                 AffinityTopologyVersion startTopVer = grp.localStartVersion();
@@ -1356,10 +1359,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (locMap != null)
                 addFullPartitionsMap(m, dupData, grp.groupId(), locMap, affCache.similarAffinityKey());
 
-            Map<Integer, Long> partSizesMap = grp.topology().globalPartSizes();
+            if (!sizesFromSupplier) {
+                Map<Integer, Long> partSizesMap = grp.topology().globalPartSizes();
 
-            if (!partSizesMap.isEmpty())
-                partsSizes.put(grp.groupId(), partSizesMap);
+                if (!partSizesMap.isEmpty())
+                    partsSizes.put(grp.groupId(), partSizesMap);
+            }
 
             if (exchId != null) {
                 m.addPartitionUpdateCounters(grp.groupId(), grp.topology().fullUpdateCounters());
@@ -1379,10 +1384,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (exchId != null) {
                 m.addPartitionUpdateCounters(top.groupId(), top.fullUpdateCounters());
 
-                Map<Integer, Long> partSizesMap = top.globalPartSizes();
+                if (!sizesFromSupplier) {
+                    Map<Integer, Long> partSizesMap = top.globalPartSizes();
 
-                if (!partSizesMap.isEmpty())
-                    partsSizes.put(top.groupId(), partSizesMap);
+                    if (!partSizesMap.isEmpty())
+                        partsSizes.put(top.groupId(), partSizesMap);
+                }
 
                 m.addLostPartitions(top.groupId(), top.lostPartitions());
             }

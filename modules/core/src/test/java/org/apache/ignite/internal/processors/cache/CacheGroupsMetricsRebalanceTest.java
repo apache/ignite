@@ -507,7 +507,8 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
                 long keyLeft = m.getKeysToRebalanceLeft();
 
-                if (keyLeft < keysLine) {
+                // The estimate arrives with the first supply message, keys left is zero before that.
+                if (m.getEstimatedRebalancingKeys() > 0 && keyLeft < keysLine) {
                     latch.countDown();
 
                     break;

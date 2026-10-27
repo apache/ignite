@@ -12,7 +12,7 @@
     {"order": 8, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap>", "name": "partCntrs", "annotations": ["@org.apache.ignite.internal.Compress"]},
     {"order": 9, "type": "java.util.Map<java.util.UUID,java.util.Map<org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair,java.lang.Long>>", "name": "partHistSuppliers", "annotations": ["@org.apache.ignite.internal.Compress"]},
     {"order": 10, "type": "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,java.util.Set<java.lang.Integer>>>", "name": "partsToReload", "annotations": ["@org.apache.ignite.internal.Compress"]},
-    {"order": 11, "type": "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>>", "name": "partsSizes"},
+    {"order": 11, "type": "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>>", "name": "partsSizes", "annotations": ["@org.apache.ignite.internal.Order(value=5, deprecatedBy=\"PARTITION_SIZES_IN_SUPPLY_FEATURE\")"]},
     {"order": 12, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
     {"order": 13, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage>", "name": "errMsgs", "annotations": ["@org.apache.ignite.internal.Compress"]},
     {"order": 14, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "resTopVer"},
