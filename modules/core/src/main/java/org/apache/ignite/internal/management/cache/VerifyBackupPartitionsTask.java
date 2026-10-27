@@ -203,18 +203,18 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             if (!ignite.context().state().publicApiActiveState(true))
                 throw new IgniteException(IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
 
-            Set<Integer> grpIds = getGroupIds();
-
             try {
                 ignite.context().cache().context().database().waitForCheckpoint(CP_REASON);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to wait for checkpoint before executing verify backup partitions task " +
-                    "[grpIds=" + grpIds + "].", e);
+                throw new IgniteException(
+                    "Failed to wait for checkpoint before executing verify backup partitions task.", e);
             }
 
             if (isCancelled())
-                throw new IgniteException("Partition hash calculation has been cancelled [grpIds=" + grpIds + "].");
+                throw new IgniteException("Partition hash calculation has been cancelled.");
+
+            Set<Integer> grpIds = getGroupIds();
 
             if (log.isInfoEnabled()) {
                 log.info("Idle verify procedure has started [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
@@ -292,6 +292,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                     // Do not proceed to the next future, wait for the current one.
                     --i;
+                }
+                catch (Exception e) {
+                    System.err.println("");
                 }
             }
 
