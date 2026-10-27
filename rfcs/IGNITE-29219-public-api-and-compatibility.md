@@ -19,38 +19,29 @@ limitations under the License.
 
 Ticket: [IGNITE-29219](https://issues.apache.org/jira/browse/IGNITE-29219)
 
-## Public interfaces
+## Covered contracts
 
-Public interfaces are designed and supported for external use:
+This RFC covers interfaces designed and supported for external use, plus formats with compatibility requirements across versions:
 
 - **Programming APIs:** language and client APIs, plugins, and SPIs.
 - **SQL:** syntax, types, functions, and behavior.
 - **REST and CLI:** endpoints, commands, options, and supported machine-readable output.
 - **Configuration:** user settings and default values.
 - **Monitoring:** supported metrics, JMX interfaces, system views, and documented structured events.
-- **Data exchange:** client protocols and serialization formats used by external systems.
+- **Client protocols:** client protocols and external serialization formats, including compatibility for supported combinations of client and server versions.
+- **Stored data:** data, metadata, WAL, and snapshot formats needed to read or migrate existing data during supported upgrades and recovery.
 
 An interface remains public even if its documentation is missing or we know of no external users. Experimental public interfaces follow their stated stability limits.
 
 ## Contract guarantees
 
-The contract of each public interface covers:
+These contracts cover:
 
 - **Structure:** names, signatures, and schemas.
 - **Inputs and results:** accepted inputs and results.
 - **Behavior:** side effects and guarantees about transactions, ordering, retries, and cancellation.
 - **Errors:** errors, including error codes and SQLState values.
 - **Extension points:** guarantees about calls to overridden methods and callbacks.
-
-## Compatibility
-
-Check these parts of compatibility separately:
-
-- **API compatibility:** source and binary compatibility.
-- **Protocol compatibility:** client/server protocols and protocols between nodes, including communication, discovery, and internal management messages.
-- **Stored data compatibility:** data, metadata, WAL, and snapshots.
-
-Protocols between nodes and stored data formats have separate contracts from external APIs. These checks cover supported client/server combinations, upgrades, recovery, and reading stored data. This RFC does not add support for other version combinations or rolling upgrades.
 
 ## Outside the contract
 
