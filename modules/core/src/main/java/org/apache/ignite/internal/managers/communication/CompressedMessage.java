@@ -50,7 +50,7 @@ public class CompressedMessage extends AbstractMessage implements NonMarshallabl
      */
     private static final int MAX_DEFLATE_BLOCK_OVERHEAD = 64;
 
-    /** Compressed data chunks: filled by {@link #compress(ByteBuffer)} on send, by the serializer on receive. */
+    /** Compressed data chunks: filled by {@link Compressor} on send, by the serializer on receive. */
     List<byte[]> chunks;
 
     /** Index of the next chunk to send. */
@@ -65,24 +65,9 @@ public class CompressedMessage extends AbstractMessage implements NonMarshallabl
     /** Flag indicating whether this is the last chunk. */
     boolean finalChunk;
 
-    /** Compression level. */
-    private int compressionLvl;
-
     /** Constructor. */
     public CompressedMessage() {
         // No-op.
-    }
-
-    /**
-     * @param buf Source buffer with serialized data.
-     * @param compressionLvl Compression level.
-     */
-    public CompressedMessage(ByteBuffer buf, int compressionLvl) {
-        dataSize = buf.remaining();
-        this.compressionLvl = compressionLvl;
-
-        if (dataSize > 0)
-            compress(buf);
     }
 
     /** @return Raw data size. */
@@ -100,40 +85,6 @@ public class CompressedMessage extends AbstractMessage implements NonMarshallabl
     /** @return Next chunk of data or null. */
     public byte[] nextChunk() {
         return chunkIdx < chunks.size() ? chunks.get(chunkIdx++) : null;
-    }
-
-    /** @param buf Buffer. */
-    private void compress(ByteBuffer buf) {
-        Deflater deflater = new Deflater(compressionLvl, true);
-
-        try {
-            deflater.setInput(buf);
-            deflater.finish();
-
-            chunks = new ArrayList<>(dataSize / CHUNK_SIZE + 1);
-
-            // Incompressible data may expand: raw-deflate worst case below CHUNK_SIZE is one stored block (~11 bytes overhead).
-            byte[] chunk0 = new byte[dataSize >= CHUNK_SIZE ? CHUNK_SIZE : dataSize + 16];
-
-            int len = 0;
-
-            while (!deflater.finished()) {
-                len += deflater.deflate(chunk0, len, chunk0.length - len);
-
-                if (len == chunk0.length && !deflater.finished()) {
-                    chunks.add(chunk0);
-
-                    chunk0 = new byte[CHUNK_SIZE];
-                    len = 0;
-                }
-            }
-
-            if (len > 0)
-                chunks.add(len == chunk0.length ? chunk0 : Arrays.copyOf(chunk0, len));
-        }
-        finally {
-            deflater.end();
-        }
     }
 
     /** @return Uncompressed data. */
@@ -200,5 +151,86 @@ public class CompressedMessage extends AbstractMessage implements NonMarshallabl
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CompressedMessage.class, this);
+    }
+
+    /** Compresses serialized data piece by piece, so that the data never has to be held in one buffer. */
+    public static class Compressor implements AutoCloseable {
+        /** */
+        private final Deflater deflater;
+
+        /** */
+        private final List<byte[]> chunks = new ArrayList<>();
+
+        /** Chunk being filled. */
+        private byte[] chunk;
+
+        /** Number of bytes in {@link #chunk}. */
+        private int chunkLen;
+
+        /** Raw data size. */
+        private int dataSize;
+
+        /** @param compressionLvl Compression level. */
+        public Compressor(int compressionLvl) {
+            deflater = new Deflater(compressionLvl, true);
+        }
+
+        /**
+         * Compresses the next piece of serialized data. The piece is consumed fully, so its buffer can be reused for
+         * the next piece.
+         *
+         * @param piece Piece of serialized data.
+         */
+        public void compress(ByteBuffer piece) {
+            // Incompressible data may expand: raw-deflate worst case below CHUNK_SIZE is one stored block (~11 bytes overhead).
+            if (chunk == null)
+                chunk = new byte[Math.min(CHUNK_SIZE, piece.remaining() + 16)];
+
+            dataSize += piece.remaining();
+
+            deflater.setInput(piece);
+
+            deflate(false);
+        }
+
+        /** @return Message with the compressed data. */
+        public CompressedMessage message() {
+            CompressedMessage msg = new CompressedMessage();
+
+            msg.dataSize = dataSize;
+
+            if (dataSize > 0) {
+                deflater.finish();
+
+                deflate(true);
+
+                if (chunkLen > 0)
+                    chunks.add(chunkLen == chunk.length ? chunk : Arrays.copyOf(chunk, chunkLen));
+
+                msg.chunks = chunks;
+            }
+
+            return msg;
+        }
+
+        /** @param finish Whether to deflate until the stream is finished rather than until the input is consumed. */
+        private void deflate(boolean finish) {
+            do {
+                if (chunkLen == chunk.length) {
+                    chunks.add(chunk);
+
+                    chunk = new byte[CHUNK_SIZE];
+                    chunkLen = 0;
+                }
+
+                chunkLen += deflater.deflate(chunk, chunkLen, chunk.length - chunkLen);
+            }
+            while (finish ? !deflater.finished() : !deflater.needsInput());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            deflater.end();
+        }
     }
 }
