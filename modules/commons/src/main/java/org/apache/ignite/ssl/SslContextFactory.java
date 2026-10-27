@@ -34,6 +34,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
@@ -177,6 +178,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      *
      * @return Key store password.
      */
+    @SensitiveProperty
     public char[] getKeyStorePassword() {
         return keyStorePwd;
     }
@@ -217,6 +219,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      *
      * @return Trust store password.
      */
+    @SensitiveProperty
     public char[] getTrustStorePassword() {
         return trustStorePwd;
     }

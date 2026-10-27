@@ -471,6 +471,7 @@ Register name: `client.connector`
 |AffinityKeyRequestsMisses | long | The number of affinity-aware cache key requests that were sent not to the primary node.
 |AffinityQueryRequestsHits | long | The number of affinity-aware query requests that were sent to the primary node.
 |AffinityQueryRequestsMisses | long | The number of affinity-aware query requests that were sent not to the primary node.
+|MaxRunningComputeTasksPerConnection | long | Maximum number of running user compute tasks per thin client connection over the configured time interval (60 seconds by default).
 |RejectedSessionsAuthenticationFailed | integer | TCP sessions count that were rejected due to failed authentication.
 |RejectedSessionsTimeout | integer | TCP sessions count that were rejected due to handshake timeout.
 |RejectedSessionsTotal | integer | Total number of rejected TCP connections.
