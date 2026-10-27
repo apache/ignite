@@ -113,8 +113,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Builds a fresh context with the legacy key-manager hook. Subclasses that load a key store can override this method
-     * and call {@link #createSslBundle(KeyMaterial)} to include its certificate chains.
+     * Builds a fresh context and its certificate metadata without calling {@link #create()} or changing its cached context.
+     * The default implementation calls the legacy key-manager hook and leaves certificate metadata unknown. Subclasses that
+     * load a key store can override this method and call {@link #createSslBundle(KeyMaterial)} to include its certificate chains.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws IgniteException If the context could not be created.
