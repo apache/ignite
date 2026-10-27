@@ -45,7 +45,7 @@ One RFC may cover several tickets. Merge it with the first implementation PR and
 
 An approved RFC can be updated through a new ticket and PR. Edit the existing RFC file and merge the update with any related code changes.
 
-After voting starts, changes to the proposal or compatibility plan require a new `[VOTE]`, another 72-hour period, and new votes. Code changes and wording-only edits do not restart voting if they preserve the agreed proposal and compatibility plan.
+After voting starts, changes to the proposal or compatibility plan require a new vote under the same rules.
 
 ## References
 
