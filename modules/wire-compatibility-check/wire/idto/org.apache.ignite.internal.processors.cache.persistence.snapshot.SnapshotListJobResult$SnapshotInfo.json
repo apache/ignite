@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult$SnapshotInfo",
+  "fields": [
+    {"order": 0, "type": "long", "name": "size"},
+    {"order": 1, "type": "java.lang.Long", "name": "date"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult$SnapshotInfo", "name": "extStors"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotListJobResult$SnapshotInfo", "name": "incs"},
+    {"order": 4, "type": "java.lang.Integer", "name": "cnt"}
+  ]
+}
