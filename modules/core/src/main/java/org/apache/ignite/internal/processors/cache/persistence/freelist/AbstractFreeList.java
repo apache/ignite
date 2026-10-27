@@ -139,16 +139,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /**
      * Pages reserved by in-flight inserts (see {@link #reserve(long, boolean)}): only the rows' own pages, the empty pages pool
-     * is a separate region-wide margin. A reservation is released as a whole once its row is written.
+     * is a separate region-wide margin. A reservation is released as a whole once its row (or batch of rows) is written.
      */
     private final AtomicLong reservedPages = new AtomicLong();
 
     /**
-     * Time (milliseconds) of the last best-effort reservation that gave up because the eviction made no progress. While
-     * within {@link #EVICTION_NO_PROGRESS_TIMEOUT_MILLIS} of it, best-effort reservations give up after a single
+     * Whether the eviction is stalled: set by a best-effort reservation that gave up because the eviction made no
+     * progress within {@link #EVICTION_NO_PROGRESS_TIMEOUT_MILLIS}, cleared by any reservation that observes progress or
+     * reserves pages. While set, best-effort reservations (including the already waiting ones) give up after an
      * eviction attempt without progress, so a series of inserts does not wait for the timeout one by one.
      */
-    private volatile long lastStallMillis;
+    private volatile boolean stalled;
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -400,27 +401,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
-    /**
-     * Per-call write context of {@link #insertDataRows}: the rows cursor plus the reservation accounting of the row
-     * currently being written, shared between {@link WriteRowsHandler} and the outer loop of {@link #insertDataRows}.
-     */
-    private static final class RowsWriteContext<T extends Storable> {
-        /** Rows cursor. */
-        private GridCursor<T> cur;
-
-        /** Reservation made by {@link #reserve(long, boolean)} for the current row, released as a whole once the row is written. */
-        private long reserved;
-
-        /**
-         * Set when {@link WriteRowsHandler} could not reserve space for a row without eviction (forbidden under the
-         * page write lock) or lost a CAS race with a concurrent reservation; the cursor is positioned on that row, and
-         * the outer loop must continue without advancing.
-         */
-        private boolean pending;
-    }
-
     /** */
-    private final class WriteRowsHandler extends PageHandler<RowsWriteContext<T>, Integer> {
+    private final class WriteRowsHandler extends PageHandler<GridCursor<T>, Integer> {
         /** {@inheritDoc} */
         @Override public Integer run(
             int cacheId,
@@ -429,31 +411,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            RowsWriteContext<T> ctx,
+            GridCursor<T> cur,
             int written,
             IoStatisticsHolder statHolder
         ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             // Fill the page up to the end.
-            while (written != COMPLETE || ctx.cur.next()) {
-                T row = ctx.cur.get();
+            while (written != COMPLETE || cur.next()) {
+                T row = cur.get();
 
                 if (written == COMPLETE) {
-                    long tryClaim = tryReserve(row.size());
-
-                    if (tryClaim < 0) {
-                        ctx.pending = true;
-
-                        break;
-                    }
-
-                    claim(ctx, tryClaim);
-
-                    written = writeWholePages(row, statHolder);
-
                     // If the data row was completely written without remainder, proceed to the next.
-                    if (written == COMPLETE)
+                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
                         continue;
 
                     if (io.getFreeSpace(pageAddr) < row.size() - written)
@@ -734,6 +704,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * Rows are sequentially added to the page as long as there is enough free space on it. If the row is large then
      * those fragments that occupy the whole memory page are written to other pages, and the remainder is added to the
      * current one.
+     * <p>
+     * The space of the whole batch is reserved upfront, before any page lock is taken: the eviction is not allowed
+     * under a page write lock, and a batch (e.g. of rebalancing) is small, so a pessimistic reservation is cheap.
      *
      * @param rows Rows.
      * @param statHolder Statistics holder to track IO operations.
@@ -742,20 +715,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void insertDataRows(Collection<T> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
-            RowsWriteContext<T> ctx = new RowsWriteContext<>();
-
-            ctx.cur = new GridCursorIteratorWrapper<>(rows.iterator());
-
-            int written = COMPLETE;
+            // Best-effort: rows of a batch (e.g. of rebalancing) can not be safely refused.
+            long reserved = reserveEnabled ? reserve(batchSize(rows), true) : 0;
 
             try {
-                while (written != COMPLETE || ctx.pending || ctx.cur.next()) {
-                    ctx.pending = false;
+                GridCursor<T> cur = new GridCursorIteratorWrapper<>(rows.iterator());
 
-                    T row = ctx.cur.get();
+                int written = COMPLETE;
+
+                while (written != COMPLETE || cur.next()) {
+                    T row = cur.get();
 
                     if (written == COMPLETE) {
-                        written = reserveAndWriteWholePages(ctx, row, statHolder);
+                        written = writeWholePages(row, statHolder);
 
                         continue;
                     }
@@ -770,13 +742,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         initIo = row.ioVersions().latest();
                     }
 
-                    written = write(pageId, writeRowsHnd, initIo, ctx, written, FAIL_I, statHolder);
+                    written = write(pageId, writeRowsHnd, initIo, cur, written, FAIL_I, statHolder);
 
                     assert written != FAIL_I; // We can't fail here.
                 }
             }
             finally {
-                releaseReserved(ctx.reserved);
+                releaseReserved(reserved);
             }
         }
         catch (RuntimeException e) {
@@ -785,36 +757,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Releases the reservation of the previous (already written) row, reserves the space for the next row and writes
-     * its whole-page fragments. The previous reservation is released first, so the thread never holds two
-     * reservations at once.
+     * Computes a pessimistic size of a batch of rows: every row is rounded up to whole data pages, as if no rows
+     * shared a page.
      *
-     * @param ctx Write context holding the reservation accounting of the current row.
-     * @param row Row to process.
-     * @param statHolder Statistics holder to track IO operations.
-     * @return Number of bytes written, {@link #COMPLETE} if the row was fully written by whole-page fragments.
+     * @param rows Rows.
+     * @return Size of the batch in bytes.
      * @throws IgniteCheckedException If failed.
      */
-    private int reserveAndWriteWholePages(RowsWriteContext<T> ctx, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        // Release the previous row's reservation before reserve() may block on eviction.
-        claim(ctx, 0);
+    private long batchSize(Collection<T> rows) throws IgniteCheckedException {
+        long size = 0;
 
-        // Best-effort: rows of the batch may already be partially written (e.g. during rebalancing), a refusal is unsafe.
-        ctx.reserved = reserve(row.size(), true);
+        for (T row : rows)
+            size += requiredPages(row.size()) * MIN_SIZE_FOR_DATA_PAGE;
 
-        return writeWholePages(row, statHolder);
-    }
-
-    /**
-     * Releases the reservation of the previous row and stores the new claim for the current row.
-     *
-     * @param ctx Write context holding the reservation accounting of the current row.
-     * @param claimPages Pages claimed for the current row.
-     */
-    private void claim(RowsWriteContext<T> ctx, long claimPages) {
-        releaseReserved(ctx.reserved);
-
-        ctx.reserved = claimPages;
+        return size;
     }
 
     /**
@@ -1256,7 +1212,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public long reserve(long rowSize, boolean bestEffort) throws IgniteOutOfMemoryException, IgniteCheckedException {
-        if (!reserveEnabled)
+        // Nothing to insert (e.g. an empty batch): no eviction is needed.
+        if (!reserveEnabled || rowSize <= 0)
             return 0;
 
         long claimPages = requiredPages(rowSize);
@@ -1270,8 +1227,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         long limitPages = limitPages(claimPages);
 
-        boolean recentStall = bestEffort && U.currentTimeMillis() - lastStallMillis < EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
-
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
         long lastProgressMillis = U.currentTimeMillis();
@@ -1284,25 +1239,30 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             long deficit = deficit(claimPages, limitPages, reserved);
 
             if (deficit <= 0) {
-                if (reservedPages.compareAndSet(reserved, reserved + claimPages))
+                if (reservedPages.compareAndSet(reserved, reserved + claimPages)) {
+                    clearStalled();
+
                     return claimPages;
+                }
 
                 continue;
             }
 
             if (prevDeficit > 0) {
                 if (deficit < prevDeficit) {
+                    clearStalled();
+
                     lastProgressMillis = U.currentTimeMillis();
 
                     backoffNanos = EVICTION_BACKOFF_START_NANOS;
                 }
-                else if (recentStall)
+                else if (bestEffort && stalled)
                     return 0;
                 else if (U.currentTimeMillis() - lastProgressMillis > EVICTION_NO_PROGRESS_TIMEOUT_MILLIS) {
                     if (!bestEffort)
                         throw outOfMemory();
 
-                    lastStallMillis = U.currentTimeMillis();
+                    stalled = true;
 
                     LT.warn(log, "Page eviction made no progress, the row is inserted without a page reservation " +
                         "[region=" + dataRegion.config().getName() + ", timeout=" + EVICTION_NO_PROGRESS_TIMEOUT_MILLIS + "ms]");
@@ -1329,6 +1289,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
+    /**
+     * Clears the {@link #stalled} flag once a reservation observes progress or reserves pages. The flag is read first,
+     * so the common path does not write to the shared field.
+     */
+    private void clearStalled() {
+        if (stalled)
+            stalled = false;
+    }
+
     /** {@inheritDoc} */
     @Override public void releaseReserved(long pages) {
         assert pages >= 0;
@@ -1340,36 +1309,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** {@inheritDoc} */
     @Override public String toString() {
         return "FreeList [name=" + name() + ']';
-    }
-
-    /**
-     * Attempts to reserve space for a row without blocking on eviction. Unlike {@link #reserve(long, boolean)}, this method
-     * never calls {@code evictionTracker.evictDataPage()} (which would take an entry lock), so it is safe to call
-     * while holding a page write lock.
-     *
-     * @param rowSize Row size in bytes.
-     * @return The number of claimed pages (>= 0) if the reservation succeeded without eviction, or {@code -1} if
-     *     the claim would require eviction or lost a race with a concurrent reservation (the caller should defer the
-     *     row to a context where blocking is safe).
-     *     A row that does not fit into the region together with the empty pages pool is admitted without a claim
-     *     ({@code 0}), as in the best-effort {@link #reserve(long, boolean)}.
-     */
-    private long tryReserve(long rowSize) {
-        if (!reserveEnabled)
-            return 0;
-
-        long claimPages = requiredPages(rowSize);
-
-        if (!fitsRegion(claimPages))
-            return 0;
-
-        long reserved = reservedPages.get();
-
-        if (deficit(claimPages, limitPages(claimPages), reserved) > 0 ||
-            !reservedPages.compareAndSet(reserved, reserved + claimPages))
-            return -1;
-
-        return claimPages;
     }
 
     /**

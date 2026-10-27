@@ -66,10 +66,10 @@ public interface FreeList<T extends Storable> {
     public void dumpStatistics(IgniteLogger log);
 
     /**
-     * Reserves pages for a row of the given size before the entry lock is acquired. Runs blocking eviction when
-     * necessary (the caller must not hold any entry or page locks).
+     * Reserves pages for a row (or a batch of rows) of the given size before it is inserted. Runs blocking eviction
+     * when necessary (the caller must not hold any entry or page locks).
      *
-     * @param rowSize Size of the row to be inserted.
+     * @param rowSize Size of the row (or the total size of a batch of rows) to be inserted.
      * @param bestEffort {@code True} if the insert can not be safely refused (e.g. a backup update or a transaction
      *      commit): if the row does not fit into the region or the eviction makes no progress, the row is admitted
      *      without a reservation ({@code 0} is returned) and the page memory remains the hard limit. {@code False} if

@@ -24,27 +24,84 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /** Tests size-aware page eviction on in-memory (non-persistent) data regions. */
 public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbstractTest {
+    /** Name of the rebalance supplier node, which has a twice larger data region. */
+    private static final String SUPPLIER = "supplier";
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        if (SUPPLIER.equals(gridName)) {
+            DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+            regCfg.setMaxSize(regCfg.getMaxSize() * 2);
+        }
+
+        return cfg;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /**
+     * Rebalancing inserts the received rows in batches reserved as a whole: the demander, which receives more data than
+     * fits below its threshold, evicts at the threshold and releases the reservations.
+     */
+    @Test(timeout = 300_000)
+    public void testRebalanceHonorsThreshold() throws Exception {
+        IgniteEx supplier = startGrid(SUPPLIER);
+
+        IgniteCache<Integer, Object> cache = supplier.createCache(new CacheConfiguration<Integer, Object>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(1));
+
+        byte[] val = new byte[pageSize(supplier) - 200];
+
+        // One page per entry: 1.5 times the demander region.
+        int keys = (int)(totalPages(supplier) * 0.75);
+
+        for (int base = 0; base < keys; base += 100) {
+            Map<Integer, Object> batch = new HashMap<>();
+
+            for (int i = base; i < Math.min(base + 100, keys); i++)
+                batch.put(i, val);
+
+            cache.putAll(batch);
+        }
+
+        IgniteEx demander = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        assertHonorsThreshold(demander);
+
+        assertEquals(0, ((AtomicLong)GridTestUtils.getFieldValue(defaultFreeList(demander), "reservedPages")).get());
     }
 
     /** */
@@ -262,7 +319,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     /**
      * When no page can be evicted (all resident entries are locked), the eviction progress guard refuses an insert that
      * can be refused (a primary atomic update) with an out-of-memory, while a best-effort reservation (backup update,
-     * transaction commit, rebalancing) gives up without an error, and repeated best-effort attempts do not wait again.
+     * transaction commit, rebalancing) gives up without an error. Once the stall is detected, the already waiting and
+     * the following best-effort reservations give up without waiting for the timeout, until the eviction makes progress
+     * again.
      */
     @Test(timeout = 180_000)
     public void testGuardWhenAllEntriesLocked() throws Exception {
@@ -308,20 +367,76 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
             IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
-            assertEquals(0, db.reserveInRegion(defaultRegion(ignite), largeValSize, true));
+            DataRegion region = defaultRegion(ignite);
 
+            FreeList<?> freeList = db.freeList(region.config().getName());
+
+            long timeout = AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
+
+            assertFalse(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+
+            IgniteInternalFuture<Long> firstFut = GridTestUtils.runAsync(() -> db.reserveInRegion(region, largeValSize, true),
+                "size-aware-guard-first");
+
+            U.sleep(timeout / 2);
+
+            // Starts waiting before the stall is detected and must be released once the first reservation detects it.
             long start = System.currentTimeMillis();
 
-            assertEquals(0, db.reserveInRegion(defaultRegion(ignite), largeValSize, true));
+            assertEquals(0, db.reserveInRegion(region, largeValSize, true));
 
-            assertTrue("Repeated best-effort reservation must not wait for the timeout again",
-                System.currentTimeMillis() - start < AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS / 2);
+            assertTrue("Waiting best-effort reservation must give up once the stall is detected",
+                System.currentTimeMillis() - start < timeout * 3 / 4);
+
+            assertEquals(0, (long)firstFut.get(timeout, TimeUnit.MILLISECONDS));
+
+            assertTrue(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+
+            // The stall is not a time window: once the timeout passes, best-effort reservations still do not wait.
+            U.sleep(timeout + 500);
+
+            start = System.currentTimeMillis();
+
+            assertEquals(0, db.reserveInRegion(region, largeValSize, true));
+
+            assertTrue("Best-effort reservation must not wait for the timeout while the eviction is stalled",
+                System.currentTimeMillis() - start < timeout / 2);
+
+            release.countDown();
+
+            lockerFut.get(10, TimeUnit.SECONDS);
+
+            // The unlocked entries can be evicted again: the reservation succeeds and clears the stall. While stalled, a
+            // best-effort reservation gives up after a single eviction attempt, which may free no page, so it is retried.
+            long reserved = 0;
+
+            long deadline = System.currentTimeMillis() + timeout;
+
+            while (reserved == 0 && System.currentTimeMillis() < deadline)
+                reserved = db.reserveInRegion(region, largeValSize, true);
+
+            try {
+                assertTrue("Reservation must succeed once the entries are unlocked", reserved > 0);
+
+                assertFalse(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+            }
+            finally {
+                db.releaseInRegion(region, reserved);
+            }
         }
         finally {
             release.countDown();
 
             lockerFut.get(10, TimeUnit.SECONDS);
         }
+    }
+
+    /**
+     * @param ignite Node.
+     * @return Free list of the default data region.
+     */
+    private static FreeList<?> defaultFreeList(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().freeList(defaultRegion(ignite).config().getName());
     }
 
     /**
