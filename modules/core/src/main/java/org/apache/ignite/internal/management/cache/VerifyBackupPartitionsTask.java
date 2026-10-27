@@ -203,17 +203,18 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             if (!ignite.context().state().publicApiActiveState(true))
                 throw new IgniteException(IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE);
 
+            Set<Integer> grpIds = getGroupIds();
+
             try {
                 ignite.context().cache().context().database().waitForCheckpoint(CP_REASON);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to wait for checkpoint before executing verify backup partitions task.", e);
+                throw new IgniteException("Failed to wait for checkpoint before executing verify backup partitions task " +
+                    "[grpIds=" + grpIds + "].", e);
             }
 
             if (isCancelled())
-                throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-
-            Set<Integer> grpIds = getGroupIds();
+                throw new IgniteException("Partition hash calculation has been cancelled [grpIds=" + grpIds + "].");
 
             if (log.isInfoEnabled()) {
                 log.info("Idle verify procedure has started [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
@@ -260,8 +261,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         }
                     }
                     else if (jobFailure == null) {
-                        jobFailure = new IgniteException("Failed to execute a partition hash calculation [reason=" +
-                            e.getCause().getMessage() + ']', e.getCause());
+                        jobFailure = new IgniteException("Failed to execute a partition hash calculation [grpIds=" +
+                            grpIds + ", reason=" + e.getCause().getMessage() + ']', e.getCause());
 
                         cancel();
                     }
@@ -272,7 +273,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     interrupted = true;
 
                     if (jobFailure == null) {
-                        jobFailure = new IgniteInterruptedException("Partition hash calculation has been interrupted.", e);
+                        jobFailure = new IgniteInterruptedException("Partition hash calculation has been interrupted " +
+                            "[grpIds=" + grpIds + "].", e);
 
                         cancel();
                     }
@@ -300,10 +302,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw jobFailure;
 
             if (isCancelled())
-                throw new IgniteException("Partition hash calculation has been cancelled.");
+                throw new IgniteException("Partition hash calculation has been cancelled [grpIds=" + grpIds + "].");
 
-            if (log.isInfoEnabled())
-                log.info("Idle verify procedure has finished.");
+            if (log.isInfoEnabled()) {
+                log.info("Idle verify procedure has finished [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
+                    arg.checkCrc() + ", grpIds=" + grpIds + "].");
+            }
 
             if (!F.isEmpty(exceptions))
                 throw new IdleVerifyException(exceptions);
@@ -314,7 +318,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         /**
          * Class that processes cache filtering chain.
          */
-        private class CachesFiltering {
+        private static class CachesFiltering {
             /**
              * Initially all cache descriptors are included.
              */

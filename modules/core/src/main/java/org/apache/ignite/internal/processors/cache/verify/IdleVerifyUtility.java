@@ -122,7 +122,7 @@ public class IdleVerifyUtility {
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                 if (cancelled != null && cancelled.getAsBoolean())
-                    throw new IgniteException("Checking of partitions page CRC sum has been cancelled.");
+                    throw new IgniteException("Checking of partitions page CRC sum has been cancelled [partId=" + partId + ']');
 
                 buf.clear();
 
@@ -321,7 +321,7 @@ public class IdleVerifyUtility {
         }
 
         if (cancelled0)
-            throw new IgniteCheckedException("Partition hash calculation has been cancelled, " + partKey);
+            throw new IgniteCheckedException("Partition hash calculation has been cancelled [part=" + partKey + ']');
 
         return new PartitionHashRecord(
             partKey,
