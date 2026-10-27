@@ -33,8 +33,10 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -242,11 +244,43 @@ public class TypeUtils {
 
         for (int i = 0; i < sqlType.getFieldCount(); i++) {
             List<String> origin = origins == null ? null : origins.get(i);
-            b.add(fields.get(i).getName(), typeFactory.createType(
-                getResultClass(typeFactory, schema, fields.get(i).getType(), origin)));
+
+            b.add(fields.get(i).getName(), resultFieldType(typeFactory, schema, fields.get(i).getType(), origin));
         }
 
         return b.build();
+    }
+
+    /** Preserves ROW, ARRAY and MAP types and resolves the external Java type of each leaf. */
+    private static RelDataType resultFieldType(
+        IgniteTypeFactory typeFactory,
+        RelOptSchema schema,
+        RelDataType type,
+        @Nullable List<String> origin
+    ) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Preserve MULTISET types and resolve their element types.
+        // Java types, including byte[], are values rather than SQL containers.
+        if (type instanceof RelDataTypeFactoryImpl.JavaType)
+            return typeFactory.createType(getResultClass(typeFactory, schema, type, origin));
+
+        RelDataType resultType;
+
+        if (type.isStruct())
+            resultType = getResultType(typeFactory, schema, type, null);
+        else if (type.getSqlTypeName() == SqlTypeName.ARRAY) {
+            RelDataType componentType = resultFieldType(typeFactory, schema, type.getComponentType(), null);
+
+            resultType = typeFactory.createArrayType(componentType, -1);
+        }
+        else if (type.getSqlTypeName() == SqlTypeName.MAP) {
+            resultType = typeFactory.createMapType(
+                resultFieldType(typeFactory, schema, type.getKeyType(), null),
+                resultFieldType(typeFactory, schema, type.getValueType(), null));
+        }
+        else
+            return typeFactory.createType(getResultClass(typeFactory, schema, type, origin));
+
+        return typeFactory.createTypeWithNullability(resultType, type.isNullable());
     }
 
     /**
@@ -299,7 +333,7 @@ public class TypeUtils {
     public static <Row> Function<Row, Row> resultTypeConverter(ExecutionContext<Row> ectx, RelDataType resultType) {
         assert resultType.isStruct();
 
-        if (hasConvertableFields(resultType)) {
+        if (needsResultConversion(resultType)) {
             RowHandler<Row> hnd = ectx.rowHandler();
             List<RelDataType> types = RelOptUtil.getFieldTypeList(resultType);
             RowHandler.RowFactory<Row> factory = hnd.factory(ectx.getTypeFactory(), types);
@@ -319,10 +353,53 @@ public class TypeUtils {
 
     /** */
     private static Function<Object, Object> fieldConverter(ExecutionContext<?> ectx, RelDataType fieldType) {
-        Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Add recursive conversion of MULTISET elements.
+        if (!needsResultConversion(fieldType))
+            return Function.identity();
 
-        if (isConvertableType(storageType))
+        if (fieldType instanceof RelDataTypeFactoryImpl.JavaType) {
+            Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
+
             return v -> fromInternal(ectx, v, storageType);
+        }
+
+        if (fieldType.isStruct()) {
+            List<Function<Object, Object>> converters = transform(fieldType.getFieldList(),
+                f -> fieldConverter(ectx, f.getType()));
+            return v -> {
+                if (v == null)
+                    return null;
+
+                Object[] row = ((Object[])v).clone();
+
+                for (int i = 0; i < converters.size(); i++)
+                    row[i] = converters.get(i).apply(row[i]);
+
+                return row;
+            };
+        }
+
+        if (fieldType.getSqlTypeName() == SqlTypeName.ARRAY) {
+            Function<Object, Object> elementConverter = fieldConverter(ectx, fieldType.getComponentType());
+
+            return v -> v == null ? null : transform((List<?>)v, elementConverter::apply);
+        }
+
+        if (fieldType.getSqlTypeName() == SqlTypeName.MAP) {
+            Function<Object, Object> keyConverter = fieldConverter(ectx, fieldType.getKeyType());
+            Function<Object, Object> valConverter = fieldConverter(ectx, fieldType.getValueType());
+
+            return v -> {
+                if (v == null)
+                    return null;
+
+                Map<Object, Object> map = new LinkedHashMap<>();
+
+                ((Map<?, ?>)v).forEach((key, val) -> map.put(keyConverter.apply(key), valConverter.apply(val)));
+
+                return map;
+            };
+        }
 
         return Function.identity();
     }
@@ -338,10 +415,20 @@ public class TypeUtils {
                     && isConvertableType(((RelDataTypeFactoryImpl.JavaType)type).getJavaClass());
     }
 
-    /** */
-    private static boolean hasConvertableFields(RelDataType resultType) {
-        return RelOptUtil.getFieldTypeList(resultType).stream()
-            .anyMatch(TypeUtils::isConvertableType);
+    /** Checks declared types during converter construction, without inspecting result values. */
+    private static boolean needsResultConversion(RelDataType type) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Check MULTISET element types for required conversion.
+        if (type instanceof RelDataTypeFactoryImpl.JavaType)
+            return isConvertableType(type);
+
+        if (type.isStruct())
+            return type.getFieldList().stream().anyMatch(f -> needsResultConversion(f.getType()));
+
+        if (type.getSqlTypeName() == SqlTypeName.ARRAY)
+            return needsResultConversion(type.getComponentType());
+
+        return type.getSqlTypeName() == SqlTypeName.MAP
+            && (needsResultConversion(type.getKeyType()) || needsResultConversion(type.getValueType()));
     }
 
     /** */

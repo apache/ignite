@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "uid"},
+    {"order": 1, "type": "java.lang.String", "name": "grpName"},
+    {"order": 2, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 3, "type": "java.lang.String", "name": "idxName"},
+    {"order": 4, "type": "java.lang.String", "name": "oldTreeName"},
+    {"order": 5, "type": "java.lang.String", "name": "newTreeName"},
+    {"order": 6, "type": "int", "name": "segments"}
+  ]
+}

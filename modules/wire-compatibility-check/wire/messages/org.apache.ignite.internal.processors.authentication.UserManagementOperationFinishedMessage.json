@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "opId"},
+    {"order": 1, "type": "java.lang.String", "name": "errorMsg"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "val"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "op"},
+    {"order": 2, "type": "boolean", "name": "hasWriteVal"}
+  ]
+}

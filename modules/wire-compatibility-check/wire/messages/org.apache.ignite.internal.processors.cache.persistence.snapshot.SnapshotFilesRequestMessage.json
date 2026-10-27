@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 2, "type": "java.lang.String", "name": "snpName"},
+    {"order": 3, "type": "java.lang.String", "name": "snpPath"},
+    {"order": 4, "type": "java.util.Map<java.lang.Integer,int[]>", "name": "parts"}
+  ]
+}

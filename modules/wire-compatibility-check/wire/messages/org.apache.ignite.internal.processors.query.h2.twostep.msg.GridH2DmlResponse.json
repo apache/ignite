@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "reqId"},
+    {"order": 1, "type": "long", "name": "updCnt"},
+    {"order": 2, "type": "java.lang.String", "name": "err"},
+    {"order": 3, "type": "byte[]", "name": "errKeysBytes"}
+  ]
+}

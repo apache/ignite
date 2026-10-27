@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult",
+  "fields": [
+    {"order": 0, "type": "int", "name": "cnt"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.util.ErrorMessage>", "name": "errors"}
+  ]
+}

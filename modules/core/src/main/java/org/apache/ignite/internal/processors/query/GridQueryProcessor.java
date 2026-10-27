@@ -203,6 +203,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         "(consider adding module '" + INDEXING.module() + "' to classpath or moving it from 'optional' to 'libs' folder).";
 
     /** */
+    public static final String INDEXING_ENGINE_NAME = "h2";
+
+    /** */
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
 
     /** For tests. */
@@ -562,19 +565,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
         if (F.isEmpty(qryEnginesCfg)) {
-            // No query engines explicitly configured - indexing will be used.
-            // If indexing is disabled, try to find any query engine in components.
-            if (!indexingEnabled()) {
-                for (GridComponent cmp : ctx.components()) {
-                    if (cmp instanceof QueryEngine qryEngine && qryEngine.config() != null) {
-                        qryEngines = new QueryEngine[] {qryEngine};
-                        dfltQryEngine = qryEngine;
-                        this.qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
-
-                        break;
-                    }
-                }
-            }
+            initImplicitQueryEngines();
 
             return;
         }
@@ -637,6 +628,53 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             dfltQryEngine = qryEngines[dfltQryEngineIdx];
+    }
+
+    /**
+     * Registers the query engines found on the classpath.
+     * A query engine component that provides its own configuration (the Calcite-based engine) becomes the default engine.
+     * The indexing (H2) engine, if it is on the classpath too, remains available by name.
+     */
+    private void initImplicitQueryEngines() {
+        QueryEngine qryEngine = null;
+
+        for (GridComponent cmp : ctx.components()) {
+            if (cmp instanceof QueryEngine qryEngine0 && qryEngine0.config() != null) {
+                qryEngine = qryEngine0;
+
+                break;
+            }
+        }
+
+        if (qryEngine == null)
+            return;
+
+        if (indexingEnabled()) {
+            qryEngines = new QueryEngine[] {qryEngine, null};
+            qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config(), new QueryEngineConfigurationEx() {
+                @Override public String engineName() {
+                    return INDEXING_ENGINE_NAME;
+                }
+
+                @Override public Class<? extends QueryEngine> engineClass() {
+                    return IndexingQueryEngine.class;
+                }
+
+                @Override public boolean isDefault() {
+                    return false;
+                }
+
+                @Override public QueryEngineConfiguration setDefault(boolean isDflt) {
+                    throw new UnsupportedOperationException("Implicit query engine configuration is read-only.");
+                }
+            } };
+        }
+        else {
+            qryEngines = new QueryEngine[] {qryEngine};
+            qryEnginesCfg = new QueryEngineConfigurationEx[] {qryEngine.config()};
+        }
+
+        dfltQryEngine = qryEngine;
     }
 
     /**

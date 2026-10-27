@@ -28,10 +28,10 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class CacheGroupRecoveryState implements Externalizable, Message {
+public class CacheGroupRecoveryState extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

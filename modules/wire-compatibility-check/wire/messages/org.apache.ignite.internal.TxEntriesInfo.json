@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.TxEntriesInfo",
+  "fields": [
+    {"order": 0, "type": "int", "name": "cacheId"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "keys"}
+  ]
+}

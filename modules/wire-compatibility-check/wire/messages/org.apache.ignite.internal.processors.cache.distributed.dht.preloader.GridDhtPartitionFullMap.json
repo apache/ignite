@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "long", "name": "nodeOrder"},
+    {"order": 2, "type": "long", "name": "updateSeq"},
+    {"order": 3, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap>", "name": "map"}
+  ]
+}

@@ -171,6 +171,8 @@ namespace ignite
                 opts.push_back(CopyChars("--add-opens=java.base/java.lang.invoke=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/java.math=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.sql/java.sql=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.time=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-opens=java.base/java.text=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.logging/java.util.logging=ALL-UNNAMED"));
             }
         }

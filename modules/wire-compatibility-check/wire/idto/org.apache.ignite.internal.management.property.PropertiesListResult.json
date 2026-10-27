@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.property.PropertiesListResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Collection<org.apache.ignite.internal.util.typedef.T3<java.lang.String,java.lang.String,java.lang.String>>", "name": "props"}
+  ]
+}

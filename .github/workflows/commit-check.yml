@@ -124,6 +124,22 @@ jobs:
           fi
           exit "$rc"
 
+      - name: Check message wire format descriptions
+        run: |
+          missing=$(find modules -path '*/target/classes/META-INF/ignite-wire/*' -type f | sed 's#.*/META-INF/ignite-wire/##' | sort -u \
+            | while read -r f; do [ -f "modules/wire-compatibility-check/wire/$f" ] || echo "$f"; done | paste -sd ' ' -)
+          if [ -n "$missing" ]; then
+            echo "::error title=Uncollected wire format descriptions::Add the modules that generate these descriptions to modules/wire-compatibility-check/pom.xml: $missing"
+            exit 1
+          fi
+          git add -A modules/wire-compatibility-check/wire
+          if ! git diff --cached --quiet -- modules/wire-compatibility-check/wire; then
+            echo "::error title=Outdated wire format descriptions::modules/wire-compatibility-check/wire differs from the compiled messages. Run './mvnw clean process-classes -pl modules/wire-compatibility-check -am' and commit the changes."
+            git diff --cached --color=always -- modules/wire-compatibility-check/wire
+            { echo '```diff'; git diff --cached -- modules/wire-compatibility-check/wire; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Run abandoned tests checks.
         # Reuse classes from the previous step; the differing profiles otherwise trigger a full reactor recompile.
         run : |
@@ -138,7 +154,7 @@ jobs:
           ./mvnw test-compile -Pdocs -pl :code-snippets -am -B -V -Dmaven.compiler.useIncrementalCompilation=false
 
   check-dotnet:
-    name: Сheck .NET code
+    name: Check .NET code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,15 +178,14 @@ jobs:
       fail-fast: false
       matrix:
         cfg:
-          - { python: "3.8", toxenv: "py38" }
-          - { python: "3.9", toxenv: "py39" }
-          - { python: "3.9", toxenv: "codestyle" }
+          - { python: "3.12", toxenv: "py312" }
+          - { python: "3.12", toxenv: "codestyle" }
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.cfg.python }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.cfg.python}}

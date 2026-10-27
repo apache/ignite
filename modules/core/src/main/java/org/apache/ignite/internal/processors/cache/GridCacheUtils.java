@@ -1390,6 +1390,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param grpName Cache group name, {@code null} if the cache does not belong to a group.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheGroupName(@Nullable String grpName) throws IllegalArgumentException {
+        A.ensure(grpName == null || !grpName.isEmpty(), "Cache group name must not be empty.");
+    }
+
+    /**
      * @param name Cache name.
      * @throws IllegalArgumentException In case the name is not valid.
      */

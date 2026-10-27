@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.managers.encryption.GenerateEncryptionKeyResponse",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.Collection<byte[]>", "name": "encKeys"},
+    {"order": 2, "type": "byte[]", "name": "masterKeyDigest"}
+  ]
+}

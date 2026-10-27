@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "qryReqId"},
+    {"order": 1, "type": "int", "name": "segmentId"},
+    {"order": 2, "type": "int", "name": "qry"},
+    {"order": 3, "type": "int", "name": "page"},
+    {"order": 4, "type": "int", "name": "allRows"},
+    {"order": 5, "type": "int", "name": "cols"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.plugin.extensions.communication.Message>", "name": "vals"},
+    {"order": 7, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "retry"},
+    {"order": 8, "type": "java.lang.String", "name": "retryCause"},
+    {"order": 9, "type": "boolean", "name": "last"}
+  ]
+}

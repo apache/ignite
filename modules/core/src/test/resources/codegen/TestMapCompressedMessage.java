@@ -19,9 +19,9 @@ package org.apache.ignite.internal;
 
 import java.util.Map;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestMapCompressedMessage implements Message {
+public class TestMapCompressedMessage extends AbstractMessage {
     @Order(0)
     Map<String, CompressedMessage> stringMessageMap;
 

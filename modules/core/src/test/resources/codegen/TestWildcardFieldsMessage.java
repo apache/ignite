@@ -20,9 +20,9 @@ package org.apache.ignite.internal;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Map;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestWildcardFieldsMessage implements Message {
+public class TestWildcardFieldsMessage extends AbstractMessage {
     @Marshalled("entryBytes")
     Map.Entry<?, ? extends Serializable> entry;
 

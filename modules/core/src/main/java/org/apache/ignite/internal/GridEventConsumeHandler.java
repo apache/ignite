@@ -54,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
@@ -61,7 +62,7 @@ import static org.apache.ignite.events.EventType.EVTS_ALL;
 /**
  * Continuous routine handler for remote event listening.
  */
-public final class GridEventConsumeHandler implements GridContinuousHandler, MarshallableMessage {
+public final class GridEventConsumeHandler extends AbstractMessage implements GridContinuousHandler, MarshallableMessage {
     /** Default callback. */
     private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<>() {
         @Override public boolean apply(UUID uuid, Event e) {

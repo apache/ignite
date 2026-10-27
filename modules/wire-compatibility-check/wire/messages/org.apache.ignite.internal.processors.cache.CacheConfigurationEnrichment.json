@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,byte[]>", "name": "enrichFields"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "fieldClassNames"}
+  ]
+}

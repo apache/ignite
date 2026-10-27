@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "res"},
+    {"order": 2, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}

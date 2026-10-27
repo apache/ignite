@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage",
+  "fields": [
+    {"order": 0, "type": "int", "name": "connIdx"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors",
+  "fields": [
+    {"order": 0, "type": "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "failedKeys"},
+    {"order": 1, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}

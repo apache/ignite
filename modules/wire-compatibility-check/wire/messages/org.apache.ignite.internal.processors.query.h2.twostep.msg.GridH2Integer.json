@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Integer",
+  "fields": [
+    {"order": 0, "type": "int", "name": "x"}
+  ]
+}

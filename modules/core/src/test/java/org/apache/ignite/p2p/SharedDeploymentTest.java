@@ -53,6 +53,25 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Start a cluster of 3 server nodes.
+     * Run callables deployed on nodes 2 and 3 from the first classpath. Check return values.
+     * Stop nodes 2 and 3 (all master nodes of the deployment), restart node 3 and run a callable deployed on it
+     * from the second classpath (another version of the same class). Check the return value of the new version.
+     * <br><br>
+     * According to SHARED mode contract: <br>
+     * 1. Classes from different master nodes with the same user version share
+     * the same class loader on worker nodes <br>
+     *
+     * 2. Classes are un-deployed when all master nodes leave the cluster or the
+     * user version changes <br><br>
+     *
+     * The documented contract is: "classes from different master nodes with the
+     * same user version share the same class
+     * loader on worker nodes. Classes are un-deployed when all master nodes
+     * leave the cluster or the user version changes."
+     * Also from the user-version section: redeploying changed code on a subset
+     * of nodes requires changing the user version.
+     *
      * @throws Exception if failed.
      */
     @Test
@@ -66,12 +85,15 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
             Collection<Object> res = runJob0(new GridTestExternalClassLoader(new URL[] {
                 new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, RUN_CLS1/*, RUN_CLS2*/), ignite2, 10_000, 1);
 
+            // Node 3 and node 2 are different nodes with the same user
+            // version, they share the loader, node 3 gets v1 = 42.
             for (Object o: res)
                 assertEquals(o, 42);
 
             res = runJob1(new GridTestExternalClassLoader(new URL[] {
                 new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, RUN_CLS, RUN_CLS2), ignite3, 10_000, 2);
 
+            // Nothing is undeployed: user version unchanged.
             for (Object o: res)
                 assertEquals(o, 42);
 
@@ -81,6 +103,11 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
             for (Object o: res)
                 assertEquals(o, 42);
 
+            // In SHARED mode classes are undeployed only when all master nodes leave: node 2 participates in the
+            // deployment serving the first version of the classes, so it has to leave before node 3 is restarted
+            // with the second version. Otherwise node 3 would legitimately share the already deployed classes.
+            stopGrid(2);
+
             ignite3.close();
 
             ignite3 = startGrid(3);
@@ -88,6 +115,7 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
             res = runJob2(new GridTestExternalClassLoader(new URL[] {
                 new URL(GridTestProperties.getProperty("p2p.uri.cls.second"))}, RUN_CLS, RUN_CLS1), ignite3, 10_000, 4);
 
+            // User-version bump: redeploying changed code on a subset of nodes.
             for (Object o: res)
                 assertEquals(o, 43);
         }

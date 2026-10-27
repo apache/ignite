@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "groupName"},
+    {"order": 1, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 2, "type": "int", "name": "indexBuildPartitionsLeftCount"},
+    {"order": 3, "type": "int", "name": "totalPartitionsCount"}
+  ]
+}

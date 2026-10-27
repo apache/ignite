@@ -27,13 +27,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class to implement discovery messages.
  */
-public abstract class TcpDiscoveryAbstractMessage implements Message {
+public abstract class TcpDiscoveryAbstractMessage extends AbstractMessage {
     /** */
     protected static final int CLIENT_FLAG_POS = 0;
 
@@ -110,6 +110,8 @@ public abstract class TcpDiscoveryAbstractMessage implements Message {
         topVer = msg.topVer;
         flags = msg.flags;
         opCtxSnp = msg.opCtxSnp;
+
+        rawFields(msg.rawFields());
     }
 
     /**

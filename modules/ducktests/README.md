@@ -19,7 +19,7 @@ All paths below are relative to `${IGNITE_HOME}/modules/ducktests/tests`:
 Docker is used to emulate a distributed multi-node cluster environment where each individual container acts as a running cluster node.
 
 ### 1. Prerequisites
-* **Docker** installed and running on your host system.
+* **Docker** installed and running on your host system. A rootless daemon works too: the runner detects it and runs the `ducker` user as container root, which the daemon maps to you. Network fault tests then need the `iptables` and `sch_netem` kernel modules already loaded on the host, since a rootless container cannot load them.
 * **Python >= 3.8** installed on your host system (required only for local environment scripts and development).
 
 ### 2. Prepare the Environment & Code

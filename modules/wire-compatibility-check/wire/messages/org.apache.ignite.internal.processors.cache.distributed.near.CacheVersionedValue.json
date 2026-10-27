@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "val"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 2, "type": "int", "name": "cacheId"}
+  ]
+}

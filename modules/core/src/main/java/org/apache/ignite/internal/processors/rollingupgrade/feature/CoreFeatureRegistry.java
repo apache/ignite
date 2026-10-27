@@ -94,6 +94,24 @@ public class CoreFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
 
-    /** */
-    public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = new IgniteCoreFeature(1);
+    /**
+     * Feature that introduces the raw-field suffix, a count of raw fields and the raw fields themselves written after the
+     * positional fields of every message.
+     */
+    public static final IgniteFeature RAW_FIELDS_FEATURE = new IgniteCoreFeature(1);
+
+    /**
+     * Feature that deprecates the mechanism for tracking the features of the previous version under which the node operated.
+     * This mechanism was replaced by the raw-field suffix.
+     */
+    public static final IgniteFeature PREV_CLUSTER_VER_DEPRECATED_FEATURE = new IgniteCoreFeature(2);
+
+    /** Feature that introduces the snapshot deletion command. */
+    public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = new IgniteCoreFeature(3);
+
+    /** Feature that introduces the snapshot list command. */
+    public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
+
+    /** Future that introduces the snaphost check status. */
+    public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = new IgniteCoreFeature(5);
 }

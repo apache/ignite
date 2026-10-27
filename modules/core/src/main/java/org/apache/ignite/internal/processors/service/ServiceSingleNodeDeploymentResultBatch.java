@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -30,7 +30,7 @@ import org.jetbrains.annotations.NotNull;
  * <p/>
  * Contains collection of {@link ServiceSingleNodeDeploymentResult} mapped services ids.
  */
-public class ServiceSingleNodeDeploymentResultBatch implements Message {
+public class ServiceSingleNodeDeploymentResultBatch extends AbstractMessage {
     /** Deployment process id. */
     @Order(0)
     @GridToStringInclude

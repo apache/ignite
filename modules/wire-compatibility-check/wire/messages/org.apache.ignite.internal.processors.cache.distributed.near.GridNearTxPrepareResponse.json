@@ -1,0 +1,24 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 5, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "committedVers"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "rolledbackVers"},
+    {"order": 7, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"order": 8, "type": "int", "name": "part"},
+    {"order": 9, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "pending"},
+    {"order": 10, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"},
+    {"order": 11, "type": "int", "name": "miniId"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "dhtVer"},
+    {"order": 13, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "writeVer"},
+    {"order": 14, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.distributed.near.KeyedVersionedValue>", "name": "ownedVals"},
+    {"order": 15, "type": "org.apache.ignite.internal.processors.cache.GridCacheReturn", "name": "retVal"},
+    {"order": 16, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey>", "name": "filterFailedKeys"},
+    {"order": 17, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "clientRemapVer"},
+    {"order": 18, "type": "boolean", "name": "onePhaseCommit"}
+  ]
+}

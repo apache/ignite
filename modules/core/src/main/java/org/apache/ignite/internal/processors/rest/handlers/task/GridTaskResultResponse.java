@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task result response.
  */
-public class GridTaskResultResponse implements Message {
+public class GridTaskResultResponse extends AbstractMessage {
     /** Result. */
     @Marshalled("resBytes")
     public @Nullable Object res;

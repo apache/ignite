@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.CacheDhtLocalPartitionAfterRe
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CacheGroupLocalConfigurationSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheGroupNameValidationTest;
 import org.apache.ignite.internal.processors.cache.CacheOptimisticTransactionsWithFilterTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapUpdateSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedGetSelfTest;
@@ -198,6 +199,7 @@ public class IgniteCacheTestSuite2 {
 
         // Configuration validation
         GridTestUtils.addTestIfNeeded(suite, CacheGroupLocalConfigurationSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheGroupNameValidationTest.class, ignoredTests);
 
         // Affinity and collocation
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedAffinitySelfTest.class, ignoredTests);

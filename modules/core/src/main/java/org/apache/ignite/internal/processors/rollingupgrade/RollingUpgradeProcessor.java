@@ -371,12 +371,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     private RollingUpgradeClusterData collectRollingUpgradeClusterData() {
-        return new RollingUpgradeClusterData(
-            isVerUpgradeEnabled,
-            curFinalizeProcId,
-            featureMgr.activeFeatures(),
-            featureMgr.previousActiveFeatures()
-        );
+        return new RollingUpgradeClusterData(isVerUpgradeEnabled, curFinalizeProcId, featureMgr.activeFeatures());
     }
 
     /** */

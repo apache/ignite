@@ -601,6 +601,7 @@ public class GridLocalConfigManager {
         String cacheName = cfg.getName();
 
         CU.validateCacheName(cacheName);
+        CU.validateCacheGroupName(cfg.getGroupName());
 
         Collection<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>(caches.size());
 

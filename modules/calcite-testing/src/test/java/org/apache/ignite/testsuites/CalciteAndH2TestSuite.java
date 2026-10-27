@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.ResultSet
 import org.apache.ignite.internal.processors.query.calcite.integration.SqlPlanHistoryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TimeoutIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ViewsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcClientDriverDefaultEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
 import org.apache.ignite.internal.processors.tx.TxWithExceptionalInterceptorTest;
@@ -36,6 +37,7 @@ import org.junit.platform.suite.api.Suite;
 @Suite
 @SelectClasses({
     JdbcCrossEngineTest.class,
+    JdbcClientDriverDefaultEngineTest.class,
     MultiLineQueryTest.class,
     TimeoutIntegrationTest.class,
     TxWithExceptionalInterceptorTest.class,

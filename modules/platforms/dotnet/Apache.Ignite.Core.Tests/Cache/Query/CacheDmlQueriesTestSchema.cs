@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
@@ -53,7 +54,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     SchemaName2,
                     QSchemaName4,
                     SchemaName4
-                }
+                },
+                SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
             };
 
             Ignition.Start(cfg);

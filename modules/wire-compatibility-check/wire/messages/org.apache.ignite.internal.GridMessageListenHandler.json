@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.GridMessageListenHandler",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "topicBytes"},
+    {"order": 1, "type": "byte[]", "name": "predBytes"},
+    {"order": 2, "type": "java.lang.String", "name": "clsName"},
+    {"order": 3, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "predDepInfo"}
+  ]
+}

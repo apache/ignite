@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.GridJobCancelRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sessionId"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "jobId"},
+    {"order": 2, "type": "boolean", "name": "system"}
+  ]
+}
