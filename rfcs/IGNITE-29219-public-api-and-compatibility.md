@@ -55,8 +55,10 @@ A compatible change preserves the ability to read and recover existing data with
 
 ## Outside the contract
 
-- **Implementation details:** internal classes, algorithms, and undocumented implementation details.
+- **Implementation details:** classes outside the public API, internal algorithms, and undocumented implementation details.
 - **Diagnostics:** stack traces, plus log wording that the interface does not guarantee.
 - **Timing:** execution timing that the interface does not guarantee.
 
-An internal class does not become public API because it has public methods or produces public error codes.
+A class in an internal package can still be part of the public API. The same compatibility rules apply to it.
+
+Public methods or public error codes alone do not make a class part of the public API.
