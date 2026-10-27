@@ -51,13 +51,12 @@ class DelegatingSSLContextSpi extends SSLContextSpi {
 
     /** {@inheritDoc} */
     @Override protected SSLSocketFactory engineGetSocketFactory() {
-        return parameters == null ? delegate.getSocketFactory() : new SSLSocketFactoryWrapper(delegate.getSocketFactory(), parameters);
+        return new SSLSocketFactoryWrapper(delegate.getSocketFactory(), parameters);
     }
 
     /** {@inheritDoc} */
     @Override protected SSLServerSocketFactory engineGetServerSocketFactory() {
-        return parameters == null ? delegate.getServerSocketFactory()
-            : new SSLServerSocketFactoryWrapper(delegate.getServerSocketFactory(), parameters);
+        return new SSLServerSocketFactoryWrapper(delegate.getServerSocketFactory(), parameters);
     }
 
     /** {@inheritDoc} */

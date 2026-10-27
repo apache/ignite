@@ -38,7 +38,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
-import org.apache.ignite.ssl.SSLContextWrapper;
+import org.apache.ignite.ssl.KeyMaterial;
+import org.apache.ignite.ssl.SslBundle;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.Extension;
@@ -169,14 +170,28 @@ public class TestCertificateAuthority {
     /**
      * @param keyStore Store with the certificate to present.
      * @param trustStore Store with the authorities to trust.
-     * @return Context using the supplied key and trust stores, with certificate metadata attached.
+     * @return Context using the supplied key and trust stores.
      */
     public static SSLContext context(KeyStore keyStore, KeyStore trustStore) throws Exception {
         SSLContext ctx = SSLContext.getInstance("TLS");
 
         ctx.init(keyManagers(keyStore), trustManagers(trustStore), null);
 
-        return new SSLContextWrapper(ctx, null, certificateChain(keyStore));
+        return ctx;
+    }
+
+    /**
+     * @param keyStore Store with the certificates to present.
+     * @param trustStore Store with the authorities to trust.
+     * @return Context and certificate chains from the supplied stores.
+     */
+    public static SslBundle bundle(KeyStore keyStore, KeyStore trustStore) throws Exception {
+        KeyMaterial material = new KeyMaterial(keyStore, PWD, KeyManagerFactory.getDefaultAlgorithm());
+        SSLContext ctx = SSLContext.getInstance("TLS");
+
+        ctx.init(material.keyManagers(), trustManagers(trustStore), null);
+
+        return new SslBundle(ctx, material.certificateChains());
     }
 
     /**
