@@ -67,7 +67,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -115,7 +114,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 /**
  * This class defines task processor.
  */
-public class GridTaskProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
+public class GridTaskProcessor extends GridProcessorAdapter {
     /** */
     public static final String TASKS_VIEW = "tasks";
 
@@ -148,9 +147,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
     /** */
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
-
-    /** Internal metadata cache. */
-    private volatile IgniteInternalCache<GridTaskNameHashKey, String> tasksMetaCache;
 
     /**
      * {@code true} if local node has persistent region in configuration and is not a client.
@@ -199,8 +195,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         ctx.io().addMessageListener(TOPIC_JOB_SIBLINGS, new JobSiblingsMessageListener());
         ctx.io().addMessageListener(TOPIC_TASK_CANCEL, new TaskCancelMessageListener());
         ctx.io().addMessageListener(TOPIC_TASK, new JobMessageListener(true));
-
-        ctx.internalSubscriptionProcessor().registerGlobalStateListener(this);
 
         if (log.isDebugEnabled())
             log.debug("Started task processor.");
@@ -321,15 +315,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     }
 
     /**
-     * @return Task metadata cache.
+     * @return Task metadata cache or {@code null} if the cluster is inactive.
      */
     private IgniteInternalCache<GridTaskNameHashKey, String> taskMetaCache() {
         assert ctx.security().enabled();
 
-        if (tasksMetaCache == null && ctx.state().publicApiActiveState(false))
-            tasksMetaCache = ctx.cache().utilityCache();
-
-        return tasksMetaCache;
+        return ctx.state().publicApiState(false).active() ? ctx.cache().utilityCache() : null;
     }
 
     /** {@inheritDoc} */
@@ -1161,16 +1152,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         finally {
             lock.readUnlock();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onDeActivate(GridKernalContext kctx) {
-        tasksMetaCache = null;
     }
 
     /**
