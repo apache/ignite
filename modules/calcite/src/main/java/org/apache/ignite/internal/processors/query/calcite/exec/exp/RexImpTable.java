@@ -263,6 +263,8 @@ import static org.apache.calcite.util.ReflectUtil.isStatic;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITAND;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITOR;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.BITXOR;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.CYCLE_PATH_APPEND;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.CYCLE_PATH_CONTAINS;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
@@ -594,6 +596,8 @@ public class RexImpTable {
         map.put(NULL_BOUND, sysFunctionImplementor);
 
         defineMethod(LEAST2, IgniteMethod.LEAST2.method(), NullPolicy.ALL);
+        defineMethod(CYCLE_PATH_APPEND, BuiltInMethod.ARRAY_APPEND.method, NullPolicy.ARG0);
+        defineMethod(CYCLE_PATH_CONTAINS, IgniteMethod.CYCLE_PATH_CONTAINS.method(), NullPolicy.NONE);
         defineMethod(GREATEST2, IgniteMethod.GREATEST2.method(), NullPolicy.ALL);
 
         // Operator IS_NOT_DISTINCT_FROM is removed by RexSimplify, but still possible in join conditions, so

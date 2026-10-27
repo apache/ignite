@@ -20,6 +20,77 @@ Apache Calcite is a dynamic data management framework, which mainly serves for m
 
 The current H2-based SQL engine has a number of fundamental limitations of query execution in a distributed environment. To address these limitations, a new SQL engine was implemented. The new engine uses tools provided by Apache Calcite for parsing and planning queries. It also has a new query execution flow.
 
+== Recursive Common Table Expressions
+
+A recursive common table expression (CTE) defines a temporary named query that can refer to itself.
+Use it to traverse hierarchies or graphs, or to generate a sequence of values.
+A recursive CTE combines an initial query (the seed) and a recursive query using `UNION ALL` or `UNION`.
+
+[source,sql]
+----
+WITH RECURSIVE numbers(n) AS (
+    VALUES (1)
+    UNION ALL
+    SELECT n + 1 FROM numbers WHERE n < 3
+)
+SELECT n FROM numbers ORDER BY n;
+----
+
+This query returns `1`, `2`, and `3`. The column list `(n)` names the column produced by the CTE.
+The seed runs once and produces `1`. Each recursive step reads only the rows produced by the previous step,
+not the entire accumulated result: `1` produces `2`, then `2` produces `3`.
+The condition `n < 3` is evaluated before computing `n + 1`, so `3` is returned but produces no further rows.
+Recursion stops when a step produces no new rows. Use an outer `ORDER BY` when result order matters.
+
+`UNION ALL` retains duplicates. `UNION` removes duplicate rows from the seed and subsequent steps,
+including rows already present in the accumulated result. Duplicate comparison uses the entire CTE row;
+changing a depth or path column can therefore prevent otherwise repeated keys from being eliminated.
+For repeated-key detection along a path, use `CYCLE` as described below.
+
+=== Iteration Limit
+
+The distributed property `sql.calcite.recursiveCteIterationLimit` limits recursive execution to `100` iterations
+by default. If execution reaches the limit without terminating, the query fails with an iteration-limit error.
+A negative value disables the limit. This limit also applies to CTEs with `CYCLE`.
+
+For example, set a limit of `1000` iterations using the link:tools/control-script[control script]:
+
+[source,shell]
+----
+control.sh --property set --name sql.calcite.recursiveCteIterationLimit --val 1000
+----
+
+On Windows, use `control.bat` instead of `control.sh`.
+
+=== Cycle Detection
+
+Use `CYCLE` after a recursive CTE definition to detect repeated keys along each path:
+
+[source,sql]
+----
+WITH RECURSIVE walk(n) AS (
+    VALUES (1)
+    UNION ALL
+    SELECT MOD(n + 1, 3) FROM walk
+)
+CYCLE n SET is_cycle USING path
+SELECT n, is_cycle, CARDINALITY(path) AS depth FROM walk;
+----
+
+This query returns `1`, `2`, `0`, and then `1` marked as a cycle. The closing row is returned but is not expanded further.
+Each row carries its own path as an array of rows containing the columns listed after `CYCLE`, in that order.
+The generated mark and path columns are available to consumers of the CTE, but not to its original recursive term.
+
+The abbreviated syntax uses `TRUE` for a cycle and `FALSE` otherwise. To choose explicit marks, use
+`CYCLE n SET is_cycle TO 'Y' DEFAULT 'N' USING path`. The two marks must be distinct, non-null Boolean literals
+or compatible single-character string literals. Multiple key columns are supported, for example `CYCLE src, dst`.
+Keys are compared using SQL row equality: an `UNKNOWN` comparison caused by `NULL` does not close a cycle.
+
+`CYCLE` requires an explicit `WITH RECURSIVE` and a `UNION` or `UNION ALL` whose recursive operand is a `SELECT`
+with exactly one direct self-reference. The reference cannot be on a null-generating side of an outer join.
+Aggregation, `DISTINCT`, and window functions in the recursive operand are not supported.
+Existing Ignite recursion limits still apply.
+
 == Calcite Module Libraries
 
 To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.

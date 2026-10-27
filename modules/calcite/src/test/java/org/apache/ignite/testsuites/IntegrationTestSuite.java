@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.CalciteOn
 import org.apache.ignite.internal.processors.query.calcite.integration.CalcitePlanningDumpTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CollectIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.CycleIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DistributedJoinIntegrationTest;
@@ -120,6 +121,7 @@ import org.junit.platform.suite.api.Suite;
     MetadataIntegrationTest.class,
     RunningQueriesIntegrationTest.class,
     RecursiveCteIntegrationTest.class,
+    CycleIntegrationTest.class,
     SqlDiagnosticIntegrationTest.class,
     SortAggregateIntegrationTest.class,
     TableDdlIntegrationTest.class,
