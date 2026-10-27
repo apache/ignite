@@ -50,7 +50,7 @@ See also the [Apache Ignite Blog](https://ignite.apache.org/blog/).
 
 ## Contributing Code
 
-Changes to [public API and compatibility contracts](rfcs/IGNITE-29219-public-api-and-compatibility.md) follow the [RFC development process](rfcs/IGNITE-29220-rfc-development-process.md).
+Changes to public contracts defined in [IGNITE-29219](https://issues.apache.org/jira/browse/IGNITE-29219) follow the [RFC development process](rfcs/IGNITE-29220-rfc-development-process.md).
 
 ### Project Initial Setup
 Create [Apache Ignite code](https://github.com/apache/ignite) fork using GitHub interface.
