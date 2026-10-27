@@ -28,6 +28,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
@@ -268,7 +269,22 @@ public class SslContextFactory extends AbstractSslContextFactory {
      */
     @Deprecated
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        return loadKeyMaterial().keyManagers();
+        try {
+            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
+
+            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+            keyMgrFactory.init(keyStore, keyStorePwd);
+
+            return keyMgrFactory.getKeyManagers();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
+                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
     }
 
     /** {@inheritDoc} */

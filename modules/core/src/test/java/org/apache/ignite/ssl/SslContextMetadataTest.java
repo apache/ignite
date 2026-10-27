@@ -250,6 +250,26 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(1, factory.loadKeyStoreCalls);
     }
 
+    /** Legacy store loaders can still pass null to JSSE to initialize key managers without a store. */
+    @Test
+    public void testLegacyNullKeyStore() {
+        SslContextFactory factory = new SslContextFactory() {
+            /** {@inheritDoc} */
+            @Override protected KeyStore loadKeyStore(String type, String path, char[] pwd) {
+                return null;
+            }
+        };
+
+        factory.setKeyStoreFilePath("unused-by-custom-loader");
+        factory.setKeyStorePassword(PASSWORD);
+        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+
+        SSLContext ctx = factory.create();
+
+        assertNotNull(ctx.createSSLEngine());
+        assertSame(ctx, factory.create());
+    }
+
     /** Invalid parameters are reported before loading the store. */
     @Test
     public void testInvalidParametersDoNotLoadStore() throws Exception {
