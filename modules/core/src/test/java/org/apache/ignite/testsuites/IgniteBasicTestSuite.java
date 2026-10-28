@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.processors.rollingupgrade.CoreVersionRollingUpgradeTest;
+import org.apache.ignite.internal.processors.rollingupgrade.PartitionStateFromOwnerRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.PluginVersionRollingUpgradeTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSetTest;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.ManagementApiVersionValidationTest;
@@ -112,6 +113,7 @@ import org.junit.runners.Suite;
 
     CoreVersionRollingUpgradeTest.class,
     PluginVersionRollingUpgradeTest.class,
+    PartitionStateFromOwnerRollingUpgradeTest.class,
     ManagementApiVersionValidationTest.class,
     GridProductVersionSelfTest.class,
     GridAffinityAssignmentV2Test.class,
