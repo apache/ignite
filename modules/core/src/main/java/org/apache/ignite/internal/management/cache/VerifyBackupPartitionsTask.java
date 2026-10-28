@@ -531,20 +531,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
-
-                    if (arg.checkCrc() && gctx.persistenceEnabled()) {
-                        FilePageStoreManager pageStoreMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
-                        checkPartitionsPageCrcSum(
-                            () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
-                            part.id(),
-                            FLAG_DATA,
-                            () -> isCancelledOrStopped(cancelled, gctx)
-                        );
-                    }
-
                     PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
-
                     PartitionHashRecord hash;
 
                     // The cache group can be destroyed concurrently.
@@ -552,6 +539,20 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         throw cancellationException(gctx, part);
 
                     try {
+                        // This reading is under the lock too to avoid a concurrent deletion of the partition
+                        // file due to possible the cache destruction.
+                        if (arg.checkCrc() && gctx.persistenceEnabled()) {
+                            FilePageStoreManager pageStoreMgr =
+                                (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                            checkPartitionsPageCrcSum(
+                                () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
+                                part.id(),
+                                FLAG_DATA,
+                                () -> isCancelledOrStopped(cancelled, gctx)
+                            );
+                        }
+
                         hash = calculatePartitionHash(
                             key,
                             updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
