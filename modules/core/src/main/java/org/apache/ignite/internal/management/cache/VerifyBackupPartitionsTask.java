@@ -251,7 +251,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             exceptions = new ArrayList<>();
 
                         exceptions.add((IgniteException)e.getCause());
-
                     }
                     else if (jobFailure == null) {
                         jobFailure = new IgniteException("Failed to execute a partition hash calculation [grpIds=" +
