@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
@@ -41,13 +42,14 @@ import static org.apache.ignite.internal.processors.rollingupgrade.feature.Suppo
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Checks that the coordinator writes the state of the new owners of lost partitions into their partition maps itself
- * only until {@code PART_STATE_FROM_OWNER_FEATURE} is active. An older node doesn't send its map after it owns a lost
- * partition, so until every node runs the new version the coordinator can't wait for that map.
+ * Checks that the other nodes write the state of the new owners of lost partitions into their partition maps
+ * themselves only until {@code PART_STATE_FROM_OWNER_FEATURE} is active. An older node doesn't send its map after it
+ * owns a lost partition, so until every node runs the new version the others can't wait for that map.
  * <p>
  * In both parts a server leaves with the only copies of some partitions under the IGNORE policy, while the maps that
- * the other servers send outside an exchange can't reach the coordinator. The servers send their maps as before, so
- * dropping the maps stands for an older node that doesn't send them.
+ * the other servers send outside an exchange are held. The servers send their maps as before, so holding the maps
+ * stands for an older node that doesn't send them. The coordinator and the client watch the new owners' partitions.
+ * The client hasn't started the cache, so it keeps the cache's partition map in a client topology.
  */
 public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUpgradeTest {
     /** */
@@ -59,13 +61,16 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
     /** Version whose features include {@code PART_STATE_FROM_OWNER_FEATURE}, by its id. */
     private static final String NEW_VER = "2.19.2";
 
+    /** Index of the client node, as started by {@link #startCluster()}. */
+    private static final int CLIENT = 2;
+
     /** Index of the server that leaves. */
     private static final int LEAVING = 3;
 
     /**
-     * Before the upgrade the coordinator sees the new owners right after the exchange, with their maps dropped. After
-     * all nodes are upgraded and the version is finalized, the feature is active, and the coordinator sees the new
-     * owners only once their maps arrive.
+     * Before the upgrade the coordinator and the client see the new owners right after the exchange, with the owners'
+     * maps held. Once all nodes are upgraded and the version is finalized, the feature is active, and they see the new
+     * owners only after the maps arrive.
      *
      * @throws Exception If failed.
      */
@@ -83,49 +88,50 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         assertFalse(isFeatureActive(grid(0), PART_STATE_FROM_OWNER_FEATURE));
 
-        IgniteEx crd = stopLeavingWithMapsDropped();
+        IgniteEx oldCrd = stopLeavingWithMapsHeld();
 
-        assertTrue("The coordinator didn't write the new owners' state: " + mismatches(crd),
-            mismatches(crd).isEmpty());
+        for (IgniteEx viewer : new IgniteEx[] {oldCrd, grid(CLIENT)}) {
+            assertTrue(viewer.name() + " didn't write the new owners' state: " + mismatches(viewer),
+                mismatches(viewer).isEmpty());
+        }
 
         TestRecordingCommunicationSpi.stopBlockAll();
 
         ru(0).enableVersionUpgrade();
 
         upgradeNodeVersion(1, NEW_VER);
-        upgradeNodeVersion(2, NEW_VER);
+        upgradeNodeVersion(CLIENT, NEW_VER);
         upgradeNodeVersion(0, NEW_VER);
 
+        // Also checks that every node has the features of the new version active.
         finalizeClusterVersion(1, NEW_VER);
-
-        for (Ignite g : G.allGrids())
-            assertTrue(g.name(), isFeatureActive(g, PART_STATE_FROM_OWNER_FEATURE));
 
         startGrid(LEAVING, NEW_VER);
 
         awaitPartitionMapExchange();
 
-        crd = stopLeavingWithMapsDropped();
+        IgniteEx crd = stopLeavingWithMapsHeld();
 
-        assertFalse("The coordinator wrote the new owners' state itself", mismatches(crd).isEmpty());
+        for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)})
+            assertFalse(viewer.name() + " wrote the new owners' state itself", mismatches(viewer).isEmpty());
 
         TestRecordingCommunicationSpi.stopBlockAll();
 
-        IgniteEx crd0 = crd;
-
-        if (!waitForCondition(() -> mismatches(crd0).isEmpty(), 10_000))
-            fail("The coordinator's partition map differs from the nodes: " + mismatches(crd));
+        for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)}) {
+            if (!waitForCondition(() -> mismatches(viewer).isEmpty(), 10_000))
+                fail("The partition map of " + viewer.name() + " differs from the nodes: " + mismatches(viewer));
+        }
     }
 
     /**
-     * Stops the leaving server while the other servers' partition maps sent outside an exchange are dropped, and waits
+     * Stops the leaving server while the other servers' partition maps sent outside an exchange are held, and waits
      * for every node to finish the exchange.
      *
      * @return Coordinator.
      * @throws Exception If failed.
      */
-    private IgniteEx stopLeavingWithMapsDropped() throws Exception {
-        IgniteEx crd = coordinator();
+    private IgniteEx stopLeavingWithMapsHeld() throws Exception {
+        IgniteEx crd = grid(coordinatorIndex());
 
         UUID crdId = crd.localNode().id();
 
@@ -153,25 +159,16 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         return crd;
     }
 
-    /** @return The oldest server node. */
-    private IgniteEx coordinator() {
-        IgniteEx crd = null;
-
-        for (Ignite g : G.allGrids()) {
-            if (!g.cluster().localNode().isClient()
-                && (crd == null || g.cluster().localNode().order() < crd.localNode().order()))
-                crd = (IgniteEx)g;
-        }
-
-        return crd;
-    }
-
     /**
-     * @param viewer Node whose partition map is checked.
+     * @param viewer Server with the cache started, or the client, which keeps the cache in a client topology.
      * @return Partitions whose state in the viewer's map differs from the state on the server itself.
      */
     private List<String> mismatches(IgniteEx viewer) {
-        GridDhtPartitionTopology viewerTop = viewer.cachex(CACHE).context().topology();
+        GridDhtPartitionTopology viewerTop = viewer.cluster().localNode().isClient()
+            ? viewer.context().cache().context().exchange().clientTopologyIfExists(CU.cacheId(CACHE))
+            : viewer.cachex(CACHE).context().topology();
+
+        assertNotNull(viewer.name(), viewerTop);
 
         List<String> res = new ArrayList<>();
 

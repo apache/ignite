@@ -297,14 +297,15 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
      * The coordinator creates these partitions as MOVING, sends the full message, and only then owns them. When its
      * last RENTING partition is evicted, the map changes and the coordinator schedules a resend. If the resend fires
      * before the coordinator owns the partitions, it carries them as MOVING. Its version is newer than the full
-     * message's, so node 1 takes it.
+     * message's, so node 1 takes it. Node 1 sees the partitions OWNING only once the coordinator sends its map after
+     * owning them.
      * <p>
      * The test:
      * <ol>
      *     <li>holds the eviction of one partition that the coordinator gave to node 1;</li>
      *     <li>stops node 2 and stalls the coordinator right after it sends the full message;</li>
      *     <li>lets the eviction finish once node 1 has finished the exchange;</li>
-     *     <li>checks that node 1 took the stale map, then lets the coordinator go on.</li>
+     *     <li>lets the coordinator go on once node 1 has taken the resent map.</li>
      * </ol>
      *
      * @throws Exception If failed.
@@ -354,15 +355,14 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> exchangeFinished(other, leaveVer), WAIT));
 
-        evictionResume.countDown();
-
         GridDhtPartitionTopology otherTop = other.cachex(CACHE).context().topology();
 
-        assertTrue("Node 1 didn't take a stale map of the coordinator", waitForCondition(() -> {
-            GridDhtPartitionMap crdMap = otherTop.partitionMap(false).get(crdId);
+        long seq = otherTop.partitionMap(false).get(crdId).updateSequence();
 
-            return crdMap != null && crdMap.hasMovingPartitions();
-        }, 10_000));
+        evictionResume.countDown();
+
+        assertTrue("Node 1 didn't take the coordinator's resent map", waitForCondition(
+            () -> otherTop.partitionMap(false).get(crdId).updateSequence() > seq, WAIT));
 
         crdResume.countDown();
 
@@ -407,8 +407,8 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Under the IGNORE policy runs a query on each viewer. Then checks that the partition map of each viewer matches the
-     * local states of the nodes.
+     * Under the IGNORE policy runs a query on each viewer. Then checks that the partition map of each viewer matches
+     * the local states of the nodes.
      *
      * @param viewers Nodes whose partition maps are checked.
      * @throws Exception If failed.
