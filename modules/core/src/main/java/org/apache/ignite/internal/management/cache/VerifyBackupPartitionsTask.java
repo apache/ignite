@@ -211,11 +211,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(
-                    "Failed to wait for checkpoint before executing verify backup partitions task.", e);
+                    "Failed to wait for checkpoint before executing verify backup partitions task", e);
             }
 
             if (isCancelled())
-                throw new IgniteException(CALC_CANCELLED_ERR_MSG + '.');
+                throw new IgniteException(CALC_CANCELLED_ERR_MSG);
 
             Set<Integer> grpIds = getGroupIds();
 
