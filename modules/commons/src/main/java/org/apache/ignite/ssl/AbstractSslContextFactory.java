@@ -117,10 +117,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
             KeyMaterial material = loadKeyMaterial();
 
-            return new SslBundle(createSslContext(createKeyManagers(material)), material.certificateChains());
+            return new SslBundle(createSslContext(material.keyManagers()), material.certificateChains());
         }
         catch (SSLException e) {
-            throw new IgniteException(e);
+            throw new IgniteException(new SSLException(e.getMessage() + " [factory=" + this + ']', e));
         }
     }
 
@@ -130,8 +130,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws SSLException If trust managers or the context cannot be created.
      */
     private SSLContext createSslContext(KeyManager[] keyMgrs) throws SSLException {
-        checkNullParameter(keyMgrs, "keyManagers");
-
         TrustManager[] trustMgrs = createTrustManagers();
 
         try {
@@ -186,17 +184,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws SSLException If the key material cannot be loaded.
      */
     protected abstract KeyMaterial loadKeyMaterial() throws SSLException;
-
-    /**
-     * Creates key managers from the loaded material. Override to customize key selection without reloading the store.
-     *
-     * @param material Loaded key material whose certificate chains will be included in the bundle.
-     * @return Key managers using that material, never {@code null}.
-     * @throws SSLException If the key managers cannot be created.
-     */
-    protected KeyManager[] createKeyManagers(KeyMaterial material) throws SSLException {
-        return material.keyManagers();
-    }
 
     /**
      * @return Created Trust Managers.

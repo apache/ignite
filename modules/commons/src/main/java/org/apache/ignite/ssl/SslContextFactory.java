@@ -27,7 +27,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -262,16 +261,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** {@inheritDoc} */
     @Override protected KeyMaterial loadKeyMaterial() throws SSLException {
         return new KeyMaterial(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected KeyManager[] createKeyManagers(KeyMaterial material) throws SSLException {
-        try {
-            return super.createKeyManagers(material);
-        }
-        catch (SSLException e) {
-            throw new SSLException(e.getMessage() + " [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
-        }
     }
 
     /** {@inheritDoc} */
