@@ -2392,7 +2392,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local scan.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      * @return Created query.
      */
     @SuppressWarnings("unchecked")

@@ -309,7 +309,7 @@ public class CacheQuery<T> {
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local query.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -340,7 +340,7 @@ public class CacheQuery<T> {
      * @param part Partition.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -391,7 +391,7 @@ public class CacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -454,7 +454,7 @@ public class CacheQuery<T> {
         this(cctx, type, clsName, null, filter, part, false, false, idxQryDesc, null);
     }
 
-    /** @return Set of keys that must be skiped during iteration. */
+    /** @return Set of keys that must be skipped during iteration. */
     public Collection<KeyCacheObject> skipKeys() {
         return skipKeys;
     }

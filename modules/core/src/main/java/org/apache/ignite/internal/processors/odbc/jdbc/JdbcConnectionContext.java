@@ -194,7 +194,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         EnumSet<JdbcThinFeature> features = EnumSet.noneOf(JdbcThinFeature.class);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
-            // Obsolete pages scan flag (disabled).
+            // Reserved byte (formerly the data page scan flag), read to keep the handshake format.
             reader.readByte();
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);

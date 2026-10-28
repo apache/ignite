@@ -41,7 +41,7 @@ public class GridQueryNextPageRequest extends AbstractMessage {
     @Order(3)
     int pageSize;
 
-    /** Is unused but keeps the wire format. */
+    /** Unused, reserved for wire compatibility (formerly the data page scan flag). */
     @Order(4)
     byte flags;
 

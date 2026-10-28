@@ -147,11 +147,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     @Order(19)
     AffinityTopologyVersion topVer;
 
-    /** Set of keys that must be skiped during iteration. */
+    /** Set of keys that must be skipped during iteration. */
     @Order(20)
     Collection<KeyCacheObject> skipKeys;
 
-    /** Reserved byte. Formerly data page scan flag. Must stay for wire compatibility. */
+    /** Unused, reserved for wire compatibility (formerly the data page scan flag). */
     @Order(21)
     byte flags;
 
@@ -317,7 +317,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     private GridCacheQueryRequest(
         int cacheId,
@@ -521,7 +521,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         return taskHash;
     }
 
-    /** @return Set of keys that must be skiped during iteration. */
+    /** @return Set of keys that must be skipped during iteration. */
     public Collection<KeyCacheObject> skipKeys() {
         return skipKeys;
     }
