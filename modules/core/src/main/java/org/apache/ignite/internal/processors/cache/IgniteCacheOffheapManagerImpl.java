@@ -625,7 +625,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      *
      * @param cacheId Cache ID.
-     * @param dataIt  Data store iterator.
+     * @param dataIt Data store iterator.
      * @return Rows iterator
      */
     private GridCloseableIterator<CacheDataRow> iterator(int cacheId, Iterator<CacheDataStore> dataIt) {
