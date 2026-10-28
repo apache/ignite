@@ -115,6 +115,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1941,9 +1942,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.remapTopologyVersion(ctx.topology().lastTopologyChangeVersion());
         }
         catch (Throwable e) {
-            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
-            // an attempt to use cleaned resources.
-            U.error(log, "Unexpected exception during cache update", e);
+            if (X.hasCause(e, IgniteOutOfMemoryException.class)) {
+                // An expected refusal of the page reservation (see reserveBatchSpace): nothing has been changed, the
+                // keys are reported as failed to the client. No stack trace: under a sustained overload every update
+                // is refused, and the message already names the region and the ways out.
+                LT.warn(log, "Cache update refused, out of memory in data region [cache=" + name() +
+                    ", keys=" + req.size() + "]: " + X.cause(e, IgniteOutOfMemoryException.class).getMessage());
+            }
+            else {
+                // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and
+                // there is an attempt to use cleaned resources.
+                U.error(log, "Unexpected exception during cache update", e);
+            }
 
             res.addFailedKeys(req.keys(), e);
 

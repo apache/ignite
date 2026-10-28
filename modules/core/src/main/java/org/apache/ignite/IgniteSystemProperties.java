@@ -1640,9 +1640,10 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
 
     /**
-     * Maximum time in milliseconds the size-aware eviction guard is willing to wait without a deficit decrease. This is
-     * a liveness guard against a true stall (all evictable entries locked); a progressing eviction that is simply slow
-     * (e.g. a large putAll on a nearly-full region) is not interrupted by this timeout. When it expires, an insert that
+     * Maximum time in milliseconds the size-aware eviction guard is willing to wait without progress: no entry evicted
+     * in the data region and no decrease of the waiting insert's page deficit. This is a liveness guard against a true
+     * stall (all evictable entries locked); a progressing eviction that is simply slow (e.g. a large putAll on a
+     * nearly-full region) is not interrupted by this timeout. When it expires, an insert that
      * can be refused (e.g. a primary atomic update) fails with an out-of-memory, while an insert that can not be safely
      * refused (a backup update, a transaction commit, rebalancing) proceeds without a page reservation. After that,
      * until the eviction makes progress again, such inserts proceed without waiting for the timeout.

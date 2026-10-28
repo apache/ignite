@@ -97,12 +97,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     public static final long DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = 5_000L;
 
     /**
-     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without the region's free page
-     * count increasing (the deficit shrinking) before giving up. This is a liveness guard: a
-     * {@code evictDataPage()} call can free no page (for example when the sampled rows are not actually reclaimable),
-     * so progress is measured by a real deficit decrease.
-     * An eviction that is merely slow but still frees pages keeps shrinking the deficit and thus keeps resetting the
-     * timer; a stall that frees nothing for the whole window gives up instead of spinning.
+     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without progress before giving up.
+     * This is a liveness guard: a {@code evictDataPage()} call can evict nothing (for example when the sampled rows
+     * are not actually reclaimable). Progress is either a decrease of the caller's own deficit or an entry evicted by
+     * any thread of the region (see {@link #evictedCnt}): a large claim competing with many small ones may not see
+     * its deficit shrink while the eviction is working, and it must not be refused for that.
+     * An eviction that is merely slow keeps resetting the timer; a stall that evicts nothing for the whole window
+     * gives up instead of spinning.
      */
     private static final long EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = IgniteSystemProperties.getLong(
         IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS, DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
@@ -150,6 +151,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * eviction attempt without progress, so a series of inserts does not wait for the timeout one by one.
      */
     private volatile boolean stalled;
+
+    /**
+     * Number of successful {@link PageEvictionTracker#evictDataPage()} calls made by the reservations of this free
+     * list (region-wide: an in-memory region has a single free list). A change of the counter is a progress of the
+     * eviction for every waiting reservation, whether or not its own deficit has decreased (see {@link #reserve}).
+     */
+    private final AtomicLong evictedCnt = new AtomicLong();
 
     /** Page list cache limit. */
     private final AtomicLong pageListCacheLimit;
@@ -1234,6 +1242,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         // Deficit before the last eviction attempt, 0 until the first one.
         long prevDeficit = 0;
 
+        // Eviction counter before the last eviction attempt.
+        long prevEvicted = 0;
+
         while (true) {
             long reserved = reservedPages.get();
             long deficit = deficit(claimPages, limitPages, reserved);
@@ -1249,7 +1260,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
 
             if (prevDeficit > 0) {
-                if (deficit < prevDeficit) {
+                if (deficit < prevDeficit || evictedCnt.get() != prevEvicted) {
                     clearStalled();
 
                     lastProgressMillis = U.currentTimeMillis();
@@ -1277,13 +1288,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             }
 
             prevDeficit = deficit;
+            prevEvicted = evictedCnt.get();
 
             if (memMetrics.onPageEvictionsStarted()) {
                 U.warn(log, "Page-based evictions started." +
                     " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
             }
 
-            evictionTracker.evictDataPage();
+            if (evictionTracker.evictDataPage())
+                evictedCnt.incrementAndGet();
 
             memMetrics.updateEvictionRate();
         }

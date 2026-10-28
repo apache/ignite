@@ -1244,7 +1244,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return Number of reserved pages to be released via {@link #releaseInRegion(DataRegion, long)}, or {@code 0} if
      *      nothing is reserved: the reservation is not engaged for this region (see {@link #isReserveEnabled(DataRegion)})
      *      or a best-effort insert is admitted without a reservation.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed, or if the insert is refused: then the cause is the (unchecked)
+     *      {@link IgniteOutOfMemoryException}. The refusal is wrapped into a checked exception so that the callers
+     *      handling {@code IgniteCheckedException} (e.g. the futures that call {@code initialValue}) complete with the
+     *      error instead of leaking it; nothing has been changed and the failure handler is not involved.
      */
     public long reserveInRegion(@Nullable DataRegion memPlc, long rowSize, boolean bestEffort) throws IgniteCheckedException {
         if (!isReserveEnabled(memPlc))
@@ -1252,7 +1255,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         FreeList<?> freeList = freeList(memPlc.config().getName());
 
-        return freeList == null ? 0 : freeList.reserve(rowSize, bestEffort);
+        if (freeList == null)
+            return 0;
+
+        try {
+            return freeList.reserve(rowSize, bestEffort);
+        }
+        catch (IgniteOutOfMemoryException e) {
+            throw new IgniteCheckedException("Failed to reserve pages for a row insert: " + e.getMessage(), e);
+        }
     }
 
     /**
