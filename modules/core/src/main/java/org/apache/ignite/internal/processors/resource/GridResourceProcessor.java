@@ -324,8 +324,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         if (clsDesc.isAnnotated(annSet) == 0)
             return;
 
-        for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations)
-            clsDesc.inject(obj, ann, nullInjector, null, null);
+        for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations) {
+            // We should not nullify loggers for prevention of NPEs at grid workers.
+            if (ann != GridResourceIoc.ResourceAnnotation.LOGGER)
+                clsDesc.inject(obj, ann, nullInjector, null, null);
+        }
     }
 
     /**
