@@ -77,6 +77,8 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -214,6 +216,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Name of the discovery metrics registry. */
     public static final String DISCO_METRICS = metricName("io", "discovery");
 
+    /** Metric name for the count of client nodes joined to topology. */
+    public static final String CLIENT_NODES_JOINED = "ClientNodesJoined";
+
     /** Predicate filtering client nodes. */
     private static final IgnitePredicate<ClusterNode> FILTER_CLI = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
@@ -293,6 +298,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Received custom messages history. */
     private final ArrayDeque<IgniteUuid> rcvdCustomMsgs = new ArrayDeque<>();
 
+    /** Counter of client nodes joined to topology. */
+    private final LongAdderMetric clientNodesJoinedCtr;
+
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -308,6 +316,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
+
+        MetricRegistryImpl discoReg = ctx.metric().registry(DISCO_METRICS);
+
+        clientNodesJoinedCtr = discoReg.longAdderMetric(
+            CLIENT_NODES_JOINED, "Count of client nodes joined to topology");
 
         if (ctx.systemView().view(NODES_SYS_VIEW) == null) {
             ctx.systemView().registerView(
@@ -3084,6 +3097,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
                         }
 
+                        if (node.isClient())
+                            clientNodesJoinedCtr.increment();
+
                         if (log.isInfoEnabled())
                             log.info("Added new node to topology: " + node);
 
@@ -3112,6 +3128,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
 
                     case EVT_CLIENT_NODE_RECONNECTED: {
+                        clientNodesJoinedCtr.increment();
+
                         if (log.isInfoEnabled())
                             log.info("Client node reconnected to topology: " + node);
 
