@@ -2316,6 +2316,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean cleanIdxRebuildFutures = true;
 
+        Collection<CacheGroupContext> locChangedGrps = new HashSet<>();
+
         try {
             waitUntilNewCachesAreRegistered();
 
@@ -2370,7 +2372,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (exchCtx.events().hasServerLeft() || activateCluster())
-                    detectLostPartitions(res);
+                    locChangedGrps.addAll(detectLostPartitions(res));
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
@@ -2412,8 +2414,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cleanIdxRebuildFutures = false;
 
-                for (CacheGroupContext grp : cctx.cache().cacheGroups())
-                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false))
+                        locChangedGrps.add(grp);
+                }
+
+                if (!locChangedGrps.isEmpty()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Refresh partitions due to local partition changes at the end of exchange [grps=" +
+                            locChangedGrps.stream().map(CacheGroupContext::cacheOrGroupName)
+                                .collect(Collectors.toList()) + ']');
+                    }
+
+                    cctx.exchange().refreshPartitions(locChangedGrps);
+                }
 
                 if (changedAffinity())
                     cctx.walState().disableGroupDurabilityForPreloading(this);
@@ -3520,11 +3534,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * Detect lost partitions in case of node left or failed. For topology coordinator is called when all {@link
      * GridDhtPartitionsSingleMessage} were received. For other nodes is called when exchange future is completed by
-     * {@link GridDhtPartitionsFullMessage}. If a local partition changes, sends the partition maps of its group again.
+     * {@link GridDhtPartitionsFullMessage}.
      *
      * @param resTopVer Result topology version.
+     * @return Cache groups where the state of a local partition changed.
      */
-    private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
+    private Collection<CacheGroupContext> detectLostPartitions(AffinityTopologyVersion resTopVer) {
         Collection<CacheGroupContext> changedGrps = ConcurrentHashMap.newKeySet();
 
         try {
@@ -3548,16 +3563,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             throw new IgniteException(e);
         }
 
-        if (!changedGrps.isEmpty()) {
-            if (log.isDebugEnabled()) {
-                log.debug("Refresh partitions due to lost partitions detected [grps=" +
-                    changedGrps.stream().map(CacheGroupContext::cacheOrGroupName).collect(Collectors.toList()) + ']');
-            }
-
-            cctx.exchange().refreshPartitions(changedGrps);
-        }
-
         timeBag.finishGlobalStage("Detect lost partitions");
+
+        return changedGrps;
     }
 
     /**

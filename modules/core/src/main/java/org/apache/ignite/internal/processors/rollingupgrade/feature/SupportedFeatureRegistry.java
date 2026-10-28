@@ -93,4 +93,10 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
 public class SupportedFeatureRegistry {
     /** */
     public static final IgniteFeature ROLLING_UPGRADE_FEATURE = new IgniteCoreFeature(0);
+
+    /**
+     * After loss detection, and after a node owns a partition that no node has, only the node that holds the partition
+     * writes its state into its partition map. The other nodes take the state from that map.
+     */
+    public static final IgniteFeature PART_STATE_FROM_OWNER_FEATURE = new IgniteCoreFeature(1);
 }
