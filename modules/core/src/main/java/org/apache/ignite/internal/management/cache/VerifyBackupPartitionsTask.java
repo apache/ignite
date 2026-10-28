@@ -96,7 +96,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         "the cluster is inactive.";
 
     /** */
-    public static final String CACL_PART_HASH_ERR_MSG = "Can't calculate partition hash";
+    public static final String CALC_PART_HASH_ERR_MSG = "Can't calculate partition hash";
+
+    /** */
+    private static final String CANCELLATION_PREF = "Partition hash calculation has been cancelled. The task " +
+        "has been cancelled, or the local node is stopping, or the cache group is stopping";
 
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
@@ -212,7 +216,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             }
 
             if (isCancelled())
-                throw new IgniteException("Partition hash calculation has been cancelled.");
+                throw new IgniteException(CANCELLATION_PREF + '.');
 
             Set<Integer> grpIds = getGroupIds();
 
@@ -293,9 +297,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     // Do not proceed to the next future, wait for the current one.
                     --i;
                 }
-                catch (Exception e) {
-                    System.err.println("");
-                }
             }
 
             if (interrupted)
@@ -305,7 +306,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw jobFailure;
 
             if (isCancelled())
-                throw new IgniteException("Partition hash calculation has been cancelled [grpIds=" + grpIds + "].");
+                throw new IgniteException(CANCELLATION_PREF + " [grpIds=" + grpIds + "].");
 
             if (log.isInfoEnabled()) {
                 log.info("Idle verify procedure has finished [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
@@ -578,7 +579,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
+                    String msg = CALC_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
+                        ", reason=" + e.getMessage() + "]";
 
                     U.error(log, msg, e);
 
@@ -596,14 +598,24 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
         /**
          * Checks whether the work should be stopped: the task was cancelled, the local node is stopping,
-         * or the cache group is stopping or being destroyed.
+         * or the cache group is stopping or being destroyed. Invokes {@link #cancel()} if the local node is stopping,
+         * or the cache group is stopping or being destroyed
          *
          * @param cancelled Supplier that returns {@code true} if the task cancellation was requested.
          * @param gctx Cache group context.
          * @return {@code true} if the work should be stopped.
          */
         private boolean isCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
-            return cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+            if (cancelled.getAsBoolean())
+                return true;
+
+            if (gctx.isPreparedToStop() || ignite.context().isStopping()) {
+                cancel();
+
+                return true;
+            }
+
+            return false;
         }
 
         /** */
