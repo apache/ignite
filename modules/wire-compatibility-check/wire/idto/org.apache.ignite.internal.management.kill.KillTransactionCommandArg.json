@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillTransactionCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "xid"}
+  ]
+}

@@ -109,6 +109,18 @@ public class IndexQueryLimitTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testLocalQueryLimit() {
+        insertData(1);
+
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, IDX).setLimit(3);
+
+        qry.setLocal(true);
+
+        assertEquals(3, crd.cache(CACHE).query(qry).getAll().size());
+    }
+
+    /** */
     private void checkRangeQueries(int duplicates) throws Exception {
         // Add data
         insertData(duplicates);

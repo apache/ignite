@@ -21,10 +21,10 @@ import java.util.List;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 
-/** Generates an artifact for a single message class. */
+/** Generates an artifact for a single class. */
 interface MessageGenerator {
     /**
-     * @param type Message class.
+     * @param type Class.
      * @param fields Fields annotated with {@link Order} in the serialization order.
      * @throws Exception If generation failed.
      */

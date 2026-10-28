@@ -191,7 +191,7 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         if (jsonGen == null)
-            jsonGen = new MessageJsonGenerator(processingEnv);
+            jsonGen = new MessageJsonGenerator(processingEnv, "messages/");
 
         List<Supplier<MessageGenerator>> generators = List.of(
             () -> new MessageSerializerGenerator(processingEnv),

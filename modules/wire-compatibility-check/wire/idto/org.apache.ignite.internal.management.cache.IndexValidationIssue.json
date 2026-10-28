@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.IndexValidationIssue",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "key"},
+    {"order": 1, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 2, "type": "java.lang.String", "name": "idxName"},
+    {"order": 3, "type": "java.lang.Throwable", "name": "t"}
+  ]
+}

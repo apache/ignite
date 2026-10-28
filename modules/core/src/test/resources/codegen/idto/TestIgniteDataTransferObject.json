@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.TestIgniteDataTransferObject",
+  "fields": [
+    {"order": 0, "type": "char[]", "name": "charArray"}
+  ]
+}

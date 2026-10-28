@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.snapshot.SnapshotListCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "src"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState", "name": "MOVING"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState", "name": "OWNING"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState", "name": "RENTING"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState", "name": "EVICTED"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState", "name": "LOST"}
+  ]
+}

@@ -567,6 +567,7 @@
                 <configuration>
                     <!-- Parent POM sets maven.compiler.release, but javac rejects "add-exports" with "release". -->
                     <release combine.self="override"/>
+                    <proc>full</proc>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>

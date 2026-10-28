@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.wal.WalSetStateTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.List<java.lang.String>", "name": "successGrps"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "errorsByGrp"}
+  ]
+}
