@@ -67,6 +67,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static final double NON_EQUI_COEFF = 0.7;
 
     /** */
+    private static final double INTERSECT_ESTIMATE_COEFF = 0.8;
+
+    /** */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdRowCount(), BuiltInMetadata.RowCount.Handler.class);
 
@@ -313,9 +316,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
             }
         }
 
-        if (percentageAdjustment == null) {
-            // No info, let's be conservative.
-            percentageAdjustment = 1.0;
+        if (percentageAdjustment == null || Double.compare(1.0, percentageAdjustment) == 0) {
+            // No info or default 1.0, let's estimate.
+            percentageAdjustment = INTERSECT_ESTIMATE_COEFF;
         }
 
         return baseRowCnt * percentageAdjustment * postFiltrationAdjustment;

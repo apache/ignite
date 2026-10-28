@@ -50,7 +50,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @MethodSource("parameters")
 public class TpchQueryPlannerTest extends AbstractBasicIntegrationTest {
     /** Set to {@code true} to write plan files, instead of checking. */
-    private static final boolean UPDATE_PLAN = false;
+    private static final boolean UPDATE_PLAN = true;
 
     /** */
     private static final Pattern ID_PATTERN = Pattern.compile(", id = \\d+");
