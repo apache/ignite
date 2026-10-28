@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
@@ -48,6 +50,10 @@ public class GridQueryFailResponse extends AbstractMessage {
     @Order(2)
     byte failCode;
 
+    /** Ignite SQL error status code, or {@code 0} if absent (for example, when the error came from an older node). */
+    @Order(value = 3, introducedBy = "QUERY_FAIL_RESPONSE_ERROR_CODE_FEATURE")
+    int statusCode;
+
     /**
      * Default constructor.
      */
@@ -69,6 +75,10 @@ public class GridQueryFailResponse extends AbstractMessage {
             failCode = RETRY_QUERY;
         else
             failCode = GENERAL_ERROR;
+
+        IgniteSQLException sqlErr = X.cause(err, IgniteSQLException.class);
+
+        statusCode = sqlErr != null ? sqlErr.statusCode() : 0;
     }
 
     /**
@@ -90,6 +100,13 @@ public class GridQueryFailResponse extends AbstractMessage {
      */
     public byte failCode() {
         return failCode;
+    }
+
+    /**
+     * @return Ignite SQL error status code, or {@code 0} if it is absent.
+     */
+    public int statusCode() {
+        return statusCode;
     }
 
     /** {@inheritDoc} */
