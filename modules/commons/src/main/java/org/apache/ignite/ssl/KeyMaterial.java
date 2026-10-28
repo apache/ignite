@@ -85,9 +85,9 @@ public final class KeyMaterial {
     }
 
     /**
-     * @return Immutable X.509 chains by identified private-key alias, own certificate first. An empty map means no private-key
-     *      entries were found. JKS lists a private key stored without a chain as a secret key, so such a key is not included. An empty list
-     *      retains an alias whose chain is absent or contains a non-X.509 certificate; key managers never present such a key.
+     * @return Immutable, nonempty X.509 chains of key entries, ordered by alias and with each key's own certificate first.
+     *      Entries without a chain or with a non-X.509 certificate are omitted. An empty map means no such chains were found.
+     *      Reading the chains does not recover the keys.
      * @throws SSLException If the loaded store cannot be read.
      */
     public Map<String, List<X509Certificate>> certificateChains() throws SSLException {
@@ -100,11 +100,10 @@ public final class KeyMaterial {
                 if (!store.isKeyEntry(alias))
                     continue;
 
-                Certificate[] chain = store.getCertificateChain(alias);
+                List<X509Certificate> chain = certificateChain(store.getCertificateChain(alias));
 
-                // The JDK's JCEKS entry-type check reads the first certificate even for an empty chain.
-                if (chain != null || store.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class))
-                    chains.put(alias, certificateChain(chain));
+                if (!chain.isEmpty())
+                    chains.put(alias, chain);
             }
 
             return Collections.unmodifiableMap(chains);

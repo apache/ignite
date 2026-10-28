@@ -39,10 +39,10 @@ public final class SslBundle {
 
     /**
      * @param ctx Initialized SSL context.
-     * @param chains Chains by identified private-key alias, own certificate first. {@code null} means the aliases are unknown;
-     *      an empty map means no private-key entries were found. An empty list means the alias has a private key but its chain is absent
-     *      or contains a non-X.509 certificate, so key managers never present that key. Trusted certificate entries and secret keys
+     * @param chains Nonempty X.509 chains of key entries, by alias, own certificate first. {@code null} means certificate
+     *      metadata is unavailable; an empty map means there are no chains. Trusted certificate entries and secret keys
      *      must not be included.
+     * @throws IllegalArgumentException If a chain is empty.
      */
     public SslBundle(SSLContext ctx, @Nullable Map<String, List<X509Certificate>> chains) {
         A.notNull(ctx, "ctx");
@@ -54,7 +54,11 @@ public final class SslBundle {
         else {
             Map<String, List<X509Certificate>> copy = new TreeMap<>();
 
-            chains.forEach((alias, chain) -> copy.put(alias, List.copyOf(chain)));
+            chains.forEach((alias, chain) -> {
+                A.ensure(!chain.isEmpty(), "Certificate chain must not be empty [alias=" + alias + ']');
+
+                copy.put(alias, List.copyOf(chain));
+            });
 
             this.chains = Collections.unmodifiableMap(copy);
         }
@@ -66,9 +70,8 @@ public final class SslBundle {
     }
 
     /**
-     * @return Immutable chains ordered by alias, or {@code null} if the aliases are unknown. An empty map means no private-key
-     *      entries were found. An empty list means the alias's chain is absent or contains a non-X.509 certificate, so that key is
-     *      never presented.
+     * @return Immutable, nonempty chains ordered by alias, or {@code null} if certificate metadata is unavailable.
+     *      An empty map means there are no chains.
      */
     public @Nullable Map<String, List<X509Certificate>> certificateChains() {
         return chains;

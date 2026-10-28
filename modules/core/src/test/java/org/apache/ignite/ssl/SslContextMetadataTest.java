@@ -57,10 +57,10 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Each factory call reads the key store once into a fresh context, throws when the read fails and reads again on the next call,
- * and checks parameters before reading. {@link KeyMaterial} reports private keys only, each with its own chain (an empty store
- * gives an empty map, a key whose chain contains a non-X.509 certificate keeps its alias with an empty chain), and keeps its
- * own key password. {@link SslBundle} keeps a sorted immutable copy of the metadata, or {@code null}. Custom key managers take
- * part in handshakes and cannot be {@code null}. {@link SslContextFactory} names the store whose key it cannot open.
+ * and checks parameters before reading. {@link KeyMaterial} reports nonempty X.509 chains of key entries without recovering
+ * their keys, and keeps its own key password. {@link SslBundle} keeps a sorted immutable copy of the metadata, or {@code null},
+ * and rejects empty per-alias chains. Custom key managers take part in handshakes and cannot be {@code null}.
+ * {@link SslContextFactory} names the store whose key it cannot open.
  */
 public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Authority that signs the test certificates. */
@@ -127,25 +127,29 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(0, factory.loads);
     }
 
-    /** Metadata lists every private key with its own chain and skips trusted certificates and secret keys. */
+    /** Metadata includes only nonempty X.509 chains of key entries, without recovering the keys. */
     @Test
-    public void testOnlyPrivateKeysWithTheirChains() throws Exception {
-        KeyStore first = ca.keyStoreWithPrivateKey("first-key");
-        KeyStore second = ca.keyStoreWithPrivateKey("second-key");
+    public void testOnlyKeyEntriesWithX509Chains() throws Exception {
+        String firstAlias = "first-key";
+        String secondAlias = "second-key";
+        KeyStore first = ca.keyStoreWithPrivateKey(firstAlias);
+        KeyStore second = ca.keyStoreWithPrivateKey(secondAlias);
         KeyStore.PasswordProtection prot = new KeyStore.PasswordProtection(PWD);
 
         // JCEKS can hold both private keys and secret keys.
-        KeyStore store = KeyStore.getInstance("JCEKS");
+        KeyStore store = keyStoreWithoutCertificateChain("JCEKS", "key-without-chain");
 
-        store.load(null, PWD);
-        store.setEntry("first-key", first.getEntry("first-key", prot), prot);
-        store.setEntry("second-key", second.getEntry("second-key", prot), prot);
-        store.setCertificateEntry("trusted", first.getCertificate("first-key"));
-        store.setEntry("secret", new KeyStore.SecretKeyEntry(KeyGenerator.getInstance("AES").generateKey()), prot);
+        store.setEntry(firstAlias, first.getEntry(firstAlias, prot), prot);
+        store.setEntry(secondAlias, second.getEntry(secondAlias, prot), prot);
+        store.setCertificateEntry("trusted", first.getCertificate(firstAlias));
+        store.setEntry("secret", new KeyStore.SecretKeyEntry(KeyGenerator.getInstance("AES").generateKey()),
+            new KeyStore.PasswordProtection("unrelated-password".toCharArray()));
+        store.setKeyEntry("non-x509-chain", first.getKey(firstAlias, PWD), PWD,
+            new Certificate[] {first.getCertificate(firstAlias), mock(Certificate.class)});
 
         KeyMaterial material = new KeyMaterial(store, PWD, SslContextFactory.DFLT_KEY_ALGORITHM);
 
-        assertEquals(Map.of("first-key", chain(first), "second-key", chain(second)), material.certificateChains());
+        assertEquals(Map.of(firstAlias, chain(first), secondAlias, chain(second)), material.certificateChains());
     }
 
     /** An empty key store yields a context without private keys and an empty map. */
@@ -158,37 +162,6 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         SslBundle bundle = new InMemoryStoreFactory(empty).createSslBundle();
 
         assertEquals(Map.of(), bundle.certificateChains());
-    }
-
-    /** A private key whose chain contains a non-X.509 certificate keeps its alias with an empty chain. */
-    @Test
-    public void testNonX509ChainRetainsPrivateKeyAlias() throws Exception {
-        KeyStore store = ca.keyStoreWithPrivateKey("private-key");
-
-        store.setKeyEntry("private-key", store.getKey("private-key", PWD), PWD,
-            new Certificate[] {store.getCertificate("private-key"), mock(Certificate.class)});
-
-        KeyMaterial material = new KeyMaterial(store, PWD, SslContextFactory.DFLT_KEY_ALGORITHM);
-
-        assertEquals(Map.of("private-key", List.of()), material.certificateChains());
-    }
-
-    /** Keys without a chain keep their aliases alongside usable keys in the context metadata. */
-    @Test
-    public void testMissingChainRetainsPrivateKeyAlias() throws Exception {
-        String missingChainAlias = "key-without-chain";
-        String usableAlias = "usable";
-        KeyStore usable = ca.keyStoreWithPrivateKey(usableAlias);
-
-        for (String type : List.of("JCEKS", "PKCS12")) {
-            KeyStore store = keyStoreWithoutCertificateChain(type, missingChainAlias);
-
-            store.setKeyEntry(usableAlias, usable.getKey(usableAlias, PWD), PWD, usable.getCertificateChain(usableAlias));
-
-            assertNotNull(type, store.getKey(missingChainAlias, PWD));
-            assertEquals(type, Map.of(missingChainAlias, List.of(), usableAlias, chain(usable)),
-                new InMemoryStoreFactory(store).createSslBundle().certificateChains());
-        }
     }
 
     /** Material keeps its own copy of the key password, so clearing the caller's array does not lock the keys. */
@@ -228,7 +201,16 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, () -> chains.get("a").set(0, bCert), UnsupportedOperationException.class, null);
     }
 
-    /** Unknown metadata stays {@code null}, so it is not mistaken for a store without private keys. */
+    /** Custom factories must omit entries without a chain instead of reporting an empty chain. */
+    @Test
+    public void testBundleRejectsEmptyChain() throws Exception {
+        String alias = "missing-chain";
+
+        GridTestUtils.assertThrows(log, () -> new SslBundle(SSLContext.getDefault(), Map.of(alias, List.of())),
+            IllegalArgumentException.class, "Certificate chain must not be empty [alias=" + alias + ']');
+    }
+
+    /** Unknown metadata stays {@code null}, so it is not mistaken for a store without certificate chains. */
     @Test
     public void testBundleKeepsUnknownMetadata() throws Exception {
         assertNull(new SslBundle(SSLContext.getDefault(), null).certificateChains());
