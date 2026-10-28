@@ -302,6 +302,22 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             if (interrupted)
                 Thread.currentThread().interrupt();
 
+            if (!F.isEmpty(exceptions)) {
+                if (ignite.context().isStopping()) {
+                    throw new IgniteException("Partition hash calculation has been stopped because the local node is " +
+                        "stopping [grpIds=" + grpIds + "].");
+                }
+
+                Integer stoppingGrpId = F.find(grpIds, null, this::isGroupStopping);
+
+                if (stoppingGrpId != null) {
+                    throw new IgniteException("Partition hash calculation has been stopped because the cache group is " +
+                        "stopping [grpId=" + stoppingGrpId + "].");
+                }
+
+                throw new IdleVerifyException(exceptions);
+            }
+
             if (jobFailure != null)
                 throw jobFailure;
 
@@ -607,6 +623,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          */
         private boolean isCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
             return cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+        }
+
+        /** */
+        private boolean isGroupStopping(int grpId) {
+            CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
+
+            return grp == null || grp.isPreparedToStop();
         }
 
         /** */
