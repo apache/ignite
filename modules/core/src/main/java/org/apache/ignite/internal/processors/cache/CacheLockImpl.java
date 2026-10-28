@@ -199,8 +199,6 @@ class CacheLockImpl<K, V> implements Lock {
 
             assert cntr > 0;
 
-            boolean held = lockedByCurrentThread();
-
             cntr--;
 
             if (cntr == 0) {
@@ -221,10 +219,8 @@ class CacheLockImpl<K, V> implements Lock {
                 cctx.shared().txMetrics().onExplicitLockRelease(U.nanosToMillis(holdTimeNanos));
             }
 
-            delegate.unlockAll(keys);
-
             // The lock state of the instance is reset above, so it stays usable after the exception.
-            if (!held) {
+            if (!delegate.unlockAll(keys)) {
                 throw new IllegalStateException("Failed to unlock keys, the lock has been released externally " +
                     "(was the lock killed?).");
             }
@@ -235,23 +231,6 @@ class CacheLockImpl<K, V> implements Lock {
         finally {
             gate.leave(prev);
         }
-    }
-
-    /**
-     * @return {@code True} if all the keys are still locked by the current thread, {@code false} if the lock
-     *      has been released externally.
-     */
-    private boolean lockedByCurrentThread() {
-        GridCacheContext<K, V> cctx = delegate.context();
-
-        long threadId = Thread.currentThread().getId();
-
-        for (K key : keys) {
-            if (cctx.mvcc().explicitLock(threadId, cctx.txKey(cctx.toCacheKeyObject(key))) == null)
-                return false;
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
