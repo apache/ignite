@@ -74,6 +74,9 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
      */
     public static final int FLAG_LAZY = 1 << 5;
 
+    /** Obsolete pages scan flag (disabled). */
+    private static final int FLAG_DATA_PAGE_SCAN_SHIFT = 6;
+
     /** */
     @Order(0)
     long reqId;
