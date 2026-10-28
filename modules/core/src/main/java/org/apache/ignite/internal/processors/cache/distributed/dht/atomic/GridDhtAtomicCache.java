@@ -3001,6 +3001,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * <p>
      * Nothing is reserved for a remove: it inserts no rows. For a transform the result is unknown before the entry
      * processor runs under the entry lock, so only a row without a value (key, version and row header) is reserved.
+     * The value produced by the entry processor is written without a reservation (known limitation): its pages come
+     * from the empty pages pool, like the B+tree pages, or from the space above the eviction threshold if the pool is
+     * drained at that moment, and the next reservation in the region evicts to restore the pool. Backups are not
+     * affected: they receive the computed value and reserve the full row size.
      *
      * @param req Update request.
      * @return Reserved pages to release via {@code releaseInRegion}, or {@code 0} if reservation is not engaged.
