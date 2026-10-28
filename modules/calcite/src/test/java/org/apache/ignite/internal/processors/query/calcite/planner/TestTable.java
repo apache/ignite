@@ -450,6 +450,7 @@ public class TestTable implements IgniteCacheTable, Wrapper {
         /** */
         private final String name;
 
+        /** */
         private final boolean key;
 
         /** */

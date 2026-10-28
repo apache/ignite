@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -57,7 +57,6 @@ import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.calcite.runtime.SqlFunctions.not;
 import static org.apache.calcite.util.NumberUtil.multiply;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
@@ -142,12 +141,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 return max;
         }
 
+        // Primary key columns per table.
+        Map<IgniteTable, List<Integer>> pkColsPerTable = new IdentityHashMap<>(2);
 
-        /** Per table primary key size. */
-        Map<IgniteTable, Integer> pkSizePerTable = new IdentityHashMap<>(2);
-
-        Map<Integer, KeyColumnOrigin> columnsFromLeft = resolveOrigins(mq, rel.getLeft(), joinInfo.leftKeys, pkSizePerTable);
-        Map<Integer, KeyColumnOrigin> columnsFromRight = resolveOrigins(mq, rel.getRight(), joinInfo.rightKeys, pkSizePerTable);
+        Map<Integer, KeyColumnOrigin> columnsFromLeft = resolveOrigins(mq, rel.getLeft(), joinInfo.leftKeys, pkColsPerTable);
+        Map<Integer, KeyColumnOrigin> columnsFromRight = resolveOrigins(mq, rel.getRight(), joinInfo.rightKeys, pkColsPerTable);
 
         if (columnsFromLeft.isEmpty() || columnsFromRight.isEmpty()) {
             // Use crude estimation instead.
@@ -174,12 +172,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
                     assert leftTable != null && rightTable != null;
 
-                    Integer leftPkSize = pkSizePerTable.get(leftTable);
-                    Integer rightPkSize = pkSizePerTable.get(rightTable);
+                    List<Integer> leftPkCols = pkColsPerTable.get(leftTable);
+                    List<Integer> rightPkCols = pkColsPerTable.get(rightTable);
 
-                    assert leftPkSize != null && rightPkSize != null : leftPkSize + " " + rightPkSize;
+                    assert leftPkCols != null && rightPkCols != null : leftPkCols + " " + rightPkCols;
 
-                    return new JoinContext(leftPkSize, rightPkSize);
+                    return new JoinContext(leftPkCols.size(), rightPkCols.size());
                 }
             ).countKeys(leftKey, rightKey);
         }
@@ -335,7 +333,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         RelMetadataQuery mq,
         RelNode joinSide,
         ImmutableIntList keys,
-        Map<IgniteTable, Integer> pkSizePerTable
+        Map<IgniteTable, List<Integer>> pkColsPerTable
     ) {
         GridLeanMap<Integer, KeyColumnOrigin> origins = new GridLeanMap<>();
 
@@ -354,20 +352,46 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 table.distribution().function().type() != RelDistribution.Type.BROADCAST_DISTRIBUTED))
                 continue;
 
-            Collection<? extends ColumnDescriptor> descs = table.descriptor().columnDescriptors();
-            List<Integer> distKeys = table.descriptor().columnDescriptors().stream()
-                .filter(d -> d instanceof CacheColumnDescriptor)
-                .filter(d -> not(((CacheColumnDescriptor)d).name().equals(KEY_FIELD_NAME)))
-                .filter(d -> ((CacheColumnDescriptor)d).key()).map(ColumnDescriptor::fieldIndex).toList();
+            List<Integer> pkCols = pkColsPerTable.computeIfAbsent(table, IgniteMdRowCount::primaryKeyColumns);
 
-            pkSizePerTable.put(table, distKeys.size());
+            // No key information (e.g. the table is not backed by a cache), can't classify the join.
+            if (pkCols.isEmpty())
+                continue;
 
-            int idx = distKeys.indexOf(origin.getOriginColumnOrdinal());
-
-            origins.put(i, new KeyColumnOrigin(origin, idx));
+            origins.put(i, new KeyColumnOrigin(origin, pkCols.indexOf(origin.getOriginColumnOrdinal())));
         }
 
         return origins;
+    }
+
+    /**
+     * Resolves columns forming the primary key of the table.
+     *
+     * <p>Key fields (or the key alias) are returned when the key is exposed as separate columns. For a table
+     * whose key is a plain type without an alias, the {@code _KEY} column itself forms the primary key.
+     *
+     * @param table Table.
+     * @return Field indexes of the primary key columns, empty list if the table has no key information.
+     */
+    private static List<Integer> primaryKeyColumns(IgniteTable table) {
+        List<Integer> pkCols = new ArrayList<>(2);
+
+        int keyCol = -1;
+
+        for (ColumnDescriptor desc : table.descriptor().columnDescriptors()) {
+            if (!(desc instanceof CacheColumnDescriptor) || !((CacheColumnDescriptor)desc).key())
+                continue;
+
+            if (KEY_FIELD_NAME.equals(desc.name()))
+                keyCol = desc.fieldIndex();
+            else
+                pkCols.add(desc.fieldIndex());
+        }
+
+        if (pkCols.isEmpty() && keyCol >= 0)
+            pkCols.add(keyCol);
+
+        return pkCols;
     }
 
     /**
@@ -478,8 +502,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
          */
         private final @Nullable BitSet commonKeys;
 
+        /** Whether primary key columns of both tables are known. */
+        private final boolean pkKnown;
+
         /** */
         JoinContext(int leftPkSize, int rightPkSize) {
+            pkKnown = leftPkSize > 0 && rightPkSize > 0;
+
             leftKeys = new BitSet();
             rightKeys = new BitSet();
             commonKeys = leftPkSize == rightPkSize && leftPkSize != 0 ? new BitSet() : null;
@@ -511,6 +540,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         /** */
         JoiningRelationType joinType() {
+            if (!pkKnown) {
+                return JoiningRelationType.UNKNOWN;
+            }
+
             if (commonKeys != null && commonKeys.isEmpty()) {
                 return JoiningRelationType.PK_ON_PK;
             }
