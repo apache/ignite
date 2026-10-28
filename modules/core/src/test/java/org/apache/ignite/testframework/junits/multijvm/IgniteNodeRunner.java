@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.security.AnyTypePermission;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -177,7 +178,11 @@ public class IgniteNodeRunner {
     private static IgniteConfiguration readCfgFromFileAndDeleteFile(String fileName)
         throws IOException {
         try (BufferedReader cfgReader = new BufferedReader(new FileReader(fileName))) {
-            IgniteConfiguration cfg = (IgniteConfiguration)new XStream().fromXML(cfgReader);
+            XStream xstream = new XStream();
+
+            xstream.addPermission(AnyTypePermission.ANY);
+
+            IgniteConfiguration cfg = (IgniteConfiguration)xstream.fromXML(cfgReader);
 
             if (cfg.getDiscoverySpi() == null) {
                 TcpDiscoverySpi disco = new TcpDiscoverySpi();

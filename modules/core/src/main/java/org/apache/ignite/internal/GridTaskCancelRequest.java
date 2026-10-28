@@ -19,12 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Request for cancelling tasks.
  */
-public class GridTaskCancelRequest implements Message {
+public class GridTaskCancelRequest extends AbstractMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;

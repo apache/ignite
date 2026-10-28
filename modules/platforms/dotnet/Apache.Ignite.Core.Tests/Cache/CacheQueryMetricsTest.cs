@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -39,7 +40,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration());
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
+            });
         }
 
         /// <summary>

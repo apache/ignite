@@ -19,13 +19,13 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job cancellation request.
  */
-public class GridJobCancelRequest implements Message {
+public class GridJobCancelRequest extends AbstractMessage {
     /** */
     @Order(0)
     IgniteUuid sessionId;

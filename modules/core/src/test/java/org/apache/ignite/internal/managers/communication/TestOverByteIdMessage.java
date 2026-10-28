@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Test message with over byte direct type. */
-public class TestOverByteIdMessage implements Message {
+public class TestOverByteIdMessage extends AbstractMessage {
     /** Direct type. */
     static final short DIRECT_TYPE_OVER_BYTE = 1000;
 

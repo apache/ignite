@@ -29,13 +29,11 @@ import java.util.LinkedList;
 import java.util.Map;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Session implementation.
@@ -47,17 +45,6 @@ class WebSession implements HttpSession, Externalizable {
 
     /** Flag indicating if the session is valid. */
     private transient volatile boolean isValid = true;
-
-    /** Empty session context. */
-    private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
-        @Nullable @Override public HttpSession getSession(String id) {
-            return null;
-        }
-
-        @Override public Enumeration<String> getIds() {
-            return Collections.enumeration(Collections.<String>emptyList());
-        }
-    };
 
     /** Session ID. */
     private String id;
@@ -248,29 +235,12 @@ class WebSession implements HttpSession, Externalizable {
         return val;
     }
 
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttribute(String)}.
-     */
-    @Override @Deprecated public Object getValue(String name) {
-        return getAttribute(name);
-    }
-
     /** {@inheritDoc} */
     @Override public Enumeration<String> getAttributeNames() {
         if (!isValid)
             throw new IllegalStateException("Call on invalidated session!");
 
         return Collections.enumeration(attrs.keySet());
-    }
-
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttributeNames()}.
-     */
-    @Override @Deprecated public String[] getValueNames() {
-        if (!isValid)
-            throw new IllegalStateException("Call on invalidated session!");
-
-        return attrs.keySet().toArray(new String[attrs.size()]);
     }
 
     /** {@inheritDoc} */
@@ -284,13 +254,6 @@ class WebSession implements HttpSession, Externalizable {
             updates.add(new T2<>(name, val));
     }
 
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #setAttribute(String, Object)}.
-     */
-    @Override @Deprecated public void putValue(String name, Object val) {
-        setAttribute(name, val);
-    }
-
     /** {@inheritDoc} */
     @Override public void removeAttribute(String name) {
         if (!isValid)
@@ -300,13 +263,6 @@ class WebSession implements HttpSession, Externalizable {
 
         if (updates != null)
             updates.add(new T2<>(name, null));
-    }
-
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #removeAttribute(String)}.
-     */
-    @Override @Deprecated public void removeValue(String name) {
-        removeAttribute(name);
     }
 
     /** {@inheritDoc} */
@@ -331,13 +287,6 @@ class WebSession implements HttpSession, Externalizable {
             throw new IllegalStateException("Call on invalidated session!");
 
         return isNew;
-    }
-
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Always returns an empty context.
-     */
-    @Override @Deprecated public HttpSessionContext getSessionContext() {
-        return EMPTY_SES_CTX;
     }
 
     /** {@inheritDoc} */

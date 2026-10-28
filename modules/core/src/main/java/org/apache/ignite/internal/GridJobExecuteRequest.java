@@ -33,13 +33,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution request.
  */
 @SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
-public class GridJobExecuteRequest implements ExecutorAwareMessage, DeferredUnmarshalMessage {
+public class GridJobExecuteRequest extends AbstractMessage implements ExecutorAwareMessage, DeferredUnmarshalMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;

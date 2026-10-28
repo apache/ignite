@@ -32,9 +32,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.DistributedAttributeKey;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -56,7 +56,6 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNIT
 import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_SEC_PROC_CLS_IS_INVALID;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.hasSecurityManager;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
-import static org.apache.ignite.internal.thread.context.DistributedAttributeIdRegistry.SECURITY;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_USER_ACCESS;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
 
@@ -90,11 +89,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /**
-     * Attribute that holds local and distributed Security Context.
-     *
-     * @see OperationContextDispatcher
-     */
+    /** */
     private static final OperationContextAttribute<SecurityContextWrapper> SEC_CTX_ATTR = OperationContextAttribute.newInstance();
 
     /** Security processor. */
@@ -253,7 +248,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        ctx.operationContextDispatcher().registerDistributedAttribute(SECURITY, SEC_CTX_ATTR);
+        ctx.distributedOperationContext().register(DistributedAttributeKey.SECURITY, SEC_CTX_ATTR);
 
         ctx.addNodeAttribute(ATTR_GRID_SEC_PROC_CLASS, secPrc.getClass().getName());
 

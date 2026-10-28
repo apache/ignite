@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup",
+  "fields": [
+    {"order": 0, "type": "long[]", "name": "srcIds"},
+    {"order": 1, "type": "java.util.List<java.util.UUID>", "name": "nodeIds"},
+    {"order": 2, "type": "int[]", "name": "marshalledAssignments"}
+  ]
+}

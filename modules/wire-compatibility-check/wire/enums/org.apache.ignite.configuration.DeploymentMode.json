@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.configuration.DeploymentMode",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.configuration.DeploymentMode", "name": "PRIVATE"},
+    {"order": 1, "type": "org.apache.ignite.configuration.DeploymentMode", "name": "ISOLATED"},
+    {"order": 2, "type": "org.apache.ignite.configuration.DeploymentMode", "name": "SHARED"},
+    {"order": 3, "type": "org.apache.ignite.configuration.DeploymentMode", "name": "CONTINUOUS"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.encryption.ReencryptionRateTask$ReencryptionRateJobResult",
+  "fields": [
+    {"order": 0, "type": "java.lang.Double", "name": "limit"}
+  ]
+}

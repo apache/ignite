@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
 import org.apache.ignite.internal.management.api.CommandUtilsSelfTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.thread.GridThreadTest;
+import org.apache.ignite.internal.thread.pool.DataStreamerStarvationMetricTest;
 import org.apache.ignite.internal.thread.pool.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolSizeTest;
 import org.apache.ignite.internal.thread.pool.ThreadPoolMetricsTest;
@@ -124,6 +125,7 @@ import org.junit.runners.Suite;
     ClusterMetricsSelfTest.class,
     ClusterRebalancedMetricTest.class,
     ThreadPoolMetricsTest.class,
+    DataStreamerStarvationMetricTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,

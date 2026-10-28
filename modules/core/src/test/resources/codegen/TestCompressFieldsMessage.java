@@ -18,9 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-public class TestCompressFieldsMessage implements Message {
+public class TestCompressFieldsMessage extends AbstractMessage {
     @Order(0)
     @Compress
     Map<Integer, String> map;

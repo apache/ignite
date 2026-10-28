@@ -25,12 +25,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Deployment of classes, as it travels inside the messages carrying them.
  */
-public final class GridDeploymentInfoMessage implements Message, GridDeploymentInfo, Serializable {
+public final class GridDeploymentInfoMessage extends AbstractMessage implements GridDeploymentInfo, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

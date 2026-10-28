@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
+  "fields": [
+    {"order": 0, "type": "long", "name": "rcvCnt"}
+  ]
+}

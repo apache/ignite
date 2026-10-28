@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -76,9 +75,9 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
 import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -404,17 +403,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public void update(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        GridDhtLocalPartition part
     ) throws IgniteCheckedException {
         assert expireTime >= 0;
 
-        dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+        dataStore(part).update(cctx, key, val, ver, expireTime);
     }
 
     /** {@inheritDoc} */
@@ -988,7 +986,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
         CacheDataStore dataStore = dataStore(part);
 
-        List<DataRowCacheAware> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
+        List<DataRow> batch = new ArrayList<>(PRELOAD_SIZE_UNDER_CHECKPOINT_LOCK);
 
         while (infos.hasNext()) {
             GridCacheEntryInfo info = infos.next();
@@ -996,7 +994,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert info.ttl() == TTL_ETERNAL : info.ttl();
 
             try {
-                batch.add(new DataRowCacheAware(info.key(),
+                batch.add(new DataRow(info.key(),
                     info.value(),
                     info.version(),
                     part.id(),
@@ -1226,7 +1224,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final LongAdder storageSize = new LongAdder();
 
         /** */
-        private final IntMap<AtomicLong> cacheSizes = new IntRWHashMap<>();
+        private final IntMap<AtomicLong> cacheSizes;
 
         /** */
         private final IgniteLogger log;
@@ -1235,9 +1233,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final Boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
             IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY
         );
-
-        /** */
-        private final int updateValSizeThreshold;
 
         /** */
         private volatile GridQueryRowCacheCleaner rowCacheCleaner;
@@ -1265,14 +1260,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.busyLock = busyLock;
             this.log = log;
 
+            cacheSizes = grp.sharedGroup() ? new CopyOnWriteIntMap<>() : null;
+
             PartitionUpdateCounter delegate = !grp.persistenceEnabled() || grp.hasAtomicCaches() ?
                 new PartitionUpdateCounterVolatileImpl(grp) :
                 new PartitionUpdateCounterTrackingImpl(grp);
 
             pCntr = grp.shared().logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : new PartitionUpdateCounterErrorWrapper(partId, delegate);
-
-            updateValSizeThreshold = grp.shared().database().pageSize() / 2;
 
             if (cleaner == null)
                 rowStore.setRowCacheCleaner(() -> rowCacheCleaner);
@@ -1437,28 +1432,73 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /**
+         * Checks if in-place row update is possible.
+         *
          * @param cctx Cache context.
          * @param oldRow Old row.
          * @param dataRow New row.
          * @return {@code True} if it is possible to update old row data.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean canUpdateOldRow(GridCacheContext cctx, @Nullable CacheDataRow oldRow, DataRow dataRow)
-            throws IgniteCheckedException {
-            if (oldRow == null || cctx.queries().enabled())
+        private boolean canUpdateOldRow(
+            GridCacheContext<?, ?> cctx,
+            @Nullable CacheDataRow oldRow,
+            DataRow dataRow
+        ) throws IgniteCheckedException {
+            if (oldRow == null)
                 return false;
 
+            // In-place update is not possible when queries (indexes) are enabled. Index entries reference the row by
+            // link and are built from the row fields, so after the in-place update, but before the index update,
+            // index entries would point to the row with fields that may not match the index. Without in-place update
+            // there is no such window:
+            //
+            // 1. The new row is inserted to the row store first.
+            // 2. Then the index entries are updated:
+            //     2a. The new entry, linked to the new row is added.
+            //     2b. The old one, linked to the old row is removed under the index leaf page lock.
+            // 3. Only after that the old row is removed from the row store.
+            //
+            // The index reader holds the index leaf page read lock while it reads the row by link, and the updater has
+            // to acquire the write lock on the same leaf page to remove the old entry before it removes the old row,
+            // so the reader always reads the row consistent with the index entry it was found by, and the row
+            // can't be removed under the reader.
+            if (cctx.queries().enabled())
+                return false;
+
+            // Pending tree entries reference the row by link and store its expire time. In-place update keeps the
+            // link and doesn't touch the pending tree, so it's possible only when the expire time is not changed,
+            // otherwise the pending tree entry would become inconsistent with the row: the entry would be processed
+            // by the TTL cleanup worker at the old expire time, while the row has the new one. Without in-place update
+            // the pending tree is kept consistent as follows:
+            //
+            // 1. The new row is inserted to the row store.
+            // 2. Then the pending tree entries are updated:
+            //     2a. The old link is removed from the pending tree (under the pending tree leaf page lock)
+            //     2b. The new one is added,
+            // 3. Only after that the old row is removed from the row store.
+            //
+            // The TTL cleanup worker holds the pending tree leaf page write lock while it reads the row by link,
+            // and the updater has to acquire the write lock on the same leaf page to remove the old link before
+            // it removes the old row, so the worker always reads the row consistent with the pending tree entry,
+            // and the row can't be removed under the worker.
             if (oldRow.expireTime() != dataRow.expireTime())
                 return false;
 
             int oldLen = oldRow.size();
 
-            // Use grp.sharedGroup() flag since it is possible cacheId is not yet set here.
-            if (!grp.storeCacheIdInDataPage() && grp.sharedGroup() && oldRow.cacheId() != CU.UNDEFINED_CACHE_ID)
-                oldLen -= 4;
-
-            if (oldLen > updateValSizeThreshold)
-                return false;
+            // Paths that read the row by link hold different locks:
+            // *KV API*        - the data tree leaf page lock.
+            // *TTL cleanup*   - the pending tree leaf page lock.
+            // *page eviction* - the read lock of the evicted data page.
+            // *indexes*       - the index tree leaf page lock.
+            // The only lock they have in common is the lock on the data row pages, which are read one by one.
+            // In-place update is performed by the data tree invoke closure under the entry lock, but without the
+            // data tree leaf page lock. Atomicity of read / in-place update of a single-page row is provided by
+            // the lock on the single data row page. Atomicity of reads concurrent with the multi-page in-place update
+            // is provided by lock coupling on the data row pages (see AbstractFreeList#updateFragmentedRow
+            // and CacheDataRowAdapter#doInitFromLink), which doesn't allow a reader to overtake the updater and
+            // vice versa, so all readers are protected regardless of the locks they hold.
 
             int newLen = dataRow.size();
 
@@ -1507,17 +1547,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 case PUT: {
                     assert c.newRow() != null : c;
 
-                    CacheDataRow oldRow = c.oldRow();
-
-                    finishUpdate(cctx, c.newRow(), oldRow, c.oldRowExpiredFlag());
+                    finishUpdate(cctx, c.newRow(), c.oldRow(), c.oldRowExpiredFlag());
 
                     break;
                 }
 
                 case REMOVE: {
-                    CacheDataRow oldRow = c.oldRow();
-
-                    finishRemove(cctx, row.key(), oldRow);
+                    finishRemove(cctx, row.key(), c.oldRow());
 
                     break;
                 }
@@ -1532,19 +1568,23 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDataRow createRow(
-            GridCacheContext cctx,
+        @Override public CacheDataRow updateRow(
+            GridCacheContext<?, ?> cctx,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException {
             int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
-            if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData()))
+            if (canUpdateOldRow(cctx, oldRow, dataRow)) {
+                rowStore.updateRow(oldRow, dataRow, grp.statisticsHolderData());
+
                 dataRow.link(oldRow.link());
+            }
             else {
                 CacheObjectContext coCtx = cctx.cacheObjectContext();
 
@@ -1563,19 +1603,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void insertRows(Collection<DataRowCacheAware> rows,
-            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException {
+        @Override public void insertRows(
+            Collection<DataRow> rows,
+            IgnitePredicateX<CacheDataRow> initPred
+        ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw operationCancelledException();
 
             try {
                 rowStore.addRows(F.view(rows, row -> row.value() != null), grp.statisticsHolderData());
 
-                boolean cacheIdAwareGrp = grp.sharedGroup() || grp.storeCacheIdInDataPage();
-
-                for (DataRowCacheAware row : rows) {
-                    row.storeCacheId(cacheIdAwareGrp);
-
+                for (DataRow row : rows) {
                     if (!initPred.applyx(row) && row.value() != null)
                         rowStore.removeRow(row.link(), grp.statisticsHolderData());
                 }
@@ -1598,26 +1636,24 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             if (key.partition() == -1)
                 key.partition(partId);
 
-            return new DataRow(key, val, ver, partId, expireTime, cacheId);
+            assert val != null;
+
+            return new DataRow(key, val, ver, partId, expireTime, cacheId, grp.storeCacheIdInDataPage());
         }
 
         /** {@inheritDoc} */
-        @Override public void update(GridCacheContext cctx,
+        @Override public void update(
+            GridCacheContext<?, ?> cctx,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow
+            long expireTime
         ) throws IgniteCheckedException {
-            assert oldRow == null || oldRow.link() != 0L : oldRow;
-
             if (!busyLock.enterBusy())
                 throw operationCancelledException();
 
             try {
                 int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-                assert oldRow == null || oldRow.cacheId() == cacheId : oldRow;
 
                 DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
 
@@ -1627,31 +1663,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 key.valueBytes(coCtx);
                 val.valueBytes(coCtx);
 
-                CacheDataRow old;
-
                 assert cctx.shared().database().checkpointLockIsHeldByThread();
 
-                if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData())) {
-                    old = oldRow;
+                rowStore.addRow(dataRow, grp.statisticsHolderData());
 
-                    dataRow.link(oldRow.link());
-                }
-                else {
-                    rowStore.addRow(dataRow, grp.statisticsHolderData());
+                assert dataRow.link() != 0 : dataRow;
 
-                    assert dataRow.link() != 0 : dataRow;
+                if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
+                    dataRow.cacheId(cctx.cacheId());
 
-                    if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                        dataRow.cacheId(cctx.cacheId());
-
-                    if (oldRow != null) {
-                        old = oldRow;
-
-                        dataTree.putx(dataRow);
-                    }
-                    else
-                        old = dataTree.put(dataRow);
-                }
+                CacheDataRow old = dataTree.put(dataRow);
 
                 finishUpdate(cctx, dataRow, old);
             }
@@ -1666,8 +1687,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
-        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow)
-            throws IgniteCheckedException {
+        private void finishUpdate(
+            GridCacheContext<?, ?> cctx,
+            CacheDataRow newRow,
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException {
             finishUpdate(cctx, newRow, oldRow, false);
         }
 
@@ -1678,12 +1702,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param oldRowExpired Old row expiration flag
          * @throws IgniteCheckedException If failed.
          */
-        private void finishUpdate(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow oldRow, boolean oldRowExpired)
-            throws IgniteCheckedException {
+        private void finishUpdate(
+            GridCacheContext<?, ?> cctx,
+            CacheDataRow newRow,
+            @Nullable CacheDataRow oldRow,
+            boolean oldRowExpired
+        ) throws IgniteCheckedException {
             if (oldRow == null && !oldRowExpired)
                 incrementSize(cctx.cacheId());
 
-            GridCacheQueryManager qryMgr = cctx.queries();
+            GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
                 qryMgr.store(newRow, oldRow, true);

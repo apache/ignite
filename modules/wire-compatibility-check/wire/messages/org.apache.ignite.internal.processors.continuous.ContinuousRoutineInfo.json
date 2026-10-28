@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.ContinuousRoutineInfo",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "srcNodeId"},
+    {"order": 1, "type": "java.util.UUID", "name": "routineId"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.continuous.GridContinuousHandler", "name": "hnd"},
+    {"order": 3, "type": "byte[]", "name": "nodeFilter"},
+    {"order": 4, "type": "int", "name": "bufSize"},
+    {"order": 5, "type": "long", "name": "interval"},
+    {"order": 6, "type": "boolean", "name": "autoUnsubscribe"}
+  ]
+}

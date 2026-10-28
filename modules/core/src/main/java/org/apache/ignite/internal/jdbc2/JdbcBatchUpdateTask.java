@@ -27,8 +27,8 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -174,7 +174,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         qry.setSchema(schemaName);
         qry.setArgs(args == null ? null : args.toArray());
 
-        QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
+        QueryCursorEx<List<?>> qryCursor = (QueryCursorEx<List<?>>)cache.withKeepBinary().query(qry);
 
         if (qryCursor.isQuery()) {
             throw createJdbcSqlException(getError("Query produced result set", qry),

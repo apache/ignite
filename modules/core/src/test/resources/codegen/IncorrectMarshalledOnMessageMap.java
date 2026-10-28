@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class IncorrectMarshalledOnMessageMap implements Message {
+public class IncorrectMarshalledOnMessageMap extends AbstractMessage {
     /** */
     @Marshalled("bytes")
     Map<Integer, TestMessage> msgMap;

@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheAffinityConfiguration",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "function"},
+    {"order": 1, "type": "java.lang.String", "name": "mapper"},
+    {"order": 2, "type": "int", "name": "partitionedBackups"},
+    {"order": 3, "type": "int", "name": "partitions"},
+    {"order": 4, "type": "java.lang.Boolean", "name": "exclNeighbors"}
+  ]
+}

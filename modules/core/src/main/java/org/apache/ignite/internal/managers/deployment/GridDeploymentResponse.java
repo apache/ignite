@@ -20,12 +20,12 @@ package org.apache.ignite.internal.managers.deployment;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Grid deployment response containing requested resource bytes.
  */
-public class GridDeploymentResponse implements Message {
+public class GridDeploymentResponse extends AbstractMessage {
     /** Result state. */
     @Order(0)
     boolean success;

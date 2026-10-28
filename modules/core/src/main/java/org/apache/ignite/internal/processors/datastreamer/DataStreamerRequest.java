@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 
 /** Batch of streamed entries. */
-public class DataStreamerRequest implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
+public class DataStreamerRequest extends AbstractMessage implements DeferredUnmarshalMessage, CacheIdAware, StripedMessage {
     /** */
     @Order(0)
     long reqId;

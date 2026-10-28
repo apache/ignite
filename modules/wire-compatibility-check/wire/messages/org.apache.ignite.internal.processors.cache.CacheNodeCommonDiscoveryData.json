@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheNodeCommonDiscoveryData",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheData>", "name": "caches"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheData>", "name": "templates"},
+    {"order": 2, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.CacheGroupData>", "name": "cacheGrps"},
+    {"order": 3, "type": "java.util.Map<java.lang.String,java.util.Map<java.util.UUID,java.lang.Boolean>>", "name": "clientNodesMap"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData", "name": "clusterCacheGrpRecoveryData"}
+  ]
+}

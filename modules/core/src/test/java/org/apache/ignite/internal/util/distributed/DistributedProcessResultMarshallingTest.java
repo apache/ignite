@@ -46,6 +46,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -210,7 +211,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
      * carries no {@code JdkMarshalled} of its own: the test checks that pinning {@link SingleNodeMessage} covers every
      * result, including the ones written later.
      */
-    public static class PayloadMessage implements Message {
+    public static class PayloadMessage extends AbstractMessage {
         /** Payload. */
         private Object val;
 

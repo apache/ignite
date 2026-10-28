@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 @EmptyMessage
-public class CorrectEmptyMessage implements Message {
+public class CorrectEmptyMessage extends AbstractMessage {
     public short directType() {
         return 0;
     }

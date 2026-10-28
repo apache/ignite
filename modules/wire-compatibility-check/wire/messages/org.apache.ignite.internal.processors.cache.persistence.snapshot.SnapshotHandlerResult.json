@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "data"},
+    {"order": 1, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}

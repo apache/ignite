@@ -90,7 +90,7 @@ class RawBinaryObjectExtractor implements BinaryPositionReadable {
                 break;
 
             case GridBinaryMarshaller.OBJ:
-                skipBytes(BinaryUtils.length(in, objStartPos) - /** Object type. */ Byte.BYTES);
+                skipBytes(BinaryImplUtils.length(in, objStartPos) - /** Object type. */ Byte.BYTES);
 
                 break;
 

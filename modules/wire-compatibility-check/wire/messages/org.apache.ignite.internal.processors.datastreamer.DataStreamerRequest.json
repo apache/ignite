@@ -1,0 +1,18 @@
+{
+  "class": "org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "reqId"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "resTopicId"},
+    {"order": 2, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage", "name": "updaterMsg"},
+    {"order": 4, "type": "java.util.Collection<org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry>", "name": "entries"},
+    {"order": 5, "type": "boolean", "name": "ignoreDepOwnership"},
+    {"order": 6, "type": "boolean", "name": "skipStore"},
+    {"order": 7, "type": "boolean", "name": "keepBinary"},
+    {"order": 8, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 9, "type": "java.lang.String", "name": "sampleClsName"},
+    {"order": 10, "type": "boolean", "name": "forceLocDep"},
+    {"order": 11, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 12, "type": "int", "name": "partId"}
+  ]
+}

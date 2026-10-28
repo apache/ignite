@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-public class QueryInboxCloseMessage implements Message {
+public class QueryInboxCloseMessage extends AbstractMessage {
     /** */
     @Order(0)
     UUID qryId;

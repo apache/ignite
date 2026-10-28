@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.managers.eventstorage.GridEventStorageResponse",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "evtsBytes"},
+    {"order": 1, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"type": "java.util.Collection<org.apache.ignite.events.Event>", "name": "evts", "annotations": ["@org.apache.ignite.internal.Marshalled(\"evtsBytes\")"]}
+  ]
+}

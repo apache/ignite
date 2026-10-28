@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.message.QueryBatchMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "qryId"},
+    {"order": 1, "type": "long", "name": "fragmentId"},
+    {"order": 2, "type": "long", "name": "exchangeId"},
+    {"order": 3, "type": "int", "name": "batchId"},
+    {"order": 4, "type": "boolean", "name": "last"},
+    {"order": 5, "type": "java.util.List<org.apache.ignite.internal.processors.query.calcite.message.GenericValueMessage>", "name": "mRows"}
+  ]
+}

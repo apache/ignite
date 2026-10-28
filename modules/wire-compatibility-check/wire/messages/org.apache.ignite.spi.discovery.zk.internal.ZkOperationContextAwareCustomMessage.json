@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.spi.discovery.zk.internal.ZkOperationContextAwareCustomMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage", "name": "delegate"},
+    {"order": 1, "type": "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage", "name": "opCtxSnp"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "taskId"},
+    {"order": 1, "type": "long", "name": "topicId"}
+  ]
+}

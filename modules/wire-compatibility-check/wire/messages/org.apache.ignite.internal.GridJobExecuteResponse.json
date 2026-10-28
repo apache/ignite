@@ -1,0 +1,16 @@
+{
+  "class": "org.apache.ignite.internal.GridJobExecuteResponse",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sesId"},
+    {"order": 2, "type": "org.apache.ignite.lang.IgniteUuid", "name": "jobId"},
+    {"order": 3, "type": "byte[]", "name": "gridExBytes"},
+    {"order": 4, "type": "byte[]", "name": "resBytes"},
+    {"order": 5, "type": "byte[]", "name": "jobAttrsBytes"},
+    {"order": 6, "type": "boolean", "name": "isCancelled"},
+    {"order": 7, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "retry"},
+    {"type": "java.lang.Object", "name": "res", "annotations": ["@org.apache.ignite.internal.Marshalled(\"resBytes\")"]},
+    {"type": "java.util.Map<java.lang.Object,java.lang.Object>", "name": "jobAttrs", "annotations": ["@org.apache.ignite.internal.Marshalled(\"jobAttrsBytes\")"]},
+    {"type": "org.apache.ignite.IgniteException", "name": "gridEx", "annotations": ["@org.apache.ignite.internal.Marshalled(\"gridExBytes\")"]}
+  ]
+}

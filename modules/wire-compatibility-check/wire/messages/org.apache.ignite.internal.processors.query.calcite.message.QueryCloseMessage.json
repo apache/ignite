@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.calcite.message.QueryCloseMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "qryId"}
+  ]
+}

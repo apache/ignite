@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "verifierNodeId"},
+    {"order": 2, "type": "long", "name": "topVer"},
+    {"order": 3, "type": "int", "name": "flags"},
+    {"order": 4, "type": "java.util.Set<java.util.UUID>", "name": "failedNodes"},
+    {"order": 5, "type": "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage", "name": "opCtxSnp"},
+    {"order": 6, "type": "java.util.Collection<java.lang.String>", "name": "addrs"},
+    {"order": 7, "type": "java.util.Collection<java.lang.String>", "name": "hostNames"}
+  ]
+}

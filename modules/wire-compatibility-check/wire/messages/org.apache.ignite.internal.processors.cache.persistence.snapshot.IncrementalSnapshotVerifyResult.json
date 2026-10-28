@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotVerifyResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord>", "name": "txHashRes"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord>", "name": "partHashRes"},
+    {"order": 2, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "partiallyCommittedTxs"},
+    {"order": 3, "type": "java.util.Collection<org.apache.ignite.internal.util.ErrorMessage>", "name": "exceptions"}
+  ]
+}

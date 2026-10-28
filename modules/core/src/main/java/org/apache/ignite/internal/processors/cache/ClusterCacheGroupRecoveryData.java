@@ -26,11 +26,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ClusterCacheGroupRecoveryData implements Externalizable, Message {
+public class ClusterCacheGroupRecoveryData extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

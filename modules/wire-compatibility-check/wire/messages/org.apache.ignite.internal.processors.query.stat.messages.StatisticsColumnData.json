@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage", "name": "min"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage", "name": "max"},
+    {"order": 2, "type": "long", "name": "nulls"},
+    {"order": 3, "type": "long", "name": "distinct"},
+    {"order": 4, "type": "long", "name": "total"},
+    {"order": 5, "type": "int", "name": "size"},
+    {"order": 6, "type": "byte[]", "name": "rawData"},
+    {"order": 7, "type": "long", "name": "ver"},
+    {"order": 8, "type": "long", "name": "createdAt"}
+  ]
+}

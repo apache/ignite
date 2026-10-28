@@ -100,7 +100,7 @@ public class ClassLoaderUtils {
      * Gets class for provided name. Accepts primitive types names.
      *
      * @param clsName Class name.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
@@ -159,7 +159,7 @@ public class ClassLoaderUtils {
      * Gets class for provided name. Accepts primitive types names.
      *
      * @param clsName Class name.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
@@ -168,7 +168,7 @@ public class ClassLoaderUtils {
     }
 
     /**
-     * Gets class for provided name. Accepts primitive types names.
+     * Gets class for provided name using {@link CommonUtils#gridClassLoader()}. Accepts primitive types names.
      *
      * @param clsName Class name.
      * @return Class.

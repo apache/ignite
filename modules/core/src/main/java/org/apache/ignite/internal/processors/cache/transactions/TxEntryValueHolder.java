@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Auxiliary class to hold value, value-has-been-set flag, value update operation, value bytes.
  */
-public class TxEntryValueHolder implements Message {
+public class TxEntryValueHolder extends AbstractMessage {
     /** Stored value. */
     @Order(0)
     @GridToStringInclude(sensitive = true)

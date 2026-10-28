@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "clsLdrId"},
+    {"order": 1, "type": "org.apache.ignite.configuration.DeploymentMode", "name": "depMode"},
+    {"order": 2, "type": "java.lang.String", "name": "userVer"},
+    {"order": 3, "type": "java.util.Map<java.util.UUID,org.apache.ignite.lang.IgniteUuid>", "name": "participants"}
+  ]
+}

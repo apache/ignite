@@ -1,0 +1,25 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.schema.message.QueryEntityExMessage",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "keyType"},
+    {"order": 1, "type": "java.lang.String", "name": "valType"},
+    {"order": 2, "type": "java.lang.String", "name": "keyFieldName"},
+    {"order": 3, "type": "java.lang.String", "name": "valFieldName"},
+    {"order": 4, "type": "java.util.LinkedHashMap<java.lang.String,java.lang.String>", "name": "fields"},
+    {"order": 5, "type": "java.lang.String[]", "name": "keyFields"},
+    {"order": 6, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "aliases"},
+    {"order": 7, "type": "java.util.Collection<org.apache.ignite.internal.cache.query.QueryIndexMessage>", "name": "idxs"},
+    {"order": 8, "type": "java.lang.String", "name": "tableName"},
+    {"order": 9, "type": "java.util.Set<java.lang.String>", "name": "notNullFields"},
+    {"order": 10, "type": "byte[]", "name": "dfltFieldValuesBytes"},
+    {"order": 11, "type": "java.util.Map<java.lang.String,java.lang.Integer>", "name": "fieldsPrecision"},
+    {"order": 12, "type": "java.util.Map<java.lang.String,java.lang.Integer>", "name": "fieldsScale"},
+    {"order": 13, "type": "boolean", "name": "preserveKeysOrder"},
+    {"order": 14, "type": "boolean", "name": "implicitPk"},
+    {"order": 15, "type": "boolean", "name": "fillAbsentPKsWithDefaults"},
+    {"order": 16, "type": "int", "name": "pkInlineSize"},
+    {"order": 17, "type": "int", "name": "affKeyInlineSize"},
+    {"order": 18, "type": "boolean", "name": "sql"},
+    {"type": "java.util.Map<java.lang.String,java.lang.Object>", "name": "dfltFieldValues", "annotations": ["@org.apache.ignite.internal.Marshalled(\"dfltFieldValuesBytes\")"]}
+  ]
+}

@@ -229,8 +229,9 @@ public class SqlConfiguration {
      * {@code QUERY_ENGINE('engineName')} SQL query hint. If no query engine is explicitly chosen, default query engine
      * will be used (see {@link QueryEngineConfiguration#setDefault(boolean)}).
      * <p>
-     * When this property is not set, the query engine cannot be chosen in run-time, and the engine provided by the
-     * ignite-indexing module will be used for all queries.
+     * When this property is not set, the query engines found on the classpath are used: the Calcite-based engine
+     * (the ignite-calcite module) is the default one and the H2-based engine (the ignite-indexing module), if present,
+     * can be chosen in run-time. If only one of the modules is on the classpath, its engine is used for all queries.
      *
      * @param enginesConfiguration Query engines configuration.
      * @return {@code this} for chaining.

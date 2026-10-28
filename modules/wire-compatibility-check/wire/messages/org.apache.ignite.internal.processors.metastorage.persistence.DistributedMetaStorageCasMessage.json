@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 2, "type": "java.lang.String", "name": "key"},
+    {"order": 3, "type": "byte[]", "name": "valBytes"},
+    {"order": 4, "type": "byte[]", "name": "expValBytes"},
+    {"order": 5, "type": "boolean", "name": "matches"}
+  ]
+}

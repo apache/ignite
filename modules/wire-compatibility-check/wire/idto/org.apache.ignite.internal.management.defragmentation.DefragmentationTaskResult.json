@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.defragmentation.DefragmentationTaskResult",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "success"},
+    {"order": 1, "type": "java.lang.String", "name": "msg"}
+  ]
+}

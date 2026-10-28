@@ -22,4 +22,4 @@ the `green visa` attached to the JIRA ticket (see tab `PR Check` at [TC.Bot - In
 - [Coding Guidelines](https://cwiki.apache.org/confluence/display/IGNITE/Coding+Guidelines)
 - [Apache Ignite Teamcity Bot](https://cwiki.apache.org/confluence/display/IGNITE/Apache+Ignite+Teamcity+Bot)
 
-If you need any help, please email dev@ignite.apache.org or ask anу advice on http://asf.slack.com _#ignite_ channel.
+If you need any help, please email dev@ignite.apache.org or ask any advice on https://the-asf.slack.com _#ignite_ channel.

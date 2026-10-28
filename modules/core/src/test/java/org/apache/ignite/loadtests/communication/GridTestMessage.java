@@ -24,12 +24,12 @@ import java.io.ObjectOutput;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-class GridTestMessage implements Message, Externalizable {
+class GridTestMessage extends AbstractMessage implements Externalizable {
     /** */
     @Order(0)
     IgniteUuid id;

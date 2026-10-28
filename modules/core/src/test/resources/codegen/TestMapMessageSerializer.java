@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMapMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -27,6 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -252,6 +255,14 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
                     return false;
 
                 writer.incrementState();
+
+            case 26:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
+
+                writer.incrementState();
         }
 
         return true;
@@ -465,6 +476,19 @@ public final class TestMapMessageSerializer implements MessageSerializer<TestMap
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 26:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }
