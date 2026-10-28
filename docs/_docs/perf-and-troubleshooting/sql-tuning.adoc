@@ -503,7 +503,7 @@ If the row cache is enabled, you might be able to trade RAM for performance. You
 [discrete]
 === SQL On-Heap Row Cache Size
 
-Presently, the cache is unlimited and can occupy as much RAM as allocated to your memory data regions. Make sure to:
+By default, the cache is unlimited (`CacheConfiguration.sqlOnheapCacheMaxSize = 0`) and can occupy as much RAM as allocated to your memory data regions. Set `sqlOnheapCacheMaxSize` to limit the number of cached rows, or make sure to:
 
 * Set the JVM max heap size equal to the total size of all the data regions that store caches for which this on-heap row cache is enabled.
 
