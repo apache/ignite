@@ -668,17 +668,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             else
                 startTime = g0.context().discovery().gridStartTime();
 
-            IgniteInternalFuture<?> exchFut =
-                g0.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
+            GridCachePartitionExchangeManager<?, ?> nodeExchMgr = g0.context().cache().context().exchange();
 
-            if (exchFut != null && !exchFut.isDone()) {
-                try {
-                    exchFut.get(timeout);
+            try {
+                AffinityTopologyVersion completedVer = nodeExchMgr.affinityReadyFuture(waitTopVer).get(timeout);
+
+                // The exchange future completes before its listener publishes the ready affinity version.
+                if (!waitForCondition(() -> nodeExchMgr.readyAffinityVersion().compareTo(completedVer) >= 0, timeout)) {
+                    throw new IgniteException("Timeout waiting for ready affinity publication [node=" + g0.name() +
+                        ", completedVer=" + completedVer + ", readyVer=" + nodeExchMgr.readyAffinityVersion() + ']');
                 }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to wait for exchange [topVer=" + waitTopVer +
-                        ", node=" + g0.name() + ']', e);
-                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for exchange [topVer=" + waitTopVer +
+                    ", node=" + g0.name() + ']', e);
             }
 
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
