@@ -25,9 +25,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -122,69 +124,70 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
 
     /** */
     @Test
-    public void testOrphanedIdleVerifyTaskOnCacheDestruction() throws Exception {
-        prepareCluster();
+    public void testWithCacheDestruction() throws Exception {
+        // The cache destruction concurrent operation.
+        Supplier<IgniteInternalFuture<?>> concurrentOpProvider = new Supplier<>() {
+            @Override public IgniteInternalFuture<?> get() {
+                CacheGroupContext grp = grid(0).cachex(DEFAULT_CACHE_NAME).context().group();
 
-        IgniteEx loadCli = startClientGrid();
+                IgniteInternalFuture<?> destroyCacheFut = runAsync(() -> grid(0).destroyCache(DEFAULT_CACHE_NAME));
 
-        IgniteInternalFuture<IdleVerifyResult> idleFut = runAsync(() -> idleVerify(grid(0), checkCrc, DEFAULT_CACHE_NAME));
+                try {
+                    assertTrue(waitForCondition(grp::isPreparedToStop, 10_000L));
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    log.error("Unexpected interruption.", e);
 
-        // Wait until all the idle verify threads blocked.
-        assertTrue(waitForCondition(() -> BLOCKED_THREADS.size() == DFLT_IDLE_VERIFY_POOL_SIZE, getTestTimeout()));
+                    throw new IgniteException("Unexpected interruption.", e);
+                }
 
-        // Concurrent updates may stop the idle verify with the 'cache-not-idle' exception.
-        AtomicBoolean stopUpdatingFlag = new AtomicBoolean(false);
-        IgniteInternalFuture<?> updateFut = launchConcurrentUpdates(loadCli, stopUpdatingFlag);
+                return destroyCacheFut;
+            }
+        };
 
-        CacheGroupContext grp = grid(0).cachex(DEFAULT_CACHE_NAME).context().group();
-
-        IgniteInternalFuture<?> destroyCacheFut = runAsync(() -> grid(0).destroyCache(DEFAULT_CACHE_NAME));
-
-        assertTrue(waitForCondition(grp::isPreparedToStop, 10_000L));
-
-        stopThreadsBlocking();
-
-        // The idle verify is expected to finish with cancellation, node stoppage, group stoppage or the 'cache-not-idle' exception.
-        assertFalse(F.isEmpty(idleFut.get().exceptions()));
-
-        stopUpdatingFlag.set(true);
-
-        destroyCacheFut.get();
-
-        // The cache updating cannot stop normally due to the cache destruction. This is ok.
-        try {
-            updateFut.get();
-        }
-        catch (IgniteInterruptedCheckedException | IgniteFutureCancelledCheckedException e) {
-            throw new IllegalStateException("Unexpected exception.", e);
-        }
-        catch (IgniteCheckedException ignored) {
-            //no-op.
-        }
+        doTestConcurrentOperationDuringIdleVerify(concurrentOpProvider);
     }
 
     /** */
     @Test
-    public void testOrphanedIdleVerifyTaskOnNodeStoppage() throws Exception {
-        prepareCluster();
+    public void testWithNodeStoppage() throws Exception {
+        // The node stoppage concurrent operation.
+        Supplier<IgniteInternalFuture<?>> concurrentOpProvider = new Supplier<>() {
+            @Override public IgniteInternalFuture<?> get() {
+                GridKernalContext kctx = grid(0).context();
 
-        IgniteEx loadCli = startClientGrid();
+                IgniteInternalFuture<?> stopNodeFut = runAsync(() -> stopGrid(0));
+
+                try {
+                    assertTrue(waitForCondition(kctx::isStopping, 10_000L));
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    log.error("Unexpected interruption.", e);
+
+                    throw new IgniteException("Unexpected interruption.", e);
+                }
+
+                return stopNodeFut;
+            }
+        };
+
+        doTestConcurrentOperationDuringIdleVerify(concurrentOpProvider);
+    }
+
+    /** */
+    private void doTestConcurrentOperationDuringIdleVerify(Supplier<IgniteInternalFuture<?>> concurrentOpProvider) throws Exception {
+        IgniteEx loadCli = prepareCluster();
 
         IgniteInternalFuture<IdleVerifyResult> idleFut = runAsync(() -> idleVerify(grid(0), checkCrc, DEFAULT_CACHE_NAME));
 
         // Wait until all the idle verify threads blocked.
         assertTrue(waitForCondition(() -> BLOCKED_THREADS.size() == DFLT_IDLE_VERIFY_POOL_SIZE, getTestTimeout()));
 
-
         // Concurrent updates may stop the idle verify with the 'cache-not-idle' exception.
         AtomicBoolean stopUpdatingFlag = new AtomicBoolean(false);
         IgniteInternalFuture<?> updateFut = launchConcurrentUpdates(loadCli, stopUpdatingFlag);
 
-        GridKernalContext kctx = grid(0).context();
-
-        IgniteInternalFuture<?> stopNodeFut = runAsync(() -> stopGrid(0));
-
-        assertTrue(waitForCondition(kctx::isStopping, 10_000L));
+        IgniteInternalFuture<?> concurrentOpFut = concurrentOpProvider.get();
 
         stopThreadsBlocking();
 
@@ -193,7 +196,7 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
 
         stopUpdatingFlag.set(true);
 
-        stopNodeFut.get(10_000L);
+        concurrentOpFut.get(10_000L);
 
         // The cache updating cannot stop normally due to the node stoppage. This is ok.
         try {
@@ -232,7 +235,7 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
     }
 
     /** */
-    private void prepareCluster() throws Exception {
+    private IgniteEx prepareCluster() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
@@ -253,9 +256,11 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
             }
         }
 
-        // Restart for force keeping data on disk.
+        // Restart to keep the data on disk and out of the memory.
         stopGrid(0);
         startGrid(0);
+
+        return startClientGrid();
     }
 
     /** */
@@ -301,7 +306,7 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
             BLOCKED_THREADS.add(Thread.currentThread().getId());
 
             if (log.isDebugEnabled())
-                log.error("Blocked thread: " + Thread.currentThread().getId() + " / " + Thread.currentThread().getName());
+                log.debug("Blocked thread: " + Thread.currentThread().getId() + " / " + Thread.currentThread().getName());
 
             try {
                 synchronized (BLOCKED_THREADS) {
@@ -315,7 +320,7 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
             }
 
             if (log.isDebugEnabled())
-                log.error("Released thread: " + Thread.currentThread().getId() + " / " + Thread.currentThread().getName());
+                log.debug("Released thread: " + Thread.currentThread().getId() + " / " + Thread.currentThread().getName());
         }
     }
 }

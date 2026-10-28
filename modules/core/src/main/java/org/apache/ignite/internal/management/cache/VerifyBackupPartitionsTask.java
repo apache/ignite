@@ -539,8 +539,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         throw cancellationException(gctx, part);
 
                     try {
-                        // This reading is under the lock too to avoid a concurrent deletion of the partition
-                        // file due to possible the cache destruction.
+                        // Also hold the lock during the read to avoid a concurrent deletion of the partition
+                        // file when the cache is destroyed.
                         if (arg.checkCrc() && gctx.persistenceEnabled()) {
                             FilePageStoreManager pageStoreMgr =
                                 (FilePageStoreManager)ignite.context().cache().context().pageStore();
