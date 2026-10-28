@@ -151,7 +151,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     @Order(20)
     Collection<KeyCacheObject> skipKeys;
 
-    /** */
+    /** Reserved byte. Formerly data page scan flag. Must stay for wire compatibility. */
     @Order(21)
     byte flags;
 

@@ -43,7 +43,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 
 /**
@@ -196,7 +195,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
             // Obsolete data page scan flag.
-            nullableBooleanFromByte(reader.readByte());
+            reader.readByte();
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
         }
