@@ -28,7 +28,6 @@
     </parent>
 
     <artifactId>ignite-wire-compatibility-check</artifactId>
-    <packaging>pom</packaging>
 
     <dependencies>
         <dependency>
@@ -49,6 +48,18 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-zookeeper</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-codegen</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-tools</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -71,8 +82,37 @@
                                     <fileset dir="${basedir}/../indexing/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../calcite/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../zookeeper/target/classes/META-INF/ignite-wire"/>
+                                    <preserveintarget>
+                                        <include name="ids.json"/>
+                                    </preserveintarget>
                                 </sync>
                             </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>write-ids</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${java.home}/bin/java</executable>
+                            <arguments>
+                                <argument>--add-opens=java.base/java.nio=ALL-UNNAMED</argument>
+                                <argument>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</argument>
+                                <argument>--add-opens=java.base/sun.nio.ch=ALL-UNNAMED</argument>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>org.apache.ignite.internal.wire.MessageIdsWriter</argument>
+                                <argument>${project.basedir}/wire/ids.json</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>
