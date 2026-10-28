@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-/**
- * Declares reserved distributed IDs used to consistently identify {@link OperationContext} attributes across
- * all nodes in the cluster.
- */
-public class DistributedAttributeIdRegistry {
-    /** ID Reserved for {@link SecurityContext} propagation. */
-    public static final byte SECURITY = 0;
+/** */
+public class TestInheritedIgniteDataTransferObject extends TestIgniteDataTransferObject {
+    /** */
+    @Order(1)
+    int intVal;
+
+    /** */
+    @Order(2)
+    TransactionIsolation isolation;
+
+    /** */
+    public static class Nested extends IgniteDataTransferObject {
+        /** */
+        @Order(0)
+        String str;
+    }
 }

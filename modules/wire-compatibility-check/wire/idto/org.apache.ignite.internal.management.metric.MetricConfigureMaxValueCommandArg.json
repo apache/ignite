@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.metric.MetricConfigureMaxValueCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "name"},
+    {"order": 1, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 2, "type": "long", "name": "newTimeInterval"}
+  ]
+}

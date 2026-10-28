@@ -139,7 +139,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
      */
     @Test
     public void testCheckpointSimulationMultiThreaded() throws Exception {
-        IgniteEx ig = startGrid(0);
+        IgniteEx ig = startGrid(0, cfg -> {
+            cfg.getDataStorageConfiguration().setMaxWalArchiveSize(DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE);
+        });
 
         ig.cluster().state(ClusterState.ACTIVE);
 
@@ -148,8 +150,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)shared.database();
 
         IgnitePageStoreManager pageStore = shared.pageStore();
-
-        U.sleep(1_000);
 
         // Disable integrated checkpoint thread.
         dbMgr.enableCheckpoints(false).get();

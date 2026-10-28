@@ -312,7 +312,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             new CacheExplicitLockViewWalker(),
             pendingExplicit.values(),
             GridCacheExplicitLockSpan::candidates,
-            (threadId, lock) -> new CacheExplicitLockView(lock)
+            CacheExplicitLockView::new
         );
 
         List<GridCacheMvccCandidate> locks = new ArrayList<>();

@@ -40,7 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -137,8 +137,8 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
-    /** Distributed operation context dispatcher. */
-    protected final OperationContextDispatcher operationCtxDispatcher;
+    /** Distributed operation context. */
+    protected final DistributedOperationContext distrOpCtx;
 
     /**
      * @param spi Adapter.
@@ -150,7 +150,7 @@ abstract class TcpDiscoveryImpl {
 
         ctx = ((IgniteEx)spi.ignite()).context();
 
-        operationCtxDispatcher = ctx.operationContextDispatcher();
+        distrOpCtx = ctx.distributedOperationContext();
     }
 
     /**

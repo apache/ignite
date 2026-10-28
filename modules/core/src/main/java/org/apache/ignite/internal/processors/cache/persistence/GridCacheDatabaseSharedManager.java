@@ -2880,8 +2880,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     dataEntry.value(),
                     dataEntry.writeVersion(),
                     dataEntry.expireTime(),
-                    locPart,
-                    null);
+                    locPart);
 
                 return true;
 

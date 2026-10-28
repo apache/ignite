@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.SystemViewTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.TreeMap<java.util.UUID,java.util.List<java.util.List<?>>>", "name": "rows"},
+    {"order": 1, "type": "java.util.List<java.lang.String>", "name": "attrs"},
+    {"order": 2, "type": "java.util.List<org.apache.ignite.internal.management.SystemViewTask$SimpleType>", "name": "types"}
+  ]
+}

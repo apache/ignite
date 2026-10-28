@@ -38,6 +38,10 @@ public class TestRollingUpgradeAwareMessage extends AbstractMessage {
     @Order(value = 3, introducedBy = "THIRD_FEATURE")
     long newCnt;
 
+    /** */
+    @Order(value = 4, deprecatedBy = "FOURTH_FEATURE")
+    int oldCnt;
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return 0;

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxSortOrder",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.tx.TxSortOrder", "name": "DURATION"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.tx.TxSortOrder", "name": "SIZE"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.tx.TxSortOrder", "name": "START_TIME"}
+  ]
+}

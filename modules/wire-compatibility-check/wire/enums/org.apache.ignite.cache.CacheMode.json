@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.cache.CacheMode",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.CacheMode", "name": "REPLICATED"},
+    {"order": 1, "type": "org.apache.ignite.cache.CacheMode", "name": "PARTITIONED"}
+  ]
+}

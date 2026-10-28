@@ -227,6 +227,8 @@ Register name: `tx`
 |AllOwnerTransactions | Map<String, String> | Map of local node owning transactions.
 |ExplicitLockHoldTimeHistogram | histogram | Explicit locks hold times on node represented as histogram, in milliseconds.
 |LockedKeysNumber | long | The number of keys locked on the node.
+|LongRunningCacheFuturesCount | long | The count of cache futures currently in progress on the node whose duration exceeds the long operations dump timeout.
+|MaxCacheFutureDuration | long | Maximum duration of cache futures currently in progress on the node, in milliseconds.
 |MaxExplicitLockHoldTime | long | Maximum hold time of explicit locks currently held on the node, in milliseconds.
 |OwnerTransactionsNumber | long | The number of active transactions for which this node is the initiator.
 |TransactionsHoldingLockNumber | long | The number of active transactions holding at least one key lock.
@@ -469,6 +471,7 @@ Register name: `client.connector`
 |AffinityKeyRequestsMisses | long | The number of affinity-aware cache key requests that were sent not to the primary node.
 |AffinityQueryRequestsHits | long | The number of affinity-aware query requests that were sent to the primary node.
 |AffinityQueryRequestsMisses | long | The number of affinity-aware query requests that were sent not to the primary node.
+|MaxRunningComputeTasksPerConnection | long | Maximum number of running user compute tasks per thin client connection over the configured time interval (60 seconds by default).
 |RejectedSessionsAuthenticationFailed | integer | TCP sessions count that were rejected due to failed authentication.
 |RejectedSessionsTimeout | integer | TCP sessions count that were rejected due to handshake timeout.
 |RejectedSessionsTotal | integer | Total number of rejected TCP connections.

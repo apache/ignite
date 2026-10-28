@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheRebalanceConfiguration",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.CacheRebalanceMode", "name": "mode"},
+    {"order": 1, "type": "int", "name": "batchSize"},
+    {"order": 2, "type": "long", "name": "partitionedDelay"},
+    {"order": 3, "type": "long", "name": "throttle"},
+    {"order": 4, "type": "long", "name": "timeout"},
+    {"order": 5, "type": "long", "name": "batchesPrefetchCnt"},
+    {"order": 6, "type": "int", "name": "rebalanceOrder"}
+  ]
+}
