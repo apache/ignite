@@ -146,6 +146,9 @@ public class PoolProcessor extends GridProcessorAdapter {
     public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
 
     /** */
+    public static final String POOL_NAME_IDLE_VERIFY = "idleVerify";
+
+    /** */
     @SystemProperty(value = "Idle verify utility thread pool size.", type = Integer.class,
         defaults = "Total available CPUs minus 2, but at least 4 threads.")
     private static final String IDLE_VERIFY_POOL_SIZE_PROPERTY = "IGNITE_IDLE_VERIFY_POOL_SIZE";
