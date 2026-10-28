@@ -590,7 +590,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                     }
                 }
-                catch (IgniteException e) {
+                catch (IgniteCheckedException e) {
                     String msg = CALC_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
                         ", reason=" + e.getMessage() + "]";
 
