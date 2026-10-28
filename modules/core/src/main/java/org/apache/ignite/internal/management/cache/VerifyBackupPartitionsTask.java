@@ -309,12 +309,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             if (!F.isEmpty(exceptions)) {
                 if (ignite.context().isStopping())
-                    throw new IgniteException(CANCELLATION_PREF + ". The local node is stopping [grpIds=" + grpIds + "].");
+                    throw new IgniteException(CANCELLATION_PREF + " because the local node is stopping [grpIds=" + grpIds + "].");
 
                 Integer stoppingGrpId = F.find(grpIds, null, this::isGroupStopping);
 
                 if (stoppingGrpId != null)
-                    throw new IgniteException(CANCELLATION_PREF + ". The cache group is stopping [grpId=" + stoppingGrpId + "].");
+                    throw new IgniteException(CANCELLATION_PREF + " because the cache group is stopping [grpId=" + stoppingGrpId + "].");
 
                 throw new IdleVerifyException(exceptions);
             }
@@ -323,9 +323,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 log.info("Idle verify procedure has finished [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
                     arg.checkCrc() + ", grpIds=" + grpIds + "].");
             }
-
-            if (!F.isEmpty(exceptions))
-                throw new IdleVerifyException(exceptions);
 
             return res;
         }
