@@ -321,7 +321,7 @@ public class IdleVerifyUtility {
         }
 
         if (cancelled0)
-            throw new IgniteCheckedException("Partition hash calculation has been cancelled [part=" + partKey + ']');
+            throw new IgniteException("Partition hash calculation has been cancelled [part=" + partKey + ']');
 
         return new PartitionHashRecord(
             partKey,

@@ -520,7 +520,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
-                if (checkCancelledOrStopped(cancelled, gctx))
+                if (isCancelledOrStopped(cancelled, gctx))
                     throw cancellationException(gctx, part);
 
                 Map<PartitionKey, PartitionHashRecord> res = emptyMap();
@@ -549,7 +549,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                                 () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
                                 part.id(),
                                 FLAG_DATA,
-                                () -> checkCancelledOrStopped(cancelled, gctx)
+                                () -> isCancelledOrStopped(cancelled, gctx)
                             );
                         }
 
@@ -561,7 +561,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             part.primary(gctx.topology().readyTopologyVersion()),
                             part.dataStore().fullSize(),
                             gctx.offheap().partitionIterator(part.id()),
-                            () -> checkCancelledOrStopped(cancelled, gctx)
+                            () -> isCancelledOrStopped(cancelled, gctx)
                         );
                     }
                     finally {
@@ -579,13 +579,11 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             "calculation [updCntrBefore=" + updateCntrBefore + ", updCntrAfter=" + updateCntrAfter + "]");
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     String msg = CALC_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
                         ", reason=" + e.getMessage() + "]";
 
-                    // Avoids flooding the logs with knows stoppage/cancellation errors.
-                    if (!isCancelled())
-                        U.error(log, msg, e);
+                    U.error(log, msg, e);
 
                     throw new IgniteException(msg, e);
                 }
@@ -602,26 +600,13 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
         /**
          * Checks whether the work should be stopped: the task was cancelled, the local node is stopping,
          * or the cache group is stopping or being destroyed.
-         * <p>NOTE: Invokes {@link #cancel()} if the local node is stopping, or the cache group is stopping or being
-         * destroyed to stop any unnecessary parallel work and logging.</p>
          *
          * @param cancelled Supplier that returns {@code true} if the task cancellation was requested.
          * @param gctx Cache group context.
          * @return {@code true} if the work should be stopped.
          */
-        private boolean checkCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
-            if (cancelled.getAsBoolean())
-                return true;
-
-            if (gctx.isPreparedToStop() || ignite.context().isStopping()) {
-                // Sets the global cancellation flag to stop any unnecessary parallel work and logging.
-                if (!isCancelled())
-                    cancel();
-
-                return true;
-            }
-
-            return false;
+        private boolean isCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
+            return cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
         }
 
         /** */
