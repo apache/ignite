@@ -226,22 +226,16 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            // Overall job failure. If presents, there is no need to process the remaining subjobs.
             IgniteException jobFailure = null;
-            // Acceptable partition subjob exceptions to collect.
             List<IgniteException> exceptions = null;
-            // The current thread's interruption flag.
             boolean interrupted = false;
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
-            // Start time of the current log-timeout interval.
             long lastProgressLogTs = U.currentTimeMillis();
 
-            // Launch the partition jobs.
             List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
 
-            // Iterate over the per-partition futures. We wait for all of them to finish.
             for (int i = 0; i < partHashCalcFuts.size(); i++) {
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
@@ -252,16 +246,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         res.putAll(partHash);
                 }
                 catch (ExecutionException e) {
-                    // An acceptable exception to store.
                     if (e.getCause() instanceof IgniteException && !(e.getCause() instanceof GridNotIdleException)) {
-                        // A cancelled job drains its futures, and they may fail with the same cancellation exception.
-                        // Let's skip them, the cancellation is reported at the end.
-                        if (!isCancelled()) {
-                            if (exceptions == null)
-                                exceptions = new ArrayList<>();
+                        if (exceptions == null)
+                            exceptions = new ArrayList<>();
 
-                            exceptions.add((IgniteException)e.getCause());
-                        }
+                        exceptions.add((IgniteException)e.getCause());
+
                     }
                     else if (jobFailure == null) {
                         jobFailure = new IgniteException("Failed to execute a partition hash calculation [grpIds=" +
@@ -285,7 +275,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                         jobFailure.addSuppressed(e);
                 }
                 catch (TimeoutException e) {
-                    // Log the progress status periodically.
                     if (U.currentTimeMillis() - lastProgressLogTs > LOG_PROGRESS_TIMEOUT) {
                         lastProgressLogTs = U.currentTimeMillis();
 
@@ -293,7 +282,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                             partHashCalcFuts.size() + " local partitions");
                     }
 
-                    // Do not proceed to the next future, wait for the current one.
                     --i;
                 }
             }
