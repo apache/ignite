@@ -143,7 +143,7 @@ public class PoolProcessor extends GridProcessorAdapter {
      * <p>
      * Value is {@code 30 sec}.
      */
-    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
+    private static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 30 * 1000L;
 
     /** */
     public static final String POOL_NAME_IDLE_VERIFY = "idleVerify";

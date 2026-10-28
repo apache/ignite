@@ -21,46 +21,36 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
+import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
-import org.apache.ignite.internal.processors.pool.PoolProcessor;
-import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.internal.processors.pool.PoolProcessor.DFLT_IDLE_VERIFY_POOL_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.POOL_NAME_IDLE_VERIFY;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -68,22 +58,29 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractTest {
     /** */
-    private static final Set<Long> BLOCKED_THREADS = ConcurrentHashMap.newKeySet();
+    private static final int PARTS = 4;
 
-    /**
-     * Flag to avoid threads reblocking if one file read(...) unexpectedly uses another read(...).
-     *
-     * @see IdleVerifyThreadsBlockingFileIOFactory
-     */
-    private static volatile boolean threadsBlockingAllowed;
+    /** */
+    private static final int KEYS = PARTS * 200;
 
-    /**
-     * Whether to check the CRC sums.
-     *
-     * @see IdleVerifyUtility#checkPartitionsPageCrcSum(IgniteThrowableSupplier, int, byte, BooleanSupplier)
-     */
+    /** */
+    private static final int NOT_IDLE_PART = 0;
+
+    /** */
+    private static volatile CountDownLatch partitionReadBlocked;
+
+    /** */
+    private static volatile CountDownLatch partitionReadUnblocked;
+
+    /** */
+    private static volatile CountDownLatch notIdlePartReadUnblocked;
+
+    /** */
     @Parameterized.Parameter
     public boolean checkCrc;
+
+    /** */
+    private TestFailureHandler failureHnd;
 
     /** */
     @Parameterized.Parameters(name = "checkCrc={0}")
@@ -93,14 +90,12 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setPersistenceEnabled(true));
-
-        dsCfg.setFileIOFactory(new IdleVerifyThreadsBlockingFileIOFactory(dsCfg.getFileIOFactory()));
-
         return super.getConfiguration(igniteInstanceName)
-            .setDataStorageConfiguration(dsCfg)
-            .setFailureHandler(new StopNodeOrHaltFailureHandler());
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setFileIOFactory(new IdleVerifyThreadsBlockingFileIOFactory())
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)))
+            .setFailureHandler(failureHnd);
     }
 
     /** {@inheritDoc} */
@@ -109,12 +104,17 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
 
         cleanPersistenceDir();
 
-        threadsBlockingAllowed = true;
-        BLOCKED_THREADS.clear();
+        failureHnd = new TestFailureHandler(false);
+
+        partitionReadBlocked = new CountDownLatch(PARTS);
+        partitionReadUnblocked = new CountDownLatch(1);
+        notIdlePartReadUnblocked = new CountDownLatch(1);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        unblockPartitionRead();
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -125,202 +125,150 @@ public class NodeOrCacheStoppingDuringIdleVerifyTest extends GridCommonAbstractT
     /** */
     @Test
     public void testWithCacheDestruction() throws Exception {
-        // The cache destruction concurrent operation.
-        Supplier<IgniteInternalFuture<?>> concurrentOpProvider = new Supplier<>() {
-            @Override public IgniteInternalFuture<?> get() {
-                CacheGroupContext grp = grid(0).cachex(DEFAULT_CACHE_NAME).context().group();
+        prepareCluster();
 
-                IgniteInternalFuture<?> destroyCacheFut = runAsync(() -> grid(0).destroyCache(DEFAULT_CACHE_NAME));
+        CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
 
-                try {
-                    assertTrue(waitForCondition(grp::isPreparedToStop, 10_000L));
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    log.error("Unexpected interruption.", e);
+        IgniteInternalFuture<IdleVerifyResult> idleFut = startIdleVerify();
 
-                    throw new IgniteException("Unexpected interruption.", e);
-                }
+        IgniteInternalFuture<?> destroyFut = runAsync(() -> grid(0).destroyCache(DEFAULT_CACHE_NAME));
 
-                return destroyCacheFut;
-            }
-        };
+        assertTrue(waitForCondition(grp::isPreparedToStop, getTestTimeout()));
 
-        doTestConcurrentOperationDuringIdleVerify(concurrentOpProvider);
+        assertFalse(waitForCondition(destroyFut::isDone, 1_000));
+
+        unblockPartitionRead();
+
+        destroyFut.get(getTestTimeout());
+
+        assertFalse(F.isEmpty(idleFut.get(getTestTimeout()).exceptions()));
+        assertNull(failureHnd.failureContext());
+    }
+
+    /** */
+    @Test
+    public void testWithDeactivation() throws Exception {
+        prepareCluster();
+
+        CacheGroupContext grp = grid(0).context().cache().cacheGroup(CU.cacheId(DEFAULT_CACHE_NAME));
+
+        IgniteInternalFuture<IdleVerifyResult> idleFut = startIdleVerify();
+
+        IgniteInternalFuture<?> deactivateFut = runAsync(() -> grid(0).cluster().state(ClusterState.INACTIVE));
+
+        assertTrue(waitForCondition(grp::isPreparedToStop, getTestTimeout()));
+
+        assertFalse(waitForCondition(deactivateFut::isDone, 1_000));
+
+        unblockPartitionRead();
+
+        deactivateFut.get(getTestTimeout());
+
+        assertFalse(F.isEmpty(idleFut.get(getTestTimeout()).exceptions()));
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        assertEquals(KEYS, grid(0).cache(DEFAULT_CACHE_NAME).size());
+        assertNull(failureHnd.failureContext());
     }
 
     /** */
     @Test
     public void testWithNodeStoppage() throws Exception {
-        // The node stoppage concurrent operation.
-        Supplier<IgniteInternalFuture<?>> concurrentOpProvider = new Supplier<>() {
-            @Override public IgniteInternalFuture<?> get() {
-                GridKernalContext kctx = grid(0).context();
+        prepareCluster();
 
-                IgniteInternalFuture<?> stopNodeFut = runAsync(() -> stopGrid(0));
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-                try {
-                    assertTrue(waitForCondition(kctx::isStopping, 10_000L));
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    log.error("Unexpected interruption.", e);
+        int key = partitionKeys(cache, NOT_IDLE_PART, 1, 0).get(0);
 
-                    throw new IgniteException("Unexpected interruption.", e);
-                }
+        cache.get(key);
 
-                return stopNodeFut;
-            }
-        };
+        IgniteInternalFuture<IdleVerifyResult> idleFut = startIdleVerify();
 
-        doTestConcurrentOperationDuringIdleVerify(concurrentOpProvider);
+        cache.put(key, -1);
+
+        notIdlePartReadUnblocked.countDown();
+
+        assertTrue(waitForCondition(
+            () -> grid(0).context().pools().getIdleVerifyExecutorService().getCompletedTaskCount() > 0,
+            getTestTimeout()
+        ));
+
+        GridKernalContext kctx = grid(0).context();
+
+        IgniteInternalFuture<?> stopFut = runAsync(() -> stopGrid(0, true));
+
+        assertTrue(waitForCondition(kctx::isStopping, getTestTimeout()));
+
+        unblockPartitionRead();
+
+        stopFut.get(getTestTimeout());
+
+        IdleVerifyResult res = idleFut.get(getTestTimeout());
+
+        assertTrue(X.hasCause(F.first(res.exceptions().values()), GridNotIdleException.class));
+        assertNull(failureHnd.failureContext());
     }
 
     /** */
-    private void doTestConcurrentOperationDuringIdleVerify(Supplier<IgniteInternalFuture<?>> concurrentOpProvider) throws Exception {
-        IgniteEx loadCli = prepareCluster();
-
-        IgniteInternalFuture<IdleVerifyResult> idleFut = runAsync(() -> idleVerify(grid(0), checkCrc, DEFAULT_CACHE_NAME));
-
-        // Wait until all the idle verify threads blocked.
-        assertTrue(waitForCondition(() -> BLOCKED_THREADS.size() == DFLT_IDLE_VERIFY_POOL_SIZE, getTestTimeout()));
-
-        // Concurrent updates may stop the idle verify with the 'cache-not-idle' exception.
-        AtomicBoolean stopUpdatingFlag = new AtomicBoolean(false);
-        IgniteInternalFuture<?> updateFut = launchConcurrentUpdates(loadCli, stopUpdatingFlag);
-
-        IgniteInternalFuture<?> concurrentOpFut = concurrentOpProvider.get();
-
-        stopThreadsBlocking();
-
-        // The idle verify is expected to finish with cancellation, node stoppage, group stoppage or the 'cache-not-idle' exception.
-        assertFalse(F.isEmpty(idleFut.get().exceptions()));
-
-        stopUpdatingFlag.set(true);
-
-        concurrentOpFut.get(10_000L);
-
-        // The cache updating cannot stop normally due to the node stoppage. This is ok.
-        try {
-            updateFut.get(10_000L);
-        }
-        catch (IgniteInterruptedCheckedException | IgniteFutureTimeoutCheckedException | IgniteFutureCancelledCheckedException e) {
-            throw new IllegalStateException("Unexpected exception.", e);
-        }
-        catch (IgniteCheckedException ignored) {
-            //no-op.
-        }
-    }
-
-    /** */
-    private void stopThreadsBlocking() {
-        threadsBlockingAllowed = false;
-
-        synchronized (BLOCKED_THREADS) {
-            BLOCKED_THREADS.notifyAll();
-        }
-    }
-
-    /** */
-    private IgniteInternalFuture<?> launchConcurrentUpdates(IgniteEx ig, AtomicBoolean stopUpdatingFlag) {
-        IgniteCache<Integer, Integer> cache = ig.cache(DEFAULT_CACHE_NAME);
-
-        int keyUnderLoad = partitionKeys(cache, 0, 1, 0).get(0);
-
-        // Continuously changes the partition update counter.
-        IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(() -> {
-            for (int i = 0; !stopUpdatingFlag.get(); i++)
-                cache.put(keyUnderLoad, i);
-        });
-
-        return updateFut;
-    }
-
-    /** */
-    private IgniteEx prepareCluster() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().state(ClusterState.ACTIVE);
-
-        int parts = DFLT_IDLE_VERIFY_POOL_SIZE * 2;
-        int keys = parts * 10;
-
-        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(ATOMIC)
-            .setAffinity(new RendezvousAffinityFunction(false, parts)));
-
-        Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
-
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int k = 0; k < keys; k++) {
-                if (aff.partition(k) != 0)
-                    streamer.addData(k, k);
-            }
-        }
-
-        // Restart to keep the data on disk and out of the memory.
-        stopGrid(0);
+    private void prepareCluster() throws Exception {
         startGrid(0);
 
-        return startClientGrid();
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, Integer> cache = grid(0).createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
+
+        for (int k = 0; k < KEYS; k++)
+            cache.put(k, k);
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
     }
 
     /** */
-    private static final class IdleVerifyThreadsBlockingFileIOFactory implements FileIOFactory {
+    private IgniteInternalFuture<IdleVerifyResult> startIdleVerify() throws Exception {
+        IgniteInternalFuture<IdleVerifyResult> fut = runAsync(() -> idleVerify(grid(0), checkCrc, DEFAULT_CACHE_NAME));
+
+        assertTrue(partitionReadBlocked.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        return fut;
+    }
+
+    /** */
+    private static void unblockPartitionRead() {
+        notIdlePartReadUnblocked.countDown();
+        partitionReadUnblocked.countDown();
+    }
+
+    /** */
+    private static class IdleVerifyThreadsBlockingFileIOFactory implements FileIOFactory {
         /** */
-        private final FileIOFactory delegateFactory;
+        private static final long serialVersionUID = 0L;
 
         /** */
-        private IdleVerifyThreadsBlockingFileIOFactory(FileIOFactory delegateFactory) {
-            this.delegateFactory = delegateFactory;
-        }
+        private final FileIOFactory delegate = new RandomAccessFileIOFactory();
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            FileIO delegate = delegateFactory.create(file, modes);
+            return new FileIODecorator(delegate.create(file, modes)) {
+                @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
+                    int res = super.readFully(destBuf, position);
 
-            return new FileIODecorator(delegate) {
-                @Override public int read(ByteBuffer destBuf) throws IOException {
-                    blockIfRequired();
+                    if (Thread.currentThread().getName().startsWith(POOL_NAME_IDLE_VERIFY)) {
+                        partitionReadBlocked.countDown();
 
-                    return super.read(destBuf);
-                }
+                        U.awaitQuiet(file.getName().equals(partitionFileName(NOT_IDLE_PART))
+                            ? notIdlePartReadUnblocked
+                            : partitionReadUnblocked);
+                    }
 
-                @Override public int read(ByteBuffer destBuf, long position) throws IOException {
-                    blockIfRequired();
-
-                    return super.read(destBuf, position);
-                }
-
-                @Override public int read(byte[] buf, int off, int len) throws IOException {
-                    blockIfRequired();
-
-                    return super.read(buf, off, len);
+                    return res;
                 }
             };
-        }
-
-        /** */
-        private void blockIfRequired() {
-            if (!threadsBlockingAllowed || !Thread.currentThread().getName().startsWith(PoolProcessor.POOL_NAME_IDLE_VERIFY + "-#"))
-                return;
-
-            BLOCKED_THREADS.add(Thread.currentThread().getId());
-
-            if (log.isDebugEnabled())
-                log.debug("Blocked thread: " + Thread.currentThread().getId() + " / " + Thread.currentThread().getName());
-
-            try {
-                synchronized (BLOCKED_THREADS) {
-                    BLOCKED_THREADS.wait(15_000L);
-                }
-            }
-            catch (InterruptedException e) {
-                log.error("Unexpected interruption while waiting for the threads to release.", e);
-
-                throw new IllegalStateException("Unexpected interruption.", e);
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Released thread: " + Thread.currentThread().getId() + " / " + Thread.currentThread().getName());
         }
     }
 }
