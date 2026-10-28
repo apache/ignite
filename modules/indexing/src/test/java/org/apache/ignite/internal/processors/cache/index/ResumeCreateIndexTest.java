@@ -183,7 +183,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testConcurrentBuildNewIndexAndRebuildIndexes0() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true, cfg -> cfg.setBuildIndexThreadPoolSize(2));
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
