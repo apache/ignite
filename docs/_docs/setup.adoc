@@ -207,7 +207,7 @@ The following modules are available:
 
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
 
-|ignite-indexing | link:SQL/sql-calcite#legacy-h2-engine[Legacy H2-based SQL engine]. Not needed for SQL in general: the default engine is provided by the `ignite-calcite` module, which is enabled out of the box. Required only for the features listed on the linked page.
+|ignite-indexing | link:SQL/sql-calcite#legacy-h2-engine[Legacy H2-based SQL engine]. Enabled out of the box next to `ignite-calcite`, which provides the default engine. Required for the features listed on the linked page, for example `TextQuery` and the `COPY` command.
 
 |ignite-jcl |Support for the Jakarta Common Logging (JCL) framework.
 

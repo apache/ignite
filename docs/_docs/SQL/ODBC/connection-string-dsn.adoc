@@ -76,7 +76,7 @@ See link:security/authentication[Authentication] and link:sql-reference/ddl#crea
 |`1024`
 
 |`QUERY_ENGINE`
-|Name of the SQL engine that executes the queries of this connection: `calcite` or `h2`. The engine must be available on the server: either configured in `SqlConfiguration.queryEnginesConfiguration` or the only engine on the server classpath. Otherwise the connection fails with `Not found configuration for query engine: <name>`. See link:SQL/sql-calcite#routing-queries-to-query-engine[Routing Queries to Query Engine].
+|Name of the SQL engine that executes the queries of this connection: `calcite` or `h2`. The engine must be available on the server, see link:SQL/sql-calcite#configuring-query-engines[Configuring Query Engines]; otherwise the connection fails with `Not found configuration for query engine: <name>`. See also link:SQL/sql-calcite#routing-queries-to-query-engine[Routing Queries to Query Engine].
 |The default engine of the server
 
 |`DISTRIBUTED_JOINS`
@@ -92,7 +92,7 @@ See link:security/authentication[Authentication] and link:sql-reference/ddl#crea
 |`2.3.0`
 
 |`REPLICATED_ONLY`
-|Set this property to `true` if the query is to be executed over fully replicated tables. This can enforce execution optimizations. Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only.
+|Deprecated. The attribute is ignored by both SQL engines since version 2.8.
 |`false`
 
 |`COLLOCATED`

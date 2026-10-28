@@ -61,7 +61,7 @@ SQLHSTMT stmt;
 SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
 SQLCHAR query1[] = "CREATE TABLE Person ( "
-    "id LONG PRIMARY KEY, "
+    "id BIGINT PRIMARY KEY, "
     "firstName VARCHAR, "
     "lastName VARCHAR, "
     "salary FLOAT) "
@@ -70,7 +70,7 @@ SQLCHAR query1[] = "CREATE TABLE Person ( "
 SQLExecDirect(stmt, query1, SQL_NTS);
 
 SQLCHAR query2[] = "CREATE TABLE Organization ( "
-    "id LONG PRIMARY KEY, "
+    "id BIGINT PRIMARY KEY, "
     "name VARCHAR) "
     "WITH \"template=partitioned\"";
 

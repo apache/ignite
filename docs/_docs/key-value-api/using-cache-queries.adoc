@@ -22,7 +22,7 @@
 `IgniteCache` has several query methods, all of which receive a subclass of the `Query` class and return a `QueryCursor`.
 Available types of queries: `ScanQuery`, `IndexQuery`, `TextQuery`.
 
-NOTE: `TextQuery` is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] and requires the `ignite-indexing` module on the classpath of all server nodes.
+NOTE: `TextQuery` is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] and requires the `ignite-indexing` module on the classpath of the node that runs the query and of all server nodes.
 
 A `Query` represents an abstract paginated query to be executed on a cache.
 The page size is configurable via the `Query.setPageSize(...)` method (default is 1024).

@@ -84,7 +84,7 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 |`ignite`
 
 |`queryEngine`
-|Name of the SQL engine that executes the queries of this connection: `calcite` or `h2`. The engine must be available on the server: either configured in `SqlConfiguration.queryEnginesConfiguration` or the only engine on the server classpath. Otherwise the connection fails with `Not found configuration for query engine: <name>`. See link:SQL/sql-calcite#routing-queries-to-query-engine[Routing Queries to Query Engine].
+|Name of the SQL engine that executes the queries of this connection: `calcite` or `h2`. The engine must be available on the server, see link:SQL/sql-calcite#configuring-query-engines[Configuring Query Engines]; otherwise the connection fails with `Not found configuration for query engine: <name>`. See also link:SQL/sql-calcite#routing-queries-to-query-engine[Routing Queries to Query Engine].
 |The default engine of the server
 
 |`distributedJoins`
@@ -273,6 +273,8 @@ Partition awareness eliminates that hop by sending the query to the right node.
 
 To make use of the partition awareness feature, provide the addresses of all the server nodes in the connection properties.
 The driver will route requests to the nodes that store the data requested by the query.
+
+NOTE: Partition awareness works with the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only. The Calcite-based engine does not return the partition information to the driver, so the queries of a connection that uses it are sent to a random node from the list.
 
 [WARNING]
 ====

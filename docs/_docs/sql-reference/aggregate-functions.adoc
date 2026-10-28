@@ -153,7 +153,7 @@ The `expression` can be a concatenation of columns and strings using the `||` op
 - `ORDER BY` - orders rows by expression.
 - `SEPARATOR` - overrides a string separator. By default, the separator character is the comma ','.
 
-NOTE: The `DISTINCT` and `ORDER BY` expressions inside the GROUP_CONCAT function are only supported if you group the results by the primary or affinity key (i.e. use `GROUP BY`). Moreover, you have to tell Ignite that your data is colocated by specifying the `collocated=true` property in the connection string or by calling `SqlFieldsQuery.setCollocated(true)` if you use the link:{javadoc_base_url}/org/apache/ignite/cache/query/SqlFieldsQuery.html#setCollocated-boolean-[Java API, window=_blank].
+NOTE: On the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine], the `DISTINCT` and `ORDER BY` expressions inside the GROUP_CONCAT function are only supported if you group the results by the primary or affinity key (i.e. use `GROUP BY`). Moreover, you have to tell Ignite that your data is colocated by specifying the `collocated=true` property in the connection string or by calling `SqlFieldsQuery.setCollocated(true)` if you use the link:{javadoc_base_url}/org/apache/ignite/cache/query/SqlFieldsQuery.html#setCollocated-boolean-[Java API, window=_blank]. The Calcite-based engine supports these expressions without the flag.
 
 
 === Example

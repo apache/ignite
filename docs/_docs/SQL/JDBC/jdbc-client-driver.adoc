@@ -19,11 +19,10 @@ JDBC Client Driver interacts with the cluster by means of a client node.
 
 == JDBC Client Driver
 
-The JDBC Client Driver connects to the cluster by using a lclient node connection. You must provide a complete Spring XML configuration as part of the JDBC connection string, and copy all the JAR files mentioned below to the classpath of your application or SQL tool:
+The JDBC Client Driver connects to the cluster by using a client node connection. You must provide a complete Spring XML configuration as part of the JDBC connection string, and copy all the JAR files mentioned below to the classpath of your application or SQL tool:
 
 - All the JARs under `{IGNITE_HOME}\libs` directory.
-- All the JARs under `{IGNITE_HOME}\libs\ignite-calcite` and `{IGNITE_HOME}\libs\ignite-spring` directories.
-- All the JARs under `{IGNITE_HOME}\libs\optional\ignite-indexing` if the cluster uses the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine].
+- All the JARs under `{IGNITE_HOME}\libs\ignite-calcite`, `{IGNITE_HOME}\libs\ignite-indexing` and `{IGNITE_HOME}\libs\ignite-spring` directories.
 
 The driver itself is more robust, and might not support the latest SQL features of Ignite. However, because it uses the client node connection underneath, it can execute and distribute queries, and aggregate their results directly from the application side.
 

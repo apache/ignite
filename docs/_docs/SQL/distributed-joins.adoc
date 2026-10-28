@@ -63,7 +63,7 @@ If all of the above is true, then the JOIN can be performed correctly.
 
 == Non-colocated Joins
 
-With the Calcite-based engine, a non-colocated join needs no special mode. The planner chooses a distribution strategy for the join: depending on the tables and the join condition it either re-partitions one side of the join by the join key, or broadcasts the smaller side to the nodes that hold the other side, and then executes the join in a distributed manner. Use link:SQL/sql-calcite#hints[hints] if the chosen plan is not optimal for your data.
+With the Calcite-based engine, a non-colocated join needs no special mode. The planner chooses how to distribute the join: it either re-partitions one or both sides of the join by the join keys, so that the matching rows meet on the same node, or collects both sides on a single node; a replicated table is joined locally on every node. The distribution cannot be set by a hint; the join link:SQL/sql-calcite#hints[hints] select the join algorithm. Use `EXPLAIN PLAN FOR` to see the chosen plan.
 
 The rest of this section describes the non-colocated mode of the legacy H2 engine.
 

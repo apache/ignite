@@ -22,7 +22,7 @@ You can interact with Ignite as you would with any other SQL enabled storage by 
 
 Internally, SQL tables have the same data structure as link:data-modeling/data-modeling#key-value-cache-vs-sql-table[key-value caches]. It means that you can change partition distribution of your data and leverage link:data-modeling/affinity-collocation[affinity colocation techniques] for better performance.
 
-Ignite's default SQL engine link:SQL/sql-calcite[Apache Calcite-based, window=_blank], but also the H2-based SQL engine can be enabled to execute queries. For more information about see link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine, window=_blank].
+Ignite's default SQL engine is link:SQL/sql-calcite[based on Apache Calcite, window=_blank]. The H2-based engine is still available for individual queries and connections, see link:SQL/sql-calcite#legacy-h2-engine[Legacy H2 Engine, window=_blank].
 
 == Distributed Queries
 
