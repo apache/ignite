@@ -31,6 +31,7 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -72,17 +73,17 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * <p>
  * The new primary recreates each lost partition empty as MOVING when it applies the coordinator's full message. At
  * the end of the exchange it owns the partition under the {@link PartitionLossPolicy#IGNORE IGNORE} policy or marks
- * it LOST under the safe policies. If the node sends its partition map between these two steps, the map shows the
- * partition MOVING. The coordinator accepts this map and replaces the state it has already set with MOVING. So the
- * node must send its map again after the change.
+ * it LOST under the safe policies. Only the new primary writes this state into its partition map and sends the map.
+ * A map the node sent earlier shows the partition MOVING or doesn't have it at all. The other nodes must take the
+ * new primary's state in the end, whatever order its maps arrive in.
  * <p>
- * In a real cluster such a map is a resend scheduled by {@code scheduleResendPartitions()}, for example after an
- * eviction, that fires between the two steps. {@link #testStaleCoordinatorMapAfterEviction()} checks the case where
- * the coordinator is the new primary.
+ * In a real cluster such an earlier map is a resend scheduled by {@code scheduleResendPartitions()}, for example after
+ * an eviction. {@link #testStaleCoordinatorMapAfterEviction()} checks the case where the coordinator is the new
+ * primary.
  */
 public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE = "cache";
+    protected static final String CACHE = "cache";
 
     /** */
     private static final int PARTS = 64;
@@ -92,6 +93,12 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
     /** Index of the node that leaves. */
     private static final int LEAVING = 2;
+
+    /** Index of a server node that watches node 1's partitions in its partition map. */
+    private static final int OBSERVER = 3;
+
+    /** Index of the client node. */
+    private static final int CLIENT = 4;
 
     /** Time to wait for a step of a test, in milliseconds. */
     private static final long WAIT = 30_000;
@@ -124,8 +131,8 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     private PartitionLossPolicy plc = IGNORE;
 
     /**
-     * Whether the coordinator is the new primary of all lost partitions. Sets {@link JoinOrderAffinityFunction}, a
-     * {@link StallingCommunicationSpi} and a rebalance pool of 4 threads.
+     * Whether the coordinator is the new primary of all lost partitions. Sets {@link JoinOrderAffinityFunction} and a
+     * {@link StallingCommunicationSpi}.
      */
     private boolean crdNewPrimary;
 
@@ -140,14 +147,10 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
                 ? new JoinOrderAffinityFunction()
                 : new RendezvousAffinityFunction(false, PARTS)));
 
-        if (crdNewPrimary) {
-            cfg.setCommunicationSpi(new StallingCommunicationSpi());
+        cfg.setCommunicationSpi(crdNewPrimary ? new StallingCommunicationSpi() : new TestRecordingCommunicationSpi());
 
-            // Evictions use the rebalance pool, one thread by default below 8 cores: the held one would block the rest.
-            cfg.setRebalanceThreadPoolSize(4);
-        }
-        else
-            cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        // Evictions run in the rebalance pool, one thread by default below 8 cores: a held one would block the rest.
+        cfg.setRebalanceThreadPoolSize(4);
 
         return cfg;
     }
@@ -183,9 +186,10 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that the coordinator's partition map matches the local states of the nodes after node 1 sends a stale
-     * map. Node 2 joins, takes over partitions from nodes 0 and 1, and leaves with the only copies. Right before node 1
-     * owns a lost partition or marks it LOST, it sends its map, which still shows the partition MOVING.
+     * Checks that the partition maps of the coordinator, the observer and the client match the local states of the
+     * nodes after node 1 sends a stale map. Node 2 joins, takes over partitions from the other servers, and leaves with
+     * the only copies. Right before node 1 owns a lost partition or marks it LOST, it sends its map, which still shows
+     * the partition MOVING. The coordinator gets this map once its own exchange is finished.
      *
      * @param plc Partition loss policy.
      * @throws Exception If failed.
@@ -193,16 +197,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     private void checkStaleMapBeforeLostPartitionChanged(PartitionLossPolicy plc) throws Exception {
         this.plc = plc;
 
-        IgniteEx crd = startGrid(0);
-
-        startGrid(STALE_MAP_SENDER, partitionHooksResolver());
-
-        IgniteCache<Integer, Integer> cache = crd.cache(CACHE);
-
-        for (int i = 0; i < PARTS * 4; i++)
-            cache.put(i, i);
-
-        startGrid(LEAVING);
+        IgniteEx crd = startNodes();
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -229,8 +224,71 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         sndSpi.stopBlock();
 
-        if (!waitForCondition(() -> mismatches(crd).isEmpty(), 10_000))
-            fail("The coordinator's partition map differs from the nodes: " + mismatches(crd));
+        checkNodes(crd, grid(OBSERVER), grid(CLIENT));
+    }
+
+    /**
+     * Checks that the partition maps of the coordinator, the observer and the client match the local states of the
+     * nodes after node 1 sends its map before it gets the full message.
+     * <p>
+     * When node 1's last RENTING partition is evicted, the map changes and node 1 schedules a resend. Node 1 doesn't
+     * know its lost partitions until it gets the full message, so the resent map doesn't have them. Its version is
+     * newer than the one the coordinator has, so the coordinator takes it. The test:
+     * <ol>
+     *     <li>holds the eviction of one partition that node 1 gives to the observer;</li>
+     *     <li>stops node 2 and holds the coordinator's full message to node 1;</li>
+     *     <li>lets the eviction finish once the coordinator has finished the exchange;</li>
+     *     <li>lets the full message go once the coordinator has taken node 1's resent map.</li>
+     * </ol>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStaleMapBeforeFullMessage() throws Exception {
+        holdEviction.set(true);
+
+        IgniteEx crd = startNodes();
+
+        awaitPartitionMapExchange();
+
+        assertTrue("Node 1 didn't start an eviction", evictionHeld.await(WAIT, MILLISECONDS));
+
+        IgniteEx snd = grid(STALE_MAP_SENDER);
+
+        GridDhtPartitionTopology sndTop = snd.cachex(CACHE).context().topology();
+
+        // Wait until only the held eviction is left: the last eviction schedules the resend.
+        assertTrue(waitForCondition(() -> sndTop.localPartitions().stream()
+            .filter(p -> p.state() == RENTING).count() == 1, WAIT));
+
+        UUID sndId = snd.localNode().id();
+
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
+
+        crdSpi.blockMessages((node, msg) -> node.id().equals(sndId)
+            && msg instanceof GridDhtPartitionsFullMessage
+            && ((GridDhtPartitionsFullMessage)msg).exchangeId() != null);
+
+        long leaveVer = crd.cluster().topologyVersion() + 1;
+
+        stopGrid(LEAVING);
+
+        assertTrue("The coordinator didn't send the full message", crdSpi.waitForBlocked(1, WAIT));
+
+        assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
+
+        GridDhtPartitionTopology crdTop = crd.cachex(CACHE).context().topology();
+
+        long seq = crdTop.partitionMap(false).get(sndId).updateSequence();
+
+        evictionResume.countDown();
+
+        assertTrue("The coordinator didn't take node 1's resent map", waitForCondition(
+            () -> crdTop.partitionMap(false).get(sndId).updateSequence() > seq, WAIT));
+
+        crdSpi.stopBlock();
+
+        checkNodes(crd, grid(OBSERVER), grid(CLIENT));
     }
 
     /**
@@ -266,6 +324,8 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         holdEviction.set(true);
 
         IgniteEx other = startGrid(1);
+
+        IgniteEx client = startClientGrid(CLIENT);
 
         awaitPartitionMapExchange();
 
@@ -308,8 +368,61 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
 
-        if (!waitForCondition(() -> mismatches(other).isEmpty(), 10_000))
-            fail("Node 1's partition map differs from the nodes: " + mismatches(other));
+        checkNodes(other, client);
+    }
+
+    /**
+     * Runs a query over the cache on a node. Called while the node may still see a lost partition without an owner.
+     *
+     * @param node Node.
+     */
+    protected void runQuery(Ignite node) {
+        node.cache(CACHE).query(new ScanQuery<>()).getAll();
+    }
+
+    /**
+     * Starts the coordinator, node 1 with the partition hooks and the client, loads the cache, then starts the
+     * observer and node 2.
+     *
+     * @return Coordinator.
+     * @throws Exception If failed.
+     */
+    private IgniteEx startNodes() throws Exception {
+        IgniteEx crd = startGrid(0);
+
+        startGrid(STALE_MAP_SENDER, partitionHooksResolver());
+
+        startClientGrid(CLIENT);
+
+        IgniteCache<Integer, Integer> cache = crd.cache(CACHE);
+
+        for (int i = 0; i < PARTS * 4; i++)
+            cache.put(i, i);
+
+        startGrid(OBSERVER);
+
+        startGrid(LEAVING);
+
+        return crd;
+    }
+
+    /**
+     * Under the IGNORE policy runs a query on each viewer. Then checks that the partition map of each viewer matches the
+     * local states of the nodes.
+     *
+     * @param viewers Nodes whose partition maps are checked.
+     * @throws Exception If failed.
+     */
+    private void checkNodes(IgniteEx... viewers) throws Exception {
+        if (plc == IGNORE) {
+            for (IgniteEx viewer : viewers)
+                runQuery(viewer);
+        }
+
+        for (IgniteEx viewer : viewers) {
+            if (!waitForCondition(() -> mismatches(viewer).isEmpty(), 10_000))
+                fail("The partition map of " + viewer.name() + " differs from the nodes: " + mismatches(viewer));
+        }
     }
 
     /**
