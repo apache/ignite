@@ -48,6 +48,7 @@ import org.junit.Test;
 import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
 import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
+import static org.apache.ignite.testframework.TestCertificateAuthority.keyStoreWithoutCertificateChain;
 import static org.apache.ignite.testframework.TestCertificateAuthority.trustManagers;
 import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.atLeastOnce;
@@ -172,6 +173,24 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(Map.of("private-key", List.of()), material.certificateChains());
     }
 
+    /** Keys without a chain keep their aliases alongside usable keys in the context metadata. */
+    @Test
+    public void testMissingChainRetainsPrivateKeyAlias() throws Exception {
+        String missingChainAlias = "key-without-chain";
+        String usableAlias = "usable";
+        KeyStore usable = ca.keyStoreWithPrivateKey(usableAlias);
+
+        for (String type : List.of("JCEKS", "PKCS12")) {
+            KeyStore store = keyStoreWithoutCertificateChain(type, missingChainAlias);
+
+            store.setKeyEntry(usableAlias, usable.getKey(usableAlias, PWD), PWD, usable.getCertificateChain(usableAlias));
+
+            assertNotNull(type, store.getKey(missingChainAlias, PWD));
+            assertEquals(type, Map.of(missingChainAlias, List.of(), usableAlias, chain(usable)),
+                new InMemoryStoreFactory(store).createSslBundle().certificateChains());
+        }
+    }
+
     /** Material keeps its own copy of the key password, so clearing the caller's array does not lock the keys. */
     @Test
     public void testLoadedMaterialCopiesKeyPassword() throws Exception {
@@ -286,9 +305,11 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         factory.setKeyStoreFilePath("unreadable-key.jks");
 
-        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class,
-            "[type=JKS, keyStorePath=unreadable-key.jks]");
+        String storeDetails = "[type=JKS, keyStorePath=unreadable-key.jks]";
+        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, storeDetails);
 
+        assertTrue(err.getCause() instanceof SSLException);
+        assertTrue(err.getCause().getMessage().contains(storeDetails));
         assertTrue(X.hasCause(err, UnrecoverableKeyException.class));
     }
 

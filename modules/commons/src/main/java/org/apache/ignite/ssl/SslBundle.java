@@ -39,8 +39,8 @@ public final class SslBundle {
 
     /**
      * @param ctx Initialized SSL context.
-     * @param chains Chains by private-key alias, own certificate first. {@code null} means the aliases are unknown;
-     *      an empty map means there are no private keys. An empty list means the alias has a private key but its chain is absent
+     * @param chains Chains by identified private-key alias, own certificate first. {@code null} means the aliases are unknown;
+     *      an empty map means no private-key entries were found. An empty list means the alias has a private key but its chain is absent
      *      or contains a non-X.509 certificate, so key managers never present that key. Trusted certificate entries and secret keys
      *      must not be included.
      */
@@ -66,8 +66,9 @@ public final class SslBundle {
     }
 
     /**
-     * @return Immutable chains ordered by alias, or {@code null} if the aliases are unknown. An empty map means no private keys;
-     *      an empty list means the alias's chain is absent or contains a non-X.509 certificate, so that key is never presented.
+     * @return Immutable chains ordered by alias, or {@code null} if the aliases are unknown. An empty map means no private-key
+     *      entries were found. An empty list means the alias's chain is absent or contains a non-X.509 certificate, so that key is
+     *      never presented.
      */
     public @Nullable Map<String, List<X509Certificate>> certificateChains() {
         return chains;
