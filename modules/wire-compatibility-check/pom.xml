@@ -111,7 +111,7 @@
                                 <argument>-classpath</argument>
                                 <classpath/>
                                 <argument>org.apache.ignite.internal.wire.MessageIdsWriter</argument>
-                                <argument>${project.basedir}/wire/ids.json</argument>
+                                <argument>${project.basedir}/wire</argument>
                             </arguments>
                         </configuration>
                     </execution>

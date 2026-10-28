@@ -31,11 +31,8 @@ import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImp
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
 
-/** Writes the direct types of the registered messages with their classes to a JSON file. */
+/** Writes the direct types of the registered messages with their classes to {@code ids.json}. */
 public class MessageIdsWriter {
-    /** Directory of the message descriptions on the classpath. */
-    private static final String WIRE_DIR = "META-INF/ignite-wire/messages/";
-
     /** */
     private final IgniteMessageFactoryImpl<?, ?> factory;
 
@@ -51,7 +48,7 @@ public class MessageIdsWriter {
         this.handWritten = handWritten;
     }
 
-    /** @param args Output file. */
+    /** @param args Directory with the message descriptions. */
     public static void main(String[] args) throws IOException, IgniteCheckedException {
         List<MessageFactoryProvider> providers = new ArrayList<>();
 
@@ -72,25 +69,24 @@ public class MessageIdsWriter {
     }
 
     /**
-     * Writes the direct types with the message classes to a file.
+     * Writes {@code ids.json} to the directory with the message descriptions.
      *
-     * @param file Output file.
+     * @param dir Directory with the message descriptions.
      * @throws IOException If the file cannot be written.
      * @throws IllegalStateException If a registered message has no description.
      */
-    public void write(Path file) throws IOException {
+    public void write(Path dir) throws IOException {
         List<String> lines = new ArrayList<>();
 
         for (short id : factory.registeredDirectTypes()) {
             Class<?> cls = factory.create(id).getClass();
 
-            if (!handWritten.contains(cls) && getClass().getResource('/' + WIRE_DIR + cls.getName() + ".json") == null)
-                throw new IllegalStateException(
-                    "No wire format description on the classpath [cls=" + cls.getName() + ']');
+            if (!handWritten.contains(cls) && !Files.exists(dir.resolve("messages/" + cls.getName() + ".json")))
+                throw new IllegalStateException("No wire format description [cls=" + cls.getName() + ']');
 
             lines.add("  \"" + id + "\": \"" + cls.getName() + '"');
         }
 
-        Files.writeString(file, "{\n" + String.join(",\n", lines) + "\n}\n");
+        Files.writeString(dir.resolve("ids.json"), "{\n" + String.join(",\n", lines) + "\n}\n");
     }
 }
