@@ -1401,8 +1401,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                 if (locPart == null)
                     return -1L;
 
-                // Use HWM for primary, LWM for backup.
-                return backup > 0 ? locPart.updateCounter() : locPart.reservedCounter();
+                return locPart.updateCounter();
             }, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)));
     }
 
