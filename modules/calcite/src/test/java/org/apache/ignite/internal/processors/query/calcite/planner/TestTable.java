@@ -44,6 +44,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
@@ -411,12 +413,13 @@ public class TestTable implements IgniteCacheTable, Wrapper {
         /** {@inheritDoc} */
         @Override public ColumnDescriptor columnDescriptor(String fieldName) {
             RelDataTypeField field = rowType.getField(fieldName, false, false);
-            return new TestColumnDescriptor(field.getIndex(), fieldName);
+            return new TestColumnDescriptor(field.getIndex(), fieldName, distribution().getKeys().contains(field.getIndex()));
         }
 
         /** {@inheritDoc} */
         @Override public Collection<ColumnDescriptor> columnDescriptors() {
-            return Commons.transform(rowType.getFieldList(), f -> new TestColumnDescriptor(f.getIndex(), f.getName()));
+            return Commons.transform(rowType.getFieldList(), f -> new TestColumnDescriptor(f.getIndex(), f.getName(),
+                distribution().getKeys().contains(f.getIndex())));
         }
 
         /** {@inheritDoc} */
@@ -440,17 +443,20 @@ public class TestTable implements IgniteCacheTable, Wrapper {
     }
 
     /** */
-    static class TestColumnDescriptor implements ColumnDescriptor {
+    static class TestColumnDescriptor implements CacheColumnDescriptor {
         /** */
         private final int idx;
 
         /** */
         private final String name;
 
+        private final boolean key;
+
         /** */
-        public TestColumnDescriptor(int idx, String name) {
+        public TestColumnDescriptor(int idx, String name, boolean key) {
             this.idx = idx;
             this.name = name;
+            this.key = key;
         }
 
         /** {@inheritDoc} */
@@ -480,6 +486,27 @@ public class TestTable implements IgniteCacheTable, Wrapper {
 
         /** {@inheritDoc} */
         @Override public Object defaultValue() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean field() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean key() {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx,
+            CacheDataRow src) throws IgniteCheckedException {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void set(Object dst, Object val) throws IgniteCheckedException {
             throw new AssertionError();
         }
     }

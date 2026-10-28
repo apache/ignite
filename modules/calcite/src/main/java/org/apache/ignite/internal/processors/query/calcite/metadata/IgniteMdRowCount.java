@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.Join;
@@ -46,12 +50,16 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.schema.CacheColumnDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.runtime.SqlFunctions.not;
 import static org.apache.calcite.util.NumberUtil.multiply;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
 /** */
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
@@ -134,8 +142,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 return max;
         }
 
-        Map<Integer, KeyColumnOrigin> columnsFromLeft = resolveOrigins(mq, rel.getLeft(), joinInfo.leftKeys);
-        Map<Integer, KeyColumnOrigin> columnsFromRight = resolveOrigins(mq, rel.getRight(), joinInfo.rightKeys);
+
+        /** Per table primary key size. */
+        Map<IgniteTable, Integer> pkSizePerTable = new IdentityHashMap<>(2);
+
+        Map<Integer, KeyColumnOrigin> columnsFromLeft = resolveOrigins(mq, rel.getLeft(), joinInfo.leftKeys, pkSizePerTable);
+        Map<Integer, KeyColumnOrigin> columnsFromRight = resolveOrigins(mq, rel.getRight(), joinInfo.rightKeys, pkSizePerTable);
 
         if (columnsFromLeft.isEmpty() || columnsFromRight.isEmpty()) {
             // Use crude estimation instead.
@@ -162,8 +174,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
                     assert leftTable != null && rightTable != null;
 
-                    int leftPkSize = leftTable.distribution().getKeys().size();
-                    int rightPkSize = rightTable.distribution().getKeys().size();
+                    Integer leftPkSize = pkSizePerTable.get(leftTable);
+                    Integer rightPkSize = pkSizePerTable.get(rightTable);
+
+                    assert leftPkSize != null && rightPkSize != null : leftPkSize + " " + rightPkSize;
 
                     return new JoinContext(leftPkSize, rightPkSize);
                 }
@@ -317,7 +331,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /** */
-    private static Map<Integer, KeyColumnOrigin> resolveOrigins(RelMetadataQuery mq, RelNode joinSide, ImmutableIntList keys) {
+    private static Map<Integer, KeyColumnOrigin> resolveOrigins(
+        RelMetadataQuery mq,
+        RelNode joinSide,
+        ImmutableIntList keys,
+        Map<IgniteTable, Integer> pkSizePerTable
+    ) {
         GridLeanMap<Integer, KeyColumnOrigin> origins = new GridLeanMap<>();
 
         for (int i : keys) {
@@ -331,11 +350,17 @@ public class IgniteMdRowCount extends RelMdRowCount {
             }
 
             IgniteTable table = origin.getOriginTable().unwrap(IgniteTable.class);
-            if (table == null || !table.distribution().function().affinity())
+            if (table == null || (!table.distribution().function().affinity() &&
+                table.distribution().function().type() != RelDistribution.Type.BROADCAST_DISTRIBUTED))
                 continue;
 
-            // Keys can relate to affinity not pk, just assumption here.
-            ImmutableIntList distKeys = table.distribution().getKeys();
+            Collection<? extends ColumnDescriptor> descs = table.descriptor().columnDescriptors();
+            List<Integer> distKeys = table.descriptor().columnDescriptors().stream()
+                .filter(d -> d instanceof CacheColumnDescriptor)
+                .filter(d -> not(((CacheColumnDescriptor)d).name().equals(KEY_FIELD_NAME)))
+                .filter(d -> ((CacheColumnDescriptor)d).key()).map(ColumnDescriptor::fieldIndex).toList();
+
+            pkSizePerTable.put(table, distKeys.size());
 
             int idx = distKeys.indexOf(origin.getOriginColumnOrdinal());
 
