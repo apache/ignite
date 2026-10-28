@@ -291,8 +291,8 @@ public class JdbcThinTcpIo {
             writer.writeString(DEFAULT_NESTED_TX_MODE);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
-            // Reserved byte (formerly the data page scan flag), written to keep the handshake format.
-            writer.writeByte(0);
+            // Reserved byte (formerly the data page scan flag), written to keep the handshake format: 2 - is 'default'.
+            writer.writeByte(2);
 
             JdbcUtils.writeNullableInteger(writer, connProps.getUpdateBatchSize());
         }
