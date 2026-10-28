@@ -230,7 +230,7 @@ public class GridReduceQueryExecutor {
                 e = new CacheException(mapperFailedMsg, new QueryCancelledException());
             else if (failCode == GridQueryFailResponse.RETRY_QUERY)
                 e = new CacheException(mapperFailedMsg, new QueryRetryException(msg));
-            else if (statusCode != 0)
+            else if (statusCode != GridQueryFailResponse.NO_STATUS_CODE)
                 e = new CacheException(mapperFailedMsg, new IgniteSQLException(msg, statusCode));
             else
                 e = new CacheException(mapperFailedMsg);
@@ -289,7 +289,8 @@ public class GridReduceQueryExecutor {
         catch (Exception e) {
             U.error(log, "Error in message.", e);
 
-            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR, 0);
+            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR,
+                GridQueryFailResponse.NO_STATUS_CODE);
 
             return;
         }

@@ -38,6 +38,8 @@ public class IgniteCacheDistributedSqlQueryErrorSelfTest extends GridCommonAbstr
 
     /**
      * Checks that a failure of a remote map node carries the SQL error to the client.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testRemoteMapperFailure() throws Exception {
@@ -49,6 +51,8 @@ public class IgniteCacheDistributedSqlQueryErrorSelfTest extends GridCommonAbstr
 
     /**
      * Checks that a failure of the local map node carries the SQL error to the client as well.
+     *
+     * @throws Exception If failed.
      */
     @Test
     public void testLocalMapperFailure() throws Exception {
