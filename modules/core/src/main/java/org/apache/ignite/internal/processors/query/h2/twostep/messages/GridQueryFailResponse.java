@@ -38,6 +38,10 @@ public class GridQueryFailResponse extends AbstractMessage {
     /** Execution error. Query should be retried. */
     public static final byte RETRY_QUERY = 2;
 
+    /** SQL error status code is absent (for example, when the error carries no SQL status code or came from an
+     * older node). */
+    public static final int NO_STATUS_CODE = 0;
+
     /** */
     @Order(0)
     long qryReqId;
@@ -78,7 +82,7 @@ public class GridQueryFailResponse extends AbstractMessage {
 
         IgniteSQLException sqlErr = X.cause(err, IgniteSQLException.class);
 
-        statusCode = sqlErr != null ? sqlErr.statusCode() : 0;
+        statusCode = sqlErr != null ? sqlErr.statusCode() : NO_STATUS_CODE;
     }
 
     /**
