@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryExecuteInPrimaryTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFactoryAsyncFilterRandomOperationTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerClientSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerKeepBinaryTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.ClientReconnectContinuousQueryTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryReassignmentTest;
@@ -73,7 +74,9 @@ import org.junit.runners.Suite;
     CacheContinuousQueryCounterPartitionedAtomicTest.class,
     CacheContinuousQueryCounterPartitionedTxTest.class,
     CacheContinuousQueryCounterReplicatedAtomicTest.class,
-    CacheContinuousQueryCounterReplicatedTxTest.class
+    CacheContinuousQueryCounterReplicatedTxTest.class,
+
+    CacheContinuousWithTransformerKeepBinaryTest.class
 })
 public class IgniteCacheQuerySelfTestSuite3 {
 }
