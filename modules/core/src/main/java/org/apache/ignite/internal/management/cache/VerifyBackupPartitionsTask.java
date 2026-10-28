@@ -99,7 +99,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     public static final String CALC_PART_HASH_ERR_MSG = "Can't calculate partition hash";
 
     /** */
-    private static final String CANCELLATION_PREF = "Partition hash calculation has been cancelled";
+    private static final String CALC_CANCELLED_ERR_MSG = "Partition hash calculation has been cancelled";
 
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
@@ -215,7 +215,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             }
 
             if (isCancelled())
-                throw new IgniteException(CANCELLATION_PREF + '.');
+                throw new IgniteException(CALC_CANCELLED_ERR_MSG + '.');
 
             Set<Integer> grpIds = getGroupIds();
 
@@ -293,16 +293,20 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw jobFailure;
 
             if (isCancelled())
-                throw new IgniteException(CANCELLATION_PREF + " [grpIds=" + grpIds + "].");
+                throw new IgniteException(CALC_CANCELLED_ERR_MSG + " [grpIds=" + grpIds + "].");
 
             if (!F.isEmpty(exceptions)) {
-                if (ignite.context().isStopping())
-                    throw new IgniteException(CANCELLATION_PREF + " because the local node is stopping [grpIds=" + grpIds + "].");
+                if (ignite.context().isStopping()) {
+                    throw new IgniteException(CALC_CANCELLED_ERR_MSG + " because the local node is stopping [grpIds=" +
+                        grpIds + "].");
+                }
 
                 Integer stoppingGrpId = F.find(grpIds, null, this::isGroupStopping);
 
-                if (stoppingGrpId != null)
-                    throw new IgniteException(CANCELLATION_PREF + " because the cache group is stopping [grpId=" + stoppingGrpId + "].");
+                if (stoppingGrpId != null) {
+                    throw new IgniteException(CALC_CANCELLED_ERR_MSG + " because the cache group is stopping [grpId=" +
+                        stoppingGrpId + "].");
+                }
 
                 throw new IdleVerifyException(exceptions);
             }
@@ -614,7 +618,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
         /** */
         private static IgniteException cancellationException(CacheGroupContext gctx, GridDhtLocalPartition part) {
-            return new IgniteException(CANCELLATION_PREF + ". The task has been cancelled, or the local node is stopping, " +
+            return new IgniteException(CALC_CANCELLED_ERR_MSG + ". The task has been cancelled, or the local node is stopping, " +
                 "or the cache group is stopping [groupId=" + gctx.groupId() +
                 ", groupName=" + gctx.cacheOrGroupName() + ", partId=" + part.id() + "].");
         }
