@@ -301,6 +301,12 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             if (interrupted)
                 Thread.currentThread().interrupt();
 
+            if (jobFailure != null)
+                throw jobFailure;
+
+            if (isCancelled())
+                throw new IgniteException(CANCELLATION_PREF + " [grpIds=" + grpIds + "].");
+
             if (!F.isEmpty(exceptions)) {
                 if (ignite.context().isStopping())
                     throw new IgniteException(CANCELLATION_PREF + " The local node is stopping [grpIds=" + grpIds + "].");
@@ -312,12 +318,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 throw new IdleVerifyException(exceptions);
             }
-
-            if (jobFailure != null)
-                throw jobFailure;
-
-            if (isCancelled())
-                throw new IgniteException(CANCELLATION_PREF + " [grpIds=" + grpIds + "].");
 
             if (log.isInfoEnabled()) {
                 log.info("Idle verify procedure has finished [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
