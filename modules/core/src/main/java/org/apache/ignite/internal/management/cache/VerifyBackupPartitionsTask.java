@@ -305,7 +305,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 throw jobFailure;
 
             if (isCancelled())
-                throw new IgniteException(CANCELLATION_PREF + ". [grpIds=" + grpIds + "].");
+                throw new IgniteException(CANCELLATION_PREF + " [grpIds=" + grpIds + "].");
 
             if (!F.isEmpty(exceptions)) {
                 if (ignite.context().isStopping())
