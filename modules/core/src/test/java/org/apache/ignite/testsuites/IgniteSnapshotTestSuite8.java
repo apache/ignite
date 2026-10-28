@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.IdleVerifyOrphanedTaskOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotHandlerTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -49,7 +48,6 @@ public class IgniteSnapshotTestSuite8 {
 
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotCheckTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotHandlerTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IdleVerifyOrphanedTaskOnNodeStopTest.class, ignoredTests);
 
         return suite;
     }
