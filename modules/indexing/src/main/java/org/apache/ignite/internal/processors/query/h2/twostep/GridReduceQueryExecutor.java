@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
@@ -208,15 +209,17 @@ public class GridReduceQueryExecutor {
     public void onFail(ClusterNode node, GridQueryFailResponse msg) {
         ReduceQueryRun r = runs.get(msg.queryRequestId());
 
-        fail(r, node.id(), msg.error(), msg.failCode());
+        fail(r, node.id(), msg.error(), msg.failCode(), msg.statusCode());
     }
 
     /**
      * @param r Query run.
      * @param nodeId Failed node ID.
      * @param msg Error message.
+     * @param failCode Fail code.
+     * @param statusCode Ignite SQL error status code, or {@code 0} if absent.
      */
-    private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode) {
+    private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode, int statusCode) {
         if (r != null) {
             CacheException e;
 
@@ -227,6 +230,8 @@ public class GridReduceQueryExecutor {
                 e = new CacheException(mapperFailedMsg, new QueryCancelledException());
             else if (failCode == GridQueryFailResponse.RETRY_QUERY)
                 e = new CacheException(mapperFailedMsg, new QueryRetryException(msg));
+            else if (statusCode != 0)
+                e = new CacheException(mapperFailedMsg, new IgniteSQLException(msg, statusCode));
             else
                 e = new CacheException(mapperFailedMsg);
 
@@ -284,7 +289,7 @@ public class GridReduceQueryExecutor {
         catch (Exception e) {
             U.error(log, "Error in message.", e);
 
-            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR);
+            fail(r, node.id(), "Error in message.", GridQueryFailResponse.GENERAL_ERROR, 0);
 
             return;
         }

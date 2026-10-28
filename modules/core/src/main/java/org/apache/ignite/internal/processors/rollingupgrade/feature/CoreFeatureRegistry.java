@@ -114,4 +114,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the cache size estimation task for SQL statistics. */
     public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
+
+    /** Feature that introduces the SQL error status code in GridQueryFailResponse. */
+    public static final IgniteFeature QUERY_FAIL_RESPONSE_ERROR_CODE_FEATURE = new IgniteCoreFeature(6);
 }
