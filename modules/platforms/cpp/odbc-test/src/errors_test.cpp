@@ -194,7 +194,7 @@ BOOST_AUTO_TEST_CASE(TestSyntaxError)
 
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
 
-    SQLCHAR req[] = "INSERT INTO TestType(_key, fasf) VALUES(1, 'some')";
+    SQLCHAR req[] = "INSERT INTO TestType(_key VALUES(1)";
 
     SQLRETURN ret;
 
@@ -202,6 +202,22 @@ BOOST_AUTO_TEST_CASE(TestSyntaxError)
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
     BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "42000");
+}
+
+BOOST_AUTO_TEST_CASE(TestColumnNotFound)
+{
+    StartAdditionalNode("Node1");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR req[] = "INSERT INTO TestType(_key, fasf) VALUES(1, 'some')";
+
+    SQLRETURN ret;
+
+    ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "42S22");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
