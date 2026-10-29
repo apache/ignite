@@ -31,6 +31,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
@@ -418,15 +419,25 @@ public class ExplicitLockKillTest extends GridCommonAbstractTest {
     public void testServiceLeftLock() throws Exception {
         int key = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
 
-        LogListener lsnr = LogListener.matches("Service execution finished without releasing explicit locks").build();
+        for (String method : List.of("init", "execute", "cancel")) {
+            LogListener lsnr = LogListener
+                .matches("Service execution (" + method + " method) finished without releasing explicit locks")
+                .build();
 
-        testLog.registerListener(lsnr);
+            testLog.registerListener(lsnr);
 
-        grid(0).services(grid(0).cluster().forLocal()).deployNodeSingleton("lock-service", new LockService(key));
+            IgniteServices svcs = grid(0).services(grid(0).cluster().forLocal());
 
-        assertTrue(lsnr.check(TIMEOUT));
+            String svcName = "lock-" + method + "-service";
 
-        assertLockFree(key);
+            svcs.deployNodeSingleton(svcName, new LockService(key, method));
+
+            svcs.cancel(svcName);
+
+            assertTrue(lsnr.check(TIMEOUT));
+
+            assertLockFree(key);
+        }
     }
 
     /** */
@@ -733,14 +744,34 @@ public class ExplicitLockKillTest extends GridCommonAbstractTest {
         /** */
         private final int key;
 
-        /** @param key Key. */
-        LockService(int key) {
+        /** */
+        private final String method;
+
+        /**
+         * @param key Key.
+         * @param method Method which locks the key.
+         */
+        LockService(int key, String method) {
             this.key = key;
+            this.method = method;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init() {
+            if ("init".equals(method))
+                ignite.cache(DEFAULT_CACHE_NAME).lock(key).lock();
         }
 
         /** {@inheritDoc} */
         @Override public void execute() {
-            ignite.cache(DEFAULT_CACHE_NAME).lock(key).lock();
+            if ("execute".equals(method))
+                ignite.cache(DEFAULT_CACHE_NAME).lock(key).lock();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            if ("cancel".equals(method))
+                ignite.cache(DEFAULT_CACHE_NAME).lock(key).lock();
         }
     }
 }

@@ -441,13 +441,13 @@ The subsequent `Lock.unlock()` call of the thread that has acquired the killed l
 tab:Unix[]
 [source,bash]
 ----
-./control.sh --kill LOCK xid [--node-id node_id]
+./control.sh --kill LOCK xid [--node-id node_id] [--yes]
 ----
 
 tab:Windows[]
 [source,bash]
 ----
-control.bat --kill LOCK xid [--node-id node_id]
+control.bat --kill LOCK xid [--node-id node_id] [--yes]
 ----
 
 --

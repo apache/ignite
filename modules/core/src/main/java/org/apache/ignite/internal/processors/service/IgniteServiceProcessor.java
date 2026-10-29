@@ -1337,6 +1337,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 throw new IgniteCheckedException("Error occured during service initialization: " +
                     "[locId=" + ctx.localNodeId() + ", name=" + name + ']', e);
             }
+            finally {
+                releaseLeftExplicitLocks(srvcCtx, "init");
+            }
 
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
@@ -1382,7 +1385,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                             throw (Error)e;
                     }
                     finally {
-                        releaseLeftExplicitLocks(srvcCtx);
+                        releaseLeftExplicitLocks(srvcCtx, "execute");
 
                         // Suicide.
                         exe.shutdownNow();
@@ -1397,15 +1400,16 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * so locks left unreleased by the terminating service thread would never be released.
      *
      * @param srvcCtx Service context.
+     * @param method Method name.
      */
-    private void releaseLeftExplicitLocks(ServiceContextImpl srvcCtx) {
+    private void releaseLeftExplicitLocks(ServiceContextImpl srvcCtx, String method) {
         try {
             Collection<GridCacheVersion> released = ctx.cache().context().mvcc()
                 .releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
 
             if (!released.isEmpty()) {
-                U.warn(log, "Service execution finished without releasing explicit locks, the locks have been " +
-                    "released forcibly [name=" + srvcCtx.name() + ", execId=" + srvcCtx.executionId() +
+                U.warn(log, "Service execution (" + method + " method) finished without releasing explicit locks, " +
+                    "the locks have been released forcibly [name=" + srvcCtx.name() + ", execId=" + srvcCtx.executionId() +
                     ", lockVers=" + released + ']');
             }
         }
@@ -1535,6 +1539,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     throw e;
             }
             finally {
+                releaseLeftExplicitLocks(ctx, "cancel");
+
                 try {
                     this.ctx.resource().cleanup(srvc);
                 }
