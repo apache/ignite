@@ -969,6 +969,7 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 === Supported Data Types
 
 Below are the data types supported by the Calcite-based SQL engine:
+The mappings also apply recursively to values inside `ROW`, `ARRAY`, and `MAP` query results.
 
 [cols="1,1",opts="stretch,header"]
 |===
