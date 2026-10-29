@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.Serializable;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -235,7 +236,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private void ensureSnapshotCheckStatus(boolean positive, boolean useCommand, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
+    private void ensureSnapshotCheckStatus(boolean supports, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
         int blockNodeIdx = 1;
 
         spi(grid(blockNodeIdx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -245,25 +246,15 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         assertTrue(waitForCondition(() -> spi(grid(blockNodeIdx)).hasBlockedMessages(), getTestTimeout()));
 
-        Collection<SnapshotStatusTask.SnapshotOperationStatus> snpStatuses;
+        for (Ignite ig : G.allGrids()) {
+            Serializable rawRes = snapshotStatusTask(ig, clientArg);
 
-        if (clientArg != null) {
-            snpStatuses = snapshotStatusCli(clientArg);
-
-            if (positive)
-                assertTrue(snpStatuses != null && snpStatuses.size() == 1);
-            else
-                assertTrue(snpStatuses == null);
-        }
-        else {
-            for (Ignite ig : G.allGrids()) {
-                snpStatuses = snapshotStatusTask(ig);
-
-                if (positive)
-                    assertTrue(snpStatuses != null && snpStatuses.size() == 1);
-                else
-                    assertTrue(snpStatuses == null);
+            if (supports) {
+                assertTrue(rawRes instanceof Collection<?> cll && !cll.isEmpty() &&
+                    F.first(cll) instanceof SnapshotStatusTask.SnapshotOperationStatus);
             }
+            else
+                assertTrue(rawRes == null);
         }
 
         spi(grid(blockNodeIdx)).stopBlock();
@@ -280,8 +271,8 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private void ensureSnapshotCheckStatus(boolean positive) throws Exception {
-        ensureSnapshotCheckStatus(positive, null);
+    private void ensureSnapshotCheckStatus(boolean supports) throws Exception {
+        ensureSnapshotCheckStatus(supports, null);
     }
 
     /** */
@@ -290,16 +281,18 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private static <T> T snapshotStatusTask(Ignite grid) throws Exception {
-        Collection<UUID> nodes = grid.cluster().nodes().stream().map(ClusterNode::id).toList();
+    private static <T extends Serializable> T snapshotStatusTask(Ignite grid, @Nullable VisorTaskArgument<NoArg> vtArg) throws Exception {
+        if (vtArg == null) {
+            Collection<UUID> nodes = grid.cluster().nodes().stream().map(ClusterNode::id).toList();
 
-        VisorTaskArgument<NoArg> vtArg = new VisorTaskArgument<>(nodes, new NoArg(), false);
+            vtArg = new VisorTaskArgument<>(nodes, new NoArg(), false);
+        }
 
         return (T)grid.compute().execute(SnapshotStatusTask.class, vtArg).result();
     }
 
     /** */
-    private <T> T snapshotStatusCli(VisorTaskArgument<NoArg> vtArg, boolean useCommand) throws Exception {
+    private <T> T snapshotStatusCli(VisorTaskArgument<NoArg> vtArg) throws Exception {
         String taskName = SnapshotStatusTask.class.getName();
 
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFe
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -143,11 +144,11 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             }
         }
 
-        // There is no snapshot operation or the check operation in not supported yet in the result.
+        // Empty list notifies that this is the new result but is empty. Old empty is always null.
         if (allStatuses.isEmpty())
-            return null;
+            return initiatorSupports && featureEnabled ? (Serializable)Collections.emptyList() : null;
 
-        ArrayList<SnapshotOperationStatus> taskResult = null;
+        ArrayList<SnapshotOperationStatus> taskResult = new ArrayList<>();
 
         // First, find create or restore operation.
         Collection<SnapshotOperationStatus> filtered = F.viewReadOnly(allStatuses, s -> s, s -> s.operation() != SnapshotOperation.CHECK);
@@ -201,8 +202,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             taskResult.addAll(mergedCheckStatuses.values());
         }
 
-        // Empty list notifies that this is the new result but is empty. Old empty is always null.
-        return taskResult == null ? (Serializable)Collections.emptyList() : taskResult;
+        return taskResult;
     }
 
     /**

@@ -228,7 +228,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public static final String REENCRYPTION_SUSPEND = "suspend_reencryption";
 
     /** */
-    protected static File dfltDiagnosticDir;
+    protected static File defaultDiagnosticDir;
 
     /** */
     protected static File customDiagnosticDir;
@@ -266,7 +266,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @throws IgniteCheckedException If failed.
      */
     protected void initDiagnosticDir() throws IgniteCheckedException {
-        dfltDiagnosticDir = new File(U.defaultWorkDirectory()
+        defaultDiagnosticDir = new File(U.defaultWorkDirectory()
             + separatorChar + DEFAULT_TARGET_FOLDER + separatorChar);
 
         customDiagnosticDir = new File(U.defaultWorkDirectory()
@@ -277,7 +277,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * Clean diagnostic directories.
      */
     protected void cleanDiagnosticDir() {
-        U.delete(dfltDiagnosticDir);
+        U.delete(defaultDiagnosticDir);
         U.delete(customDiagnosticDir);
     }
 
@@ -2370,7 +2370,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         );
 
         // Check file dump in default path.
-        checkNumberFiles(dfltDiagnosticDir, 1);
+        checkNumberFiles(defaultDiagnosticDir, 1);
 
         assertEquals(
             EXIT_CODE_OK,
@@ -2393,7 +2393,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         );
 
         // Current cluster 4 nodes -> 4 files + 1 from previous operation.
-        checkNumberFiles(dfltDiagnosticDir, 5);
+        checkNumberFiles(defaultDiagnosticDir, 5);
 
         assertEquals(
             EXIT_CODE_OK,
@@ -2417,7 +2417,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         );
 
         // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
-        checkNumberFiles(dfltDiagnosticDir, 7);
+        checkNumberFiles(defaultDiagnosticDir, 7);
 
         // Dump locks only for 2 nodes use constIds as arg.
         assertEquals(

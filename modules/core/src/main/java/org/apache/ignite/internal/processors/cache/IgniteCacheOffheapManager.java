@@ -409,6 +409,21 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
+     * Tries to lock the manager against incompatible state like node or cache group stopping.
+     *
+     * @return {@code true} if successful, {@code false} if the manager is already in an incompatible state.
+     * @see #leaveBusy()
+     */
+    public boolean enterBusy();
+
+    /**
+     * Releases the 'busy' state.
+     *
+     * @see #enterBusy()
+     */
+    public void leaveBusy();
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
