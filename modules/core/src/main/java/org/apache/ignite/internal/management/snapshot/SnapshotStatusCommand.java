@@ -67,20 +67,14 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
             return;
         }
 
-        assert rawResult instanceof SnapshotStatus || rawResult instanceof Collection<?> :
-            "Unsupported job result: " + rawResult.getClass().getSimpleName();
-
         SnapshotStatus singleOldStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
         Collection<SnapshotStatusTask.SnapshotOperationStatus> statuses = rawResult instanceof Collection<?>
             ? (Collection<SnapshotStatusTask.SnapshotOperationStatus>)rawResult
             : null;
 
-        assert statuses == null || statuses.isEmpty() || F.first(statuses) instanceof SnapshotStatusTask.SnapshotOperationStatus :
-            "Statuses collection has an unsupported result type";
-
-        // Empty old-style result is null. Enpty new-style result is an empty collection.
+        // Empty old-style result is null. No-statuses result of the new-style result is always an empty collection.
         if (statuses != null && statuses.isEmpty()) {
-            printer.accept("There is no any snapshot operation in progress.");
+            printer.accept("There is no snapshot operation in progress.");
 
             return;
         }
@@ -90,11 +84,10 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
         boolean first = true;
 
         for (SnapshotStatusTask.SnapshotOperationStatus s0 : statuses) {
-            if (!first) {
+            if (!first)
                 printer.accept(U.nl());
-
+            else
                 first = false;
-            }
 
             if (s0.operation() == SnapshotStatusTask.SnapshotOperation.CREATE)
                 printer.accept("Create snapshot operation is in progress.");

@@ -175,9 +175,6 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             if (!initiatorSupports)
                 return new SnapshotStatus(merged.op, merged.name, merged.incIdx, merged.reqId, merged.startTime, progress);
 
-            if (taskResult == null)
-                taskResult = new ArrayList<>();
-
             taskResult.add(merged);
         }
 
@@ -195,9 +192,6 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
                 if (chkStatus0 != chkStatus)
                     chkStatus0.progress.putAll(chkStatus.progress);
             });
-
-            if (taskResult == null)
-                taskResult = new ArrayList<>();
 
             taskResult.addAll(mergedCheckStatuses.values());
         }
@@ -297,13 +291,13 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
                 return createOrRestoreStatus;
             }
 
-            // New nany results.
+            // New many results.
             ArrayList<SnapshotOperationStatus> snpOpStatuses = null;
 
             if (createOrRestoreStatus != null) {
                 snpOpStatuses = new ArrayList<>();
 
-                // Status of creation or restoration operation always goes firts. This is important for old command initiators (control.sh).
+                // Status of creation or restoration operation always goes first. This is important for old command initiators (control.sh).
                 snpOpStatuses.add(new SnapshotOperationStatus(createOrRestoreStatus));
             }
 
@@ -430,7 +424,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
 
     /**
      * Snapshot operation status after {@link CoreFeatureRegistry#SNAPSHOT_CHECK_STATUS_FEATURE}.
-     * Is now a {@linkIgniteDataTransferObject}.
+     * Is now a {@link IgniteDataTransferObject}.
      */
     public static class SnapshotOperationStatus extends IgniteDataTransferObject {
         /** */

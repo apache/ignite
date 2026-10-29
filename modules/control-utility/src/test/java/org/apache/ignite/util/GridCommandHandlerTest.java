@@ -3800,7 +3800,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals("Unexpected exit code", EXIT_CODE_OK, execute("--snapshot", "status"));
 
-        var out = testOut.toString();
+        String out = testOut.toString();
 
         if (log.isInfoEnabled())
             log.info("Test out:" + U.nl() + out);
