@@ -19,12 +19,17 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgnitePredicate;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 
 /**
  * Zk Cluster Nodes.
@@ -84,6 +89,8 @@ public class ZkClusterNodes {
         assert node.id() != null : node;
         assert node.order() > 0 : node;
 
+        clearNodeSensitiveData(node);
+
         ZookeeperClusterNode old = nodesById.put(node.id(), node);
 
         assert old == null : old;
@@ -95,6 +102,16 @@ public class ZkClusterNodes {
         old = nodesByInternalId.put(node.internalId(), node);
 
         assert old == null : old;
+    }
+
+    /** */
+    private static void clearNodeSensitiveData(ZookeeperClusterNode node) {
+        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+        attrs.remove(ATTR_NODE_CERTIFICATES);
+        attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+        node.setAttributes(attrs);
     }
 
     /**
