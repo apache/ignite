@@ -560,6 +560,25 @@ public class MessageProcessorTest {
     }
 
     /**
+     * Negative test verifying an error is thrown by codegeneration tool if
+     * a field contains EnumSets of different enum types.
+     */
+    @Test
+    public void testEnumMapperCannotBeTwoEnumSets() {
+        Compilation compilation = compile("TwoDifferentEnumSetsInCollectionMessage.java");
+
+        assertThat(compilation).failed();
+
+        String oai = "org.apache.ignite.";
+
+        assertThat(compilation).hadErrorContaining(String.format("Multiple enums of different types are not supported " +
+            "for a single field [msgClsName=%s, field=%s, existingEnumType=%s, otherEnumType=%s]",
+            oai + "internal.TwoDifferentEnumSetsInCollectionMessage", "col",
+            oai + "transactions.TransactionIsolation",
+            oai + "internal.processors.cache.GridCacheOperation"));
+    }
+
+    /**
      * Positive test for custom EnumMapper implementation for enum field: codegeneration tool
      * generates a serializer using provided EnumMapper implementation.
      * Generated serializer compiles successfully.
@@ -580,6 +599,29 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.CustomMapperEnumFieldsMessage.json")
             .contentsAsUtf8String().isEqualTo(jsonFile("CustomMapperEnumFieldsMessage.json"));
+    }
+
+    /**
+     * Positive test for custom EnumMapper implementation for EnumSet fields: codegeneration tool
+     * generates a serializer using provided EnumMapper implementation.
+     * Generated serializer compiles successfully.
+     */
+    @Test
+    public void testCustomMapperEnumSetMessage() {
+        Compilation compilation = compile("CustomMapperEnumSetMessage.java", "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
+
+        // No marshaller: enum fields need no marshalling, so its generation is skipped.
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.CustomMapperEnumSetMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumSetMessageSerializer.java"));
+
+        assertThat(compilation)
+            .generatedFile(CLASS_OUTPUT, WIRE_DIR + "messages/org.apache.ignite.internal.CustomMapperEnumSetMessage.json")
+            .contentsAsUtf8String().isEqualTo(jsonFile("CustomMapperEnumSetMessage.json"));
     }
 
     /** */
