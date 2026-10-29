@@ -120,7 +120,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             return new SslBundle(createSslContext(material.keyManagers()), material.certificateChains());
         }
         catch (SSLException e) {
-            throw new IgniteException(new SSLException(e.getMessage() + " [factory=" + this + ']', e));
+            throw new IgniteException(e.getMessage() + " [factory=" + this + ']', e);
         }
     }
 

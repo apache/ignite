@@ -32,7 +32,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509KeyManager;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -221,9 +220,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, storeDetails);
 
         assertTrue(err.getCause() instanceof SSLException);
-        assertTrue(err.getCause().getMessage().contains(storeDetails));
-        assertTrue(err.getCause().getMessage().contains("keyStoreType=" + store.getType()));
-        assertTrue(X.hasCause(err, UnrecoverableKeyException.class));
+        assertTrue(err.getMessage().contains("keyStoreType=" + store.getType()));
+        assertTrue(err.getCause().getCause() instanceof UnrecoverableKeyException);
     }
 
     /**
