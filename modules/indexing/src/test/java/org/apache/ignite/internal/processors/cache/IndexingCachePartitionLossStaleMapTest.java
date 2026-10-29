@@ -22,6 +22,8 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -43,5 +45,12 @@ public class IndexingCachePartitionLossStaleMapTest extends CachePartitionLossSt
     /** {@inheritDoc} */
     @Override protected void runQuery(Ignite node) {
         node.cache(CACHE).query(new SqlFieldsQuery("select count(*) from Integer").setTimeout(10, SECONDS)).getAll();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("No query runs under READ_WRITE_SAFE, so the test is the same as in CachePartitionLossStaleMapTest")
+    @Override public void testStaleMapBeforeLostPartitionMarkedLost() throws Exception {
+        super.testStaleMapBeforeLostPartitionMarkedLost();
     }
 }
