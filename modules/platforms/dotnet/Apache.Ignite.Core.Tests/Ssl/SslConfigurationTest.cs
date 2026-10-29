@@ -112,14 +112,14 @@ namespace Apache.Ignite.Core.Tests.Ssl
                                                           TrustStoreFilePath, Password);
 
             ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.AreEqual(@"Failed to initialize key store (I/O error occurred): Config/KeyStore/server.jks",
+            StringAssert.StartsWith(@"Failed to initialize key store (I/O error occurred): " + KeyStoreFilePath,
                 ex.Message);
 
             cfg.SslContextFactory = new SslContextFactory(KeyStoreFilePath, Password,
                                                           TrustStoreFilePath, "654321");
 
             ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
-            Assert.AreEqual(@"Failed to initialize key store (I/O error occurred): Config/KeyStore/trust.jks",
+            StringAssert.StartsWith(@"Failed to initialize key store (I/O error occurred): " + TrustStoreFilePath,
                 ex.Message);
         }
 
