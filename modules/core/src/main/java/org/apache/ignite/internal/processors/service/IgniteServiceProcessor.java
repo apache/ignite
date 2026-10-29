@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -1404,8 +1405,10 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private void releaseLeftExplicitLocks(ServiceContextImpl srvcCtx, String method) {
         try {
-            Collection<GridCacheVersion> released = ctx.cache().context().mvcc()
-                .releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
+            GridCacheMvccManager locksMgr = ctx.cache().context().mvcc();
+
+            Collection<GridCacheVersion> released = locksMgr == null ? Collections.emptySet() :
+                locksMgr.releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
 
             if (!released.isEmpty()) {
                 U.warn(log, "Service execution (" + method + " method) finished without releasing explicit locks, " +

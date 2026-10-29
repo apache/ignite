@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -588,8 +589,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
                         @Nullable @Override public Object call() {
                             // The job can be executed by a thread that already holds explicit locks.
-                            Set<GridCacheVersion> locksBefore = locksManager().explicitLockVersions(
-                                Thread.currentThread().getId());
+                            GridCacheMvccManager locksMgr = locksManager();
+
+                            Set<GridCacheVersion> locksBefore = locksMgr == null ? Collections.emptySet() :
+                                locksMgr.explicitLockVersions(Thread.currentThread().getId());
 
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
@@ -697,8 +700,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     private void releaseLeftExplicitLocks(Set<GridCacheVersion> locksBefore) {
         try {
-            Collection<GridCacheVersion> released = locksManager().releaseExplicitLocks(
-                Thread.currentThread().getId(), locksBefore);
+            GridCacheMvccManager locksMgr = locksManager();
+
+            Collection<GridCacheVersion> released = locksMgr == null ? Collections.emptySet() :
+                locksMgr.releaseExplicitLocks(Thread.currentThread().getId(), locksBefore);
 
             if (!released.isEmpty()) {
                 U.warn(log, "Job finished without releasing explicit locks, the locks have been released forcibly " +

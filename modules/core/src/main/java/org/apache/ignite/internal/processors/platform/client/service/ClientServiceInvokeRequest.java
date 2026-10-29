@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -217,8 +218,10 @@ public class ClientServiceInvokeRequest extends ClientRequest {
      */
     private void releaseLeftExplicitLocks(ClientConnectionContext ctx) {
         try {
-            Collection<GridCacheVersion> released = ctx.kernalContext().cache().context().mvcc()
-                .releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
+            GridCacheMvccManager locksMgr = ctx.kernalContext().cache().context().mvcc();
+
+            Collection<GridCacheVersion> released = locksMgr == null ? Collections.emptySet() :
+                locksMgr.releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
 
             if (!released.isEmpty()) {
                 U.warn(ctx.kernalContext().log(getClass()), "Service method invocation finished without releasing " +
