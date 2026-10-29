@@ -67,16 +67,10 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
             return;
         }
 
-        assert rawResult instanceof SnapshotStatus || rawResult instanceof Collection<?> :
-            "Unsupported job result: " + rawResult.getClass().getSimpleName();
-
         SnapshotStatus singleOldStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
         Collection<SnapshotStatusTask.SnapshotOperationStatus> statuses = rawResult instanceof Collection<?>
             ? (Collection<SnapshotStatusTask.SnapshotOperationStatus>)rawResult
             : null;
-
-        assert statuses == null || statuses.isEmpty() || F.first(statuses) instanceof SnapshotStatusTask.SnapshotOperationStatus :
-            "Statuses collection has an unsupported result type";
 
         // Empty old-style result is null. Enpty new-style result is an empty collection.
         if (statuses != null && statuses.isEmpty()) {
