@@ -76,7 +76,7 @@ IMPORTANT: This approach does not replicate any updates or removals from the des
 .Algorithm:
 .. Changes from the "local" cluster are always win. Any replicated data can be overridden locally.
 .. If both old and new entry are from the same cluster then entry versions comparison is used to determine the order.
-.. Conflict resolution failed. Update will be ignored. Failure will be logged.
+.. Conflict resolution failed. Update will be ignored. Failure will be logged and counted by the `ConflictResolverFailedCount` cache metric.
 
 ==== Conflict resolution based on the entry's value field
 This approach provides the eventual consistency guarantee even when entry is updatable from any cluster.
@@ -89,7 +89,7 @@ IMPORTANT: This approach does not replicate the removals from the destination cl
 .. Changes from the "local" cluster are always win. Any replicated data can be overridden locally.
 .. If both old and new entry are from the same cluster then entry versions comparison is used to determine the order.
 .. If `conflictResolveField` is provided then field values comparison is used to determine the order.
-.. Conflict resolution failed. Update will be ignored. Failure will be logged.
+.. Conflict resolution failed. Update will be ignored. Failure will be logged and counted by the `ConflictResolverFailedCount` cache metric.
 
 ==== Custom conflict resolution rules
 You're able to define your own rules for resolving conflicts based on the nature of your data and operations.

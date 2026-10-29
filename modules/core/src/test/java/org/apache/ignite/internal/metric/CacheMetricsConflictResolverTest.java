@@ -92,13 +92,13 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkMetrics(int expAccepted, int expRejected, int expMerged, int expErrors) {
+    private void checkMetrics(int expAccepted, int expRejected, int expMerged, int expFailed) {
         MetricRegistryImpl mreg = grid(0).context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
         assertEquals(expAccepted, mreg.<LongMetric>findMetric("ConflictResolverAcceptedCount").value());
         assertEquals(expRejected, mreg.<LongMetric>findMetric("ConflictResolverRejectedCount").value());
         assertEquals(expMerged, mreg.<LongMetric>findMetric("ConflictResolverMergedCount").value());
-        assertEquals(expErrors, mreg.<LongMetric>findMetric("ConflictResolverErrorsCount").value());
+        assertEquals(expFailed, mreg.<LongMetric>findMetric("ConflictResolverFailedCount").value());
     }
 
     /** */

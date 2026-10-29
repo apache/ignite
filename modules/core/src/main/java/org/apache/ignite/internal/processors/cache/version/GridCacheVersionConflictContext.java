@@ -175,12 +175,12 @@ public class GridCacheVersionConflictContext<K, V> {
         return manualResolve;
     }
 
-    /** Marks that the conflict could not be resolved properly, e.g. due to an error. */
+    /** Marks that the conflict could not be resolved. */
     public void markResolveFailed() {
         resolveFailed = true;
     }
 
-    /** @return {@code True} if the conflict could not be resolved properly. */
+    /** @return {@code True} if the conflict could not be resolved. */
     public boolean isResolveFailed() {
         return resolveFailed;
     }

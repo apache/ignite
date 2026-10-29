@@ -114,7 +114,7 @@ Register name: `cache.{cache_name}.{near}`
 |CommitTime | histogram | Commit time in nanoseconds.
 |CommitTimeTotal | long | The total time of commit, in nanoseconds.
 |ConflictResolverAcceptedCount | long | Conflict resolver accepted entries count.
-|ConflictResolverErrorsCount | long | Conflict resolver errors count.
+|ConflictResolverFailedCount | long | Conflict resolver failed entries count.
 |ConflictResolverMergedCount | long | Conflict resolver merged entries count.
 |ConflictResolverRejectedCount | long | Conflict resolver rejected entries count.
 |EntryProcessorHits | long | The total number of invocations on keys, which exist in cache.
@@ -170,7 +170,7 @@ Register name: `cache.{cache_name}.{near}`
 |TxKeyCollisions | string | Tx key collisions. Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows corresponding keys.
 |===
 
-NOTE: `ConflictResolver*` metrics are registered only when a conflict resolver is configured for the cache. `ConflictResolverErrorsCount` counts entries the resolver could not resolve properly. For the CDC conflict resolver such entries are always rejected, so regular rejections are `ConflictResolverRejectedCount - ConflictResolverErrorsCount`. `IsCacheAffinityConfigurationMdcSafe` and `IsCachePartitionDistributionSafe` are registered on server nodes only, and only when the node has a data center ID.
+NOTE: `ConflictResolver*` metrics are registered only when a conflict resolver is configured for the cache. Entries counted by `ConflictResolverFailedCount` are also counted by one of the other `ConflictResolver*` metrics according to the applied decision. `IsCacheAffinityConfigurationMdcSafe` and `IsCachePartitionDistributionSafe` are registered on server nodes only, and only when the node has a data center ID.
 
 == Cache Groups
 
