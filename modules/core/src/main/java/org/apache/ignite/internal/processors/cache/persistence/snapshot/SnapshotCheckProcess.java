@@ -760,12 +760,12 @@ public class SnapshotCheckProcess {
                 "Number of checked snapshot parts (nodes data) on current node.");
         }
 
-        // Presence of this metrics also marks that the registry is complete.
+        // Presence of this metric marks that the registry is complete.
         mreg.register(
             "requestId",
             () -> ctx.req.requestId().toString(),
             String.class,
-            "The request ID of the last running cluster snapshot check operation on this node."
+            "The request ID of the current cluster snapshot check operation on this node."
         );
     }
 

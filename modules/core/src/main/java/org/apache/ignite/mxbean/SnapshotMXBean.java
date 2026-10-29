@@ -129,11 +129,10 @@ public interface SnapshotMXBean {
     public void cancelSnapshotRestore(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String name);
 
     /**
-     * Get the status of the current snapshot check or restore operation in the cluster. Doesn't provide status of
-     * snapshots check operations.
+     * Get the status of the current snapshot operation in the cluster.
      *
-     * @return The status of a current snapshot create or restore operation in the cluster.
+     * @return The status of a current snapshot operation in the cluster.
      */
-    @MXBeanDescription("The status of a current snapshot create or restore operation in the cluster.")
+    @MXBeanDescription("The status of a current snapshot operation in the cluster.")
     public String status();
 }

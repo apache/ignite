@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rollingupgrade.feature;
+package org.apache.ignite.internal.ducktest.tests.disk_full;
 
-/** */
-public class TestIgniteReleaseFeatures_2_19_4 {
-    /** */
-    public static final IgniteFeature ROLLING_UPGRADE_FEATURE = TestIgniteReleaseFeatures_2_18_0.ROLLING_UPGRADE_FEATURE;
-
-    /** */
-    public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = CoreFeatureRegistry.SNAPSHOT_CHECK_STATUS_FEATURE;
+/**
+ * Writes lines to {@code System.out} without end, as user code left with debug output does.
+ */
+public interface StdoutFloodService {
+    /** @return Lines written so far. */
+    public long lines();
 }

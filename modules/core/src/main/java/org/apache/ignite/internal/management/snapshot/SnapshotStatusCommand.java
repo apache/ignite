@@ -44,6 +44,9 @@ import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.ST
 
 /** */
 public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serializable> {
+    /** */
+    public static final String NO_SNP_OP_IN_PROGRESS_MSG = "There is no snapshot operation in progress.";
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get the status of the current snapshot operation";
@@ -61,31 +64,32 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
 
     /** {@inheritDoc} */
     @Override public void printResult(NoArg arg, @Nullable Serializable rawResult, Consumer<String> printer) {
+        // An old-style empty result is null.
         if (rawResult == null) {
             printer.accept("There is no create or restore snapshot operation in progress.");
 
             return;
         }
 
-        assert rawResult instanceof SnapshotStatus || rawResult instanceof Collection<?> :
-            "Unsupported job result: " + rawResult.getClass().getSimpleName();
+        SnapshotStatus singleOldStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
+        Collection<SnapshotStatusTask.SnapshotOperationStatus> statuses = rawResult instanceof Collection<?>
+            ? (Collection<SnapshotStatusTask.SnapshotOperationStatus>)rawResult
+            : null;
 
-        SnapshotStatus singleStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
-        Collection<SnapshotStatus> statuses = rawResult instanceof Collection ? (Collection<SnapshotStatus>)rawResult : null;
+        // A new-style result with no statuses is an empty collection, never null.
+        if (statuses != null && statuses.isEmpty()) {
+            printer.accept(NO_SNP_OP_IN_PROGRESS_MSG);
 
-        assert statuses == null || (!statuses.isEmpty() || (F.first(statuses) instanceof SnapshotStatus)) :
-            "Statuses collection has unsupported result type";
+            return;
+        }
 
-        statuses = statuses == null ? Collections.singleton(singleStatus) : statuses;
+        statuses = statuses == null ? Collections.singleton(new SnapshotStatusTask.SnapshotOperationStatus(singleOldStatus)) : statuses;
 
-        boolean first = true;
+        boolean separator = false;
 
-        for (SnapshotStatus s0 : statuses) {
-            if (!first) {
+        for (SnapshotStatusTask.SnapshotOperationStatus s0 : statuses) {
+            if (separator)
                 printer.accept(U.nl());
-
-                first = false;
-            }
 
             if (s0.operation() == SnapshotStatusTask.SnapshotOperation.CREATE)
                 printer.accept("Create snapshot operation is in progress.");
@@ -128,6 +132,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
                 .collect(Collectors.toList());
 
             SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
+
+            separator = true;
         }
     }
 

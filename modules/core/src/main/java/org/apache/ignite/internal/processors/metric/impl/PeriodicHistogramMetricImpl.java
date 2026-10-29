@@ -110,12 +110,17 @@ public class PeriodicHistogramMetricImpl extends AbstractMetric implements Confi
 
     /** {@inheritDoc} */
     @Override public void bounds(long[] bounds) {
-        A.notNull(bounds, "bounds");
-        A.ensure(bounds.length > 1, "bounds.length > 1");
-        A.ensure(bounds[0] < bounds[1], "bounds[0] < bounds[1]");
+        checkBounds(bounds);
 
         // We need only interval between bounds and count of buckets, skip all values except first 2.
         reinit(bounds[1] - bounds[0], bounds.length);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkBounds(long[] bounds) {
+        A.notNull(bounds, "bounds");
+        A.ensure(bounds.length > 1, "bounds.length > 1");
+        A.ensure(bounds[0] < bounds[1], "bounds[0] < bounds[1]");
     }
 
     /** {@inheritDoc} */

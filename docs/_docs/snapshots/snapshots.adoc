@@ -371,7 +371,7 @@ If the metadata isn't found or cannot be read, snapshot isn't deleted.
 
 == Getting Snapshot Operation Status
 
-The status of the create/restore/check snapshot operations in the cluster can be obtained using the `control.sh|bat` script.                                                                                                                                                                 │
+The status of the create/restore/check snapshot operations in the cluster can be obtained using the `control.sh|bat` script.
 
 [tabs]
 --
@@ -390,11 +390,13 @@ control.bat --snapshot status
 ----
 --
 
- [NOTE]                                                                                                                                                                                                                                                        │
-====                                                                                                                                                                                                                                                          │
-Parallel and multiple snapshot check operations can be running concurrently with any other snapshot operation.
-But only one check for one snapshot. Create and restore operations cannot run in parallel  - only one of each type can
-be active at a time. The status is printed for each running snapshot operation (if multiple) separately, one after another.
+[NOTE]
+====
+Multiple snapshot check operations can run concurrently with any other snapshot operation of another snapshot.
+Only one check can be running for the same snapshot at a time. Create and restore operations cannot run in parallel —
+only one of them can be active at a time. The status is printed for each running snapshot operation (if multiple) separately,
+one after another.
+====
 
 == Cancelling Snapshot Operation
 

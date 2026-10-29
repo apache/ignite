@@ -85,6 +85,7 @@ import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.management.snapshot.SnapshotStatusCommand;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -135,7 +136,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metric.MetricRegistry;
-import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -150,7 +150,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -238,9 +237,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     /** */
     protected ListeningTestLogger listeningLog;
 
-    /** */
-    protected @Nullable PluginProvider pluginProvider;
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -248,6 +244,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         initDiagnosticDir();
 
         cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        listeningLog = null;
     }
 
     /** {@inheritDoc} */
@@ -263,9 +266,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         if (listeningLog != null)
             cfg.setGridLogger(listeningLog);
-
-        if (pluginProvider != null)
-            cfg.setPluginProviders(pluginProvider);
 
         return cfg;
     }
@@ -3657,7 +3657,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(ctxDisposed);
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "status"));
-        assertContains(log, testOut.toString(), "There is no create or restore snapshot operation in progress.");
+        assertContains(log, testOut.toString(), SnapshotStatusCommand.NO_SNP_OP_IN_PROGRESS_MSG);
 
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
@@ -3808,7 +3808,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals("Unexpected exit code", EXIT_CODE_OK, execute("--snapshot", "status"));
 
-        var out = testOut.toString();
+        String out = testOut.toString();
 
         if (log.isInfoEnabled())
             log.info("Test out:" + U.nl() + out);
@@ -4060,7 +4060,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(out, EXIT_CODE_OK, status);
 
         if (!isCreating && !isRestoring) {
-            assertContains(log, out, "There is no create or restore snapshot operation in progress.");
+            assertContains(log, out, SnapshotStatusCommand.NO_SNP_OP_IN_PROGRESS_MSG);
 
             return;
         }
