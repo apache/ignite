@@ -20,23 +20,16 @@ package org.apache.ignite.internal.util.offheap.unsafe;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.offheap.GridOffHeapEventListener;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_OFFHEAP_SAFE_RELEASE;
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.ALLOCATE;
-import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.RELEASE;
 
 /**
  * Unsafe memory.
  */
 public class GridUnsafeMemory {
-    /** Free byte. */
-    private static final byte FREE = (byte)0;
-
     /** Safe offheap release flag. */
     private static final boolean SAFE_RELEASE = IgniteCommonsSystemProperties.getBoolean(IGNITE_OFFHEAP_SAFE_RELEASE);
 
@@ -48,13 +41,6 @@ public class GridUnsafeMemory {
     @GridToStringInclude
     private final AtomicLong allocated;
 
-    /** Total amount of memory allocated for system structures. */
-    @GridToStringInclude
-    private final AtomicLong sysAllocated;
-
-    /** Event listener. */
-    private GridOffHeapEventListener lsnr;
-
     /**
      * @param total Total size, {@code 0} for unlimited.
      */
@@ -64,17 +50,6 @@ public class GridUnsafeMemory {
         this.total = total;
 
         allocated = new AtomicLong();
-
-        sysAllocated = new AtomicLong();
-    }
-
-    /**
-     * Sets event listener.
-     *
-     * @param lsnr Event listener.
-     */
-    public void listen(GridOffHeapEventListener lsnr) {
-        this.lsnr = lsnr;
     }
 
     /**
@@ -113,36 +88,12 @@ public class GridUnsafeMemory {
      *
      * @param size Size of allocated block.
      * @param init Flag to zero-out the initialized memory or not.
-     * @return Allocated block address.
-     * @throws GridOffHeapOutOfMemoryException If Memory could not be allocated.
-     */
-    public long allocate(long size, boolean init) throws GridOffHeapOutOfMemoryException {
-        return allocate(size, init, false);
-    }
-
-    /**
-     * Allocates memory of given size in bytes.
-     *
-     * @param size Size of allocated block.
-     * @param init Flag to zero-out the initialized memory or not.
      * @param reserved Flag indicating that memory being allocated was reserved before.
      * @return Allocated block address.
      * @throws GridOffHeapOutOfMemoryException If memory could not be allocated.
      */
     public long allocate(long size, boolean init, boolean reserved) throws GridOffHeapOutOfMemoryException {
         return allocate0(size, init, reserved, allocated);
-    }
-
-    /**
-     * Allocates memory of given size in bytes, adds to system memory counter.
-     *
-     * @param size Size of allocated block.
-     * @param init Whether or not allocated block is zeroed upon return.
-     * @return Allocated block address.
-     * @throws GridOffHeapOutOfMemoryException If memory could not be allocated.
-     */
-    public long allocateSystem(long size, boolean init) throws GridOffHeapOutOfMemoryException {
-        return allocate0(size, init, false, sysAllocated);
     }
 
     /**
@@ -169,9 +120,6 @@ public class GridUnsafeMemory {
 
             if (init)
                 GridUnsafe.zeroMemory(ptr, size);
-
-            if (lsnr != null)
-                lsnr.onEvent(ALLOCATE);
 
             return ptr;
         }
@@ -203,16 +151,6 @@ public class GridUnsafeMemory {
     }
 
     /**
-     * Releases memory allocated by {@link #allocateSystem(long, boolean)}.
-     *
-     * @param ptr Address of memory block to deallocate.
-     * @param size Size of allocated block.
-     */
-    public void releaseSystem(long ptr, long size) {
-        release0(ptr, size, sysAllocated);
-    }
-
-    /**
      * Internal release procedure. Decreases size of corresponding counter.
      *
      * @param ptr Address of memory block to deallocate.
@@ -227,9 +165,6 @@ public class GridUnsafeMemory {
             GridUnsafe.freeMemory(ptr);
 
             cnt.addAndGet(-size);
-
-            if (lsnr != null)
-                lsnr.onEvent(RELEASE);
         }
     }
 
@@ -395,66 +330,6 @@ public class GridUnsafeMemory {
      */
     public void writeByteVolatile(long ptr, byte v) {
         GridUnsafe.putByteVolatile(null, ptr, v);
-    }
-
-    /**
-     * Stores value to the specified memory location. If specified pointer is {@code 0}, then will
-     * allocate required space. If size of allocated space is not enough to hold given values, will
-     * reallocate memory.
-     *
-     * @param ptr Optional pointer to allocated memory. First 4 bytes in allocated region must contain
-     *      size of allocated chunk.
-     * @param val Value to store.
-     * @param type Value type.
-     * @return Pointer.
-     */
-    public long putOffHeap(long ptr, byte[] val, byte type) {
-        int size = val.length;
-
-        assert size != 0;
-
-        int allocated = ptr == 0 ? 0 : readInt(ptr);
-
-        if (allocated != size) {
-            if (ptr != 0)
-                release(ptr, allocated + 5);
-
-            ptr = allocate(size + 5);
-
-            writeInt(ptr, size);
-        }
-
-        writeByte(ptr + 4, type);
-        writeBytes(ptr + 5, val);
-
-        return ptr;
-    }
-
-    /**
-     * Releases off-heap memory allocated by {@link #putOffHeap} method.
-     *
-     * @param ptr Optional pointer returned by {@link #putOffHeap}.
-     */
-    public void removeOffHeap(long ptr) {
-        if (ptr != 0)
-            release(ptr, readInt(ptr) + 5);
-    }
-
-    /**
-     * Get value stored in offheap along with a value type.
-     *
-     * @param ptr Pointer to read.
-     * @return Stored byte array and "raw bytes" flag.
-     */
-    public IgniteBiTuple<byte[], Byte> get(long ptr) {
-        assert ptr != 0;
-
-        int size = readInt(ptr);
-
-        byte type = readByte(ptr + 4);
-        byte[] bytes = readBytes(ptr + 5, size);
-
-        return new IgniteBiTuple<>(bytes, type);
     }
 
     /**
@@ -659,15 +534,6 @@ public class GridUnsafeMemory {
     }
 
     /**
-     * Checks if direct memory allocation is limited to some value.
-     *
-     * @return {@code True} if memory allocation is limited.
-     */
-    public boolean unlimited() {
-        return totalSize() == 0;
-    }
-
-    /**
      * @return Total size.
      */
     public long totalSize() {
@@ -675,29 +541,10 @@ public class GridUnsafeMemory {
     }
 
     /**
-     * @return Free size.
-     */
-    public long freeSize() {
-        if (total == 0)
-            return 0;
-
-        long diff = total - allocated.get();
-
-        return diff < 0 ? 0 : diff;
-    }
-
-    /**
      * @return Allocated size.
      */
     public long allocatedSize() {
         return allocated.get();
-    }
-
-    /**
-     * @return Size of memory allocated with {@link #allocateSystem(long, boolean)}.
-     */
-    public long systemAllocatedSize() {
-        return sysAllocated.get();
     }
 
     /** {@inheritDoc} */
