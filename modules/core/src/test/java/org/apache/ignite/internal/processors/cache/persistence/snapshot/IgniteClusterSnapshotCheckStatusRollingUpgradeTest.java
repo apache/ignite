@@ -140,29 +140,32 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         createCache(0);
 
-        // Blocks the finalization of the create operation to keep it in progress while the status is requested.
+        // The snapshot to check. It must be created before the messages are blocked.
+        createSnapshot(0, "testSnapshotToCheck");
+
+        // Blocks the finalization of the create operation and the check operation to keep them in progress while
+        // the status is requested.
         for (int i = 0; i < ALL_GRIDS - CLIENTS; i++) {
             spi(grid(i)).blockMessages((node, msg) ->
-                msg instanceof SingleNodeMessage<?> snm && snm.type() == END_SNAPSHOT.ordinal());
+                msg instanceof SingleNodeMessage<?> snm &&
+                    (snm.type() == END_SNAPSHOT.ordinal() || snm.type() == CHECK_SNAPSHOT_METAS.ordinal()));
         }
 
+        int chkNodeIdx = 1;
+
+        IgniteInternalFuture<SnapshotPartitionsVerifyResult> chkFut = snp(chkNodeIdx).checkSnapshot("testSnapshotToCheck", null);
         IgniteFuture<Void> createFut = snp(0).createSnapshot(SNP_NAME);
 
         try {
-            assertTrue("Snapshot create operation has not started.", waitForCondition(() -> {
-                for (int i = 0; i < ALL_GRIDS - CLIENTS; i++) {
-                    if (snp(i).currentCreateRequest() == null)
-                        return false;
-                }
-
-                return true;
-            }, 10_000L));
+            assertTrue(waitForCondition(
+                () -> snp(chkNodeIdx).isSnapshotCreating() && snp(chkNodeIdx).isSnapshotChecking("testSnapshotToCheck"), 10_000L));
 
             Collection<UUID> nodes = Collections.singleton(nodeId(0));
 
             Collection<SnapshotStatusTask.SnapshotOperationStatus> statuses =
                 snapshotStatusTaskWithClient(new VisorTaskArgument<>(nodes, new NoArg(), false));
 
+            // The check operation is not reported by the cluster of the previous version.
             assertEquals(1, statuses.size());
 
             SnapshotStatusTask.SnapshotOperationStatus status = F.first(statuses);
@@ -177,6 +180,13 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
         }
 
         createFut.get(10_000L);
+
+        // Ensure that the snapshot check process correctly finished too.
+        SnapshotPartitionsVerifyResult chkRes = chkFut.get(getTestTimeout());
+
+        assertTrue(F.isEmpty(chkRes.exceptions()));
+        assertTrue(F.isEmpty(chkRes.idleVerifyResult().exceptions()));
+        assertFalse(chkRes.idleVerifyResult().hasConflicts());
     }
 
     /** */
@@ -299,7 +309,24 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
     /** */
     private void createSnapshot(int gridIdx) {
-        snp(gridIdx).createSnapshot(SNP_NAME).get(getTestTimeout());
+        createSnapshot(gridIdx, SNP_NAME);
+    }
+
+    /** */
+    private void createSnapshot(int gridIdx, String snpName) {
+        snp(gridIdx).createSnapshot(snpName).get(getTestTimeout());
+    }
+
+    /** @return {@code True} if the create operation of the snapshot {@code snpName} is in progress on all the server nodes. */
+    private boolean createInProgress(String snpName) {
+        for (int i = 0; i < ALL_GRIDS - CLIENTS; i++) {
+            SnapshotOperationRequest req = snp(i).currentCreateRequest();
+
+            if (req == null || !snpName.equals(req.snapshotName()))
+                return false;
+        }
+
+        return true;
     }
 
     /** */
