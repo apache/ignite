@@ -3549,12 +3549,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.affinity().cacheGroups().values(),
                 desc -> {
-                    if (partitionTopology(desc.groupId()).detectLostPartitions(resTopVer, this)) {
-                        CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
-
-                        if (grp != null)
-                            changedGrps.add(grp);
-                    }
+                    if (partitionTopology(desc.groupId()).detectLostPartitions(resTopVer, this))
+                        changedGrps.add(cctx.cache().cacheGroup(desc.groupId()));
 
                     return null;
                 });
