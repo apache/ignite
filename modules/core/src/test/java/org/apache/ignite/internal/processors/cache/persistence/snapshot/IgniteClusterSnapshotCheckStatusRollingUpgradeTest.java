@@ -118,7 +118,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     @Test
     public void testClientOfThePreviousVersion() throws Exception {
         for (int i = 0; i < ALL_GRIDS - CLIENTS; i++)
-            startGrid(i, "2.19.4", false);
+            startGrid(i, "master", false);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
@@ -151,7 +151,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
 
-            upgradeNodeVersion(i, "2.18.0", "2.19.4");
+            upgradeNodeVersion(i, "2.18.0", "master");
         }
 
         spi(grid(testNodeIx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -195,7 +195,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
 
-            upgradeNodeVersion(i, "2.18.0", "2.19.4");
+            upgradeNodeVersion(i, "2.18.0", "master");
         }
 
         ensureSnapshotCheckStatus(false);
@@ -235,7 +235,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private void ensureSnapshotCheckStatus(boolean positive, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
+    private void ensureSnapshotCheckStatus(boolean positive, boolean useCommand, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
         int blockNodeIdx = 1;
 
         spi(grid(blockNodeIdx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -245,7 +245,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         assertTrue(waitForCondition(() -> spi(grid(blockNodeIdx)).hasBlockedMessages(), getTestTimeout()));
 
-        Collection<SnapshotStatusTask.SnapshotStatus> snpStatuses;
+        Collection<SnapshotStatusTask.SnapshotOperationStatus> snpStatuses;
 
         if (clientArg != null) {
             snpStatuses = snapshotStatusCli(clientArg);
@@ -299,7 +299,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private <T> T snapshotStatusCli(VisorTaskArgument<NoArg> vtArg) throws Exception {
+    private <T> T snapshotStatusCli(VisorTaskArgument<NoArg> vtArg, boolean useCommand) throws Exception {
         String taskName = SnapshotStatusTask.class.getName();
 
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {

@@ -112,6 +112,6 @@ public class CoreFeatureRegistry {
     /** Feature that introduces the snapshot list command. */
     public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
 
-    /** Future that introduces the snaphost check status. */
+    /** Future that introduces status of the snaphost check operation. */
     public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = new IgniteCoreFeature(5);
 }
