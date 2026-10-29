@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -41,6 +42,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEX_REBUILD_BATCH_SIZE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.COMPLETE;
 import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.INIT;
 import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage.KEY_PREFIX;
@@ -181,7 +183,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testConcurrentBuildNewIndexAndRebuildIndexes0() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true, cfg -> cfg.setBuildIndexThreadPoolSize(2));
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -231,7 +233,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testConcurrentBuildNewIndexAndRebuildIndexes1() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true, cfg -> cfg.setBuildIndexThreadPoolSize(2));
 
         SlowdownBuildIndexConsumer slowdownRebuildIdxConsumer = addSlowdownRebuildIndexConsumer(n, cacheName, 10);
         assertTrue(forceRebuildIndexes(n, n.cachex(cacheName).context()).isEmpty());
@@ -426,19 +428,38 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         assertEquals(expNewIdx, status.buildNewIndexes());
     }
 
+    /** */
+    private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt, boolean disableCp) throws Exception {
+        return prepareNodeToCreateNewIndex(cacheName, cnt, disableCp, null);
+    }
+
     /**
      * Creating a node and filling the cache.
      *
      * @param cacheName Cache name.
      * @param cnt Entry count.
      * @param disableCp Disable checkpoint.
+     * @param cfgC Configuration mutator.
      * @return New node.
      * @throws Exception If failed.
      */
-    private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt, boolean disableCp) throws Exception {
+    private IgniteEx prepareNodeToCreateNewIndex(
+        String cacheName,
+        int cnt,
+        boolean disableCp,
+        Consumer<IgniteConfiguration> cfgC
+    ) throws Exception {
         IndexesRebuildTaskEx.prepareBeforeNodeStart();
 
-        IgniteEx n = startGrid(0);
+        IgniteEx n;
+
+        if (cfgC == null)
+            n = startGrid(0);
+        else {
+            n = startGrid(0, cfgC);
+
+            n.cluster().state(ACTIVE);
+        }
 
         populate(n.cache(cacheName), cnt);
 

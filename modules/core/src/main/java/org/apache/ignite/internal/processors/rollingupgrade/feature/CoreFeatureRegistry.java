@@ -108,4 +108,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the snapshot deletion command. */
     public static final IgniteFeature SNAPSHOT_DELETE_FEATURE = new IgniteCoreFeature(3);
+
+    /** Feature that introduces the snapshot list command. */
+    public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
 }

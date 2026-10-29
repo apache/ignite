@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
+package org.apache.ignite.internal.management.snapshot;
 
-/**
- * Polls LRU.
- */
-interface GridUnsafeLruPoller {
-    /**
-     * Frees space from LRU queue.
-     *
-     * @param size Size of the space to free.
-     */
-    public void lruPoll(int size);
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.jetbrains.annotations.Nullable;
+
+/** */
+public class SnapshotListCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
+    @Order(0)
+    @Argument(example = "path/to/snapshots", optional = true, description = SnapshotRestoreCommandArg.SRC_PATH_DESCRIPTION)
+    @Nullable String src;
+
+    /** */
+    public @Nullable String src() {
+        return src;
+    }
+
+    /** */
+    public void src(@Nullable String src) {
+        this.src = src;
+    }
 }

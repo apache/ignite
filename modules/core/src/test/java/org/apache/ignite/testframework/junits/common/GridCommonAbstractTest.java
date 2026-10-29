@@ -2209,11 +2209,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * concurrently updated.
      *
      * @param ig Ignite instance.
+     * @param checkCrc Whether to check the CRC sums of partition pages.
      * @param caches Cache names (if null, all user caches will be verified).
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResult idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
+    protected IdleVerifyResult idleVerify(Ignite ig, boolean checkCrc, @Nullable String... caches) throws Exception {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2236,11 +2237,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         CacheIdleVerifyCommandArg taskArg = new CacheIdleVerifyCommandArg();
 
         taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
+        taskArg.checkCrc(checkCrc);
 
         return ((VisorTaskResult<IdleVerifyResult>)ig.compute().execute(
             IdleVerifyTask.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         )).result();
+    }
+
+    /** @see #idleVerify(Ignite, boolean, String...) */
+    protected IdleVerifyResult idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
+        return idleVerify(ig, false, caches);
     }
 
     /**

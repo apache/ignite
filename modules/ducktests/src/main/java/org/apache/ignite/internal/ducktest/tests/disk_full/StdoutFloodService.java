@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap.unsafe;
-
-import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
-import org.apache.ignite.internal.util.offheap.GridOffHeapMapAbstractSelfTest;
-import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
+package org.apache.ignite.internal.ducktest.tests.disk_full;
 
 /**
- * Unsafe map test.
+ * Writes lines to {@code System.out} without end, as user code left with debug output does.
  */
-public class GridUnsafeMapSelfTest extends GridOffHeapMapAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected GridOffHeapMap newMap() {
-        return GridOffHeapMapFactory.unsafeMap(concurrency, load, initCap, mem, lruStripes, evictLsnr);
-    }
+public interface StdoutFloodService {
+    /** @return Lines written so far. */
+    public long lines();
 }
