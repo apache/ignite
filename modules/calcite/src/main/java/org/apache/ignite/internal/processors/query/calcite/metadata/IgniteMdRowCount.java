@@ -204,6 +204,9 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         double postFiltrationAdjustment = 1.0;
 
+        // Outer joins return every row of the preserved side(s), the result can't be smaller than that.
+        double preservedRowCnt = 0.0;
+
         switch (rel.getJoinType()) {
             case INNER:
             case SEMI:
@@ -211,6 +214,18 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 // therefore we need to adjust final result with a little factor.
                 if (joinCtxts.size() != 1 || !joinInfo.isEqui())
                     postFiltrationAdjustment = NON_EQUI_COEFF;
+
+                break;
+            case LEFT:
+                preservedRowCnt = leftRowCnt;
+
+                break;
+            case RIGHT:
+                preservedRowCnt = rightRowCnt;
+
+                break;
+            case FULL:
+                preservedRowCnt = Math.max(leftRowCnt, rightRowCnt);
 
                 break;
             default:
@@ -311,11 +326,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
 
         if (percentageAdjustment == null || Double.compare(1.0, percentageAdjustment) == 0) {
-            // No info or default 1.0, let's estimate.
-            percentageAdjustment = INTERSECT_ESTIMATE_COEFF;
+            // No info or default 1.0, let's estimate. The intersection estimate is not applicable to outer joins:
+            // the preserved side is returned entirely, no matter how many rows have a match.
+            percentageAdjustment = preservedRowCnt > 0.0 ? 1.0 : INTERSECT_ESTIMATE_COEFF;
         }
 
-        return baseRowCnt * percentageAdjustment * postFiltrationAdjustment;
+        return Math.max(preservedRowCnt, baseRowCnt * percentageAdjustment * postFiltrationAdjustment);
     }
 
     /** Percentage of original rows of the right input, see {@link #joinRowCount(RelMetadataQuery, Join, double)}. */

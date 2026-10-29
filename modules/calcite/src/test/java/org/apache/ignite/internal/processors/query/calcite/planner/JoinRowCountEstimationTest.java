@@ -35,7 +35,6 @@ import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdRowCount.INTERSECT_ESTIMATE_COEFF;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdSelectivity.COMPARISON_SELECTIVITY;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdSelectivity.EQUALS_SELECTIVITY;
 import static org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMdSelectivity.IS_NOT_NULL_SELECTIVITY;
@@ -230,20 +229,20 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  FROM catalog_returns LEFT JOIN date_dim ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * INTERSECT_ESTIMATE_COEFF)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM date_dim LEFT JOIN catalog_returns ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * INTERSECT_ESTIMATE_COEFF)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM catalog_returns LEFT JOIN date_dim ON"
                 + "  cr_returned_date_sk = d_date_sk"
                 + "     AND cr_return_quantity > 6",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * INTERSECT_ESTIMATE_COEFF)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
     }
 
     /** */
@@ -253,20 +252,20 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  FROM catalog_returns RIGHT JOIN date_dim ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * INTERSECT_ESTIMATE_COEFF)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM date_dim RIGHT JOIN catalog_returns ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * INTERSECT_ESTIMATE_COEFF)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM date_dim RIGHT JOIN catalog_returns ON"
                 + "  cr_returned_date_sk = d_date_sk"
                 + "     AND cr_return_quantity > 6",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE * INTERSECT_ESTIMATE_COEFF)));
+            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
     }
 
     /** */
