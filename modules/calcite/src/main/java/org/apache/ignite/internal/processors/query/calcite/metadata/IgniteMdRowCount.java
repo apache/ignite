@@ -46,7 +46,6 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
@@ -67,20 +66,15 @@ public class IgniteMdRowCount extends RelMdRowCount {
     private static final double NON_EQUI_COEFF = 0.7;
 
     /** */
-    private static final double INTERSECT_ESTIMATE_COEFF = 0.8;
+    public static final double INTERSECT_ESTIMATE_COEFF = 0.8;
 
     /** */
     public static final RelMetadataProvider SOURCE =
         ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdRowCount(), BuiltInMetadata.RowCount.Handler.class);
 
-    /** */
-    public Double getRowCount(IgniteCorrelatedNestedLoopJoin rel, RelMetadataQuery mq) {
-        return rel.estimateRowCount(mq);
-    }
-
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
-        return joinRowCount(mq, rel);
+        return rel.estimateRowCount(mq);
     }
 
     /** {@inheritDoc} */
