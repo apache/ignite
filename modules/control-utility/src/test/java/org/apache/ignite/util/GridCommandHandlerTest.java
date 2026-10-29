@@ -85,6 +85,7 @@ import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.management.snapshot.SnapshotStatusCommand;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -243,6 +244,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         initDiagnosticDir();
 
         cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        listeningLog = null;
     }
 
     /** {@inheritDoc} */
@@ -3649,7 +3657,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(ctxDisposed);
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "status"));
-        assertContains(log, testOut.toString(), "There is no create or restore snapshot operation in progress.");
+        assertContains(log, testOut.toString(), SnapshotStatusCommand.NO_SNP_OP_IN_PROGRESS_MSG);
 
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
@@ -4052,7 +4060,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(out, EXIT_CODE_OK, status);
 
         if (!isCreating && !isRestoring) {
-            assertContains(log, out, "There is no create or restore snapshot operation in progress.");
+            assertContains(log, out, SnapshotStatusCommand.NO_SNP_OP_IN_PROGRESS_MSG);
 
             return;
         }

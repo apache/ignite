@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFe
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -113,31 +112,17 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             /** Old single {@link SnapshotStatus} of creation or restoration status or new several results as a collection. */
             Serializable rawResult = jobRes.getData();
 
-            assert rawResult instanceof SnapshotStatus || rawResult instanceof Collection<?> :
-                "Unsupported job result type: " + rawResult.getClass().getSimpleName();
-            assert !(rawResult instanceof Collection<?> cll) || cll.isEmpty() || (F.first(cll) instanceof SnapshotOperationStatus) :
-                "Statuses collection is empty or its first status is of unsupported type";
-
-            if (rawResult instanceof SnapshotStatus singleJobStatus) {
-                assert !featureEnabled :
-                    "Single snapshot status result is allowed only if the snapshot check status feature is not enabled";
-                assert singleJobStatus.operation() != SnapshotOperation.CHECK :
-                    "Status of the check operation is allowed only within the new result list, not as a single result";
-
+            if (rawResult instanceof SnapshotStatus singleJobStatus)
                 allStatuses.add(new SnapshotOperationStatus(singleJobStatus));
-            }
             else {
-                assert featureEnabled :
-                    "Many snapshot status results are allowed only if the snapshot check status feature is enabled";
-
                 Collection<SnapshotOperationStatus> jobMultipleStatuses = (Collection<SnapshotOperationStatus>)rawResult;
 
-                // Skip the check status if cluster supports, but not a thin client of previous version.
+                // Skip the check status for an old command initiator that doesn't know about it.
                 if (!initiatorSupports) {
                     jobMultipleStatuses = jobMultipleStatuses.stream().filter(s -> s.operation() != SnapshotOperation.CHECK).toList();
 
                     assert jobMultipleStatuses.isEmpty() || jobMultipleStatuses.size() == 1 :
-                        "Snapshot creation or restoration are mutually exclusive, only one of them allowed at the same time.";
+                        "Snapshot creation and restoration are mutually exclusive; only one of them can run at a time.";
                 }
 
                 allStatuses.addAll(jobMultipleStatuses);

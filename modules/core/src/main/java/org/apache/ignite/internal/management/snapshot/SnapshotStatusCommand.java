@@ -44,6 +44,9 @@ import static org.apache.ignite.internal.management.SystemViewTask.SimpleType.ST
 
 /** */
 public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serializable> {
+    /** */
+    public static final String NO_SNP_OP_IN_PROGRESS_MSG = "There is no snapshot operation in progress.";
+
     /** {@inheritDoc} */
     @Override public String description() {
         return "Get the status of the current snapshot operation";
@@ -61,6 +64,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
 
     /** {@inheritDoc} */
     @Override public void printResult(NoArg arg, @Nullable Serializable rawResult, Consumer<String> printer) {
+        // An old-style empty result is null.
         if (rawResult == null) {
             printer.accept("There is no create or restore snapshot operation in progress.");
 
@@ -72,22 +76,20 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
             ? (Collection<SnapshotStatusTask.SnapshotOperationStatus>)rawResult
             : null;
 
-        // Empty old-style result is null. No-statuses result of the new-style result is always an empty collection.
+        // A new-style result with no statuses is an empty collection, never null.
         if (statuses != null && statuses.isEmpty()) {
-            printer.accept("There is no snapshot operation in progress.");
+            printer.accept(NO_SNP_OP_IN_PROGRESS_MSG);
 
             return;
         }
 
         statuses = statuses == null ? Collections.singleton(new SnapshotStatusTask.SnapshotOperationStatus(singleOldStatus)) : statuses;
 
-        boolean first = true;
+        boolean separator = false;
 
         for (SnapshotStatusTask.SnapshotOperationStatus s0 : statuses) {
-            if (!first)
+            if (separator)
                 printer.accept(U.nl());
-            else
-                first = false;
 
             if (s0.operation() == SnapshotStatusTask.SnapshotOperation.CREATE)
                 printer.accept("Create snapshot operation is in progress.");
@@ -130,6 +132,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
                 .collect(Collectors.toList());
 
             SystemViewCommand.printTable(desc.titles(), desc.types(), rows, printer);
+
+            separator = true;
         }
     }
 
