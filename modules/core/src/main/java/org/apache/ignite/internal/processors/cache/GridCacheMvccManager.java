@@ -1229,8 +1229,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             Collection<KeyCacheObject> keys = Collections.singleton(cand.key().key());
 
-            if (cacheCtx.isNear())
+            if (cacheCtx.isNear()) {
                 cacheCtx.nearTx().removeLocks(ver, keys);
+
+                removeExplicitLock(cand);
+            }
             else if (cacheCtx.isColocated())
                 cacheCtx.colocated().removeLocks(threadId, ver, keys);
         }
