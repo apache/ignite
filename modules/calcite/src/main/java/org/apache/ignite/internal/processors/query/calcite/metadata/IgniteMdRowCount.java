@@ -188,13 +188,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
         JoinContext joinCtx = it.next();
         while (it.hasNext()) {
             JoinContext nextCtx = it.next();
-            if (nextCtx.joinType().strength > joinCtx.joinType().strength) {
+            if (nextCtx.joinType().strength > joinCtx.joinType().strength)
                 joinCtx = nextCtx;
-            }
 
-            if (joinCtx.joinType().strength == JoiningRelationType.PK_ON_PK.strength) {
+            if (joinCtx.joinType().strength == JoiningRelationType.PK_ON_PK.strength)
                 break;
-            }
         }
 
         if (joinCtx.joinType() == JoiningRelationType.UNKNOWN) {
@@ -254,12 +252,10 @@ public class IgniteMdRowCount extends RelMdRowCount {
                     percentageAdjustment = rightPercentage(mq, rel, rightAdjust);
                 }
             }
-            else if (rel.getJoinType() == JoinRelType.LEFT) {
+            else if (rel.getJoinType() == JoinRelType.LEFT)
                 baseRowCnt = leftRowCnt;
-            }
-            else if (rel.getJoinType() == JoinRelType.RIGHT) {
+            else if (rel.getJoinType() == JoinRelType.RIGHT)
                 baseRowCnt = rightRowCnt;
-            }
             else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
@@ -286,9 +282,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 baseRowCnt = leftRowCnt * selectivity;
                 percentageAdjustment = rightPercentage(mq, rel, rightAdjust);
             }
-            else if (rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.RIGHT) {
+            else if (rel.getJoinType() == JoinRelType.LEFT || rel.getJoinType() == JoinRelType.RIGHT)
                 baseRowCnt = leftRowCnt;
-            }
             else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
@@ -308,9 +303,8 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 baseRowCnt = rightRowCnt * selectivity;
                 percentageAdjustment = mq.getPercentageOriginalRows(rel.getLeft());
             }
-            else if (rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.LEFT) {
+            else if (rel.getJoinType() == JoinRelType.RIGHT || rel.getJoinType() == JoinRelType.LEFT)
                 baseRowCnt = rightRowCnt;
-            }
             else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
@@ -356,14 +350,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
         GridLeanMap<Integer, KeyColumnOrigin> origins = new GridLeanMap<>();
 
         for (int i : keys) {
-            if (origins.containsKey(i)) {
+            if (origins.containsKey(i))
                 continue;
-            }
 
             RelColumnOrigin origin = mq.getColumnOrigin(joinSide, i);
-            if (origin == null) {
+            if (origin == null)
                 continue;
-            }
 
             IgniteTable table = origin.getOriginTable().unwrap(IgniteTable.class);
             if (table == null || (!table.distribution().function().affinity() &&
@@ -543,36 +535,29 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
         /** */
         void countKeys(KeyColumnOrigin left, KeyColumnOrigin right) {
-            if (left.positionInKey >= 0) {
+            if (left.positionInKey >= 0)
                 leftKeys.clear(left.positionInKey);
-            }
 
-            if (right.positionInKey >= 0) {
+            if (right.positionInKey >= 0)
                 rightKeys.clear(right.positionInKey);
-            }
 
-            if (commonKeys != null && left.positionInKey == right.positionInKey && left.positionInKey >= 0) {
+            if (commonKeys != null && left.positionInKey == right.positionInKey && left.positionInKey >= 0)
                 commonKeys.clear(left.positionInKey);
-            }
         }
 
         /** */
         JoiningRelationType joinType() {
-            if (!pkKnown) {
+            if (!pkKnown)
                 return JoiningRelationType.UNKNOWN;
-            }
 
-            if (commonKeys != null && commonKeys.isEmpty()) {
+            if (commonKeys != null && commonKeys.isEmpty())
                 return JoiningRelationType.PK_ON_PK;
-            }
 
-            if (rightKeys.isEmpty()) {
+            if (rightKeys.isEmpty())
                 return JoiningRelationType.FK_ON_PK;
-            }
 
-            if (leftKeys.isEmpty()) {
+            if (leftKeys.isEmpty())
                 return JoiningRelationType.PK_ON_FK;
-            }
 
             return JoiningRelationType.UNKNOWN;
         }

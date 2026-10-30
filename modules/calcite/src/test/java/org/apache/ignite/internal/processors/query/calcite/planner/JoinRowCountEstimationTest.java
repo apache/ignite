@@ -332,9 +332,8 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
         /** */
         return new BaseMatcher<>() {
             @Override public boolean matches(Object o) {
-                if (!(o instanceof Integer)) {
+                if (!(o instanceof Integer))
                     return false;
-                }
 
                 double val = ((Integer)o).doubleValue();
                 // IgniteMdRowCount.EQUI_COEFF with a bit overhead
