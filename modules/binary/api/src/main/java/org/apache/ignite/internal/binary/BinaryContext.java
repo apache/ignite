@@ -357,7 +357,7 @@ public class BinaryContext {
 
     /**
      * @param ldr Caller supplied class loader or {@code null}.
-     * @return {@code true} if {@code ldr} is a custom (deployment or user supplied) loader,
+     * @return {@code True} if {@code ldr} is a custom (deployment or user supplied) loader,
      *      {@code false} if it is {@code null}, the default loader or the loader Ignite was loaded by.
      */
     public boolean isCustomLoader(@Nullable ClassLoader ldr) {
