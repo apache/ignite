@@ -126,6 +126,9 @@ delivers sorted cache entries by the order defined for queried index. `IndexQuer
 matches filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly extracts all cache entries and
 then applies a filter to them. `IndexQuery` relies on index tree structure and filters most of the entries without extracting.
 
+`IndexQuery` returns deserialized cache values by default. To receive `BinaryObject` values when possible, execute the
+query through a cache obtained with `withKeepBinary()`.
+
 [source,java]
 ----
 include::{javaFile}[tag=idxQry,indent=0]
