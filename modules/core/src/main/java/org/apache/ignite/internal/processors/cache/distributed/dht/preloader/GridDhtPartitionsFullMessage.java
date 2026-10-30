@@ -86,7 +86,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     Map<UUID, Map<Integer, Set<Integer>>> partsToReload;
 
     /** Partition sizes. */
-    @Order(5)
+    @Order(value = 5, deprecatedBy = "PARTITION_SIZES_IN_SUPPLY_FEATURE")
     Map<Integer, Map<Integer, Long>> partsSizes;
 
     /** Topology version. */

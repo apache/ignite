@@ -111,4 +111,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the snapshot list command. */
     public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
+
+    /** Feature that moves the rebalance keys estimate from the exchange full message to the first supply message of a demand. */
+    public static final IgniteFeature PARTITION_SIZES_IN_SUPPLY_FEATURE = new IgniteCoreFeature(5);
 }
