@@ -266,6 +266,34 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testJoinedClientNodesMetric() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        try {
+            MetricRegistry discoReg = srv.context().metric().registry(DISCO_METRICS);
+
+            LongMetric ctr = discoReg.<LongMetric>findMetric("JoinedClientNodes");
+
+            assertNotNull("Metric JoinedClientNodes not found", ctr);
+            assertEquals(0L, ctr.value());
+
+            startClientGrid(1);
+
+            assertEquals(1L, ctr.value());
+
+            startClientGrid(2);
+
+            assertEquals(2L, ctr.value());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test

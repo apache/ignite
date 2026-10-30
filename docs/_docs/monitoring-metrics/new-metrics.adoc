@@ -523,6 +523,7 @@ Register name: `io.discovery`
 |CoordinatorSince | long | Coordinator since timestamp.
 |CurrentTopologyVersion | long | Current topology version.
 |FailedNodes | integer | Failed nodes count.
+|JoinedClientNodes | integer | Joined client nodes count.
 |JoinedNodes | integer | Joined nodes count.
 |LeftNodes | integer | Left nodes count.
 |LocalPort | integer | Local TCP port the discovery SPI listens to.

@@ -1403,6 +1403,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Notifies the discovery SPI that a client node has joined the topology.
+     *
+     * @param spi Discovery SPI.
+     */
+    private void onClientNodeJoined(DiscoverySpi spi) {
+        spi.onClientNodeJoined();
+    }
+
+    /**
      * Logs grid size for license compliance.
      *
      * @param topVer Topology version.
@@ -3083,6 +3092,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         catch (IgniteCheckedException e) {
                             U.warn(log, e.getMessage()); // We a have well-formed attribute warning here.
                         }
+
+                        if (node.isClient())
+                            onClientNodeJoined(getSpi());
 
                         if (log.isInfoEnabled())
                             log.info("Added new node to topology: " + node);

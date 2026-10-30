@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.deployment.DeploymentRequestOfUnknown
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerClientMetricTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerWalModeConsistencyTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerInternalEventsSelfTest;
@@ -92,6 +93,7 @@ import org.junit.runners.Suite;
     GridManagerStopSelfTest.class,
     GridDiscoveryManagerAttributesSelfTest.class,
     GridDiscoveryManagerAliveCacheSelfTest.class,
+    GridDiscoveryManagerClientMetricTest.class,
     GridDiscoveryManagerWalModeConsistencyTest.class,
     GridDiscoveryEventSelfTest.class,
     GridPortProcessorSelfTest.class,

@@ -46,6 +46,9 @@ public class TcpDiscoveryStatistics {
     /** Failed nodes count. */
     private final IntMetricImpl failedNodesCnt;
 
+    /** Joined client nodes count. */
+    private final IntMetricImpl joinedClientNodesCnt;
+
     /** Left nodes count. */
     private final IntMetricImpl leftNodesCnt;
 
@@ -88,6 +91,9 @@ public class TcpDiscoveryStatistics {
 
         failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
 
+        joinedClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedClientNodes"),
+            "Joined client nodes count.");
+
         leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
 
         pendingMsgsRegistered = new IntMetricImpl(metricName(DISCO_METRICS, "PendingMessagesRegistered"),
@@ -119,6 +125,7 @@ public class TcpDiscoveryStatistics {
 
         discoReg.register(joinedNodesCnt);
         discoReg.register(failedNodesCnt);
+        discoReg.register(joinedClientNodesCnt);
         discoReg.register(leftNodesCnt);
         discoReg.register(pendingMsgsRegistered);
         discoReg.register(rejectedSslConnectionsCnt);
@@ -131,6 +138,13 @@ public class TcpDiscoveryStatistics {
      */
     public void onNodeJoined() {
         joinedNodesCnt.increment();
+    }
+
+    /**
+     * Increments joined client nodes count.
+     */
+    public void onClientNodeJoined() {
+        joinedClientNodesCnt.increment();
     }
 
     /**
@@ -321,6 +335,15 @@ public class TcpDiscoveryStatistics {
     }
 
     /**
+     * Gets joined client nodes count.
+     *
+     * @return Joined client nodes count.
+     */
+    public int joinedClientNodesCount() {
+        return joinedClientNodesCnt.value();
+    }
+
+    /**
      * Gets nodes left count.
      *
      * @return Nodes left count.
@@ -355,6 +378,7 @@ public class TcpDiscoveryStatistics {
         crdSinceTs.set(0);
         failedNodesCnt.reset();
         joinedNodesCnt.reset();
+        joinedClientNodesCnt.reset();
         leftNodesCnt.reset();
         maxMsgProcTime = 0;
         pendingMsgsRegistered.reset();
