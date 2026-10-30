@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.sql.PreparedStatement;
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reduce query info.
@@ -33,10 +34,19 @@ public class ReduceH2QueryInfo extends H2QueryInfo {
      * @param nodeId Originator node id.
      * @param qryId Query id.
      * @param initiatorId Query initiator id.
+     * @param params Query parameters.
      * @param reqId Request ID.
      */
-    public ReduceH2QueryInfo(PreparedStatement stmt, String sql, UUID nodeId, long qryId, String initiatorId, long reqId) {
-        super(QueryType.REDUCE, stmt, sql, nodeId, qryId, initiatorId);
+    public ReduceH2QueryInfo(
+        PreparedStatement stmt,
+        String sql,
+        UUID nodeId,
+        long qryId,
+        String initiatorId,
+        @Nullable Object[] params,
+        long reqId
+    ) {
+        super(QueryType.REDUCE, stmt, sql, nodeId, qryId, initiatorId, params);
 
         this.reqId = reqId;
     }

@@ -441,13 +441,13 @@ public class GridMapQueryExecutor {
                     // Ensure we are on the target node for this replicated query.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         String sql = qry.query();
-                        Collection<Object> params0 = F.asList(qry.parameters(params));
+                        Object[] params0 = qry.parameters(params);
 
                         PreparedStatement stmt = conn.prepareStatement(sql, H2StatementCache.queryFlags(
                             distributedJoins,
                             enforceJoinOrder));
 
-                        H2Utils.bindParameters(stmt, params0);
+                        H2Utils.bindParameters(stmt, F.asList(params0));
 
                         GridQueryCancel qryCancel = qryResults.queryCancel(qryIdx);
 
@@ -468,6 +468,7 @@ public class GridMapQueryExecutor {
                             qryId,
                             runningQryId,
                             qryInitiatorId,
+                            params0,
                             reqId,
                             segmentId
                         );
