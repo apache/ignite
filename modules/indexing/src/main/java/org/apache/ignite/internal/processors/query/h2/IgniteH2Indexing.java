@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -443,7 +442,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             qry,
                             timeout,
                             cancel,
-                            qryParams.dataPageScanEnabled(),
                             null
                         ),
                         qryInfo
@@ -730,7 +728,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param params Parameters.
      * @param timeoutMillis Query timeout.
      * @param cancel Query cancel.
-     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -740,24 +737,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Collection<Object> params,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel,
-        Boolean dataPageScanEnabled,
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
         PreparedStatement stmt = conn.prepareStatementNoCache(sql);
 
         H2Utils.bindParameters(stmt, params);
 
-        return executeSqlQueryWithTimer(stmt,
-            conn, sql, timeoutMillis, cancel, dataPageScanEnabled, qryInfo);
-    }
-
-    /**
-     * @param dataPageScanEnabled If data page scan is enabled.
-     */
-    public void enableDataPageScan(Boolean dataPageScanEnabled) {
-        // Data page scan is enabled by default for SQL.
-        // TODO https://issues.apache.org/jira/browse/IGNITE-11998
-        CacheDataTree.setDataPageScanEnabled(false);
+        return executeSqlQueryWithTimer(stmt, conn, sql, timeoutMillis, cancel, qryInfo);
     }
 
     /**
@@ -768,7 +754,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param sql Sql query.
      * @param timeoutMillis Query timeout.
      * @param cancel Query cancel.
-     * @param dataPageScanEnabled If data page scan is enabled.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -778,13 +763,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql,
         int timeoutMillis,
         @Nullable GridQueryCancel cancel,
-        Boolean dataPageScanEnabled,
         final H2QueryInfo qryInfo
     ) throws IgniteCheckedException {
         if (qryInfo != null)
             heavyQryTracker.startTracking(qryInfo);
-
-        enableDataPageScan(dataPageScanEnabled);
 
         Throwable err = null;
         try {
@@ -796,8 +778,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw e;
         }
         finally {
-            CacheDataTree.setDataPageScanEnabled(false);
-
             if (qryInfo != null)
                 heavyQryTracker.stopTracking(qryInfo, err);
         }
@@ -1413,7 +1393,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         qryParams.arguments(),
                         parts,
                         qryParams.lazy(),
-                        qryParams.dataPageScanEnabled(),
                         qryParams.pageSize()
                     );
                 }

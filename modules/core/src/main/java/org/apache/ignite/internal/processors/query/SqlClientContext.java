@@ -60,9 +60,6 @@ public class SqlClientContext implements AutoCloseable {
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
-    /** Data page scan support for query execution. */
-    private final @Nullable Boolean dataPageScanEnabled;
-
     /** Update internal batch size. */
     private final @Nullable Integer updateBatchSize;
 
@@ -127,7 +124,6 @@ public class SqlClientContext implements AutoCloseable {
      * @param replicatedOnly Replicated caches only flag.
      * @param loc Local query flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
      * @param qryEngine Name of the SQL engine to use.
      * @param concurrency Transaction concurrency.
@@ -143,7 +139,6 @@ public class SqlClientContext implements AutoCloseable {
         boolean replicatedOnly,
         boolean loc,
         boolean skipReducerOnUpdate,
-        @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
         @Nullable String qryEngine,
         @Nullable TransactionConcurrency concurrency,
@@ -159,7 +154,6 @@ public class SqlClientContext implements AutoCloseable {
         this.replicatedOnly = replicatedOnly;
         this.loc = loc;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-        this.dataPageScanEnabled = dataPageScanEnabled;
         this.updateBatchSize = updateBatchSize;
         this.qryEngine = qryEngine;
         this.concurrency = concurrency;
@@ -266,13 +260,6 @@ public class SqlClientContext implements AutoCloseable {
      */
     public boolean isSkipReducerOnUpdate() {
         return skipReducerOnUpdate;
-    }
-
-    /**
-     * @return Data page scan flag or {@code null} if not set.
-     */
-    public @Nullable Boolean dataPageScanEnabled() {
-        return dataPageScanEnabled;
     }
 
     /**

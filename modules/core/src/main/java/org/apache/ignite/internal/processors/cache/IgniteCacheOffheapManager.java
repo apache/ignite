@@ -225,26 +225,23 @@ public interface IgniteCacheOffheapManager {
      * @param primary Primary entries flag.
      * @param backup Backup entries flag.
      * @param topVer Topology version.
-     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> cacheIterator(int cacheId,
+    public GridIterator<CacheDataRow> cacheIterator(
+        int cacheId,
         boolean primary,
         boolean backup,
-        AffinityTopologyVersion topVer,
-        Boolean dataPageScanEnabled
+        AffinityTopologyVersion topVer
     ) throws IgniteCheckedException;
 
     /**
      * @param cacheId Cache ID.
      * @param part Partition.
-     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part,
-        Boolean dataPageScanEnabled) throws IgniteCheckedException;
+    public GridIterator<CacheDataRow> cachePartitionIterator(int cacheId, final int part) throws IgniteCheckedException;
 
     /**
      * @param part Partition number.
@@ -276,7 +273,6 @@ public interface IgniteCacheOffheapManager {
      * @param backup {@code True} if need to return backup entries.
      * @param topVer Topology version.
      * @param keepBinary Keep binary flag.
-     * @param dataPageScanEnabled Flag to enable data page scan.
      * @return Entries iterator.
      * @throws IgniteCheckedException If failed.
      */
@@ -285,8 +281,7 @@ public interface IgniteCacheOffheapManager {
         final boolean primary,
         final boolean backup,
         final AffinityTopologyVersion topVer,
-        final boolean keepBinary,
-        Boolean dataPageScanEnabled
+        final boolean keepBinary
     ) throws IgniteCheckedException;
 
     /**

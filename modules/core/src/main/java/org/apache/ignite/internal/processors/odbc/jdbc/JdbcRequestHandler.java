@@ -181,7 +181,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * @param loc Local query flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
-     * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
@@ -202,7 +201,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         boolean loc,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
-        @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
         @Nullable TransactionConcurrency concurrency,
         @Nullable TransactionIsolation isolation,
@@ -231,7 +229,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             replicatedOnly,
             loc,
             skipReducerOnUpdate,
-            dataPageScanEnabled,
             updateBatchSize,
             qryEngine,
             concurrency,

@@ -174,11 +174,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private final StringProperty passwd = new StringProperty(
         "password", "User's password", null, null, false, null);
 
-    /** Data page scan flag. */
-    private final BooleanProperty dataPageScanEnabled = new BooleanProperty("dataPageScanEnabled",
-        "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
-        null, false);
-
     /** Partition awareness flag. */
     private final BooleanProperty partitionAwareness = new BooleanProperty(
         "partitionAwareness",
@@ -273,7 +268,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         userAttrsFactory,
         user, passwd,
-        dataPageScanEnabled,
         partitionAwareness,
         updateBatchSize,
         partitionAwarenessSQLCacheSize,
@@ -569,16 +563,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public String getPassword() {
         return passwd.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable Boolean isDataPageScanEnabled() {
-        return dataPageScanEnabled.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled) {
-        this.dataPageScanEnabled.setValue(dataPageScanEnabled);
     }
 
     /** {@inheritDoc} */

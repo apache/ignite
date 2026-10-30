@@ -158,7 +158,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             false,
             skipReducerOnUpdate,
             null,
-            null,
             qryEngine,
             null,
             null,

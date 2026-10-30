@@ -297,7 +297,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
 
         /** {@inheritDoc} */
         @Override public ResultSet executeSqlQueryWithTimer(PreparedStatement stmt, H2PooledConnection conn, String sql,
-            int timeoutMillis, @Nullable GridQueryCancel cancel, Boolean dataPageScanEnabled,
+            int timeoutMillis, @Nullable GridQueryCancel cancel,
             H2QueryInfo qryInfo) throws IgniteCheckedException {
             if (expectedLazy != null) {
                 assertEquals(
@@ -309,7 +309,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
 
             qryCnt++;
 
-            return super.executeSqlQueryWithTimer(stmt, conn, sql, timeoutMillis, cancel, dataPageScanEnabled, qryInfo);
+            return super.executeSqlQueryWithTimer(stmt, conn, sql, timeoutMillis, cancel, qryInfo);
         }
 
         /** */
