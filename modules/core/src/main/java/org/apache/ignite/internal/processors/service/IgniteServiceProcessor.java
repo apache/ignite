@@ -61,7 +61,9 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
@@ -1336,6 +1338,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 throw new IgniteCheckedException("Error occured during service initialization: " +
                     "[locId=" + ctx.localNodeId() + ", name=" + name + ']', e);
             }
+            finally {
+                releaseLeftExplicitLocks(srvcCtx, "init");
+            }
 
             if (log.isInfoEnabled())
                 log.info("Starting service instance [name=" + srvcCtx.name() + ", execId=" +
@@ -1381,11 +1386,39 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                             throw (Error)e;
                     }
                     finally {
+                        releaseLeftExplicitLocks(srvcCtx, "execute");
+
                         // Suicide.
                         exe.shutdownNow();
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * Releases explicit locks acquired but not released by the service execution. Locks are bound to the thread,
+     * so locks left unreleased by the terminating service thread would never be released.
+     *
+     * @param srvcCtx Service context.
+     * @param method Method name.
+     */
+    private void releaseLeftExplicitLocks(ServiceContextImpl srvcCtx, String method) {
+        try {
+            GridCacheMvccManager locksMgr = ctx.cache().context().mvcc();
+
+            Collection<GridCacheVersion> released = locksMgr == null ? Collections.emptySet() :
+                locksMgr.releaseExplicitLocks(Thread.currentThread().getId(), Collections.emptySet());
+
+            if (!released.isEmpty()) {
+                U.warn(log, "Service execution (" + method + " method) finished without releasing explicit locks, " +
+                    "the locks have been released forcibly [name=" + srvcCtx.name() + ", execId=" + srvcCtx.executionId() +
+                    ", lockVers=" + released + ']');
+            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to release explicit locks left by service [name=" + srvcCtx.name() +
+                ", execId=" + srvcCtx.executionId() + ']', e);
         }
     }
 
@@ -1509,6 +1542,8 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                     throw e;
             }
             finally {
+                releaseLeftExplicitLocks(ctx, "cancel");
+
                 try {
                     this.ctx.resource().cleanup(srvc);
                 }
