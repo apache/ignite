@@ -282,7 +282,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         else if (joinCtx.joinType() == JoiningRelationType.FK_ON_PK) {
             // For foreign key joins the base table is the one which is joined by non-primary key columns.
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                Double selectivity = mq.getSelectivity(rel, rel.getCondition());
+                double selectivity = safeSelectivity(mq.getSelectivity(rel, rel.getCondition()));
                 baseRowCnt = leftRowCnt * selectivity;
                 percentageAdjustment = rightPercentage(mq, rel, rightAdjust);
             }
@@ -304,7 +304,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
         else { // PK_ON_FK
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                Double selectivity = mq.getSelectivity(rel, rel.getCondition());
+                double selectivity = safeSelectivity(mq.getSelectivity(rel, rel.getCondition()));
                 baseRowCnt = rightRowCnt * selectivity;
                 percentageAdjustment = mq.getPercentageOriginalRows(rel.getLeft());
             }
@@ -332,6 +332,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
         }
 
         return Math.max(preservedRowCnt, baseRowCnt * percentageAdjustment * postFiltrationAdjustment);
+    }
+
+    /** */
+    private static double safeSelectivity(Double selectivity) {
+        return selectivity == null ? 1.0 : selectivity;
     }
 
     /** Percentage of original rows of the right input, see {@link #joinRowCount(RelMetadataQuery, Join, double)}. */
