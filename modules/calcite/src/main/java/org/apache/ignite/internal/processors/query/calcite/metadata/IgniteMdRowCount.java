@@ -234,8 +234,6 @@ public class IgniteMdRowCount extends RelMdRowCount {
         Double percentageAdjustment = null;
         if (joinCtx.joinType() == JoiningRelationType.PK_ON_PK) {
             if (rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.SEMI) {
-                if (!joinInfo.isEqui())
-                    postFiltrationAdjustment = NON_EQUI_COEFF;
                 // Assume we have two fact tables SALES and RETURNS sharing the same primary key. Every item
                 // can be sold, but only items which were sold can be returned back, therefore
                 // size(SALES) > size(RETURNS). When joining SALES on RETURNS by primary key, the estimated
@@ -266,7 +264,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
                 }
 
                 Double leftPercentage = mq.getPercentageOriginalRows(rel.getLeft());
-                Double rightPercentage = mq.getPercentageOriginalRows(rel.getRight());
+                Double rightPercentage = rightPercentage(mq, rel, rightAdjust);;
                 leftPercentage = leftPercentage == null ? 1.0 : leftPercentage;
                 rightPercentage = rightPercentage == null ? 1.0 : rightPercentage;
 
