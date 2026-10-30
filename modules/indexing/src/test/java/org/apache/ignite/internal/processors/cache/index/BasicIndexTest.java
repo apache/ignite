@@ -190,6 +190,252 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         return gridCount;
     }
 
+/*    static final String KEY_FIELD = "key";
+    static final String ASOF_FIELD = "asof";
+    static final String ASAT_FIELD = "asat";
+    static final String PAYLOAD_FIELD = "payload";
+    static final String STATUS_FIELD = "status";
+
+    public static final Long TOTAL = 10_000L;
+    public static final Long KEY_FACTOR = TOTAL * 9 / 10;
+    public static final Long ASOF_FACTOR = 1L;
+    public static final Long ASAT_FACTOR = 20L;
+    public static final Long STATUS_FACTOR = 1L;
+    public static final Long PAYLOAD_FACTOR = (TOTAL / 10) * 9;
+    public static final Long PAYLOAD_SIZE_FACTOR = 4000L;
+
+    static class Key0 {
+
+        private String key;
+        private Long asof;
+        private Long asat;
+
+        public static Key0 from(long id) {
+            Key0 key = new Key0();
+
+            key.key = keyOf(id);
+            key.asof = asofOf(id);
+            key.asat = asatOf(id);
+
+            return key;
+        }
+
+        public static String keyOf(long id) {
+            return "k" + genByFactor(id, KEY_FACTOR);
+        }
+
+        public static long asofOf(long id) {
+            return genByFactor(id, ASOF_FACTOR);
+        }
+
+        public static long asatOf(long id) {
+            return genByFactor(id, ASAT_FACTOR);
+        }
+
+    }
+
+    private static long genByFactor(long id, long factor) {
+        return id % factor;
+    }
+
+    public static int randomInt(int ceiling) {
+        return (int) (Math.random() * ceiling);
+    }
+
+    public static void writeLong(long l, final byte[] target, int pos) {
+        for (int i = Long.BYTES - 1; i >= 0; i--) {
+            target[pos + i] = (byte) (l & 0xFF);
+            l >>= Byte.SIZE;
+        }
+    }
+
+    static class Val0 {
+
+        private byte[] payload;
+        private String status;
+
+        public static Val0 from(long id) {
+            Val0 val = new Val0();
+
+            val.payload = payloadOf(id);
+            val.status = statusOf(id);
+
+            return val;
+        }
+
+        public static byte[] payloadOf(long id) {
+            int size = Math.toIntExact(PAYLOAD_SIZE_FACTOR) + randomInt(Math.toIntExact(PAYLOAD_SIZE_FACTOR * 2));
+            long value = genByFactor(id, PAYLOAD_FACTOR);
+            byte[] payload = new byte[size];
+            writeLong(value, payload, 0);
+            for (int i = Long.BYTES; i < payload.length; i++)
+                payload[i] = 0;
+            return payload;
+        }
+
+        public static String statusOf(long id) {
+            return "s" + genByFactor(id, STATUS_FACTOR);
+        }
+
+    }
+
+    public static QueryEntity queryEntity() {
+        QueryEntity entity = new QueryEntity();
+        entity.setTableName("tbl");
+
+        entity.setKeyType(Key0.class.getCanonicalName());
+        entity.setKeyFields(new HashSet<>(Arrays.asList(KEY_FIELD, ASOF_FIELD, ASAT_FIELD)));
+
+        entity.setValueType(Val0.class.getName());
+        LinkedHashMap<String, String> fields = new LinkedHashMap<String, String>() {{
+            put(KEY_FIELD, String.class.getCanonicalName());
+            put(ASOF_FIELD, Long.class.getCanonicalName());
+            put(ASAT_FIELD, Long.class.getCanonicalName());
+            put(PAYLOAD_FIELD, byte[].class.getCanonicalName());
+            put(STATUS_FIELD, String.class.getCanonicalName());
+        }};
+        entity.setFields(fields);
+
+        List<QueryIndex> indexes = new LinkedList<>();
+
+        LinkedHashMap<String, Boolean> indexGroup = new LinkedHashMap<>();
+        indexGroup.put(KEY_FIELD, false);
+        indexGroup.put(ASOF_FIELD, false);
+        indexGroup.put(ASAT_FIELD, false);
+
+        indexes.add(new QueryIndex(indexGroup, QueryIndexType.SORTED));
+
+        entity.setIndexes(indexes);
+
+        return entity;
+    }
+
+    public static CacheConfiguration<Key0, Val0> cacheConfig(String cacheName) {
+        CacheConfiguration<Key0, Val0> config = new CacheConfiguration<>(cacheName);
+
+        config.setQueryEntities(Collections.singletonList(queryEntity()));
+
+        return config;
+    }
+
+    public static String query(String cacheName) {
+        String table = "\"" + cacheName + "\".tbl";
+        return "" +
+            "SELECT origin._key, origin._val " +
+            "FROM ( " +
+            "   SELECT key as k, max(asof) as asof " +
+            "   FROM " + table + " t1 " +
+            "   JOIN table (id varchar=?) t2  ON t1.key = t2.id " +
+            "   AND t1.asof <= ? " +
+            "   AND t1.asat <= ? " +
+            "   GROUP BY key " +
+            ") as snapshot, ( " +
+            "   SELECT key as k, asof as asof, max(asat) as asat " +
+            "   FROM " + table + " t1 " +
+            "   JOIN table (id varchar=?) t2  ON t1.key = t2.id " +
+            "   AND t1.asof <= ? " +
+            "   AND t1.asat <= ? " +
+            "   GROUP BY key, asof " +
+            ") as version, " +
+            table + " as origin " +
+            "WHERE snapshot.k=version.k " +
+            "AND snapshot.asof=version.asof " +
+            "AND snapshot.k=origin.key " +
+            "AND snapshot.asof=origin.asOf " +
+            "AND version.asat=origin.asAt";
+    }
+
+    public static final List<String> CACHE_NAMES = Arrays.asList("foo");
+
+    public static void iterate(long total, Consumer<Long> action) {
+        for (long i = 0; i < total; i++)
+            action.accept(i);
+    }
+
+    static Object[] prepareArgs(long asof, long asat, String... keys) {
+        Object[] args = new Object[6];
+        for (int i = 0; i < 2; i++) {
+            args[i * 3] = keys;
+            args[i * 3 + 1] = asof;
+            args[i * 3 + 2] = asat;
+        }
+
+        return args;
+    }
+
+    static String[] generateKeySet(int amount) {
+        Set<String> set = new HashSet<>();
+
+        iterate(amount / 2 + randomInt(amount / 2), i -> {
+            set.add(Key0.keyOf(KEY_FACTOR));
+        });
+
+        return set.toArray(new String[]{});
+    }
+
+    @Test
+    public void test0() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(0);
+
+        IgniteEx client = startClientGrid(CLIENT_NAME);
+
+        CACHE_NAMES.forEach(cacheName -> {
+            IgniteCache<Key0, Val0> cache0 = client.createCache(cacheConfig(cacheName));
+
+            iterate(TOTAL, i -> {
+                Key0 key = Key0.from(i);
+                Val0 val = Val0.from(i);
+                cache0.put(key, val);
+            });
+
+            System.err.println("Finish filling " + cacheName);
+        });
+
+        String[] keys = generateKeySet(10);
+        final long asof = 15;
+        final long asat = 225;
+
+        int summary = 0;
+
+        for (int i=0; i<10; ++i) {
+            SqlFieldsQuery query = new SqlFieldsQuery(query(CACHE_NAMES.get(0)))
+                .setArgs(prepareArgs(asof, asat, keys))
+                .setCollocated(true)
+                .setEnforceJoinOrder(true)
+                .setDistributedJoins(true);
+
+            List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
+
+            System.err.println(result.get(0).get(0));
+
+            //System.err.println("---" + result.get(0).get(0));
+            //System.err.println();
+
+            summary += result.size();
+        }
+
+        System.err.println("warmup end " + summary);
+        System.gc();
+        summary = 0;
+        long start = System.currentTimeMillis();
+
+        SqlFieldsQuery query = new SqlFieldsQuery(query(CACHE_NAMES.get(0)))
+            .setArgs(prepareArgs(asof, asat, keys))
+            .setCollocated(true)
+            .setEnforceJoinOrder(true)
+            .setDistributedJoins(true);
+
+        for (int i=0; i<1000; ++i) {
+            List<List<?>> result = client.cache(CACHE_NAMES.get(0)).query(query).getAll();
+
+            summary += result.size();
+        }
+
+        System.err.println("!!!!sum: " + summary + " , spend time: " + (System.currentTimeMillis() - start));
+    }*/
+
     /** */
     @Test
     public void testNoIndexesNoPersistence() throws Exception {
