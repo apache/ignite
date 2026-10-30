@@ -193,6 +193,8 @@
   items:
     - title: Introduction
       url: SQL/sql-introduction
+    - title: SQL Engines
+      url: SQL/sql-calcite
     - title: Understanding Schemas
       url: SQL/schemas
     - title: Defining Indexes
@@ -223,8 +225,6 @@
           url: SQL/ODBC/error-codes
     - title: SQL Statistics
       url: SQL/sql-statistics
-    - title: Calcite-based SQL Engine
-      url: SQL/sql-calcite
 - title: SQL Reference
   url: sql-reference/index
   items:

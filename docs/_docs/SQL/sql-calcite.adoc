@@ -12,25 +12,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Calcite-based SQL Engine
+= SQL Engines
 
-Starting the 2.13 version, Apache Ignite includes a new SQL engine based on the Apache Calcite framework.
+Apache Ignite parses, plans and executes SQL queries with the engine based on the Apache Calcite framework. The engine was introduced in version 2.13 as an optional module and, starting with version 2.19, is the default SQL engine: the `ignite-calcite` module is enabled in the binary distribution out of the box.
 
 Apache Calcite is a dynamic data management framework, which mainly serves for mediating between applications, one or more data storage locations, and data processing engines. For more information on Apache Calcite, please see the link:https://calcite.apache.org/docs[product documentation, window=_blank].
 
-The current H2-based SQL engine has a number of fundamental limitations of query execution in a distributed environment. To address these limitations, a new SQL engine was implemented. The new engine uses tools provided by Apache Calcite for parsing and planning queries. It also has a new query execution flow.
+The previous SQL engine, based on the H2 database, had a number of fundamental limitations of query execution in a distributed environment. It is still shipped as the <<legacy-h2-engine,legacy H2 engine>> in the `ignite-indexing` module, which stays in the `libs` folder of the distribution, so the H2 engine can be selected per query or per connection without any configuration. A few features are implemented by the legacy engine only; see the linked section for the list and for the upgrade notes.
 
 == Calcite Module Libraries
 
-To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.
-
 === Standalone Mode
 
-When starting a standalone node, move `optional/ignite-calcite` folder to the `libs` folder before running `ignite.{sh|bat}` script. In this case, the content of the module folder is added to the classpath.
+The `ignite-calcite` module is located in the `libs` folder of the binary distribution, so a node started with the `ignite.{sh|bat}` script has the engine on the classpath. Nothing needs to be moved or enabled.
 
 === Maven Configuration
 
-If you are using Maven to manage dependencies of your project, you can add Calcite module dependency as follows: Replace `${ignite.version}` with the actual Apache Ignite version you are interested in:
+If you start Ignite from your application and use Maven to manage its dependencies, add the Calcite module dependency as follows. Replace `${ignite.version}` with the actual Apache Ignite version you are interested in:
 
 [tabs]
 --
@@ -47,7 +45,18 @@ tab:XML[]
 
 == Configuring Query Engines
 
-To enable engine, add the explicit `CalciteQueryEngineConfiguration` instance to the `SqlConfiguration.QueryEnginesConfiguration` property.
+=== Engines Available Without Configuration
+
+When `SqlConfiguration.queryEnginesConfiguration` is not set, a node uses the engine modules found on its classpath:
+
+* If the `ignite-calcite` module is on the classpath, the Calcite-based engine is the default engine. If the `ignite-indexing` module is on the classpath too, which is the case for the binary distribution, the H2 engine is available by name: per connection with the JDBC `queryEngine` parameter or the ODBC `QUERY_ENGINE` attribute, and per query with the `QUERY_ENGINE('h2')` hint, see <<Routing Queries to Query Engine>>.
+* If only the `ignite-indexing` module is on the classpath, the H2 engine executes all queries. No engine can be chosen by name on such a node: the hint fails with `Query engines not configured, but specified engine: <name>`, and a JDBC or ODBC connection that sets the engine fails with `Not found configuration for query engine: <name>`.
+
+The engine names are `calcite` and `h2`.
+
+=== Explicit Configuration
+
+Set `SqlConfiguration.queryEnginesConfiguration` to change the default engine or to set engine options, for example the <<memory-quotas,memory quotas>> of the Calcite-based engine. When the property is set, only the configured engines are available: a query that asks for another engine fails with `Query engine not found: <name>`, and a connection that asks for it fails with `Not found configuration for query engine: <name>`. The `IndexingQueryEngineConfiguration` class belongs to the `ignite-indexing` module and the `CalciteQueryEngineConfiguration` class to the `ignite-calcite` module, so a configuration that names a class of an absent module does not load.
 
 Below is a configuration example of two configured query engines (H2-based and Calcite-based engines) where the Calcite-based engine is chosen as a default one:
 
@@ -88,7 +97,7 @@ IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
 
 == Routing Queries to Query Engine
 
-Normally, all queries are routed to the query engine that is configured by default. If more than one engine is configured through `queryEnginesConfiguration`, it's possible to use another engine instead of the one configured default for individual queries or for the whole connection.
+Normally, all queries are routed to the default query engine. If more than one engine is available on the node (see <<Configuring Query Engines>>), it is possible to use another engine instead of the default one for individual queries, with the <<hint_query_engine,QUERY_ENGINE>> hint, or for the whole connection, as shown below.
 
 === JDBC
 
@@ -181,13 +190,19 @@ IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
 
 === DDL
 
-Data definition language (DDL) statements are compliant with the old H2-based engine. You can find the DDL syntax description link:sql-reference/ddl[here, window=_blank].
+You can find the DDL syntax description link:sql-reference/ddl[here, window=_blank]. The Calcite-based engine does not accept the following elements of the H2 dialect:
+
+* The `LONG` type name: use `BIGINT`.
+* A precision of the integer types, such as `INT(11)`: use `INT`.
+* The `affinityKey` and `cacheGroup` spellings of the `CREATE TABLE` options: use `AFFINITY_KEY` and `CACHE_GROUP`.
+* The `PARALLELISM`, `PK_INLINE_SIZE` and `AFFINITY_INDEX_INLINE_SIZE` options of `CREATE TABLE`.
+* Spatial indexes (`CREATE SPATIAL INDEX`) and the `GEOMETRY` data type.
 
 === DML
 
-The new SQL engine mostly inherits data manipulation language (DML) statements syntax from the Apache Calcite framework. See the Apache Calcite SQL grammar description link:https://calcite.apache.org/docs/reference.html[here, window=_blank].
+The Calcite-based engine mostly inherits data manipulation language (DML) statements syntax from the Apache Calcite framework. See the Apache Calcite SQL grammar description link:https://calcite.apache.org/docs/reference.html[here, window=_blank].
 
-In most cases, statement syntax is compliant with the old SQL engine. But there are still some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note the `MERGE` statement syntax has changed.
+In most cases, statement syntax is compliant with the legacy H2-based engine. But there are still some differences between DML dialects in H2-based engine and Calcite-based engine. For example, note the `MERGE` statement syntax has changed.
 
 === Transactions
 
@@ -1294,3 +1309,76 @@ If neither option is specified, Ignite uses the transaction timeout.
 `SELECT ... FOR UPDATE` is supported only for plain `SELECT` queries over cache-based tables and joins of such tables.
 It is not supported for `DISTINCT`, `GROUP BY`, `HAVING`, aggregate-only result sets, system views, or table functions.
 ====
+
+== Legacy H2 Engine [[legacy-h2-engine]]
+
+The SQL engine based on the H2 database is provided by the `ignite-indexing` module. The module is shipped in the `libs` folder of the binary distribution next to `ignite-calcite`, so a node started with the `ignite.{sh|bat}` script has both engines: the Calcite-based engine is the default one and the H2 engine is available by name, see <<Configuring Query Engines>>. If you start Ignite from your application and manage its dependencies with Maven, add the `ignite-indexing` dependency to get the H2 engine.
+
+To make the H2 engine the default engine again, configure it explicitly with `IndexingQueryEngineConfiguration.setDefault(true)`, as shown in <<Configuring Query Engines>>. This is the simplest way to keep the previous behaviour after an upgrade.
+
+[WARNING]
+====
+Every node of the cluster, including thick client nodes and the nodes embedded into an application, must have the same set of engine modules as the server nodes.
+====
+
+=== Features Implemented by the H2 Engine Only
+
+The following features work only when the query is executed by the H2 engine: the `ignite-indexing` module must be on the classpath of every node, and the H2 engine must be selected for the query or the connection, or configured as the default engine.
+
+* The link:sql-reference/operational-commands#copy[COPY] and link:sql-reference/operational-commands#set-streaming[SET STREAMING] commands and the streaming modes of the JDBC and ODBC drivers.
+* link:SQL/JDBC/jdbc-driver#partition-awareness[Partition awareness] of the JDBC thin driver. The Calcite-based engine does not return the partition information to the driver, so the driver sends the queries of such a connection to a random node of the cluster.
+* The `USE INDEX` syntax. The Calcite-based engine provides the `FORCE_INDEX` and `NO_INDEX` <<hints,hints>>.
+* Spatial indexes (`CREATE SPATIAL INDEX`) and the `GEOMETRY` data type.
+* The query flags `distributedJoins`, `collocated` and `skipReducerOnUpdate` of `SqlFieldsQuery`, of the JDBC connection string and of the ODBC connection string. The Calcite-based engine accepts and ignores them; it plans distributed joins and aggregations on its own. The `replicatedOnly` flag is deprecated since version 2.8 and is ignored by both engines.
+* `CacheConfiguration.queryParallelism` and the `PARALLELISM` option of `CREATE TABLE`. The Calcite-based engine executes a query fragment in a single thread on each node and merges the segments of a segmented index, so keep the value `1` for the tables that are queried by the Calcite-based engine.
+* The `sql.disabledFunctions` distributed property. The Calcite-based engine does not block the functions listed in it.
+* The H2 SQL dialect: functions, type conversions and statement syntax that exist in H2 but not in the Calcite-based engine, for example the H2 form of the `MERGE` statement and the DDL elements listed in <<DDL>>.
+
+The following cache API queries require the `ignite-indexing` module but do not depend on the selected engine:
+
+* `TextQuery` is executed by the H2 engine with Lucene on every server node. It requires the `ignite-indexing` module on the node that starts the query and on all server nodes.
+* The deprecated `SqlQuery` requires the `ignite-indexing` module on the node that starts the query, where it is translated into a `SqlFieldsQuery`. The resulting query is executed by the default engine of that node, so a `SqlQuery` that relies on the H2 dialect fails when the Calcite-based engine is the default. Use `SqlFieldsQuery` instead.
+
+Without the module both queries fail with `... is supported by the H2 query engine only`.
+
+=== Upgrade Notes
+
+Starting with version 2.19, the Calcite-based engine is the default engine. The following behaviour changes may affect an application that is upgraded from a previous version.
+
+* On a node with the `ignite-calcite` module, which is the case for the binary distribution and for the Docker image, every SQL query runs on the Calcite-based engine unless the H2 engine is requested by name or configured as the default. Statements that rely on the H2 dialect may fail with a parse or validation error and have to be rewritten; see <<DDL>> for the DDL differences.
+* An application that depends on `ignite-indexing` but not on `ignite-calcite` keeps the H2 engine as its only engine. Such a node must not connect to a cluster whose server nodes have no `ignite-indexing` module, see the warning above.
+* An XML configuration that contains `IndexingQueryEngineConfiguration` loads only when the `ignite-indexing` module is on the classpath; `CalciteQueryEngineConfiguration` needs the `ignite-calcite` module in the same way.
+* The execution plan format changed: use `EXPLAIN PLAN FOR <query>`, see link:perf-and-troubleshooting/sql-tuning#using-the-explain-statement[Using the EXPLAIN Statement].
+* The functions listed in the `sql.disabledFunctions` property are not blocked by the Calcite-based engine.
+* The SQL plan history is enabled by default on a node where the Calcite-based engine is the default engine, see link:monitoring-metrics/system-views#sql_plans_history[SQL_PLANS_HISTORY].
+* The errors below indicate that a feature of the H2 engine is used where it is not available:
+
+[width="100%",cols="40%,60%",options="header"]
+|===
+|Error message |Cause and remedy
+
+|`Failed to execute query. Add module 'ignite-indexing' to the classpath of all Ignite nodes or configure any query engine.`
+|The node has no SQL engine at all: neither `ignite-calcite` nor `ignite-indexing` is on the classpath. Add the `ignite-calcite` module.
+
+|`Failed to execute query because indexing is disabled (consider adding module 'ignite-indexing' ...)`
+|A feature implemented by the H2 engine (`SqlQuery`, `TextQuery`, JDBC streaming, `COPY`) is used on a node without the `ignite-indexing` module. Add the module to the classpath of all nodes, or use `SqlFieldsQuery`, the data streamer or JDBC batches instead.
+
+|`'SqlQuery' is supported by the H2 query engine only ...`
+|The deprecated `SqlQuery` is used on a node without the `ignite-indexing` module. Use `SqlFieldsQuery`, or add the module to the classpath of all nodes.
+
+|`'TextQuery' is supported by the H2 query engine only ...`
+|A text query is used on a node without the `ignite-indexing` module. Add the module to the classpath of all nodes.
+
+|`Not found configuration for query engine: <name>`
+|A JDBC or ODBC connection requests an engine that is not available on the server: its module is not on the classpath, `queryEnginesConfiguration` is set and does not list it, or the server has the `ignite-indexing` module only and no configuration. Add the module or configure the engine, or remove the `queryEngine` parameter.
+
+|`Query engine not found: <name>`
+|The `QUERY_ENGINE` hint names an engine that is not available on the node: its module is not on the classpath, or `queryEnginesConfiguration` is set and does not list it. Add the module or configure the engine, or remove the hint.
+
+|`Query engines not configured, but specified engine: <name>`
+|The `QUERY_ENGINE` hint is used on a node that has the `ignite-indexing` module only and no `queryEnginesConfiguration`. Add the `ignite-calcite` module or configure the engines, or remove the hint.
+
+|`Failed to parse query` for `COPY` or `SET STREAMING`
+|The command is sent to the Calcite-based engine. Run it over a connection with `queryEngine=h2`, or use the data streamer or JDBC batches instead.
+
+|===

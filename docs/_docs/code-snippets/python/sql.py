@@ -20,13 +20,13 @@ client = Client()
 client.connect('127.0.0.1', 10800)
 
 CITY_CREATE_TABLE_QUERY = '''CREATE TABLE City (
-    ID INT(11),
+    ID INT,
     Name CHAR(35),
     CountryCode CHAR(3),
     District CHAR(20),
-    Population INT(11),
+    Population INT,
     PRIMARY KEY (ID, CountryCode)
-) WITH "affinityKey=CountryCode"'''
+) WITH "affinity_key=CountryCode"'''
 
 client.sql(CITY_CREATE_TABLE_QUERY)
 

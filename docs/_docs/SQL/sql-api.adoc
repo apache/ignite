@@ -27,7 +27,7 @@ NOTE: If you create tables using JDBC or SQL tools, you do not need to define qu
 
 [NOTE]
 ====
-Indexing capabilities are provided by the 'ignite-indexing' module. If you start Ignite from java code, link:setup#enabling-modules[add this module to the classpath of your application].
+SQL is provided by the `ignite-calcite` module. If you start Ignite from Java code, link:setup#enabling-modules[add this module to the classpath of your application]. See link:SQL/sql-calcite[SQL Engines] for details.
 ====
 
 In Java, queryable fields can be configured in two ways:

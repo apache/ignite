@@ -21,7 +21,7 @@ In addition to common DDL commands, such as CREATE/DROP INDEX, developers can us
 
 [NOTE]
 ====
-Indexing capabilities are provided by the 'ignite-indexing' module. If you start Ignite from Java code, link:setup#enabling-modules[add this module to your classpath].
+SQL and indexes are provided by the `ignite-calcite` module, which is enabled in the binary distribution by default. If you start Ignite from Java code, link:setup#enabling-modules[add this module to your classpath]. See link:SQL/sql-calcite[SQL Engines] for details.
 ====
 
 Ignite automatically creates indexes for each primary key and affinity key field.
@@ -244,7 +244,7 @@ Use the link:sql-reference/ddl#create-index[CREATE/DROP INDEX] command if you ne
 
 Proper index inline size can help speed up queries on indexed fields.
 //For primitive types and BinaryObjects, Ignite uses a predefined inline index size
-Refer to the dedicated section in the link:SQL/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
+Refer to the dedicated section in the link:perf-and-troubleshooting/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
 
 In most cases, you will only need to set the inline size for indexes on variable-length fields, such as strings or arrays.
 The default value is 10.

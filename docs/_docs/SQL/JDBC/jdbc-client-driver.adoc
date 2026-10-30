@@ -19,10 +19,10 @@ JDBC Client Driver interacts with the cluster by means of a client node.
 
 == JDBC Client Driver
 
-The JDBC Client Driver connects to the cluster by using a lclient node connection. You must provide a complete Spring XML configuration as part of the JDBC connection string, and copy all the JAR files mentioned below to the classpath of your application or SQL tool:
+The JDBC Client Driver connects to the cluster by using a client node connection. You must provide a complete Spring XML configuration as part of the JDBC connection string, and copy all the JAR files mentioned below to the classpath of your application or SQL tool:
 
 - All the JARs under `{IGNITE_HOME}\libs` directory.
-- All the JARs under `{IGNITE_HOME}\ignite-indexing` and `{IGNITE_HOME}\ignite-spring` directories.
+- All the JARs under `{IGNITE_HOME}\libs\ignite-calcite`, `{IGNITE_HOME}\libs\ignite-indexing` and `{IGNITE_HOME}\libs\ignite-spring` directories.
 
 The driver itself is more robust, and might not support the latest SQL features of Ignite. However, because it uses the client node connection underneath, it can execute and distribute queries, and aggregate their results directly from the application side.
 
@@ -84,12 +84,13 @@ For information on how to secure the JDBC client driver connection, you can refe
 |`collocated`
 
 |Flag that is used for optimization purposes. Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members. If you know in advance that the elements of your query selection are colocated together on the same node, Ignite can make significant performance and network optimizations.
+Applies to the legacy H2 engine only; the Calcite-based engine ignores it.
 
 |`false`
 
 |`distributedJoins`
 
-|Allows use of distributed joins for non-colocated data.
+|Allows use of distributed joins for non-colocated data. Applies to the legacy H2 engine only; the Calcite-based engine executes non-colocated joins without this flag.
 
 |`false`
 
@@ -141,7 +142,7 @@ However, in cases when you need transactional syntax to work (even without trans
 
 |`skipReducerOnUpdate`
 
-|Enables server side update feature.
+|Enables server side update feature. Applies to the legacy H2 engine only.
 
 When Ignite executes a DML operation, it first fetches all of the affected intermediate rows for analysis to the query initiator (also known as reducer), and then prepares batches of updated values to be sent to remote nodes.
 

@@ -83,8 +83,12 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 See the link:security/authentication[Authentication] and link:sql-reference/ddl#create-user[CREATE user] documentation for more details.
 |`ignite`
 
+|`queryEngine`
+|Name of the SQL engine that executes the queries of this connection: `calcite` or `h2`. The engine must be available on the server, see link:SQL/sql-calcite#configuring-query-engines[Configuring Query Engines]; otherwise the connection fails with `Not found configuration for query engine: <name>`. See also link:SQL/sql-calcite#routing-queries-to-query-engine[Routing Queries to Query Engine].
+|The default engine of the server
+
 |`distributedJoins`
-|Whether to execute distributed joins in link:SQL/distributed-joins#non-colocated-joins[non-colocated mode].
+|Whether to execute distributed joins in link:SQL/distributed-joins#non-colocated-joins[non-colocated mode]. Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only; the Calcite-based engine executes non-colocated joins without this flag.
 |false
 
 |`enforceJoinOrder`
@@ -100,6 +104,7 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
   you know in advance that the elements of your query selection are colocated together on the same node and you group by
   a primary or affinity key, then Ignite makes significant performance and network optimizations by grouping data locally
    on each node participating in the query.
+  Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only; the Calcite-based engine ignores it.
 |`false`
 
 |`autoCloseServerCursor`
@@ -135,7 +140,7 @@ See the link:security/authentication[Authentication] and link:sql-reference/ddl#
 |`false`
 
 |`skipReducerOnUpdate`
-|Enables server side updates.
+|Enables server side updates. Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only.
 When Ignite executes a DML operation, it fetches all the affected intermediate rows and sends them to the query initiator (also known as reducer) for analysis. Then it prepares batches of updated values to be sent to remote nodes.
 This approach might impact performance and it can saturate the network if a DML operation has to move many entries over it.
 Use this flag to tell Ignite to perform all intermediate row analysis and updates "in-place" on corresponding remote data nodes.
@@ -268,6 +273,8 @@ Partition awareness eliminates that hop by sending the query to the right node.
 
 To make use of the partition awareness feature, provide the addresses of all the server nodes in the connection properties.
 The driver will route requests to the nodes that store the data requested by the query.
+
+NOTE: Partition awareness works with the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only. The Calcite-based engine does not return the partition information to the driver, so the queries of a connection that uses it are sent to a random node from the list.
 
 [WARNING]
 ====
@@ -588,7 +595,7 @@ JDBC Thin Driver supports the standard JDBC savepoint API for explicit transacti
 * `Connection.rollback(Savepoint savepoint)`
 * `Connection.releaseSavepoint(Savepoint savepoint)`
 
-Savepoints are available for JDBC connections that use the Calcite-based SQL engine and explicit transactions.
+Savepoints are available for JDBC connections that use the Calcite-based SQL engine (the default) and explicit transactions. The legacy H2 engine does not support savepoints.
 Disable auto-commit before creating a savepoint.
 If auto-commit is left enabled, JDBC savepoint API calls requiring a transaction will fail with 'SQLException'.
 
@@ -687,6 +694,8 @@ conn.createStatement().execute("DELETE FROM Person WHERE age = 25");
 == Streaming
 
 JDBC Driver allows streaming data in bulk using the `SET` command. See the `SET` command link:sql-reference/operational-commands#set-streaming[documentation] for more information.
+
+NOTE: `SET STREAMING` is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only and requires `queryEngine=h2` (or the H2 engine configured as the default). With the Calcite-based engine use the link:data-streaming[data streamer] or JDBC batch statements (`Statement.addBatch()`) instead.
 
 
 

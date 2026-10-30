@@ -70,7 +70,7 @@ The following are the two most commonly used modules:
 
 
 * `ignite-spring` (support for link:understanding-configuration#spring-xml-configuration[XML-based configuration])
-* `ignite-indexing` (support for SQL indexing)
+* `ignite-calcite` (the link:SQL/sql-calcite[SQL engine])
 
 
 [source, xml]
@@ -82,11 +82,14 @@ The following are the two most commonly used modules:
 </dependency>
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-indexing</artifactId>
+    <artifactId>ignite-calcite</artifactId>
     <version>${ignite.version}</version>
 </dependency>
 
 ----
+
+The legacy H2-based SQL engine is provided by the `ignite-indexing` module. Add it only if you need the
+link:SQL/sql-calcite#legacy-h2-engine[features that are implemented by the legacy engine].
 
 
 
@@ -204,7 +207,7 @@ The following modules are available:
 
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
 
-|ignite-indexing | link:SQL/indexes[SQL querying and indexing]
+|ignite-indexing | link:SQL/sql-calcite#legacy-h2-engine[Legacy H2-based SQL engine].
 
 |ignite-jcl |Support for the Jakarta Common Logging (JCL) framework.
 
