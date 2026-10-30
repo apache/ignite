@@ -793,7 +793,7 @@ public class SnapshotCheckProcess {
         /** All the snapshot metadatas. */
         @Nullable private Map<ClusterNode, List<SnapshotMetadata>> clusterMetas;
 
-        /** Common counter of total work units to process on current node, of all snapshot parts ({@link #checkedSnapshotParts}). */
+        /** Common counter of total work units to process on current node. */
         @GridToStringExclude
         private final AtomicInteger totalCounter = new AtomicInteger(-1);
 

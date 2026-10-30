@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
-import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T5;
@@ -71,8 +70,8 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Command initiator's features. */
-    private transient IgniteCoreFeatureSet cmdInitiatorFeatures;
+    /** Flag of the feature availability at the task start. */
+    private transient boolean featureEnabled;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<NoArg, Serializable> job(NoArg arg) {
@@ -81,7 +80,8 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<NoArg> arg) {
-        cmdInitiatorFeatures = arg.initiatorFeatures();
+        featureEnabled = ignite.context().rollingUpgrade().features().isActive(SNAPSHOT_CHECK_STATUS_FEATURE) &&
+            arg.initiatorFeatures().contains(SNAPSHOT_CHECK_STATUS_FEATURE.id());;
 
         return nodeIds(ignite.cluster().forServers().nodes());
     }
@@ -97,11 +97,6 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
         if (error != null)
             throw new IgniteException("Failed to get the snapshot status.", error);
 
-        assert cmdInitiatorFeatures != null : "Command initiator features isn't set";
-
-        boolean featureEnabled = ignite.context().rollingUpgrade().features().isActive(SNAPSHOT_CHECK_STATUS_FEATURE);
-        boolean initiatorSupports = cmdInitiatorFeatures.features().contains(SNAPSHOT_CHECK_STATUS_FEATURE.id());
-
         // All the jobs' statuses combined to one flat collection.
         Collection<SnapshotOperationStatus> allStatuses = new ArrayList<>(results.size());
 
@@ -109,36 +104,19 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             if (jobRes.getData() == null)
                 continue;
 
-            /** Old single {@link SnapshotStatus} of creation or restoration status or new several results as a collection. */
             Serializable rawResult = jobRes.getData();
 
-            if (rawResult instanceof SnapshotStatus singleJobStatus)
-                allStatuses.add(new SnapshotOperationStatus(singleJobStatus));
-            else {
-                Collection<SnapshotOperationStatus> jobMultipleStatuses = (Collection<SnapshotOperationStatus>)rawResult;
-
-                // Skip the check status for an old command initiator that doesn't know about it.
-                if (!initiatorSupports) {
-                    jobMultipleStatuses = jobMultipleStatuses.stream().filter(s -> s.operation() != SnapshotOperation.CHECK).toList();
-
-                    assert jobMultipleStatuses.isEmpty() || jobMultipleStatuses.size() == 1 :
-                        "Snapshot creation and restoration are mutually exclusive; only one of them can run at a time.";
-                }
-
-                allStatuses.addAll(jobMultipleStatuses);
-            }
+            if (rawResult instanceof SnapshotStatus singleStatus)
+                allStatuses.add(new SnapshotOperationStatus(singleStatus));
+            else
+                allStatuses.addAll((Collection<SnapshotOperationStatus>)rawResult);
         }
-
-        // Empty list notifies that this is the new result but is empty. Old empty is always null.
-        if (allStatuses.isEmpty())
-            return initiatorSupports && featureEnabled ? (Serializable)Collections.emptyList() : null;
 
         ArrayList<SnapshotOperationStatus> taskResult = new ArrayList<>();
 
         // First, find create or restore operation.
         Collection<SnapshotOperationStatus> filtered = F.viewReadOnly(allStatuses, s -> s, s -> s.operation() != SnapshotOperation.CHECK);
 
-        // Found create or restore statuses.
         if (!filtered.isEmpty()) {
             // Merged create or restore.
             SnapshotOperationStatus merged = F.first(filtered);
@@ -148,19 +126,23 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             // Filter out differing requests due to concurrent updates on nodes.
             filtered = F.view(filtered, s -> s.reqId.equals(mergedRqId));
 
-            // Merge nodes progress.
+            // Progress per node.
             Map<UUID, T5<Long, Long, Long, Long, Long>> progress = new HashMap<>();
 
             filtered.forEach(s -> progress.putAll(s.progress));
 
             merged = new SnapshotOperationStatus(merged.op, merged.name, merged.incIdx, merged.reqId, merged.startTime, progress);
 
-            // If the initiator like thin client of 'control.sh' doesn't support the feature yet, we have to rewrap
-            // the first single result back to the old format.
-            if (!initiatorSupports)
-                return new SnapshotStatus(merged.op, merged.name, merged.incIdx, merged.reqId, merged.startTime, progress);
-
             taskResult.add(merged);
+        }
+
+        if (!featureEnabled) {
+            if (taskResult.isEmpty())
+                return null;
+
+            SnapshotOperationStatus s0 = taskResult.get(0);
+
+            return new SnapshotStatus(s0.op, s0.name, s0.incIdx, s0.reqId, s0.startTime, s0.progress);
         }
 
         // Check operation statuses go last.
