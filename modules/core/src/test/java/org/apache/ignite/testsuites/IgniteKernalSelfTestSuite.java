@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.cache.NodeWithFilterRestartTest;
 import org.apache.ignite.internal.ClusterMetricsSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
-import org.apache.ignite.internal.processors.metric.GridMetricManagerAssertionMetricTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
 import org.apache.ignite.internal.GridDiscoverySelfTest;
 import org.apache.ignite.internal.GridFailedInputParametersSelfTest;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeSelfTest
 import org.apache.ignite.internal.processors.cluster.ClusterStateChangeOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
+import org.apache.ignite.internal.processors.metric.GridMetricManagerAssertionMetricTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.util.GridMutableLongTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;

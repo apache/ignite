@@ -51,7 +51,7 @@ public class GridMetricManagerAssertionMetricTest extends GridCommonAbstractTest
 
             assertNotNull("Metric " + ASSERTION_ERROR_CNT + " not found", ctr);
 
-            long initial = ctr.value();
+            long init = ctr.value();
 
             // Throw an AssertionError.
             try {
@@ -64,7 +64,7 @@ public class GridMetricManagerAssertionMetricTest extends GridCommonAbstractTest
             // Metric should increment (JFR events are delivered asynchronously).
             assertTrue(
                 "Metric should increment after AssertionError",
-                waitForCondition(() -> ctr.value() >= initial + 1, getTestTimeout()));
+                waitForCondition(() -> ctr.value() >= init + 1, getTestTimeout()));
         }
         finally {
             stopAllGrids();
