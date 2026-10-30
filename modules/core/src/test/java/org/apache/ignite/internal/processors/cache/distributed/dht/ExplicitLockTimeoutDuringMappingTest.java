@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -29,9 +30,12 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,8 +55,14 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
     /** */
     private static final long TIMEOUT = 10_000L;
 
-    /** Pause of the key serialization in the current thread, consumed by the first serialization. */
+    /**
+     * Pause of the first serialization of a key in the current thread. The keys are converted lazily by the mapping,
+     * so the pause lands after the lock timeout is armed.
+     */
     private static final ThreadLocal<Long> KEY_SERIALIZATION_PAUSE = new ThreadLocal<>();
+
+    /** */
+    private static final AtomicBoolean STALL_EXPLICIT_LOCK_REGISTRATION = new AtomicBoolean();
 
     /** */
     private IgniteCache<Object, Object> cache;
@@ -167,6 +177,48 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
         checkReleased(cache1, key);
     }
 
+    /**
+     * The timeout expires while the candidate of a key of a remote primary node is registered on a client node: the
+     * candidate must not outlive the failed lock attempt.
+     */
+    @Test
+    public void testTimeoutDuringRemoteMappingOnClient() throws Exception {
+        IgniteEx client = startClientGrid(1);
+
+        awaitPartitionMapExchange();
+
+        checkTimeoutDuringRemoteMapping(client.cache(DEFAULT_CACHE_NAME), 1);
+    }
+
+    /**
+     * The timeout expires while the candidate of a key of a remote primary node is registered on a server node: the
+     * candidate must not outlive the failed lock attempt.
+     */
+    @Test
+    public void testTimeoutDuringRemoteMappingOnServer() throws Exception {
+        IgniteEx node = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        checkTimeoutDuringRemoteMapping(cache, primaryKey(node.cache(DEFAULT_CACHE_NAME)));
+    }
+
+    /** */
+    private void checkTimeoutDuringRemoteMapping(IgniteCache<Object, Object> cache, int key) throws Exception {
+        STALL_EXPLICIT_LOCK_REGISTRATION.set(true);
+
+        Lock lock = cache.lock(new StallingCacheKey(key));
+
+        boolean locked = lock.tryLock(100, TimeUnit.MILLISECONDS);
+
+        assertFalse("Registration was not stalled", STALL_EXPLICIT_LOCK_REGISTRATION.get());
+
+        if (locked)
+            lock.unlock();
+
+        checkReleased(cache, key);
+    }
+
     /** Checks that the key can be locked by another thread and is not considered locked by the current one. */
     private void checkReleased(IgniteCache<Object, Object> cache, Object key) throws Exception {
         CountDownLatch release = new CountDownLatch(1);
@@ -180,8 +232,13 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
         holder.get(TIMEOUT);
 
         for (Ignite ignite : G.allGrids()) {
-            assertEquals(0, ((IgniteEx)ignite).context().systemView().view(CACHE_EXPLICIT_LOCKS_VIEW).size());
-            assertEquals(0, ((IgniteEx)ignite).context().systemView().view(CACHE_LOCKS_VIEW).size());
+            GridKernalContext ctx = ((IgniteEx)ignite).context();
+
+            assertEquals(0, ctx.systemView().view(CACHE_EXPLICIT_LOCKS_VIEW).size());
+
+            // A lock on a remote primary node is removed asynchronously.
+            assertTrue(GridTestUtils.waitForCondition(() -> ctx.systemView().view(CACHE_LOCKS_VIEW).size() == 0,
+                TIMEOUT));
         }
     }
 
@@ -243,6 +300,34 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public String toString() {
             return "StallingKey [id=" + id + ']';
+        }
+    }
+
+    /**
+     * Key pausing the thread inside the registration of its explicit lock candidate: the first access to the key by
+     * the explicit lock span of the thread adds the candidate, see {@link #STALL_EXPLICIT_LOCK_REGISTRATION}.
+     */
+    private static class StallingCacheKey extends KeyCacheObjectImpl {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private StallingCacheKey(int val) {
+            super(val, null, -1);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            if (inExplicitLockSpan() && STALL_EXPLICIT_LOCK_REGISTRATION.compareAndSet(true, false))
+                doSleep(500);
+
+            return super.hashCode();
+        }
+
+        /** */
+        private static boolean inExplicitLockSpan() {
+            return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                .walk(frames -> frames.anyMatch(f -> f.getDeclaringClass() == GridCacheExplicitLockSpan.class));
         }
     }
 }

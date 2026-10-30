@@ -602,7 +602,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
         }
         else if (timeoutObj != null) {
-            // Serialized with the registration of explicit lock candidates, see mapAsPrimary().
+            // Serialized with the registration of explicit lock candidates, see map().
             synchronized (timeoutObj) {
                 return onComplete(false, true);
             }
@@ -939,10 +939,17 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      */
     private void map(Collection<KeyCacheObject> keys, boolean remap, boolean topLocked) {
         try {
-            map0(
-                keys,
-                remap,
-                topLocked);
+            if (tx != null || timeoutObj == null)
+                map0(keys, remap, topLocked);
+            else {
+                // Candidates registered after the future has been completed by the timeout or cancellation are never
+                // released: undoLocks() has already run. The completion holds the same monitor, so the mapping is
+                // atomic with it. Transactions release their candidates on rollback instead.
+                synchronized (timeoutObj) {
+                    if (!isDone())
+                        map0(keys, remap, topLocked);
+                }
+            }
         }
         catch (IgniteCheckedException ex) {
             onDone(false, ex);
@@ -1357,20 +1364,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @throws IgniteCheckedException If key cannot be added to mapping.
      */
     private boolean mapAsPrimary(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer)
-        throws IgniteCheckedException {
-        if (tx != null || timeoutObj == null)
-            return mapAsPrimary0(keys, topVer);
-
-        // Explicit lock candidates registered after the future has been completed by the timeout or cancellation
-        // are never released: undoLocks() has already run. The completion holds the same monitor, so the local
-        // mapping is atomic with it. Transactions release their candidates on rollback instead.
-        synchronized (timeoutObj) {
-            return isDone() || mapAsPrimary0(keys, topVer);
-        }
-    }
-
-    /** */
-    private boolean mapAsPrimary0(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         // Assign keys to primary nodes.
         Collection<KeyCacheObject> distributedKeys = new ArrayList<>(keys.size());
