@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.hamcrest.BaseMatcher;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
@@ -128,7 +129,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  FROM catalog_sales LEFT JOIN catalog_returns ON"
                 + "  cs_item_sk = cr_item_sk AND cs_order_number = cr_order_number",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_SALES_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_SALES_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM catalog_sales LEFT JOIN catalog_returns"
@@ -136,7 +137,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "    AND cs_order_number = cr_order_number"
                 + "    AND cs_promo_sk IS NOT NULL",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_SALES_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_SALES_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM catalog_sales LEFT JOIN catalog_returns"
@@ -144,7 +145,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "    AND cs_order_number = cr_order_number"
                 + "    AND cr_order_number > 1",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_SALES_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_SALES_SIZE)));
     }
 
     /** */
@@ -154,7 +155,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  FROM catalog_returns RIGHT JOIN catalog_sales ON"
                 + "  cs_item_sk = cr_item_sk AND cs_order_number = cr_order_number",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_SALES_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_SALES_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM catalog_returns RIGHT JOIN catalog_sales"
@@ -162,7 +163,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "    AND cs_order_number = cr_order_number"
                 + "    AND cs_promo_sk IS NOT NULL",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_SALES_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_SALES_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM catalog_returns RIGHT JOIN catalog_sales"
@@ -170,7 +171,7 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "    AND cs_order_number = cr_order_number"
                 + "    AND cr_order_number > 1",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_SALES_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_SALES_SIZE)));
     }
 
     /** */
@@ -229,20 +230,20 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  FROM catalog_returns LEFT JOIN date_dim ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM date_dim LEFT JOIN catalog_returns ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM catalog_returns LEFT JOIN date_dim ON"
                 + "  cr_returned_date_sk = d_date_sk"
                 + "     AND cr_return_quantity > 6",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
     }
 
     /** */
@@ -252,20 +253,20 @@ public class JoinRowCountEstimationTest extends AbstractPlannerTest {
                 + "  FROM catalog_returns RIGHT JOIN date_dim ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM date_dim RIGHT JOIN catalog_returns ON"
                 + "  cr_returned_date_sk = d_date_sk",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
 
         assertPlan(SELECT
                 + "  FROM date_dim RIGHT JOIN catalog_returns ON"
                 + "  cr_returned_date_sk = d_date_sk"
                 + "     AND cr_return_quantity > 6",
             publicSchema,
-            nodeRowCount("IgniteHashJoin", approximatelyEqual(CATALOG_RETURNS_SIZE)));
+            nodeRowCount("IgniteHashJoin", CoreMatchers.is(CATALOG_RETURNS_SIZE)));
     }
 
     /** */
