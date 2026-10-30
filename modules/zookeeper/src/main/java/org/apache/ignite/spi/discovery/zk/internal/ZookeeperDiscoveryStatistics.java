@@ -41,8 +41,8 @@ public class ZookeeperDiscoveryStatistics {
         "Left nodes count");
 
     /** */
-    private final LongAdderMetric joinedClientNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "JoinedClientNodes"),
-        "Joined client nodes count.");
+    private final LongAdderMetric joinedClientNodesCnt = new LongAdderMetric(
+        metricName(DISCO_METRICS, "JoinedClientNodes"), "Joined client nodes count.");
 
     /** Communication error count. */
     private final LongAdderMetric commErrCnt = new LongAdderMetric(metricName(DISCO_METRICS, "CommunicationErrors"),

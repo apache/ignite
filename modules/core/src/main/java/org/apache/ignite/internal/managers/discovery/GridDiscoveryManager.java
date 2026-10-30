@@ -1412,6 +1412,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Logs grid size for license compliance.
+     *
      * @param topVer Topology version.
      * @param evtType Event type.
      * @param evtNode Event node.
