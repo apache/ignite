@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import org.apache.calcite.plan.RelOptPredicateList;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdPredicates;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.util.BuiltInMethod;
 import org.apache.ignite.internal.processors.query.calcite.rel.ProjectableFilterableTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 @SuppressWarnings("unused") // actually all methods are used by runtime generated classes
 public class IgniteMdPredicates extends RelMdPredicates {
     /** */
-    public static final RelMetadataProvider SOURCE = ReflectiveRelMetadataProvider
-        .reflectiveSource(BuiltInMethod.PREDICATES.method, new IgniteMdPredicates());
+    public static final RelMetadataProvider SOURCE =
+        ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdPredicates(), BuiltInMetadata.Predicates.Handler.class);
 
     /**
      * See {@link RelMdPredicates#getPredicates(org.apache.calcite.rel.RelNode, org.apache.calcite.rel.metadata.RelMetadataQuery)}

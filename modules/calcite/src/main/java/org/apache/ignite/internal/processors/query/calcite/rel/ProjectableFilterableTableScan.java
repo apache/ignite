@@ -242,7 +242,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
      * @return Set of column origins for the given idx or {@code null} if unable to found it.
      */
     public RelColumnOrigin columnOriginsByRelLocalRef(int colIdx) {
-        int originColIdx = (requiredColumns() == null) ? colIdx : requiredColumns().toArray()[colIdx];
+        int originColIdx = (requiredColumns() == null) ? colIdx : requiredColumns().nth(colIdx);
 
         return new RelColumnOrigin(getTable(), originColIdx, false);
     }
