@@ -36,19 +36,42 @@ public interface BinariesFactory {
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
-     * @param hnds Reader handles or {@code null} to start a new handles context.
+     * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
+     */
+    public BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal);
+
+    /**
+     * Creates reader instance.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
+     */
+    public BinaryReaderEx reader(BinaryContext ctx,
+                                 BinaryInputStream in,
+                                 ClassLoader ldr,
+                                 @Nullable BinaryReaderHandles hnds,
+                                 boolean forUnmarshal);
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
-    public BinaryReaderEx reader(
-        BinaryContext ctx,
-        BinaryInputStream in,
-        @Nullable ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds,
-        boolean skipHdrCheck,
-        boolean forUnmarshal
-    );
+    public BinaryReaderEx reader(BinaryContext ctx,
+                                 BinaryInputStream in,
+                                 ClassLoader ldr,
+                                 @Nullable BinaryReaderHandles hnds,
+                                 boolean skipHdrCheck,
+                                 boolean forUnmarshal);
 
     /**
      * Unmarshals object from the input stream without deserialization of user types.

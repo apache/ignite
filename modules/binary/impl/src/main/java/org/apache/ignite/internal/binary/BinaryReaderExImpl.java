@@ -169,6 +169,44 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      *
      * @param ctx Context.
      * @param in Input stream.
+     * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
+     */
+    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        this(ctx,
+            in,
+            ldr,
+            null,
+            forUnmarshal);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    public BinaryReaderExImpl(BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean forUnmarshal) {
+        this(ctx,
+            in,
+            ldr,
+            hnds,
+            false,
+            forUnmarshal);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
      * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
      * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param skipHdrCheck Whether to skip header check.

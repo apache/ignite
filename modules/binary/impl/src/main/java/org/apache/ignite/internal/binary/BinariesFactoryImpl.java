@@ -37,10 +37,26 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BinariesFactoryImpl implements BinariesFactory {
     /** {@inheritDoc} */
+    @Override public BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        return new BinaryReaderExImpl(ctx, in, ldr, forUnmarshal);
+    }
+
+    /** {@inheritDoc} */
     @Override public BinaryReaderEx reader(
         BinaryContext ctx,
         BinaryInputStream in,
-        @Nullable ClassLoader ldr,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean forUnmarshal
+    ) {
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, forUnmarshal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryReaderEx reader(
+        BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds,
         boolean skipHdrCheck,
         boolean forUnmarshal

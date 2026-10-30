@@ -63,7 +63,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
     protected BinaryReaderEx createReader(ClientMessage msg) {
         BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
-        return BinaryUtils.reader(binCtx, stream, true);
+        return BinaryUtils.reader(binCtx, stream, ctx.config().getClassLoader(), true);
     }
 
     /**

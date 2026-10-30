@@ -1292,14 +1292,15 @@ public class BinaryUtils {
     }
 
     /**
-     * Creates reader instance that resolves classes with {@link BinaryContext#classLoader()}.
+     * Creates reader instance.
      *
      * @param ctx Context.
      * @param in Input stream.
+     * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
-    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, boolean forUnmarshal) {
-        return binariesFactory.reader(ctx, in, null, null, false, forUnmarshal);
+    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        return binariesFactory.reader(ctx, in, ldr, forUnmarshal);
     }
 
     /**
@@ -1307,29 +1308,52 @@ public class BinaryUtils {
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
-     * @param hnds Reader handles or {@code null} to start a new handles context.
+     * @param ldr Class loader.
+     * @param hnds Context.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    static BinaryReaderEx reader(
-        BinaryContext ctx,
-        BinaryInputStream in,
-        @Nullable ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds,
-        boolean forUnmarshal
-    ) {
-        return binariesFactory.reader(ctx, in, ldr, hnds, false, forUnmarshal);
+    static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        @Nullable BinaryReaderHandles hnds,
+                                        boolean forUnmarshal) {
+        return binariesFactory.reader(ctx, in, ldr, hnds, forUnmarshal);
     }
 
     /**
-     * Creates reader instance for a stream that is not positioned at a binary object header (header check is skipped).
-     * Classes are resolved with {@link BinaryContext#classLoader()}.
+     * Constructor.
      *
      * @param ctx Context.
      * @param in Input stream.
+     * @param ldr Class loader.
+     * @param skipHdrCheck Whether to skip header check.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in) {
-        return binariesFactory.reader(ctx, in, null, null, true, true);
+    public static BinaryReaderEx reader(BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        boolean skipHdrCheck,
+        boolean forUnmarshal) {
+        return reader(ctx, in, ldr, null, skipHdrCheck, forUnmarshal);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Context.
+     * @param in Input stream.
+     * @param ldr Class loader.
+     * @param hnds Context.
+     * @param skipHdrCheck Whether to skip header check.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     */
+    static BinaryReaderEx reader(BinaryContext ctx,
+                                        BinaryInputStream in,
+                                        ClassLoader ldr,
+                                        @Nullable BinaryReaderHandles hnds,
+                                        boolean skipHdrCheck,
+                                        boolean forUnmarshal) {
+        return binariesFactory.reader(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
     }
 
     /**

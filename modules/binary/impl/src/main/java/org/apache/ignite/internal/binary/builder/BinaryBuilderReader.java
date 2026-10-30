@@ -69,9 +69,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
         reader = new BinaryReaderExImpl(ctx,
             BinaryStreams.inputStream(arr, pos),
-            null,
-            null,
-            false,
+            ctx.classLoader(),
             false);
 
         objMap = new HashMap<>();
@@ -92,7 +90,6 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             BinaryStreams.inputStream(arr, start),
             null,
             other.reader.handles(),
-            false,
             false);
 
         this.objMap = other.objMap;

@@ -93,7 +93,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** Marshaller. */
+    /** Binary context. */
     private final BinaryContext bctx;
 
     /** Memory manager. */
@@ -179,7 +179,11 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public BinaryReaderEx reader(PlatformInputStream in) {
-        return BinaryUtils.reader(bctx, in);
+        return BinaryUtils.reader(bctx,
+            in,
+            ctx.config().getClassLoader(),
+            true,
+            true);
     }
 
     /** {@inheritDoc} */

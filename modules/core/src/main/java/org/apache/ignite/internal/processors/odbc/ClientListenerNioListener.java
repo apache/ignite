@@ -356,7 +356,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
         marsh.setContext(new MarshallerContextImpl(null));
 
-        BinaryReaderEx reader = BinaryUtils.reader(U.binaryContext(marsh), BinaryStreams.inputStream(msg.payload()), true);
+        BinaryReaderEx reader = BinaryUtils.reader(U.binaryContext(marsh), BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 

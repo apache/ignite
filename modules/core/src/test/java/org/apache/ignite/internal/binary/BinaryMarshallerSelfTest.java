@@ -3266,7 +3266,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryInputStream is = BinaryStreams.inputStream(os.array());
 
-        BinaryReaderEx reader = BinaryUtils.reader(marsh.binaryMarshaller().context(), is, true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.binaryMarshaller().context(), is, null, true);
 
         Object bObj = reader.readObjectDetached(deserialize);
 
@@ -3796,7 +3796,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMetadata restoredMeta = new BinaryMetadata();
 
-        restoredMeta.readFrom(BinaryUtils.reader(marsh.binaryMarshaller().context(), BinaryStreams.inputStream(out.array()), true));
+        restoredMeta.readFrom(BinaryUtils.reader(marsh.binaryMarshaller().context(), BinaryStreams.inputStream(out.array()), null, true));
 
         assertArrayEquals(fieldNames, restoredMeta.fields().toArray());
     }
