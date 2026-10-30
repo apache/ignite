@@ -39,7 +39,7 @@ Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. Link to re
 4. Publish `[RESULT]` on the dev list and link it from the PR.
 5. The implementation must pass code review and tests. Merge it with the approved RFC as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
 
-One RFC may cover several tickets. Merge it with the first implementation PR and link later PRs to it.
+One RFC may cover several tickets, including deprecation and removal. Merge it with the first implementation PR and link later PRs to it. Removal that follows the approved plan needs no new RFC or vote.
 
 ## Changes to an RFC
 
