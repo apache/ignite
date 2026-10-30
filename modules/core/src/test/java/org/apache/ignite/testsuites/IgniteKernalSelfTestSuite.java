@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.cache.NodeWithFilterRestartTest;
 import org.apache.ignite.internal.ClusterMetricsSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
+import org.apache.ignite.internal.processors.metric.GridMetricManagerAssertionMetricTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
 import org.apache.ignite.internal.GridDiscoverySelfTest;
 import org.apache.ignite.internal.GridFailedInputParametersSelfTest;
@@ -113,6 +114,7 @@ import org.junit.runners.Suite;
     IgniteConnectionConcurrentReserveAndRemoveTest.class,
     LongJVMPauseDetectorTest.class,
     ClusterMetricsSelfTest.class,
+    GridMetricManagerAssertionMetricTest.class,
     DeploymentRequestOfUnknownClassProcessingTest.class,
     ThreadNameValidationTest.class,
     NodeWithFilterRestartTest.class,

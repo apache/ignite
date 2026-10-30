@@ -25,6 +25,7 @@ Register name: `sys`
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
+|AssertionErrorCount | long | Number of AssertionErrors thrown in this JVM.
 |CpuLoad | double | CPU load.
 |CurrentThreadCpuTime | long | CPU time of the thread that reads the metric, in nanoseconds.
 |CurrentThreadUserTime | long | User-mode CPU time of the thread that reads the metric, in nanoseconds.

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import jdk.jfr.consumer.RecordingStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -142,6 +144,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** Custom metrics registry name. */
     public static final String CUSTOM_METRICS = "custom";
 
+    /** Metric name for the count of AssertionErrors thrown in the JVM. */
+    public static final String ASSERTION_ERROR_CNT = "AssertionErrorCount";
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -202,6 +207,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** */
     private final IgniteMetrics customMetrics;
 
+    /** AssertionError counter. */
+    private final LongAdderMetric assertionErrorCnt;
+
+    /** JFR stream for capturing thrown Errors. */
+    private volatile RecordingStream jfrStream;
+
     /**
      * @param ctx Kernal context.
      */
@@ -247,6 +258,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             "CPU time of the thread that reads the metric, in nanoseconds.");
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime,
             "User-mode CPU time of the thread that reads the metric, in nanoseconds.");
+        assertionErrorCnt = sysreg.longAdderMetric(ASSERTION_ERROR_CNT,
+                "Number of AssertionErrors thrown in this JVM.");
 
         MetricRegistryImpl pmeReg = registry(PME_METRICS);
 
@@ -272,6 +285,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             spi.setMetricRegistry(this);
 
         startSpi();
+
+        startJfrErrorStream();
 
         // In case standalone kernal start.
         if (ctx.internalSubscriptionProcessor() == null)
@@ -323,6 +338,34 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
+        U.closeQuiet(jfrStream);
+        jfrStream = null;
+    }
+
+    /**
+     * Starts a JFR RecordingStream to capture thrown Error events and increment the
+     * {@link #assertionErrorCnt} metric when an AssertionError is detected.
+     */
+    private void startJfrErrorStream() {
+        try {
+            RecordingStream stream = new RecordingStream();
+            stream.enable("jdk.JavaErrorThrow");
+            stream.onEvent("jdk.JavaErrorThrow", event -> {
+                try {
+                    jdk.jfr.consumer.RecordedClass cls = event.getClass("thrownClass");
+                    if (cls != null && "java.lang.AssertionError".equals(cls.getName()))
+                        assertionErrorCnt.increment();
+                }
+                catch (RuntimeException ignored) {
+                    // Ignore — must not disrupt the JFR consumer thread.
+                }
+            });
+            stream.startAsync();
+            jfrStream = stream;
+        }
+        catch (RuntimeException cause) {
+            U.warn(log, "Failed to start JFR error stream: ", cause);
+        }
     }
 
     /**
