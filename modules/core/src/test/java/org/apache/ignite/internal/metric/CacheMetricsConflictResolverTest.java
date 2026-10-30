@@ -64,34 +64,41 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        checkMetrics(0, 0, 0);
+        checkMetrics(0, 0, 0, 0);
 
         TestCacheVersionConflictResolver.plc = ResolvePolicy.USE_NEW;
 
         cache.put(0, 0);
 
-        checkMetrics(1, 0, 0);
+        checkMetrics(1, 0, 0, 0);
 
         TestCacheVersionConflictResolver.plc = ResolvePolicy.USE_OLD;
 
         cache.put(0, 0);
 
-        checkMetrics(1, 1, 0);
+        checkMetrics(1, 1, 0, 0);
 
         TestCacheVersionConflictResolver.plc = ResolvePolicy.MERGE;
 
         cache.put(0, 0);
 
-        checkMetrics(1, 1, 1);
+        checkMetrics(1, 1, 1, 0);
+
+        TestCacheVersionConflictResolver.plc = ResolvePolicy.FAIL;
+
+        cache.put(0, 0);
+
+        checkMetrics(1, 2, 1, 1);
     }
 
     /** */
-    private void checkMetrics(int expAccepted, int expRejected, int expMerged) {
+    private void checkMetrics(int expAccepted, int expRejected, int expMerged, int expFailed) {
         MetricRegistryImpl mreg = grid(0).context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
         assertEquals(expAccepted, mreg.<LongMetric>findMetric("ConflictResolverAcceptedCount").value());
         assertEquals(expRejected, mreg.<LongMetric>findMetric("ConflictResolverRejectedCount").value());
         assertEquals(expMerged, mreg.<LongMetric>findMetric("ConflictResolverMergedCount").value());
+        assertEquals(expFailed, mreg.<LongMetric>findMetric("ConflictResolverFailedCount").value());
     }
 
     /** */
@@ -112,6 +119,10 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
                 res.useNew();
             else if (plc == ResolvePolicy.USE_OLD)
                 res.useOld();
+            else if (plc == ResolvePolicy.FAIL) {
+                res.useOld();
+                res.markResolveFailed();
+            }
             else
                 res.merge(
                     newEntry.value(ctx),
@@ -141,6 +152,9 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
         USE_NEW,
 
         /** Merge. */
-        MERGE
+        MERGE,
+
+        /** Use old and mark the resolution as failed. */
+        FAIL
     }
 }
