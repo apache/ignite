@@ -74,7 +74,7 @@ public class JmhStreamerAllocationBenchmark extends JmhCacheAllocationAbstractBe
     }
 
     /**
-     * Creates the keys of every iteration and thread of the run, so that adding a key allocates no key object.
+     * Creates the keys of every iteration of the run, so that adding a key allocates no key object.
      *
      * @param params Benchmark parameters.
      */
@@ -82,7 +82,7 @@ public class JmhStreamerAllocationBenchmark extends JmhCacheAllocationAbstractBe
     public void createNewKeys(BenchmarkParams params) {
         IterationParams w = params.getWarmup();
         IterationParams m = params.getMeasurement();
-        int calls = (w.getCount() * w.getBatchSize() + m.getCount() * m.getBatchSize()) * params.getThreads();
+        int calls = w.getCount() * w.getBatchSize() + m.getCount() * m.getBatchSize();
 
         newKeys = new Integer[calls * KEYS];
 
