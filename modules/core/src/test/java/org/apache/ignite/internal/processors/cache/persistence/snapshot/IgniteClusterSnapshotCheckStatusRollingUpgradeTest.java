@@ -176,7 +176,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
     /** */
     @Test
-    public void testParallelRollingUpgradeInProgress() throws Exception {
+    public void testRollingUpgradeInProgress() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
             startGrid(i, "2.18.0", i >= ALL_GRIDS - CLIENTS);
 
