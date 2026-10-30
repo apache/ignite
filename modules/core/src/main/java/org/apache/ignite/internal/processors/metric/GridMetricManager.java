@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordingStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -352,7 +353,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             stream.enable("jdk.JavaErrorThrow");
             stream.onEvent("jdk.JavaErrorThrow", event -> {
                 try {
-                    jdk.jfr.consumer.RecordedClass cls = event.getClass("thrownClass");
+                    RecordedClass cls = event.getClass("thrownClass");
                     if (cls != null && "java.lang.AssertionError".equals(cls.getName()))
                         assertionErrorCnt.increment();
                 }
