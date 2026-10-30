@@ -18,13 +18,34 @@
 package org.apache.ignite.internal.processors.security;
 
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.junit.Test;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 
 /** Tests task metadata lookup. */
 public class TaskNameResolutionTest extends AbstractSecurityTest {
     /** Task name. */
     private static final String TASK_NAME = "test-task";
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /** */
+    @Test
+    public void testExecuteTaskOnClusterStartedInactive() throws Exception {
+        String login = getTestIgniteInstanceName(0);
+
+        IgniteConfiguration cfg = getConfiguration(login, new TestSecurityPluginProvider(login, "", ALL_PERMISSIONS, false));
+
+        IgniteEx ignite = startGrid(cfg.setClusterStateOnStart(ClusterState.INACTIVE));
+
+        ignite.compute().withName(TASK_NAME).run(() -> {});
+    }
 
     /** */
     @Test
@@ -38,6 +59,8 @@ public class TaskNameResolutionTest extends AbstractSecurityTest {
         assertTaskNameResolved(ignite);
 
         ignite.cluster().state(ClusterState.INACTIVE);
+
+        ignite.compute().withName(TASK_NAME).run(() -> {});
 
         assertNull(grid(1).context().task().resolveTaskName(TASK_NAME.hashCode()));
 
