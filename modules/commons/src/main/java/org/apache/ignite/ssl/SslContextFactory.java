@@ -27,9 +27,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -40,8 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
  *
- * This factory caches the result of the first successful attempt to create an {@link SSLContext} and always returns it
- * as a result of further invocations of the {@link SslContextFactory#create()}} method.
+ * Each call loads the stores again and builds a fresh context. The component using it should retain the context between
+ * connections.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
@@ -262,23 +259,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        try {
-            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
-
-            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            return keyMgrFactory.getKeyManagers();
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
-        }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
-                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
-        }
+    @Override protected KeyMaterial loadKeyMaterial() throws SSLException {
+        return new KeyMaterial(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
     }
 
     /** {@inheritDoc} */
@@ -359,7 +341,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @param keyStoreType Type of key store.
      * @param storeFilePath Path to key store file.
      * @param keyStorePwd Store password.
-     * @return Initialized key store.
+     * @return Initialized key store, never {@code null}. Return an empty loaded store for a context without private keys.
      * @throws SSLException If key store could not be initialized.
      */
     protected KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)

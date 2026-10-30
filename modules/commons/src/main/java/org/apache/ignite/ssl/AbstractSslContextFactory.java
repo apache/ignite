@@ -19,7 +19,6 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -30,9 +29,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
- * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
- * {@link AbstractSslContextFactory#create()}} method.
+ * Builds a fresh SSL context and its certificate metadata on each call. The component using the context is responsible for
+ * retaining it between connections.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -49,9 +47,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Enabled protocols. */
     protected String[] protocols;
-
-    /** Cached instance of an {@link SSLContext}. */
-    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /**
      * Gets protocol for secure transport.
@@ -110,16 +105,31 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Creates SSL context based on factory settings.
+     * Checks the factory parameters, loads its key material once, and builds a fresh context with the certificate chains from
+     * that material. The factory does not retain the result.
      *
-     * @return Initialized SSL context.
-     * @throws SSLException If SSL context could not be created.
+     * @return Fresh context and the certificate metadata available to this factory.
+     * @throws IgniteException If the context could not be created.
      */
-    private SSLContext createSslContext() throws SSLException {
-        checkParameters();
+    public SslBundle createSslBundle() {
+        try {
+            checkParameters();
 
-        KeyManager[] keyMgrs = createKeyManagers();
+            KeyMaterial material = loadKeyMaterial();
 
+            return new SslBundle(createSslContext(material.keyManagers()), material.certificateChains());
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e.getMessage() + " [factory=" + this + ']', e);
+        }
+    }
+
+    /**
+     * @param keyMgrs Key managers for the loaded material.
+     * @return Initialized context.
+     * @throws SSLException If trust managers or the context cannot be created.
+     */
+    private SSLContext createSslContext(KeyManager[] keyMgrs) throws SSLException {
         TrustManager[] trustMgrs = createTrustManagers();
 
         try {
@@ -167,10 +177,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract void checkParameters() throws SSLException;
 
     /**
-     * @return Created Key Managers.
-     * @throws SSLException If Key Managers could not be created.
+     * Loads the key store and the settings used to read its keys. Called once per context, after the parameters are checked.
+     * For a context without private keys, return material over an empty store initialized with {@code KeyStore.load(null, null)}.
+     *
+     * @return Loaded key material, never {@code null}.
+     * @throws SSLException If the key material cannot be loaded.
      */
-    protected abstract KeyManager[] createKeyManagers() throws SSLException;
+    protected abstract KeyMaterial loadKeyMaterial() throws SSLException;
 
     /**
      * @return Created Trust Managers.
@@ -178,22 +191,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
-    /** {@inheritDoc} */
-    @Override public SSLContext create() {
-        SSLContext ctx = sslCtx.get();
-
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
-
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        return ctx;
+    /**
+     * Builds a fresh context through {@link #createSslBundle()}. Override that method to customize both entry points.
+     *
+     * @return Fresh initialized context.
+     * @throws IgniteException If the context could not be created.
+     */
+    @Override public final SSLContext create() {
+        return createSslBundle().context();
     }
 }

@@ -188,9 +188,8 @@ public class JdbcThinSSLUtil {
         catch (IgniteException e) {
             final Throwable cause = e.getCause();
 
-            // Unwrap.
             if (cause instanceof SSLException)
-                throw new SQLException(cause.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException(e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             else
                 throw new SQLException("Unknown error.", SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
