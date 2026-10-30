@@ -966,6 +966,9 @@ The Calcite-based SQL engine supports SQL window functions. See link:sql-referen
 
 |===
 
+In Calcite SQL, `ROW` and `ARRAY` values are compared recursively by their contents when used in equality predicates,
+`DISTINCT`, `GROUP BY`, set operations, joins, and `ORDER BY`.
+
 === Supported Data Types
 
 Below are the data types supported by the Calcite-based SQL engine:
