@@ -93,20 +93,36 @@ public class GridWorkerPool {
     }
 
     /**
-     * Waits for all workers to finish.
+     * Waits for all workers to finish with a timeout. Logs failures if {@link #log} is not {@code null}.
      *
-     * @param cancel Flag to indicate whether workers should be cancelled
-     *      before waiting for them to finish.
+     * @param cancel Flag to indicate whether workers should be cancelled before waiting for them to finish.
+     * @param timeout Timeout to join in milliseconds. If negative, ignored.
      */
-    public void join(boolean cancel) {
+    public void join(boolean cancel, long timeout) {
+        long timeThresholdNs = timeout < 0L ? -1L : System.nanoTime() + CommonUtils.millisToNanos(timeout);
+
+        if (cancel) {
+            for (GridWorker worker : workers) {
+                try {
+                    if (cancel)
+                        CommonUtils.cancel(worker);
+                }
+                catch (Throwable e) {
+                    if (log != null)
+                        log.warning("Failed to cancel grid worker [" + worker.name() + ']', e);
+                }
+            }
+        }
+
         for (GridWorker worker : workers) {
             try {
-                if (cancel)
-                    CommonUtils.cancel(worker);
-
-                CommonUtils.join(worker, log);
+                CommonUtils.join(
+                    worker,
+                    timeout < 0L ? -1L : CommonUtils.nanosToMillis(timeThresholdNs - System.nanoTime()),
+                    log
+                );
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 if (log != null)
                     log.warning("Failed to stop grid worker [" + worker.name() + ']', e);
             }
