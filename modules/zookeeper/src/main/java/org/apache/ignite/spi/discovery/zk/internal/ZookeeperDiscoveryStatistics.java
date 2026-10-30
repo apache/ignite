@@ -40,6 +40,10 @@ public class ZookeeperDiscoveryStatistics {
     private final LongAdderMetric leftNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "LeftNodes"),
         "Left nodes count");
 
+    /** */
+    private final LongAdderMetric joinedClientNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "JoinedClientNodes"),
+        "Joined client nodes count.");
+
     /** Communication error count. */
     private final LongAdderMetric commErrCnt = new LongAdderMetric(metricName(DISCO_METRICS, "CommunicationErrors"),
         "Communication errors count");
@@ -54,6 +58,7 @@ public class ZookeeperDiscoveryStatistics {
     public void registerMetrics(MetricRegistryImpl discoReg) {
         discoReg.register(joinedNodesCnt);
         discoReg.register(failedNodesCnt);
+        discoReg.register(joinedClientNodesCnt);
         discoReg.register(leftNodesCnt);
         discoReg.register(commErrCnt);
         discoReg.register(topVer);
@@ -75,6 +80,11 @@ public class ZookeeperDiscoveryStatistics {
     }
 
     /** */
+    public long joinedClientNodesCnt() {
+        return joinedClientNodesCnt.value();
+    }
+
+    /** */
     public long commErrorCount() {
         return commErrCnt.value();
     }
@@ -82,6 +92,11 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public void onNodeJoined() {
         joinedNodesCnt.increment();
+    }
+
+    /** */
+    public void onClientNodeJoined() {
+        joinedClientNodesCnt.increment();
     }
 
     /** */

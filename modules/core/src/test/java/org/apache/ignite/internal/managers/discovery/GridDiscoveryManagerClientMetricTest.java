@@ -22,18 +22,20 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.CLIENT_NODES_JOINED;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Tests the CLIENT_NODES_JOINED metric in the discovery metrics registry.
+ * Tests the JOINED_CLIENT_NODES metric in the discovery metrics registry.
  */
 public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest {
+    /** */
+    private static final String JOINED_CLIENT_NODES = "JoinedClientNodes";
+
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -51,7 +53,7 @@ public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest
     }
 
     /**
-     * Verifies that the CLIENT_NODES_JOINED counter increments
+     * Verifies that the JOINED_CLIENT_NODES counter increments
      * when client nodes join the topology.
      *
      * @throws Exception If fails.
@@ -71,11 +73,11 @@ public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest
 
                 assertNotNull(discoReg);
 
-                LongMetric ctr = discoReg.findMetric(CLIENT_NODES_JOINED);
+                IntMetric ctr = discoReg.findMetric(JOINED_CLIENT_NODES);
 
-                assertNotNull("Metric " + CLIENT_NODES_JOINED + " not found", ctr);
+                assertNotNull("Metric " + JOINED_CLIENT_NODES + " not found", ctr);
 
-                assertEquals(0L, ctr.value());
+                assertEquals(0, ctr.value());
             }
 
             // Start one client node.
@@ -87,9 +89,9 @@ public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest
 
                 MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
-                LongMetric ctr = discoReg.findMetric(CLIENT_NODES_JOINED);
+                IntMetric ctr = discoReg.findMetric(JOINED_CLIENT_NODES);
 
-                assertTrue(waitForCondition(() -> ctr.value() == 1L, getTestTimeout()));
+                assertTrue(waitForCondition(() -> ctr.value() == 1, getTestTimeout()));
             }
 
             // Start a second client node.
@@ -101,9 +103,9 @@ public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest
 
                 MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
-                LongMetric ctr = discoReg.findMetric(CLIENT_NODES_JOINED);
+                IntMetric ctr = discoReg.findMetric(JOINED_CLIENT_NODES);
 
-                assertTrue(waitForCondition(() -> ctr.value() == 2L, getTestTimeout()));
+                assertTrue(waitForCondition(() -> ctr.value() == 2, getTestTimeout()));
             }
         }
         finally {
@@ -112,7 +114,7 @@ public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest
     }
 
     /**
-     * Verifies that the CLIENT_NODES_JOINED metric is accessible
+     * Verifies that the JOINED_CLIENT_NODES metric is accessible
      * via the metric registry and exposes proper name and description.
      *
      * @throws Exception If fails.
@@ -124,13 +126,13 @@ public class GridDiscoveryManagerClientMetricTest extends GridCommonAbstractTest
 
             MetricRegistry discoReg = grid.context().metric().registry(DISCO_METRICS);
 
-            LongMetric ctr = discoReg.findMetric(CLIENT_NODES_JOINED);
+            IntMetric ctr = discoReg.findMetric(JOINED_CLIENT_NODES);
 
             assertNotNull(ctr);
 
-            assertEquals(DISCO_METRICS + "." + CLIENT_NODES_JOINED, ctr.name());
+            assertEquals(DISCO_METRICS + "." + JOINED_CLIENT_NODES, ctr.name());
 
-            assertEquals("Count of client nodes joined to topology", ctr.description());
+            assertEquals("Joined client nodes count.", ctr.description());
         }
         finally {
             stopAllGrids();
