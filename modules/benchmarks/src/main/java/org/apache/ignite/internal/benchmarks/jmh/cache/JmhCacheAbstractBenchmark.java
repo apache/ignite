@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.profile.JmhNodeStopHook;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -85,22 +86,22 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         System.out.println("IGNITE BENCHMARK INFO: ");
 
-        System.out.println("\tclient mode:                " + booleanProperty(PROP_CLIENT_MODE));
+        System.out.println("\tclient mode:                " + clientMode());
 
-        System.out.println("\tdata nodes:                 " + intProperty(PROP_DATA_NODES, DFLT_DATA_NODES));
+        System.out.println("\tdata nodes:                 " + dataNodes());
 
-        System.out.println("\tbackups:                    " + intProperty(PROP_BACKUPS));
+        CacheConfiguration cacheCfg = cacheConfiguration();
 
-        System.out.println("\tatomicity mode:             " +
-            enumProperty(PROP_ATOMICITY_MODE, CacheAtomicityMode.class));
+        System.out.println("\tbackups:                    " + cacheCfg.getBackups());
 
-        System.out.println("\twrite synchronization mode: " +
-            enumProperty(PROP_WRITE_SYNC_MODE, CacheWriteSynchronizationMode.class));
+        System.out.println("\tatomicity mode:             " + cacheCfg.getAtomicityMode());
+
+        System.out.println("\twrite synchronization mode: " + cacheCfg.getWriteSynchronizationMode());
 
         System.out.println("--------------------");
         System.out.println();
 
-        int nodesCnt = intProperty(PROP_DATA_NODES, DFLT_DATA_NODES);
+        int nodesCnt = dataNodes();
 
         A.ensure(nodesCnt >= 1, "nodesCnt >= 1");
 
@@ -109,9 +110,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
 
-        boolean isClient = booleanProperty(PROP_CLIENT_MODE);
-
-        if (isClient) {
+        if (clientMode()) {
             IgniteConfiguration clientCfg = configuration("client");
 
             clientCfg.setClientMode(true);
@@ -129,7 +128,19 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
+        JmhNodeStopHook.run();
+
         Ignition.stopAll(true);
+    }
+
+    /** @return Number of server nodes. */
+    protected int dataNodes() {
+        return intProperty(PROP_DATA_NODES, DFLT_DATA_NODES);
+    }
+
+    /** @return Whether the benchmark calls the cache through a client node. */
+    protected boolean clientMode() {
+        return booleanProperty(PROP_CLIENT_MODE);
     }
 
     /**
