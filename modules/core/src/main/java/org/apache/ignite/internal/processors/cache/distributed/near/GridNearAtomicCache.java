@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -131,10 +132,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     /**
      * @param req Update request.
      * @param res Update response.
+     * @param fut Update future, releases the key reservation before its entry is offered to eviction.
      */
     public void processNearAtomicUpdateResponse(
         GridNearAtomicAbstractUpdateRequest req,
-        GridNearAtomicUpdateResponse res
+        GridNearAtomicUpdateResponse res,
+        GridNearAtomicAbstractUpdateFuture fut
     ) {
         if (F.size(res.failedKeys()) == req.size())
             return;
@@ -171,10 +174,16 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
             // Reader became backup.
             if (ctx.affinity().partitionBelongs(ctx.localNode(), ctx.affinity().partition(key), req.topologyVersion())) {
+                fut.releaseNearCacheEntry(key);
+
                 GridCacheEntryEx entry = peekEx(key);
 
-                if (entry != null && entry.markObsolete(ver))
-                    removeEntry(entry);
+                if (entry != null) {
+                    if (entry.markObsolete(ver))
+                        removeEntry(entry);
+                    else
+                        entry.touch(); // Not removed: return the released entry to the eviction policy.
+                }
 
                 continue;
             }
@@ -209,7 +218,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     req.keepBinaryInInterceptor(),
                     req.nodeId(),
                     taskName,
-                    req.operation() == TRANSFORM);
+                    req.operation() == TRANSFORM,
+                    fut);
             }
             catch (IgniteCheckedException e) {
                 res.addFailedKey(key, new IgniteCheckedException("Failed to update key in near cache: " + key, e));
@@ -226,6 +236,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @param nodeId Node ID.
      * @param taskName Task name.
      * @param transformedValue {@code True} if transformed value.
+     * @param fut Update future.
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
@@ -238,7 +249,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean keepBinaryInInterceptor,
         UUID nodeId,
         String taskName,
-        boolean transformedValue) throws IgniteCheckedException {
+        boolean transformedValue,
+        GridNearAtomicAbstractUpdateFuture fut) throws IgniteCheckedException {
         try {
             while (true) {
                 GridCacheEntryEx entry = null;
@@ -294,8 +306,12 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
                     entry = null;
                 }
                 finally {
-                    if (entry != null)
+                    if (entry != null) {
+                        // Release before touch, so that the eviction policy sees an evictable entry.
+                        fut.releaseNearCacheEntry(key);
+
                         entry.touch();
+                    }
                 }
             }
         }
