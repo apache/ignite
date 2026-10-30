@@ -56,7 +56,7 @@ Data region metrics expose information about data regions, including memory and 
 Enable data region metrics in the link:memory-configuration/data-regions[configuration of the region] for every region
 you want to collect the metrics for.
 The setting is read at node startup and cannot be changed at runtime.
-Size metrics such as `TotalAllocatedSize` are collected regardless of it.
+Some metrics, such as `TotalAllocatedSize`, are collected regardless of it.
 
 The following example illustrates how to enable metrics for the default data region and one custom data region.
 
@@ -82,7 +82,8 @@ tab:C++[unsupported]
 
 == Enabling Persistence-related Metrics
 The `io.datastorage` register (WAL, checkpoint and storage size metrics) is collected only when persistence metrics are
-enabled in the data storage configuration; otherwise its metrics report zero.
+enabled in the data storage configuration; otherwise its metrics report zero, except `LastArchivedSegment`, which
+reports `-1`.
 The property is deprecated but still required; it is read at node startup and cannot be changed at runtime.
 
 [tabs]

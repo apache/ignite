@@ -29,7 +29,7 @@ Some metrics represent <<histograms>>.
 
 And then there are different ways to export the metrics — what we call _exporters_.
 To put it another way, the exporter are different ways you can access the metrics.
-Each exporter always gives access to all available metrics.
+Unless an export filter is configured, each exporter gives access to all available metrics.
 
 Ignite includes the following exporters:
 
@@ -143,6 +143,8 @@ All Ignite MBeans have the same domain: `org.apache`. The key properties are:
 
 * `clsLdr` - the hash code of the class loader that loaded Ignite, as a hex string. Present by default; omitted if you
 set the `IGNITE_MBEAN_APPEND_CLASS_LOADER_ID` system property to `false`.
+* `jvmId` - the name of the JVM (`<pid>@<host>`). Present only if the `IGNITE_MBEAN_APPEND_JVM_ID` system property is
+set to `true`.
 * `igniteInstanceName` - the instance name of the node. Present only if the node has one.
 * `group` and `name` - for a metric register, `group` is the part of the register name before the first dot and `name`
 is the rest. Registers without a dot in the name, such as `tx`, have no `group` property.
@@ -153,7 +155,8 @@ For example, the `io.discovery` and `tx` registers are exposed as:
     org.apache:clsLdr=18b4aac2,name=tx
 
 The MBean ObjectName can be used to identify the bean in UI tools like JConsole.
-For example, JConsole displays MBeans in a tree-like structure where all beans are first grouped by domain and then by the 'group' property:
+For example, JConsole displays MBeans in a tree-like structure where beans are grouped by domain and then by the key
+properties in the order listed above:
 
 image::images/jconsole.png[]
 
@@ -317,14 +320,15 @@ The metrics belong to the `io.datastorage` register, see link:monitoring-metrics
 ====
 The `io.datastorage` register is collected only when persistence metrics are enabled in the
 link:monitoring-metrics/configuring-metrics#enabling-persistence-related-metrics[data storage configuration]; otherwise
-its metrics report zero.
+its metrics report zero, except `LastArchivedSegment`, which reports `-1`.
 ====
 
 ===== Data Region Size
 
-`PagesFillFactor`, `PhysicalMemoryPages` and `PhysicalMemorySize` require data region metrics to be enabled in the
-link:monitoring-metrics/configuring-metrics#enabling-data-region-metrics[data region configuration]; the other metrics
-listed below are always collected.
+`PagesFillFactor` requires data region metrics to be enabled in the
+link:monitoring-metrics/configuring-metrics#enabling-data-region-metrics[data region configuration], and so do
+`PhysicalMemoryPages` and `PhysicalMemorySize` for regions with persistence enabled; the other metrics listed below are
+always collected.
 
 The size of the data region on a node comprises the size of all partitions (including backup partitions) that this node owns for all caches in that data region.
 
@@ -359,6 +363,8 @@ See link:persistence/persistence-tuning#pages-writes-throttling[Pages Writes Thr
 The metrics belong to the `io.datastorage` register, see link:monitoring-metrics/new-metrics#data-storage[Data Storage];
 they require persistence metrics to be enabled in the
 link:monitoring-metrics/configuring-metrics#enabling-persistence-related-metrics[data storage configuration].
+`DirtyPages` and `CheckpointBufferSize` are summed over data regions, so they also require
+link:monitoring-metrics/configuring-metrics#enabling-data-region-metrics[data region metrics] to be enabled.
 
 === Monitoring Rebalancing
 link:data-rebalancing[Rebalancing] is the process of moving partitions between the cluster nodes so that the data is always distributed in a balanced manner. Rebalancing is triggered when a new node joins, or an existing node leaves the cluster.
@@ -417,8 +423,8 @@ For a more accurate estimate, use the `IndexRebuildKeyProcessed` cache metric:
 
 === Monitoring Transactions
 The commit and rollback counters are updated only on the node that started the transaction, no matter how many nodes
-store the affected keys, so the sum of `txCommits` over all nodes is the number of transactions committed in the
-cluster.
+store the affected keys, so the sum of `txCommits` over all nodes, including client nodes, is the number of
+transactions committed in the cluster.
 
 * `LockedKeysNumber` - The number of keys locked on the node.
 * `TransactionsCommittedNumber` - The number of transactions that have been committed on the node. Exposed as `txCommits` in the `tx` register.
