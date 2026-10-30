@@ -46,7 +46,8 @@ public class UncollectPlannerTest extends AbstractPlannerTest {
 
         publicSchema = createSchema(
             createTable("HASH_TBL", IgniteDistributions.hash(ImmutableIntList.of(0)),
-                "ID", SqlTypeName.INTEGER, "NAME", SqlTypeName.VARCHAR),
+                "ID", SqlTypeName.INTEGER, "NAME", SqlTypeName.VARCHAR)
+                .addIndex("IDX", 0),
             createTable("RANDOM_TBL", IgniteDistributions.random(),
                 "ID", SqlTypeName.INTEGER, "NAME", SqlTypeName.VARCHAR),
             createTable("BROADCAST_TBL", broadcast(),
@@ -110,7 +111,7 @@ public class UncollectPlannerTest extends AbstractPlannerTest {
 
         assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(Join.class)
             .and(nodeOrAnyChild(isInstanceOf(IgniteExchange.class).negate())
-                .and(nodeOrAnyChild(isTableScan("hash_tbl"))))
+                .and(nodeOrAnyChild(isIndexScan("HASH_TBL", "IDX"))))
             .and(nodeOrAnyChild(isInstanceOf(IgniteUncollect.class)))
         ));
     }
