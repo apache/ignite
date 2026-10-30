@@ -20,11 +20,13 @@ package org.apache.ignite.spi.discovery;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.zip.ZipInputStream;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,7 +45,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
 
     /** */
     @Test
-    public void testSerializationAndDeserialization() throws Exception {
+    public void testSerializationAndDeserialization() throws IgniteCheckedException {
         HashMap<Integer, CacheMetricsSnapshot> metrics = new HashMap<>();
 
         metrics.put(1, createMetricsWithBorderMarker());
@@ -52,11 +54,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
 
         byte[] zipMarshal = U.zip(U.marshal(marshaller, metrics));
 
-        ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipMarshal));
-
-        in.getNextEntry();
-
-        HashMap<Integer, CacheMetricsSnapshot> unmarshalMetrics = U.unmarshal(marshaller, in, null);
+        HashMap<Integer, CacheMetricsSnapshot> unmarshalMetrics = unmarshalZip(marshaller, zipMarshal);
 
         assertTrue(isMetricsEquals(metrics.get(1), unmarshalMetrics.get(1)));
 
@@ -94,5 +92,30 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
         marsh.setContext(new MarshallerContextTestImpl());
 
         return marsh;
+    }
+
+    /**
+     * @param marsh Marshaller.
+     * @param zipBytes Zip-compressed bytes.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException
+     */
+    private static <T> T unmarshalZip(Marshaller marsh, byte[] zipBytes) throws IgniteCheckedException {
+        assert marsh != null;
+        assert zipBytes != null;
+
+        try {
+            ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipBytes));
+
+            in.getNextEntry();
+
+            return marsh.unmarshal(in, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 }

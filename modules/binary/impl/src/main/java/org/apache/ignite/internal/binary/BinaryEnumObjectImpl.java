@@ -169,13 +169,15 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
-        if (ldr != null)
+        boolean customLdr = ctx.isCustomLoader(ldr);
+
+        if (customLdr)
             Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             Class cls = BinaryImplUtils.resolveClass(ctx, typeId, clsName, ldr, false);
 
-            return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
+            return (T)(customLdr ? uncachedValue(cls) : BinaryEnumCache.get(cls, ord));
         }
         finally {
             Marshallers.USE_CACHE.set(Boolean.TRUE);
