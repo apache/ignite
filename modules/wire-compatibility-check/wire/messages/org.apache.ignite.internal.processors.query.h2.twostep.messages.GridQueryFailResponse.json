@@ -3,6 +3,7 @@
   "fields": [
     {"order": 0, "type": "long", "name": "qryReqId"},
     {"order": 1, "type": "java.lang.String", "name": "errMsg"},
-    {"order": 2, "type": "byte", "name": "failCode"}
+    {"order": 2, "type": "byte", "name": "failCode"},
+    {"order": 3, "type": "int", "name": "statusCode", "annotations": ["@org.apache.ignite.internal.Order(value=3, introducedBy=\"QUERY_FAIL_RESPONSE_ERROR_CODE_FEATURE\")"]}
   ]
 }

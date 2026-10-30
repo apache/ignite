@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSel
 import org.apache.ignite.internal.processors.cache.GridCacheQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDeleteSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheDistributedSqlQueryErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAndReplicatedCollocationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinQueryWithAffinityKeyTest;
@@ -116,6 +117,7 @@ import org.junit.runners.Suite;
     DynamicIndexServerCoordinatorBasicSelfTest.class,
     DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class,
     DynamicIndexClientBasicSelfTest.class,
+    IgniteCacheDistributedSqlQueryErrorSelfTest.class,
     IgniteCacheSqlQueryErrorSelfTest.class,
     IgniteCacheSqlDmlErrorSelfTest.class,
     SqlUnsupportedSelfTest.class,
