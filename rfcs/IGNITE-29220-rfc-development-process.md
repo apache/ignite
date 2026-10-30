@@ -25,6 +25,8 @@ An RFC is required to add, change, deprecate, or remove a public contract define
 
 Refactoring, optimizations, tests, documentation fixes, and bug fixes that restore supported behavior need no RFC if they preserve all contracts. If unsure, discuss the change in the ticket.
 
+APIs deprecated before this process may be removed through normal code review, without an RFC, vote, or dev-list announcement. Removal is allowed from the next non-patch release in the same branch: an API deprecated in 2.18 may be removed in 2.19, but not in 2.18.x.
+
 Fixes for undisclosed vulnerabilities follow the [ASF security process](https://www.apache.org/security/committers.html#work-in-private) instead of this public RFC process. After disclosure, document any public contract changes and migration steps in the user documentation. The fix does not need a separate RFC after disclosure.
 
 ## RFC contents
