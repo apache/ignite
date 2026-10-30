@@ -177,7 +177,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * Default implementation does nothing. SPI implementations that support
      * client-node-joined metrics should override this method.
      */
-    default public void onClientNodeJoined() {
+    default void onClientNodeJoined() {
         // No-op by default.
     }
 }
