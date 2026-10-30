@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.compute;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,19 +37,40 @@ import org.apache.ignite.internal.benchmarks.jmh.profile.JmhNodeStopHook;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Param;
 
-/** Compute calls from a client node to the two servers, and a task through the thin client; the jobs do nothing. */
+/** Compute calls to the two servers from a client node or a server, and a task through the thin client. */
 public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
     /** Keys whose primary server runs {@link #affinityCall}. */
     private static final int KEYS = 1024;
 
-    /** Job that does nothing. */
-    private static final IgniteRunnable NOOP = new NoopRunnable();
+    /** Node that calls compute. */
+    public enum Client {
+        /** A server node. */
+        SERVER,
 
-    /** Job that returns a constant. */
-    private static final IgniteCallable<Integer> ONE = new OneCallable();
+        /** A client node. */
+        THICK
+    }
 
-    /** Compute of the client node over the servers. */
+    /** Node that calls compute. */
+    @Param("THICK")
+    private Client client;
+
+    /** Length of the {@code byte[]} in each job's argument and result, 0 for none. */
+    @Param("0")
+    private int argSize;
+
+    /** Argument of the jobs and the task, {@code null} with {@code argSize=0}. */
+    private byte[] arg;
+
+    /** Job that holds {@link #arg} and does nothing. */
+    private IgniteRunnable runJob;
+
+    /** Job that returns {@link #arg}. */
+    private IgniteCallable<byte[]> callJob;
+
+    /** Compute of the calling node over the servers. */
     private IgniteCompute compute;
 
     /** Keys of {@link #affinityCall}. */
@@ -65,6 +85,10 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
+
+        arg = argSize == 0 ? null : new byte[argSize];
+        runJob = new ArgRunnable(arg);
+        callJob = new EchoCallable(arg);
 
         compute = node.compute(node.cluster().forServers());
 
@@ -94,7 +118,7 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected boolean clientMode() {
-        return true;
+        return client == Client.THICK;
     }
 
     /** {@inheritDoc} */
@@ -109,31 +133,31 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
     /** Runs a job on one of the servers. */
     @Benchmark
     public void run() {
-        compute.run(NOOP);
+        compute.run(runJob);
     }
 
     /** @return Result of a job run on one of the servers. */
     @Benchmark
-    public Integer call() {
-        return compute.call(ONE);
+    public byte[] call() {
+        return compute.call(callJob);
     }
 
     /** @return Result of a job run on the primary server of a key. */
     @Benchmark
-    public Integer affinityCall() {
-        return compute.affinityCall(cache.getName(), keys[ThreadLocalRandom.current().nextInt(KEYS)], ONE);
+    public byte[] affinityCall() {
+        return compute.affinityCall(cache.getName(), keys[ThreadLocalRandom.current().nextInt(KEYS)], callJob);
     }
 
-    /** @return Result of a task of one job, mapped to the first server. */
+    /** @return Result of a task of one job. */
     @Benchmark
-    public Integer execute() {
-        return compute.execute(OneTask.class, null);
+    public byte[] execute() {
+        return compute.execute(EchoTask.class, arg);
     }
 
     /** Runs a job on each server. */
     @Benchmark
     public void broadcast() {
-        compute.broadcast(NOOP);
+        compute.broadcast(runJob);
     }
 
     /**
@@ -141,14 +165,22 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
      * @throws InterruptedException If interrupted.
      */
     @Benchmark
-    public Integer thinExecute() throws InterruptedException {
-        return thinCompute.execute(OneTask.class.getName(), null);
+    public byte[] thinExecute() throws InterruptedException {
+        return thinCompute.execute(EchoTask.class.getName(), arg);
     }
 
-    /** Job that does nothing. */
-    private static class NoopRunnable implements IgniteRunnable {
+    /** Job that holds an argument and does nothing. */
+    private static class ArgRunnable implements IgniteRunnable {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Argument. */
+        private final byte[] arg;
+
+        /** @param arg Argument. */
+        ArgRunnable(byte[] arg) {
+            this.arg = arg;
+        }
 
         /** {@inheritDoc} */
         @Override public void run() {
@@ -156,41 +188,57 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
         }
     }
 
-    /** Job that returns 1. */
-    private static class OneCallable implements IgniteCallable<Integer> {
+    /** Job that returns its argument. */
+    private static class EchoCallable implements IgniteCallable<byte[]> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Argument. */
+        private final byte[] arg;
+
+        /** @param arg Argument. */
+        EchoCallable(byte[] arg) {
+            this.arg = arg;
+        }
+
         /** {@inheritDoc} */
-        @Override public Integer call() {
-            return 1;
+        @Override public byte[] call() {
+            return arg;
         }
     }
 
-    /** Task of one job that returns 1, mapped to the first node of the task's nodes. */
-    public static class OneTask extends ComputeTaskAdapter<Object, Integer> {
+    /** Task of one job that returns the task's argument; the load balancer picks the job's node. */
+    public static class EchoTask extends ComputeTaskSplitAdapter<byte[], byte[]> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
-            return Map.of(new OneJob(), subgrid.get(0));
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, byte[] arg) {
+            return List.of(new EchoJob(arg));
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) {
+        @Override public byte[] reduce(List<ComputeJobResult> results) {
             return results.get(0).getData();
         }
     }
 
-    /** Job of {@link OneTask}. */
-    private static class OneJob extends ComputeJobAdapter {
+    /** Job of {@link EchoTask}. */
+    private static class EchoJob extends ComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Argument. */
+        private final byte[] arg;
+
+        /** @param arg Argument. */
+        EchoJob(byte[] arg) {
+            this.arg = arg;
+        }
+
         /** {@inheritDoc} */
         @Override public Object execute() {
-            return 1;
+            return arg;
         }
     }
 }
