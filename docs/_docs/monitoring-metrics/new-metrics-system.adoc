@@ -151,8 +151,8 @@ is the rest. Registers without a dot in the name, such as `tx`, have no `group` 
 
 For example, the `io.discovery` and `tx` registers are exposed as:
 
-    org.apache:clsLdr=18b4aac2,group=io,name=discovery
-    org.apache:clsLdr=18b4aac2,name=tx
+    org.apache:clsLdr=5ffd2b27,group=io,name=discovery
+    org.apache:clsLdr=5ffd2b27,name=tx
 
 The MBean ObjectName can be used to identify the bean in UI tools like JConsole.
 For example, JConsole displays MBeans in a tree-like structure where beans are grouped by domain and then by the key
