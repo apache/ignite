@@ -209,6 +209,7 @@ public class IgniteCacheSqlQueryErrorSelfTest extends GridCacheAbstractSelfTest 
         checkSqlErrorCode("select * from wrong_schema.test", IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
         checkSqlErrorCode("insert into wrong (id, val) values (3, 'val3')", IgniteQueryErrorCode.TABLE_NOT_FOUND);
         checkSqlErrorCode("insert into test (id, wrong) values (3, 'val3')", IgniteQueryErrorCode.COLUMN_NOT_FOUND);
+        checkSqlErrorCode("insert into test (id, id) values (3, 4)", IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS);
         checkSqlErrorCode("alter table wrong drop column val", IgniteQueryErrorCode.TABLE_NOT_FOUND);
 
         // Generic syntax errors must be reported with the default parsing code.

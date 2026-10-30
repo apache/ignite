@@ -1613,10 +1613,10 @@ BOOST_AUTO_TEST_CASE(TestErrorMessage)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
-    // Just selecting everything to make sure everything is OK
+    // Provoking an error by selecting from a missing table.
     SQLCHAR selectReq[] = "SELECT a FROM B";
 
-    SQLRETURN ret = SQLExecDirect(stmt, selectReq, sizeof(selectReq));
+    SQLRETURN ret = SQLExecDirect(stmt, selectReq, SQL_NTS);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
 
