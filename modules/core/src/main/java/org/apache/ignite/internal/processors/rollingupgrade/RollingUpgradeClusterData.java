@@ -38,7 +38,7 @@ public class RollingUpgradeClusterData extends AbstractMessage {
     IgniteNodeFeatureSet activeFeatures;
 
     /** */
-    @Order(3)
+    @Order(value = 3, deprecatedBy = "PREV_CLUSTER_VER_DEPRECATED_FEATURE")
     @Nullable IgniteNodeFeatureSet prevActiveFeatures;
 
     /** */
@@ -47,25 +47,14 @@ public class RollingUpgradeClusterData extends AbstractMessage {
     }
 
     /** */
-    public RollingUpgradeClusterData(
-        boolean isVersionUpgradeEnabled,
-        UUID curFinalizeProcId,
-        IgniteNodeFeatureSet activeFeatures,
-        @Nullable IgniteNodeFeatureSet prevActiveFeatures
-    ) {
+    public RollingUpgradeClusterData(boolean isVersionUpgradeEnabled, UUID curFinalizeProcId, IgniteNodeFeatureSet activeFeatures) {
         this.isVersionUpgradeEnabled = isVersionUpgradeEnabled;
         this.curFinalizeProcId = curFinalizeProcId;
         this.activeFeatures = activeFeatures;
-        this.prevActiveFeatures = prevActiveFeatures;
     }
 
     /** */
     public IgniteNodeFeatureSet activeFeatures() {
         return activeFeatures;
-    }
-
-    /** */
-    @Nullable public IgniteNodeFeatureSet previousActiveFeatures() {
-        return prevActiveFeatures;
     }
 }

@@ -26,13 +26,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -194,18 +194,16 @@ public interface IgniteCacheOffheapManager {
      * @param val Value.
      * @param ver Version.
      * @param expireTime Expire time.
-     * @param oldRow Old row if available.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
     public void update(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         KeyCacheObject key,
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        GridDhtLocalPartition part,
-        @Nullable CacheDataRow oldRow
+        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**
@@ -411,6 +409,21 @@ public interface IgniteCacheOffheapManager {
     public void preloadPartition(int pardId) throws IgniteCheckedException;
 
     /**
+     * Tries to lock the manager against incompatible state like node or cache group stopping.
+     *
+     * @return {@code true} if successful, {@code false} if the manager is already in an incompatible state.
+     * @see #leaveBusy()
+     */
+    public boolean enterBusy();
+
+    /**
+     * Releases the 'busy' state.
+     *
+     * @see #enterBusy()
+     */
+    public void leaveBusy();
+
+    /**
      *
      */
     interface OffheapInvokeClosure extends IgniteTree.InvokeClosure<CacheDataRow> {
@@ -542,13 +555,14 @@ public interface IgniteCacheOffheapManager {
          * @return New row.
          * @throws IgniteCheckedException If failed.
          */
-        CacheDataRow createRow(
-            GridCacheContext cctx,
+        CacheDataRow updateRow(
+            GridCacheContext<?, ?> cctx,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+            @Nullable CacheDataRow oldRow
+        ) throws IgniteCheckedException;
 
         /**
          * Insert rows into page memory.
@@ -557,8 +571,10 @@ public interface IgniteCacheOffheapManager {
          * @param initPred Applied to all rows. Each row that not matches the predicate is removed.
          * @throws IgniteCheckedException If failed.
          */
-        public void insertRows(Collection<DataRowCacheAware> rows,
-            IgnitePredicateX<CacheDataRow> initPred) throws IgniteCheckedException;
+        public void insertRows(
+            Collection<DataRow> rows,
+            IgnitePredicateX<CacheDataRow> initPred
+        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
@@ -566,16 +582,15 @@ public interface IgniteCacheOffheapManager {
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
-         * @param oldRow Old row if available.
          * @throws IgniteCheckedException If failed.
          */
         void update(
-            GridCacheContext cctx,
+            GridCacheContext<?, ?> cctx,
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+            long expireTime
+        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

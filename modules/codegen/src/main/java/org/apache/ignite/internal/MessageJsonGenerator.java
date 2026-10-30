@@ -19,9 +19,12 @@ package org.apache.ignite.internal;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -32,13 +35,20 @@ import org.apache.ignite.internal.wire.WireJsonWriter;
 
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
 
-/** Generates JSON representations of messages and of the enums their fields refer to. */
+/** Generates JSON representations of classes and of the enums their fields refer to. */
 public class MessageJsonGenerator implements MessageGenerator {
     /** Directory of the representations in the class output. */
     private static final String WIRE_DIR = "META-INF/ignite-wire/";
 
+    /** Enums described in each compilation, shared by its processors. */
+    private static final Map<ProcessingEnvironment, Set<String>> DESCRIBED_ENUMS =
+        Collections.synchronizedMap(new WeakHashMap<>());
+
     /** */
     private final ProcessingEnvironment env;
+
+    /** */
+    private final String dir;
 
     /** */
     private final SchemaReader reader;
@@ -47,18 +57,23 @@ public class MessageJsonGenerator implements MessageGenerator {
     private final WireJsonWriter writer = new WireJsonWriter();
 
     /** */
-    private final Set<String> describedEnums = new HashSet<>();
+    private final Set<String> describedEnums;
 
-    /** */
-    MessageJsonGenerator(ProcessingEnvironment env) {
+    /**
+     * @param env Processing environment.
+     * @param dir Directory of the class representations.
+     */
+    public MessageJsonGenerator(ProcessingEnvironment env, String dir) {
         this.env = env;
+        this.dir = dir;
 
         reader = new SchemaReader(env);
+        describedEnums = DESCRIBED_ENUMS.computeIfAbsent(env, e -> new HashSet<>());
     }
 
     /** {@inheritDoc} */
     @Override public void generate(TypeElement type, List<VariableElement> fields) throws Exception {
-        write("messages/", reader.read(type, fields), type);
+        write(dir, reader.read(type, fields), type);
 
         for (Schema enumSchema : reader.enums(fields)) {
             if (describedEnums.add(enumSchema.cls()))

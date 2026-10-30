@@ -4,6 +4,6 @@
     {"order": 0, "type": "boolean", "name": "isVersionUpgradeEnabled"},
     {"order": 1, "type": "java.util.UUID", "name": "curFinalizeProcId"},
     {"order": 2, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet", "name": "activeFeatures"},
-    {"order": 3, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet", "name": "prevActiveFeatures"}
+    {"order": 3, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet", "name": "prevActiveFeatures", "annotations": ["@org.apache.ignite.internal.Order(value=3, deprecatedBy=\"PREV_CLUSTER_VER_DEPRECATED_FEATURE\")"]}
   ]
 }

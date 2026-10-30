@@ -17,25 +17,24 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
-
 /**
  * Message for {@link OperationContext} distributed attributes.
  *
- * @see OperationContextDispatcher
+ * @see DistributedOperationContext
  */
 public class OperationContextSnapshotMessage extends AbstractMessage {
-    /** Values of operation context attributes. */
+    /** Maximal number of supported distributed attributes. */
+    static final int MAX_ATTRS_CNT = Byte.SIZE;
+
+    /** Values of operation context attributes, in ascending id order. */
     @Order(0)
     Message[] attrs;
 
-    /** Bitmap of effective attributes ids. */
+    /** Bitmap of attributes ids. */
     @Order(1)
     byte idBitmap;
 
@@ -45,50 +44,44 @@ public class OperationContextSnapshotMessage extends AbstractMessage {
     }
 
     /** */
-    private OperationContextSnapshotMessage(byte idBitmap, Message[] attrs) {
+    OperationContextSnapshotMessage(byte idBitmap, Message[] attrs) {
+        assert attrs.length == attributesCount(idBitmap);
+
         this.attrs = attrs;
         this.idBitmap = idBitmap;
     }
 
     /** */
-    public static class Builder {
-        /** */
-        private byte bitmap = 0;
+    Message getValue(int attrId) {
+        assert contains(idBitmap, attrId);
 
-        /** */
-        private List<Message> vals;
+        return attrs[valueIndex(attrId)];
+    }
 
-        /** */
-        private Builder() {
-            // No-op.
-        }
+    /** */
+    private int valueIndex(int attrId) {
+        return Integer.bitCount(idBitmap & ((1 << attrId) - 1));
+    }
 
-        /** */
-        public void add(int attrId, Message attrVal) {
-            if (vals == null)
-                vals = new ArrayList<>(MAX_ATTRS_CNT / 2);
+    /** */
+    static int attributesCount(byte idBitmap) {
+        return Integer.bitCount(Byte.toUnsignedInt(idBitmap));
+    }
 
-            byte mask = (byte)(1 << attrId);
+    /** */
+    static int nextAttributeId(byte idBitmap, int prevId) {
+        int bits = Byte.toUnsignedInt(idBitmap) & (-1 << (prevId + 1));
 
-            assert (bitmap & mask) == 0;
+        return bits == 0 ? -1 : Integer.numberOfTrailingZeros(bits);
+    }
 
-            vals.add(attrVal);
-            bitmap |= mask;
-        }
+    /** */
+    static boolean contains(byte idBitmap, int attrId) {
+        return (idBitmap & (1 << attrId)) != 0;
+    }
 
-        /** */
-        public boolean isEmpty() {
-            return bitmap == 0;
-        }
-
-        /** */
-        OperationContextSnapshotMessage build() {
-            return new OperationContextSnapshotMessage(bitmap, vals.toArray(Message[]::new));
-        }
-
-        /** */
-        public static OperationContextSnapshotMessage.Builder create() {
-            return new Builder();
-        }
+    /** */
+    static byte set(byte idBitmap, int attrId) {
+        return (byte)(idBitmap | (1 << attrId));
     }
 }

@@ -200,7 +200,7 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
     public void testDefaultRegistryMixedPair() throws Exception {
         startServerNodes("2.19.0", "2.20.0");
 
-        checkMutualMessageSend(grid(0), grid(1), DEFAULT_REGISTRY_MSG, A, null, C, D, E, F);
+        checkMutualMessageSend(grid(0), grid(1), DEFAULT_REGISTRY_MSG, A, B, C, D, E, F);
     }
 
     /** */
@@ -578,6 +578,67 @@ public class RollingUpgradeMessageSerializationTest extends AbstractRollingUpgra
 
         assertNull(send(grid(1), grid(0), CORE_MSG).rawFields());
         assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
+    }
+
+    /** */
+    @Test
+    public void testDeprecatedFieldsDuringUpgrade() throws Exception {
+        startServerNodes("2.19.2", "2.20.0", "2.20.0");
+
+        checkMutualCoreMessageSend(grid(1), grid(2), A, B, null, D, E, null);
+        checkMutualCoreMessageSend(grid(0), grid(1), A, B, null, D, null, null);
+        checkMutualCoreMessageSend(grid(0), grid(2), A, B, null, D, null, null);
+
+        TestContainerMessage_2_20_0 rcvd = (TestContainerMessage_2_20_0)send(grid(1), grid(2), CONTAINER_MSG);
+
+        assertEquals(7, rcvd.oldCnt);
+        assertFields(A, B, null, D, E, null, rcvd.oldCompressedMsg);
+    }
+
+    /** */
+    @Test
+    public void testEmptyDeprecatedValueIsSent() throws Exception {
+        startServerNodes("2.19.2", "2.20.0", "2.20.0");
+
+        TestCoreMessage_2_20_0 msg = (TestCoreMessage_2_20_0)buildMessage(grid(1), CORE_MSG);
+
+        msg.fldB = "";
+
+        assertEquals("", send(grid(1), grid(2), msg).fldB());
+    }
+
+    /** */
+    @Test
+    public void testDeletedFieldIsRelayed() throws Exception {
+        startServerNodes("2.20.1", "2.21.0", "2.20.1");
+
+        TestDiscoveryMessage msg = CORE_MSG.build("2.20.1", feature -> false);
+
+        TestMessage held = send(grid(0), grid(1), msg);
+
+        assertEquals(TestCoreMessage_2_21_0.class, held.getClass());
+        assertFields(A, null, null, null, E, F, held);
+        assertEquals(3, held.rawFields().size());
+
+        assertFields(A, B, C, D, E, F, send(grid(1), grid(0), held));
+
+        Map<String, TestDiscoveryMessage> rcvd = sendOverDiscovery(grid(0), msg);
+
+        assertEquals(3, rcvd.get(grid(1).name()).rawFields().size());
+
+        assertFields(A, B, C, D, E, F, rcvd.get(grid(2).name()));
+        assertNull(rcvd.get(grid(2).name()).rawFields());
+    }
+
+    /** */
+    @Test
+    public void testNewerVersionWithoutDeprecatedFields() throws Exception {
+        startServerNodes("2.20.1", "2.21.0");
+
+        checkMutualCoreMessageSend(grid(0), grid(1), A, null, null, null, E, F);
+
+        assertNull(send(grid(0), grid(1), CORE_MSG).rawFields());
+        assertNull(sendOverDiscovery(grid(0), CORE_MSG).get(grid(1).name()).rawFields());
     }
 
     /** */

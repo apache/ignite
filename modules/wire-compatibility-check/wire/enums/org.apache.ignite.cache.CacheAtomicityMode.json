@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.cache.CacheAtomicityMode",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.CacheAtomicityMode", "name": "TRANSACTIONAL"},
+    {"order": 1, "type": "org.apache.ignite.cache.CacheAtomicityMode", "name": "ATOMIC"}
+  ]
+}

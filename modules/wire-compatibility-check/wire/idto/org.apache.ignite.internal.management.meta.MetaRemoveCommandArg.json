@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.meta.MetaRemoveCommandArg",
+  "fields": [
+    {"order": 0, "type": "int", "name": "typeId"},
+    {"order": 1, "type": "java.lang.String", "name": "typeName"},
+    {"order": 2, "type": "java.lang.String", "name": "out"}
+  ]
+}

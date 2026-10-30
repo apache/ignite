@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridC
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.MultiDcRebalancingTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.MultiDcSplitBrainRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.CleanupRestoredCachesSlowTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -72,6 +73,7 @@ public class IgniteCacheTestSuite19 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingCancelTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MultiDcRebalancingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MultiDcSplitBrainRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheStoreTxPutAllMultiNodeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CleanupRestoredCachesSlowTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ClientCreateCacheGroupOnJoinNodeMapsTest.class, ignoredTests);

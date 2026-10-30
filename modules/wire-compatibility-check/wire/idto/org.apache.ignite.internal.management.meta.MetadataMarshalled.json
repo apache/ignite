@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.meta.MetadataMarshalled",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "metaMarshalled"},
+    {"order": 1, "type": "org.apache.ignite.internal.binary.BinaryMetadata", "name": "meta"}
+  ]
+}

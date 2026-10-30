@@ -48,6 +48,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
     """
     The base class to build services aware of Ignite.
     """
+    # Mount source of the volumes mount_tmpfs makes: clean_node finds them by it.
+    TMPFS_SOURCE = "ignitetest-tmpfs"
+
     @constructible
     class NetPart(IntEnum):
         """
@@ -79,6 +82,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         self.disconnected_nodes = []
 
+        self.tmpfs_volumes = {}
+
     @property
     def product(self):
         return str(self.config.version)
@@ -109,7 +114,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, nodes=nodes, from_the_beginning=True)
 
+    def mount_tmpfs(self, path, size_mb):
+        """
+        Mounts a tmpfs of size_mb over the path on every node when it starts, so writes there fail once it is full.
+        """
+        self.tmpfs_volumes[path] = size_mb
+
     def start_node(self, node, **kwargs):
+        self.__mount_tmpfs_volumes(node)
+
         self.init_shared(node)
         self.init_persistent(node)
 
@@ -186,7 +199,25 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
     def clean_node(self, node, **kwargs):
         super().clean_node(node, **kwargs)
 
+        self.__unmount_tmpfs_volumes(node)
+
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
+
+    def __mount_tmpfs_volumes(self, node):
+        """
+        Mounts the volumes registered by mount_tmpfs, unless they are still mounted from the node's previous start.
+        """
+        for path, size_mb in self.tmpfs_volumes.items():
+            node.account.ssh(f"findmnt -rn -S {self.TMPFS_SOURCE} -M {path} > /dev/null || (mkdir -p {path} && "
+                             f"sudo mount -t tmpfs -o size={size_mb}m,uid=$(id -u),gid=$(id -g) {self.TMPFS_SOURCE} "
+                             f"{path})", allow_fail=False)
+
+    def __unmount_tmpfs_volumes(self, node):
+        """
+        Unmounts every volume mount_tmpfs made on the node, also one left by an aborted run.
+        """
+        node.account.ssh(f"findmnt -rn -S {self.TMPFS_SOURCE} -o TARGET | xargs -r -n1 sudo umount -l",
+                         allow_fail=False)
 
     def init_persistent(self, node):
         """

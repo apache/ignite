@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.aware.IndexRebuildCacheInfo",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 1, "type": "boolean", "name": "recreate"}
+  ]
+}

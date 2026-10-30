@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<org.apache.ignite.cluster.ClusterNode,java.util.List<org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata>>", "name": "metas"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.cache.IdleVerifyResult", "name": "idleRes"}
+  ]
+}

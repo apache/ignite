@@ -75,6 +75,8 @@ import org.apache.ignite.internal.management.io.IoTestCommand;
 import org.apache.ignite.internal.management.kill.KillAllCommand;
 import org.apache.ignite.internal.management.kill.KillAllCommandArg;
 import org.apache.ignite.internal.management.kill.KillCommand;
+import org.apache.ignite.internal.management.kill.KillLockCommand;
+import org.apache.ignite.internal.management.kill.KillLockCommandArg;
 import org.apache.ignite.internal.management.meta.MetaCommand;
 import org.apache.ignite.internal.management.meta.MetaRemoveCommand;
 import org.apache.ignite.internal.management.meta.MetaUpdateCommand;
@@ -82,6 +84,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
+import org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
 import org.apache.ignite.internal.management.tx.TxCommandArg;
@@ -93,6 +96,7 @@ import org.apache.ignite.internal.management.wal.WalPrintCommand.WalPrintCommand
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -548,12 +552,16 @@ public class CommandHandlerParsingTest {
             cmdText = F.concat(cmdText, "cacheGroup1");
         else if (cmd.getClass() == SnapshotRestoreCommand.class)
             cmdText = F.concat(cmdText, "snp1");
+        else if (cmd.getClass() == SnapshotDeleteCommand.class)
+            cmdText = F.concat(cmdText, "snp1");
         else if (cmd.getClass() == MetaUpdateCommand.class)
             return;
         else if (cmd.getClass() == MetaRemoveCommand.class)
             cmdText = F.concat(cmdText, "--typeId", "1");
         else if (cmd.getClass() == KillAllCommand.class)
             cmdText = F.concat(cmdText, "SQL");
+        else if (cmd.getClass() == KillLockCommand.class)
+            cmdText = F.concat(cmdText, IgniteUuid.randomUuid().toString());
 
         args = parseArgs(asList(cmdText));
 
@@ -725,6 +733,22 @@ public class CommandHandlerParsingTest {
 
         assertParseArgsThrows("String representation of \"java.util.UUID\" is exepected", IllegalArgumentException.class,
             "--kill", "continuous", UUID.randomUUID().toString(), "not_a_uuid");
+
+        // Lock command format errors.
+        assertParseArgsThrows("Argument xid required.", "--kill", "lock");
+
+        assertParseArgsThrows("Invalid UUID string: not_a_uuid", IllegalArgumentException.class,
+            "--kill", "lock", "not_a_uuid");
+
+        // Lock command parse success.
+        IgniteUuid xid = IgniteUuid.randomUuid();
+        UUID nodeId = UUID.randomUUID();
+
+        KillLockCommandArg lockArg = (KillLockCommandArg)parseArgs(asList(
+            "--kill", "lock", xid.toString(), "--node-id", nodeId.toString())).commandArg();
+
+        assertEquals(xid, lockArg.xid());
+        assertEquals(nodeId, lockArg.nodeId());
 
         // Kill all command format errors.
         assertParseArgsThrows("Argument target required.", "--kill", "all");

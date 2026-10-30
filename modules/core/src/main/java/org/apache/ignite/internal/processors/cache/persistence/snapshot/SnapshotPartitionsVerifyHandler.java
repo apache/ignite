@@ -304,15 +304,17 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Snapshot
                         // There is no `primary` partitions for snapshot.
                         PartitionKey key = new PartitionKey(grpId, partId, grpName);
 
-                        PartitionHashRecord hash = calculatePartitionHash(key,
+                        PartitionHashRecord hash = calculatePartitionHash(
+                            key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash() ? F.emptyIterator()
+                            skipHash()
+                                ? F.emptyIterator()
                                 : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore),
-                            null
+                            () -> cctx.kernalContext().isStopping()
                         );
 
                         assert hash != null : "OWNING must have hash: " + key;
