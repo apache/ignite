@@ -36,8 +36,8 @@ Copy [TEMPLATE.md](TEMPLATE.md) and replace its prompts with answers. Link to re
 ## Review and merge
 
 1. Create a ticket describing the problem and change. Open one PR with the implementation and either a new RFC or an update to an existing RFC. Name new RFCs `rfcs/IGNITE-<ticket>-<short-title>.md`. Link the ticket and PR. The implementation may be added later.
-2. Review the RFC in the PR. When it is ready, start a `[VOTE]` on `dev@ignite.apache.org` with links to the PR and the RFC version being voted on. Include any unresolved concerns in the vote thread. Keep the vote open for at least 72 hours. If the proposal or compatibility plan changes during the vote, restart it.
-3. Get explicit `+1` votes from at least three different Ignite committers on the dev list. The author can count if they are a committer and vote explicitly. Any request to skip deprecation must be explicitly approved. Resolve technical objections. A valid technical veto on a code change blocks merging until withdrawn.
+2. Review the RFC in the PR. When it is ready, start a `[VOTE]` on `dev@ignite.apache.org` with links to the PR and the RFC version being voted on. Include any unresolved concerns in the vote thread. Keep the vote open for at least 72 hours. For RFCs limited to compatible additions, announce that the RFC is also approved if no objections are raised during the first seven days of the vote. If the proposal or compatibility plan changes during the vote, restart it.
+3. Approval requires explicit `+1` votes from at least three different Ignite committers on the dev list. For RFCs limited to compatible additions, seven days without objections is also sufficient. The author can count if they are a committer and vote explicitly. Any request to skip deprecation must be explicitly approved. Resolve technical objections. A valid technical veto on a code change blocks merging until withdrawn.
 4. Publish `[RESULT]` on the dev list and link it from the PR.
 5. The implementation must pass code review and tests. Merge it with the approved RFC as one commit for the ticket. RFCs for documentation or process changes need no code implementation.
 
