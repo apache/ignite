@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -45,15 +46,14 @@ import org.junit.jupiter.api.Test;
 @Order(1)
 public class PlannerTimeoutTest extends AbstractPlannerTest {
     /** */
-    @BeforeAll
-    static void init() {
-        // Additional check for val correctness: GridTestClockTimer#startTestTimer
-        // Extended description: https://issues.apache.org/jira/browse/IGNITE-29084
-        assertEquals(1, (int)GridTestUtils.getFieldValue(CommonUtils.class, "gridCnt"));
-    }
+    private static final long PLANNER_TIMEOUT = 1_000;
 
     /** */
-    private static final long PLANNER_TIMEOUT = 1_000;
+    @BeforeAll
+    static void init() {
+        // Each running node holds a gridCnt slot, plus one slot for the test clock.
+        assertEquals(G.allGrids().size() + 1, (int)GridTestUtils.getFieldValue(CommonUtils.class, "gridCnt"));
+    }
 
     /** */
     @Test
