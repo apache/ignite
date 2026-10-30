@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillLockCommandArg",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "xid"},
+    {"order": 1, "type": "java.util.UUID", "name": "nodeId"}
+  ]
+}
