@@ -57,6 +57,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CacheConfigurationInternalAccessor;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1594,8 +1595,12 @@ public class GridCacheUtils {
      * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @throws IgniteCheckedException If configuration is not valid.
      */
-    public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx, boolean recoveryMode) throws IgniteCheckedException {
+    public static void initializeConfigDefaults(
+        IgniteLogger log,
+        CacheConfiguration cfg,
+        CacheObjectContext cacheObjCtx,
+        boolean recoveryMode
+    ) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -1654,8 +1659,8 @@ public class GridCacheUtils {
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
         if (!F.isEmpty(entities)) {
-            cfg.clearQueryEntities().setQueryEntities(
-                QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
+            CacheConfigurationInternalAccessor.replaceQueryEntities(
+                cfg, QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
         }
     }
 
@@ -2072,8 +2077,11 @@ public class GridCacheUtils {
         boolean isSqlEscape,
         int qryParallelism
     ) {
-        return new CacheConfiguration<>(oldCfg)
-                .setQueryEntities(entities)
+        CacheConfiguration<K, V> newCfg = new CacheConfiguration<>(oldCfg);
+
+        CacheConfigurationInternalAccessor.replaceQueryEntities(newCfg, entities);
+
+        return newCfg
                 .setSqlSchema(sqlSchema)
                 .setSqlEscapeAll(isSqlEscape)
                 .setQueryParallelism(qryParallelism);

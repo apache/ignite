@@ -18,13 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDeleteSqlQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAndReplicatedCollocationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinQueryWithAffinityKeyTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapEvictQueryTest;
@@ -119,7 +119,7 @@ import org.junit.runners.Suite;
     IgniteCacheSqlQueryErrorSelfTest.class,
     IgniteCacheSqlDmlErrorSelfTest.class,
     SqlUnsupportedSelfTest.class,
-    IgniteCacheDuplicateEntityConfigurationSelfTest.class,
+    CacheConfigurationQueryEntityTest.class,
     IncorrectQueryEntityTest.class,
     IgniteDynamicSqlRestoreTest.class,
     IgniteSqlSplitterSelfTest.class,

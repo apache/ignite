@@ -138,7 +138,6 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singletonList(new QueryEntity(Integer.class, Integer.class)))
-            .setIndexedTypes(Integer.class, Integer.class)
         );
 
         cache.put(100000, 0);

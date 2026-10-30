@@ -91,7 +91,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
         QueryEntity entity = new QueryEntity(Integer.class, JoinSqlTestHelper.Organization.class);
 
         entity.setKeyFieldName("ID");
-        entity.getFields().put("ID", String.class.getName());
+        entity.getFields().put("ID", Integer.class.getName());
 
         return Collections.singletonList(entity);
     }
@@ -101,9 +101,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      */
     private static Collection<QueryEntity> personQueryEntity() {
         QueryEntity entity = new QueryEntity(Integer.class, JoinSqlTestHelper.Person.class);
-
-        entity.setKeyFieldName("ID");
-        entity.getFields().put("ID", String.class.getName());
 
         return Collections.singletonList(entity);
     }
@@ -123,7 +120,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
             new CacheConfiguration<Integer, JoinSqlTestHelper.Person>(PERS_CACHE_NAME)
                 .setCacheMode(CacheMode.PARTITIONED)
                 .setSqlSchema(PERS_CACHE_NAME)
-                .setIndexedTypes(Integer.class, JoinSqlTestHelper.Person.class)
                 .setQueryEntities(personQueryEntity())
         );
 
