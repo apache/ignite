@@ -2985,7 +2985,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             List<InetSocketAddress> addrs = new ArrayList<>(super.socketAddresses());
 
             // Unresolved address: getAddress() returns null.
-            addrs.add(new InetSocketAddress("unresolved-host-name-that-does-not-resolve-xyz", 47500));
+            addrs.add(InetSocketAddress.createUnresolved("unresolved-host-name-that-does-not-resolve-xyz", 47500));
 
             return addrs;
         }
