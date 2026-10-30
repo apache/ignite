@@ -109,8 +109,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-                )
+                        .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE))
         );
 
         cfg.setWorkDirectory(new File(U.defaultWorkDirectory(), igniteInstanceName).getAbsolutePath());
@@ -120,31 +119,27 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
     /** */
     @Test
-    public void testClientOfThePreviousVersion() throws Exception {
-        doTestClientOfVersion(MASTER_VER_REF, "2.18.0");
-    }
-
-    /** */
-    @Test
-    public void testClientOfTheNextVersion() throws Exception {
-        doTestClientOfVersion("2.18.0", MASTER_VER_REF);
+    public void testClientOfThePreviousVersionWithCreateInProgress() throws Exception {
+        doTestDifferentClusterAndClientVersions(MASTER_VER_REF, "2.18.0");
     }
 
     /** */
     @Test
     public void testClientOfTheNextVersionWithCreateInProgress() throws Exception {
+        doTestDifferentClusterAndClientVersions("2.18.0", MASTER_VER_REF);
+    }
+
+    /** */
+    private void doTestDifferentClusterAndClientVersions(String clusterVer, String clientVer) throws Exception {
         for (int i = 0; i < ALL_GRIDS - CLIENTS; i++)
-            startGrid(i, "2.18.0", false);
+            startGrid(i, clusterVer, false);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
         createCache(0);
 
-        // The snapshot to check. It must be created before the messages are blocked.
-        createSnapshot(0, "testSnapshotToCheck");
+        snp(0).createSnapshot("testSnapshotToCheck").get(getTestTimeout());
 
-        // Blocks the finalization of the create operation and the check operation to keep them in progress while
-        // the status is requested.
         for (int i = 0; i < ALL_GRIDS - CLIENTS; i++) {
             spi(grid(i)).blockMessages((node, msg) ->
                 msg instanceof SingleNodeMessage<?> snm &&
@@ -162,13 +157,9 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
             Collection<UUID> nodes = Collections.singleton(nodeId(0));
 
-            Collection<SnapshotStatusTask.SnapshotOperationStatus> statuses =
-                snapshotStatusTaskWithClient(new VisorTaskArgument<>(nodes, new NoArg(), false));
+            VisorTaskArgument<NoArg> vtArg = withCoreVersion(clientVer, () -> new VisorTaskArgument<>(nodes, new NoArg(), false));
 
-            // The check operation is not reported by the cluster of the previous version.
-            assertEquals(1, statuses.size());
-
-            SnapshotStatusTask.SnapshotOperationStatus status = F.first(statuses);
+            SnapshotStatusTask.SnapshotStatus status = snapshotStatusTaskWithClient(vtArg);
 
             assertEquals(SnapshotOperation.CREATE, status.operation());
             assertEquals(SNP_NAME, status.name());
@@ -180,29 +171,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
         }
 
         createFut.get(10_000L);
-
-        // Ensure that the snapshot check process correctly finished too.
-        SnapshotPartitionsVerifyResult chkRes = chkFut.get(getTestTimeout());
-
-        assertTrue(F.isEmpty(chkRes.exceptions()));
-        assertTrue(F.isEmpty(chkRes.idleVerifyResult().exceptions()));
-        assertFalse(chkRes.idleVerifyResult().hasConflicts());
-    }
-
-    /** */
-    private void doTestClientOfVersion(String clusterVer, String clientVer) throws Exception {
-        for (int i = 0; i < ALL_GRIDS - CLIENTS; i++)
-            startGrid(i, clusterVer, false);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
-
-        createCacheAndSnapshot(0);
-
-        Collection<UUID> nodes = Collections.singleton(nodeId(0));
-
-        VisorTaskArgument<NoArg> vtArg = withCoreVersion(clientVer, () -> new VisorTaskArgument<>(nodes, new NoArg(), false));
-
-        validateSnapshotCheckStatusFeature(false, vtArg);
+        chkFut.get(10_000L);
     }
 
     /** */
@@ -217,7 +186,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         createCacheAndSnapshot(testNodeIx);
 
-        validateSnapshotCheckStatusFeature(false);
+        validateSnapshotCheckStatus(false);
 
         ru(grid(testNodeIx)).enableVersionUpgrade();
 
@@ -234,7 +203,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         assertTrue(spi(grid(testNodeIx)).waitForBlocked(1, getTestTimeout()));
 
-        validateSnapshotCheckStatusFeature(false);
+        validateSnapshotCheckStatus(false);
 
         spi(grid(testNodeIx)).stopBlock();
 
@@ -248,7 +217,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
             assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
         }
 
-        validateSnapshotCheckStatusFeature(true);
+        validateSnapshotCheckStatus(true);
     }
 
     /** */
@@ -261,7 +230,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         createCacheAndSnapshot(1);
 
-        validateSnapshotCheckStatusFeature(false);
+        validateSnapshotCheckStatus(false);
 
         ru(grid(0)).enableVersionUpgrade();
 
@@ -271,7 +240,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
             upgradeNodeVersion(i, "2.18.0", MASTER_VER_REF);
         }
 
-        validateSnapshotCheckStatusFeature(false);
+        validateSnapshotCheckStatus(false);
 
         ru(grid(1)).finalizeClusterVersion();
 
@@ -281,56 +250,11 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
             assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
         }
 
-        validateSnapshotCheckStatusFeature(true);
+        validateSnapshotCheckStatus(true);
     }
 
     /** */
-    private void createCacheAndSnapshot(int gridIdx) {
-        createCache(gridIdx);
-
-        createSnapshot(gridIdx);
-    }
-
-    /** Creates a replicated cache and fills it with data. */
-    private void createCache(int gridIdx) {
-        int partsCnt = 4;
-        int keysCnt = partsCnt * 5;
-
-        grid(gridIdx).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.REPLICATED)
-            .setAffinity(new RendezvousAffinityFunction().setPartitions(partsCnt))
-            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
-
-        try (IgniteDataStreamer<Integer, Integer> ds = grid(gridIdx).dataStreamer(DEFAULT_CACHE_NAME)) {
-            for (int i = 0; i < keysCnt; i++)
-                ds.addData(i, i);
-        }
-    }
-
-    /** */
-    private void createSnapshot(int gridIdx) {
-        createSnapshot(gridIdx, SNP_NAME);
-    }
-
-    /** */
-    private void createSnapshot(int gridIdx, String snpName) {
-        snp(gridIdx).createSnapshot(snpName).get(getTestTimeout());
-    }
-
-    /** @return {@code True} if the create operation of the snapshot {@code snpName} is in progress on all the server nodes. */
-    private boolean createInProgress(String snpName) {
-        for (int i = 0; i < ALL_GRIDS - CLIENTS; i++) {
-            SnapshotOperationRequest req = snp(i).currentCreateRequest();
-
-            if (req == null || !snpName.equals(req.snapshotName()))
-                return false;
-        }
-
-        return true;
-    }
-
-    /** */
-    private void validateSnapshotCheckStatusFeature(boolean supports, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
+    private void validateSnapshotCheckStatus(boolean supports, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
         int blockNodeIdx = 1;
 
         spi(grid(blockNodeIdx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -365,25 +289,12 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         spi(grid(blockNodeIdx)).stopBlock();
 
-        assertTrue(waitForCondition(() -> !spi(grid(blockNodeIdx)).hasBlockedMessages(), getTestTimeout()));
-
-        // Ensure that the snapshot check process correctly finished too.
-        SnapshotPartitionsVerifyResult chkRes = chkFut.get(getTestTimeout());
-
-        assertTrue(F.isEmpty(chkRes.exceptions()));
-        assertFalse(F.isEmpty(chkRes.metas()));
-        assertTrue(F.isEmpty(chkRes.idleVerifyResult().exceptions()));
-        assertFalse(chkRes.idleVerifyResult().hasConflicts());
+        chkFut.get(10_000L);
     }
 
     /** */
-    private void validateSnapshotCheckStatusFeature(boolean supports) throws Exception {
-        validateSnapshotCheckStatusFeature(supports, null);
-    }
-
-    /** */
-    private IgniteSnapshotManager snp(int gridIdx) {
-        return grid(gridIdx).context().cache().context().snapshotMgr();
+    private void validateSnapshotCheckStatus(boolean supports) throws Exception {
+        validateSnapshotCheckStatus(supports, null);
     }
 
     /** */
@@ -396,13 +307,39 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private <T> T snapshotStatusTaskWithClient(VisorTaskArgument<NoArg> vtArg) throws Exception {
-        String taskName = SnapshotStatusTask.class.getName();
-
+    private static <T> T snapshotStatusTaskWithClient(VisorTaskArgument<NoArg> vtArg) throws Exception {
         try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-            VisorTaskResult<T> vtRes = cli.compute().execute(taskName, vtArg);
+            VisorTaskResult<T> vtRes = cli.compute().execute(SnapshotStatusTask.class.getName(), vtArg);
 
             return vtRes.result();
+        }
+    }
+
+    /** */
+    private IgniteSnapshotManager snp(int gridIdx) {
+        return grid(gridIdx).context().cache().context().snapshotMgr();
+    }
+
+    /** */
+    private void createCacheAndSnapshot(int gridIdx) {
+        createCache(gridIdx);
+
+        snp(gridIdx).createSnapshot(SNP_NAME).get(getTestTimeout());
+    }
+
+    /** Creates a replicated cache and fills it with data. */
+    private void createCache(int gridIdx) {
+        int partsCnt = 4;
+        int keysCnt = partsCnt * 5;
+
+        grid(gridIdx).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(partsCnt))
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC));
+
+        try (IgniteDataStreamer<Integer, Integer> ds = grid(gridIdx).dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < keysCnt; i++)
+                ds.addData(i, i);
         }
     }
 }

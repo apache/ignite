@@ -71,7 +71,8 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
             return;
         }
 
-        SnapshotStatus singleOldStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
+        SnapshotStatus singleStatus = rawResult instanceof SnapshotStatus ? (SnapshotStatus)rawResult : null;
+
         Collection<SnapshotStatusTask.SnapshotOperationStatus> statuses = rawResult instanceof Collection<?>
             ? (Collection<SnapshotStatusTask.SnapshotOperationStatus>)rawResult
             : null;
@@ -83,7 +84,9 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
             return;
         }
 
-        statuses = statuses == null ? Collections.singleton(new SnapshotStatusTask.SnapshotOperationStatus(singleOldStatus)) : statuses;
+        statuses = statuses == null
+            ? Collections.singleton(new SnapshotStatusTask.SnapshotOperationStatus(singleStatus))
+            : statuses;
 
         boolean separator = false;
 
@@ -143,17 +146,17 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
         private final List<String> titles;
 
         /** */
-        SnapshotTaskProgressDesc(List<String> titles) {
+        private SnapshotTaskProgressDesc(List<String> titles) {
             this.titles = Collections.unmodifiableList(titles);
         }
 
         /** @return Progress table columns titles. */
-        List<String> titles() {
+        private List<String> titles() {
             return titles;
         }
 
         /** @return Progress table columns types. */
-        List<SystemViewTask.SimpleType> types() {
+        private List<SystemViewTask.SimpleType> types() {
             List<SystemViewTask.SimpleType> types = new ArrayList<>();
 
             types.add(STRING);
@@ -165,13 +168,13 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
         }
 
         /** @return Progress table data row. */
-        abstract List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress);
+        protected abstract List<?> buildRow(UUID nodeId, T5<Long, Long, Long, Long, Long> progress);
     }
 
     /** */
     private static class CreateFullSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
-        CreateFullSnapshotTaskProgressDesc() {
+        private CreateFullSnapshotTaskProgressDesc() {
             super(F.asList("Node ID", "Processed, bytes", "Total, bytes", "Percent"));
         }
 
@@ -192,7 +195,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
     /** */
     private static class CreateIncrementalSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
-        CreateIncrementalSnapshotTaskProgressDesc() {
+        private CreateIncrementalSnapshotTaskProgressDesc() {
             super(F.asList("Node ID", "Progress"));
         }
 
@@ -205,7 +208,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
     /** */
     private static class RestoreFullSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
-        RestoreFullSnapshotTaskProgressDesc() {
+        private RestoreFullSnapshotTaskProgressDesc() {
             super(F.asList("Node ID", "Processed, partitions", "Total, partitions", "Percent"));
         }
 
@@ -226,7 +229,7 @@ public class SnapshotStatusCommand extends AbstractSnapshotCommand<NoArg, Serial
     /** */
     private static class RestoreIncrementalSnapshotTaskProgressDesc extends SnapshotTaskProgressDesc {
         /** */
-        RestoreIncrementalSnapshotTaskProgressDesc() {
+        private RestoreIncrementalSnapshotTaskProgressDesc() {
             super(F.asList(
                 "Node ID",
                 "Processed, partitions",
