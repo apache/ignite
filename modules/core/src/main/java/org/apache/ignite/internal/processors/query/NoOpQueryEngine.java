@@ -70,4 +70,9 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     ) throws IgniteSQLException {
         return Collections.emptyList();
     }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable QueryEngineConfigurationEx config() {
+        return null;
+    }
 }

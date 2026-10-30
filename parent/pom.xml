@@ -23,6 +23,13 @@
         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.apache</groupId>
+        <artifactId>apache</artifactId>
+        <version>40</version>
+        <relativePath/>
+    </parent>
+
     <!--
         NOTE:
         The ignite-parent module is used as a shared pom between the Ignite internal submodules and the Ignite Extensions.
@@ -38,29 +45,11 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
 
-    <distributionManagement>
-        <repository>
-            <id>${distMgmtReleasesId}</id>
-            <name>${distMgmtReleasesName}</name>
-            <url>${distMgmtReleasesUrl}</url>
-        </repository>
-        <snapshotRepository>
-            <id>${distMgmtSnapshotsId}</id>
-            <name>${distMgmtSnapshotsName}</name>
-            <url>${distMgmtSnapshotsUrl}</url>
-        </snapshotRepository>
-    </distributionManagement>
-
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-
-        <distMgmtReleasesId>apache.releases.https</distMgmtReleasesId>
-        <distMgmtReleasesName>Apache Release Distribution Repository</distMgmtReleasesName>
-        <distMgmtReleasesUrl>https://repository.apache.org/service/local/staging/deploy/maven2</distMgmtReleasesUrl>
-        <distMgmtSnapshotsId>apache.snapshots.https</distMgmtSnapshotsId>
-        <distMgmtSnapshotsName>Apache Development Snapshot Repository</distMgmtSnapshotsName>
-        <distMgmtSnapshotsUrl>https://repository.apache.org/content/repositories/snapshots</distMgmtSnapshotsUrl>
+        <!-- IDE and jar manifest read it; javac is driven by source/target, see maven-compiler-plugin below. -->
+        <maven.compiler.release>17</maven.compiler.release>
 
         <revision>2.19.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
@@ -79,85 +68,80 @@
         <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
-        <commons.codec.version>1.20.0</commons.codec.version>
+        <commons.codec.version>1.23.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.io.version>2.22.0</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
+        <commons.logging.version>1.4.0</commons.logging.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.9.0</curator.version>
-        <guava.version>33.5.0-jre</guava.version>
+        <guava.version>33.7.2-jre</guava.version>
         <failureaccess.version>1.0.3</failureaccess.version>
-        <grpc-context.version>1.81.0</grpc-context.version>
+        <grpc-context.version>1.85.0</grpc-context.version>
         <h2.version>1.4.197</h2.version>
         <hamcrest.version>3.0</hamcrest.version>
-        <jackson.version>2.22.2</jackson.version>
-        <jackson-annotations.version>2.21</jackson-annotations.version>
-        <javassist.version>3.28.0-GA</javassist.version>
+        <jackson.version>2.22.3</jackson.version>
+        <jackson-annotations.version>2.22</jackson-annotations.version>
+        <javassist.version>3.33.0-GA</javassist.version>
         <javax.cache.bundle.version>1.0.0_1</javax.cache.bundle.version>
         <javax.cache.tck.version>1.1.1</javax.cache.tck.version>
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.logging.version>3.6.3.Final</jboss.logging.version>
         <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
-        <jetty.version>12.1.13</jetty.version>
+        <jetty.version>12.1.14</jetty.version>
         <jetty-jakarta-servlet-api.version>6.1.0</jetty-jakarta-servlet-api.version>
         <jmh.version>1.37</jmh.version>
         <jna.version>5.19.1</jna.version>
-        <jnr.posix.version>3.1.15</jnr.posix.version>
+        <jnr.posix.version>3.2.2</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
         <jtidy.version>1.0.5</jtidy.version>
         <jts.version>1.20.0</jts.version>
-        <junit4.version>4.13.1</junit4.version>
+        <junit4.version>4.13.2</junit4.version>
         <log4j2.version>2.26.1</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.4</lucene.version>
-        <lz4.version>1.11.2</lz4.version>
+        <lz4.version>1.12.0</lz4.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.9.16</maven.model.version>
         <checkstyle.puppycrawl.version>12.3.1</checkstyle.puppycrawl.version>
-        <mockito.version>5.21.0</mockito.version>
-        <mysql.connector.version>8.0.30</mysql.connector.version>
-        <prometheus.version>0.3.0</prometheus.version>
-        <slf4j.version>2.0.17</slf4j.version>
+        <mockito.version>5.24.0</mockito.version>
+        <mysql.connector.version>8.0.33</mysql.connector.version>
+        <prometheus.version>0.16.0</prometheus.version>
+        <slf4j.version>2.0.19</slf4j.version>
         <snappy.version>1.1.10.8</snappy.version>
         <spring.version>6.2.19</spring.version>
-        <surefire.version>3.5.6</surefire.version>
-        <tomcat.version>10.0.27</tomcat.version>
+        <surefire.version>3.6.0</surefire.version>
+        <tomcat.version>11.0.26</tomcat.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <zookeeper.version>3.9.5</zookeeper.version>
-        <zstd.version>1.5.7-11</zstd.version>
+        <zookeeper.version>3.9.6</zookeeper.version>
+        <zstd.version>1.5.7-24</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
-        <commons.lang3.version>3.20.0</commons.lang3.version>
+        <commons.lang3.version>3.21.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
-        <xstream.version>1.4.17</xstream.version>
+        <xstream.version>1.4.21</xstream.version>
         <narayana.version>7.3.4.Final</narayana.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
-        <maven.enforcer.plugin.version>3.6.2</maven.enforcer.plugin.version>
+        <maven.enforcer.plugin.version>3.6.3</maven.enforcer.plugin.version>
         <maven.compiler.plugin.version>3.16.0</maven.compiler.plugin.version>
-        <maven.surefire.plugin.version>3.5.4</maven.surefire.plugin.version>
-        <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
-        <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
-        <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
-        <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
-        <maven.resources.plugin.version>3.4.0</maven.resources.plugin.version>
+        <maven.deploy.plugin.version>3.2.0</maven.deploy.plugin.version>
+        <maven.install.plugin.version>3.2.0</maven.install.plugin.version>
+        <maven.jar.plugin.version>3.5.1</maven.jar.plugin.version>
+        <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
         <maven.site.plugin.version>3.22.0</maven.site.plugin.version>
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.assembly.plugin.version>3.8.0</maven.assembly.plugin.version>
-        <maven.dependency.plugin.version>3.9.0</maven.dependency.plugin.version>
+        <maven.dependency.plugin.version>3.11.0</maven.dependency.plugin.version>
         <maven.jarsigner.plugin.version>3.1.0</maven.jarsigner.plugin.version>
-        <build.helper.maven.plugin.version>3.6.1</build.helper.maven.plugin.version>
+        <build.helper.maven.plugin.version>3.6.2</build.helper.maven.plugin.version>
         <cmake.maven.plugin.version>3.31.5-b1</cmake.maven.plugin.version>
-        <maven.bundle.plugin.version>5.1.9</maven.bundle.plugin.version>
+        <maven.bundle.plugin.version>6.2.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
-        <maven.flatten.plugin.version>1.7.3</maven.flatten.plugin.version>
+        <maven.flatten.plugin.version>1.8.0</maven.flatten.plugin.version>
         <maven.remote.resources.version>3.3.0</maven.remote.resources.version>
-
-        <sonar.organization>apache</sonar.organization>
-        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.exclusions>**/generated/**/*</sonar.exclusions>
 
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
@@ -221,6 +205,16 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient</artifactId>
+                <version>${prometheus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_common</artifactId>
+                <version>${prometheus.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -295,6 +289,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven.jar.plugin.version}</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>META-INF/ignite-wire/**</exclude>
+                        </excludes>
+                    </configuration>
                 </plugin>
 
                 <plugin>
@@ -302,6 +302,8 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
                     <configuration>
+                        <!-- Same reason as for maven-compiler-plugin: "add-exports" below is incompatible with "release". -->
+                        <release combine.self="override"/>
                         <taglets>
                             <taglet>
                                 <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
@@ -315,7 +317,6 @@
                         <doctitle>Ignite ${ignite.version}</doctitle>
                         <windowtitle>Ignite ${ignite.version}</windowtitle>
                         <breakiterator>true</breakiterator>
-                        <verbose>true</verbose>
                         <show>protected</show>
                         <use>true</use>
                         <author>false</author>
@@ -508,7 +509,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.6.3</version>
+                    <version>3.6.4</version>
                     <dependencies>
                         <dependency>
                             <groupId>${project.groupId}</groupId>
@@ -564,6 +565,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
+                    <!-- Parent POM sets maven.compiler.release, but javac rejects "add-exports" with "release". -->
+                    <release combine.self="override"/>
+                    <proc>full</proc>
                     <compilerArgs>
                         <arg>--add-exports</arg>
                         <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
@@ -846,11 +850,10 @@
                     <plugin>
                         <groupId>org.apache.rat</groupId>
                         <artifactId>apache-rat-plugin</artifactId>
-                        <version>0.17</version>
+                        <version>0.18</version>
                         <configuration>
                             <config>${maven.multiModuleProjectDirectory}/parent/rat-config.xml</config>
-                            <!-- Disable SCM ignore file parsing to avoid RAT 0.17 race condition
-                                 with temporary NameSet files in parallel builds -->
+                            <!-- RAT misreads .gitignore files and skips tracked sources under modules/platforms/cpp. -->
                             <parseSCMIgnoresAsExcludes>false</parseSCMIgnoresAsExcludes>
                         </configuration>
                         <executions>
@@ -894,12 +897,9 @@
                                         <inputExclude>**/META-INF/services/**</inputExclude> <!-- Interface mappings: cannot be changed -->
                                         <inputExclude>**/id_rsa**</inputExclude>  <!--SSH-->
                                         <!--special excludes-->
-                                        <!-- RAT 0.17 bug: creates temp dir NameSet* in basedir for case-sensitivity check -->
-                                        <inputExclude>NameSet*</inputExclude>
                                         <inputExclude>**/.gitignore</inputExclude>
                                         <inputExclude>**/.git</inputExclude>
                                         <inputExclude>**/.asf.yaml</inputExclude>
-                                        <inputExclude>.travis.yml</inputExclude>
                                         <inputExclude>.github/PULL_REQUEST_TEMPLATE.md</inputExclude>
                                         <inputExclude>idea/ignite_codeStyle.xml</inputExclude>
                                         <inputExclude>**/DEVNOTES*.txt</inputExclude>
@@ -921,7 +921,6 @@
                                         <inputExclude>**/books/*.txt</inputExclude><!--books examples-->
                                         <inputExclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</inputExclude><!--books examples-->
                                         <inputExclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</inputExclude><!--books examples-->
-                                        <inputExclude>src/main/java/org/jetbrains/annotations/*.java</inputExclude><!--copyright-->
                                         <inputExclude>dev-tools/IGNITE-*.patch</inputExclude>
                                         <inputExclude>dev-tools/.gradle/**/*</inputExclude>
                                         <inputExclude>dev-tools/gradle/wrapper/**/*</inputExclude>
@@ -1098,10 +1097,12 @@
                                 <phase>compile</phase>
                                 <configuration>
                                     <target>
-                                        <!-- moving licenses generated by "ignite-dependencies" -->
-                                        <move file="${basedir}/target/classes/META-INF/licenses.txt" tofile="${basedir}/target/licenses/${project.artifactId}-licenses.txt"/>
+                                        <!-- Move the licenses generated by "ignite-dependencies". The file is absent in modules
+                                             without resources, e.g. with the pom packaging. -->
+                                        <move file="${basedir}/target/classes/META-INF/licenses.txt"
+                                              tofile="${basedir}/target/licenses/${project.artifactId}-licenses.txt"
+                                              failonerror="false" quiet="true"/>
                                     </target>
-                                    <failOnError>false</failOnError>
                                 </configuration>
                             </execution>
                         </executions>

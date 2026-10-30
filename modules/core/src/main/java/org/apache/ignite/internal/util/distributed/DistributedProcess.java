@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -62,6 +63,8 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
  * </ol>
  * <p>
  * Several processes of one type can be started at the same time.
+ * <p>
+ * Processes can be chained: the finish closure starts the next process via {@link #startByCoordinator(UUID, Message)}.
  *
  * @param <I> Request type.
  * @param <R> Result type.
@@ -74,6 +77,9 @@ public class DistributedProcess<I extends Message, R extends Message> {
 
     /** Active processes. */
     private final ConcurrentHashMap<UUID, Process> processes = new ConcurrentHashMap<>(1);
+
+    /** Start requests to run when the local node becomes the coordinator, see {@link #startByCoordinator}. */
+    private final ConcurrentHashMap<UUID, Runnable> pendingStartRequests = new ConcurrentHashMap<>(1);
 
     /** Synchronization mutex for coordinator initializing and the remaining collection operations. */
     private final Object mux = new Object();
@@ -125,6 +131,8 @@ public class DistributedProcess<I extends Message, R extends Message> {
         ctx.discovery().setCustomEventListener(InitMessage.class, (topVer, snd, msg) -> {
             if (msg.type() != type.ordinal())
                 return;
+
+            pendingStartRequests.remove(msg.processId());
 
             Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
@@ -215,6 +223,8 @@ public class DistributedProcess<I extends Message, R extends Message> {
         ctx.event().addDiscoveryEventListener((evt, discoCache) -> {
             UUID leftNodeId = evt.eventNode().id();
 
+            startPendingRequests();
+
             for (Process p : processes.values()) {
                 p.initFut.listen(() -> {
                     if (Objects.equals(leftNodeId, p.crdId)) {
@@ -262,6 +272,50 @@ public class DistributedProcess<I extends Message, R extends Message> {
         }
         catch (IgniteCheckedException e) {
             log.warning("Unable to start process.", e);
+        }
+    }
+
+    /**
+     * Starts the process by the coordinator: it sends the initial request, and if it leaves before the request is
+     * delivered, the next coordinator sends it. Must be called on every server node while handling the same discovery
+     * event, e.g. from the finish closure of the previous process, so that the call precedes the initial request
+     * delivery.
+     *
+     * @param id Process id.
+     * @param req Initial request.
+     */
+    public void startByCoordinator(UUID id, I req) {
+        if (ctx.clientNode())
+            return;
+
+        assert Thread.currentThread() instanceof IgniteDiscoveryThread : "Must be called from the discovery thread";
+
+        ClusterNode crd = coordinator();
+
+        if (crd == null)
+            return;
+
+        if (crd.isLocal())
+            start(id, req);
+        else
+            pendingStartRequests.put(id, () -> start(id, req));
+    }
+
+    /** Runs the pending start requests if the local node has become the coordinator. */
+    private void startPendingRequests() {
+        if (pendingStartRequests.isEmpty())
+            return;
+
+        ClusterNode crd = coordinator();
+
+        if (crd == null || !crd.isLocal())
+            return;
+
+        for (UUID id : pendingStartRequests.keySet()) {
+            Runnable start = pendingStartRequests.remove(id);
+
+            if (start != null)
+                start.run();
         }
     }
 
@@ -373,6 +427,7 @@ public class DistributedProcess<I extends Message, R extends Message> {
     /** Handles case when all server nodes have left the grid. */
     private void onAllServersLeft() {
         processes.clear();
+        pendingStartRequests.clear();
     }
 
     /** @return Cluster coordinator, {@code null} if failed to determine. */
@@ -519,5 +574,10 @@ public class DistributedProcess<I extends Message, R extends Message> {
          * Cluster version finalization abort process.
          */
         RU_ABORT_VERSION_FINALIZATION,
+
+        /**
+         * Delete snapshot procedure.
+         */
+        DELETE_SNAPSHOT
     }
 }

@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class SnapshotOperationResponse implements Message {
+public class SnapshotOperationResponse extends AbstractMessage {
     /** Results of single-node handlers execution. */
     @Order(0)
     Map<String, SnapshotHandlerResult<Message>> hndResults;

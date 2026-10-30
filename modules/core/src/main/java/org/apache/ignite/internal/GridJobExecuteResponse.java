@@ -24,12 +24,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse implements DeferredUnmarshalMessage {
+public class GridJobExecuteResponse extends AbstractMessage implements DeferredUnmarshalMessage {
     /** */
     @Order(0)
     UUID nodeId;

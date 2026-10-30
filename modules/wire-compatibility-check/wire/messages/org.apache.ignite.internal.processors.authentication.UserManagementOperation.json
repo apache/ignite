@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.authentication.UserManagementOperation",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.authentication.User", "name": "usr"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.authentication.UserManagementOperation$OperationType", "name": "type"},
+    {"order": 2, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"}
+  ]
+}

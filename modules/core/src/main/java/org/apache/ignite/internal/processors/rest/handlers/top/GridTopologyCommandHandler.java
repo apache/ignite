@@ -33,9 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
-import org.apache.ignite.internal.processors.rest.GridRestProtocol;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
@@ -48,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.IgnitePortProtocol;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
@@ -340,22 +337,6 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         T attr = node.attribute(attrName);
 
         return attr == null ? dfltVal : attr;
-    }
-
-    /**
-     * Get registered port
-     *
-     * @param protoCls Protocol class.
-     * @param def Default value if such class is not registered.
-     * @return Registered port for the protocol class or {@code default value if such class is not registered.
-     */
-    private int getRegisteredPort(Class<? extends GridRestProtocol> protoCls, int def) {
-        for (GridPortRecord r : ctx.ports().records()) {
-            if (r.protocol() == IgnitePortProtocol.TCP && protoCls.isAssignableFrom(r.clazz()))
-                return r.port();
-        }
-
-        return def;
     }
 
     /** {@inheritDoc} */

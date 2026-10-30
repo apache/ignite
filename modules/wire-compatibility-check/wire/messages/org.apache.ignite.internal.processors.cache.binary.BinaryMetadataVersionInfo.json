@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo",
+  "annotations": ["@org.apache.ignite.internal.JdkMarshalled"],
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "metadataBytes"},
+    {"order": 1, "type": "int", "name": "pendingVer"},
+    {"order": 2, "type": "int", "name": "acceptedVer"},
+    {"type": "org.apache.ignite.internal.binary.BinaryMetadata", "name": "metadata", "annotations": ["@org.apache.ignite.internal.Marshalled(\"metadataBytes\")"]}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.transactions.TransactionConcurrency",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.transactions.TransactionConcurrency", "name": "OPTIMISTIC"},
+    {"order": 1, "type": "org.apache.ignite.transactions.TransactionConcurrency", "name": "PESSIMISTIC"}
+  ]
+}

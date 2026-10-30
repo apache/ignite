@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.consistency.ConsistencyRepairCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "cache"},
+    {"order": 1, "type": "int[]", "name": "partitions"},
+    {"order": 2, "type": "org.apache.ignite.cache.ReadRepairStrategy", "name": "strategy"},
+    {"order": 3, "type": "boolean", "name": "parallel"}
+  ]
+}

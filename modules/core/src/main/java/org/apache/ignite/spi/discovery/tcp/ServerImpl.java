@@ -2956,7 +2956,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
+                msg.attachOperationContextSnapshot(distrOpCtx.createSnapshot());
 
             boolean addFirst = msg.highPriority() && !ignoreHighPriority;
 
@@ -3183,7 +3183,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+            try (Scope ignored = distrOpCtx.restoreSnapshot(msg.opCtxSnp)) {
                 processMessage0(msg);
             }
         }
@@ -6070,7 +6070,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomMessage()) != null) {
-                    try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+                    try (Scope ignored = distrOpCtx.restoreSnapshot(msg.opCtxSnp)) {
                         processCustomMessage(msg, true);
                     }
                 }

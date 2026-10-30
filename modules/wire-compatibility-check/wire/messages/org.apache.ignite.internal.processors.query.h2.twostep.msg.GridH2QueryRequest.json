@@ -1,0 +1,20 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "reqId"},
+    {"order": 1, "type": "java.util.List<java.lang.Integer>", "name": "caches"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 3, "type": "java.util.Map<java.util.UUID,int[]>", "name": "parts"},
+    {"order": 4, "type": "int[]", "name": "qryParts"},
+    {"order": 5, "type": "int", "name": "pageSize"},
+    {"order": 6, "type": "java.util.List<org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery>", "name": "qrys"},
+    {"order": 7, "type": "byte", "name": "flags"},
+    {"order": 8, "type": "java.util.Collection<org.apache.ignite.internal.processors.query.h2.QueryTable>", "name": "tbls"},
+    {"order": 9, "type": "int", "name": "timeout"},
+    {"order": 10, "type": "byte[]", "name": "paramsBytes"},
+    {"order": 11, "type": "java.lang.String", "name": "schemaName"},
+    {"order": 12, "type": "java.lang.String", "name": "qryInitiatorId"},
+    {"order": 13, "type": "long", "name": "qryId"},
+    {"order": 14, "type": "boolean", "name": "explicitTimeout"}
+  ]
+}

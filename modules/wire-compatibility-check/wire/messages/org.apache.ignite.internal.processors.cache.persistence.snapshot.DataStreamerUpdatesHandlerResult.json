@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandlerResult",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "streamerWarning"}
+  ]
+}

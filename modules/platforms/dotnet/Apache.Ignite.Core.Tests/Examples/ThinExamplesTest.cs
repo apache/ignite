@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using NUnit.Framework;
@@ -57,7 +58,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         {
             for (int i = 0; i < _serverCount; i++)
             {
-                Ignition.Start(TestUtils.GetTestConfiguration(name: i.ToString()));
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(name: i.ToString()))
+                {
+                    SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
+                });
             }
 
             // Init default services.

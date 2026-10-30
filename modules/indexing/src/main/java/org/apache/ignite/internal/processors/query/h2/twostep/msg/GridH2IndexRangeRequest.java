@@ -21,12 +21,12 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Range request.
  */
-public class GridH2IndexRangeRequest implements Message {
+public class GridH2IndexRangeRequest extends AbstractMessage {
     /** */
     @Order(0)
     UUID originNodeId;

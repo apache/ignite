@@ -25,6 +25,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -32,7 +33,9 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Full partition map from all nodes.
@@ -41,6 +44,9 @@ public class GridDhtPartitionFullMap
     extends AbstractMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    @Nullable private transient List<RawField> rawFields;
 
     /** Node ID. */
     @Order(0)
@@ -190,6 +196,16 @@ public class GridDhtPartitionFullMap
         this.updateSeq = updateSeq;
 
         return old;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public List<RawField> rawFields() {
+        return rawFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rawFields(@Nullable List<RawField> rawFields) {
+        this.rawFields = rawFields;
     }
 
     /** {@inheritDoc} */

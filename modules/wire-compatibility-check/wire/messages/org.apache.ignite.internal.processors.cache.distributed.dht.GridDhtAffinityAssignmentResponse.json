@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "grpId"},
+    {"order": 4, "type": "long", "name": "futId"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 6, "type": "java.util.List<java.util.List<java.util.UUID>>", "name": "affAssignmentIds"},
+    {"order": 7, "type": "java.util.List<java.util.List<java.util.UUID>>", "name": "idealAffAssignment"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap", "name": "partMap", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 9, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "affAssignmentErrMsg"}
+  ]
+}

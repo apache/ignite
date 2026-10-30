@@ -759,9 +759,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                             }
                         }
 
-                        // Apply cache size deltas.
-                        applyTxSizes();
-
                         TxCounters txCntrs = txCounters(false);
 
                         // Apply update counters.

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse$DeleteStatus",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse$DeleteStatus", "name": "DELETED"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse$DeleteStatus", "name": "PARTLY"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse$DeleteStatus", "name": "NOT_FOUND"}
+  ]
+}

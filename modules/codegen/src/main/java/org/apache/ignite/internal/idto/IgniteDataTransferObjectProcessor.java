@@ -20,7 +20,10 @@ package org.apache.ignite.internal.idto;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -34,9 +37,12 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
+import org.apache.ignite.internal.MessageJsonGenerator;
+import org.apache.ignite.internal.Order;
 
 import static org.apache.ignite.internal.MessageCompanionGenerator.NL;
 import static org.apache.ignite.internal.MessageCompanionGenerator.TAB;
@@ -73,6 +79,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem"
     );
 
+    /** */
+    private MessageJsonGenerator jsonGen;
+
     /**
      * Processes all classes extending the {@code IgniteDataTransferObject} and generates corresponding serializer code.
      */
@@ -81,6 +90,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return true;
 
         genSerDes.clear();
+
+        if (jsonGen == null)
+            jsonGen = new MessageJsonGenerator(processingEnv, "idto/");
 
         roundEnv.getRootElements().forEach(this::generateSingle);
 
@@ -123,10 +135,14 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return;
 
         try {
-            IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
+            List<VariableElement> fields = fields(clazz);
+
+            IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz, fields);
 
             if (gen.generate())
                 genSerDes.put(clazz, gen.serializerFQN());
+
+            jsonGen.generate(clazz, fields);
         }
         catch (Exception e) {
             processingEnv.getMessager().printMessage(
@@ -135,6 +151,38 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
                 clazz
             );
         }
+    }
+
+    /** @return Fields in the serialization order. */
+    private List<VariableElement> fields(TypeElement type) {
+        List<VariableElement> flds = new ArrayList<>();
+
+        for (; type != null; type = (TypeElement)processingEnv.getTypeUtils().asElement(type.getSuperclass())) {
+            for (Element el : type.getEnclosedElements()) {
+                if (el.getKind() != ElementKind.FIELD
+                    || el.getModifiers().contains(Modifier.STATIC)
+                    || el.getModifiers().contains(Modifier.TRANSIENT))
+                    continue;
+
+                if (el.getAnnotation(Order.class) == null) {
+                    throw new IllegalStateException("Please, add @Order " +
+                        "[field=" + el.getSimpleName() + ", cls=" + type.getQualifiedName() + ']');
+                }
+
+                flds.add((VariableElement)el);
+            }
+        }
+
+        flds.sort(Comparator.comparingInt(f -> f.getAnnotation(Order.class).value()));
+
+        for (int i = 0; i < flds.size(); i++) {
+            if (flds.get(i).getAnnotation(Order.class).value() != i) {
+                throw new IllegalStateException("Annotation @Order must be a sequence from 0 to " + (flds.size() - 1) +
+                    " [field=" + flds.get(i).getSimpleName() + ", cls=" + flds.get(i).getEnclosingElement() + ']');
+            }
+        }
+
+        return flds;
     }
 
     /**

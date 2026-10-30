@@ -1,0 +1,19 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 1, "type": "int", "name": "cacheId"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder", "name": "val"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder", "name": "oldVal"},
+    {"order": 4, "type": "byte[]", "name": "transformClosBytes"},
+    {"order": 5, "type": "long", "name": "ttl"},
+    {"order": 6, "type": "long", "name": "conflictExpireTime"},
+    {"order": 7, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "conflictVer"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "explicitVer"},
+    {"order": 9, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicate[]", "name": "filters"},
+    {"order": 10, "type": "byte[]", "name": "expiryPlcBytes"},
+    {"order": 11, "type": "byte", "name": "flags"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "serReadVer"},
+    {"type": "java.util.Collection<org.apache.ignite.internal.util.typedef.T2<javax.cache.processor.EntryProcessor<java.lang.Object,java.lang.Object,java.lang.Object>,java.lang.Object[]>>", "name": "entryProcessorsCol", "annotations": ["@org.apache.ignite.internal.Marshalled(\"transformClosBytes\")"]}
+  ]
+}

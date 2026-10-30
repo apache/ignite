@@ -24,11 +24,11 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Node compound metrics message. */
-public class NodeFullMetricsMessage implements Message {
+public class NodeFullMetricsMessage extends AbstractMessage {
     /** Node metrics wrapper message. */
     @Order(0)
     public ClusterMetricsSnapshot nodeMetricsMsg;

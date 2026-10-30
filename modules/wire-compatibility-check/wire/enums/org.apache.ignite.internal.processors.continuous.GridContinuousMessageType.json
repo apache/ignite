@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.GridContinuousMessageType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.continuous.GridContinuousMessageType", "name": "MSG_EVT_NOTIFICATION"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.continuous.GridContinuousMessageType", "name": "MSG_EVT_ACK"}
+  ]
+}

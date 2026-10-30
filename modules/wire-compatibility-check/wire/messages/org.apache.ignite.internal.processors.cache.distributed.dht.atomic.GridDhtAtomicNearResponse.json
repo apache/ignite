@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "int", "name": "partId"},
+    {"order": 5, "type": "long", "name": "futId"},
+    {"order": 6, "type": "java.util.UUID", "name": "primaryId"},
+    {"order": 7, "type": "byte", "name": "flags"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors", "name": "errs"}
+  ]
+}

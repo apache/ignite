@@ -27,13 +27,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class FragmentMapping implements Message {
+public class FragmentMapping extends AbstractMessage {
     /** */
     @Order(0)
     List<ColocationGroup> colocationGrps;

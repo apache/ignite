@@ -48,13 +48,14 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.systemview.CacheExplicitLockViewWalker;
 import org.apache.ignite.internal.systemview.CacheLockViewWalker;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
-import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -116,7 +117,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
 
     /** Pending near local locks and topology version per thread. */
-    private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
+    private final ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit = newMap();
 
     /** Set of removed lock versions. */
     private GridBoundedConcurrentLinkedHashSet<GridCacheVersion> rmvLocks =
@@ -226,6 +227,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Received owner changed callback [" + entry.key() + ", owner=" + owner + ']');
 
+        // Colocated explicit locks are marked acquired by the lock future, near ones become owners here.
+        if (owner != null && owner.nearLocal() && !owner.tx()) {
+            GridCacheExplicitLockSpan span = pendingExplicit.get(owner.threadId());
+
+            if (span != null)
+                span.markAcquired(entry.txKey());
+        }
+
         if (owner != null && (owner.local() || owner.nearLocal())) {
             Collection<GridCacheVersionedFuture<?>> futCol = verFuts.get(owner.version());
 
@@ -297,8 +306,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
 
-        pendingExplicit = GridConcurrentFactory.newMap();
-
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         cctx.kernalContext().systemView().registerInnerCollectionView(
@@ -307,7 +314,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             new CacheExplicitLockViewWalker(),
             pendingExplicit.values(),
             GridCacheExplicitLockSpan::candidates,
-            (threadId, lock) -> new CacheExplicitLockView(lock)
+            CacheExplicitLockView::new
         );
 
         List<GridCacheMvccCandidate> locks = new ArrayList<>();
@@ -1031,14 +1038,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      * @param key Key.
      * @param threadId Thread id.
+     * @return {@code False} if there is no explicit lock candidate for the given thread and key.
      */
-    public void markExplicitOwner(IgniteTxKey key, long threadId) {
+    public boolean markExplicitOwner(IgniteTxKey key, long threadId) {
         assert threadId > 0;
 
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
-        if (span != null)
-            span.markOwned(key);
+        return span != null && span.markOwned(key);
     }
 
     /**
@@ -1112,6 +1119,126 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
         return span != null ? span.topologyVersion() : null;
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @return Versions of explicit locks acquired or awaited by the thread.
+     */
+    public Set<GridCacheVersion> explicitLockVersions(long threadId) {
+        GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
+
+        if (span == null)
+            return Collections.emptySet();
+
+        Set<GridCacheVersion> vers = new HashSet<>();
+
+        for (GridCacheMvccCandidate cand : span.candidates())
+            vers.add(cand.version());
+
+        return vers;
+    }
+
+    /**
+     * Forcibly releases explicit locks of the thread except the given ones.
+     * <p>
+     * The method is usually called when a job or a service has finished, and the current thread can be interrupted
+     * at this moment (for example, the job or the service has been cancelled). Locks are removed locally first and
+     * then unlock requests are sent to primary nodes, so the interruption flag is cleared for the time of the release:
+     * otherwise a request can fail to be sent and the lock is left on the primary node with no way to release it.
+     *
+     * @param threadId Thread ID.
+     * @param exclude Versions of locks to keep.
+     * @return Versions of released locks.
+     */
+    public Collection<GridCacheVersion> releaseExplicitLocks(long threadId, Set<GridCacheVersion> exclude) {
+        Set<GridCacheVersion> vers = explicitLockVersions(threadId);
+
+        if (vers.isEmpty())
+            return Collections.emptySet();
+
+        vers.removeAll(exclude);
+
+        if (vers.isEmpty())
+            return vers;
+
+        boolean interrupted = Thread.interrupted();
+
+        try {
+            for (GridCacheVersion ver : vers)
+                releaseExplicitLock(threadId, ver);
+        }
+        finally {
+            if (interrupted)
+                Thread.currentThread().interrupt();
+        }
+
+        return vers;
+    }
+
+    /**
+     * Forcibly releases explicit lock acquired or awaited by the thread on all keys of the lock.
+     * <p>
+     * The lock future is cancelled first: if the lock is not acquired yet (or acquired on a part of the keys only),
+     * the future undoes the lock itself, otherwise cancellation has no effect and the acquired lock is removed after.
+     * Decision can't be made by the {@link GridCacheMvccCandidate#owner()} flag of the candidate since the lock can
+     * be concurrently acquired.
+     *
+     * @param threadId Thread ID.
+     * @param ver Lock version.
+     * @return {@code True} if the lock was found.
+     */
+    public boolean releaseExplicitLock(long threadId, GridCacheVersion ver) {
+        GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
+
+        if (span == null)
+            return false;
+
+        // Candidates of reentries have the same version, each of them is removed by a separate call.
+        List<GridCacheMvccCandidate> cands = new ArrayList<>();
+
+        for (GridCacheMvccCandidate cand : span.candidates()) {
+            if (cand.version().equals(ver))
+                cands.add(cand);
+        }
+
+        if (cands.isEmpty())
+            return false;
+
+        Collection<GridCacheVersionedFuture<?>> futs = futuresForVersion(ver);
+
+        if (futs != null) {
+            for (GridCacheVersionedFuture<?> fut : futs) {
+                if (fut instanceof GridNearLockFuture || fut instanceof GridDhtColocatedLockFuture) {
+                    try {
+                        fut.cancel();
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to cancel explicit lock future: " + fut, e);
+                    }
+                }
+            }
+        }
+
+        for (GridCacheMvccCandidate cand : cands) {
+            GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cand.key().cacheId());
+
+            // Cache context may be absent if the cache was stopped concurrently.
+            if (cacheCtx == null)
+                continue;
+
+            Collection<KeyCacheObject> keys = Collections.singleton(cand.key().key());
+
+            if (cacheCtx.isNear()) {
+                cacheCtx.nearTx().removeLocks(ver, keys);
+
+                removeExplicitLock(cand);
+            }
+            else if (cacheCtx.isColocated())
+                cacheCtx.colocated().removeLocks(threadId, ver, keys);
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 2, "type": "long", "name": "timeout"},
+    {"order": 3, "type": "boolean", "name": "isInit"}
+  ]
+}

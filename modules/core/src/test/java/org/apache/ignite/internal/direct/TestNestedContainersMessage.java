@@ -21,11 +21,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 /** */
-class TestNestedContainersMessage implements Message {
+class TestNestedContainersMessage extends AbstractMessage {
     /** */
     public static final short TYPE = Short.MAX_VALUE;
 

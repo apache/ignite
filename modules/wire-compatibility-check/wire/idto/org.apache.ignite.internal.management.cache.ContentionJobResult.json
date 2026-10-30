@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ContentionJobResult",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cluster.ClusterNode", "name": "node"},
+    {"order": 1, "type": "java.util.List<java.lang.String>", "name": "entries"}
+  ]
+}

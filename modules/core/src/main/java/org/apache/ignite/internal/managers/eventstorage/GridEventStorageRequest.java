@@ -25,11 +25,12 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_EVENT;
 
 /** Remote event query. The filter is a user class, hence the deferred unmarshalling. */
-public class GridEventStorageRequest implements DeferredUnmarshalMessage {
+public class GridEventStorageRequest extends AbstractMessage implements DeferredUnmarshalMessage {
     /** */
     @Order(0)
     IgniteUuid resTopicId;

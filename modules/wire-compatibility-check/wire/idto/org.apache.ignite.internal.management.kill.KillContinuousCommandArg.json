@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillContinuousCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "originNodeId"},
+    {"order": 1, "type": "java.util.UUID", "name": "routineId"}
+  ]
+}

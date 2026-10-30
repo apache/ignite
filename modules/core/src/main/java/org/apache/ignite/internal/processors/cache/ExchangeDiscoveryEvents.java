@@ -191,20 +191,6 @@ public class ExchangeDiscoveryEvents {
     }
 
     /**
-     *
-     */
-    public Collection<ClusterNode> joinedServerNodes() {
-        return joinedSrvNodes;
-    }
-
-    /**
-     *
-     */
-    public Collection<ClusterNode> leftServerNodes() {
-        return leftSrvNodes;
-    }
-
-    /**
      * @param cctx Context.
      */
     public void warnNoAffinityNodes(GridCacheSharedContext<?, ?> cctx) {

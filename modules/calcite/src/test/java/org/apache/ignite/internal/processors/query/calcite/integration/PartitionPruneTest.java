@@ -436,7 +436,7 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
                     res.stream().map(row -> row.get(0)).sorted().collect(Collectors.toList())
                 );
             },
-            IntStream.of(values).boxed().toArray(Integer[]::new));
+            IntStream.of(values).boxed().toArray());
     }
 
     /** */

@@ -753,6 +753,7 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of {@link DataRegionMetrics} snapshots.
      * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
+    @Deprecated
     public Collection<DataRegionMetrics> dataRegionMetrics();
 
     /**

@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "txId"},
+    {"order": 4, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"},
+    {"order": 5, "type": "int", "name": "part"},
+    {"order": 6, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"order": 7, "type": "int", "name": "miniId"},
+    {"order": 8, "type": "long", "name": "nearThreadId"}
+  ]
+}

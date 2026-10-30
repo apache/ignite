@@ -19,10 +19,10 @@ package org.apache.ignite.internal;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class DefaultMapperEnumMapCollectionMessage implements Message {
+public class DefaultMapperEnumMapCollectionMessage extends AbstractMessage {
     @Order(0)
     Map<Collection<TransactionIsolation>, String> isolationStringMap;
 

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  *
  * @see #finishUpdating()
  */
-public class PartitionUpdateCountersMessage implements Message {
+public class PartitionUpdateCountersMessage extends AbstractMessage {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 

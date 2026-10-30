@@ -23,9 +23,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,13 +43,13 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -880,12 +878,12 @@ public class PlatformUtils {
      *
      * @return Marshaller.
      */
-    public static GridBinaryMarshaller marshaller() {
+    public static BinaryContext binaryContext() {
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextImpl(null));
 
-        return new GridBinaryMarshaller(U.binaryContext(BinaryUtils.noopMetadataHandler(), marsh));
+        return U.binaryContext(BinaryUtils.noopMetadataHandler(), marsh);
     }
 
     /**
@@ -941,26 +939,6 @@ public class PlatformUtils {
             obj instanceof float[] ||
             obj instanceof UUID[] ||
             obj instanceof BigDecimal[];
-    }
-
-    /**
-     * @param o Object to test.
-     * @return True if collection should be recursively unwrapped.
-     */
-    private static boolean knownCollection(Object o) {
-        Class<?> cls = o == null ? null : o.getClass();
-
-        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
-    }
-
-    /**
-     * @param o Object to test.
-     * @return True if map should be recursively unwrapped.
-     */
-    private static boolean knownMap(Object o) {
-        Class<?> cls = o == null ? null : o.getClass();
-
-        return cls == HashMap.class || cls == LinkedHashMap.class;
     }
 
     /**

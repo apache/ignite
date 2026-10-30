@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.cache.QueryIndexType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.QueryIndexType", "name": "SORTED"},
+    {"order": 1, "type": "org.apache.ignite.cache.QueryIndexType", "name": "FULLTEXT"},
+    {"order": 2, "type": "org.apache.ignite.cache.QueryIndexType", "name": "GEOSPATIAL"}
+  ]
+}

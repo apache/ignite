@@ -22,13 +22,15 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Objects;
+import org.apache.ignite.internal.ImmutableSchema;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Represents a set of {@link IgniteFeature}s available for the specific Ignite component version. */
-public abstract class IgniteComponentFeatureSet implements Message, Externalizable {
+@ImmutableSchema
+public abstract class IgniteComponentFeatureSet extends AbstractMessage implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

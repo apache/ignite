@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.GridTaskCancelRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sesId"}
+  ]
+}

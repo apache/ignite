@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteProductVersion", "name": "ver"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet", "name": "features"}
+  ]
+}

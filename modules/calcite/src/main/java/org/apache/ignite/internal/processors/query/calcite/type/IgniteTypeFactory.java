@@ -296,7 +296,11 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return customType;
         }
 
-        return toSql(this, type);
+        RelDataType sqlType = toSql(this, type);
+
+        // Java types without a built-in SQL mapping must use Ignite's OTHER semantics, including casts.
+        return sqlType.getSqlTypeName() == SqlTypeName.OTHER
+            ? createCustomType(Object.class, sqlType.isNullable()) : sqlType;
     }
 
     /** Converts Java types, including Java time types, to SQL types using the supplied factory. */

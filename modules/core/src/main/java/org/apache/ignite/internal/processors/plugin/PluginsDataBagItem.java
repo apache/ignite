@@ -21,11 +21,11 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class PluginsDataBagItem implements Message {
+public class PluginsDataBagItem extends AbstractMessage {
     /** Original plugins data. */
     @Marshalled("dataBytes")
     @Nullable Map<String, Serializable> data;

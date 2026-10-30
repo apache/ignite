@@ -138,7 +138,8 @@ abstract class IncrementalSnapshotProcessor {
 
                 WALRecord rec = walRec.getValue();
 
-                if (rec.type() == CLUSTER_SNAPSHOT && ((ClusterSnapshotRecord)rec).clusterSnapshotName().equals(sft.name())) {
+                // A filesystem might not support the character case of directory or file name.
+                if (rec.type() == CLUSTER_SNAPSHOT && ((ClusterSnapshotRecord)rec).clusterSnapshotName().equalsIgnoreCase(sft.name())) {
                     startIdx = walRec.getKey().index();
 
                     break;

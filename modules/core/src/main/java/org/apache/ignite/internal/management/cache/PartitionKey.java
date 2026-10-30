@@ -19,13 +19,13 @@ package org.apache.ignite.internal.management.cache;
 import java.io.Serializable;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
  * Partition key - pair of cache group ID and partition ID.
  */
-public class PartitionKey implements Message, Serializable {
+public class PartitionKey extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

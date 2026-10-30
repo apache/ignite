@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.util.distributed.FullMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "processId"},
+    {"order": 2, "type": "int", "name": "type"},
+    {"order": 3, "type": "java.util.Map<java.util.UUID,R extends org.apache.ignite.plugin.extensions.communication.Message>", "name": "res"},
+    {"order": 4, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage>", "name": "err"}
+  ]
+}

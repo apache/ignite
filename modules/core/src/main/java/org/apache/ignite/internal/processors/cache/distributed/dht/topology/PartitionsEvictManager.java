@@ -329,24 +329,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         }
 
         /**
-         * Await evict finish partition.
-         */
-        private void awaitFinish(Integer part, IgniteInternalFuture<?> fut) {
-            // Wait for last offered partition eviction completion
-            try {
-                if (log.isInfoEnabled())
-                    log.info("Await partition evict, grpName=" + grp.cacheOrGroupName() +
-                        ", grpId=" + grp.groupId() + ", partId=" + part);
-
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.warning("Failed to await partition eviction during stopping.", e);
-            }
-        }
-
-        /**
          * Shows progress group of eviction.
          */
         private void showProgress() {

@@ -1095,7 +1095,8 @@ Command [METRIC] finished with code: 0
 
 == Metric configure command
 
-The metrics command configure bounds of histogram metrics or rate time interval of hitrate metric.
+The metrics command configure bounds of histogram metrics, rate time interval of hitrate metric or time interval of max value metric.
+Time intervals are set in milliseconds.
 
 [tabs]
 --
@@ -1104,16 +1105,24 @@ tab:Unix[]
 ----
 control.sh --metric --configure-histogram histogram-metric-name 1,2,3
 control.sh --metric --configure-hitrate hitrate-metric-name 1000
+control.sh --metric --configure-max-value max-value-metric-name 60000
 ----
 tab:Windows[]
 [source,shell,subs="verbatim,quotes"]
 ----
 control.bat --metric --configure-histogram histogram-metric-name 1,2,3
 control.bat --metric --configure-hitrate hitrate-metric-name 1000
+control.bat --metric --configure-max-value max-value-metric-name 60000
 ----
 --
 
 NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+
+NOTE: For the `PageTimestampHistogram` metric, the values set
+link:monitoring-metrics/system-views#pages_timestamp_histogram[time intervals] rather than bounds:
+the interval length in milliseconds is the difference between the first two values, the number of intervals is
+the number of values, and the other values are ignored.
+For example, `0,600000,0` sets three 10-minute intervals.
 
 == Indexes Management
 

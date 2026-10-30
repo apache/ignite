@@ -602,8 +602,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        dht.unlockAll(keys);
+    @Override public boolean unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        return dht.unlockAll(keys);
     }
 
     /** {@inheritDoc} */

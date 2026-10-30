@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair",
+  "fields": [
+    {"order": 0, "type": "int", "name": "grpId"},
+    {"order": 1, "type": "int", "name": "partId"}
+  ]
+}

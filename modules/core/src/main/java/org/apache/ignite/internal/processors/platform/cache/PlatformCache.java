@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
@@ -1333,21 +1332,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 PlatformUtils.writeError(ex, writer);
             }
-        }
-    }
-
-    /**
-     * Writes an error to the writer either as a native exception, or as a couple of strings.
-     * @param writer Writer.
-     * @param ex Exception.
-     */
-    private static void writeError(BinaryWriterEx writer, Exception ex) {
-        if (ex.getCause() instanceof PlatformNativeException)
-            writer.writeObjectDetached(((PlatformNativeException)ex.getCause()).cause());
-        else {
-            writer.writeObjectDetached(ex.getClass().getName());
-            writer.writeObjectDetached(ex.getMessage());
-            writer.writeObjectDetached(X.getFullStackTrace(ex));
         }
     }
 

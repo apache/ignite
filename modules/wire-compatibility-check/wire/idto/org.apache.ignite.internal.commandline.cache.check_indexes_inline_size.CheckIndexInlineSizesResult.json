@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,java.util.Map<java.lang.String,java.lang.Integer>>", "name": "nodeToIndexes"}
+  ]
+}

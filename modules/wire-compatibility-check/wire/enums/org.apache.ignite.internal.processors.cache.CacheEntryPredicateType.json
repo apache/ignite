@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType", "name": "VALUE"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType", "name": "HAS_VALUE"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType", "name": "HAS_NO_VALUE"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType", "name": "ALWAYS_FALSE"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicateType", "name": "OTHER"}
+  ]
+}

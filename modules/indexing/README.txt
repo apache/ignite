@@ -4,9 +4,9 @@ Apache Ignite Indexing Module
 Apache Ignite indexing module provides capabilities to index cache context and run SQL, full text or
 individual field queries against these indexes.
 
-To enable indexing module when starting a standalone node, move 'optional/ignite-indexing' folder to
-'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
-be added to classpath in this case.
+The module is located in the 'libs' folder of the binary distribution and is enabled by default. It provides
+the H2-based SQL engine. When the Calcite-based engine (the 'ignite-calcite' module) is on the classpath too and
+`SqlConfiguration.QueryEnginesConfiguration` is not set, the Calcite-based engine is the default one.
 
 Importing indexing Module In Maven Project
 ------------------------------------------

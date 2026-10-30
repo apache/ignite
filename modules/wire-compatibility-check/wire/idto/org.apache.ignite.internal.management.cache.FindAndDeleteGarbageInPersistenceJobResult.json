@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceJobResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>>", "name": "result"}
+  ]
+}

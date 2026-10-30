@@ -69,13 +69,6 @@ public class TxDeadlock {
     }
 
     /**
-     * @return Deadlock represented as cycle of transaction in wait-for-graph.
-     */
-    public List<GridCacheVersion> cycle() {
-        return cycle;
-    }
-
-    /**
      * @param ctx Context.
      */
     public String toString(GridCacheSharedContext ctx) {

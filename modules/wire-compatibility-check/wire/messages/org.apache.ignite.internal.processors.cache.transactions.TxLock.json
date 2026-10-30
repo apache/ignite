@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.transactions.TxLock",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nearNodeId"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "txId"},
+    {"order": 2, "type": "long", "name": "threadId"},
+    {"order": 3, "type": "byte", "name": "ownership"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.plugin.security.SecurityBasicPermissionSet",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>>", "name": "cachePermissions"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>>", "name": "taskPermissions"},
+    {"order": 2, "type": "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>>", "name": "srvcPermissions"},
+    {"order": 3, "type": "java.util.EnumSet<org.apache.ignite.plugin.security.SecurityPermission>", "name": "sysPermissions"},
+    {"order": 4, "type": "boolean", "name": "dfltAllowAll"}
+  ]
+}

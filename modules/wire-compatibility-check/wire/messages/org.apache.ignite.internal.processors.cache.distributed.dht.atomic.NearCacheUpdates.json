@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates",
+  "fields": [
+    {"order": 0, "type": "java.util.List<java.lang.Integer>", "name": "nearValsIdxs"},
+    {"order": 1, "type": "java.util.List<java.lang.Integer>", "name": "nearSkipIdxs"},
+    {"order": 2, "type": "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject>", "name": "nearVals"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "nearVer"},
+    {"order": 4, "type": "org.apache.ignite.internal.util.GridLongList", "name": "nearTtls"},
+    {"order": 5, "type": "org.apache.ignite.internal.util.GridLongList", "name": "nearExpireTimes"}
+  ]
+}

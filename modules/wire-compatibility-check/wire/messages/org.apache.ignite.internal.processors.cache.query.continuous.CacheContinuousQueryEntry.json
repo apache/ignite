@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry",
+  "fields": [
+    {"order": 0, "type": "javax.cache.event.EventType", "name": "evtType"},
+    {"order": 1, "type": "byte", "name": "flags"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "newVal"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "oldVal"},
+    {"order": 5, "type": "int", "name": "cacheId"},
+    {"order": 6, "type": "int", "name": "part"},
+    {"order": 7, "type": "long", "name": "updateCntr"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 9, "type": "long", "name": "filteredCnt"}
+  ]
+}

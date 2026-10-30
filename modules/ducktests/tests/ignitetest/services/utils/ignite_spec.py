@@ -373,6 +373,12 @@ class IgniteSpec(metaclass=ABCMeta):
         opts = ["-J%s" % o for o in self.jvm_opts]
         return " ".join(opts)
 
+    def _output_redirect(self):
+        """
+        :return: shell redirection of the service's stdout and stderr: through tee, appended to console.log.
+        """
+        return "2>&1 | tee -a %s" % os.path.join(self.service.log_dir, "console.log")
+
     def _runcmd(self, cmd):
         self.service.logger.debug(cmd)
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -388,14 +394,24 @@ class IgniteNodeSpec(IgniteSpec):
     """
 
     def command(self, node):
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+        cmd = "%s %s %s %s %s &" % \
               (envs_to_exports(self.envs()),
                self.service.script("ignite.sh"),
                self._jvm_opts(),
                self.config_file_path(),
-               os.path.join(self.service.log_dir, "console.log"))
+               self._output_redirect())
 
         return cmd
+
+
+class IgniteNodeSpecFileOutput(IgniteNodeSpec):
+    """
+    Spec to run ignite node with stdout and stderr appended to console.log by the shell, as nohup does, so the JVM
+    writes them itself instead of a pipe to tee.
+    """
+
+    def _output_redirect(self):
+        return ">> %s 2>&1" % os.path.join(self.service.log_dir, "console.log")
 
 
 class IgniteApplicationSpec(IgniteSpec):
@@ -422,12 +438,12 @@ class IgniteApplicationSpec(IgniteSpec):
             str(base64.b64encode(json.dumps(self.service.params).encode('utf-8')), 'utf-8')
         ]
 
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+        cmd = "%s %s %s %s %s &" % \
               (envs_to_exports(self.envs()),
                self.service.script("ignite.sh"),
                self._jvm_opts(),
                ",".join(args),
-               os.path.join(self.service.log_dir, "console.log"))
+               self._output_redirect())
 
         return cmd
 

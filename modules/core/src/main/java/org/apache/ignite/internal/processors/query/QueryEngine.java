@@ -81,4 +81,7 @@ public interface QueryEngine extends GridProcessor {
         String qry,
         List<Object[]> batchedParams
     ) throws IgniteSQLException;
+
+    /** @return Configuration of the engine. {@code null} if the engine has no configuration and cannot be selected. */
+    @Nullable QueryEngineConfigurationEx config();
 }

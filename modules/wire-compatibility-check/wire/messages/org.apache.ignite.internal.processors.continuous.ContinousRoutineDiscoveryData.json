@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryData",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.processors.continuous.ContinousRoutineDiscoveryDataItem>", "name": "items"},
+    {"order": 2, "type": "java.util.Map<java.util.UUID,java.util.Map<java.util.UUID,org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo>>", "name": "clientInfos"}
+  ]
+}

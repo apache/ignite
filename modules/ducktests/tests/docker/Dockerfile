@@ -170,8 +170,9 @@ ARG USER_GID=1000
 RUN getent passwd ubuntu &>/dev/null && userdel -r ubuntu || true
 
 # Provision ducker system environment and security configurations
-RUN groupadd -g $USER_GID ducker \
-    && useradd -u $USER_UID -g $USER_GID -ms /bin/bash ducker \
+# -o lets ducker share uid and gid 0 with root in an image built for a rootless daemon (see ducker-ignite).
+RUN groupadd -o -g $USER_GID ducker \
+    && useradd -o -u $USER_UID -g $USER_GID -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
     && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \

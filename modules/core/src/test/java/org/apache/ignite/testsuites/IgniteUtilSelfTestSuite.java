@@ -21,6 +21,7 @@ import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
 import org.apache.ignite.internal.management.api.CommandUtilsSelfTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.thread.GridThreadTest;
+import org.apache.ignite.internal.thread.pool.DataStreamerStarvationMetricTest;
 import org.apache.ignite.internal.thread.pool.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.internal.thread.pool.IgniteThreadPoolSizeTest;
 import org.apache.ignite.internal.thread.pool.ThreadPoolMetricsTest;
@@ -37,16 +38,14 @@ import org.apache.ignite.internal.util.distributed.DistributedProcessClientAwait
 import org.apache.ignite.internal.util.distributed.DistributedProcessCoordinatorLeftTest;
 import org.apache.ignite.internal.util.distributed.DistributedProcessErrorHandlingTest;
 import org.apache.ignite.internal.util.distributed.DistributedProcessResultMarshallingTest;
+import org.apache.ignite.internal.util.distributed.DistributedProcessStartByCoordinatorTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioServerTest;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKeySelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
 import org.apache.ignite.internal.util.nio.impl.GridNioFilterChainSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMapSelfTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemorySelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
 import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
@@ -123,12 +122,10 @@ import org.junit.runners.Suite;
     ClusterMetricsSelfTest.class,
     ClusterRebalancedMetricTest.class,
     ThreadPoolMetricsTest.class,
+    DataStreamerStarvationMetricTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,
-    GridUnsafeStripedLruSefTest.class,
-    GridUnsafeMapSelfTest.class,
-    GridUnsafePartitionedMapSelfTest.class,
 
     // NIO.
     GridNioSessionMetaKeySelfTest.class,
@@ -147,6 +144,7 @@ import org.junit.runners.Suite;
 
     DistributedProcessErrorHandlingTest.class,
     DistributedProcessCoordinatorLeftTest.class,
+    DistributedProcessStartByCoordinatorTest.class,
     DistributedProcessClientAwaitTest.class,
     DistributedProcessResultMarshallingTest.class,
 

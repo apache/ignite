@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheConfigurationCollectorTaskArg",
+  "fields": [
+    {"order": 0, "type": "java.util.Collection<java.lang.String>", "name": "cacheNames"},
+    {"order": 1, "type": "java.lang.String", "name": "regex"}
+  ]
+}

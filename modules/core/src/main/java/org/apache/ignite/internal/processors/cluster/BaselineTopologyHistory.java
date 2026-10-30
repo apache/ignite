@@ -25,10 +25,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class BaselineTopologyHistory implements Message {
+public class BaselineTopologyHistory extends AbstractMessage {
     /** */
     private static final String METASTORE_BLT_HIST_PREFIX = "bltHist-";
 

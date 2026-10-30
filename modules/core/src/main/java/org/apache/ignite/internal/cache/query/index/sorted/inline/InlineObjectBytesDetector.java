@@ -167,7 +167,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
 
     /**
      * Static analyze inline_size and inline columns set.
-     * e.g.: indexed: (long, obj) and inline_size < 12.
+     * e.g.: indexed: (long, obj) and {@code inline_size < 12}.
      * In this case there is no space for inline object.
      *
      * @param keyDefs Index key definition.

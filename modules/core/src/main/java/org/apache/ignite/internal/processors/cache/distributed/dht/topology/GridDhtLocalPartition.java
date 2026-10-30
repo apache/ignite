@@ -60,8 +60,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.collection.IntRWHashMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -198,7 +198,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (grp.sharedGroup()) {
             singleCacheEntryMap = null;
-            cacheMaps = new IntRWHashMap<>();
+            cacheMaps = new CopyOnWriteIntMap<>();
         }
         else {
             GridCacheContext cctx = grp.singleCacheContext();
@@ -276,7 +276,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected CacheMapHolder entriesMapIfExists(Integer cacheId) {
+    @Nullable @Override protected CacheMapHolder entriesMapIfExists(int cacheId) {
         return grp.sharedGroup() ? cacheMaps.get(cacheId) : singleCacheEntryMap;
     }
 
@@ -287,7 +287,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private CacheMapHolder cacheMapHolder(GridCacheContext cctx) {
         assert grp.sharedGroup();
 
-        CacheMapHolder hld = cacheMaps.get(cctx.cacheIdBoxed());
+        CacheMapHolder hld = cacheMaps.get(cctx.cacheId());
 
         if (hld != null)
             return hld;
@@ -295,7 +295,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (cctx.isNear())
             cctx = cctx.near().dht().context();
 
-        CacheMapHolder old = cacheMaps.putIfAbsent(cctx.cacheIdBoxed(), hld = ctx.kernalContext().resource().resolve(
+        CacheMapHolder old = cacheMaps.putIfAbsent(cctx.cacheId(), hld = ctx.kernalContext().resource().resolve(
             new CacheMapHolder(cctx, createEntriesMap())));
 
         if (old != null)
@@ -778,14 +778,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         return true;
-    }
-
-    /**
-     * @param state State.
-     * @return {@code True} if partition has no reservations and empty.
-     */
-    private boolean freeAndEmpty(long state) {
-        return isEmpty() && getSize(state) == 0 && getReservations(state) == 0;
     }
 
     /**

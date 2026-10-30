@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheJoinInfo>", "name": "caches"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.CacheJoinInfo>", "name": "templates"},
+    {"order": 2, "type": "org.apache.ignite.lang.IgniteUuid", "name": "cacheDeploymentId"},
+    {"order": 3, "type": "boolean", "name": "startCaches"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData", "name": "clusterCacheGrpRecoveryData"}
+  ]
+}

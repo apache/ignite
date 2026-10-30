@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Bounds of row range.
  */
-public class GridH2RowRangeBounds implements Message {
+public class GridH2RowRangeBounds extends AbstractMessage {
     /** */
     @Order(0)
     int rangeId;

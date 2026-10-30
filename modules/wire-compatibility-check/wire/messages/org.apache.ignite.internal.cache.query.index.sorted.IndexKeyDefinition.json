@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "idxType"},
+    {"order": 1, "type": "boolean", "name": "asc"},
+    {"order": 2, "type": "int", "name": "precision"}
+  ]
+}

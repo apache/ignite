@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.ClusterCacheGroupRecoveryData",
+  "fields": [
+    {"order": 0, "type": "long", "name": "clusterBaselineTopVer"},
+    {"order": 1, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState>", "name": "grpStates"}
+  ]
+}

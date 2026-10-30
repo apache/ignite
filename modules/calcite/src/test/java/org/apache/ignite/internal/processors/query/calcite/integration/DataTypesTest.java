@@ -1126,6 +1126,23 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
+    @Test
+    public void testOtherTypeCastToVarchar() {
+        sql("CREATE TABLE t(id INT PRIMARY KEY, oth OTHER) WITH " + atomicity());
+
+        sql("INSERT INTO t VALUES (1, 'str'), (2, 42), (3, NULL)");
+
+        assertQuery("SELECT CAST(id AS VARCHAR), CAST(oth AS VARCHAR) FROM t ORDER BY id")
+            .ordered()
+            .returns("1", "str")
+            .returns("2", "42")
+            .returns("3", null)
+            .check();
+
+        assertQuery("SELECT id FROM t WHERE CAST(oth AS VARCHAR) = '42'").returns(2).check();
+    }
+
+    /** */
     private void assumeNoTransactions() {
         assumeTrue(sqlTxMode == SqlTransactionMode.NONE, "Test use queries that doesn't touch any data. Skip for tx modes");
     }

@@ -335,19 +335,6 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /**
-     * @param idx cell index, normalized.
-     * @return {@code true} if cell with index idx has state 'Empty'.
-     */
-    private boolean isRemoved(int idx) {
-        long base = entryBase(idx);
-
-        int grpId = GridUnsafe.getInt(base);
-        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
-
-        return isRemoved(grpId, pageId);
-    }
-
-    /**
      * Sets cell state to 'Removed' or to 'Empty' if next cell is already 'Empty'.
      * @param idx cell index, normalized.
      */
@@ -364,30 +351,6 @@ public class FullPageIdTable implements LoadedPagesMap {
      */
     private boolean isEmpty(int grpId, long pageId) {
         return pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID;
-    }
-
-    /**
-     * @param idx cell index, normalized.
-     * @return {@code true} if cell with index idx has state 'Empty'.
-     */
-    private boolean isEmpty(int idx) {
-        long base = entryBase(idx);
-
-        int grpId = GridUnsafe.getInt(base);
-        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
-
-        return isEmpty(grpId, pageId);
-    }
-
-    /**
-     * Sets cell state to 'Empty'.
-     *
-     * @param idx cell index, normalized.
-     */
-    private void setEmpty(int idx) {
-        setKeyAt(idx, EMPTY_CACHE_GRP_ID, EMPTY_PAGE_ID);
-
-        setValueAt(idx, 0);
     }
 
     /**

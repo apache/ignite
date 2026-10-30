@@ -84,7 +84,7 @@ param (
     [ValidateSet("Release", "Debug")]
     [string]$configuration="Release",
     [string]$mavenOpts="-U -P-lgpl,-scala,-spark-2.4,-examples,-test,-benchmarks -Dmaven.javadoc.skip=true",
-	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target",
+	[string]$jarDirs="modules\indexing\target,modules\core\target,modules\spring\target,modules\calcite\target",
 	[string]$version="",
 	[string]$versionSuffix=""
  )
@@ -172,10 +172,17 @@ $libsDir = "$PSScriptRoot\bin\libs"
 Make-Dir($libsDir)
 
 Get-ChildItem $jarDirs.Split(',') *.jar -recurse `
-   -include "ignite-core*","ignite-indexing*","ignite-spring*","lucene*","h2*","cache-api*","commons-*","spring*" `
+   -include "ignite-core*","ignite-indexing*","ignite-spring*","ignite-calcite*","lucene*","h2*","cache-api*","commons-*","spring*" `
    -exclude "*-sources*","*-javadoc*","*-tests*" `
    | ? { $_.FullName -inotmatch '[\\/]optional[\\/]' } `
    | % { Copy-Item -Force $_ $libsDir }
+
+# Dependencies of the Calcite SQL engine (the same set as libs\ignite-calcite in the binary distribution).
+$calciteLibsDir = "modules\calcite\target\libs"
+
+if ([IO.Directory]::Exists($calciteLibsDir)) {
+    Get-ChildItem $calciteLibsDir *.jar | % { Copy-Item -Force $_ $libsDir }
+}
 
 # Restore directory
 cd $PSScriptRoot
