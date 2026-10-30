@@ -2383,32 +2383,18 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertNotNull(realNode);
 
-            // Wrap real node so that socketAddresses() returns an unresolved InetSocketAddress.
             TcpDiscoveryNode nodeWithUnresolvedAddr = new TestTcpDiscoveryNodeWithUnresolvedAddress(realNode);
 
-            // Ensure the wrapped node is considered different from the local node by UUID.
             assertNotEquals(ignite1.localNode().id(), nodeWithUnresolvedAddr.id());
 
-            // Verify test node has at least one unresolved address.
-            boolean hasUnresolved = false;
-
-            for (InetSocketAddress addr : nodeWithUnresolvedAddr.socketAddresses()) {
-                if (addr.getAddress() == null) {
-                    hasUnresolved = true;
-
-                    break;
-                }
-            }
-
-            assertTrue("Test node should have at least one unresolved address", hasUnresolved);
+            assertTrue("Test node should have at least one unresolved address",
+                nodeWithUnresolvedAddr.socketAddresses().stream().anyMatch(addr -> addr.getAddress() == null));
 
             // Should not throw NPE; unresolved addresses must be filtered out.
             LinkedHashSet<InetSocketAddress> effAddrs = spi1.getEffectiveNodeAddresses(nodeWithUnresolvedAddr, false);
 
-            assertNotNull(effAddrs);
-
-            for (InetSocketAddress addr : effAddrs)
-                assertNotNull("Unresolved address (getAddress() == null) should have been filtered out", addr.getAddress());
+            assertTrue("Unresolved address (getAddress() == null) should have been filtered out",
+                effAddrs.stream().noneMatch(addr -> addr.getAddress() == null));
         }
         finally {
             stopAllGrids();
@@ -2984,8 +2970,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         @Override public Collection<InetSocketAddress> socketAddresses() {
             List<InetSocketAddress> addrs = new ArrayList<>(super.socketAddresses());
 
-            // Unresolved address: getAddress() returns null.
-            addrs.add(new InetSocketAddress("unresolved-host-name-that-does-not-resolve-xyz", 47500));
+            addrs.add(InetSocketAddress.createUnresolved("unresolved", 47500));
 
             return addrs;
         }
