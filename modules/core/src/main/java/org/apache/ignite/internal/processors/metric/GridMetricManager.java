@@ -28,6 +28,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -354,11 +355,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             stream.onEvent("jdk.JavaErrorThrow", event -> {
                 try {
                     RecordedClass cls = event.getClass("thrownClass");
-                    if (cls != null && "java.lang.AssertionError".equals(cls.getName()))
+                    Objects.requireNonNull(cls, "Java error occurs. Unable to get thrown class");
+                    if ("java.lang.AssertionError".equals(cls.getName()))
                         assertionErrorCnt.increment();
                 }
-                catch (RuntimeException ignored) {
-                    // Ignore — must not disrupt the JFR consumer thread.
+                catch (RuntimeException cause) {
+                    log.warning("Failed to monitor Java error event.", cause);
                 }
             });
             stream.startAsync();
