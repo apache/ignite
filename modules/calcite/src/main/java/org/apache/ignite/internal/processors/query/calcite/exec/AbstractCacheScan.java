@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
 import org.apache.ignite.internal.util.collection.IntSet;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -121,9 +122,22 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
         GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
         boolean done = topFut.isDone();
+        AffinityTopologyVersion readyTopVer;
 
-        if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
-            && cctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
+        if (done)
+            readyTopVer = topFut.topologyVersion();
+        else if (!F.isEmpty(ectx.getQryTxEntries()))
+            // The transaction holds the exchange until it finishes, so use the topology that is already ready.
+            readyTopVer = top.readyTopologyVersion();
+        else
+            readyTopVer = null;
+
+        // DML needs a ready topology at least as new as the query's, with no subsequent affinity changes.
+        // TX may hold the current exchange open; in that case, validate the query mapping against
+        // the already ready topology rather than the unfinished exchange.
+        if (readyTopVer == null || readyTopVer.before(topVer)
+            || cctx.shared().exchange().lastAffinityChangedTopologyVersion(
+                done ? topFut.initialVersion() : readyTopVer).after(topVer)) {
             top.readUnlock();
 
             throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");

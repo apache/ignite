@@ -29,7 +29,9 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +42,9 @@ import static org.apache.ignite.internal.processors.query.calcite.DistributedCal
  * Planning context.
  */
 public final class PlanningContext implements Context {
+    /** ID of the suspended transaction associated with the query being planned. */
+    public static final OperationContextAttribute<GridCacheVersion> QUERY_TX_VER = OperationContextAttribute.newInstance();
+
     /** */
     private final Context parentCtx;
 

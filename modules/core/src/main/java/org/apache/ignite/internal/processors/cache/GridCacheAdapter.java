@@ -3660,7 +3660,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Long> sizeLongAsync(final CachePeekMode[] peekModes) {
+        return sizeLongAsync(peekModes, ctx.affinity().affinityTopologyVersion());
+    }
+
+    /**
+     * Gets the local cache size using the specified affinity topology version.
+     *
+     * @param peekModes Peek modes.
+     * @param topVer Affinity topology version.
+     * @return Cache size future.
+     */
+    public IgniteInternalFuture<Long> sizeLongAsync(CachePeekMode[] peekModes, AffinityTopologyVersion topVer) {
         assert peekModes != null;
+        assert topVer != null;
 
         PeekModes modes = parsePeekModes(peekModes, true);
 
@@ -3674,7 +3686,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return new GridFinishedFuture<>(0L);
 
         return ctx.kernalContext().task().execute(
-            new SizeLongTask(ctx.name(), ctx.affinity().affinityTopologyVersion(), peekModes),
+            new SizeLongTask(ctx.name(), topVer, peekModes),
             null,
             options(nodes)
         );

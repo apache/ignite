@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsT
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlSelectForUpdateParserTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsSavepointTest;
+import org.apache.ignite.internal.processors.tx.SqlTransactionsTopologyChangeTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
@@ -50,6 +51,7 @@ import org.junit.platform.suite.api.Suite;
     SqlTransactionsIsolationTest.class,
     SqlTransactionsUnsupportedModesTest.class,
     SqlTransactionsSavepointTest.class,
+    SqlTransactionsTopologyChangeTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

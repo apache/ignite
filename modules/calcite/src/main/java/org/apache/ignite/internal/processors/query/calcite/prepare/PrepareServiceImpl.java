@@ -43,6 +43,7 @@ import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -55,6 +56,8 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlSelectFo
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
@@ -62,6 +65,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper.optimize;
+import static org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext.QUERY_TX_VER;
 
 /**
  *
@@ -96,7 +100,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
     /** {@inheritDoc} */
     @Override public QueryPlan prepareSingle(SqlNode sqlNode, PlanningContext ctx) {
-        try {
+        try (Scope ignored = OperationContext.set(QUERY_TX_VER, ctx.unwrap(GridCacheVersion.class))) {
             assert single(sqlNode);
 
             ctx.planner().reset();
