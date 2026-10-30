@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorrupte
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsMarshallerMappingRestoreOnNodeStartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistoricalRebalancingTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistenceSequentialCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.RestorePartitionStateDuringCheckpointTest;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalR
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteSequentialNodeCrashRecoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.PageIdsArrangeForPreallocationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheDestroyDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsDiskErrorsRecoveringTest;
@@ -64,7 +64,7 @@ import org.junit.runners.Suite;
     IgnitePdsPageEvictionTest.class,
     IgnitePdsMultiNodePutGetRestartTest.class,
     IgnitePersistentStoreCacheGroupsTest.class,
-    IgnitePersistenceSequentialCheckpointTest.class,
+    PageIdsArrangeForPreallocationTest.class,
     PersistenceDirectoryWarningLoggingTest.class,
     WalPathsTest.class,
     WalRecoveryTxLogicalRecordsTest.class,
