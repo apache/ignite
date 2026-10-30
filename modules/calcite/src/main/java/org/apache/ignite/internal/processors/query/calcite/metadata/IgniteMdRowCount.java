@@ -285,14 +285,12 @@ public class IgniteMdRowCount extends RelMdRowCount {
             else if (rel.getJoinType() == JoinRelType.FULL) {
                 Double selectivity = mq.getSelectivity(rel, rel.getCondition());
 
-                // Fall-back.
                 if (selectivity == null) {
                     // Fall-back to calcite's implementation.
                     return RelMdUtil.getJoinRowCount(mq, rel, rel.getCondition());
                 }
 
-                baseRowCnt = rightRowCnt + leftRowCnt;
-                percentageAdjustment = 1.0 - selectivity;
+                return Math.max(preservedRowCnt, leftRowCnt * (1.0 - selectivity) + rightRowCnt);
             }
         }
         else { // PK_ON_FK
