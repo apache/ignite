@@ -60,6 +60,11 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      *
      */
+    public static final SqlFunction XML_TABLE = new SqlXmlTableFunction();
+
+    /**
+     *
+     */
     public static final SqlFunction TYPEOF =
         new SqlFunction(
             "TYPEOF",
