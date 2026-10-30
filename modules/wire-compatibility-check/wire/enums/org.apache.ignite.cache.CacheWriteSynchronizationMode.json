@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.cache.CacheWriteSynchronizationMode",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.CacheWriteSynchronizationMode", "name": "FULL_SYNC"},
+    {"order": 1, "type": "org.apache.ignite.cache.CacheWriteSynchronizationMode", "name": "FULL_ASYNC"},
+    {"order": 2, "type": "org.apache.ignite.cache.CacheWriteSynchronizationMode", "name": "PRIMARY_SYNC"}
+  ]
+}

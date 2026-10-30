@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.property.PropertyListCommandArg",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "info"}
+  ]
+}

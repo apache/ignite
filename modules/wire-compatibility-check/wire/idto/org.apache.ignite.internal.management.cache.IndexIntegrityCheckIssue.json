@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.IndexIntegrityCheckIssue",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "grpName"},
+    {"order": 1, "type": "java.lang.Throwable", "name": "t"}
+  ]
+}

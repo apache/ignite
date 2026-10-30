@@ -148,9 +148,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private final DataRegionMetricsImpl dataRegionMetrics;
 
     /** */
-    private final AtomicInteger selector = new AtomicInteger();
-
-    /** */
     private final OffheapReadWriteLock rwLock;
 
     /** Concurrency lvl. */
@@ -395,23 +392,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int realPageSize(int grpId) {
         return pageSize();
-    }
-
-    /**
-     * @return Next index.
-     */
-    private int nextRoundRobinIndex() {
-        while (true) {
-            int idx = selector.get();
-
-            int nextIdx = idx + 1;
-
-            if (nextIdx >= segments.length)
-                nextIdx = 0;
-
-            if (selector.compareAndSet(idx, nextIdx))
-                return nextIdx;
-        }
     }
 
     /** {@inheritDoc} */

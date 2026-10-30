@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.persistence.PersistenceCleanCachesTaskArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "caches"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.event.EventCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "events"}
+  ]
+}

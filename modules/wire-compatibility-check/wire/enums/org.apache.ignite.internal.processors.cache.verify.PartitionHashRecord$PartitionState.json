@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord$PartitionState",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord$PartitionState", "name": "OWNING"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord$PartitionState", "name": "MOVING"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord$PartitionState", "name": "LOST"}
+  ]
+}

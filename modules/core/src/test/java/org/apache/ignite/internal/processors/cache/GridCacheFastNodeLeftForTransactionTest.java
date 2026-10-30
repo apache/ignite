@@ -236,7 +236,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         checkCacheData(cacheValues, cacheName);
 
-        IdleVerifyResult idleVerifyRes = idleVerify(stoppedNode, null);
+        IdleVerifyResult idleVerifyRes = idleVerify(stoppedNode);
 
         SB sb = new SB();
 

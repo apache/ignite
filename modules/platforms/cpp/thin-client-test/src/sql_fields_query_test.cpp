@@ -539,7 +539,8 @@ BOOST_AUTO_TEST_CASE(TestInsertNull)
  */
 BOOST_AUTO_TEST_CASE(TestSqlStateOnErrors)
 {
-    CheckSqlStateForQuery("select * from \"UnknownCache\".UNKNOWN_TABLE", "42000");
+    // Unknown schema is reported as SCHEMA_NOT_FOUND, whose SQL state maps to SqlStateCode.INTERNAL_ERROR.
+    CheckSqlStateForQuery("select * from \"UnknownCache\".UNKNOWN_TABLE", "50000");
     CheckSqlStateForQuery("select * from UNKNOWN_TABLE", "42000");
     CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key) values(null)", "22004");
     CheckSqlStateForQuery("insert into \"cacheAllFields\".TestType(_key) values('abc')", "0700B");

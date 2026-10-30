@@ -122,7 +122,7 @@ public class IdleVerifyUtility {
 
             for (int pageNo = 0; pageNo < pageStore.pages(); pageId++, pageNo++) {
                 if (cancelled != null && cancelled.getAsBoolean())
-                    throw new IgniteException("Checking of partitions page CRC sum has been cancelled.");
+                    throw new IgniteException("Checking of partitions page CRC sum has been cancelled [partId=" + partId + ']');
 
                 buf.clear();
 
@@ -288,17 +288,18 @@ public class IdleVerifyUtility {
         boolean isPrimary,
         long partSize,
         GridIterator<CacheDataRow> it,
-        @Nullable BooleanSupplier cancelled
+        BooleanSupplier cancelled
     ) throws IgniteCheckedException {
         if (state == GridDhtPartitionState.MOVING || state == GridDhtPartitionState.LOST) {
-            return new PartitionHashRecord(partKey,
+            return new PartitionHashRecord(
+                partKey,
                 isPrimary,
                 consId,
                 updCntr,
-                state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
-                state == GridDhtPartitionState.MOVING ?
-                    PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
+                state == GridDhtPartitionState.MOVING ? PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
+                state == GridDhtPartitionState.MOVING
+                    ? PartitionHashRecord.PartitionState.MOVING
+                    : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
             );
         }
@@ -308,10 +309,9 @@ public class IdleVerifyUtility {
 
         VerifyPartitionContext ctx = new VerifyPartitionContext();
 
-        while (it.hasNextX()) {
-            if (cancelled != null && cancelled.getAsBoolean())
-                throw new IgniteCheckedException("Partition hash calculation has been cancelled.");
+        boolean cancelled0;
 
+        while (!(cancelled0 = cancelled.getAsBoolean()) && it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
             if (row.expireTime() > 0)
@@ -319,6 +319,9 @@ public class IdleVerifyUtility {
 
             ctx.update(row.key(), row.value(), row.version());
         }
+
+        if (cancelled0)
+            throw new IgniteException("Partition hash calculation has been cancelled [part=" + partKey + ']');
 
         return new PartitionHashRecord(
             partKey,

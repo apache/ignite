@@ -23,12 +23,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Request for statistics.
  */
-public class StatisticsRequest implements Message {
+public class StatisticsRequest extends AbstractMessage {
     /** Gathering id. */
     @Order(0)
     UUID reqId;

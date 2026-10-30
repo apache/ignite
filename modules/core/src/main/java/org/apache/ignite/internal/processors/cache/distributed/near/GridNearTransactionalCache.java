@@ -351,9 +351,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys) {
+    @Override public boolean unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
-            return;
+            return true;
+
+        boolean locked = true;
 
         try {
             GridCacheVersion ver = null;
@@ -370,8 +372,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
                     GridDistributedCacheEntry entry = peekExx(cacheKey);
 
-                    if (entry == null)
+                    if (entry == null) {
+                        locked = false;
+
                         break; // While.
+                    }
 
                     try {
                         GridCacheMvccCandidate cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());
@@ -387,7 +392,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 Collection<ClusterNode> affNodes = CU.affinityNodes(ctx, cand.topologyVersion());
 
                                 if (F.isEmpty(affNodes))
-                                    return;
+                                    return locked;
 
                                 keyCnt = (int)Math.ceil((double)keys.size() / affNodes.size());
 
@@ -439,6 +444,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         " [lock=" + rmv + ", curThreadId=" + Thread.currentThread().getId() + ']');
                             }
                         }
+                        else
+                            locked = false;
 
                         assert !topVer.equals(AffinityTopologyVersion.NONE) || cand == null;
 
@@ -454,7 +461,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             }
 
             if (ver == null)
-                return;
+                return locked;
 
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
@@ -471,6 +478,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
+
+        return locked;
     }
 
     /**

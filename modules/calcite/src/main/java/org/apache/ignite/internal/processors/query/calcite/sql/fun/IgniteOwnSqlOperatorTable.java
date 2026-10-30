@@ -126,7 +126,7 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             OperandTypes.SAME_SAME,
             SqlFunctionCategory.SYSTEM);
 
-    /** Bitwise '&' of two values. */
+    /** Bitwise {@code &} of two values. */
     public static final SqlFunction BITAND =
         new SqlFunction(
             "BITAND",

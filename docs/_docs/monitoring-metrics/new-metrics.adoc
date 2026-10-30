@@ -226,7 +226,11 @@ Register name: `tx`
 |===
 |Name | Type | Description
 |AllOwnerTransactions | Map<String, String> | Map of local node owning transactions.
+|ExplicitLockHoldTimeHistogram | histogram | Explicit locks hold times on node represented as histogram, in milliseconds.
 |LockedKeysNumber | long | The number of keys locked on the node.
+|LongRunningCacheFuturesCount | long | The count of cache futures currently in progress on the node whose duration exceeds the long operations dump timeout.
+|MaxCacheFutureDuration | long | Maximum duration of cache futures currently in progress on the node, in milliseconds.
+|MaxExplicitLockHoldTime | long | Maximum hold time of explicit locks currently held on the node, in milliseconds.
 |OwnerTransactionsNumber | long | The number of active transactions for which this node is the initiator.
 |TransactionsHoldingLockNumber | long | The number of active transactions holding at least one key lock.
 |commitTime | long | Last commit time.
@@ -304,6 +308,7 @@ Striped executors (`StripedExecutor`, `GridDataStreamExecutor`) expose a differe
 |ActiveCount | integer | Number of active tasks of all stripes.
 |DetectStarvation | boolean | True if possible starvation in striped pool is detected.
 |Shutdown | boolean | True if this executor has been shut down.
+|StarvationEventsCount | long | Number of possible starvation events detected in striped pool since node start.
 |StripesActiveStatuses | boolean[] | Active status of each stripe.
 |StripesCompletedTasksCounts | long[] | Number of completed tasks per stripe.
 |StripesCount | integer | Stripes count.
@@ -313,6 +318,8 @@ Striped executors (`StripedExecutor`, `GridDataStreamExecutor`) expose a differe
 |TotalCompletedTasksCount | long | Completed tasks count of all stripes.
 |TotalQueueSize | integer | Total queue size of all stripes.
 |===
+
+NOTE: `StarvationEventsCount` is updated by the periodic starvation check (`IGNITE_STARVATION_CHECK_INTERVAL`, 30 seconds by default, `0` disables it). A task occupying a stripe longer than `failureDetectionTimeout` is counted at most once, and only if a check finds it still running past that timeout.
 
 == Cache Group IO
 
@@ -465,6 +472,7 @@ Register name: `client.connector`
 |AffinityKeyRequestsMisses | long | The number of affinity-aware cache key requests that were sent not to the primary node.
 |AffinityQueryRequestsHits | long | The number of affinity-aware query requests that were sent to the primary node.
 |AffinityQueryRequestsMisses | long | The number of affinity-aware query requests that were sent not to the primary node.
+|MaxRunningComputeTasksPerConnection | long | Maximum number of running user compute tasks per thin client connection over the configured time interval (60 seconds by default).
 |RejectedSessionsAuthenticationFailed | integer | TCP sessions count that were rejected due to failed authentication.
 |RejectedSessionsTimeout | integer | TCP sessions count that were rejected due to handshake timeout.
 |RejectedSessionsTotal | integer | Total number of rejected TCP connections.
@@ -524,12 +532,14 @@ Register name: `io.discovery`
 |Next | UUID | Next in the ring node ID.
 |PendingMessagesRegistered | integer | Pending messages registered count.
 |RejectedSslConnectionsCount | integer | TCP discovery connections count that were rejected due to SSL errors.
+|SocketReadTimeoutsCount | integer | TCP discovery socket read operations count that timed out.
+|SocketWriteTimeoutsCount | integer | TCP discovery socket write operations count that timed out.
 |SslEnabled | boolean | Whether SSL is enabled.
 |TotalProcessedMessages | integer | Total processed messages count.
 |TotalReceivedMessages | integer | Total received messages count.
 |===
 
-NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only.
+NOTE: `Coordinator`, `CoordinatorSince`, `LocalPort`, `MaxMsgQueueSize` and `Next` are registered on server nodes only; `ClientRouterNodeId` is registered on client nodes only. `SocketReadTimeoutsCount` indicates the remote node is not sending data (not responding to pings or not sending delivery receipts) — likely a long GC pause on the remote node, a network issue in the receive direction, or the remote node is down. `SocketWriteTimeoutsCount` indicates the remote node is not accepting data (TCP send buffer full) — likely a network issue in the send direction, or the remote node is not reading the socket (GC pause, overloaded, or down).
 
 == Data Region IO
 
@@ -773,6 +783,23 @@ Register name: `Services.{service_name}`
 |Name | Type | Description
 |{method_name} | histogram | Duration in nanoseconds of '{method_name}()'.
 |===
+
+== Failure Handling
+
+Counters of the failures suppressed by the configured failure handler. One counter is registered per failure type the handler ignores, see link:perf-and-troubleshooting/handling-exceptions#failures-handling[Failures Handling].
+
+Register name: `failure.ignored`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|{failure_type} | long | The number of failures of the given type suppressed in accordance with the configured failure handler.
+|===
+
+== Change Data Capture
+
+The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, through the exporters configured in `CdcConfiguration`.
+See link:persistence/change-data-capture#metrics[Change Data Capture] for the list of metrics.
 
 == Custom Metrics
 

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -41,18 +40,6 @@ import org.jetbrains.annotations.Nullable;
  * for safe caching and processing on remote nodes.
  */
 class WebSessionV2 implements HttpSession {
-    /** Empty session context. */
-    @SuppressWarnings("deprecation")
-    private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
-        @Nullable @Override public HttpSession getSession(String id) {
-            return null;
-        }
-
-        @Override public Enumeration<String> getIds() {
-            return Collections.enumeration(Collections.<String>emptyList());
-        }
-    };
-
     /** Placeholder for removed attribute. */
     private static final Object REMOVED_ATTR = new Object();
 
@@ -181,13 +168,6 @@ class WebSessionV2 implements HttpSession {
         return maxInactiveInterval;
     }
 
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Always returns an empty context.
-     */
-    @Override @Deprecated public HttpSessionContext getSessionContext() {
-        return EMPTY_SES_CTX;
-    }
-
     /** {@inheritDoc} */
     @Override public Object getAttribute(final String name) {
         assertValid();
@@ -216,13 +196,6 @@ class WebSessionV2 implements HttpSession {
         return attr;
     }
 
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttribute(String)}.
-     */
-    @Override @Deprecated public Object getValue(final String name) {
-        return getAttribute(name);
-    }
-
     /** {@inheritDoc} */
     @Override public void setAttribute(final String name, final Object val) {
         assertValid();
@@ -231,13 +204,6 @@ class WebSessionV2 implements HttpSession {
             removeAttribute(name);
         else
             attributes().put(name, val);
-    }
-
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #setAttribute(String, Object)}.
-     */
-    @Override @Deprecated public void putValue(final String name, final Object val) {
-        setAttribute(name, val);
     }
 
     /** {@inheritDoc} */
@@ -267,29 +233,11 @@ class WebSessionV2 implements HttpSession {
         return entity.attributes().keySet();
     }
 
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #getAttributeNames()}.
-     */
-    @Override @Deprecated public String[] getValueNames() {
-        assertValid();
-
-        final Set<String> names = attributeNames();
-
-        return names.toArray(new String[names.size()]);
-    }
-
     /** {@inheritDoc} */
     @Override public void removeAttribute(final String name) {
         assertValid();
 
         attributes().put(name, REMOVED_ATTR);
-    }
-
-    /**
-     * @deprecated Legacy {@link HttpSession} API. Use {@link #removeAttribute(String)}.
-     */
-    @Override @Deprecated public void removeValue(final String name) {
-        removeAttribute(name);
     }
 
     /** {@inheritDoc} */

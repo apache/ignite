@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see DeployableMessage
  */
-public abstract class GridCacheMessage implements DeferredUnmarshalMessage, StripedMessage {
+public abstract class GridCacheMessage extends AbstractMessage implements DeferredUnmarshalMessage, StripedMessage {
     /** Maximum number of cache lookup indexes. */
     public static final int MAX_CACHE_MSG_LOOKUP_INDEX = 7;
 

@@ -329,11 +329,14 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(host + ":" + port)
             .setUserAttributes(F.asMap(IGNITE_DATA_CENTER_ID, dcId)))) {
             try (Connection conn = new IgniteJdbcThinDriver().connect("jdbc:ignite:thin://" + host, new Properties())) {
-                List<List<?>> conns = execute(ignite0, "SELECT TYPE, DATA_CENTER_ID FROM SYS.CLIENT_CONNECTIONS");
+                List<List<?>> conns = execute(ignite0,
+                    "SELECT TYPE, DATA_CENTER_ID, ACTIVE_COMPUTE_TASKS FROM SYS.CLIENT_CONNECTIONS");
 
                 assertEquals(2, conns.size());
-                assertTrue(conns.stream().anyMatch(row -> "THIN".equals(row.get(0)) && dcId.equals(row.get(1))));
-                assertTrue(conns.stream().anyMatch(row -> "JDBC".equals(row.get(0)) && row.get(1) == null));
+                assertTrue(conns.stream().anyMatch(row ->
+                    "THIN".equals(row.get(0)) && dcId.equals(row.get(1)) && Integer.valueOf(0).equals(row.get(2))));
+                assertTrue(conns.stream().anyMatch(row ->
+                    "JDBC".equals(row.get(0)) && row.get(1) == null && row.get(2) == null));
             }
         }
     }
@@ -576,7 +579,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
             asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
             asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
-            asList("DATA_CENTER_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName())
+            asList("DATA_CENTER_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
+            asList("ACTIVE_COMPUTE_TASKS", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, Integer.class.getName())
         );
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");

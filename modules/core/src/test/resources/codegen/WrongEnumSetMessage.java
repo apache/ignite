@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.util.EnumSet;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class WrongEnumSetMessage<E extends Enum<E>> implements Message {
+public class WrongEnumSetMessage<E extends Enum<E>> extends AbstractMessage {
     @Order(0)
     EnumSet<E> enums;
 

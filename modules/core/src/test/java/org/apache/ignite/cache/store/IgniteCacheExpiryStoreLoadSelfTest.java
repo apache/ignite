@@ -108,9 +108,9 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
         keys.add(primaryKey(jcache(2)));
 
         if (async)
-            cache.loadCacheAsync(null, keys.toArray(new Integer[3])).get();
+            cache.loadCacheAsync(null, keys.toArray()).get();
         else
-            cache.loadCache(null, keys.toArray(new Integer[3]));
+            cache.loadCache(null, keys.toArray());
 
         assertEquals(3, cache.size(CachePeekMode.PRIMARY));
 
@@ -146,9 +146,9 @@ public class IgniteCacheExpiryStoreLoadSelfTest extends GridCacheAbstractSelfTes
         List<Integer> keys = primaryKeys(cache, 3);
 
         if (async)
-            cache.localLoadCacheAsync(null, keys.toArray(new Integer[3])).get();
+            cache.localLoadCacheAsync(null, keys.toArray()).get();
         else
-            cache.localLoadCache(null, keys.toArray(new Integer[3]));
+            cache.localLoadCache(null, keys.toArray());
 
         assertEquals(3, cache.localSize());
 

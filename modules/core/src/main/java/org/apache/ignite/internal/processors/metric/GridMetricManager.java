@@ -557,13 +557,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     public void configureHistogram(String name, long[] bounds) throws IgniteCheckedException {
         A.notNullOrEmpty(name, "name");
-        A.notEmpty(bounds, "bounds");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        ensureMetricRegistered(name, HistogramMetric.class);
+        ensureMetricRegistered(name, ConfigurableHistogramMetric.class);
+
+        find(name, ConfigurableHistogramMetric.class).checkBounds(bounds);
 
         metastorage.write(metricName(HISTOGRAM_CFG_PREFIX, name), bounds);
     }

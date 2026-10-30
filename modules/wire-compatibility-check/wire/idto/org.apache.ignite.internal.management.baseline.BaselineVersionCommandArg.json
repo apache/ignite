@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.baseline.BaselineVersionCommandArg",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "verbose"},
+    {"order": 1, "type": "long", "name": "topologyVersion"}
+  ]
+}

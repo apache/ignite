@@ -115,13 +115,6 @@ public interface GridCacheEntryEx {
     public boolean hasValue();
 
     /**
-     * @param val New value.
-     * @param ttl Time to live.
-     * @return Old value.
-     */
-    public CacheObject rawPut(CacheObject val, long ttl);
-
-    /**
      * Wraps this map entry into cache entry.
      *
      * @return Wrapped entry.
@@ -752,25 +745,10 @@ public interface GridCacheEntryEx {
     public boolean lockedBy(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
-     * Will not fail for removed entries.
-     *
-     * @param threadId Thread ID to check.
-     * @return {@code True} if lock is owned by given thread.
-     */
-    public boolean lockedByThreadUnsafe(long threadId);
-
-    /**
      * @param ver Version to check for ownership.
      * @return {@code True} if owner has the specified version.
      */
     public boolean lockedByUnsafe(GridCacheVersion ver);
-
-    /**
-     *
-     * @param lockVer Lock ID to check.
-     * @return {@code True} if lock is owned by candidate.
-     */
-    public boolean lockedLocallyUnsafe(GridCacheVersion lockVer);
 
     /**
      * @param ver Lock version to check.

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.TxInfo",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "dhtVer"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "nearVer"}
+  ]
+}

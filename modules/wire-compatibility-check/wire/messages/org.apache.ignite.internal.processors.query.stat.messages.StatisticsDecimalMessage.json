@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage",
+  "fields": [
+    {"order": 0, "type": "int", "name": "scale"},
+    {"order": 1, "type": "byte[]", "name": "b"}
+  ]
+}

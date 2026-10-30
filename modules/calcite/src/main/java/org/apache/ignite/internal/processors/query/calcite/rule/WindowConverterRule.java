@@ -106,6 +106,7 @@ public class WindowConverterRule extends AbstractIgniteConverterRule<LogicalWind
         for (int i = 0; i < calls.size(); i++) {
             Window.RexWinAggCall aggCall = calls.get(i);
             Window.RexWinAggCall newCall = new Window.RexWinAggCall(
+                aggCall.pos,
                 (SqlAggFunction)aggCall.op,
                 aggCall.type,
                 aggCall.operands,

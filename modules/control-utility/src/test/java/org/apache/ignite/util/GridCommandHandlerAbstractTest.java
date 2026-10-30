@@ -499,6 +499,22 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
     ) {
         assert nonNull(ignite);
 
+        CacheConfiguration<?, ?> ccfg = testCacheConfiguration(cacheName, partitions, filter);
+
+        ignite.createCache(ccfg);
+
+        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(cacheName)) {
+            for (int i = 0; i < countEntries; i++)
+                streamer.addData(i, i);
+        }
+    }
+
+    /** */
+    protected CacheConfiguration<?, ?> testCacheConfiguration(
+        String cacheName,
+        int partitions,
+        @Nullable IgnitePredicate<ClusterNode> filter
+    ) {
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cacheName)
             .setAffinity(new RendezvousAffinityFunction(false, partitions))
             .setBackups(1)
@@ -507,12 +523,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommandHandlerF
         if (filter != null)
             ccfg.setNodeFilter(filter);
 
-        ignite.createCache(ccfg);
-
-        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(cacheName)) {
-            for (int i = 0; i < countEntries; i++)
-                streamer.addData(i, i);
-        }
+        return ccfg;
     }
 
     /**

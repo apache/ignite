@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreOperationResponse",
+  "fields": [
+    {"order": 0, "type": "java.util.List<org.apache.ignite.internal.processors.cache.StoredCacheData>", "name": "ccfgs"},
+    {"order": 1, "type": "java.util.List<org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata>", "name": "metas"}
+  ]
+}

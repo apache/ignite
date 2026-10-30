@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap", "name": "historical"},
+    {"order": 1, "type": "java.util.Set<java.lang.Integer>", "name": "full"}
+  ]
+}

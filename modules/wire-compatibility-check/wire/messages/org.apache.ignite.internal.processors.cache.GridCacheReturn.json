@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.GridCacheReturn",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "cacheObj"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult>", "name": "invokeResCol"},
+    {"order": 2, "type": "boolean", "name": "success"},
+    {"order": 3, "type": "boolean", "name": "invokeRes"},
+    {"order": 4, "type": "int", "name": "cacheId"}
+  ]
+}

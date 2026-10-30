@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.IndexForceRebuildTaskRes",
+  "fields": [
+    {"order": 0, "type": "java.util.Set<org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer>", "name": "cachesWithStartedRebuild"},
+    {"order": 1, "type": "java.util.Set<org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer>", "name": "cachesWithRebuildInProgress"},
+    {"order": 2, "type": "java.util.Set<java.lang.String>", "name": "notFoundCacheNames"}
+  ]
+}

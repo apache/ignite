@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "resBytes"},
+    {"order": 1, "type": "boolean", "name": "finished"},
+    {"order": 2, "type": "boolean", "name": "found"},
+    {"order": 3, "type": "java.lang.String", "name": "err"},
+    {"type": "java.lang.Object", "name": "res", "annotations": ["@org.apache.ignite.internal.Marshalled(\"resBytes\")"]}
+  ]
+}

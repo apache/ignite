@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "qryReqId"},
+    {"order": 1, "type": "int", "name": "segmentId"},
+    {"order": 2, "type": "int", "name": "qry"},
+    {"order": 3, "type": "int", "name": "pageSize"},
+    {"order": 4, "type": "byte", "name": "flags"}
+  ]
+}

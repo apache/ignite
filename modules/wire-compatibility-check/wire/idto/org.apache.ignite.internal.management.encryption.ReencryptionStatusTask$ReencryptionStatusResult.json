@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.encryption.ReencryptionStatusTask$ReencryptionStatusResult",
+  "fields": [
+    {"order": 0, "type": "java.lang.Long", "name": "val"}
+  ]
+}

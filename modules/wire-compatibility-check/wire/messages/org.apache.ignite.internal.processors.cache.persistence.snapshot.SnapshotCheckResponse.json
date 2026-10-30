@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckResponse",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "result"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.util.ErrorMessage>", "name": "errors"}
+  ]
+}

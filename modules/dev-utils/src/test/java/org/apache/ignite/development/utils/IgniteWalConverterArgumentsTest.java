@@ -67,7 +67,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
     public void testViewHelp() throws Exception {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        final IgniteWalConverterArguments parseArgs = parse(new PrintStream(out), null);
+        final IgniteWalConverterArguments parseArgs = parse(new PrintStream(out));
 
         Assert.assertNull(parseArgs);
 

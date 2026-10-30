@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.GridCacheMessage", "name": "payload"},
+    {"order": 4, "type": "java.util.UUID", "name": "id"},
+    {"order": 5, "type": "java.util.UUID", "name": "txSnpId"},
+    {"order": 6, "type": "long", "name": "topVer"}
+  ]
+}

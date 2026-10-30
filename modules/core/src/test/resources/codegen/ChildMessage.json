@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.ChildMessage",
+  "fields": [
+    {"order": 0, "type": "int", "name": "id"},
+    {"order": 1, "type": "byte", "name": "flags"},
+    {"order": 2, "type": "java.lang.String", "name": "str"},
+    {"order": 3, "type": "byte", "name": "flags"}
+  ]
+}

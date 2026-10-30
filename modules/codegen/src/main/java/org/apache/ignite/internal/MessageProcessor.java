@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -126,6 +126,9 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
+    /** */
+    private MessageJsonGenerator jsonGen;
+
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeElement msgEl = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE);
@@ -181,26 +184,102 @@ public class MessageProcessor extends AbstractProcessor {
                     clazz);
             }
 
-            if (!checkConstructors(clazz))
+            if (!checkConstructors(clazz) || !checkFeatureGatedFields(clazz, fields))
                 continue;
 
             msgFields.put(clazz, fields);
         }
 
-        List<Function<ProcessingEnvironment, MessageCompanionGenerator>> generators = List.of(
-            MessageSerializerGenerator::new, MessageMarshallerGenerator::new, MessageDeploymentGenerator::new);
+        if (jsonGen == null)
+            jsonGen = new MessageJsonGenerator(processingEnv, "messages/");
+
+        List<Supplier<MessageGenerator>> generators = List.of(
+            () -> new MessageSerializerGenerator(processingEnv),
+            () -> new MessageMarshallerGenerator(processingEnv),
+            () -> new MessageDeploymentGenerator(processingEnv),
+            () -> jsonGen);
 
         for (Map.Entry<TypeElement, List<VariableElement>> type: msgFields.entrySet()) {
-            for (Function<ProcessingEnvironment, MessageCompanionGenerator> factory : generators) {
-                MessageCompanionGenerator gen = factory.apply(processingEnv);
+            for (Supplier<MessageGenerator> factory : generators) {
+                MessageGenerator gen = factory.get();
 
                 try {
                     gen.generate(type.getKey(), type.getValue());
                 }
                 catch (Exception e) {
                     processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                        "Failed to generate a message " + gen.typeSuffix().toLowerCase() + ":" + e.getMessage(), type.getKey());
+                        "Failed to generate a message " + gen.name() + ":" + e.getMessage(), type.getKey());
                 }
+            }
+        }
+
+        return true;
+    }
+
+    /** */
+    private boolean checkFeatureGatedFields(TypeElement clazz, List<VariableElement> fields) {
+        boolean isSchemaImmutable = isSchemaImmutable(processingEnv, clazz);
+        String reg = null;
+        Map<String, VariableElement> gatedFields = new HashMap<>();
+
+        for (VariableElement field : fields) {
+            String feature = gatingFeature(field);
+
+            if (feature == null)
+                continue;
+
+            Order order = field.getAnnotation(Order.class);
+
+            if (isSchemaImmutable) {
+                printError(
+                    processingEnv,
+                    field,
+                    "A message with an immutable schema must not have fields gated by features [cls=" + clazz + ", field=" + field + ']');
+
+                return false;
+            }
+
+            String fieldReg = resolveFeatureRegistry(field.getEnclosingElement());
+
+            if (reg == null)
+                reg = fieldReg;
+            else if (!reg.equals(fieldReg)) {
+                printError(
+                    processingEnv,
+                    field,
+                    "All fields gated by features in one message hierarchy must resolve to the same feature registry" +
+                        " [expected=" + reg + ", actual=" + fieldReg + ']');
+
+                return false;
+            }
+
+            if (!order.introducedBy().isEmpty() && !order.deprecatedBy().isEmpty()) {
+                printError(
+                    processingEnv,
+                    field,
+                    "A field must not be introduced and deprecated at once, deprecate it after the feature that introduced it" +
+                        " is retired" +
+                        " [cls=" + clazz +
+                        ", field=" + field +
+                        ", introducedBy=" + order.introducedBy() +
+                        ", deprecatedBy=" + order.deprecatedBy() + ']');
+
+                return false;
+            }
+
+            VariableElement otherField = gatedFields.put(feature, field);
+
+            if (otherField != null) {
+                printError(
+                    processingEnv,
+                    field,
+                    "A feature can gate only one field of a message class hierarchy" +
+                        " [cls=" + clazz +
+                        ", feature=" + feature +
+                        ", field=" + field +
+                        ", otherField=" + otherField + ']');
+
+                return false;
             }
         }
 
@@ -438,39 +517,32 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** */
     @Nullable public static FieldFeatureGate buildFieldFeatureGate(ProcessingEnvironment env, VariableElement field) {
-        Order ann = field.getAnnotation(Order.class);
+        String feature = gatingFeature(field);
 
-        String introducingFeature = ann.introducedBy();
-        String deprecatingFeature = ann.deprecatedBy();
-
-        if (introducingFeature.isEmpty() && deprecatingFeature.isEmpty())
+        if (feature == null)
             return null;
-
-        if (introducingFeature.equals(deprecatingFeature)) {
-            printError(env, field, "Elements introducedBy and deprecatedBy of the @Order annotation must not reference the same feature.");
-
-            return null;
-        }
 
         String regCls = resolveFeatureRegistry(field.getEnclosingElement());
 
         String regName = regCls.substring(regCls.lastIndexOf('.') + 1);
 
-        List<String> conditions = new ArrayList<>();
+        boolean introduced = !field.getAnnotation(Order.class).introducedBy().isEmpty();
 
-        if (!introducingFeature.isEmpty()) {
-            validateFeature(env, field, introducingFeature, regCls);
+        validateFeature(env, field, feature, regCls);
 
-            conditions.add("ctx.includeFieldIntroducedBy(" + regName + '.' + introducingFeature + ")");
-        }
+        return new FieldFeatureGate(
+            regCls,
+            (introduced ? "ctx.includeFieldIntroducedBy(" : "ctx.includeFieldDeprecatedBy(") + regName + '.' + feature + ')');
+    }
 
-        if (!deprecatingFeature.isEmpty()) {
-            validateFeature(env, field, deprecatingFeature, regCls);
+    /** */
+    @Nullable public static String gatingFeature(VariableElement field) {
+        Order order = field.getAnnotation(Order.class);
 
-            conditions.add("ctx.includeFieldDeprecatedBy(" + regName + '.' + deprecatingFeature + ")");
-        }
+        if (!order.introducedBy().isEmpty())
+            return order.introducedBy();
 
-        return new FieldFeatureGate(regCls, String.join(" && ", conditions));
+        return order.deprecatedBy().isEmpty() ? null : order.deprecatedBy();
     }
 
     /** */
@@ -513,7 +585,7 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** */
-    private static String resolveFeatureRegistry(Element cls) {
+    static String resolveFeatureRegistry(Element cls) {
         FeatureGated ann = cls.getAnnotation(FeatureGated.class);
 
         if (ann == null)
@@ -529,6 +601,12 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return Void.class.getName().equals(regCls) ? DFLT_FEATURE_REG_CLS : regCls;
+    }
+
+    /** @return {@code true} if {@code clazz} or any of its superclasses is annotated with {@link ImmutableSchema}. */
+    public static boolean isSchemaImmutable(ProcessingEnvironment env, TypeElement clazz) {
+        return SystemViewRowAttributeWalkerProcessor.superclasses(env, clazz)
+            .anyMatch(t -> t.getAnnotation(ImmutableSchema.class) != null);
     }
 
     /** */

@@ -86,6 +86,8 @@ import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.systemview.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.util.MutableSingletonList;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -168,7 +170,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     private BinaryMetadataTransport transport;
 
     /** Cached affinity key field names. */
-    private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
+    private final IntMap<T1<BinaryField>> affKeyFields = new CopyOnWriteIntMap<>();
 
     /** Dummy {@code CacheObjectValueContext} used for mocking. */
     private CacheObjectValueContext fakeCacheObjCtx;
@@ -403,7 +405,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             if (!BinaryUtils.useBinaryArrays())
                 return pArr;
 
-            return binaryCtx.createBinaryArray(obj.getClass().getComponentType(), pArr);
+            return BinaryUtils.binariesFactory.binaryArray(binaryCtx, obj.getClass().getComponentType(), pArr);
         }
 
         if (obj instanceof IgniteBiTuple) {

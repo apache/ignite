@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId", "name": "exchId"},
+    {"order": 3, "type": "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.util.List<java.util.UUID>>>", "name": "assignmentChange"},
+    {"order": 4, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.lang.IgniteUuid>", "name": "cacheDeploymentIds"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage", "name": "partsMsg"},
+    {"order": 6, "type": "boolean", "name": "exchangeNeeded"}
+  ]
+}

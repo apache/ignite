@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -510,24 +509,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         return null;
-    }
-
-    /**
-     * @return Value bytes and flag indicating whether value is byte array.
-     */
-    protected IgniteBiTuple<byte[], Byte> valueBytes0() {
-        assert lock.isHeldByCurrentThread();
-
-        assert val != null;
-
-        try {
-            byte[] bytes = val.valueBytes(cctx.cacheObjectContext());
-
-            return new IgniteBiTuple<>(bytes, val.cacheObjectType());
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
     }
 
     /**
@@ -1733,20 +1714,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @param val Value.
-     * @param cacheObj Cache object.
-     * @param keepBinary Keep binary flag.
-     * @param cpy Copy flag.
-     * @return Cache object value.
-     */
-    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
-        if (val != null)
-            return val;
-
-        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy, null);
-    }
-
-    /**
      * @param expiry Expiration policy.
      * @return Tuple holding initial TTL and expire time with the given expiry.
      */
@@ -2175,18 +2142,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Update TTL if it is changed.
-     *
-     * @param expiryPlc Expiry policy.
-     */
-    private void updateTtlUnlocked(ExpiryPolicy expiryPlc) throws IgniteCheckedException {
-        long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
-
-        if (ttl != CU.TTL_NOT_CHANGED)
-            updateTtlUnlocked(ttl);
-    }
-
-    /**
      * Update TTL is it is changed.
      *
      * @param ver Version.
@@ -2292,15 +2247,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         finally {
             unlockEntry();
         }
-    }
-
-    /**
-     * Gets hash value for the entry key.
-     *
-     * @return Hash value.
-     */
-    int hash() {
-        return hash;
     }
 
     /** {@inheritDoc} */
@@ -2476,22 +2422,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     private boolean skipInterceptor(@Nullable GridCacheVersion explicitVer) {
         return isRemoteDrUpdate(explicitVer) && cctx.disableTriggeringCacheInterceptorOnConflict();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject rawPut(CacheObject val, long ttl) {
-        lockEntry();
-
-        try {
-            CacheObject old = this.val;
-
-            update(val, CU.toExpireTime(ttl), ttl, nextVersion(), true);
-
-            return old;
-        }
-        finally {
-            unlockEntry();
-        }
     }
 
     /** {@inheritDoc} */
@@ -2969,20 +2899,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockedByThreadUnsafe(long threadId) {
-        lockEntry();
-
-        try {
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc != null && mvcc.isLocallyOwnedByThread(threadId, true);
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean lockedByUnsafe(GridCacheVersion ver) {
         lockEntry();
 
@@ -2990,20 +2906,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheMvcc mvcc = mvccExtras();
 
             return mvcc != null && mvcc.isOwnedBy(ver);
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean lockedLocallyUnsafe(GridCacheVersion lockVer) {
-        lockEntry();
-
-        try {
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc != null && mvcc.isLocallyOwned(lockVer);
         }
         finally {
             unlockEntry();
@@ -4395,7 +4297,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (val != null) {
                 if (newRow == null) {
-                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).createRow(
+                    newRow = entry.cctx.offheap().dataStore(entry.localPartition()).updateRow(
                         entry.cctx,
                         entry.key,
                         val,
@@ -4917,7 +4819,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (needUpdate) {
-                newRow = entry.localPartition().dataStore().createRow(
+                newRow = entry.localPartition().dataStore().updateRow(
                     entry.cctx,
                     entry.key,
                     storeLoadedVal,
@@ -5081,7 +4983,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 
             if (!entry.isNear()) {
-                newRow = entry.localPartition().dataStore().createRow(
+                newRow = entry.localPartition().dataStore().updateRow(
                     entry.cctx,
                     entry.key,
                     updated,
@@ -5090,7 +4992,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     oldRow);
 
                 treeOp = oldRow != null && oldRow.link() == newRow.link() ?
-                    IgniteTree.OperationType.NOOP : IgniteTree.OperationType.PUT;
+                    IgniteTree.OperationType.IN_PLACE : IgniteTree.OperationType.PUT;
             }
             else
                 treeOp = IgniteTree.OperationType.PUT;

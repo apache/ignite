@@ -1259,7 +1259,7 @@ public abstract class CommonUtils {
     public static void quietMultipleLines(boolean err, String multiline) {
         assert multiline != null;
 
-        quiet(err, multiline.split(NL));
+        quiet(err, (Object[])multiline.split(NL));
     }
 
     /**

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.TestCompressFieldsMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.Integer,java.lang.String>", "name": "map", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 1, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "nested", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 2, "type": "java.util.Map<java.lang.Integer,java.lang.String>", "name": "plainMap"}
+  ]
+}

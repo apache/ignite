@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
@@ -57,6 +58,46 @@ public class SystemViewsIntegrationTest extends AbstractBasicIntegrationTest {
     @Test
     public void testMetricsView() {
         assertQuery("SELECT value FROM sys.metrics WHERE name = 'cluster.TotalClientNodes'").returns("1").check();
+    }
+
+    /** */
+    @Test
+    public void testClassColumn() {
+        sql("CREATE TABLE t(id INT PRIMARY KEY, name VARCHAR, amount DECIMAL(10, 2))");
+
+        assertQuery("SELECT CAST(\"TYPE\" AS VARCHAR) AS TYPE_NAME FROM SYS.TABLE_COLUMNS;")
+            .returns(Object.class.toString())
+            .returns(Integer.class.toString())
+            .returns(Integer.class.toString())
+            .returns(String.class.toString())
+            .returns(BigDecimal.class.toString())
+            .check();
+
+        assertQuery("SELECT COLUMN_NAME, \"TYPE\" FROM SYS.TABLE_COLUMNS")
+            .returns("_VAL", Object.class)
+            .returns("_KEY", Integer.class)
+            .returns("ID", Integer.class)
+            .returns("NAME", String.class)
+            .returns("AMOUNT", BigDecimal.class)
+            .check();
+
+        assertQuery("SELECT COLUMN_NAME FROM SYS.TABLE_COLUMNS WHERE CAST(\"TYPE\" AS VARCHAR) = ?")
+            .withParams(String.class.toString())
+            .returns("NAME")
+            .check();
+
+        // Creating Ignite's OTHER type must not affect Class-valued system view columns.
+        sql("CREATE TABLE other_seed(id INT PRIMARY KEY, val OTHER)");
+        sql("INSERT INTO other_seed VALUES (1, 'seed')");
+        assertQuery("SELECT val FROM other_seed").returns("seed").check();
+
+        assertQuery("SELECT CAST(\"TYPE\" AS VARCHAR) AS TYPE_NAME FROM SYS.TABLE_COLUMNS WHERE TABLE_NAME = 'T'")
+            .returns(Object.class.toString())
+            .returns(Integer.class.toString())
+            .returns(Integer.class.toString())
+            .returns(String.class.toString())
+            .returns(BigDecimal.class.toString())
+            .check();
     }
 
     /** */

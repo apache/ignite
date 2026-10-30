@@ -22,12 +22,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * H2 Decimal.
  */
-public class StatisticsDecimalMessage implements Message, Serializable {
+public class StatisticsDecimalMessage extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

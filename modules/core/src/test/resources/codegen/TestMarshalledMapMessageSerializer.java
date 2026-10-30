@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledMapMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -26,6 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -59,6 +62,14 @@ public final class TestMarshalledMapMessageSerializer implements MessageSerializ
                     return false;
 
                 writer.incrementState();
+
+            case 2:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
+
+                writer.incrementState();
         }
 
         return true;
@@ -80,6 +91,19 @@ public final class TestMarshalledMapMessageSerializer implements MessageSerializ
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 2:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

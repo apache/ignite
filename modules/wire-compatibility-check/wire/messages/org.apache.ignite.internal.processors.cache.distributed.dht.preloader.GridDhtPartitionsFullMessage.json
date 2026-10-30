@@ -1,0 +1,24 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId", "name": "exchId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "lastVer"},
+    {"order": 5, "type": "byte", "name": "flags"},
+    {"order": 6, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap>", "name": "locParts", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 7, "type": "java.util.Map<java.lang.Integer,java.lang.Integer>", "name": "dupPartsData"},
+    {"order": 8, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap>", "name": "partCntrs", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 9, "type": "java.util.Map<java.util.UUID,java.util.Map<org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair,java.lang.Long>>", "name": "partHistSuppliers", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 10, "type": "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,java.util.Set<java.lang.Integer>>>", "name": "partsToReload", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 11, "type": "java.util.Map<java.lang.Integer,java.util.Map<java.lang.Integer,java.lang.Long>>", "name": "partsSizes"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 13, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage>", "name": "errMsgs", "annotations": ["@org.apache.ignite.internal.Compress"]},
+    {"order": 14, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "resTopVer"},
+    {"order": 15, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage>", "name": "joinedNodeAff"},
+    {"order": 16, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage>", "name": "idealAffDiff"},
+    {"order": 17, "type": "byte", "name": "flags"},
+    {"order": 18, "type": "java.util.Map<java.lang.Integer,int[]>", "name": "lostParts"}
+  ]
+}

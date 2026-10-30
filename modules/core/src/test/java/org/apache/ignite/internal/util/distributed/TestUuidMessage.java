@@ -19,10 +19,10 @@ package org.apache.ignite.internal.util.distributed;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class TestUuidMessage implements Message {
+public class TestUuidMessage extends AbstractMessage {
     /** */
     @Order(0)
     UUID val;

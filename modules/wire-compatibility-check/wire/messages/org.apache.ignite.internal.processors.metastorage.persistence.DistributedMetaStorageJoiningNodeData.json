@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageJoiningNodeData",
+  "fields": [
+    {"order": 0, "type": "int", "name": "bltId"},
+    {"order": 1, "type": "long", "name": "dVerId"},
+    {"order": 2, "type": "long", "name": "dVerHash"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[]", "name": "hist"}
+  ]
+}

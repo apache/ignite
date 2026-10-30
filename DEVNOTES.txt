@@ -17,9 +17,9 @@ Apache Ignite Maven Build Instructions
         ./mvnw clean install -Pall-java,licenses -DskipTests
 
    or if you have to build .NET part as well, use the following command:
-   (Note that 'doxygen', `docfx`, '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
+   (Note that 'doxygen', `docfx`, '.NET 6 SDK', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,licenses,platforms -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,licenses,build-dotnet -DskipTests -DclientDocs
 
 2) Javadoc generation (optional):
 
@@ -45,9 +45,9 @@ Apache Ignite with LGPL Maven Build Instructions
         ./mvnw clean install -Pall-java,licenses -DskipTests
 
    or if you have to build .NET part as well, use the following command:
-   (Note that 'doxygen', `docfx`, '.NET Core SDK 3.1', 'PowerShell' should be installed before running this command.)
+   (Note that 'doxygen', `docfx`, '.NET 6 SDK', 'PowerShell' should be installed before running this command.)
 
-        ./mvnw clean install -Pall-java,licenses,platforms -DskipTests -DclientDocs
+        ./mvnw clean install -Pall-java,licenses,build-dotnet -DskipTests -DclientDocs
 
 2) Javadoc generation with LGPL (optional):
 
@@ -67,11 +67,6 @@ Apache Ignite with NUMA allocator Build Instructions (Linux only)
 2) Compile and install:
 
         ./mvnw clean install -Pall-java,licenses -DskipTests
-
-   or if you have built Apache Ignite.NET on the first step use following command:
-   (Note that 'doxygen' should be installed before running this command.)
-
-        ./mvnw clean install -Pall-java,licenses -DskipTests -DclientDocs
 
 3) Javadoc generation with NUMA allocator (optional):
 
@@ -165,7 +160,7 @@ Ignite Release Instructions
 
    3.1) Deploy Ignite to maven repository, prepares sources and binaries.
 
-                ./mvnw deploy -Papache-release,gpg,all-java,licenses,deploy-ignite-site -Dignite.edition=apache-ignite -DskipTests
+                ./mvnw deploy -Papache-release,gpg,all-java,licenses -Dignite.edition=apache-ignite -DskipTests
 
    3.2) Javadoc generation:
 
@@ -205,15 +200,17 @@ Run tests
 =========
 To run tests locally use:
 
-        ./mvnw clean test -U -Plgpl,examples,-clean-libs,-release -Dmaven.test.failure.ignore=true -DfailIfNoTests=false -Dtest=%TEST_PATTERN%
+        ./mvnw clean test -U -Pall-java,lgpl -Dmaven.test.failure.ignore=true -Dsurefire.failIfNoSpecifiedTests=false -DFORK_COUNT_SET_TO_1 -Dtest=%TEST_PATTERN%
 
-For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCacheLocalAtomicFullApiSelfTest#testGet'
+For example, %TEST_PATTERN% can be 'org.apache.ignite.testsuites.IgniteBasicTestSuite' or 'GridCachePartitionedFullApiSelfTest#testGet'
+
+FORK_COUNT_SET_TO_1 forks a test JVM with the argLine options from parent/pom.xml, otherwise pass them via MAVEN_OPTS.
 
 Test suites
 =========
-All unit tests must be included in any test suite. Travis runs a check for that. To check it locally run for the root project:
+All unit tests must be included in any test suite. GitHub Actions runs a check for that. To check it locally run for the root project:
 
-        ./mvnw test -Pcheck-test-suites
+        ./mvnw test -Pcheck-test-suites,all-java
 
 If you want to check a single module only:
 

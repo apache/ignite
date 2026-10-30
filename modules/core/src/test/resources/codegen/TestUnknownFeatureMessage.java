@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class TestUnknownFeatureMessage implements Message {
+public class TestUnknownFeatureMessage extends AbstractMessage {
     /** */
     @Order(value = 0, introducedBy = "NO_SUCH_FEATURE")
     int fld;

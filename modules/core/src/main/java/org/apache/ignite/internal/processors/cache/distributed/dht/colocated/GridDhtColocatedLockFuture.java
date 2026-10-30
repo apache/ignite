@@ -1329,8 +1329,16 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         }
         else {
             for (KeyCacheObject key : keys)
-                cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+                markExplicitOwner(key);
         }
+    }
+
+    /** */
+    private void markExplicitOwner(KeyCacheObject key) {
+        boolean marked = cctx.mvcc().markExplicitOwner(cctx.txKey(key), threadId);
+
+        assert marked || isDone() : "Explicit lock candidate not found for active lock future [key=" + key +
+            ", fut=" + this + ']';
     }
 
     /**
@@ -1775,7 +1783,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                         log.debug("Processed response for entry [res=" + res + ", entry=" + entry + ']');
                 }
                 else
-                    cctx.mvcc().markExplicitOwner(cctx.txKey(k), threadId);
+                    markExplicitOwner(k);
 
                 if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                     cctx.events().addEvent(cctx.affinity().partition(k),

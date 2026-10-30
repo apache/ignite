@@ -371,12 +371,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** */
     private RollingUpgradeClusterData collectRollingUpgradeClusterData() {
-        return new RollingUpgradeClusterData(
-            isVerUpgradeEnabled,
-            curFinalizeProcId,
-            featureMgr.activeFeatures(),
-            featureMgr.previousActiveFeatures()
-        );
+        return new RollingUpgradeClusterData(isVerUpgradeEnabled, curFinalizeProcId, featureMgr.activeFeatures());
     }
 
     /** */
@@ -535,8 +530,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
                 finishProcess(reqId, firstError(errors));
             }
-            else if (reqId.equals(curFinalizeProcId) && U.isLocalNodeCoordinator(ctx.discovery()))
-                completePhase.start(reqId, null);
+            else if (reqId.equals(curFinalizeProcId))
+                completePhase.startByCoordinator(reqId, null);
         }
 
         /** */

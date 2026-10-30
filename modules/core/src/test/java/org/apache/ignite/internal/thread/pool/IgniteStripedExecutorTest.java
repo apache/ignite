@@ -17,11 +17,17 @@
 
 package org.apache.ignite.internal.thread.pool;
 
+import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.thread.pool.IgniteStripedExecutor.STARVATION_EVENTS_CNT;
 
 /**
  *
@@ -155,7 +161,47 @@ public class IgniteStripedExecutorTest extends GridCommonAbstractTest {
 
         assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 1, 10000));
 
-        assertTrue(stripedExecSvc.detectStarvation());
+        assertTrue(stripedExecSvc.starvationDetected());
+    }
+
+    /** */
+    @Test
+    public void testStarvationEventsCountMetric() throws Exception {
+        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
+
+        stripedExecSvc.registerMetrics(mreg);
+
+        LongMetric metric = mreg.findMetric(STARVATION_EVENTS_CNT);
+
+        assertNotNull("Metric is not registered", metric);
+        assertEquals(0L, metric.value());
+
+        CountDownLatch latch1 = new CountDownLatch(1);
+
+        stripedExecSvc.execute(0, () -> U.awaitQuiet(latch1));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.starvationDetected(), 10_000));
+
+        assertEquals("Metric is not incremented", 1L, metric.value());
+
+        stripedExecSvc.starvationDetected();
+        stripedExecSvc.starvationDetected();
+
+        assertEquals("Metric is incremented on repeated detection of the same episode", 1L, metric.value());
+
+        latch1.countDown();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.activeStripesCount() == 0, 10_000));
+
+        CountDownLatch latch2 = new CountDownLatch(1);
+
+        stripedExecSvc.execute(0, () -> U.awaitQuiet(latch2));
+
+        assertTrue(GridTestUtils.waitForCondition(() -> stripedExecSvc.starvationDetected(), 10_000));
+
+        assertEquals("Metric is not incremented for a new episode", 2L, metric.value());
+
+        latch2.countDown();
     }
 
     /**

@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 2, "type": "java.util.UUID", "name": "initiatingNodeId"},
+    {"order": 3, "type": "org.apache.ignite.cluster.ClusterState", "name": "state"},
+    {"order": 4, "type": "java.util.List<org.apache.ignite.internal.processors.cache.StoredCacheData>", "name": "storedCfgs"},
+    {"order": 5, "type": "byte[]", "name": "baselineTopologyBytes"},
+    {"order": 6, "type": "boolean", "name": "forceChangeBaselineTopology"},
+    {"order": 7, "type": "boolean", "name": "forceDeactivation"},
+    {"type": "org.apache.ignite.internal.processors.cluster.BaselineTopology", "name": "baselineTopology", "annotations": ["@org.apache.ignite.internal.Marshalled(\"baselineTopologyBytes\")"]}
+  ]
+}

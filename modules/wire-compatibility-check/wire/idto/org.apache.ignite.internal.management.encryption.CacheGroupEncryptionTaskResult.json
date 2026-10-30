@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.encryption.CacheGroupEncryptionTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,T extends java.lang.Object>", "name": "results"},
+    {"order": 1, "type": "java.util.Map<java.util.UUID,org.apache.ignite.IgniteException>", "name": "exceptions"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillScanCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "originNodeId"},
+    {"order": 1, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 2, "type": "long", "name": "queryId"}
+  ]
+}

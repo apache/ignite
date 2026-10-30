@@ -2991,7 +2991,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 e = ex;
             }
 
-            throw new NodeStoppingException(e);
+            throw e == null
+                ? new NodeStoppingException("Failed to acquire lock (node is stopping) [keys=" + keys + ']')
+                : new NodeStoppingException(e);
         }
         finally {
             if (isInterrupted)

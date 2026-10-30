@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.marshaller.MappedName",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "clsName"},
+    {"order": 1, "type": "boolean", "name": "accepted"}
+  ]
+}

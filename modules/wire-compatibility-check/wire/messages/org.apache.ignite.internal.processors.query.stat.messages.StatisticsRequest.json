@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage", "name": "key"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.query.stat.StatisticsType", "name": "type"},
+    {"order": 3, "type": "java.util.Map<java.lang.String,java.lang.Long>", "name": "versions"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"}
+  ]
+}

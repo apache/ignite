@@ -267,6 +267,17 @@ ducker_build_image() {
         extra_build_args="--no-cache"
     fi
 
+    # The ducker user must be able to write the checkout that ducker_run mounts. A rootless daemon
+    # maps only container root to the caller, so there ducker is built as uid 0.
+    local ducker_uid="$(id -u)"
+    local ducker_gid="$(id -g)"
+
+    if docker info --format '{{.SecurityOptions}}' 2>/dev/null | grep -q rootless; then
+        echo "** Rootless Docker detected: building ducker as uid 0."
+        ducker_uid=0
+        ducker_gid=0
+    fi
+
     # Use SECONDS, a builtin bash variable that gets incremented each second, to measure the docker
     # build duration.
     SECONDS=0
@@ -275,7 +286,7 @@ ducker_build_image() {
     # Tip: if you are scratching your head for some dependency problems that are referring to an old code version
     # (for example java.lang.NoClassDefFoundError), add --no-cache flag to the build shall give you a clean start.
     must_do -v -o docker build ${extra_build_args} --network=host --memory="${docker_build_memory_limit}" \
-        --build-arg USER_UID=$(id -u) --build-arg USER_GID=$(id -g) \
+        --build-arg USER_UID=${ducker_uid} --build-arg USER_GID=${ducker_gid} \
         --build-arg "ducker_creator=${user_name}" --build-arg "jdk_version=${jdk_version}" \
         --build-arg "python_version=${python_version}" -t "${image_name}" \
         -f "${docker_context}/Dockerfile" -- "${docker_context}"

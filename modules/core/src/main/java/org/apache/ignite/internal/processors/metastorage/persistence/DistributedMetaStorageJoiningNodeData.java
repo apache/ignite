@@ -21,7 +21,7 @@ import java.io.Externalizable;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Distributed metastorage data message that a joining node sends to a cluster. To reduce the messages number, contains
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * @see DmsDataWriter#write(String, byte[])
  * @see MetaStorage#write(String, Serializable)
  */
-public class DistributedMetaStorageJoiningNodeData implements Message {
+public class DistributedMetaStorageJoiningNodeData extends AbstractMessage {
     /** Baseline topology id of node, {@code -1} if baseline topology is null. */
     @Order(0)
     int bltId;

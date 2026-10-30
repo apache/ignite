@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.util.GridByteArrayList",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "data"},
+    {"order": 1, "type": "int", "name": "size"}
+  ]
+}

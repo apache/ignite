@@ -1,0 +1,4 @@
+{
+  "class": "org.apache.ignite.internal.management.defragmentation.DefragmentationCommand$DefragmentationCancelCommandArg",
+  "fields": []
+}

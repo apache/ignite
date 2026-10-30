@@ -329,26 +329,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (isDeadClassLoader(meta))
                     return null;
 
-                boolean skipSearchDeployment = false;
-
-                // Check already exist deployment.
-                if (meta.deploymentMode() == SHARED) {
-                    Collection<GridDeployment> created = getDeployments();
-
-                    for (GridDeployment dep0 : created) {
-                        // hot redeploy from same node
-                        if (dep0.participants().containsKey(meta.senderNodeId()) || dep0.undeployed())
-                            continue;
-
-                        IgniteBiTuple<Class<?>, Throwable> cls = dep0.deployedClass(meta.className(), meta.alias());
-
-                        if (cls.getKey() != null && cls.getValue() == null) {
-                            ((SharedDeployment)dep0).addParticipant(meta.senderNodeId(), meta.classLoaderId());
-                            skipSearchDeployment = true;
-                        }
-                    }
-                }
-
                 if (!F.isEmpty(meta.participants())) {
                     Map<UUID, IgniteUuid> participants = new LinkedHashMap<>();
 
@@ -396,8 +376,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                     return null;
                 }
 
-                if (!skipSearchDeployment)
-                    dep = (SharedDeployment)searchDeploymentCache(meta);
+                dep = (SharedDeployment)searchDeploymentCache(meta);
 
                 if (dep == null) {
                     List<SharedDeployment> deps = cache.get(meta.userVersion());
@@ -407,9 +386,15 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         checkRedeploy(meta);
 
-                        // Find existing deployments that need to be checked
-                        // whether they should be reused for this request.
-                        if (ctx.config().getDeploymentMode() == CONTINUOUS) {
+                        // Find existing deployments that need to be checked whether they should be reused for this
+                        // request. In both SHARED and CONTINUOUS modes a deployment whose participants are able to
+                        // provide the requested class is reused, so that the same class coming from different nodes
+                        // is represented by a single class on this node.
+                        // Classes of a sandboxed subject are never shared with other subjects: the JVM checks the
+                        // package access permissions of the subject that resolves a class first and caches the result
+                        // per class loader, so a shared loader would extend that subject's permissions to all other
+                        // participants. Hence in SHARED mode under the sandbox every sender gets its own deployment.
+                        if (meta.deploymentMode() != SHARED || !ctx.security().sandbox().enabled()) {
                             for (SharedDeployment d : deps) {
                                 if (!d.pendingUndeploy() && !d.undeployed()) {
                                     Map<UUID, IgniteUuid> parties = d.participants();
@@ -491,7 +476,9 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 if (cls != null) {
                     synchronized (mux) {
                         if (!d.undeployed() && !d.pendingUndeploy()) {
-                            if (!addParticipant(d, meta))
+                            // The class was provided by the existing participants, while the sender is only known
+                            // to have this very class, so the sender is asked for further classes after them.
+                            if (!addParticipant(d, meta, false))
                                 return null;
 
                             if (log.isDebugEnabled())
@@ -511,6 +498,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             // We are here either because all participant nodes failed
             // or the class indeed should have a separate deployment.
             for (SharedDeployment d : depsToCheck) {
+                // In SHARED mode a class unknown to the existing deployments gets a separate deployment, so that
+                // a deployment is never extended with classes its participants do not have.
+                if (meta.deploymentMode() != CONTINUOUS)
+                    break;
+
                 // We check if any random class from existing deployment can be
                 // loaded from sender node. If it can, then we reuse existing
                 // deployment.
@@ -521,7 +513,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                         // Add new node prior to loading the class, so we attempt
                         // to load the class from the latest node.
-                        if (!addParticipant(d, meta)) {
+                        if (!addParticipant(d, meta, true)) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to add participant to deployment " +
                                     "[meta=" + meta + ", dep=" + dep + ']');
@@ -823,9 +815,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      *
      * @param dep Shared deployment.
      * @param meta Request metadata.
+     * @param first {@code True} to ask the added nodes for classes first, {@code false} to ask them after
+     *      the existing participants.
      * @return {@code True} if participant was added.
      */
-    private boolean addParticipant(SharedDeployment dep, GridDeploymentMetadata meta) {
+    private boolean addParticipant(SharedDeployment dep, GridDeploymentMetadata meta, boolean first) {
         assert dep != null;
         assert meta != null;
 
@@ -837,7 +831,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         if (meta.participants() != null) {
             for (Map.Entry<UUID, IgniteUuid> e : meta.participants().entrySet()) {
                 if (ctx.discovery().node(e.getKey()) != null) {
-                    dep.addParticipant(e.getKey(), e.getValue());
+                    dep.addParticipant(e.getKey(), e.getValue(), first);
 
                     if (log.isDebugEnabled())
                         log.debug("Added new participant [nodeId=" + e.getKey() + ", clsLdrId=" + e.getValue() +
@@ -850,7 +844,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
         }
 
         if (dep.deployMode() == CONTINUOUS || meta.participants() == null) {
-            if (!dep.addParticipant(meta.senderNodeId(), meta.classLoaderId())) {
+            if (!dep.addParticipant(meta.senderNodeId(), meta.classLoaderId(), first)) {
                 U.warn(log, "Failed to create shared mode deployment " +
                     "(requested class loader was already undeployed, did sender node leave grid?) " +
                     "[clsLdrId=" + meta.classLoaderId() + ", senderNodeId=" + meta.senderNodeId() + ']');
@@ -1141,13 +1135,24 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @return Whether actually added or not.
          */
         boolean addParticipant(UUID nodeId, IgniteUuid ldrId) {
+            return addParticipant(nodeId, ldrId, true);
+        }
+
+        /**
+         * @param nodeId Node ID to add.
+         * @param ldrId Class loader ID to add.
+         * @param first {@code True} to ask the node for classes first, {@code false} to ask it after
+         *      the existing participants.
+         * @return {@code True} if participant was added.
+         */
+        boolean addParticipant(UUID nodeId, IgniteUuid ldrId, boolean first) {
             assert nodeId != null;
             assert ldrId != null;
 
             assert Thread.holdsLock(mux);
 
             if (!deadClsLdrs.contains(ldrId)) {
-                classLoader().register(nodeId, ldrId);
+                classLoader().register(nodeId, ldrId, first);
 
                 return true;
             }

@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.List;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** */
-public class SnapshotMetadataResponse implements Message {
+public class SnapshotMetadataResponse extends AbstractMessage {
     /** */
     @Order(0)
     List<SnapshotMetadata> metadata;

@@ -74,9 +74,6 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
  */
 @GridToStringExclude
 public class GridClientPartitionTopology implements GridDhtPartitionTopology {
-    /** */
-    private static final GridDhtPartitionState[] MOVING_STATES = new GridDhtPartitionState[] {MOVING};
-
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -586,10 +583,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param p Partition.
      * @param topVer Topology version ({@code -1} for all nodes).
      * @param state Partition state.
-     * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state) {
         Collection<UUID> allIds = nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
 
         lock.readLock().lock();
@@ -612,7 +608,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 if (topVer.topologyVersion() > 0 && !F.contains(allIds, id))
                     continue;
 
-                if (hasState(p, id, state, states)) {
+                if (hasState(p, id, state)) {
                     ClusterNode n = discoCache.node(id);
 
                     if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion()))
@@ -629,7 +625,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> owners(int p, AffinityTopologyVersion topVer) {
-        return nodes(p, topVer, OWNING, null);
+        return nodes(p, topVer, OWNING);
     }
 
     /** {@inheritDoc} */
@@ -678,16 +674,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public List<ClusterNode> moving(int p) {
-        return nodes(p, AffinityTopologyVersion.NONE, MOVING, null);
-    }
-
-    /**
-     * @param p Partition.
-     * @param topVer Topology version.
-     * @return List of nodes in state OWNING or MOVING.
-     */
-    private List<ClusterNode> ownersAndMoving(int p, AffinityTopologyVersion topVer) {
-        return nodes(p, topVer, OWNING, MOVING_STATES);
+        return nodes(p, AffinityTopologyVersion.NONE, MOVING);
     }
 
     /** {@inheritDoc} */
@@ -1444,11 +1431,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param p Partition.
      * @param nodeId Node ID.
      * @param match State to match.
-     * @param matches Additional states.
      * @return Filter for owners of this partition.
      */
-    private boolean hasState(final int p, @Nullable UUID nodeId, final GridDhtPartitionState match,
-        final GridDhtPartitionState... matches) {
+    private boolean hasState(final int p, @Nullable UUID nodeId, final GridDhtPartitionState match) {
         if (nodeId == null)
             return false;
 
@@ -1460,11 +1445,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
             if (state == match)
                 return true;
-
-            if (matches != null && matches.length > 0)
-                for (GridDhtPartitionState s : matches)
-                    if (state == s)
-                        return true;
         }
 
         return false;

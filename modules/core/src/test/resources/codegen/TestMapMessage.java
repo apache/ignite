@@ -27,9 +27,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestMapMessage implements Message {
+public class TestMapMessage extends AbstractMessage {
     @Order(0)
     Map<boolean[], Long> booleanArrayBoxedLongMap;
 

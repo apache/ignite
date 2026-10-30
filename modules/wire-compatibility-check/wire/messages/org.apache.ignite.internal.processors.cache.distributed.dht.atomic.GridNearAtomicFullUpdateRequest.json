@@ -1,0 +1,25 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicFullUpdateRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "long", "name": "futId"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.cache.GridCacheOperation", "name": "op"},
+    {"order": 7, "type": "org.apache.ignite.cache.CacheWriteSynchronizationMode", "name": "syncMode"},
+    {"order": 8, "type": "int", "name": "taskNameHash"},
+    {"order": 9, "type": "short", "name": "flags"},
+    {"order": 10, "type": "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "keys"},
+    {"order": 11, "type": "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject>", "name": "vals"},
+    {"order": 12, "type": "java.util.List<byte[]>", "name": "entryProcessorsBytes"},
+    {"order": 13, "type": "java.util.List<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "conflictVers"},
+    {"order": 14, "type": "org.apache.ignite.internal.util.GridLongList", "name": "conflictTtls"},
+    {"order": 15, "type": "org.apache.ignite.internal.util.GridLongList", "name": "conflictExpireTimes"},
+    {"order": 16, "type": "java.util.List<byte[]>", "name": "invokeArgsBytes"},
+    {"order": 17, "type": "byte[]", "name": "expiryPlcBytes"},
+    {"order": 18, "type": "org.apache.ignite.internal.processors.cache.CacheEntryPredicate[]", "name": "filter"},
+    {"type": "java.util.List<java.lang.Object>", "name": "entryProcessors", "annotations": ["@org.apache.ignite.internal.Marshalled(\"entryProcessorsBytes\")"]}
+  ]
+}
