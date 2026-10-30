@@ -228,6 +228,35 @@ java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAll
   speed, the parts that follow time differ per operation (see [To compare two
   builds](#measuring-allocation)).
 
+### With escape analysis on
+
+An allocation found with escape analysis off may not happen in production, where the JIT removes
+some allocations. Before fixing one, check it with escape analysis on:
+
+1. Run the scenario with the histogram profiler, without `-XX:-DoEscapeAnalysis`, and with four
+   forks or more. JFR sees only allocations on the heap, so an object the JIT removed is missing
+   from the table.
+
+   ```bash
+   java -cp "target/classes:$(cat target/cp.txt)" org.openjdk.jmh.Main 'JmhCacheAllocationBenchmark.put$' \
+       -f 4 -wi 5 -w 3s -i 3 -r 3s -foe true \
+       -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler:dir=alloc' \
+       -prof 'org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler' \
+       -rf json -rff result.json -jvmArgs "<flags from JAVA_17_OPTIONS> -Xms2g -Xmx2g -XX:-UseTLAB \
+       -XX:FlightRecorderOptions:memorysize=512m"
+   ```
+
+2. Each fork writes its own table, with its process ID in the file name. In each table, find the
+   class in the group where you found it, in the measurement iterations. A lambda's class name
+   carries a number that differs between forks, so match a lambda by the part before the number.
+3. Read the forks together:
+   - Missing in every fork: the JIT removes it, and a fix gains nothing in production.
+   - In every fork, as many per operation as with escape analysis off: it stays, so a fix helps in
+     production too. Fewer per operation in every fork: the JIT removes some of them.
+   - In some forks only: it depends on how a JVM compiles the method. Each fork makes its own JIT
+     decisions, which is why the check needs four forks: two may both make the same choice and hide
+     that it varies.
+
 ### Allocation benchmarks
 
 These benchmarks in `jmh.cache`, `jmh.streamer`, `jmh.sql`, `jmh.thin`, `jmh.compute` and
