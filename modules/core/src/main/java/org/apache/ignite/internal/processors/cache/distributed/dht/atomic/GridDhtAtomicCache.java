@@ -1860,9 +1860,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 deleted = updDhtRes.deleted();
                                 expiry = updDhtRes.expiryPolicy();
                             }
-                            else
-                                // Should remap all keys.
+                            else {
+                                // Should remap all keys. If current node is stopping, topology might be the same as
+                                // in the request because topology version might not be accepted/updated when node is stopping.
                                 res.remapTopologyVersion(top.lastTopologyChangeVersion());
+                            }
                         }
                         finally {
                             top.readUnlock();
