@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -143,6 +145,33 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
                 checkBuffersCleared(primaryNodeIdx, qry -> cli.cache(DEFAULT_CACHE_NAME).query(qry));
                 checkBuffersCleared(primaryNodeIdx, qry -> thinCli.cache(DEFAULT_CACHE_NAME).query(qry));
             }
+        }
+    }
+
+    /** Checks that a backup acknowledgement covering several topology versions is sent to all backups. */
+    @Test
+    public void testBackupAcknowledgeCoveringSeveralTopologyVersions() throws Exception {
+        startGrids(3);
+
+        // Keys of the first node are in one partition, so backup CQ buffer exists before the acknowledgement.
+        IgniteCache<Object, Object> cache = grid(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new GridCacheModuloAffinityFunction(3, 2))
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setBackups(2));
+
+        // Disable acknowledgement by timeout, so the single acknowledgement covers both topology versions.
+        GridTestUtils.<Closeable>getFieldValue(grid(0).cachex(DEFAULT_CACHE_NAME).context().continuousQueries(),
+            "cancelableTask").close();
+
+        try (QueryCursor<?> ignored = cache.query(new ContinuousQuery<>().setLocalListener(evts -> {}))) {
+            for (int i = 0; i < DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD; i++) {
+                if (i == DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD / 2)
+                    startClientGrid(3);
+
+                cache.put(keyForNode(grid(0)), i);
+            }
+
+            assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(this::isContinuesQueryBufferEmpty), 5_000));
         }
     }
 
