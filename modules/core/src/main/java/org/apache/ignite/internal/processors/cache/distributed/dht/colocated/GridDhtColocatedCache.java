@@ -824,7 +824,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, txKey, ver);
 
-            if (lock != null) {
+            // A reverted reentry does not release the lock, the thread still holds it.
+            if (lock != null && !lock.reentry()) {
                 AffinityTopologyVersion topVer = lock.topologyVersion();
 
                 if (map == null) {

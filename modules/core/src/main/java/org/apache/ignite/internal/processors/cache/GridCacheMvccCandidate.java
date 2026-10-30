@@ -70,6 +70,9 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     /** Linked reentry. */
     private GridCacheMvccCandidate reentry;
 
+    /** Version of the explicit lock future that created this reentry, see {@link #unenter(GridCacheVersion)}. */
+    private GridCacheVersion reentryVer;
+
     /** Previous lock for the thread. */
     @GridToStringExclude
     private volatile GridCacheMvccCandidate prev;
@@ -198,6 +201,14 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
      * @return Reentry candidate.
      */
     public GridCacheMvccCandidate reenter() {
+        return reenter(null);
+    }
+
+    /**
+     * @param reentryVer Version of the explicit lock future that creates the reentry, {@code null} otherwise.
+     * @return Reentry candidate.
+     */
+    public GridCacheMvccCandidate reenter(@Nullable GridCacheVersion reentryVer) {
         GridCacheMvccCandidate old = reentry;
 
         GridCacheMvccCandidate reentry = new GridCacheMvccCandidate(
@@ -217,6 +228,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
             read());
 
         reentry.topVer = topVer;
+        reentry.reentryVer = reentryVer;
 
         if (old != null)
             reentry.reentry = old;
@@ -237,6 +249,27 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
             reentry = reentry.reentry;
 
             return old;
+        }
+
+        return null;
+    }
+
+    /**
+     * Unlinks the reentry created by the explicit lock future of the given version, so that a failed future reverts
+     * its reentry of a key the thread already holds.
+     *
+     * @param reentryVer Version of the future.
+     * @return Unlinked reentry or {@code null} if the future has not created a reentry of this candidate.
+     */
+    @Nullable public GridCacheMvccCandidate unenter(GridCacheVersion reentryVer) {
+        for (GridCacheMvccCandidate prev = this; prev.reentry != null; prev = prev.reentry) {
+            GridCacheMvccCandidate reentry = prev.reentry;
+
+            if (reentryVer.equals(reentry.reentryVer)) {
+                prev.reentry = reentry.reentry;
+
+                return reentry;
+            }
         }
 
         return null;

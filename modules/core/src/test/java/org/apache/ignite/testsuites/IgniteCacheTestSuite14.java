@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheServer
 import org.apache.ignite.internal.processors.cache.distributed.dht.CachePartitionPartialCountersMapSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.ExplicitLockCancelOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.ExplicitLockDumpTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.ExplicitLockTimeoutDuringMappingTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedDebugTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedPreloadRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedPrimarySyncSelfTest;
@@ -131,6 +132,7 @@ public class IgniteCacheTestSuite14 {
         GridTestUtils.addTestIfNeeded(suite, ExplicitLockCancelOnNodeStopTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ExplicitLockDumpTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ExplicitLockKillTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ExplicitLockTimeoutDuringMappingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedNestedTxTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedTxConcurrentGetTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedTxReadTest.class, ignoredTests);

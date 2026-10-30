@@ -195,6 +195,18 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                     if (deque.isEmpty())
                         cands.remove(cand.key());
                 }
+                else {
+                    // Another lock of the thread holds the key, the future of this version could add a reentry only.
+                    GridCacheMvccCandidate reentry = first.unenter(ver);
+
+                    if (reentry != null) {
+                        boolean rmvd = deque.removeIf(c -> c == reentry);
+
+                        assert rmvd : reentry;
+
+                        cand = reentry;
+                    }
+                }
             }
 
             boolean empty = cands.isEmpty();

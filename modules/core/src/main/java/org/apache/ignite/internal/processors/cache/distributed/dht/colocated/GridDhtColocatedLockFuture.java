@@ -387,7 +387,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 cand.topologyVersion(topVer);
             }
             else
-                cand = cand.reenter();
+                cand = cand.reenter(lockVer);
 
             cctx.mvcc().addExplicitLock(threadId, cand, topVer);
         }
@@ -599,6 +599,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     catch (InterruptedException ignore) {
                         // Ignore interrupts.
                     }
+            }
+        }
+        else if (timeoutObj != null) {
+            // Serialized with the registration of explicit lock candidates, see mapAsPrimary().
+            synchronized (timeoutObj) {
+                return onComplete(false, true);
             }
         }
 
@@ -1351,6 +1357,20 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @throws IgniteCheckedException If key cannot be added to mapping.
      */
     private boolean mapAsPrimary(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+        if (tx != null || timeoutObj == null)
+            return mapAsPrimary0(keys, topVer);
+
+        // Explicit lock candidates registered after the future has been completed by the timeout or cancellation
+        // are never released: undoLocks() has already run. The completion holds the same monitor, so the local
+        // mapping is atomic with it. Transactions release their candidates on rollback instead.
+        synchronized (timeoutObj) {
+            return isDone() || mapAsPrimary0(keys, topVer);
+        }
+    }
+
+    /** */
+    private boolean mapAsPrimary0(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         // Assign keys to primary nodes.
         Collection<KeyCacheObject> distributedKeys = new ArrayList<>(keys.size());
