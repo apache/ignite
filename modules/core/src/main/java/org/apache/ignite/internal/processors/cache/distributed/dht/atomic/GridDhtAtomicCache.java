@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
@@ -90,7 +91,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -112,6 +115,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -135,6 +139,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DEL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.rowSize;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -1806,8 +1811,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.shared().database().checkpointReadLock();
 
+        long batchReserved = 0;
+
         try {
-            ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
+            batchReserved = reserveBatchSpace(req);
 
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -1935,9 +1942,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.remapTopologyVersion(ctx.topology().lastTopologyChangeVersion());
         }
         catch (Throwable e) {
-            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
-            // an attempt to use cleaned resources.
-            U.error(log, "Unexpected exception during cache update", e);
+            if (X.hasCause(e, IgniteOutOfMemoryException.class)) {
+                // An expected refusal of the page reservation (see reserveBatchSpace): nothing has been changed, the
+                // keys are reported as failed to the client. No stack trace: under a sustained overload every update
+                // is refused, and the message already names the region and the ways out.
+                LT.warn(log, "Cache update refused, out of memory in data region [cache=" + name() +
+                    ", keys=" + req.size() + "]: " + X.cause(e, IgniteOutOfMemoryException.class).getMessage());
+            }
+            else {
+                // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and
+                // there is an attempt to use cleaned resources.
+                U.error(log, "Unexpected exception during cache update", e);
+            }
 
             res.addFailedKeys(req.keys(), e);
 
@@ -1949,6 +1965,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
         finally {
+            ctx.shared().database().releaseInRegion(ctx.dataRegion(), batchReserved);
+
             ctx.shared().database().checkpointReadUnlock();
         }
 
@@ -2976,6 +2994,57 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             res.addFailedKeys(failed, storeErr.getCause());
         }
+    }
+
+    /**
+     * Reserves free-list pages for the <b>total</b> size of all rows in the batch: size-aware admission control for
+     * the primary atomic path, which acquires entry locks via {@link #lockEntries} before {@code innerUpdate} and so
+     * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} makes room for the data pages
+     * of all rows of a batch with known value sizes, so their inserts are not expected to hit an out-of-memory in
+     * {@code FreeList.insertDataRow} (pages outside the reservation, e.g. B+tree pages, are covered by the empty pages
+     * pool).
+     * <p>
+     * The full row size is reserved for updates too: an update inserts the new row before removing the old one, unless
+     * it is done in place (same row size, no SQL indexes, unchanged expire time), which can't be known before the entry
+     * lock. For in-place updates near the eviction threshold this keeps extra empty pages free (up to the size of the
+     * rows being written concurrently) instead of using them for data; it is not a correctness issue.
+     * <p>
+     * Nothing is reserved for a remove: it inserts no rows. For a transform the result is unknown before the entry
+     * processor runs under the entry lock, so only a row without a value (key, version and row header) is reserved.
+     * The value produced by the entry processor is written without a reservation (known limitation): its pages come
+     * from the empty pages pool, like the B+tree pages, or from the space above the eviction threshold if the pool is
+     * drained at that moment, and the next reservation in the region evicts to restore the pool. Backups are not
+     * affected: they receive the computed value and reserve the full row size.
+     *
+     * @param req Update request.
+     * @return Reserved pages to release via {@code releaseInRegion}, or {@code 0} if reservation is not engaged.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long reserveBatchSpace(GridNearAtomicAbstractUpdateRequest req) throws IgniteCheckedException {
+        DataRegion dataRegion = ctx.dataRegion();
+
+        // Skip computing the row sizes (it may require marshalling) if the reservation is not engaged for the region.
+        if (req.operation() == GridCacheOperation.DELETE || !ctx.shared().database().isReserveEnabled(dataRegion))
+            return 0;
+
+        CacheObjectValueContext coctx = ctx.cacheObjectContext();
+
+        boolean storeCacheId = ctx.group().storeCacheIdInDataPage();
+
+        long sumRowSize = 0;
+
+        for (int i = 0; i < req.size(); i++) {
+            KeyCacheObject key = req.key(i);
+
+            // The value of a transform is unknown before the entry processor runs, a row without a value is reserved.
+            CacheObject val = req.operation() == GridCacheOperation.UPDATE ? req.value(i) : null;
+
+            // CacheVersionIO.SIZE_V2 is the maximum of both version protocols (V1 is smaller), so this is an upper
+            // bound: the actual rows can not be larger than estimated.
+            sumRowSize += rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, storeCacheId);
+        }
+
+        return ctx.shared().database().reserveInRegion(dataRegion, sumRowSize, false);
     }
 
     /**

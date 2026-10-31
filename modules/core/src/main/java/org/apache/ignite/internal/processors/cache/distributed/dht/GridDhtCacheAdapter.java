@@ -886,14 +886,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                     while (true) {
                                         GridCacheEntryEx entry = null;
 
-                                        try {
-                                            ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            // Wrap errors (will be unwrapped).
-                                            throw new GridClosureException(e);
-                                        }
-
                                         ctx.shared().database().checkpointReadLock();
 
                                         try {

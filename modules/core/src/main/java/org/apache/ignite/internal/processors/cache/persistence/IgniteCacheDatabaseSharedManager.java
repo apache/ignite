@@ -1223,23 +1223,61 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * See {@code GridCacheMapEntry#ensureFreeSpace()}
+     * Checks whether the size-aware page reservation is engaged for the given data region: only in-memory regions with
+     * enabled page eviction. Callers use it to skip computing the row size when no reservation will be made.
      *
-     * @param memPlc data region.
+     * @param memPlc Data region.
+     * @return {@code True} if {@link #reserveInRegion(DataRegion, long, boolean)} may reserve pages in the region.
      */
-    public void ensureFreeSpace(DataRegion memPlc) throws IgniteCheckedException {
-        if (memPlc == null)
-            return;
+    public boolean isReserveEnabled(@Nullable DataRegion memPlc) {
+        return memPlc != null && !memPlc.config().isPersistenceEnabled() &&
+            memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+    }
 
-        while (memPlc.evictionTracker().evictionRequired()) {
-            if (memPlc.metrics().onPageEvictionsStarted()) {
-                U.warn(log, "Page-based evictions started." +
-                    " Consider increasing 'maxSize' on Data Region configuration: " + memPlc.config().getName());
-            }
+    /**
+     * Reserves free-list pages in the given data region for a row (or a batch of rows totaling {@code rowSize} bytes)
+     * about to be inserted.
+     *
+     * @param memPlc Data region.
+     * @param rowSize Size of the row, or the total size of all rows of a batch.
+     * @param bestEffort {@code True} if the insert can not be safely refused (see {@link FreeList#reserve(long, boolean)}).
+     * @return Number of reserved pages to be released via {@link #releaseInRegion(DataRegion, long)}, or {@code 0} if
+     *      nothing is reserved: the reservation is not engaged for this region (see {@link #isReserveEnabled(DataRegion)})
+     *      or a best-effort insert is admitted without a reservation.
+     * @throws IgniteCheckedException If failed, or if the insert is refused: then the cause is the (unchecked)
+     *      {@link IgniteOutOfMemoryException}. The refusal is wrapped into a checked exception so that the callers
+     *      handling {@code IgniteCheckedException} (e.g. the futures that call {@code initialValue}) complete with the
+     *      error instead of leaking it; nothing has been changed and the failure handler is not involved.
+     */
+    public long reserveInRegion(@Nullable DataRegion memPlc, long rowSize, boolean bestEffort) throws IgniteCheckedException {
+        if (!isReserveEnabled(memPlc))
+            return 0;
 
-            memPlc.evictionTracker().evictDataPage();
+        FreeList<?> freeList = freeList(memPlc.config().getName());
 
-            memPlc.metrics().updateEvictionRate();
+        if (freeList == null)
+            return 0;
+
+        try {
+            return freeList.reserve(rowSize, bestEffort);
+        }
+        catch (IgniteOutOfMemoryException e) {
+            throw new IgniteCheckedException("Failed to reserve pages for a row insert: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Releases a reservation made by {@link #reserveInRegion(DataRegion, long, boolean)}.
+     *
+     * @param memPlc Data region the reservation was made in.
+     * @param pages Number of pages to release.
+     */
+    public void releaseInRegion(@Nullable DataRegion memPlc, long pages) {
+        if (memPlc != null && pages != 0) {
+            FreeList<?> freeList = freeList(memPlc.config().getName());
+
+            if (freeList != null)
+                freeList.releaseReserved(pages);
         }
     }
 
@@ -1321,7 +1359,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         PageMemoryNoStoreImpl pageMem0 = (PageMemoryNoStoreImpl)pageMem;
 
         if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
-            return new FairFifoPageEvictionTracker(pageMem0, plc, cctx);
+            return new FairFifoPageEvictionTracker(pageMem0, cctx);
 
         switch (plc.getPageEvictionMode()) {
             case RANDOM_LRU:

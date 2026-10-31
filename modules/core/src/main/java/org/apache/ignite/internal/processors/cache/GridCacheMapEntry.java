@@ -55,9 +55,10 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.DumpEntryChangeListener;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -885,8 +886,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         boolean touch = false;
 
+        long reserved;
+
         try {
-            ensureFreeSpace();
+            reserved = reserveEntrySpace(ret, false);
 
             lockEntry();
 
@@ -932,6 +935,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             finally {
                 unlockEntry();
+
+                releaseReserved(reserved);
             }
 
             touch = true;
@@ -988,7 +993,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         long updateCntr0;
 
-        ensureFreeSpace();
+        // Best-effort: a refused commit is not safe, other entries of the transaction may already be committed.
+        long reserved = reserveEntrySpace(val, true);
 
         lockListenerReadLock();
         lockEntry();
@@ -1141,6 +1147,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         finally {
             unlockEntry();
             unlockListenerReadLock();
+
+            releaseReserved(reserved);
         }
 
         onUpdateFinished(updateCntr0);
@@ -1445,8 +1453,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         AtomicCacheUpdateClosure c;
 
-        if (!primary && !isNear())
-            ensureFreeSpace();
+        long reserved = 0;
+
+        if (!primary && !isNear() && op == GridCacheOperation.UPDATE)
+            // Best-effort: a refused backup update is not safe, the primary has already applied it.
+            reserved = reserveEntrySpace((CacheObject)writeObj, true);
 
         lockListenerReadLock();
         lockEntry();
@@ -1706,6 +1717,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         finally {
             unlockEntry();
             unlockListenerReadLock();
+
+            releaseReserved(reserved);
         }
 
         onUpdateFinished(c.updateRes.updateCounter());
@@ -2439,7 +2452,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert !primary || !(preload || fromStore);
 
-        ensureFreeSpace();
+        // A pre-created row (rebalancing) is already inserted into the free list, so there is nothing to reserve.
+        long reserved = row == null ? reserveEntrySpace(val, false) : 0;
 
         boolean deferred = false;
         boolean obsolete = false;
@@ -2581,6 +2595,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             unlockEntry();
             unlockListenerReadLock();
 
+            releaseReserved(reserved);
+
             // It is necessary to execute these callbacks outside of lock to avoid deadlocks.
 
             if (obsolete) {
@@ -2677,6 +2693,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable IgniteCacheExpiryPolicy loadExpiryPlc,
         @Nullable ReaderArguments readerArgs
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        // The atomic cache reloads values while holding the entry locks, a reservation is not possible then.
+        long reserved = lockedByCurrentThread() ? 0 : reserveEntrySpace(val, false);
+
         lockEntry();
 
         try {
@@ -2731,6 +2750,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             unlockEntry();
+
+            releaseReserved(reserved);
         }
     }
 
@@ -3557,13 +3578,51 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * Evicts necessary number of data pages if per-page eviction is configured in current {@link DataRegion}.
+     * Reserves pages for the row about to be inserted. Must be called before {@link #lockEntry()} — eviction may
+     * block on other entries' locks.
+     *
+     * @param val Value of the row, or {@code null} for a removal: no row is inserted, so nothing is reserved.
+     * @param bestEffort {@code True} if the insert can not be safely refused (see {@code FreeList#reserve}).
+     * @return Number of reserved pages, or {@code 0} if nothing is reserved.
+     * @throws IgniteCheckedException If failed.
      */
-    private void ensureFreeSpace() throws IgniteCheckedException {
-        // Deadlock alert: evicting data page causes removing (and locking) all entries on the page one by one.
+    private long reserveEntrySpace(@Nullable CacheObject val, boolean bestEffort) throws IgniteCheckedException {
+        // Deadlock alert: evicting a data page locks all entries on it.
         assert !lock.isHeldByCurrentThread();
 
-        cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
+        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+
+        // Near entries keep values on heap (see GridNearCacheEntry#storeValue), so they are not reserved for.
+        // The row size is computed only if the reservation is engaged: it may require marshalling the value.
+        if (val == null || isNear() || !db.isReserveEnabled(cctx.dataRegion()))
+            return 0;
+
+        return db.reserveInRegion(cctx.dataRegion(), rowSize(val), bestEffort);
+    }
+
+    /**
+     * Releases a reservation made by {@link #reserveEntrySpace(CacheObject, boolean)}. The whole claim is
+     * released as a unit: the insert does not consume the reservation page by page, so the release is exact on any
+     * outcome (including an exception in the middle of the row insert).
+     *
+     * @param reserved Number of reserved pages.
+     */
+    private void releaseReserved(long reserved) {
+        cctx.shared().database().releaseInRegion(cctx.dataRegion(), reserved);
+    }
+
+    /**
+     * Computes the data row size for the given value. Used to reserve pages before the entry lock is acquired, when the
+     * version of the row may be not known yet: {@link CacheVersionIO#SIZE_V2} is the maximum of both version protocols,
+     * so the result is an upper bound.
+     *
+     * @param val Value.
+     * @return Estimated row size in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int rowSize(CacheObject val) throws IgniteCheckedException {
+        return CacheDataRowAdapter.rowSize(key, val, CacheVersionIO.SIZE_V2, cctx.cacheObjectContext(),
+            cctx.group().storeCacheIdInDataPage());
     }
 
     /**

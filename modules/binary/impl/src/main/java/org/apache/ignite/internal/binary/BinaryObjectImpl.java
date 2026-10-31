@@ -218,6 +218,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        marshal(ctx);
+
         return CacheObjectUtils.objectPutSize(valBytes.length);
     }
 

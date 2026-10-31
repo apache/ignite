@@ -88,6 +88,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.DFLT_PAGE_LOCK_TRACKER_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
+import static org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable.DFLT_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.DFLT_DELAYED_REPLACED_PAGE_WRITE;
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.DFLT_LOADED_PAGES_BACKWARD_SHIFT_MAP;
@@ -1637,6 +1638,25 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     @SystemProperty(value = "Page lock tracker thread for checking hangs threads interval",
         type = Integer.class, defaults = "" + DFLT_PAGE_LOCK_TRACKER_CHECK_INTERVAL)
     public static final String IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL = "IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL";
+
+    /**
+     * Maximum time in milliseconds the size-aware eviction guard is willing to wait without progress: no entry evicted
+     * in the data region and no decrease of the waiting insert's page deficit. This is a liveness guard against a true
+     * stall (all evictable entries locked); a progressing eviction that is simply slow (e.g. a large putAll on a
+     * nearly-full region) is not interrupted by this timeout. When it expires, an insert that
+     * can be refused (e.g. a primary atomic update) fails with an out-of-memory, while an insert that can not be safely
+     * refused (a backup update, a transaction commit, rebalancing) proceeds without a page reservation. After that,
+     * until the eviction makes progress again, such inserts proceed without waiting for the timeout.
+     * <p>
+     * {@code 0} or a negative value disables the grace period: the guard gives up on the first no-progress iteration.
+     * <p>
+     * Default is {@code 5000} (5 seconds).
+     */
+    @SystemProperty(value = "Maximum time in milliseconds the size-aware eviction guard waits without progress. " +
+        "Then an insert that can be refused fails with out-of-memory, other inserts proceed without a page " +
+        "reservation. 0 or a negative value disables the grace period", type = Long.class,
+        defaults = "" + DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS)
+    public static final String IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = "IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS";
 
     /**
      * Enables threads locks dumping on critical node failure.

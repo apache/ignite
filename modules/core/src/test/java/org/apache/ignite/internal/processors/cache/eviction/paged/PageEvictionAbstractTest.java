@@ -16,18 +16,30 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static javax.cache.expiry.CreatedExpiryPolicy.factoryOf;
 
 /**
  *
@@ -46,7 +58,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     private static final int EMPTY_PAGES_POOL_SIZE = 100;
 
     /** Eviction threshold. */
-    private static final double EVICTION_THRESHOLD = 0.9;
+    static final double EVICTION_THRESHOLD = 0.9;
 
     /** Default policy name. */
     private static final String DEFAULT_POLICY_NAME = "dfltPlc";
@@ -129,5 +141,112 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             cacheConfiguration.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cacheConfiguration;
+    }
+
+    /**
+     * @param ignite Node.
+     * @param cacheName Cache name.
+     * @return Atomic cache without expiry.
+     */
+    protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName) {
+        return createCache(ignite, cacheName, 0, false);
+    }
+
+    /**
+     * @param ignite Node.
+     * @param cacheName Cache name.
+     * @param ttl TTL in milliseconds ({@code 0} for no expiry).
+     * @param transactional {@code True} for a transactional cache, {@code false} for an atomic one.
+     * @return Cache with eager TTL expiry if {@code ttl > 0}.
+     */
+    protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName, long ttl, boolean transactional) {
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (transactional)
+            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        if (ttl > 0)
+            ccfg.setExpiryPolicyFactory(factoryOf(new Duration(MILLISECONDS, ttl))).setEagerTtl(true);
+
+        return ignite.createCache(ccfg);
+    }
+
+    /** @return Default data region. */
+    protected static DataRegion defaultRegion(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().dataRegion(null);
+    }
+
+    /** @return The maximum default data region size in bytes. */
+    protected static long regionMaxSize(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).config().getMaxSize();
+    }
+
+    /** @return The page size in bytes for the default data region. */
+    protected static int pageSize(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).pageMemory().pageSize();
+    }
+
+    /** @return The total number of pages in the default data region. */
+    protected static long totalPages(IgniteEx ignite) throws IgniteCheckedException {
+        return regionMaxSize(ignite) / defaultRegion(ignite).pageMemory().systemPageSize();
+    }
+
+    /** @return The number of loaded pages in the default data region. */
+    protected static long loadedPages(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).pageMemory().loadedPages();
+    }
+
+    /** @return {@code true} if page eviction has started in the default data region. */
+    protected static boolean isEvictionsStarted(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).metrics().isEvictionsStarted();
+    }
+
+    /**
+     * Pre-fills the cache with {@code totalPages * fraction} page-sized entries (one data page each), i.e. loads about
+     * {@code fraction} of the default data region. Entries are written with zero-filled {@code pageSize - 200} byte
+     * values at consecutive keys starting from {@code 0}.
+     *
+     * @param ignite Node.
+     * @param cache Cache.
+     * @param fraction Target fraction of total pages to load (e.g. {@code 0.85}).
+     * @return Number of entries written.
+     * @throws Exception If failed.
+     */
+    protected static int fillRegion(IgniteEx ignite, IgniteCache<Integer, Object> cache, double fraction) throws Exception {
+        int entries = (int)(totalPages(ignite) * fraction);
+
+        byte[] small = new byte[pageSize(ignite) - 200];
+
+        for (int i = 0; i < entries; i++)
+            cache.put(i, small);
+
+        return entries;
+    }
+
+    /** */
+    protected static class TestStoreFactory implements Factory<TestCacheStore> {
+        /** {@inheritDoc} */
+        @Override public TestCacheStore create() {
+            return new TestCacheStore();
+        }
+    }
+
+    /** */
+    protected static class TestCacheStore extends CacheStoreAdapter<Integer, byte[]> {
+        /** {@inheritDoc} */
+        @Override public byte[] load(Integer key) throws CacheLoaderException {
+            return new byte[PAGE_SIZE - 200];
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            // No-op.
+        }
     }
 }
