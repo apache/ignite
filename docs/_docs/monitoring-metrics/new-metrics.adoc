@@ -684,13 +684,13 @@ Register name: `snapshot-restore`
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
+|requestId | string | The request ID of the last running cluster snapshot restore operation on this node.
 |endTime | long | The system time when the restore operation of a cluster snapshot on this node ended.
 |error | string | Error message of the last running cluster snapshot restore operation on this node.
 |incrementIndex | integer | The index of incremental snapshot of the last snapshot restore operation on this node.
 |processedPartitions | integer | The number of processed partitions on this node.
 |processedWalEntries | long | The number of processed entries from incremental snapshot on this node.
 |processedWalSegments | integer | The number of processed WAL segments in the incremental snapshot on this node.
-|requestId | string | The request ID of the last running cluster snapshot restore operation on this node.
 |snapshotName | string | The snapshot name of the last running cluster snapshot restore operation on this node.
 |startTime | long | The system time of the start of the cluster snapshot restore operation on this node.
 |totalPartitions | integer | The total number of partitions to be restored on this node.
@@ -706,6 +706,8 @@ Register name: `snapshot-check.{snapshot_name}`
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
+|requestId | string | The request ID of the last running cluster snapshot check operation on this node.
+If snapshot is checked as part oth the restoration operation, it has the same request ID.
 |checkPartitions | boolean | Shows whether full validation of snapshot partitions is enabled.
 |incrementIndex | integer | The index of incremental snapshot of the snapshot check operation.
 |processedPartitions | integer | The number of checked partitions on current node.

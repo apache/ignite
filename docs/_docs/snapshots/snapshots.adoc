@@ -371,34 +371,32 @@ If the metadata isn't found or cannot be read, snapshot isn't deleted.
 
 == Getting Snapshot Operation Status
 
-The status of the create/restore snapshot operations in the cluster can be obtained using the `control.sh|bat` script or JMX interface:
+The status of the create/restore snapshot operations in the cluster can be obtained using the `control.sh|bat` script.
 
 [tabs]
 --
 tab:Unix[]
 [source,shell]
 ----
-# Get the status of the snapshot operation.
+# Get the status of snapshot operation.
 control.sh --snapshot status
 ----
 
 tab:Windows[]
 [source,shell]
 ----
-# Get the status of the snapshot operation.
+# Get the status of snapshot operation.
 control.bat --snapshot status
 ----
-
-tab:JMX[]
-You can also get the current snapshot status via the `SnapshotMXBean` interface:
-[source,java]
-----
-SnapshotMXBean mxBean = ...;
-
-// The status of a current snapshot operation in the cluster.
-String status = mxBean.status();
-----
 --
+
+[NOTE]
+====
+Multiple snapshot check operations can run concurrently with any other snapshot operation of another snapshot.
+Only one check can be running for the same snapshot at a time. Create and restore operations cannot run in parallel —
+only one of them can be active at a time. The status is printed for each running snapshot operation (if multiple) separately,
+one after another.
+====
 
 == Cancelling Snapshot Operation
 

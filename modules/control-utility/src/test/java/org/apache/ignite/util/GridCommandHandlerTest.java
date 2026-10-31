@@ -85,6 +85,7 @@ import org.apache.ignite.internal.management.api.OfflineCommand;
 import org.apache.ignite.internal.management.cache.FindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.management.cache.IdleVerifyDumpTask;
 import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
+import org.apache.ignite.internal.management.snapshot.SnapshotStatusCommand;
 import org.apache.ignite.internal.management.tx.TxInfo;
 import org.apache.ignite.internal.management.tx.TxTaskResult;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -121,6 +122,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.typedef.F;
@@ -182,6 +184,8 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_PARTS;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -3653,9 +3657,257 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertTrue(ctxDisposed);
 
         assertEquals(EXIT_CODE_OK, execute("--snapshot", "status"));
-        assertContains(log, testOut.toString(), "There is no create or restore snapshot operation in progress.");
+        assertContains(log, testOut.toString(), SnapshotStatusCommand.NO_SNP_OP_IN_PROGRESS_MSG);
 
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /** Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process. */
+    @Test
+    public void testRestoreSnapshotMetricsAtStart() throws Exception {
+        listeningLog = new ListeningTestLogger(log);
+
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
+
+        createCacheAndPreload(grid(1), 100);
+
+        IgniteSnapshotManager snpMgr = (IgniteSnapshotManager)grid(0).snapshot();
+
+        snpMgr.createSnapshot("test_snapshot").get(getTestTimeout());
+
+        grid(0).destroyCache(DEFAULT_CACHE_NAME);
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi cm = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
+
+        cm.blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> sm
+            && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()));
+
+        IgniteFutureImpl<Void> restoreFut = snpMgr.restoreSnapshot("test_snapshot", null, null, 0, true);
+
+        assertTrue(waitForCondition(cm::hasBlockedMessages, getTestTimeout()));
+
+        injectTestSystemOut();
+
+        int code = execute("--snapshot", "status");
+
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, code);
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "Check snapshot operation is in progress");
+        assertContains(log, out, "Snapshot name: test_snapshot");
+
+        assertFalse("Snapshot future has finished", restoreFut.isDone());
+
+        cm.stopBlock();
+
+        restoreFut.get(getTestTimeout());
+    }
+
+    /** */
+    @Test
+    public void testOneSnapshotCheckStatus() throws Exception {
+        doTestSnapshotsChecksStatus(false, false);
+    }
+
+    /** */
+    @Test
+    public void testOneIncrementalSnapshotCheckStatus() throws Exception {
+        doTestSnapshotsChecksStatus(false, true);
+    }
+
+    /** */
+    @Test
+    public void testTwoSnapshotsChecksStatus() throws Exception {
+        doTestSnapshotsChecksStatus(true, false);
+    }
+
+    /** */
+    @Test
+    public void testTwoIncrementalsSnapshotsChecksStatus() throws Exception {
+        doTestSnapshotsChecksStatus(true, true);
+    }
+
+    /** */
+    private void doTestSnapshotsChecksStatus(boolean twoSnapshots, boolean incremental) throws Exception {
+        walCompactionEnabled(incremental);
+
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
+
+        IgniteSnapshotManager snpMgr = (IgniteSnapshotManager)grid(0).snapshot();
+
+        createCacheAndPreload(grid(1), DEFAULT_CACHE_NAME, 100, 32, null);
+        snpMgr.createSnapshot("testSnapshot0").get(getTestTimeout());
+
+        if (incremental) {
+            try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int i = 100; i < 110; i++)
+                    streamer.addData(i, i);
+            }
+
+            snpMgr.createIncrementalSnapshot("testSnapshot0").get(getTestTimeout());
+        }
+
+        if (twoSnapshots) {
+            snpMgr.createSnapshot("testSnapshot1").get(getTestTimeout());
+
+            if (incremental) {
+                try (IgniteDataStreamer<Object, Object> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+                    for (int i = 110; i < 120; i++)
+                        streamer.addData(i, i);
+                }
+
+                snpMgr.createIncrementalSnapshot("testSnapshot1").get(getTestTimeout());
+            }
+        }
+
+        TestRecordingCommunicationSpi cm = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
+
+        cm.blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> sm &&
+            (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()));
+
+        IgniteInternalFuture<?> checkFut0 = runAsync(() -> incremental
+            ? execute("--snapshot", "check", "testSnapshot0", "--increment", "1")
+            : execute("--snapshot", "check", "testSnapshot0"));
+
+        IgniteInternalFuture<?> checkFut1 = twoSnapshots
+            ? runAsync(() -> incremental
+                             ? execute("--snapshot", "check", "testSnapshot1", "--increment", "1")
+                             : execute("--snapshot", "check", "testSnapshot1"))
+            : null;
+
+        assertTrue(waitForCondition(() -> cm.blockedMessages().stream().filter(m ->
+                m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                    && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()).count() == (twoSnapshots ? 2 : 1),
+            getTestTimeout()
+        ));
+
+        injectTestSystemOut();
+
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, execute("--snapshot", "status"));
+
+        String out = testOut.toString();
+
+        if (log.isInfoEnabled())
+            log.info("Test out:" + U.nl() + out);
+
+        String checkSnpErr = "Check snapshot operation is in progress";
+
+        int errSum = Arrays.stream(out.split(U.nl()))
+            .mapToInt(l -> (l.length() - l.replace(checkSnpErr, "").length()) / checkSnpErr.length())
+            .sum();
+
+        assertEquals(twoSnapshots ? 2 : 1, errSum);
+
+        assertTrue(out.contains("Snapshot name: testSnapshot0"));
+
+        if (incremental)
+            assertTrue(out.contains("Increment index: 1"));
+
+        if (twoSnapshots) {
+            assertTrue(out.contains("Snapshot name: testSnapshot1"));
+
+            if (incremental) {
+                // Number of 'Increment index: 1' entries.
+                var sum = Arrays.stream(out.split(U.nl()))
+                    .mapToInt(l -> (l.length() - l.replace("Increment index: 1", "").length()) / "Increment index: 1".length())
+                    .sum();
+
+                assertEquals(2, sum);
+            }
+        }
+
+        cm.stopBlock();
+
+        checkFut0.get();
+
+        if (twoSnapshots)
+            checkFut1.get();
+    }
+
+    /** */
+    @Test
+    public void testSnapshotCheckStatusWithParallelCreate() throws Exception {
+        doTestSnapshotsChecksStatusWithParallelCreate(false);
+    }
+
+    /** */
+    @Test
+    public void testTwoSnapshotsChecksStatusWithParallelCreate() throws Exception {
+        doTestSnapshotsChecksStatusWithParallelCreate(true);
+    }
+
+    /** */
+    private void doTestSnapshotsChecksStatusWithParallelCreate(boolean twoChecks) throws Exception {
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
+
+        IgniteSnapshotManager snpMgr = (IgniteSnapshotManager)grid(0).snapshot();
+
+        createCacheAndPreload(grid(1), DEFAULT_CACHE_NAME, 100, 32, null);
+        snpMgr.createSnapshot("testSnapshot0").get(getTestTimeout());
+
+        if (twoChecks) {
+            createCacheAndPreload(grid(1), "cache2", 100, 32, null);
+            snpMgr.createSnapshot("testSnapshot1").get(getTestTimeout());
+        }
+
+        createCacheAndPreload(grid(1), "cache3", 100, 32, null);
+
+        TestRecordingCommunicationSpi cm = ((TestRecordingCommunicationSpi)grid(1).configuration().getCommunicationSpi());
+
+        cm.blockMessages((node, msg) ->
+            msg instanceof SingleNodeMessage<?> sm && (sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()
+                || sm.type() == END_SNAPSHOT.ordinal()));
+
+        IgniteFuture<?> createFut = snpMgr.createSnapshot("testSnapshot2");
+
+        IgniteInternalFuture<?> checkFut0 = runAsync(() -> execute("--snapshot", "check", "testSnapshot0"));
+        IgniteInternalFuture<?> checkFut1 = twoChecks ? runAsync(() -> execute("--snapshot", "check", "testSnapshot1")) : null;
+
+        // Wait for the creation gets blocked.
+        assertTrue(waitForCondition(() -> cm.blockedMessages().stream().anyMatch(m ->
+                m.ioMessage().message() instanceof SingleNodeMessage<?> sm && sm.type() == END_SNAPSHOT.ordinal()),
+            getTestTimeout()
+        ));
+
+        // Wait for the checks get blocked.
+        assertTrue(waitForCondition(() -> cm.blockedMessages().stream().filter(m ->
+                m.ioMessage().message() instanceof SingleNodeMessage<?> sm
+                    && sm.type() == CHECK_SNAPSHOT_PARTS.ordinal()).count() == (twoChecks ? 2 : 1),
+            getTestTimeout()
+        ));
+
+        injectTestSystemOut();
+
+        assertEquals("Unexpected exit code", EXIT_CODE_OK, execute("--snapshot", "status"));
+
+        String out = testOut.toString();
+
+        assertTrue(out.contains("Create snapshot operation is in progress"));
+        assertTrue(out.contains("Snapshot name: testSnapshot2"));
+
+        String checkSnpLogErr = "Check snapshot operation is in progress";
+
+        int chkLogSum = Arrays.stream(out.split(U.nl()))
+                    .mapToInt(l -> (l.length() - l.replace(checkSnpLogErr, "").length()) / checkSnpLogErr.length())
+                    .sum();
+
+        assertEquals(twoChecks ? 2 : 1, chkLogSum);
+
+        assertTrue(out.contains("Snapshot name: testSnapshot0"));
+
+        if (twoChecks)
+            assertTrue(out.contains("Snapshot name: testSnapshot1"));
+
+        cm.stopBlock();
+
+        createFut.get();
+        checkFut0.get();
+
+        if (twoChecks)
+            checkFut1.get();
     }
 
     /** @throws Exception If fails. */
@@ -3785,7 +4037,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(out, EXIT_CODE_OK, status);
 
         if (!isCreating && !isRestoring) {
-            assertContains(log, out, "There is no create or restore snapshot operation in progress.");
+            assertContains(log, out, SnapshotStatusCommand.NO_SNP_OP_IN_PROGRESS_MSG);
 
             return;
         }
