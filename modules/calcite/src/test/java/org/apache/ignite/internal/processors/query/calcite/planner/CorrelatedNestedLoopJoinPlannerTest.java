@@ -153,6 +153,31 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
         );
     }
 
+    /** Check that CNLJ is used for unique scans (when left hand return no more than 1 row). */
+    @Test
+    public void testJoinForUniqueScans() throws Exception {
+        IgniteSchema publicSchema = createSchema(
+            createTable("EMP", 2 * DEFAULT_TBL_SIZE,
+                IgniteDistributions.affinity(1, "default", "hash"),
+                "EMPNO", INTEGER, "DEPTNO", INTEGER, "NAME", VARCHAR)
+                .addIndex("PK", 0)
+                .addIndex("AFF", 1),
+            createTable("DEPT", DEFAULT_TBL_SIZE,
+                IgniteDistributions.affinity(0, "default", "hash"),
+                "DEPTNO", INTEGER, "NAME", VARCHAR)
+                .addIndex("PK", 0)
+        );
+
+        // TODO https://issues.apache.org/jira/browse/IGNITE-16334
+        // For query SELECT * FROM ... plan still not optimal and contains other join type instead of CNLJ.
+        String sql = "SELECT count(*) FROM emp e JOIN dept d ON e.deptno = d.deptno WHERE e.empno = ?";
+
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(input(0, isIndexScan("EMP", "PK")))
+            .and(input(1, isIndexScan("DEPT", "PK")))
+        ));
+    }
+
     /** */
     private TestTable testTable(String name) {
         return createTable(name, IgniteDistributions.broadcast(), "ID", Integer.class, "JID", Integer.class, "VAL", String.class);
