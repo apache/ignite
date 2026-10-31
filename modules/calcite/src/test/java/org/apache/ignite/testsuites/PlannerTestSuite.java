@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AggregateDist
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedSubqueryPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.CyclePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.DataTypesPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.DynamicParametersPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
@@ -94,6 +95,7 @@ import org.junit.platform.suite.api.Suite;
     UserDefinedViewsPlannerTest.class,
     RexSimplificationPlannerTest.class,
     RecursiveCtePlannerTest.class,
+    CyclePlannerTest.class,
     SerializationPlannerTest.class,
     UncollectPlannerTest.class,
     WindowPlannerTest.class,
