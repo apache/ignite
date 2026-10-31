@@ -23,8 +23,10 @@ import java.util.List;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -81,7 +83,7 @@ public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbst
 
     /** */
     @Test
-    public void testKeepBinaryLocalAndRemoteEvents() throws Exception {
+    public void testNonBinaryResultArrivesAsIs() throws Exception {
         List<Object> received = Collections.synchronizedList(new ArrayList<>());
 
         ContinuousQueryWithTransformer<Integer, Object, PersonId> qry = new ContinuousQueryWithTransformer<>();
@@ -113,8 +115,82 @@ public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbst
     }
 
     /** */
+    @Test
+    public void testBinaryValueResultArrivesAsIs() throws Exception {
+        List<Object> received = Collections.synchronizedList(new ArrayList<>());
+
+        ContinuousQueryWithTransformer<Integer, Object, Object> qry = new ContinuousQueryWithTransformer<>();
+
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new ToValue()));
+
+        qry.setLocalListener(evts -> {
+            for (Object e : evts)
+                received.add(e);
+        });
+
+        IgniteCache<Integer, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        // Primary on node 0, where the query runs: its event is transformed locally.
+        int locKey = primaryKey(cache);
+
+        // Primary on node 1: its event is transformed there and sent to node 0.
+        int rmtKey = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
+
+        try (QueryCursor<?> ignored = cache.withKeepBinary().query(qry)) {
+            cache.put(locKey, new PersonId(locKey));
+            cache.put(rmtKey, new PersonId(rmtKey));
+
+            assertTrue(GridTestUtils.waitForCondition(() -> received.size() == 2, 5_000));
+
+            for (Object o : received)
+                assertTrue("Unexpected class: " + o.getClass().getName(), o instanceof BinaryObject);
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testBinaryKeyResultArrivesAsIs() throws Exception {
+        List<Object> received = Collections.synchronizedList(new ArrayList<>());
+
+        ContinuousQueryWithTransformer<Object, Integer, Object> qry = new ContinuousQueryWithTransformer<>();
+
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new ToKey()));
+
+        qry.setLocalListener(evts -> {
+            for (Object e : evts)
+                received.add(e);
+        });
+
+        IgniteCache<Object, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        // Primary on node 0, where the query runs: its event is transformed locally.
+        PersonId locKey = new PersonId(primaryKey(cache));
+
+        // Primary on node 1: its event is transformed there and sent to node 0.
+        PersonId rmtKey = new PersonId(primaryKey(grid(1).cache(DEFAULT_CACHE_NAME)));
+
+        // Make sure one event is transformed locally and the other remotely.
+        // Check that @AffinityKeyMapped keeps each key on the node primaryKey() found it for.
+        assertTrue(grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(0).localNode(), locKey));
+        assertTrue(grid(0).affinity(DEFAULT_CACHE_NAME).isPrimary(grid(1).localNode(), rmtKey));
+
+        try (QueryCursor<?> ignored = cache.withKeepBinary().query(qry)) {
+            cache.put(locKey, locKey.id);
+            cache.put(rmtKey, rmtKey.id);
+
+            assertTrue(GridTestUtils.waitForCondition(() -> received.size() == 2, 5_000));
+
+            for (Object o : received)
+                assertTrue("Unexpected class: " + o.getClass().getName(), o instanceof BinaryObject);
+        }
+    }
+
+    /** */
     private static class PersonId {
-        /** */
+        /** So the key has the same owner as its id. */
+        @AffinityKeyMapped
         final int id;
 
         /** */
@@ -130,6 +206,26 @@ public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public PersonId apply(CacheEntryEvent<? extends Integer, ?> evt) {
             return new PersonId(evt.getKey());
+        }
+    }
+
+    /**
+     */
+    private static class ToValue implements IgniteClosure<CacheEntryEvent<? extends Integer, ?>, Object> {
+        /** */
+        /** {@inheritDoc} */
+        @Override public Object apply(CacheEntryEvent<? extends Integer, ?> evt) {
+            return evt.getValue();
+        }
+    }
+
+    /**
+     */
+    private static class ToKey implements IgniteClosure<CacheEntryEvent<?, ? extends Integer>, Object> {
+        /** */
+        /** {@inheritDoc} */
+        @Override public Object apply(CacheEntryEvent<?, ? extends Integer> evt) {
+            return evt.getKey();
         }
     }
 }
