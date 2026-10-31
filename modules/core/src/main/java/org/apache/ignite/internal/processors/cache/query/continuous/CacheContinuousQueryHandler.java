@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1734,16 +1735,22 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
             oldVal = null;
         }
 
+        // The transformer result is not a cache value, so the keep binary flag of the cache does not apply to it.
+        // Keep it binary only if the transformer returned a BinaryObject, as on the local node.
+        boolean keepBinary = transVal instanceof BinaryObject;
+
         return new CacheContinuousQueryEntry(evt.entry().cacheId(),
             evt.entry().eventType(),
             null,
             newVal,
             oldVal,
-            evt.entry().isKeepBinary(),
+            keepBinary,
             evt.entry().partition(),
             evt.entry().updateCounter(),
             evt.entry().topologyVersion(),
-            evt.entry().flags());
+            // The copied flags are cleared first, because the constructor only sets the keep binary bit and never
+            // clears it. The constructor sets the bit again if keepBinary is true.
+            CacheContinuousQueryEntry.removeKeepBinary(evt.entry().flags()));
     }
 
     /**
