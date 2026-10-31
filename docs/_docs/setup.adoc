@@ -143,6 +143,9 @@ include::code-snippets/cpp/src/setting_work_directory.cpp[tag=setting-work-direc
 ----
 --
 
+The work directory contains binary metadata and marshaller mappings, so treat it as durable storage even when data and WAL are configured elsewhere.
+See link:server-node-file-system-layout[Server Node File System Layout] for the recommended disk placement of the work directory, data, WAL, logs, and diagnostic files.
+
 
 
 == Enabling Modules
@@ -342,6 +345,7 @@ If you are going to use either binary distribution or Maven, you are
 encouraged to set up the work directory for Ignite.
 The work directory is used to store metadata information, index files, your application data (if you use the link:persistence/native-persistence[Native Persistence] feature), logs, and other files.
 We recommend you always set up the work directory.
+When data, WAL, and logs are configured to separate locations, keep the work directory on durable storage with reserved headroom and off the log file system; see link:server-node-file-system-layout[Server Node File System Layout].
 
 
 === Recommended Logging Configuration
@@ -354,3 +358,4 @@ Logs play an important role when it comes to troubleshooting and finding what we
 * Do not store log files in the `/tmp` folder. This folder is cleared up every time the server is restarted.
 * Make sure that there is enough space available on the storage where the log files are stored.
 * Archive old log files periodically to save on storage space.
+* Store log files on a file system separate from the one that keeps data, WAL, and the work directory. When logs share a volume with data, their growth takes the space that checkpoints and WAL archiving need, and the node can stop. See link:server-node-file-system-layout[Server Node File System Layout].

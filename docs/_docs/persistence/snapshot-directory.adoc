@@ -24,6 +24,12 @@ Ignite Persistence routines, it's suggested to store the snapshot and persistenc
 You can avoid this interference between Ignite Native persistence and snapshotting
 by either changing link:persistence/native-persistence#configuring-persistent-storage-directory[storage directories of the persistence files]
 or overriding the default snapshots' location as shown below:
+
+NOTE: For full snapshots without increments, use a separate file system and preferably separate storage: the snapshot adds a second read and write pass over the data and competes with the traffic the cluster is serving.
+If you create incremental snapshots, the base full snapshot and its increments must be stored on the *same file system as the WAL archive*, because increments are hard links to archived WAL segments.
+Different partitions of one physical disk do not satisfy this requirement, and the retained chains occupy space after the archive cleanup.
+See link:server-node-file-system-layout[Server Node File System Layout] for the complete placement and capacity plan.
+
 [tabs]
 --
 tab:XML[]

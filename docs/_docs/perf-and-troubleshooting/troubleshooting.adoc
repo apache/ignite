@@ -29,6 +29,8 @@ On some systems, the default location for Ignite persistence files might be unde
 * Change the location of all persistence files using the `DataStorageConfiguration` APIs, such as `setStoragePath(...)`,
 `setWalPath(...)`, and `setWalArchivePath(...)`
 
+See link:server-node-file-system-layout[Server Node File System Layout] for the recommended placement of persistence files, logs, and diagnostic output on production server nodes.
+
 == Cluster Doesn't Start After Field Type Changes
 
 When developing your application, you may need to change the type of a custom
