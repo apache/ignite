@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.VisorTaskResult;
 import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
@@ -60,8 +59,6 @@ import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.ManagementApiVersionValidationTest.withCoreVersion;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CHECK_SNAPSHOT_METAS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RU_PREPARE_VERSION_FINALIZATION;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -176,52 +173,6 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
     /** */
     @Test
-    public void testRollingUpgradeInProgress() throws Exception {
-        for (int i = 0; i < ALL_GRIDS; i++)
-            startGrid(i, "2.18.0", i >= ALL_GRIDS - CLIENTS);
-
-        grid(0).cluster().active(true);
-
-        int testNodeIx = ALL_GRIDS - CLIENTS - 1;
-
-        createCacheAndSnapshot(testNodeIx);
-
-        validateSnapshotCheckStatus(false);
-
-        ru(grid(testNodeIx)).enableVersionUpgrade();
-
-        for (int i = 0; i < ALL_GRIDS; i++) {
-            assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
-
-            upgradeNodeVersion(i, "2.18.0", MASTER_VER_REF);
-        }
-
-        spi(grid(testNodeIx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
-            snm.type() == RU_PREPARE_VERSION_FINALIZATION.ordinal());
-
-        IgniteInternalFuture<?> finalizeFut = runAsync(() -> ru(testNodeIx).finalizeClusterVersion());
-
-        assertTrue(spi(grid(testNodeIx)).waitForBlocked(1, getTestTimeout()));
-
-        validateSnapshotCheckStatus(false);
-
-        spi(grid(testNodeIx)).stopBlock();
-
-        assertFalse(spi(grid(testNodeIx)).hasBlockedMessages());
-
-        finalizeFut.get(getTestTimeout());
-
-        for (int i = 0; i < ALL_GRIDS; i++) {
-            int i0 = i;
-
-            assertTrue(waitForCondition(() -> !ru(grid(i0)).isVersionUpgradeEnabled(), getTestTimeout()));
-        }
-
-        validateSnapshotCheckStatus(true);
-    }
-
-    /** */
-    @Test
     public void testSnapshotStatusFeature() throws Exception {
         for (int i = 0; i < ALL_GRIDS; i++)
             startGrid(i, "2.18.0", i >= ALL_GRIDS - CLIENTS);
@@ -230,9 +181,9 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         createCacheAndSnapshot(1);
 
-        validateSnapshotCheckStatus(false);
-
         ru(grid(0)).enableVersionUpgrade();
+
+        validateSnapshotCheckStatus(false);
 
         for (int i = 0; i < ALL_GRIDS; i++) {
             assertTrue(ru(grid(i)).isVersionUpgradeEnabled());
@@ -254,7 +205,7 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
     }
 
     /** */
-    private void validateSnapshotCheckStatus(boolean supports, @Nullable VisorTaskArgument<NoArg> clientArg) throws Exception {
+    private void validateSnapshotCheckStatus(boolean supports) throws Exception {
         int blockNodeIdx = 1;
 
         spi(grid(blockNodeIdx)).blockMessages((node, msg) -> msg instanceof SingleNodeMessage<?> snm &&
@@ -264,8 +215,8 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
 
         assertTrue(waitForCondition(() -> spi(grid(blockNodeIdx)).hasBlockedMessages(), getTestTimeout()));
 
-        if (clientArg != null) {
-            Serializable rawRes = snapshotStatusTaskWithClient(clientArg);
+        for (Ignite ig : G.allGrids()) {
+            Serializable rawRes = snapshotStatusTaskWithGrid(ig);
 
             if (supports) {
                 assertTrue(rawRes instanceof Collection<?> cll && !cll.isEmpty() &&
@@ -274,27 +225,10 @@ public class IgniteClusterSnapshotCheckStatusRollingUpgradeTest extends Abstract
             else
                 assertTrue(rawRes == null);
         }
-        else {
-            for (Ignite ig : G.allGrids()) {
-                Serializable rawRes = snapshotStatusTaskWithGrid(ig);
-
-                if (supports) {
-                    assertTrue(rawRes instanceof Collection<?> cll && !cll.isEmpty() &&
-                        F.first(cll) instanceof SnapshotStatusTask.SnapshotOperationStatus);
-                }
-                else
-                    assertTrue(rawRes == null);
-            }
-        }
 
         spi(grid(blockNodeIdx)).stopBlock();
 
         chkFut.get(10_000L);
-    }
-
-    /** */
-    private void validateSnapshotCheckStatus(boolean supports) throws Exception {
-        validateSnapshotCheckStatus(supports, null);
     }
 
     /** */

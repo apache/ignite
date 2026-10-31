@@ -3662,11 +3662,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
 
-    /** Tests that snapshot metrics aren't empty when being restored snapshot waits for the check process. */
+    /** Tests that snapshot status isn't empty when being restored snapshot waits for the check process. */
     @Test
-    public void testRestoreSnapshotMetricsAtStart() throws Exception {
-        listeningLog = new ListeningTestLogger(log);
-
+    public void testRestoreSnapshotStatusAtStart() throws Exception {
         startGrids(3).cluster().state(ClusterState.ACTIVE);
 
         createCacheAndPreload(grid(1), 100);
@@ -3890,11 +3888,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String checkSnpLogErr = "Check snapshot operation is in progress";
 
-        int chkLogSum = Arrays.stream(out.split(U.nl()))
+        int entrySum = Arrays.stream(out.split(U.nl()))
                     .mapToInt(l -> (l.length() - l.replace(checkSnpLogErr, "").length()) / checkSnpLogErr.length())
                     .sum();
 
-        assertEquals(twoChecks ? 2 : 1, chkLogSum);
+        assertEquals(twoChecks ? 2 : 1, entrySum);
 
         assertTrue(out.contains("Snapshot name: testSnapshot0"));
 
