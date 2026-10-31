@@ -1731,6 +1731,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * TODO: support cancellation of the check operation https://issues.apache.org/jira/browse/IGNITE-29240
+     *
      * @param reqId Snapshot operation request ID.
      * @return Future which will be completed when cancel operation finished.
      */
@@ -4477,6 +4479,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** {@inheritDoc} */
         @Override public Boolean call() {
+            // TODO: support cancellation of the check operation https://issues.apache.org/jira/browse/IGNITE-29240
             if (reqId != null)
                 return ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(reqId);
             else {

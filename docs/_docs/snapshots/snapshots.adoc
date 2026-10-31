@@ -371,7 +371,7 @@ If the metadata isn't found or cannot be read, snapshot isn't deleted.
 
 == Getting Snapshot Operation Status
 
-The status of the create/restore/check snapshot operations in the cluster can be obtained using the `control.sh|bat` script.
+The status of the create/restore snapshot operations in the cluster can be obtained using the `control.sh|bat` script.
 
 [tabs]
 --
