@@ -37,6 +37,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
+ * Checks that {@link ContinuousQueryWithTransformer} on a keep-binary cache delivers the transformer result
+ * to the listener as it was returned, for both local and remote events.
  */
 public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbstractTest {
 
@@ -50,18 +52,11 @@ public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbst
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache atomicity mode.
-     */
-    protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -147,9 +142,7 @@ public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbst
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testBinaryKeyResultArrivesAsIs() throws Exception {
         List<Object> received = Collections.synchronizedList(new ArrayList<>());
@@ -199,30 +192,24 @@ public class CacheContinuousWithTransformerKeepBinaryTest extends GridCommonAbst
         }
     }
 
-    /**
-     */
+    /** */
     private static class ToPersonId implements IgniteClosure<CacheEntryEvent<? extends Integer, ?>, PersonId> {
-        /** */
         /** {@inheritDoc} */
         @Override public PersonId apply(CacheEntryEvent<? extends Integer, ?> evt) {
             return new PersonId(evt.getKey());
         }
     }
 
-    /**
-     */
+    /** */
     private static class ToValue implements IgniteClosure<CacheEntryEvent<? extends Integer, ?>, Object> {
-        /** */
         /** {@inheritDoc} */
         @Override public Object apply(CacheEntryEvent<? extends Integer, ?> evt) {
             return evt.getValue();
         }
     }
 
-    /**
-     */
+    /** */
     private static class ToKey implements IgniteClosure<CacheEntryEvent<?, ? extends Integer>, Object> {
-        /** */
         /** {@inheritDoc} */
         @Override public Object apply(CacheEntryEvent<?, ? extends Integer> evt) {
             return evt.getKey();
