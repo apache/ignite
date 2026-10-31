@@ -339,10 +339,10 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
         private final long startTime;
 
         /** Progress of operation on nodes. */
-        Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
+        private final Map<UUID, T5<Long, Long, Long, Long, Long>> progress;
 
         /** */
-        private SnapshotStatus(
+        public SnapshotStatus(
             SnapshotOperation op,
             String name,
             int incIdx,
@@ -355,7 +355,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
             this.incIdx = incIdx;
             this.requestId = requestId;
             this.startTime = startTime;
-            this.progress = progress;
+            this.progress = Collections.unmodifiableMap(progress);
         }
 
         /** @return Operation type. */
@@ -385,7 +385,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, Serializable, 
 
         /** @return Progress of operation on nodes. */
         public Map<UUID, T5<Long, Long, Long, Long, Long>> progress() {
-            return Collections.unmodifiableMap(progress);
+            return progress;
         }
     }
 

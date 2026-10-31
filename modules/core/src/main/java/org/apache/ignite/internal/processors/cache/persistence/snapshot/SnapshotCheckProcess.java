@@ -661,6 +661,7 @@ public class SnapshotCheckProcess {
      * @param allRestoreHandlers If {@code true}, all the registered {@link IgniteSnapshotManager#handlers()} of type
      *                    {@link SnapshotHandlerType#RESTORE} are invoked. Otherwise, only snapshot metadatas and partition
      *                    hashes are validated.
+     * @param reqId Optional request ID to use. If {@code null}, own random one is generated.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyResult> start(
         String snpName,
@@ -668,16 +669,17 @@ public class SnapshotCheckProcess {
         @Nullable Collection<String> grpNames,
         boolean fullCheck,
         int incIdx,
-        boolean allRestoreHandlers
+        boolean allRestoreHandlers,
+        @Nullable UUID reqId
     ) {
         assert !F.isEmpty(snpName);
 
-        UUID reqId = UUID.randomUUID();
+        UUID reqId0 = reqId != null ? reqId : UUID.randomUUID();
 
         Set<UUID> requiredNodes = new HashSet<>(F.viewReadOnly(kctx.discovery().discoCache().aliveBaselineNodes(), node2id()));
 
         SnapshotCheckProcessRequest req = new SnapshotCheckProcessRequest(
-            reqId,
+            reqId0,
             requiredNodes,
             snpName,
             snpPath,
@@ -689,7 +691,7 @@ public class SnapshotCheckProcess {
 
         GridFutureAdapter<SnapshotPartitionsVerifyResult> clusterOpFut = new GridFutureAdapter<>();
 
-        clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId));
+        clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId0));
 
         clusterOpFuts.put(reqId, clusterOpFut);
 

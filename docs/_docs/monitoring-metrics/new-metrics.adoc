@@ -707,6 +707,7 @@ Register name: `snapshot-check.{snapshot_name}`
 |===
 |Name | Type | Description
 |requestId | string | The request ID of the last running cluster snapshot check operation on this node.
+If snapshot is checked as part oth the restoration operation, it has the same request ID.
 |checkPartitions | boolean | Shows whether full validation of snapshot partitions is enabled.
 |incrementIndex | integer | The index of incremental snapshot of the snapshot check operation.
 |processedPartitions | integer | The number of checked partitions on current node.

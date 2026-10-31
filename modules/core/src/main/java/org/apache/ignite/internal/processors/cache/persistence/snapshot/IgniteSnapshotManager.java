@@ -1878,6 +1878,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         });
     }
 
+    /** {@link #checkSnapshot(String, String, Collection, boolean, int, boolean, UUID)} with default {@code reqId} == {@code null}. */
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(
+        String name,
+        @Nullable String snpPath,
+        @Nullable Collection<String> grps,
+        boolean includeCustomHandlers,
+        int incIdx,
+        boolean check
+    ) {
+        return checkSnapshot(name, snpPath, grps, includeCustomHandlers, incIdx, check, null);
+    }
+
     /**
      * The check snapshot procedure performs compute operation over the whole cluster to verify the snapshot
      * entirety and partitions consistency. The result future will be completed with an exception if this
@@ -1890,16 +1902,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *                              handlers, otherwise only system consistency check will be performed.
      * @param incIdx Incremental snapshot index.
      * @param check If {@code true} check snapshot integrity.
+     * @param reqId Optional request ID to use. If {@code null}, own random one is generated.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(
+    IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
         boolean includeCustomHandlers,
         int incIdx,
-        boolean check
+        boolean check,
+        @Nullable UUID reqId
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -1913,7 +1927,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         IgniteInternalFuture<SnapshotPartitionsVerifyResult> res = checkSnpProc.start(
-            name, snpPath, grps, check, incIdx, includeCustomHandlers);
+            name, snpPath, grps, check, incIdx, includeCustomHandlers, reqId);
 
         res.listen(lsnr -> {
             if (log.isInfoEnabled()) {
