@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -381,6 +382,11 @@ public class MaintenanceRegistrySimpleTest {
         /** {@inheritDoc} */
         @Override public @Nullable String description() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void state(@NotNull MaintenanceTaskState state) {
+            //No-op.
         }
     }
 }
