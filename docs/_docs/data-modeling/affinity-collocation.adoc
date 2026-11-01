@@ -126,3 +126,14 @@ include::{dotnetSourceFile}[tag=affinity-key-class,indent=0]
 ----
 tab:C++[unsupported]
 --
+
+[[configuring-affinity-with-indexed-types]]
+== Configuring Affinity with Indexed Types
+
+In Java, `CacheConfiguration.setIndexedTypes(...)` also derives affinity key configurations from `@AffinityKeyMapped` annotations on the supplied key types.
+
+Each derived configuration replaces any existing `CacheKeyConfiguration` for the same type, including one explicitly supplied through`setKeyConfiguration(...)`. Configurations for other types are preserved, including those derived from earlier `setIndexedTypes(...)` calls.
+
+If no affinity mapping is derived for a type, its existing configuration is preserved. Passing an empty array or `null` to `setIndexedTypes(...)` does not remove affinity key configurations.
+
+If you need explicit affinity settings to override annotation-derived settings, call `setKeyConfiguration(...)` after `setIndexedTypes(...)`. Note that `setKeyConfiguration(...)` replaces the entire key configuration array, so include all required mappings in that call.

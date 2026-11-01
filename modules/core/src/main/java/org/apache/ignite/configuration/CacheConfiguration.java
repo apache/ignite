@@ -1951,7 +1951,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * <p>
      * Key configurations derived from affinity annotations replace existing key configurations
      * for the same types or are added if none exist. Key configurations for other types are preserved,
-     * including those derived from previous calls.
+     * including those derived from previous calls. Passing an empty array or {@code null} leaves key configurations
+     * unchanged.
      *
      * @param indexedTypes Key and value type pairs.
      * @return {@code this} for chaining.
@@ -2094,9 +2095,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * This method must not be used together with {@link #setIndexedTypes}.
      * <p>
      * Repeated calls replace the query entities configured by the previous call.
-     * Passing an empty collection clears the existing query entities.
+     * Passing an empty collection or {@code null} clears the existing query entities.
      *
-     * @param qryEntities Query entities.
+     * @param qryEntities qryEntities Query entities, or {@code null} to clear the existing query entities.
      * @return {@code this} for chaining.
      * @throws CacheException If query entities have already been configured through {@link #setIndexedTypes}.
      */

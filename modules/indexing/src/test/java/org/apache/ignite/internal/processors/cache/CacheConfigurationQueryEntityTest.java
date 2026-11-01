@@ -317,8 +317,14 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSetIndexedTypesAfterSetQueryEntitiesFails() {
+        LinkedHashMap<String, Boolean> idxFields = new LinkedHashMap<>();
+        idxFields.put(NAME_FIELD, true);
+        idxFields.put(AGE_FIELD, true);
+
+        QueryIndex idx = new QueryIndex().setName("PERSON_NAME_AGE_IDX").setFields(idxFields);
+
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<Integer, Person>(CACHE_NAME)
-            .setQueryEntities(Collections.singleton(configuredEntity(Person.class)));
+            .setQueryEntities(Collections.singleton(configuredEntity(AnnotatedPerson.class, idx)));
 
         assertThrows(
             log,
