@@ -605,7 +605,12 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
                 assert !skipPrimaryCheck || (cctx.isReplicated() && ctx.localNodeId().equals(nodeId));
 
-                if (asyncCb) {
+                // A transformed event for a listener on another node is converted to a cache object, which may register
+                // the result class. An ATOMIC update calls this listener under the topology lock, where registration is
+                // not allowed, so such events are handled in the async callback pool.
+                boolean asyncTrans = rmtTransFactory != null && !nodeId.equals(ctx.localNodeId()) && cctx.atomic();
+
+                if (asyncCb || asyncTrans) {
                     ContinuousQueryAsyncClosure clsr = new ContinuousQueryAsyncClosure(
                         primary,
                         evt,
