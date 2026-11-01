@@ -86,7 +86,9 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
 
         TestCacheVersionConflictResolver.plc = ResolvePolicy.FAIL;
 
-        cache.put(0, 0);
+        cache.put(0, 1);
+
+        assertEquals(0, cache.get(0));
 
         checkMetrics(1, 2, 1, 1);
     }
@@ -119,10 +121,8 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
                 res.useNew();
             else if (plc == ResolvePolicy.USE_OLD)
                 res.useOld();
-            else if (plc == ResolvePolicy.FAIL) {
-                res.useOld();
+            else if (plc == ResolvePolicy.FAIL)
                 res.markResolveFailed();
-            }
             else
                 res.merge(
                     newEntry.value(ctx),
@@ -154,7 +154,7 @@ public class CacheMetricsConflictResolverTest extends GridCommonAbstractTest {
         /** Merge. */
         MERGE,
 
-        /** Use old and mark the resolution as failed. */
+        /** Mark the resolution as failed. */
         FAIL
     }
 }

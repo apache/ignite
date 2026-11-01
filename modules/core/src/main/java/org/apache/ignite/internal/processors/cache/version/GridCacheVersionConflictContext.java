@@ -175,8 +175,10 @@ public class GridCacheVersionConflictContext<K, V> {
         return manualResolve;
     }
 
-    /** Marks that the conflict could not be resolved. */
+    /** Forces the cache to ignore the new entry and marks that the conflict could not be resolved. */
     public void markResolveFailed() {
+        useOld();
+
         resolveFailed = true;
     }
 

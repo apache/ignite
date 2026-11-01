@@ -1815,7 +1815,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Conflict resolver merged entries count");
 
         rslvrFailedCnt = mreg.longAdderMetric("ConflictResolverFailedCount",
-            "Conflict resolver failed entries count");
+            "Number of entries rejected because the conflict resolver could not resolve the conflict");
     }
 
     /** Registers metric for partition distribution.  */
