@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
+ * Checks that {@link ContinuousQueryWithTransformer} on an ATOMIC cache delivers events transformed on a remote node
+ * when the class of the transformer result is not registered yet.
  */
 public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCommonAbstractTest {
 
@@ -48,19 +50,12 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(atomicityMode());
+        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setBackups(1);
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * @return Cache atomicity mode.
-     */
-    protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
     }
 
     /** {@inheritDoc} */
@@ -123,10 +118,8 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
         }
     }
 
-    /**
-     */
+    /** */
     private static class ToPersonId implements IgniteClosure<CacheEntryEvent<? extends Integer, ?>, PersonId> {
-        /** */
         /** {@inheritDoc} */
         @Override public PersonId apply(CacheEntryEvent<? extends Integer, ?> evt) {
             return new PersonId(evt.getKey());
