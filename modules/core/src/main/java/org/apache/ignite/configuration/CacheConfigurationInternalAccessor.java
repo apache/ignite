@@ -20,7 +20,11 @@ package org.apache.ignite.configuration;
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
 
-/** Provides internal access to {@link CacheConfiguration} implementation details. */
+/**
+ * Provides internal access to {@link CacheConfiguration} implementation details.
+ * <p>
+ * This class is intended for internal use only and is not part of the supported public API.
+ */
 public final class CacheConfigurationInternalAccessor {
     /** */
     private CacheConfigurationInternalAccessor() {
@@ -28,7 +32,9 @@ public final class CacheConfigurationInternalAccessor {
     }
 
     /**
-     * Replaces query entities without changing the query-entity configuration source.
+     * Replaces query entities without checking whether {@link CacheConfiguration#setIndexedTypes} or
+     * {@link CacheConfiguration#setQueryEntities} was previously used.
+     * Preserves the query-entity configuration source.
      *
      * @param cfg Cache configuration.
      * @param qryEntities Query entities.

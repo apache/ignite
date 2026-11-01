@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.io.File;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -28,6 +29,7 @@ import org.springframework.beans.PropertyBatchUpdateException;
 
 import static org.apache.ignite.configuration.CacheConfiguration.MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.resolveIgnitePath;
 
 /** Tests that Spring XML configuration cannot mix indexed types and explicit query entities. */
 public class CacheConfigurationQueryEntityXmlTest extends GridCommonAbstractTest {
@@ -54,9 +56,12 @@ public class CacheConfigurationQueryEntityXmlTest extends GridCommonAbstractTest
 
     /** */
     private void assertMixedConfigurationFails(String fileName, String propName) {
+        File cfgFile = resolveIgnitePath(CONFIG_DIR + fileName);
+        assertNotNull(cfgFile);
+
         Throwable err = assertThrows(
             log,
-            () -> Ignition.loadSpringBean(CONFIG_DIR + fileName, "cacheConfiguration"),
+            () -> Ignition.loadSpringBean(cfgFile.getAbsolutePath(), "cacheConfiguration"),
             IgniteException.class,
             null
         );

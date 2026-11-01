@@ -149,20 +149,22 @@ public class CacheConfigurationQueryEntityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that an empty {@link CacheConfiguration#setQueryEntities} call clears query entities configured
+     * Verifies that an empty/null {@link CacheConfiguration#setQueryEntities} call clears query entities configured
      * by the previous call.
      */
     @Test
     public void testEmptySetQueryEntitiesClearsPreviousEntities() {
-        CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        for (Object entities : Arrays.asList(Collections.emptyList(), null)) {
+            CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
-        ccfg.setQueryEntities(Collections.singleton(configuredEntity(Person.class)));
+            ccfg.setQueryEntities(Collections.singleton(configuredEntity(Person.class)));
 
-        assertEquals(1, ccfg.getQueryEntities().size());
+            assertEquals(1, ccfg.getQueryEntities().size());
 
-        ccfg.setQueryEntities(Collections.emptyList());
+            ccfg.setQueryEntities((Collection<QueryEntity>)entities);
 
-        assertTrue(ccfg.getQueryEntities().isEmpty());
+            assertTrue(ccfg.getQueryEntities().isEmpty());
+        }
     }
 
     /**

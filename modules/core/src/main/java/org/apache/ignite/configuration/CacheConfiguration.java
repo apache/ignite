@@ -2100,10 +2100,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
      * @return {@code this} for chaining.
      * @throws CacheException If query entities have already been configured through {@link #setIndexedTypes}.
      */
-    public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
+    public CacheConfiguration<K, V> setQueryEntities(@Nullable Collection<QueryEntity> qryEntities) {
         checkQueryEntityConfigurationSource(QueryEntityConfigurationSource.QUERY_ENTITIES);
 
-        this.qryEntities = new ArrayList<>(qryEntities);
+        Collection<QueryEntity> safeEntities = qryEntities == null ? Collections.emptyList() : qryEntities;
+
+        this.qryEntities = new ArrayList<>(safeEntities);
 
         qryEntityCfgSrc = QueryEntityConfigurationSource.QUERY_ENTITIES;
 
@@ -2500,8 +2502,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> impleme
 
     /** */
     private void checkQueryEntityConfigurationSource(QueryEntityConfigurationSource src) {
-        if (qryEntityCfgSrc != null && qryEntityCfgSrc != src)
-            throw new CacheException(String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, name));
+        if (qryEntityCfgSrc != null && qryEntityCfgSrc != src) {
+            String cacheName = name == null ? "<unnamed>" : name;
+
+            throw new CacheException(String.format(MIXED_QUERY_ENTITIES_API_ERROR_TEMPLATE, cacheName));
+        }
     }
 
     /** API used to configure query entities. */
