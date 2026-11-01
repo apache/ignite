@@ -605,12 +605,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
                 assert !skipPrimaryCheck || (cctx.isReplicated() && ctx.localNodeId().equals(nodeId));
 
-                // A transformed event for a listener on another node is converted to a cache object, which may register
-                // the result class. An ATOMIC update calls this listener under the topology lock, where registration is
-                // not allowed, so such events are handled in the async callback pool.
-                boolean asyncTrans = rmtTransFactory != null && !nodeId.equals(ctx.localNodeId()) && cctx.atomic();
-
-                if (asyncCb || asyncTrans) {
+                if (asyncCb) {
                     ContinuousQueryAsyncClosure clsr = new ContinuousQueryAsyncClosure(
                         primary,
                         evt,
@@ -1201,21 +1196,18 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                     notifyLocalListener(F.asList(evt), trans);
             }
             else {
-                if (!entry.isFiltered()) {
-                    if (trans != null)
-                        entry = transformToEntry(trans, evt);
+                Object transVal = trans != null && !entry.isFiltered() ? transform(trans, evt) : null;
 
-                    prepareEntry(cctx, nodeId, entry);
+                // The transformer result is converted to a cache object, which may register its class. An ATOMIC update
+                // calls this listener under the topology lock, where registration is not allowed, so the conversion and
+                // sending are done in the async callback pool, ordered by partition.
+                if (trans != null && cctx.atomic() && !asyncCb) {
+                    ctx.pools().asyncCallbackPool().execute(
+                        () -> notifyRemoteListener(cctx, evt, true, transVal),
+                        evt.partitionId());
                 }
-
-                Object entryOrList = handleEntry(cctx, entry);
-
-                if (entryOrList != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Send the following event to listener: " + entryOrList);
-
-                    ctx.continuous().addNotification(nodeId, routineId, entryOrList, topic, sync, true);
-                }
+                else
+                    notifyRemoteListener(cctx, evt, trans != null, transVal);
             }
         }
         catch (ClusterTopologyCheckedException ex) {
@@ -1261,6 +1253,45 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                 evt.getOldValue(),
                 null
             ));
+        }
+    }
+
+    /**
+     * Converts the event for the listener on another node and sends it.
+     *
+     * @param cctx Cache context.
+     * @param evt Event.
+     * @param transformed Whether the query has a transformer.
+     * @param transVal Transformer result.
+     */
+    private void notifyRemoteListener(GridCacheContext<K, V> cctx, CacheContinuousQueryEvent<K, V> evt,
+        boolean transformed, @Nullable Object transVal) {
+        try {
+            CacheContinuousQueryEntry entry = evt.entry();
+
+            if (!entry.isFiltered()) {
+                if (transformed)
+                    entry = transformToEntry(transVal, evt);
+
+                prepareEntry(cctx, nodeId, entry);
+            }
+
+            Object entryOrList = handleEntry(cctx, entry);
+
+            if (entryOrList != null) {
+                if (log.isDebugEnabled())
+                    log.debug("Send the following event to listener: " + entryOrList);
+
+                ctx.continuous().addNotification(nodeId, routineId, entryOrList, topic, sync, true);
+            }
+        }
+        catch (ClusterTopologyCheckedException ex) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send event notification to node, node left cluster " +
+                    "[node=" + nodeId + ", err=" + ex + ']');
+        }
+        catch (IgniteCheckedException ex) {
+            U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), "Failed to send event notification to node: " + nodeId, ex);
         }
     }
 
@@ -1712,17 +1743,15 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
     }
 
     /**
-     * Transform event data with {@link #getTransformer()} if exists.
+     * Creates an entry that holds the transformer result instead of the event data.
      *
-     * @param trans Transformer.
+     * @param transVal Transformer result.
      * @param evt Event to transform.
      * @return Entry contains only transformed data if transformer exists. Unchanged event if transformer is not set.
      * @see #getTransformer()
      */
-    private CacheContinuousQueryEntry transformToEntry(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+    private CacheContinuousQueryEntry transformToEntry(Object transVal,
         CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
-        Object transVal = transform(trans, evt);
-
         CacheObject cacheObj = transVal == null ? null : cacheContext(ctx).toCacheObject(transVal);
 
         EventType type = evt.entry().eventType();
