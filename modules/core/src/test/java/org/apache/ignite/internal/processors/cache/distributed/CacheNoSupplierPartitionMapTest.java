@@ -66,6 +66,9 @@ public class CacheNoSupplierPartitionMapTest extends GridCommonAbstractTest {
     /** Index of the data node. */
     private static final int DATA = 3;
 
+    /** Time to wait for the partition states, in milliseconds. */
+    private static final long WAIT = 10_000;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         boolean data = igniteInstanceName.equals(getTestIgniteInstanceName(DATA));
@@ -111,14 +114,14 @@ public class CacheNoSupplierPartitionMapTest extends GridCommonAbstractTest {
             List<GridDhtLocalPartition> parts = data.cachex(CACHE).context().topology().localPartitions();
 
             return parts.size() == PARTS && parts.stream().allMatch(p -> p.state() == OWNING);
-        }, 10_000));
+        }, WAIT));
 
         UUID dataId = data.localNode().id();
 
         for (int idx = 0; idx <= CLIENT; idx++) {
             IgniteEx watcher = grid(idx);
 
-            if (!waitForCondition(() -> notOwning(watcher, dataId).isEmpty(), 10_000)) {
+            if (!waitForCondition(() -> notOwning(watcher, dataId).isEmpty(), WAIT)) {
                 fail("The partition map of " + watcher.name() + " differs from the data node: " +
                     notOwning(watcher, dataId));
             }

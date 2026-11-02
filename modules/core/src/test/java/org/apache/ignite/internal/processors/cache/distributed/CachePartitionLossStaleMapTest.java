@@ -31,7 +31,6 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -119,7 +120,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     private final CountDownLatch evictionResume = new CountDownLatch(1);
 
     /** When set, the coordinator waits for {@link #crdResume} right after it sends the next exchange full message. */
-    private final AtomicBoolean stallAfterFullMessage = new AtomicBoolean();
+    private final AtomicBoolean stallAfterFullMsg = new AtomicBoolean();
 
     /** Counted down when the coordinator starts waiting. */
     private final CountDownLatch crdStalled = new CountDownLatch(1);
@@ -216,9 +217,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         stopGrid(LEAVING);
 
-        assertTrue("Node 1 didn't change a lost partition", sndSpi.waitForBlocked(1, WAIT));
+        assertTrue("Node 1 didn't change a lost partition", waitForCondition(() -> !sendBeforeChange.get(), WAIT));
 
-        assertFalse("Node 1 didn't change a lost partition", sendBeforeChange.get());
+        assertTrue("Node 1's map wasn't held", sndSpi.waitForBlocked(1, WAIT));
 
         assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
 
@@ -345,7 +346,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         UUID crdId = crd.localNode().id();
 
-        stallAfterFullMessage.set(true);
+        stallAfterFullMsg.set(true);
 
         long leaveVer = crd.cluster().topologyVersion() + 1;
 
@@ -372,12 +373,13 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Runs a query over the cache on a node. Called while the node may still see a lost partition without an owner.
+     * Runs a query over the cache on a node that may still see a lost partition without an owner. Does nothing here:
+     * scans and key operations don't fail in that case. The SQL subclass runs a SQL query.
      *
      * @param node Node.
      */
     protected void runQuery(Ignite node) {
-        node.cache(CACHE).query(new ScanQuery<>()).getAll();
+        // No-op.
     }
 
     /**
@@ -420,8 +422,10 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         }
 
         for (IgniteEx viewer : viewers) {
-            if (!waitForCondition(() -> mismatches(viewer).isEmpty(), 10_000))
-                fail("The partition map of " + viewer.name() + " differs from the nodes: " + mismatches(viewer));
+            if (!waitForCondition(() -> mismatches(viewer, CACHE).isEmpty(), WAIT)) {
+                fail("The partition map of " + viewer.name() + " differs from the nodes: " +
+                    mismatches(viewer, CACHE));
+            }
         }
     }
 
@@ -491,22 +495,31 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param viewer Node whose partition map is checked.
-     * @return Partitions whose state in the viewer's map differs from the state on the node itself.
+     * @param viewer Server or client whose partition map is checked. A client that hasn't started the cache keeps it in
+     *      a client topology.
+     * @param cacheName Cache name.
+     * @return Partitions whose state in the viewer's map differs from the state on the server that holds them.
      */
-    private List<String> mismatches(IgniteEx viewer) {
-        GridDhtPartitionTopology viewerTop = viewer.cachex(CACHE).context().topology();
+    public static List<String> mismatches(IgniteEx viewer, String cacheName) {
+        IgniteInternalCache<?, ?> cache = viewer.cachex(cacheName);
+
+        GridDhtPartitionTopology viewerTop = cache != null
+            ? cache.context().topology()
+            : viewer.context().cache().context().exchange().clientTopologyIfExists(CU.cacheId(cacheName));
+
+        assertNotNull(viewer.name(), viewerTop);
 
         List<String> res = new ArrayList<>();
 
         for (Ignite g : G.allGrids()) {
-            UUID id = g.cluster().localNode().id();
+            if (g.cluster().localNode().isClient())
+                continue;
 
-            GridDhtPartitionMap view = viewerTop.partitionMap(false).get(id);
+            GridDhtPartitionMap view = viewerTop.partitionMap(false).get(g.cluster().localNode().id());
 
-            GridDhtPartitionTopology top = ((IgniteEx)g).cachex(CACHE).context().topology();
+            GridDhtPartitionTopology top = ((IgniteEx)g).cachex(cacheName).context().topology();
 
-            for (int p = 0; p < PARTS; p++) {
+            for (int p = 0; p < top.partitions(); p++) {
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false, true);
 
                 GridDhtPartitionState loc = locPart == null ? null : locPart.state();
@@ -525,7 +538,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Once {@link #stallAfterFullMessage} is set, holds the coordinator's thread right after it sends an exchange full
+     * Once {@link #stallAfterFullMsg} is set, holds the coordinator's thread right after it sends an exchange full
      * message, before it owns its lost partitions. The thread waits for {@link #crdResume}.
      */
     private class StallingCommunicationSpi extends TestRecordingCommunicationSpi {
@@ -537,7 +550,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
             if (msg instanceof GridIoMessage
                 && ((GridIoMessage)msg).message() instanceof GridDhtPartitionsFullMessage
                 && ((GridDhtPartitionsFullMessage)((GridIoMessage)msg).message()).exchangeId() != null
-                && stallAfterFullMessage.compareAndSet(true, false)) {
+                && stallAfterFullMsg.compareAndSet(true, false)) {
                 crdStalled.countDown();
 
                 U.awaitQuiet(crdResume);
