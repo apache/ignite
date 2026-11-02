@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.wire;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
@@ -61,18 +60,16 @@ public class MessageIdsWriterTest {
     }
 
     /** */
-    @Test public void testHandWrittenMessageWithoutDescription() throws IOException {
+    @Test public void testHandWrittenMessageWithoutDescription() throws IOException, URISyntaxException {
         Path dir = tmp.getRoot().toPath();
 
         createTestMessageDescription(dir);
 
         new MessageIdsWriter(providers(true)).write(dir);
 
-        try (InputStream in = MessageIdsWriterTest.class.getResourceAsStream("expected-ids.json")) {
-            String expected = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        Path expected = Path.of(getClass().getResource("expected-ids.json").toURI());
 
-            assertEquals(expected, Files.readString(dir.resolve("ids.json")));
-        }
+        assertEquals(Files.readString(expected), Files.readString(dir.resolve("ids.json")));
     }
 
     /** Creates the description for the ordinary test message. */
