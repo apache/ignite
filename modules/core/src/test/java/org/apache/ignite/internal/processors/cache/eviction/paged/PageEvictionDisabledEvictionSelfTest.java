@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -28,8 +26,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -44,24 +40,9 @@ import org.junit.Test;
  * while removals still succeed and do not trigger the failure handler.
  */
 public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTest {
-    /** Number of out-of-memory failures reported to the failure handler. */
-    private static final AtomicInteger OOM_FAILURES = new AtomicInteger();
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return setEvictionMode(DataPageEvictionMode.DISABLED, super.getConfiguration(gridName));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new OomCountingFailureHandler();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        OOM_FAILURES.set(0);
     }
 
     /** {@inheritDoc} */
@@ -72,7 +53,7 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
     }
 
     /** */
-    @Test(timeout = 180_000)
+    @Test
     public void testRemoveAtOomThreshold() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -135,7 +116,7 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
     }
 
     /** Read-through load into a region at the out-of-memory threshold is rejected by the insert check. */
-    @Test(timeout = 120_000)
+    @Test
     public void testReadThroughGetOomAtThreshold() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -189,16 +170,5 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
         }
 
         throw new AssertionError("Region was not filled up to the out-of-memory threshold");
-    }
-
-    /** Counts out-of-memory failures and ignores them (does not stop the node). */
-    private static class OomCountingFailureHandler implements FailureHandler {
-        /** {@inheritDoc} */
-        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-            if (X.hasCause(failureCtx.error(), IgniteOutOfMemoryException.class))
-                OOM_FAILURES.incrementAndGet();
-
-            return false;
-        }
     }
 }

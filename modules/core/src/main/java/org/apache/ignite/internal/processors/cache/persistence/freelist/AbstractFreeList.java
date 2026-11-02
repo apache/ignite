@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.LockSupport;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
@@ -90,23 +92,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private static final long EVICTION_BACKOFF_MAX_NANOS = 1_000_000L;
 
     /**
-     * Default maximum time (milliseconds) the size-aware eviction guard is willing to wait without the region's free
-     * page count increasing (the deficit shrinking) before giving up (see {@link #reserve(long, boolean)}). Configurable via
+     * Default maximum time (milliseconds) the size-aware eviction guard is willing to wait without progress before
+     * giving up (see {@link #reserve(long, boolean)}). Configurable via
      * {@link IgniteSystemProperties#IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS}.
      */
     public static final long DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = 5_000L;
-
-    /**
-     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without progress before giving up.
-     * This is a liveness guard: a {@code evictDataPage()} call can evict nothing (for example when the sampled rows
-     * are not actually reclaimable). Progress is either a decrease of the caller's own deficit or an entry evicted by
-     * any thread of the region (see {@link #evictedCnt}): a large claim competing with many small ones may not see
-     * its deficit shrink while the eviction is working, and it must not be refused for that.
-     * An eviction that is merely slow keeps resetting the timer; a stall that evicts nothing for the whole window
-     * gives up instead of spinning.
-     */
-    private static final long EVICTION_NO_PROGRESS_TIMEOUT_MILLIS = IgniteSystemProperties.getLong(
-        IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS, DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
 
     /**
      * Step between buckets in free list, measured in powers of two.
@@ -139,23 +129,43 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final DataRegion dataRegion;
 
     /**
+     * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without progress before giving up.
+     * This is a liveness guard: a {@code evictDataPage()} call can evict nothing (for example when the sampled rows
+     * are not actually reclaimable). Progress is a new minimum of the caller's own deficit. A claim waiting for the
+     * accumulating one (see {@link #accumulating}) can not see its deficit shrink while the eviction is working, so an
+     * entry evicted by any thread of the region (see {@link #evictedCnt}) is a progress for it too.
+     * An eviction that is merely slow keeps resetting the timer; a stall that evicts nothing for the whole window
+     * gives up instead of spinning.
+     */
+    private final long noProgressTimeoutMillis = IgniteSystemProperties.getLong(
+        IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS, DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
+
+    /**
      * Pages reserved by in-flight inserts (see {@link #reserve(long, boolean)}): only the rows' own pages, the empty pages pool
      * is a separate region-wide margin. A reservation is released as a whole once its row (or batch of rows) is written.
      */
     private final AtomicLong reservedPages = new AtomicLong();
 
     /**
+     * Whether a claim is accumulating pages. A claim admitted only as a whole starves while smaller claims keep taking the
+     * pages the eviction frees, so a waiting claim adds the available pages to {@link #reservedPages} until it has all of
+     * them (see {@link #reserve(long, boolean)}). Only one claim accumulates at a time: several partially reserved claims
+     * that do not fit the region together would wait for each other until the timeout.
+     */
+    private final AtomicBoolean accumulating = new AtomicBoolean();
+
+    /**
      * Whether the eviction is stalled: set by a best-effort reservation that gave up because the eviction made no
-     * progress within {@link #EVICTION_NO_PROGRESS_TIMEOUT_MILLIS}, cleared by any reservation that observes progress or
-     * reserves pages. While set, best-effort reservations (including the already waiting ones) give up after an
+     * progress within {@link #noProgressTimeoutMillis}, cleared by a reservation that observes an entry
+     * evicted in the region. While set, best-effort reservations (including the already waiting ones) give up after an
      * eviction attempt without progress, so a series of inserts does not wait for the timeout one by one.
      */
     private volatile boolean stalled;
 
     /**
      * Number of successful {@link PageEvictionTracker#evictDataPage()} calls made by the reservations of this free
-     * list (region-wide: an in-memory region has a single free list). A change of the counter is a progress of the
-     * eviction for every waiting reservation, whether or not its own deficit has decreased (see {@link #reserve}).
+     * list (region-wide: an in-memory region has a single free list). A change of the counter ends a stall and is a
+     * progress for the reservations that wait for the accumulating one (see {@link #reserve}).
      */
     private final AtomicLong evictedCnt = new AtomicLong();
 
@@ -553,7 +563,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.evictionTracker = dataRegion.evictionTracker();
 
-        reserveEnabled = ctx.cache().context().database().isReserveEnabled(dataRegion);
+        reserveEnabled = IgniteCacheDatabaseSharedManager.isReserveEnabled(dataRegion);
 
         this.dataRegion = dataRegion;
         this.reuseList = reuseList == null ? this : reuseList;
@@ -1237,31 +1247,53 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
-        long lastProgressMillis = U.currentTimeMillis();
+        // Set by the first iteration.
+        long lastProgressMillis = 0;
 
-        // Deficit before the last eviction attempt, 0 until the first one.
-        long prevDeficit = 0;
+        // Only a new minimum is a progress: the deficit also jitters with the reservations of other inserts.
+        long minDeficit = Long.MAX_VALUE;
 
         // Eviction counter before the last eviction attempt.
-        long prevEvicted = 0;
+        long prevEvicted = evictedCnt.get();
 
-        while (true) {
-            long reserved = reservedPages.get();
-            long deficit = deficit(claimPages, limitPages, reserved);
+        // The part of the claim already added to the reserved pages (see accumulating).
+        long accumulated = 0;
 
-            if (deficit <= 0) {
-                if (reservedPages.compareAndSet(reserved, reserved + claimPages)) {
-                    clearStalled();
+        boolean accumulator = false;
 
-                    return claimPages;
+        try {
+            while (true) {
+                long reserved = reservedPages.get();
+                long deficit = deficit(claimPages - accumulated, limitPages, reserved);
+
+                if (deficit <= 0) {
+                    if (reservedPages.compareAndSet(reserved, reserved + claimPages - accumulated)) {
+                        clearStalled(prevEvicted);
+
+                        // The whole claim now belongs to the caller.
+                        accumulated = 0;
+
+                        return claimPages;
+                    }
+
+                    continue;
                 }
 
-                continue;
-            }
+                // A single-page claim has nothing to accumulate: it is admitted as soon as any page is available.
+                if (!accumulator && claimPages > 1)
+                    accumulator = !accumulating.get() && accumulating.compareAndSet(false, true);
 
-            if (prevDeficit > 0) {
-                if (deficit < prevDeficit || evictedCnt.get() != prevEvicted) {
-                    clearStalled();
+                if (accumulator) {
+                    long available = claimPages - accumulated - deficit;
+
+                    if (available > 0 && reservedPages.compareAndSet(reserved, reserved + available))
+                        accumulated += available;
+                }
+
+                clearStalled(prevEvicted);
+
+                if (deficit < minDeficit || (!accumulator && evictedCnt.get() != prevEvicted)) {
+                    minDeficit = Math.min(minDeficit, deficit);
 
                     lastProgressMillis = U.currentTimeMillis();
 
@@ -1269,14 +1301,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 }
                 else if (bestEffort && stalled)
                     return 0;
-                else if (U.currentTimeMillis() - lastProgressMillis > EVICTION_NO_PROGRESS_TIMEOUT_MILLIS) {
+                else if (U.currentTimeMillis() - lastProgressMillis >= noProgressTimeoutMillis) {
                     if (!bestEffort)
                         throw outOfMemory();
 
                     stalled = true;
 
                     LT.warn(log, "Page eviction made no progress, the row is inserted without a page reservation " +
-                        "[region=" + dataRegion.config().getName() + ", timeout=" + EVICTION_NO_PROGRESS_TIMEOUT_MILLIS + "ms]");
+                        "[region=" + dataRegion.config().getName() + ", timeout=" + noProgressTimeoutMillis + "ms]");
 
                     return 0;
                 }
@@ -1285,29 +1317,37 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                     backoffNanos = Math.min(backoffNanos << 1, EVICTION_BACKOFF_MAX_NANOS);
                 }
+
+                prevEvicted = evictedCnt.get();
+
+                if (memMetrics.onPageEvictionsStarted()) {
+                    U.warn(log, "Page-based evictions started." +
+                        " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
+                }
+
+                if (evictionTracker.evictDataPage())
+                    evictedCnt.incrementAndGet();
+
+                memMetrics.updateEvictionRate();
             }
+        }
+        finally {
+            if (accumulator)
+                accumulating.set(false);
 
-            prevDeficit = deficit;
-            prevEvicted = evictedCnt.get();
-
-            if (memMetrics.onPageEvictionsStarted()) {
-                U.warn(log, "Page-based evictions started." +
-                    " Consider increasing 'maxSize' on Data Region configuration: " + dataRegion.config().getName());
-            }
-
-            if (evictionTracker.evictDataPage())
-                evictedCnt.incrementAndGet();
-
-            memMetrics.updateEvictionRate();
+            releaseReserved(accumulated);
         }
     }
 
     /**
-     * Clears the {@link #stalled} flag once a reservation observes progress or reserves pages. The flag is read first,
+     * Clears the {@link #stalled} flag once an entry has been evicted. A reservation that needs no eviction, or a claim
+     * that gives its accumulated pages back, says nothing about the eviction, so the stall stays. The flag is read first,
      * so the common path does not write to the shared field.
+     *
+     * @param prevEvicted Eviction counter before the last eviction attempt.
      */
-    private void clearStalled() {
-        if (stalled)
+    private void clearStalled(long prevEvicted) {
+        if (stalled && evictedCnt.get() != prevEvicted)
             stalled = false;
     }
 
@@ -1338,15 +1378,22 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /**
      * @param requiredPages Pages required for a row.
-     * @return {@code True} if the row together with the empty pages pool fits into the whole data region.
+     * @return {@code True} if the row together with the empty pages pool fits into the pages the region can load.
      */
     private boolean fitsRegion(long requiredPages) {
-        return requiredPages + dataRegion.config().getEmptyPagesPoolSize() <= totalPages();
+        return requiredPages + dataRegion.config().getEmptyPagesPoolSize() <= hardPages();
     }
 
     /** @return Total number of pages in the data region. */
     private long totalPages() {
         return dataRegion.config().getMaxSize() / pageMem.systemPageSize();
+    }
+
+    /** @return Maximum number of pages the data region can load: every segment may lose a page to its overhead. */
+    private long hardPages() {
+        long totalPages = totalPages();
+
+        return totalPages > SEG_CNT ? totalPages - SEG_CNT : 0;
     }
 
     /**
@@ -1359,23 +1406,21 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @return Limit of loaded pages for the row.
      */
     private long limitPages(long requiredPages) {
-        long totalPages = totalPages();
+        long hardPages = hardPages();
 
-        long hardPages = totalPages > SEG_CNT ? totalPages - SEG_CNT : 0;
-
-        long thresholdPages = Math.min((long)(dataRegion.config().getEvictionThreshold() * totalPages), hardPages);
+        long thresholdPages = Math.min((long)(dataRegion.config().getEvictionThreshold() * totalPages()), hardPages);
 
         return requiredPages + dataRegion.config().getEmptyPagesPoolSize() > thresholdPages ? hardPages : thresholdPages;
     }
 
     /**
      * Computes how many pages are missing to admit a claim: the claim, the empty pages pool and the reservations of
-     * other in-flight inserts must fit into the free pages of the region (empty pages in this free list plus the
-     * headroom up to the limit).
+     * in-flight inserts must fit into the free pages of the region (empty pages in this free list plus the headroom up
+     * to the limit).
      *
-     * @param claimPages Pages to claim.
+     * @param claimPages Pages still to claim.
      * @param limitPages Limit of loaded pages (see {@link #limitPages(long)}).
-     * @param reserved Pages reserved by other in-flight inserts.
+     * @param reserved Pages reserved by in-flight inserts, including the accumulated part of this claim.
      * @return Number of missing pages, a non-positive value if the claim can be admitted.
      */
     private long deficit(long claimPages, long limitPages, long reserved) {

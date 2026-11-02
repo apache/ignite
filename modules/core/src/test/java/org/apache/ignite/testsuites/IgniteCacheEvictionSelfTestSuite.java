@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolic
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDefaultThresholdSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDisabledEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMetricTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionPagesRecyclingAndReusingTest;
@@ -129,6 +130,8 @@ public class IgniteCacheEvictionSelfTestSuite {
         GridTestUtils.addTestIfNeeded(suite, PageEvictionReservedPagesSelfTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, PageEvictionDisabledEvictionSelfTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, PageEvictionDefaultThresholdSelfTest.class, ignoredTests);
 
         return suite;
     }

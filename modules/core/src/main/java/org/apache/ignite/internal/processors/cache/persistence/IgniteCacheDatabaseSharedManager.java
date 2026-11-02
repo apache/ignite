@@ -1229,7 +1229,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memPlc Data region.
      * @return {@code True} if {@link #reserveInRegion(DataRegion, long, boolean)} may reserve pages in the region.
      */
-    public boolean isReserveEnabled(@Nullable DataRegion memPlc) {
+    public static boolean isReserveEnabled(@Nullable DataRegion memPlc) {
         return memPlc != null && !memPlc.config().isPersistenceEnabled() &&
             memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
     }

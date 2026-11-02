@@ -889,7 +889,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         long reserved;
 
         try {
-            reserved = reserveEntrySpace(ret, false);
+            // Best-effort: the reload runs on a transaction commit, where a refusal is not safe.
+            reserved = reserveEntrySpace(ret, true);
 
             lockEntry();
 
@@ -3590,14 +3591,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         // Deadlock alert: evicting a data page locks all entries on it.
         assert !lock.isHeldByCurrentThread();
 
-        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
-
         // Near entries keep values on heap (see GridNearCacheEntry#storeValue), so they are not reserved for.
         // The row size is computed only if the reservation is engaged: it may require marshalling the value.
-        if (val == null || isNear() || !db.isReserveEnabled(cctx.dataRegion()))
+        if (val == null || isNear() || !IgniteCacheDatabaseSharedManager.isReserveEnabled(cctx.dataRegion()))
             return 0;
 
-        return db.reserveInRegion(cctx.dataRegion(), rowSize(val), bestEffort);
+        return cctx.shared().database().reserveInRegion(cctx.dataRegion(), rowSize(val), bestEffort);
     }
 
     /**

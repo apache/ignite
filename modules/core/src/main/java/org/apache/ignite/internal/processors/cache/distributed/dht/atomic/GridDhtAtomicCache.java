@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -1813,8 +1814,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long batchReserved = 0;
 
+        boolean admitted = false;
+
         try {
             batchReserved = reserveBatchSpace(req);
+
+            admitted = true;
 
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -1942,7 +1947,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.remapTopologyVersion(ctx.topology().lastTopologyChangeVersion());
         }
         catch (Throwable e) {
-            if (X.hasCause(e, IgniteOutOfMemoryException.class)) {
+            if (!admitted && X.hasCause(e, IgniteOutOfMemoryException.class)) {
                 // An expected refusal of the page reservation (see reserveBatchSpace): nothing has been changed, the
                 // keys are reported as failed to the client. No stack trace: under a sustained overload every update
                 // is refused, and the message already names the region and the ways out.
@@ -3024,7 +3029,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         DataRegion dataRegion = ctx.dataRegion();
 
         // Skip computing the row sizes (it may require marshalling) if the reservation is not engaged for the region.
-        if (req.operation() == GridCacheOperation.DELETE || !ctx.shared().database().isReserveEnabled(dataRegion))
+        if (req.operation() == GridCacheOperation.DELETE || !IgniteCacheDatabaseSharedManager.isReserveEnabled(dataRegion))
             return 0;
 
         CacheObjectValueContext coctx = ctx.cacheObjectContext();

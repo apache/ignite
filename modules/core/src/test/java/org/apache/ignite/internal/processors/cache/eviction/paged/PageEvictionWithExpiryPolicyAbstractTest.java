@@ -40,6 +40,8 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         super.afterTest();
 
         stopAllGrids();
+
+        assertNoOomFailures();
     }
 
     /** */
@@ -131,5 +133,7 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
 
         for (int i = 0; i < smallEntries; i++)
             assertNotNull("Pre-filled entry " + i + " must not be evicted", plainCache.get(i));
+
+        assertFalse("The space freed by TTL must be reused without the eviction", isEvictionsStarted(ignite));
     }
 }

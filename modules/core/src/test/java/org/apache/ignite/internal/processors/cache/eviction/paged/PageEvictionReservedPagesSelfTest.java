@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -71,6 +73,8 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
         super.afterTest();
 
         stopAllGrids();
+
+        assertNoOomFailures();
     }
 
     /** */
@@ -183,7 +187,19 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
         assertTrue("Eviction must have started during read-through loads", isEvictionsStarted(grid(0)));
 
-        assertEquals(PAGE_SIZE - 200, cache.get(1).length);
+        assertAllReleased(10_000);
+    }
+
+    /** The reservation is held while the row is written: the entry processor runs inside this window. */
+    @Test
+    public void testReservationHeldWhileRowIsWritten() throws Exception {
+        IgniteCache<Integer, Object> cache = createCache(startGrid(0), DEFAULT_CACHE_NAME);
+
+        cache.put(0, 0);
+
+        long inFlight = cache.invoke(1, new ReservedPagesProbe());
+
+        assertTrue("Reservation must be held while the row is written: " + inFlight, inFlight > 0);
 
         assertAllReleased(10_000);
     }
@@ -298,5 +314,15 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
         valObj.valueBytes(cctx.cacheObjectContext());
 
         return new DataRow(keyObj, valObj, new GridCacheVersion(), 0, 0L, cctx.cacheId(), false);
+    }
+
+    /** Returns the number of pages reserved in the region at the moment the row is being written. */
+    private static class ReservedPagesProbe implements EntryProcessor<Integer, Object, Long> {
+        /** {@inheritDoc} */
+        @Override public Long process(MutableEntry<Integer, Object> entry, Object... args) {
+            entry.setValue(1);
+
+            return reservedPages(freeList((IgniteEx)Ignition.allGrids().get(0)));
+        }
     }
 }

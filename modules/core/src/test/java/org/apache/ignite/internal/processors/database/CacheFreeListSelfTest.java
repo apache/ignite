@@ -41,13 +41,10 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
@@ -531,18 +528,6 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         when(pageLockTrackerMgr.createPageLockTracker(anyString())).thenReturn(PageLockTrackerManager.NOOP_LSNR);
 
-        GridTestKernalContext freeListCtx = new GridTestKernalContext(log);
-
-        GridCacheSharedContext<Object, Object> sharedCtx = mock(GridCacheSharedContext.class);
-
-        when(sharedCtx.database()).thenReturn(new IgniteCacheDatabaseSharedManager(freeListCtx));
-
-        GridCacheProcessor cacheProc = mock(GridCacheProcessor.class);
-
-        when(cacheProc.<Object, Object>context()).thenReturn(sharedCtx);
-
-        freeListCtx.add(cacheProc, false);
-
         return new CacheFreeList(
             1,
             "freelist",
@@ -551,7 +536,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             metaPageId,
             true,
             pageLockTrackerMgr,
-            freeListCtx,
+            new GridTestKernalContext(log),
             null,
             PageIdAllocator.FLAG_IDX
         );

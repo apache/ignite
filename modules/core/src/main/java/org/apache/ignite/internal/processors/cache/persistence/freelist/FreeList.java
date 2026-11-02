@@ -72,8 +72,9 @@ public interface FreeList<T extends Storable> {
      * @param rowSize Size of the row (or the total size of a batch of rows) to be inserted.
      * @param bestEffort {@code True} if the insert can not be safely refused (e.g. a backup update or a transaction
      *      commit): if the row does not fit into the region or the eviction makes no progress, the row is admitted
-     *      without a reservation ({@code 0} is returned) and the page memory remains the hard limit. {@code False} if
-     *      the insert can be refused: an out-of-memory is thrown instead.
+     *      without a reservation ({@code 0} is returned) and the page memory remains the hard limit: exceeding it fails
+     *      the insert with a critical error reported to the failure handler. {@code False} if the insert can be
+     *      refused: an out-of-memory is thrown instead.
      * @return Number of reserved pages to be released via {@link #releaseReserved(long)} once the row insert
      * completes, or {@code 0} if nothing is reserved (persistent data region, disabled page eviction or a best-effort
      * admission without a reservation).

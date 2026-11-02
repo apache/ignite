@@ -26,8 +26,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -41,13 +43,20 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 
 /** Tests size-aware page eviction on in-memory (non-persistent) data regions. */
 public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbstractTest {
     /** Name of the rebalance supplier node, which has a twice larger data region. */
     private static final String SUPPLIER = "supplier";
+
+    /** Eviction no-progress timeout (milliseconds) of the guard test. */
+    private static final long GUARD_TIMEOUT = 3_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -67,13 +76,15 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
         super.afterTest();
 
         stopAllGrids();
+
+        assertNoOomFailures();
     }
 
     /**
      * Rebalancing inserts the received rows in batches reserved as a whole: the demander, which receives more data than
      * fits below its threshold, evicts at the threshold and releases the reservations.
      */
-    @Test(timeout = 300_000)
+    @Test
     public void testRebalanceHonorsThreshold() throws Exception {
         IgniteEx supplier = startGrid(SUPPLIER);
 
@@ -255,7 +266,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     }
 
     /** Atomic cache with a backup: primary batch and backup updates must evict at the same threshold. */
-    @Test(timeout = 300_000)
+    @Test
     public void testAtomicBackupHonorsThreshold() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -284,7 +295,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     }
 
     /** Transactional cache: commits must evict at the threshold. */
-    @Test(timeout = 300_000)
+    @Test
     public void testTransactionalHonorsThreshold() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -317,47 +328,117 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     }
 
     /**
+     * A commit can not be refused, so the reservation does not stop a row larger than the region: it fails in the page
+     * memory, which reports a critical error to the failure handler (the default handler stops the node).
+     */
+    @Test
+    public void testTransactionalRecordLargerThanRegionFailsInPageMemory() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, 0, true);
+
+        long regionSize = regionMaxSize(ignite);
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> cache.put(1, new byte[(int)(regionSize * 2)]),
+            IgniteOutOfMemoryException.class
+        );
+
+        assertTrue("A page memory out-of-memory must reach the failure handler", OOM_FAILURES.get() > 0);
+
+        // Expected in this test only.
+        OOM_FAILURES.set(0);
+    }
+
+    /** The default streamer mode inserts through {@code initialValue}, which reserves pages for every row. */
+    @Test
+    public void testDefaultStreamerHonorsThreshold() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        createCache(ignite, DEFAULT_CACHE_NAME);
+
+        byte[] val = new byte[pageSize(ignite) - 200];
+
+        int keys = (int)(totalPages(ignite) * 3);
+
+        try (IgniteDataStreamer<Integer, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < keys; i++)
+                streamer.addData(i, val);
+        }
+
+        assertHonorsThreshold(ignite);
+    }
+
+    /**
+     * The default streamer mode can refuse a row: the refusal reaches the caller through the future of the operation and
+     * does not reach the failure handler (see {@link #afterTest()}). Closing the streamer reports the failed operation
+     * too, but not necessarily with its cause.
+     */
+    @Test
+    public void testDefaultStreamerRecordLargerThanRegionRefused() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        createCache(ignite, DEFAULT_CACHE_NAME);
+
+        IgniteDataStreamer<Integer, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        IgniteFuture<?> fut = streamer.addData(1, new byte[(int)(regionMaxSize(ignite) * 2)]);
+
+        GridTestUtils.assertThrows(log, () -> {
+            streamer.close();
+
+            return null;
+        }, CacheException.class, null);
+
+        GridTestUtils.assertThrowsWithCause(() -> fut.get(), IgniteOutOfMemoryException.class);
+
+        assertFalse("A refused row must not start the eviction", isEvictionsStarted(ignite));
+    }
+
+    /**
+     * A claim that fits the raw region size, but not the pages the region can actually load, is refused at once: it must
+     * not evict the data before the refusal.
+     */
+    @Test
+    public void testClaimAboveLoadablePagesRefusedWithoutEviction() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
+
+        int entries = fillRegion(ignite, cache, 0.5);
+
+        FreeList<?> freeList = defaultFreeList(ignite);
+
+        long claimPages = totalPages(ignite) - defaultRegion(ignite).config().getEmptyPagesPoolSize();
+
+        int pagePayload = GridTestUtils.getFieldValue(freeList, "MIN_SIZE_FOR_DATA_PAGE");
+
+        GridTestUtils.assertThrows(log, () -> freeList.reserve(claimPages * pagePayload, false),
+            IgniteOutOfMemoryException.class, null);
+
+        assertFalse("A refused claim must not start the eviction", isEvictionsStarted(ignite));
+        assertEquals(entries, cache.size());
+    }
+
+    /**
      * When no page can be evicted (all resident entries are locked), the eviction progress guard refuses an insert that
      * can be refused (a primary atomic update) with an out-of-memory, while a best-effort reservation (backup update,
      * transaction commit, rebalancing) gives up without an error. Once the stall is detected, the already waiting and
      * the following best-effort reservations give up without waiting for the timeout, until the eviction makes progress
      * again.
      */
-    @Test(timeout = 180_000)
+    @Test
+    @WithSystemProperty(key = IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS, value = "" + GUARD_TIMEOUT)
     public void testGuardWhenAllEntriesLocked() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        IgniteCache<Integer, Object> txCache = createCache(ignite, "tx-cache", 0, true);
         IgniteCache<Integer, Object> atomicCache = createCache(ignite, DEFAULT_CACHE_NAME);
 
-        int fillEntries = fillRegion(ignite, txCache, 0.85);
-
-        Collection<Integer> keys = new ArrayList<>(fillEntries);
-
-        for (int i = 0; i < fillEntries; i++)
-            keys.add(i);
-
-        CountDownLatch ready = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> lockerFut = GridTestUtils.runAsync(() -> {
-            Lock lock = txCache.lockAll(keys);
-
-            lock.lock();
-
-            try {
-                ready.countDown();
-
-                release.await();
-            }
-            finally {
-                lock.unlock();
-            }
-        }, "size-aware-guard-locker");
+        IgniteInternalFuture<?> lockerFut = fillRegionAndLockEntries(ignite, release);
 
         try {
-            assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
-
             int largeValSize = 4 * 1024 * 1024;
 
             GridTestUtils.assertThrowsWithCause(
@@ -371,14 +452,16 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
             FreeList<?> freeList = db.freeList(region.config().getName());
 
-            long timeout = AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
+            // A reservation that waits for the timeout takes at least the timeout (with the 10 ms clock error), a
+            // reservation that gives up does not: the bound separates them far from the expected time of both.
+            long bound = GUARD_TIMEOUT * 9 / 10;
 
             assertFalse(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
 
             IgniteInternalFuture<Long> firstFut = GridTestUtils.runAsync(() -> db.reserveInRegion(region, largeValSize, true),
                 "size-aware-guard-first");
 
-            U.sleep(timeout / 2);
+            U.sleep(GUARD_TIMEOUT * 9 / 10);
 
             // Starts waiting before the stall is detected and must be released once the first reservation detects it.
             long start = System.currentTimeMillis();
@@ -386,21 +469,36 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             assertEquals(0, db.reserveInRegion(region, largeValSize, true));
 
             assertTrue("Waiting best-effort reservation must give up once the stall is detected",
-                System.currentTimeMillis() - start < timeout * 3 / 4);
+                System.currentTimeMillis() - start < bound);
 
-            assertEquals(0, (long)firstFut.get(timeout, TimeUnit.MILLISECONDS));
+            assertEquals(0, (long)firstFut.get(60, TimeUnit.SECONDS));
 
             assertTrue(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
 
+            // A reservation that needs no eviction says nothing about it, so the stall stays.
+            long smallReserved = db.reserveInRegion(region, 1, false);
+
+            try {
+                assertEquals(1, smallReserved);
+
+                assertTrue(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+            }
+            finally {
+                db.releaseInRegion(region, smallReserved);
+            }
+
+            // Reservations that gave up return the pages they accumulated.
+            assertEquals(0, GridTestUtils.<AtomicLong>getFieldValue(freeList, "reservedPages").get());
+
             // The stall is not a time window: once the timeout passes, best-effort reservations still do not wait.
-            U.sleep(timeout + 500);
+            U.sleep(GUARD_TIMEOUT + 500);
 
             start = System.currentTimeMillis();
 
             assertEquals(0, db.reserveInRegion(region, largeValSize, true));
 
             assertTrue("Best-effort reservation must not wait for the timeout while the eviction is stalled",
-                System.currentTimeMillis() - start < timeout / 2);
+                System.currentTimeMillis() - start < bound);
 
             release.countDown();
 
@@ -410,7 +508,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             // best-effort reservation gives up after a single eviction attempt, which may free no page, so it is retried.
             long reserved = 0;
 
-            long deadline = System.currentTimeMillis() + timeout;
+            long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(60);
 
             while (reserved == 0 && System.currentTimeMillis() < deadline)
                 reserved = db.reserveInRegion(region, largeValSize, true);
@@ -429,6 +527,78 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
             lockerFut.get(10, TimeUnit.SECONDS);
         }
+    }
+
+    /** With a zero timeout the guard gives up after the first eviction attempt without progress. */
+    @Test
+    @WithSystemProperty(key = IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS, value = "0")
+    public void testZeroNoProgressTimeoutGivesUpWithoutWaiting() throws Exception {
+        IgniteEx ignite = startGrid(1);
+
+        IgniteCache<Integer, Object> atomicCache = createCache(ignite, DEFAULT_CACHE_NAME);
+
+        CountDownLatch release = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockerFut = fillRegionAndLockEntries(ignite, release);
+
+        try {
+            long start = System.currentTimeMillis();
+
+            GridTestUtils.assertThrowsWithCause(
+                () -> atomicCache.put(0, new byte[4 * 1024 * 1024]),
+                IgniteOutOfMemoryException.class
+            );
+
+            assertTrue("The default timeout must not be waited for",
+                System.currentTimeMillis() - start < AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
+
+            assertEquals(0, GridTestUtils.<AtomicLong>getFieldValue(defaultFreeList(ignite), "reservedPages").get());
+        }
+        finally {
+            release.countDown();
+
+            lockerFut.get(10, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Fills the region through a transactional cache and locks all the written entries, so that no page can be evicted.
+     *
+     * @param ignite Node.
+     * @param release Latch that releases the locks.
+     * @return Future of the locking thread.
+     * @throws Exception If failed.
+     */
+    private IgniteInternalFuture<?> fillRegionAndLockEntries(IgniteEx ignite, CountDownLatch release) throws Exception {
+        IgniteCache<Integer, Object> txCache = createCache(ignite, "tx-cache", 0, true);
+
+        int fillEntries = fillRegion(ignite, txCache, 0.85);
+
+        Collection<Integer> keys = new ArrayList<>(fillEntries);
+
+        for (int i = 0; i < fillEntries; i++)
+            keys.add(i);
+
+        CountDownLatch ready = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> lockerFut = GridTestUtils.runAsync(() -> {
+            Lock lock = txCache.lockAll(keys);
+
+            lock.lock();
+
+            try {
+                ready.countDown();
+
+                release.await();
+            }
+            finally {
+                lock.unlock();
+            }
+        }, "size-aware-guard-locker");
+
+        assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
+
+        return lockerFut;
     }
 
     /**

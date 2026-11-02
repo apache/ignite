@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -40,6 +41,8 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         super.afterTest();
 
         stopAllGrids();
+
+        assertNoOomFailures();
     }
 
     /** */
@@ -228,6 +231,71 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         assertNotNull(read);
         assertTrue(Arrays.equals(probeVal, read));
+    }
+
+    /**
+     * A large batch competing with a continuous stream of small writers must not starve: the small writers must not take
+     * every page the eviction frees for the batch.
+     */
+    @Test
+    public void testLargeBatchIsNotStarvedBySmallWriters() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache<Integer, byte[]> cache = ignite.createCache(new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(0)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC));
+
+        int smallValSize = pageSize(ignite) / 4 - 50;
+
+        AtomicInteger keyGen = new AtomicInteger();
+
+        while (!isEvictionsStarted(ignite)) {
+            int key = keyGen.incrementAndGet();
+
+            cache.put(key, valueFor(key, smallValSize));
+        }
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> writers = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!stop.get()) {
+                int key = keyGen.incrementAndGet();
+
+                cache.put(key, valueFor(key, smallValSize));
+            }
+        }, 8, "small-writer");
+
+        int batchRows = 50;
+        int batchValSize = (int)(regionMaxSize(ignite) / 5 / batchRows);
+
+        Map<Integer, byte[]> batch = new HashMap<>();
+
+        for (int i = 1; i <= batchRows; i++)
+            batch.put(-i, valueFor(-i, batchValSize));
+
+        IgniteInternalFuture<?> batchFut = GridTestUtils.runAsync(() -> cache.putAll(batch), "large-batch");
+
+        long start = System.currentTimeMillis();
+
+        boolean completed;
+
+        try {
+            completed = GridTestUtils.waitForCondition(batchFut::isDone, TimeUnit.SECONDS.toMillis(30));
+        }
+        finally {
+            stop.set(true);
+        }
+
+        long elapsed = System.currentTimeMillis() - start;
+
+        writers.get(TimeUnit.MINUTES.toMillis(1));
+        batchFut.get(TimeUnit.MINUTES.toMillis(1));
+
+        assertTrue("Large batch starved by small writers [elapsedMs=" + elapsed + ']', completed);
+
+        // The writers could evict rows of the batch once it was written, but the remaining rows must be intact.
+        verifyContent(cache, -batchRows, batchRows, batchValSize);
     }
 
     /** */

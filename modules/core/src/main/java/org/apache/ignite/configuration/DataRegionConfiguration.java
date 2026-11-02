@@ -276,6 +276,11 @@ public final class DataRegionConfiguration implements Serializable {
      * Note: Page eviction is used only when persistence is disabled for data region. For persistent data regions see
      * page replacement mode ({@link #getPageReplacementMode()}).
      *
+     * Note: Page eviction can not make room for a row larger than the data region. A primary update of an atomic cache
+     * and a default data streamer update of such a row are refused with an out of memory exception. A transaction
+     * commit, a backup update and rebalancing can not be refused: they fail in the page memory with a critical error
+     * handled by {@link IgniteConfiguration#getFailureHandler()}, which stops the node by default.
+     *
      * @return Memory pages eviction algorithm. {@link DataPageEvictionMode#DISABLED} used by default.
      */
     public DataPageEvictionMode getPageEvictionMode() {

@@ -16,10 +16,12 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -33,8 +35,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -62,6 +68,9 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
     /** Default policy name. */
     private static final String DEFAULT_POLICY_NAME = "dfltPlc";
+
+    /** Number of out-of-memory failures reported to the failure handler. */
+    protected static final AtomicInteger OOM_FAILURES = new AtomicInteger();
 
     /**
      * @param mode Eviction mode.
@@ -109,6 +118,26 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(dbCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new OomCountingFailureHandler();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        OOM_FAILURES.set(0);
+    }
+
+    /**
+     * Checks that no out-of-memory reached the failure handler. It tells a refused reservation, which is reported to the
+     * caller only, from a page memory out-of-memory: the caller sees the same exception cause for both of them.
+     */
+    protected static void assertNoOomFailures() {
+        assertEquals("An out-of-memory must not reach the failure handler", 0, OOM_FAILURES.get());
     }
 
     /**
@@ -222,6 +251,17 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             cache.put(i, small);
 
         return entries;
+    }
+
+    /** Counts out-of-memory failures and ignores them (does not stop the node). */
+    private static class OomCountingFailureHandler implements FailureHandler {
+        /** {@inheritDoc} */
+        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+            if (X.hasCause(failureCtx.error(), IgniteOutOfMemoryException.class))
+                OOM_FAILURES.incrementAndGet();
+
+            return false;
+        }
     }
 
     /** */
