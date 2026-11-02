@@ -47,7 +47,7 @@ Partitions of one physical disk isolate capacity but still share the failure ris
 
 |Active WAL
 |`DataStorageConfiguration.walPath`
-|A separate file system with room for the active segments and a rotation reserve, see <<Sizing the WAL Volume>>. On write-heavy workloads, a separate device for the active WAL and the data files reduces the competition between checkpoint page writes and WAL writes.
+|A separate file system with room for the active segments and a rotation reserve, see <<Sizing the WAL Volume>>. See <<Configuration Example>> for the path setting. On write-heavy workloads, a separate device for the active WAL and the data files reduces the competition between checkpoint page writes and WAL writes.
 
 |WAL archive
 |`DataStorageConfiguration.walArchivePath`
@@ -76,6 +76,10 @@ Partitions of one physical disk isolate capacity but still share the failure ris
 
 If some roles have to share a file system, size it for their combined usage and limit what each role retains.
 Keep Ignite files and diagnostic output off the operating system's root file system.
+
+Keep persistent data, the active WAL, the WAL archive, and node metadata on durable storage.
+Do not place them in temporary directories such as `/tmp`, which may be cleaned automatically, or on volatile file systems such as `tmpfs`.
+A temporary directory is not necessarily a `tmpfs` mount, but both are unsuitable for files that have to survive a host reboot.
 
 The Ignite-managed defaults are all relative to the work directory, so leaving the paths unset puts data, the active WAL, and the WAL archive on one file system.
 By default, `storagePath` is `${IGNITE_HOME}/work/db/node{IDX}-{UUID}`, `walPath` is `${IGNITE_HOME}/work/db/wal/`, and `walArchivePath` is `${IGNITE_HOME}/work/db/wal/archive/`.
@@ -140,10 +144,13 @@ See link:persistence/native-persistence#wal-archive[WAL Archive] for the cleanup
 
 The cleanup runs in the background and deletes whole segments, so the remaining size can end up below the threshold.
 It does not remove the segments that the recovery still needs.
-When the archive reaches `maxWalArchiveSize`, Ignite releases the reservations that the last completed checkpoint already covers. This allows cleanup of older segments.
-Archive usage can still exceed `maxWalArchiveSize` while segments are needed for recovery.
+`maxWalArchiveSize` is not a strict disk-space quota: cleanup runs asynchronously and preserves the WAL that the recovery needs, so the archive can exceed this value.
+When the archive reaches `maxWalArchiveSize`, Ignite releases the reservations that the last completed checkpoint already covers, which allows cleanup of older segments.
 
 Removing an archived segment does not release its disk blocks while a CDC or snapshot hard link still points to it, so plan the capacity of the file system from the retained links as well, see <<Account for Hard Links>>.
+
+Size the file system for the archive retention, the expected CDC backlog, and the retained incremental snapshot chains.
+Measure the retained WAL volume under representative load, account for the compression ratio when WAL archive compaction is enabled, and leave free space for temporary growth.
 
 Lowering the thresholds below their defaults is allowed but should be tested: the typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
 CDC is not affected: it keeps its own hard link to each captured segment, so its history is bounded by `cdcWalDirectoryMaxSize` instead.
@@ -214,12 +221,17 @@ Run it from a host where the log directory is writable and has free space.
 
 == Plan Free Space
 
-Size every backing file system with free space to spare, including those used by additional data paths and by diagnostic tools, and monitor the space that the logs and diagnostic files take.
+Size every backing file system with free space to spare, including those used by additional data paths and by diagnostic tools.
+Monitor the space that the logs and diagnostic files take.
 On Linux, monitor both available bytes and free inodes, taking account of quotas and the space available to the Ignite operating-system user.
 
+Free space is not the only property of storage that matters.
+Check storage performance under representative load: use checkpoint duration, page-write time, and fsync time to assess whether the storage keeps up with the updates, see link:monitoring-metrics/new-metrics#data-storage[Data Storage].
+For performance checks, monitor device IOPS, throughput, and I/O latency alongside these metrics and the WAL write rate (`WalWritingRate`).
+
 There is no universal safe reserve.
-It depends on the write rate, the size of the data region, the checkpoint interval, and the time the operator needs to react, so derive it from measurements on your own workload: the growth of the file system between two warning points at peak load, and the time it takes to free space once the alert is raised.
-The reserve has to cover the next checkpoint and the next WAL segment, and it has to last until someone acts on the alert.
+It depends on the write rate, the size of the data region, the checkpoint interval, and the time needed to react, so derive it from measurements on your own workload: the growth of the file system under the peak expected load and the time needed to react and free space.
+Leave enough free space for that growth and for checkpoints and WAL rotation to finish.
 
 Stopping application writes does not stop disk growth: the checkpoint that follows still has to flush dirty pages.
 That is why the reaction belongs at a threshold rather than at zero free space.

@@ -220,7 +220,7 @@ By default, the maximum size of the WAL archive is `maxWalArchiveSize`, whose de
 Cleanup starts when the archive exceeds `minWalArchiveSize`, not `maxWalArchiveSize`. By default, `minWalArchiveSize` is half of `maxWalArchiveSize`, that is 512 MiB.
 The cleanup runs asynchronously in the background. It removes the oldest segments, stopping at the last completed checkpoint and at the segments that are reserved by a running checkpoint or by a reader. It removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
 
-`maxWalArchiveSize` is the upper threshold, and it is not a hard bound on the directory size. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers. This allows cleanup of older segments. Archive usage can still exceed `maxWalArchiveSize` while segments are needed for recovery.
+`maxWalArchiveSize` is the upper threshold, and it is not a strict disk-space quota. Cleanup runs asynchronously and preserves the WAL needed for recovery, so the archive can exceed this value. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers. This allows cleanup of older segments.
 
 Removing an archived segment does not release its disk blocks while a CDC or snapshot hard link still points to it, so the space taken on the file system can be larger than the archive size.
 
@@ -384,8 +384,8 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 |`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
 
 | `walCompactionLevel` | WAL archive compression level. `1` indicates the fastest speed, and `9` indicates the best compression. | `1`
-|`maxWalArchiveSize`  | The upper threshold (in bytes) of the WAL archive. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers, so that the cleanup can delete them. It is not a hard bound on the directory size. | 1 GiB
+|`maxWalArchiveSize`  | The upper threshold (in bytes) of the WAL archive. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers, so that the cleanup can delete them. It is not a strict disk-space quota: the cleanup runs asynchronously and preserves the WAL needed for recovery, so the archive can exceed this value. | 1 GiB
 |`minWalArchiveSize` | The threshold (in bytes) that makes segments eligible for cleanup. The cleanup runs in the background and removes the oldest segments while the archive stays above this value. Segments are removed as whole files, so the remaining size can be below it. | Half of `maxWalArchiveSize`
-|`walSegments` | The number of active WAL segments. The volume that holds the active WAL has to fit that many segments of `walSegmentSize` plus a rotation reserve. | `10`
-|`checkpointFrequency` | The interval between checkpoints, in milliseconds. A value that is too small produces frequent checkpoints and a large number of checkpoint markers. | `180000` (3 minutes)
+|`walSegments` | The number of fixed-size segments used for active WAL rotation when archiving is enabled. Plan space for `walSegments` × `walSegmentSize` bytes plus a rotation reserve. Size the WAL archive separately. | `10`
+|`checkpointFrequency` | The interval between scheduled checkpoints, in milliseconds. | `180000` (3 minutes)
 |=======================================================================
