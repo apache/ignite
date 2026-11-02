@@ -250,7 +250,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
 
-    /** Conflict resolver failed entries count. */
+    /** Conflict resolver failed resolutions count. */
     private LongAdderMetric rslvrFailedCnt;
 
     /** Affinity configuration MDC safe metric. */
@@ -1815,7 +1815,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             "Conflict resolver merged entries count");
 
         rslvrFailedCnt = mreg.longAdderMetric("ConflictResolverFailedCount",
-            "Number of entries rejected because the conflict resolver could not resolve the conflict");
+            "Conflict resolver failed resolutions count");
     }
 
     /** Registers metric for partition distribution.  */

@@ -114,7 +114,7 @@ Register name: `cache.{cache_name}.{near}`
 |CommitTime | histogram | Commit time in nanoseconds.
 |CommitTimeTotal | long | The total time of commit, in nanoseconds.
 |ConflictResolverAcceptedCount | long | Conflict resolver accepted entries count.
-|ConflictResolverFailedCount | long | Number of entries rejected because the conflict resolver could not resolve the conflict.
+|ConflictResolverFailedCount | long | Conflict resolver failed resolutions count.
 |ConflictResolverMergedCount | long | Conflict resolver merged entries count.
 |ConflictResolverRejectedCount | long | Conflict resolver rejected entries count.
 |EntryProcessorHits | long | The total number of invocations on keys, which exist in cache.
