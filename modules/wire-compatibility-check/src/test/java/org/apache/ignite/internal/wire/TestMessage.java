@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.wire;
 
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.EmptyMessage;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
+@EmptyMessage
 public class TestMessage extends AbstractMessage {
-    /** */
-    @Order(0)
-    int val;
+    // No-op.
 }

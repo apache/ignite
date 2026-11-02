@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.wire;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -34,9 +37,6 @@ import static org.junit.Assert.assertTrue;
 
 /** */
 public class MessageIdsWriterTest {
-    /** Expected {@code ids.json}. */
-    private static final String IDS = "{\n  \"42\": \"" + TestMessage.class.getName() + "\"\n}\n";
-
     /** */
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
 
@@ -44,33 +44,53 @@ public class MessageIdsWriterTest {
     @Test public void testWrite() throws IOException {
         Path dir = tmp.getRoot().toPath();
 
-        Files.createDirectories(dir.resolve("messages"));
-        Files.writeString(dir.resolve("messages/" + TestMessage.class.getName() + ".json"), "{}");
+        createTestMessageDescription(dir);
 
-        new MessageIdsWriter(providers(), Set.of()).write(dir);
+        new MessageIdsWriter(providers(false), Set.of()).write(dir);
 
-        assertEquals(IDS, Files.readString(dir.resolve("ids.json")));
+        String ids = Files.readString(dir.resolve("ids.json"));
+
+        assertTrue(ids, ids.contains("\"42\": \"" + TestMessage.class.getName() + '"'));
     }
 
     /** */
-    @Test public void testMissingDescription() throws IOException {
-        Path dir = tmp.getRoot().toPath();
-
+    @Test public void testMissingDescription() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
-            () -> new MessageIdsWriter(providers(), Set.of()).write(dir));
+            () -> new MessageIdsWriter(providers(false), Set.of()).write(tmp.getRoot().toPath()));
 
         assertTrue(e.getMessage(), e.getMessage().contains(TestMessage.class.getName()));
-
-        new MessageIdsWriter(providers(), Set.of(TestMessage.class)).write(dir);
-
-        assertEquals(IDS, Files.readString(dir.resolve("ids.json")));
     }
 
-    /** @return Provider registering {@link TestMessage} under the direct type 42. */
-    private static MessageFactoryProvider[] providers() {
+    /** */
+    @Test public void testHandWrittenMessageWithoutDescription() throws IOException {
+        Path dir = tmp.getRoot().toPath();
+
+        createTestMessageDescription(dir);
+
+        new MessageIdsWriter(providers(true), Set.of(CompressedMessage.class)).write(dir);
+
+        try (InputStream in = MessageIdsWriterTest.class.getResourceAsStream("expected-ids.json")) {
+            String expected = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+
+            assertEquals(expected, Files.readString(dir.resolve("ids.json")));
+        }
+    }
+
+    /** Creates the description for the ordinary test message. */
+    private static void createTestMessageDescription(Path dir) throws IOException {
+        Path msgs = Files.createDirectories(dir.resolve("messages"));
+
+        Files.writeString(msgs.resolve(TestMessage.class.getName() + ".json"), "{}");
+    }
+
+    /** @param includeCompressed Whether to register the hand-written message as well. */
+    private static MessageFactoryProvider[] providers(boolean includeCompressed) {
         return new MessageFactoryProvider[] {
             new AbstractMessageFactoryProvider() {
                 @Override public void registerAll(IgniteMessageFactory factory) {
+                    if (includeCompressed)
+                        register(factory, CompressedMessage.class, (short)5000);
+
                     register(factory, TestMessage.class, (short)42);
                 }
             }
