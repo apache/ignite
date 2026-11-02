@@ -2249,8 +2249,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 boolean changed = false;
 
-                boolean updRmtMaps =
-                    !ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+                boolean ownerReports =
+                    ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
                 for (int part = 0; part < grp.affinity().partitions(); part++) {
                     boolean lost = F.contains(lostParts, part);
@@ -2303,7 +2303,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
 
                         // Update remote maps according to policy.
-                        if (updRmtMaps) {
+                        if (!ownerReports) {
                             for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
                                 if (entry.getKey().equals(ctx.localNodeId()))
                                     continue;

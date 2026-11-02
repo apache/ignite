@@ -2298,8 +2298,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Collection<CacheGroupContext> locChangedGrps = new HashSet<>();
 
-        boolean ownerReports = cctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
-
         try {
             waitUntilNewCachesAreRegistered();
 
@@ -2331,9 +2329,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     }
 
-                    if (ownerReports)
-                        locChangedGrps.addAll(grpToRefresh);
-                    else if (!grpToRefresh.isEmpty()) {
+                    if (!grpToRefresh.isEmpty()) {
                         if (log.isDebugEnabled())
                             log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
                                 grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
@@ -2403,7 +2399,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         locChangedGrps.add(grp);
                 }
 
-                if (ownerReports && !locChangedGrps.isEmpty()) {
+                if (!locChangedGrps.isEmpty()
+                    && cctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE)) {
                     if (log.isDebugEnabled()) {
                         log.debug("Refresh partitions due to local partition changes at the end of exchange [grps=" +
                             locChangedGrps.stream().map(CacheGroupContext::cacheOrGroupName)
