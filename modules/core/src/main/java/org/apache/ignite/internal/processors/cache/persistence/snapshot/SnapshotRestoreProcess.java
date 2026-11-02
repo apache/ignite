@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1796,6 +1797,13 @@ public class SnapshotRestoreProcess {
         int pageSize = ctx.cache().context().database().pageSize();
 
         try (FileIO src = ioFactory.create(from, READ); FileIO dest = ioFactory.create(to, CREATE, WRITE)) {
+            long len = src.size();
+
+            // XFS preallocates blocks on extending writes, and those between the pages would stay allocated.
+            try (RandomAccessFile file = new RandomAccessFile(to, "rw")) {
+                file.setLength(len);
+            }
+
             ByteBuffer buf = locBuff.get();
 
             buf.clear();
@@ -1810,7 +1818,7 @@ public class SnapshotRestoreProcess {
             buf.limit(hdrSize);
             dest.writeFully(buf, 0);
 
-            for (long off = hdrSize, len = src.size(); off < len; off += pageSize) {
+            for (long off = hdrSize; off < len; off += pageSize) {
                 if (opCtx.stopChecker.getAsBoolean())
                     throw new IgniteInterruptedException("The operation has been stopped on copy file: " + from.getAbsolutePath());
 
