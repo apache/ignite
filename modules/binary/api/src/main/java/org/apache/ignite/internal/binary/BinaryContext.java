@@ -85,8 +85,9 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  * Binary code deals with exactly two kinds of class loaders:
  * <ul>
  *     <li><b>Default loader</b> - {@link #classLoader()}. It is the loader set via
- *     {@code IgniteConfiguration#getClassLoader()} or, when none is configured, the loader Ignite itself was
- *     loaded by ({@link CommonUtils#gridClassLoader()}). Classes resolved through it are cached.</li>
+ *     {@code IgniteConfiguration#getClassLoader()} or ({@link CommonUtils#gridClassLoader()}).
+ *     Classes resolved through it are cached.</li>
+ *
  *     <li><b>Custom loader</b> - a deployment (peer class loading) or user supplied loader passed explicitly
  *     into a binary API call. Such loaders can be undeployed (see {@link #onUndeploy(ClassLoader)}),
  *     so classes resolved through them are never cached.</li>
