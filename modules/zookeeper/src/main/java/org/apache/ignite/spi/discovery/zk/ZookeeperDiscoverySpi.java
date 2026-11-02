@@ -432,11 +432,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
     }
 
     /** {@inheritDoc} */
-    @Override public void onClientNodeJoined() {
-        stats.onClientNodeJoined();
-    }
-
-    /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         startStopwatch();
 

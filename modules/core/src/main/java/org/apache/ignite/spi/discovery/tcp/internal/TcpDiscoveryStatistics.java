@@ -335,15 +335,6 @@ public class TcpDiscoveryStatistics {
     }
 
     /**
-     * Gets joined client nodes count.
-     *
-     * @return Joined client nodes count.
-     */
-    public int joinedClientNodesCount() {
-        return joinedClientNodesCnt.value();
-    }
-
-    /**
      * Gets nodes left count.
      *
      * @return Nodes left count.

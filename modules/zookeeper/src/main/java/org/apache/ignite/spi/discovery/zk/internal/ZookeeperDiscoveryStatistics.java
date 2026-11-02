@@ -80,11 +80,6 @@ public class ZookeeperDiscoveryStatistics {
     }
 
     /** */
-    public long joinedClientNodesCnt() {
-        return joinedClientNodesCnt.value();
-    }
-
-    /** */
     public long commErrorCount() {
         return commErrCnt.value();
     }

@@ -1360,11 +1360,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return stats.joinedNodesCount();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onClientNodeJoined() {
-        stats.onClientNodeJoined();
-    }
-
     /**
      * Gets left nodes count.
      *

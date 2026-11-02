@@ -170,14 +170,4 @@ public interface DiscoverySpi extends IgniteSpi {
      * @throws IllegalStateException If discovery SPI has not started.
      */
     public boolean isClientMode() throws IllegalStateException;
-
-    /**
-     * Notifies the discovery SPI that a client node has joined the topology.
-     * <p>
-     * Default implementation does nothing. SPI implementations that support
-     * client-node-joined metrics should override this method.
-     */
-    default void onClientNodeJoined() {
-        // No-op by default.
-    }
 }
