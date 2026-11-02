@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rollingupgrade;
+package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,12 +26,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.mismatches;
-import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PART_STATE_FROM_OWNER_FEATURE;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -82,14 +82,19 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         awaitPartitionMapExchange();
 
-        assertFalse(isFeatureActive(grid(0), PART_STATE_FROM_OWNER_FEATURE));
-
         IgniteEx oldCrd = stopLeavingWithMapsHeld();
 
         for (IgniteEx viewer : new IgniteEx[] {oldCrd, grid(CLIENT)}) {
             List<String> mismatches = mismatches(viewer, CACHE);
 
             assertTrue(viewer.name() + " didn't write the new owners' state: " + mismatches, mismatches.isEmpty());
+        }
+
+        for (Ignite g : G.allGrids()) {
+            if (g != oldCrd && !g.cluster().localNode().isClient()) {
+                assertFalse(g.name() + " sent its partition map before the feature is active",
+                    TestRecordingCommunicationSpi.spi(g).hasBlockedMessages());
+            }
         }
 
         TestRecordingCommunicationSpi.stopBlockAll();
@@ -112,9 +117,10 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)}) {
             List<String> mismatches = mismatches(viewer, CACHE);
 
-            // Only the new owners' partitions may differ: the viewer must not have written OWNING for them.
-            assertTrue(viewer.name() + " wrote the new owners' state itself: " + mismatches,
-                !mismatches.isEmpty() && mismatches.stream().allMatch(m -> m.contains(" local=OWNING ")));
+            assertFalse(viewer.name() + " wrote the new owners' state itself", mismatches.isEmpty());
+
+            assertTrue(viewer.name() + " differs from the nodes in more than the new owners' partitions: " + mismatches,
+                mismatches.stream().allMatch(m -> m.contains(" local=OWNING ")));
         }
 
         TestRecordingCommunicationSpi.stopBlockAll();

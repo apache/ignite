@@ -495,12 +495,14 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param viewer Server or client whose partition map is checked. A client that hasn't started the cache keeps it in
-     *      a client topology.
+     * Compares the viewer's partition map with the local partition states of the servers. A client that hasn't started
+     * the cache keeps the map in a client topology.
+     *
+     * @param viewer Server or client whose partition map is checked.
      * @param cacheName Cache name.
      * @return Partitions whose state in the viewer's map differs from the state on the server that holds them.
      */
-    public static List<String> mismatches(IgniteEx viewer, String cacheName) {
+    static List<String> mismatches(IgniteEx viewer, String cacheName) {
         IgniteInternalCache<?, ?> cache = viewer.cachex(cacheName);
 
         GridDhtPartitionTopology viewerTop = cache != null
