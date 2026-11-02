@@ -142,6 +142,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PART_STATE_FROM_OWNER_FEATURE;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
@@ -2297,6 +2298,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         Collection<CacheGroupContext> locChangedGrps = new HashSet<>();
 
+        boolean ownerReports = cctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+
         try {
             waitUntilNewCachesAreRegistered();
 
@@ -2328,7 +2331,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     }
 
-                    if (!grpToRefresh.isEmpty()) {
+                    if (ownerReports)
+                        locChangedGrps.addAll(grpToRefresh);
+                    else if (!grpToRefresh.isEmpty()) {
                         if (log.isDebugEnabled())
                             log.debug("Refresh partitions due to partitions initialized when affinity ready [" +
                                 grpToRefresh.stream().map(CacheGroupContext::name).collect(Collectors.toList()) + ']');
@@ -2398,7 +2403,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         locChangedGrps.add(grp);
                 }
 
-                if (!locChangedGrps.isEmpty()) {
+                if (ownerReports && !locChangedGrps.isEmpty()) {
                     if (log.isDebugEnabled()) {
                         log.debug("Refresh partitions due to local partition changes at the end of exchange [grps=" +
                             locChangedGrps.stream().map(CacheGroupContext::cacheOrGroupName)
