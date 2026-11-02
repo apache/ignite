@@ -104,7 +104,7 @@ You should consider the nature of your transactions, the rate of change of your 
 Custom conflict resolver can be set via `conflictResolver` and allows to compare or merge the conflict data in any required way.
 
 ==== Conflict resolution metrics
-To monitor conflict resolution, use the `ConflictResolver*` metrics from the `cache.{cache_name}` link:monitoring-metrics/new-metrics#caches[metric registry]: `ConflictResolverAcceptedCount`, `ConflictResolverRejectedCount`, `ConflictResolverMergedCount` and `ConflictResolverFailedCount`.
+To monitor conflict resolution, use the `ConflictResolverAcceptedCount`, `ConflictResolverRejectedCount`, `ConflictResolverMergedCount` and `ConflictResolverFailedCount` metrics from the `cache.{cache_name}` link:monitoring-metrics/new-metrics#caches[metric registry].
 
 === Configuration example
 Configuration is done via Ignite node plugin:
