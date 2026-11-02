@@ -2970,6 +2970,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         @Override public Collection<InetSocketAddress> socketAddresses() {
             List<InetSocketAddress> addrs = new ArrayList<>(super.socketAddresses());
 
+            // Unlike new InetSocketAddress(host, port), does no DNS lookup, so getAddress() is always null.
             addrs.add(InetSocketAddress.createUnresolved("unresolved", 47500));
 
             return addrs;
