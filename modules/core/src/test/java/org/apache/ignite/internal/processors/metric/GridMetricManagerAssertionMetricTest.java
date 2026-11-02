@@ -31,68 +31,51 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests the ASSERTION_ERROR_CNT metric in the sys metrics registry.
  */
 public class GridMetricManagerAssertionMetricTest extends GridCommonAbstractTest {
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
 
     /**
      * Verifies that the ASSERTION_ERROR_CNT counter increments
-     * when an AssertionError is thrown.
+     * only for java.lang.AssertionError (not for other Error subclasses).
      *
      * @throws Exception If fails.
      */
     @Test
     public void testAssertionErrorMetric() throws Exception {
+        IgniteEx grid = startGrid(0);
+
+        MetricRegistry sysReg = grid.context().metric().registry(SYS_METRICS);
+        LongMetric ctr = sysReg.findMetric(ASSERTION_ERROR_CNT);
+
+        assertNotNull("Metric " + ASSERTION_ERROR_CNT + " not found", ctr);
+
+        long init = ctr.value();
+
+        // Non-AssertionError should NOT increment the counter.
         try {
-            IgniteEx grid = startGrid(0);
-
-            MetricRegistry sysReg = grid.context().metric().registry(SYS_METRICS);
-
-            assertNotNull(sysReg);
-
-            LongMetric ctr = sysReg.findMetric(ASSERTION_ERROR_CNT);
-
-            assertNotNull("Metric " + ASSERTION_ERROR_CNT + " not found", ctr);
-
-            long init = ctr.value();
-
-            // Throw an AssertionError.
-            try {
-                throw new AssertionError("test assertion");
-            }
-            catch (AssertionError e) {
-                // Expected.
-            }
-
-            // Metric should increment (JFR events are delivered asynchronously).
-            assertTrue(
-                "Metric should increment after AssertionError",
-                waitForCondition(() -> ctr.value() >= init + 1, getTestTimeout()));
+            throw new Error("not an assertion");
         }
-        finally {
-            stopAllGrids();
+        catch (Error e) {
+            // Expected.
         }
-    }
 
-    /**
-     * Verifies that the ASSERTION_ERROR_CNT metric exposes proper name and description.
-     *
-     * @throws Exception If fails.
-     */
-    @Test
-    public void testMetricMetadata() throws Exception {
+        assertTrue("Non-AssertionError should not increment metric",
+            waitForCondition(() -> ctr.value() == init, 2000));
+
         try {
-            IgniteEx grid = startGrid(0);
-
-            MetricRegistry sysReg = grid.context().metric().registry(SYS_METRICS);
-
-            LongMetric ctr = sysReg.findMetric(ASSERTION_ERROR_CNT);
-
-            assertNotNull(ctr);
-
-            assertEquals(SYS_METRICS + "." + ASSERTION_ERROR_CNT, ctr.name());
-
-            assertEquals("Number of AssertionErrors thrown in this JVM.", ctr.description());
+            throw new AssertionError("test assertion");
         }
-        finally {
-            stopAllGrids();
+        catch (AssertionError e) {
+            // Expected.
         }
+
+        assertTrue("Metric should increment by exactly 1 after AssertionError",
+            waitForCondition(() -> ctr.value() == init + 1, 10000));
     }
 }

@@ -28,12 +28,11 @@ import java.lang.management.ThreadMXBean;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import jdk.jfr.consumer.RecordedClass;
+import jdk.jfr.FlightRecorder;
 import jdk.jfr.consumer.RecordingStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -213,7 +212,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private final LongAdderMetric assertionErrorCnt;
 
     /** JFR stream for capturing thrown Errors. */
-    private volatile RecordingStream jfrStream;
+    private RecordingStream jfrStream;
 
     /**
      * @param ctx Kernal context.
@@ -261,7 +260,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime,
             "User-mode CPU time of the thread that reads the metric, in nanoseconds.");
         assertionErrorCnt = sysreg.longAdderMetric(ASSERTION_ERROR_CNT,
-                "Number of AssertionErrors thrown in this JVM.");
+            "Number of AssertionError instances created in the JVM.");
 
         MetricRegistryImpl pmeReg = registry(PME_METRICS);
 
@@ -341,33 +340,30 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         // Stop discovery worker and metrics updater.
         U.closeQuiet(metricsUpdateTask);
         U.closeQuiet(jfrStream);
-        jfrStream = null;
     }
 
     /**
-     * Starts a JFR RecordingStream to capture thrown Error events and increment the
-     * {@link #assertionErrorCnt} metric when an AssertionError is detected.
+     * Starts a JFR stream; this is the only JVM-wide hook that sees errors swallowed by
+     * {@code catch (Throwable)}.
      */
     private void startJfrErrorStream() {
-        try {
-            RecordingStream stream = new RecordingStream();
-            stream.enable("jdk.JavaErrorThrow");
-            stream.onEvent("jdk.JavaErrorThrow", event -> {
-                try {
-                    RecordedClass cls = event.getClass("thrownClass");
-                    Objects.requireNonNull(cls, "Java error occurs. Unable to get thrown class");
-                    if ("java.lang.AssertionError".equals(cls.getName()))
-                        assertionErrorCnt.increment();
-                }
-                catch (RuntimeException cause) {
-                    log.warning("Failed to monitor Java error event.", cause);
-                }
-            });
-            stream.startAsync();
-            jfrStream = stream;
+        if (!FlightRecorder.isAvailable()) {
+            log.warning("JFR is not available, " + ASSERTION_ERROR_CNT + " metric will stay 0.");
+            return;
         }
-        catch (RuntimeException cause) {
-            U.warn(log, "Failed to start JFR error stream: ", cause);
+
+        try {
+            jfrStream = new RecordingStream();
+            jfrStream.enable("jdk.JavaErrorThrow").withoutStackTrace();
+            jfrStream.onEvent("jdk.JavaErrorThrow", event -> {
+                if (AssertionError.class.getName().equals(event.getClass("thrownClass").getName()))
+                    assertionErrorCnt.increment();
+            });
+            jfrStream.onError(e -> log.warning("Failed to process JFR error event.", e));
+            jfrStream.startAsync();
+        }
+        catch (IllegalStateException e) {
+            log.warning("Failed to start JFR error stream, " + ASSERTION_ERROR_CNT + " metric will stay 0.", e);
         }
     }
 
