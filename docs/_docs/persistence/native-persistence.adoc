@@ -156,10 +156,11 @@ tab:C++[unsupported]
 
 You can also change the WAL and WAL archive paths to point to directories outside of the storage directory. Refer to the next section for details.
 
-NOTE: On production server nodes, keep data, the active WAL, the WAL archive, the work directory, snapshots, logs, and diagnostic output on separate file systems with independently provisioned capacity, and place data and the active WAL on different physical devices.
-Two roles cannot be moved away: the CDC directory and the root of an incremental snapshot chain have to be on the same file system as the WAL archive, because both use hard links to archived segments.
-If the Ignite paths are left unset, data, the active WAL, the WAL archive, and CDC all live in the work directory and therefore on one file system, so the isolation does not exist.
-See link:server-node-file-system-layout[Server Node File System Layout] for the placement and sizing rules.
+NOTE: On production server nodes, place data, the active WAL, the WAL archive, the work directory, snapshots, logs, and diagnostic output on separate file systems where the available storage allows it, and keep logs and diagnostic output away from the space that data and WAL need.
+If several roles share a file system, plan for their combined volume and leave free space for checkpoints and WAL rotation.
+Two roles cannot be moved away: the CDC directory and the snapshot root of an incremental snapshot chain have to be on the same file system as the WAL archive, because both use hard links to archived segments.
+If the Ignite paths are left unset, data, the active WAL, the WAL archive, and CDC all live in the work directory and therefore on one file system.
+See link:server-node-file-system-layout[Server Node File System Layout] for the placement and sizing recommendations.
 
 == Write-Ahead Log
 
@@ -216,9 +217,12 @@ The WAL archive is used to store WAL segments that may be needed to recover the 
 
 By default, the maximum size of the WAL archive is `maxWalArchiveSize`, whose default value is 1 GiB. You can change that value in the <<Configuration Properties,configuration>>.
 
-Cleanup is triggered by `minWalArchiveSize`, not by `maxWalArchiveSize`. By default, it is half of `maxWalArchiveSize`, that is 512 MiB. The cleaner waits for the archive to reach this lower threshold, then removes the oldest segments, stopping at the last completed checkpoint and at the segments that are reserved by a running checkpoint or by a reader. It removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
+Cleanup starts when the archive exceeds `minWalArchiveSize`, not `maxWalArchiveSize`. By default, `minWalArchiveSize` is half of `maxWalArchiveSize`, that is 512 MiB.
+The cleanup runs asynchronously in the background. It removes the oldest segments, stopping at the last completed checkpoint and at the segments that are reserved by a running checkpoint or by a reader. It removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
 
-`maxWalArchiveSize` is the upper threshold, and it is not a hard bound on the directory size. The archive reaches it only when segments cannot be removed, for example because a checkpoint or a reader still holds them. At this upper threshold Ignite forcibly releases those reservations, so that the cleanup can delete the segments despite them.
+`maxWalArchiveSize` is the upper threshold, and it is not a hard bound on the directory size. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers. This allows cleanup of older segments. Archive usage can still exceed `maxWalArchiveSize` while segments are needed for recovery.
+
+Removing an archived segment does not release its disk blocks while a CDC or snapshot hard link still points to it, so the space taken on the file system can be larger than the archive size.
 
 CAUTION: Setting these thresholds to values lower than the defaults should be tested before being used in production. The typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
 CDC is not affected: it keeps its own hard link to each captured segment, so its history is retained independently of the archive cleanup and is bounded by `cdcWalDirectoryMaxSize` instead.
@@ -380,8 +384,8 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 |`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
 
 | `walCompactionLevel` | WAL archive compression level. `1` indicates the fastest speed, and `9` indicates the best compression. | `1`
-|`maxWalArchiveSize`  | The upper threshold (in bytes) of the WAL archive. When the archive reaches it, Ignite forcibly releases the segments reserved by a running checkpoint or by a reader, so that the cleanup can delete them. It is not a hard bound on the directory size. | 1 GiB
-|`minWalArchiveSize` | The threshold (in bytes) that starts the cleanup of the WAL archive. The cleanup removes the oldest segments while the archive stays above this value. Segments are removed as whole files, so the remaining size can be below it. | Half of `maxWalArchiveSize`
+|`maxWalArchiveSize`  | The upper threshold (in bytes) of the WAL archive. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers, so that the cleanup can delete them. It is not a hard bound on the directory size. | 1 GiB
+|`minWalArchiveSize` | The threshold (in bytes) that makes segments eligible for cleanup. The cleanup runs in the background and removes the oldest segments while the archive stays above this value. Segments are removed as whole files, so the remaining size can be below it. | Half of `maxWalArchiveSize`
 |`walSegments` | The number of active WAL segments. The volume that holds the active WAL has to fit that many segments of `walSegmentSize` plus a rotation reserve. | `10`
 |`checkpointFrequency` | The interval between checkpoints, in milliseconds. A value that is too small produces frequent checkpoints and a large number of checkpoint markers. | `180000` (3 minutes)
 |=======================================================================

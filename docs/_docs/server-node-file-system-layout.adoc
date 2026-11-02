@@ -14,161 +14,173 @@
 // limitations under the License.
 
 = Server Node File System Layout
+:javaFile: {javaCodeDir}/PersistenceTuning.java
 
-Plan disk space separately for persistent data, WAL, retained WAL segments, snapshots, logs, and JVM diagnostics.
-If these files share a file system, growth in one directory can exhaust the space needed by the others.
-A failed write to Ignite data, WAL, or metadata can cause the node to stop.
-A full file system can also prevent the node from restarting.
+This page brings together recommendations for placing server node files.
+Use it to plan disk space, manage retained files, and protect node storage from log and diagnostic growth.
 
-These recommendations apply to production server nodes.
-For nodes without native persistence, the recommendations for the work directory, logs, and JVM diagnostics still apply.
+These recommendations are intended for production server nodes.
+On nodes without native persistence, the guidance for the work directory, logs, and JVM diagnostics still applies.
 
-Not every role can be isolated: CDC and the root of an incremental snapshot chain are hard-linked to WAL archive segments and therefore have to live on the archive file system.
-Isolate the remaining roles.
+== Separate File Systems
 
-== Separate Capacity and I/O
+Use separate file systems to keep log and diagnostic growth from taking space needed by the node.
+For workloads with heavy writes, placing data files and the active WAL on separate devices can also improve write performance.
+Choose a layout that fits your workload and available storage.
+If several file types share a file system, plan for their combined use, limit retained logs and diagnostic files, and leave free space for checkpoints and WAL rotation.
 
-Use separate file systems or volumes with independently provisioned capacity to contain disk-space exhaustion.
-Different directories on the same file system share free space and do not provide this isolation.
-A separate file system is a capacity boundary only: it does not by itself reduce I/O contention, which requires a separate device or independently provisioned storage throughput.
+Running out of disk space can stop a node and prevent it from restarting.
 
-Separate the roles for a second reason: they compete for the same device queue.
-Data files receive checkpoint batches, the active WAL receives the writes of the commit path, and the archive, CDC, and snapshots add their own sequential streams.
-When these streams share a device, a spike in one of them delays the others, and the delay appears while the load is at its highest.
-
-Separate partitions on one physical device isolate capacity but not I/O: they still share the device queue, the controller, and the failure risk.
-For I/O isolation, place data files and the active WAL on different physical devices or independently provisioned storage.
-Separate the archive as well where possible, so that archiving and retained segments do not compete with the active WAL.
-Include the underlying shared storage pools in capacity and throughput planning.
+A separate file system bounds capacity: directories placed on the same file system share its free space.
+It does not by itself reduce I/O contention, which requires a separate device or independently provisioned throughput.
+Partitions of one physical disk isolate capacity but still share the failure risk of that disk.
 
 == Recommended Placement
 
 [cols="1,1,3", options="header"]
 |===
-|Files |Configuration |Placement and reason
+|Files |Configuration |Placement
 
 |Data and indexes
-|`DataStorageConfiguration.storagePath`; all additional configured data and index paths
-|Use dedicated, durable data file systems. Keep logs, diagnostic files, and retained backups off these file systems to protect checkpoint writes and recovery from unrelated growth.
+|`DataStorageConfiguration.storagePath` and `DataStorageConfiguration.extraStoragePaths`
+|Dedicated, durable data file systems. Keep logs, diagnostic files, and retained backups off them, so that unrelated growth does not take the space needed by checkpoint writes and recovery.
 
 |Active WAL
 |`DataStorageConfiguration.walPath`
-|Use a dedicated file system, separate from data and preferably from the WAL archive. This protects the space needed for WAL writes and keeps the files of the two roles apart. To reduce the competition between checkpoint page writes and WAL writes, place the active WAL on a separate device or on independently provisioned storage throughput.
+|A separate file system with room for the active segments and a rotation reserve, see <<Sizing the WAL Volume>>. On write-heavy workloads, a separate device for the active WAL and the data files reduces the competition between checkpoint page writes and WAL writes.
 
 |WAL archive
 |`DataStorageConfiguration.walArchivePath`
-|Use a file system with capacity planned for retained WAL, CDC, and incremental snapshots when enabled. This file system also hosts these two consumers, because both link to archived segments.
-Provision throughput as well as capacity: if the archiver cannot keep up with the peak WAL rate, the working segments run out and the write waits.
-Include the extra load of WAL compaction and of the consumers that read the archive, such as CDC and incremental snapshots.
-Keep the archive separate from data and active WAL where possible.
+|Preferably a separate file system. Plan its capacity for the retained segments, see <<Sizing the WAL Archive>>, and for the features that share it: CDC and incremental snapshots, see <<Account for Hard Links>>.
 
-|CDC WAL segments
+|CDC
 |`DataStorageConfiguration.cdcWalPath`
-|Keep this directory on the *same file system as the WAL archive*. CDC uses hard links, which cannot cross file-system boundaries. A separate CDC directory does not isolate its disk-space usage.
+|The *same file system as the WAL archive*, because CDC uses hard links to archived WAL segments. A separate CDC directory does not isolate its disk-space usage. Bound its retention with `cdcWalDirectoryMaxSize`.
 
 |Work directory
 |`IgniteConfiguration.workDirectory`
-|Use durable storage with reserved operating headroom. The directory contains binary metadata, marshaller mappings, and other node files even when data and WAL are configured elsewhere. Isolate it from logs and diagnostic output; do not treat it as disposable temporary storage.
+|Durable storage with free space to spare. The directory keeps binary metadata, marshaller mappings, and other node files even when data and WAL are configured elsewhere. Keep it apart from logs and diagnostic output, and do not treat it as disposable temporary storage.
 
 |Snapshots
-|`IgniteConfiguration.snapshotPath`
-|For full snapshots without increments, use a separate file system and preferably separate storage: a snapshot adds a second read and write pass over the data, and on a shared device it competes with the traffic the cluster is serving. For incremental snapshot chains, follow the same-file-system requirement below.
+|`IgniteConfiguration.snapshotPath` and `DataStorageConfiguration.extraSnapshotPaths`
+|For full snapshots without increments, preferably a separate file system and, where available, separate storage: the snapshot adds a second read and write pass over the data. For incremental snapshots, the snapshot root must be on the same file system as the WAL archive, see <<Account for Hard Links>>. Keep independent backup copies outside the node storage.
 
 |Ignite logs
 |Log4j2 appenders in the logging configuration; `java.util.logging.properties` and the `IGNITE_LOG_DIR` environment variable for the built-in JUL logger
-|Use a dedicated log file system, separate from data, WAL, and the work directory, and bound the total retained volume rather than only individual files. When logs share a file system with data, their growth can take the space that checkpoints, the archiver, and node startup need. Note that `IGNITE_LOG_DIR` affects only the built-in JUL logger output, not Log4j2 appenders.
+|A separate file system, with a bound on the total retained volume rather than on individual files. When logs share a file system with data, their growth can take the space that checkpoints and WAL rotation need. `IGNITE_LOG_DIR` affects only the built-in JUL logger, not Log4j2 appenders.
 
 |JVM and OS diagnostics
-|GC logging options; JFR repository and output settings; heap/core dump paths; monitoring-tool output
-|Use diagnostic storage separate from data, WAL, the work directory, and preferably application logs. Bound retained output and budget space for large dumps.
+|GC logging options; JFR repository and output settings; heap and core dump paths; monitoring-tool output
+|Storage separate from data, WAL, and the work directory, with retained output bounded and space reserved for large dumps, see <<Logs and Diagnostic Output>>.
 |===
 
-Keep growing Ignite files and diagnostic output off the operating system's root file system.
-If some roles must share a file system, size and monitor their combined usage.
-Use explicit paths and verify the actual mount points before starting the node.
+If some roles have to share a file system, size it for their combined usage and limit what each role retains.
+Keep Ignite files and diagnostic output off the operating system's root file system.
 
-The Ignite-managed defaults are all relative to the work directory, so leaving the paths unset puts data, active WAL, and the WAL archive on one file system.
+The Ignite-managed defaults are all relative to the work directory, so leaving the paths unset puts data, the active WAL, and the WAL archive on one file system.
 By default, `storagePath` is `${IGNITE_HOME}/work/db/node{IDX}-{UUID}`, `walPath` is `${IGNITE_HOME}/work/db/wal/`, and `walArchivePath` is `${IGNITE_HOME}/work/db/wal/archive/`.
-In that configuration the archive grows inside the node's own volume, and the separation described in this section does not exist at all.
-Paths of the tools outside Ignite's control have their own defaults, for example the JFR disk repository, which is created in the temporary directory of the operating system unless configured.
 See link:persistence/native-persistence#configuring-persistent-storage-directory[Configuring Persistent Storage Directory].
+
+== Configuration Example
+
+The example below places the main node paths on separate file systems:
+
+[source,java]
+----
+include::{javaFile}[tags=layout-paths,indent=0]
+----
+
+The `/mnt/...` locations represent mount points prepared in advance; different directory names on one file system do not isolate anything.
+The WAL archive and CDC directories share `/mnt/wal-archive`.
+
+See the following sections for the individual paths:
+
+* link:setup#configuring-work-directory[Configuring Work Directory]
+* link:persistence/persistence-tuning#keep-wals-separately[Keep WALs Separately]
+* link:persistence/snapshot-directory#configuring-snapshot-directory[Configuring Snapshot Directory]
+
+=== Additional Data and Snapshot Directories
+
+If the data is spread over several directories with `DataStorageConfiguration.extraStoragePaths`, configure the snapshot locations for them as well:
+For full snapshots of data stored in `extraStoragePaths`, use `DataStorageConfiguration.extraSnapshotPaths` to set additional snapshot locations.
+When configured, the two arrays must have the same length; entries at the same index correspond to each other.
+
+[source,java]
+----
+include::{javaFile}[tags=extra-snapshot-paths,indent=0]
+----
+
+Additional snapshot paths are ordinary snapshot destinations: they do not have to be on the WAL archive file system.
+Do not pass an explicit snapshot path together with them: when a path is specified for the snapshot itself, all snapshot files are stored inside it and the additional locations are not used.
+
+NOTE: The additional locations currently apply to full snapshots only. Support for extra storages in incremental snapshots is not implemented yet, see https://issues.apache.org/jira/browse/IGNITE-29128[IGNITE-29128^].
 
 == Sizing the WAL Volume
 
-The active WAL volume does not behave like a data volume, because segment files are created by the configured I/O factory rather than filled page by page.
-How much space is taken at creation time and when it happens depends on the WAL mode and on the I/O factory: with `WALMode.FSYNC` Ignite uses the configured `fileIOFactory`, while the other modes use the default random-access file I/O.
-Do not assume that a full WAL volume always fails at the moment the next segment is created; a write can also fail inside an already allocated segment.
-Size the volume for the segments it can hold at once plus a rotation reserve, and monitor it like the other volumes.
-
+The active WAL volume has to hold the segments that exist at the same time plus a reserve for rotation.
 A node keeps 10 active segments by default (`walSegments`), and they are filled in a cyclical order, so the volume has to hold that many segments of `walSegmentSize` plus the rotation reserve.
 Changing `walSegmentSize` changes that footprint as well as the number of rotations.
+Monitor the volume like the other volumes, and keep the reserve for the next segment: a write can fail inside an already allocated segment as well.
 
-The WAL mode decides what a commit actually guarantees.
-With the default `LOG_ONLY` mode, a commit guarantees that the record reaches the operating system cache and survives a process crash.
-`FSYNC` also forces the record to disk on every commit and is therefore slower.
-`BACKGROUND` does not require a synchronous flush for every commit: it flushes periodically and depends on the memory-mapped file setting, so the last updates can be lost if the process crashes.
-`NONE` disables the WAL.
-Moving to a weaker mode is a durability decision rather than a tuning step, so treat it as a change to the guarantees of the cluster and not as a way to make the volume smaller.
-See link:persistence/native-persistence#wal-modes[WAL Modes].
+The WAL mode defines the durability guarantees of a commit rather than the size of the volume, see link:persistence/native-persistence#wal-modes[WAL Modes].
 
 Do not disable the WAL to stop unexpected volume growth: disabling or enabling it is only safe on a stable topology, and with the WAL disabled a node restart removes the data from its persistent storage.
 See link:persistence/native-persistence#disabling-wal[Disabling WAL].
 
 Archiving can be disabled by setting `walPath` to the same value as `walArchivePath`.
-In that mode segments are written to the WAL directory under their absolute indexes instead of being copied into a separate directory, and the retained segments are still removed according to `minWalArchiveSize` and `maxWalArchiveSize`.
-The removal runs asynchronously, stops at the last completed checkpoint and at the segments reserved by a running checkpoint or by a reader, and can be forced past the reservations when the archive exceeds the limit, so the directory can temporarily occupy more or, after a forced release, less than the configured value.
+In that mode segments are written to the WAL directory under their absolute indexes instead of being copied into a separate directory, and the retained segments are removed according to `minWalArchiveSize` and `maxWalArchiveSize`.
 Plan the capacity of that file system like the capacity of a data volume, because it holds both the active and the retained segments.
-Consumers do not behave the same way in this mode: incremental snapshots require the WAL archive to be enabled, and CDC receives its links from the archiver, so standalone CDC does not capture new changes without an archive.
-Historical rebalancing can still use the retained segments of the shared directory.
+Incremental snapshots require the WAL archive to be enabled, and CDC receives its links from the archiver, so standalone CDC does not capture new changes without an archive.
 See link:persistence/native-persistence#disabling-wal-archive[Disabling WAL Archive].
 
 == Sizing the WAL Archive
 
-The archive is controlled by two thresholds. `minWalArchiveSize` starts the cleanup and is half of `maxWalArchiveSize` by default, that is 512 MiB. `maxWalArchiveSize` is the upper threshold, 1 GiB by default, at which the reservations are forcibly released.
-Cleanup starts as soon as the archive reaches `minWalArchiveSize`, not `maxWalArchiveSize`. The cleaner waits for the lower threshold, then removes the oldest segments, stopping at the last completed checkpoint and at the segments reserved by a running checkpoint or by a reader, and removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
-The archive reaches `maxWalArchiveSize` only when segments cannot be removed, for example because a checkpoint or a reader still holds them. At this upper threshold Ignite forcibly releases those reservations, so that the cleanup can delete the segments despite them.
-Removing an archived segment also does not release its disk blocks while a CDC or snapshot hard link still points to it, so the footprint of the file system is larger than the archive bookkeeping suggests.
-Reducing the thresholds below their defaults is allowed but should be tested: the typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
-CDC is not affected: it keeps its own hard link to each captured segment, so its history is retained independently of the archive cleanup and is bounded by `cdcWalDirectoryMaxSize` instead.
-See link:persistence/native-persistence#wal-archive[WAL Archive].
+Cleanup starts when the archive reaches `minWalArchiveSize`. By default, this threshold is half of `maxWalArchiveSize`: 512 MiB with the default maximum of 1 GiB.
+See link:persistence/native-persistence#wal-archive[WAL Archive] for the cleanup rules.
 
-Retention is no longer controlled by `walHistorySize`: the parameter is deprecated and ignored, and only `maxWalArchiveSize` with `minWalArchiveSize` define how much of the archive is kept.
+The cleanup runs in the background and deletes whole segments, so the remaining size can end up below the threshold.
+It does not remove the segments that the recovery still needs.
+When the archive reaches `maxWalArchiveSize`, Ignite releases the reservations that the last completed checkpoint already covers. This allows cleanup of older segments.
+Archive usage can still exceed `maxWalArchiveSize` while segments are needed for recovery.
+
+Removing an archived segment does not release its disk blocks while a CDC or snapshot hard link still points to it, so plan the capacity of the file system from the retained links as well, see <<Account for Hard Links>>.
+
+Lowering the thresholds below their defaults is allowed but should be tested: the typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
+CDC is not affected: it keeps its own hard link to each captured segment, so its history is bounded by `cdcWalDirectoryMaxSize` instead.
+Retention is not controlled by `walHistorySize`: the parameter is deprecated and ignored.
 
 WAL archive compaction, which stores older segments in ZIP format, is disabled by default; when it is enabled, the compressed segments occupy less space on the same file system.
 See link:persistence/native-persistence#wal-archive-compaction[WAL Archive Compaction].
 
+Capacity is not the only requirement: the archiver has to write at the peak rate at which the active WAL produces segments, and the same device may also serve compaction and the consumers that read the archive.
+If the archiver falls behind, the working segments run out and the write waits for space that only archiving can free.
+Provision sequential throughput for the peak WAL rate plus compaction, and verify it on the archive device itself.
+
 Archived segments are written once, mostly sequentially, and are read again only for recovery, CDC, incremental snapshots, historical rebalancing, and archive compaction.
-This makes the archive a candidate for cheaper, higher-capacity, slower media, such as HDDs or a capacity-oriented storage pool, while fast devices stay dedicated to the data and the active WAL.
-
-Capacity is not the only requirement.
-The archiver has to write at the peak rate at which the active WAL produces segments, and the same device may also serve compaction and the consumers that read the archive.
-If the archiver falls behind, the working segments run out and the write waits for space that only archiving can free, so an under-provisioned archive turns into a write stall rather than into a slow backup.
-Provision sequential throughput for the peak WAL rate plus compaction, and verify it on the archive device itself rather than extrapolating from the fast devices.
-
-Slower media also extend the time to replay archived segments during recovery, to catch up CDC, and to create an incremental snapshot, so take those objectives into account when choosing the device.
+This makes the archive a candidate for cheaper, higher-capacity, slower media, such as HDDs, while fast devices stay dedicated to the data and the active WAL.
+Slower media also extend the time to replay archived segments during recovery, to catch up CDC, and to create an incremental snapshot, so take these objectives into account when choosing the device.
 
 == Account for Hard Links
 
-CDC creates hard links to WAL archive segments.
-Deleting the archive's link does not release the disk blocks while a CDC link still exists.
-Consequently, `maxWalArchiveSize` does not bound the space retained by CDC.
+Keep the CDC directory and the snapshot root used for incremental snapshots on the same file system as the WAL archive.
+Both features use hard links to archived WAL segments.
 
-When enabling CDC, configure a positive `cdcWalDirectoryMaxSize` appropriate for the expected lag and the capacity shared with the archive.
-The default is unlimited.
-This setting does not reserve free space: leave room for the archive and other users of the file system.
+The links are created on segment files, not on the CDC or snapshot directories, so a separate directory on the same file system does not separate its free space.
+
+For CDC, `maxWalArchiveSize` does not bound the retained space.
+Configure a positive `cdcWalDirectoryMaxSize` appropriate for the expected lag and for the capacity shared with the archive; the default is unlimited.
+This setting does not reserve free space, so leave room for the archive and the other users of the file system.
 If adding a segment would exceed the limit, Ignite skips its CDC link and the corresponding changes are unavailable to CDC.
 The skip is reported in the node log, and `ignite-cdc.sh` notices the gap only when it reaches it, which can happen long after the event.
-Treat the first skipped segment as something that requires a CDC re-sync rather than as a warning to observe; this limit trades CDC continuity for bounded retention.
+Treat the first skipped segment as a reason to re-sync CDC, because this limit trades CDC continuity for bounded retention.
 
-Incremental snapshots also use hard links to archived WAL segments.
-The snapshot root used for the base full snapshot and its increments must be on the *same file system as the WAL archive*.
-Different partitions on the same physical disk do not satisfy this requirement.
-Snapshot links can retain disk blocks after archive cleanup, so include the retained snapshot chains in the capacity plan.
-Store independent backup copies outside the node's storage.
+For incremental snapshots, the snapshot root of the base full snapshot and of its increments has to be on the same file system as the WAL archive.
+Snapshot links can retain disk blocks after the archive cleanup, so include the retained snapshot chains in the capacity plan.
+Additional snapshot locations configured with `extraSnapshotPaths` do not change this requirement and are not used for incremental snapshots.
 
-Even when a full snapshot destination is on a separate file system, concurrent-change tracking can require temporary space on the live data file systems.
-Reserve space on both the source and destination.
+Even when a full snapshot destination is on a separate file system, concurrent-change tracking can require temporary space on the live data file systems, so reserve space on both the source and the destination.
 If the destination has its own file system, a destination that fills stops the snapshot operation while the node keeps serving; if the snapshot shares a file system with data or WAL, the same exhaustion can stop the node.
+Store independent backup copies outside the node storage.
 
 == Logs and Diagnostic Output
 
@@ -190,41 +202,38 @@ If you redirect it to a file yourself, rotate that file externally and be aware 
 Enable console appenders only if you intend to capture their output, otherwise redirecting stdout duplicates the log.
 * *Diagnostics.* Heap dumps, core dumps, saved recordings, and monitoring output are not covered by any of the above and must be managed separately.
 
+Size the log volume for the total retention that the configured policies can leave behind, plus the captured stdout.
+
 For JFR, configure both the disk repository and the recording output locations.
 By default the repository is created in the temporary directory of the operating system, and setting a recording filename alone does not relocate it.
 `maxsize` and `maxage` are per-recording options: they bound the data that each individual recording keeps in the repository, not the size of the repository as a whole and not the age of the `.jfr` files already written out.
-Leave space for active chunks, several concurrent recordings, and dumps, and delete or archive the recording files by your own policy.
-Some JDK versions can terminate the JVM if the JFR repository runs out of disk space. This bypasses the Ignite failure handler. A separate diagnostic file system protects Ignite data volumes from JFR growth, but does not prevent this JVM failure. Set recording retention limits, reserve free space, and monitor repository usage.
-
-Size the log volume for the total retention that the configured policies can leave behind, plus the captured stdout.
+Some JDK versions can terminate the JVM if the JFR repository runs out of disk space. This bypasses the Ignite failure handler, so a separate diagnostic file system protects the Ignite data volumes from JFR growth but does not prevent this JVM failure. Set retention limits for each recording, reserve free space for concurrent recordings and dumps, and monitor repository usage.
 
 The Control Script writes through the same logger configuration and opens its log file before the command runs, so a full or unwritable log directory can prevent the utility from starting.
 Run it from a host where the log directory is writable and has free space.
 
-== Monitor Free Space and Reserve Headroom
+== Plan Free Space
 
-Monitor every backing file system, including those used by additional data paths and diagnostic tools.
+Size every backing file system with free space to spare, including those used by additional data paths and by diagnostic tools, and monitor the space that the logs and diagnostic files take.
 On Linux, monitor both available bytes and free inodes, taking account of quotas and the space available to the Ignite operating-system user.
 
 There is no universal safe reserve.
-It depends on the write rate, the size of the data region, the checkpoint interval, and the time the operator needs to react, so derive it from measurements on your own workload: the growth of the file system between two warning points at peak load, and the time it takes to free space once the alert fires.
+It depends on the write rate, the size of the data region, the checkpoint interval, and the time the operator needs to react, so derive it from measurements on your own workload: the growth of the file system between two warning points at peak load, and the time it takes to free space once the alert is raised.
 The reserve has to cover the next checkpoint and the next WAL segment, and it has to last until someone acts on the alert.
 
-Stopping application writes does not stop disk growth: the checkpoint that follows still has to flush dirty pages, and if the volume has no room for them, the write fails and the node stops.
+Stopping application writes does not stop disk growth: the checkpoint that follows still has to flush dirty pages.
 That is why the reaction belongs at a threshold rather than at zero free space.
 
 The reserve also has a hardware side: random writes on a half-filled SSD are substantially faster than on a nearly full one, because of over-provisioning.
 Choosing devices with a higher over-provisioning rate, and leaving room to use it, is part of the same decision.
 See link:persistence/persistence-tuning#ssd-over-provisioning[SSD Over-provisioning].
 
-Configured retention limits and separate file systems reduce the interference between the roles, and a separate device or independently provisioned throughput reduces the I/O contention, but none of these guarantees that a node remains running or restartable after its storage is exhausted.
-
 == Related Configuration
 
 * link:setup#configuring-work-directory[Configuring Work Directory]
+* link:persistence/persistence-tuning#keep-wals-separately[Keep WALs Separately]
+* link:persistence/snapshot-directory#configuring-snapshot-directory[Configuring Snapshot Directory]
 * link:persistence/native-persistence[Ignite Persistence]
-* link:persistence/persistence-tuning#keep-wals-separately[Keeping WAL Separately]
 * link:persistence/change-data-capture[Change Data Capture]
-* link:persistence/snapshot-directory[Configuring the Snapshot Directory]
 * link:snapshots/snapshots[Cluster Snapshots]
 * link:logging[Configuring Logging]

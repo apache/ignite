@@ -116,7 +116,7 @@ See the link:persistence/snapshot-directory#configuring-snapshot-directory[Confi
 configuration examples.
 
 NOTE: A full snapshot reads all the data and writes a separate stream of files, so on a shared device it adds a second full read and write pass on top of the traffic the cluster is serving.
-Incremental snapshot chains must be stored on the same file system as the WAL archive, because increments are hard links to archived WAL segments.
+The snapshot root used for incremental snapshots has to be on the same file system as the WAL archive, because increments are hard links to archived WAL segments.
 See link:server-node-file-system-layout[Server Node File System Layout] for capacity and placement recommendations.
 
 === Snapshot Execution Pool
