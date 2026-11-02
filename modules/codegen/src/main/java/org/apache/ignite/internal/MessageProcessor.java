@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -115,18 +116,28 @@ public class MessageProcessor extends AbstractProcessor {
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
 
     /** Messages with no fields. A serializer generation intentionally skipped. */
-    public static final Set<String> SKIP_MESSAGES = Set.of(
+    static final String[] SKIP_MESSAGES = {
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage",
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
-    );
+    };
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
     /** */
     private MessageJsonGenerator jsonGen;
+
+    /** Returns whether the message class is listed in {@link #SKIP_MESSAGES}. */
+    public static boolean isSkippedMessage(String clsName) {
+        for (String name : SKIP_MESSAGES) {
+            if (name.equals(clsName))
+                return true;
+        }
+
+        return false;
+    }
 
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -477,8 +488,8 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** Map class names to {@link TypeMirror} objects. */
-    private List<TypeMirror> typesToTypeMirrors(Collection<String> types) {
-        return types.stream()
+    private List<TypeMirror> typesToTypeMirrors(String[] types) {
+        return Arrays.stream(types)
             .map(cls -> processingEnv.getElementUtils().getTypeElement(cls))
             .filter(Objects::nonNull)
             .map(Element::asType)

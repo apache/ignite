@@ -71,7 +71,8 @@ public class MessageIdsWriter {
         for (short id : factory.registeredDirectTypes()) {
             String clsName = factory.create(id).getClass().getName();
 
-            if (!MessageProcessor.SKIP_MESSAGES.contains(clsName) && !Files.exists(dir.resolve("messages/" + clsName + ".json")))
+            if (!MessageProcessor.isSkippedMessage(clsName)
+                && !Files.exists(dir.resolve("messages/" + clsName + ".json")))
                 throw new IllegalStateException("No wire format description [cls=" + clsName + ']');
 
             lines.add("  \"" + id + "\": \"" + clsName + '"');
