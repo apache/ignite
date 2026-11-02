@@ -937,7 +937,10 @@ public abstract class IgniteUtils extends CommonUtils {
 
         ThreadInfo threadInfo = mxBean.getThreadInfo(threadId, Integer.MAX_VALUE);
 
-        printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
+        if (threadInfo == null)
+            sb.a("Thread [id=").a(threadId).a("] is not alive or is a virtual thread").a(NL);
+        else
+            printThreadInfo(threadInfo, sb, Collections.<Long>emptySet());
     }
 
     /**

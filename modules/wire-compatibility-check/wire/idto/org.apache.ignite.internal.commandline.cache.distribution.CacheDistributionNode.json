@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionNode",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "java.lang.String", "name": "addrs"},
+    {"order": 2, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "userAttrs"},
+    {"order": 3, "type": "java.util.List<org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionGroup>", "name": "groups"}
+  ]
+}

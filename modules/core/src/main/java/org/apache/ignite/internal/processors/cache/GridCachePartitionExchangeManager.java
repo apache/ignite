@@ -2049,6 +2049,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (mvcc != null) {
+            WarningsGroup lockWarnings = new WarningsGroup("First %d long running explicit locks [total=%d]",
+                diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
+
+            for (GridCacheExplicitLockSpan lockSpan : mvcc.activeExplicitLocks()) {
+                if (lockSpan.maxHoldTime() > timeout) {
+                    found = true;
+
+                    if (lockWarnings.canAddMessage())
+                        lockWarnings.add(explicitLockWarning(lockSpan));
+                    else
+                        lockWarnings.incTotal();
+                }
+            }
+
+            lockWarnings.printToLog();
+
             WarningsGroup activeWarnings = new WarningsGroup("First %d long running cache futures [total=%d]",
                 diagnosticLog, DIAGNOSTIC_WARN_LIMIT);
 
@@ -2249,6 +2265,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             task instanceof ForceRebalanceExchangeTask;
     }
 
+    /** @return Span and, if it holds a lock, the stack trace of the holding thread. */
+    private static String explicitLockWarning(GridCacheExplicitLockSpan lockSpan) {
+        GridStringBuilder sb = new GridStringBuilder(">>> ").a(lockSpan);
+
+        GridCacheMvccCandidate cand = F.first(lockSpan.candidates());
+
+        if (cand != null && lockSpan.maxHoldTime() > 0) {
+            sb.a(U.nl()).a("Stack trace of the explicit lock owner thread:").a(U.nl());
+
+            U.printStackTrace(cand.threadId(), sb);
+        }
+
+        return sb.toString();
+    }
+
     /**
      * @param exchTopVer Exchange topology version.
      * @param diagCtx Diagnostic request.
@@ -2289,7 +2320,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     first = false;
                 }
 
-                U.warn(diagnosticLog, ">>> " + lockSpan);
+                U.warn(diagnosticLog, explicitLockWarning(lockSpan));
             }
 
             first = true;

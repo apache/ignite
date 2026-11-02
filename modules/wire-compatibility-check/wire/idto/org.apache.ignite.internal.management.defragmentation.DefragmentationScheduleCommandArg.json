@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.defragmentation.DefragmentationScheduleCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "nodes"},
+    {"order": 1, "type": "java.lang.String[]", "name": "caches"}
+  ]
+}

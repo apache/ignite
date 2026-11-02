@@ -119,6 +119,10 @@ public class SystemViewLocksTest extends SystemViewAbstractTest {
             assertEquals(explicitLocks1.get(0).threadId(), explicitLocks1.get(1).threadId());
             assertNotSame(explicitLocks2.get(0).threadId(), explicitLocks2.get(1).threadId());
 
+            // Hold duration is reported per key for acquired locks only: node1 holds key2 and waits for key0.
+            assertTrue(waitForCondition(() -> explicitLocks0.stream().allMatch(l -> l.duration() > 0), 1_000L));
+            assertTrue(waitForCondition(() -> F.size(explicitLocks1, l -> l.duration() > 0) == 1, 1_000L));
+
             // Check lock owners.
             CacheLockView owner0 = F.find(keyLocks0, null, CacheLockView::isOwner);
             CacheLockView owner1 = F.find(keyLocks1, null, CacheLockView::isOwner);

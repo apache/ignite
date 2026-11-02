@@ -78,6 +78,13 @@ public class CopyOnWriteIntMapTest {
         assertEquals("one", map.computeIfAbsent(1, k -> "computed"));
         assertEquals("2", map.computeIfAbsent(2, String::valueOf));
         assertEquals("2", map.get(2));
+
+        assertNull(map.computeIfAbsent(3, k -> null));
+        assertFalse(map.containsKey(3));
+
+        map.put(3, null);
+
+        assertEquals("3", map.computeIfAbsent(3, String::valueOf));
     }
 
     /** */

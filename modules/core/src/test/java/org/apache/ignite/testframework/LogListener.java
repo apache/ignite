@@ -81,7 +81,7 @@ public abstract class LogListener implements Consumer<String> {
             if (check())
                 return true;
 
-            Thread.sleep(1000);
+            Thread.sleep(200);
         }
 
         return check();

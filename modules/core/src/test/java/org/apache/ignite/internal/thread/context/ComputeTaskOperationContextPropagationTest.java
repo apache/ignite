@@ -55,7 +55,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_JOB_REJECTED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
-import static org.apache.ignite.internal.thread.context.OperationContextDispatcher.MAX_ATTRS_CNT;
+import static org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage.MAX_ATTRS_CNT;
 
 /** */
 public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstractTest {
@@ -421,6 +421,9 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
     /** */
     private static class TestIgniteComponent extends AbstractTestPluginProvider {
+        /** */
+        private static final DistributedAttributeKey USR_KEY = new DistributedAttributeKey(MAX_ATTRS_CNT - 1);
+
         /** {@inheritDoc} */
         @Override public String name() {
             return "TestComputeTaskOperationContextAttributeRegistrator";
@@ -428,7 +431,7 @@ public class ComputeTaskOperationContextPropagationTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void start(PluginContext ctx) {
-            ((IgniteEx)ctx.grid()).context().operationContextDispatcher().registerDistributedAttribute(MAX_ATTRS_CNT - 1, USR_ATTR);
+            ((IgniteEx)ctx.grid()).context().distributedOperationContext().register(USR_KEY, USR_ATTR);
         }
     }
 }

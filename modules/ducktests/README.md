@@ -173,6 +173,9 @@ You can modify test environments at execution time using global flags injected t
 | **cluster_size** | Controls the cluster size for tests. Overrides the default num_nodes value passed in the @cluster annotation. Default value is determined by the test framework. | ```{"cluster_size": 13}``` |
 | **ignite_versions** | List of Ignite versions for testing. Tests run for each version in the list. Values are folder names in /opt/ (e.g., "ignite-dev" for master branch, "ignite-2.18.0" for release). Default is determined by test annotations. | ```{"ignite_versions": ["ignite-dev", "ignite-2.18.0"]}``` |
 | **failure_detection_timeout** | Timeout in milliseconds for failure detection in discovery. Used to detect node failures in the cluster. Default value is 10000 ms (10 seconds). | ```{"failure_detection_timeout": 20000}``` |
+| **disk_full_tests** | Boolean flag to run the reproducers in `disk_full_test.py`, which fill a disk volume of a server node and check what the node does. Default is False: the tests are ignored. | ```{"disk_full_tests": true}``` |
+
+*Note on reproducers:* A test marked with `@reproducer("<global>")` runs only when that global is set to true; otherwise it is ignored. The mark is for tests that reproduce a behavior on demand and guard nothing on a regular run.
 
 #### Security & Authentication
 

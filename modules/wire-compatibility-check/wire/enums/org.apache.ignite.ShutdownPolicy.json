@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.ShutdownPolicy",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.ShutdownPolicy", "name": "IMMEDIATE"},
+    {"order": 1, "type": "org.apache.ignite.ShutdownPolicy", "name": "GRACEFUL"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheEvictionConfiguration",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "plc"},
+    {"order": 1, "type": "java.lang.Integer", "name": "plcMaxSize"},
+    {"order": 2, "type": "java.lang.String", "name": "filter"}
+  ]
+}

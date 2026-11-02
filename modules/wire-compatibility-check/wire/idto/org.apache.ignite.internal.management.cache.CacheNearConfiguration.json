@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheNearConfiguration",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "nearEnabled"},
+    {"order": 1, "type": "int", "name": "nearStartSize"},
+    {"order": 2, "type": "java.lang.String", "name": "nearEvictPlc"},
+    {"order": 3, "type": "java.lang.Integer", "name": "nearEvictMaxSize"}
+  ]
+}

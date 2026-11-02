@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheListCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "regex"},
+    {"order": 1, "type": "boolean", "name": "config"},
+    {"order": 2, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 3, "type": "java.lang.String", "name": "outputFormat"},
+    {"order": 4, "type": "boolean", "name": "groups"},
+    {"order": 5, "type": "boolean", "name": "seq"}
+  ]
+}

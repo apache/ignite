@@ -178,15 +178,14 @@ jobs:
       fail-fast: false
       matrix:
         cfg:
-          - { python: "3.8", toxenv: "py38" }
-          - { python: "3.9", toxenv: "py39" }
-          - { python: "3.9", toxenv: "codestyle" }
+          - { python: "3.12", toxenv: "py312" }
+          - { python: "3.12", toxenv: "codestyle" }
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.cfg.python }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.cfg.python}}

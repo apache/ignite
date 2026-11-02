@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "snapshotName"},
+    {"order": 1, "type": "int", "name": "increment"},
+    {"order": 2, "type": "java.lang.String[]", "name": "groups"},
+    {"order": 3, "type": "java.lang.String", "name": "src"},
+    {"order": 4, "type": "boolean", "name": "sync"},
+    {"order": 5, "type": "boolean", "name": "check"},
+    {"order": 6, "type": "boolean", "name": "status"},
+    {"order": 7, "type": "boolean", "name": "cancel"},
+    {"order": 8, "type": "boolean", "name": "start"}
+  ]
+}

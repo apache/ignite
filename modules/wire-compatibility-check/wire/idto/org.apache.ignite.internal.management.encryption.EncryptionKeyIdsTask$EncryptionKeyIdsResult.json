@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.encryption.EncryptionKeyIdsTask$EncryptionKeyIdsResult",
+  "fields": [
+    {"order": 0, "type": "java.util.List<java.lang.Integer>", "name": "val"}
+  ]
+}

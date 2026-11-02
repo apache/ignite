@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheDestroyCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String[]", "name": "caches"},
+    {"order": 1, "type": "boolean", "name": "destroyAllCaches"}
+  ]
+}

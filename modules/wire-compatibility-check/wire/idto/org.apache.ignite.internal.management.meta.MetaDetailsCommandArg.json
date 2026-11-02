@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.meta.MetaDetailsCommandArg",
+  "fields": [
+    {"order": 0, "type": "int", "name": "typeId"},
+    {"order": 1, "type": "java.lang.String", "name": "typeName"}
+  ]
+}

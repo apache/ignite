@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "verbose"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.baseline.BaselineAutoAdjustCommandArg$Enabled", "name": "enabled"},
+    {"order": 2, "type": "java.lang.Long", "name": "timeout"}
+  ]
+}

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.direct;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -58,6 +60,9 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_C
 public class DirectMessageWriter implements MessageWriter {
     /** Temporary buffer capacity.  */
     private static final int TMP_BUF_CAPACITY = 10 * 1024;
+
+    /** Empty array of byte arrays. */
+    private static final byte[][] EMPTY_BYTE_ARRAYS = new byte[0][];
 
     /** State. */
     @GridToStringInclude
@@ -81,7 +86,7 @@ public class DirectMessageWriter implements MessageWriter {
     /** Reusable writer for compressed payload serialization. Lazily created; thread-confined like the writer itself. */
     private DirectMessageWriter tmpWriter;
 
-    /** Reusable scratch buffer for compressed payload serialization. Retained at the largest size seen so far. */
+    /** Reusable fixed-size scratch buffer for compressed payload serialization. */
     private ByteBuffer tmpBuf;
 
     /** @param msgFactory Message factory. */
@@ -507,12 +512,12 @@ public class DirectMessageWriter implements MessageWriter {
         }
 
         if (!stream.serializeFinished()) {
-            // CompressedMessage consumes the scratch buffer in its constructor (deflates into its own byte array),
-            // so the buffer never escapes this method and can be reused across fields; heap is cheaper than direct
-            // here (no native alloc / Cleaner churn).
-            ByteBuffer buf = serializeToTemporaryBuffer(consumer);
+            try (CompressedMessage.Compressor compressor = new CompressedMessage.Compressor(compressionLvl)) {
+                serializeToTemporaryBuffer(consumer, compressor::compress);
 
-            stream.compressedMessage(new CompressedMessage(buf, compressionLvl));
+                stream.compressedMessage(compressor.message());
+            }
+
             stream.serializeFinished(true);
         }
 
@@ -526,11 +531,12 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public void addPendingRawField(int tag, Consumer<MessageWriter> valueWriter) {
-        ByteBuffer buf = serializeToTemporaryBuffer(valueWriter::accept);
+        List<byte[]> pieces = new ArrayList<>(1);
 
-        byte[] bytes = new byte[buf.remaining()];
+        serializeToTemporaryBuffer(valueWriter::accept, piece ->
+            pieces.add(Arrays.copyOfRange(piece.array(), piece.position(), piece.limit())));
 
-        buf.get(bytes);
+        byte[] bytes = pieces.size() == 1 ? pieces.get(0) : U.join(pieces.toArray(EMPTY_BYTE_ARRAYS));
 
         state.item().pendingRawFields().add(new RawField(tag, bytes));
     }
@@ -544,12 +550,14 @@ public class DirectMessageWriter implements MessageWriter {
         return stream.lastFinished();
     }
 
-    /** */
-    private ByteBuffer serializeToTemporaryBuffer(Consumer<DirectMessageWriter> consumer) {
+    /**
+     * Serializes through the temporary buffer as through a socket buffer: each time the buffer fills up or the
+     * serialization finishes, its content is passed to the piece consumer and the buffer is reused.
+     */
+    private void serializeToTemporaryBuffer(Consumer<DirectMessageWriter> consumer, Consumer<ByteBuffer> pieceConsumer) {
+        // Heap is cheaper than direct here (no native alloc / Cleaner churn).
         if (tmpBuf == null)
             tmpBuf = ByteBuffer.allocate(TMP_BUF_CAPACITY);
-        else
-            tmpBuf.clear();
 
         // Reuse the temp writer across fields/messages instead of allocating a fresh state stack each time.
         if (tmpWriter == null)
@@ -559,29 +567,33 @@ public class DirectMessageWriter implements MessageWriter {
 
         tmpWriter.setBuffer(tmpBuf);
 
-        boolean finished;
+        boolean ok = false;
 
-        do {
-            if (tmpBuf.remaining() <= tmpBuf.capacity() / 10) {
-                ByteBuffer newBuf = ByteBuffer.allocate(tmpBuf.capacity() * 2);
+        try {
+            boolean finished;
+
+            do {
+                tmpBuf.clear();
+
+                consumer.accept(tmpWriter);
+
+                finished = tmpWriter.state.item().stream.lastFinished();
+
+                assert finished || tmpBuf.position() > 0 : "No progress in the temporary buffer";
 
                 tmpBuf.flip();
-                newBuf.put(tmpBuf);
 
-                tmpBuf = newBuf;
-
-                tmpWriter.setBuffer(tmpBuf);
+                pieceConsumer.accept(tmpBuf);
             }
+            while (!finished);
 
-            consumer.accept(tmpWriter);
-
-            finished = tmpWriter.state.item().stream.lastFinished();
+            ok = true;
         }
-        while (!finished);
-
-        tmpBuf.flip();
-
-        return tmpBuf;
+        finally {
+            // Don't reuse a writer with half-written state.
+            if (!ok)
+                tmpWriter = null;
+        }
     }
 
     /**
