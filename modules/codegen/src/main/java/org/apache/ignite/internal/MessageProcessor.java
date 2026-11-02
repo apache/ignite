@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -116,12 +115,12 @@ public class MessageProcessor extends AbstractProcessor {
     public static final Set<String> NO_PUBLIC_CTOR_MSGS = Set.of(GRID_H2_NULL, ZK_NO_SERVERS_MESSAGE);
 
     /** Messages with no fields. A serializer generation intentionally skipped. */
-    static final String[] SKIP_MESSAGES = {
+    public static final Set<String> SKIP_MESSAGES = Set.of(
         "org.apache.ignite.internal.processors.odbc.ClientMessage",
         COMPRESSED_MESSAGE_CLASS,
         "org.apache.ignite.loadtests.communication.GridTestMessage",
         "org.apache.ignite.spi.communication.tcp.TestDelayMessage"
-    };
+    );
 
     /** */
     private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
@@ -478,8 +477,8 @@ public class MessageProcessor extends AbstractProcessor {
     }
 
     /** Map class names to {@link TypeMirror} objects. */
-    private List<TypeMirror> typesToTypeMirrors(String[] types) {
-        return Arrays.stream(types)
+    private List<TypeMirror> typesToTypeMirrors(Collection<String> types) {
+        return types.stream()
             .map(cls -> processingEnv.getElementUtils().getTypeElement(cls))
             .filter(Objects::nonNull)
             .map(Element::asType)

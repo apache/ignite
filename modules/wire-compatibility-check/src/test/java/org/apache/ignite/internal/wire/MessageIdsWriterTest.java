@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
 import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactory;
 import org.apache.ignite.internal.plugin.AbstractMessageFactoryProvider;
@@ -46,7 +45,7 @@ public class MessageIdsWriterTest {
 
         createTestMessageDescription(dir);
 
-        new MessageIdsWriter(providers(false), Set.of()).write(dir);
+        new MessageIdsWriter(providers(false)).write(dir);
 
         String ids = Files.readString(dir.resolve("ids.json"));
 
@@ -56,7 +55,7 @@ public class MessageIdsWriterTest {
     /** */
     @Test public void testMissingDescription() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
-            () -> new MessageIdsWriter(providers(false), Set.of()).write(tmp.getRoot().toPath()));
+            () -> new MessageIdsWriter(providers(false)).write(tmp.getRoot().toPath()));
 
         assertTrue(e.getMessage(), e.getMessage().contains(TestMessage.class.getName()));
     }
@@ -67,7 +66,7 @@ public class MessageIdsWriterTest {
 
         createTestMessageDescription(dir);
 
-        new MessageIdsWriter(providers(true), Set.of(CompressedMessage.class)).write(dir);
+        new MessageIdsWriter(providers(true)).write(dir);
 
         try (InputStream in = MessageIdsWriterTest.class.getResourceAsStream("expected-ids.json")) {
             String expected = new String(in.readAllBytes(), StandardCharsets.UTF_8);

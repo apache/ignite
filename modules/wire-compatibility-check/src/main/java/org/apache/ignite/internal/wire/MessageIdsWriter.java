@@ -22,11 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteComponentType;
-import org.apache.ignite.internal.managers.communication.CompressedMessage;
+import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
@@ -36,16 +35,9 @@ public class MessageIdsWriter {
     /** */
     private final IgniteMessageFactoryImpl<?, ?> factory;
 
-    /** Messages with custom {@code writeTo} and {@code readFrom}, which have no description. */
-    private final Set<Class<?>> handWritten;
-
-    /**
-     * @param providers Message factory providers.
-     * @param handWritten Messages with custom {@code writeTo} and {@code readFrom}, which have no description.
-     */
-    public MessageIdsWriter(MessageFactoryProvider[] providers, Set<Class<?>> handWritten) {
+    /** @param providers Message factory providers. */
+    public MessageIdsWriter(MessageFactoryProvider[] providers) {
         factory = new IgniteMessageFactoryImpl<>(providers);
-        this.handWritten = handWritten;
     }
 
     /** @param args Directory with the message descriptions. */
@@ -63,9 +55,7 @@ public class MessageIdsWriter {
 
         providers.add(new ZkMessageFactory());
 
-        Set<Class<?>> handWritten = Set.of(CompressedMessage.class);
-
-        new MessageIdsWriter(providers.toArray(MessageFactoryProvider[]::new), handWritten).write(Path.of(args[0]));
+        new MessageIdsWriter(providers.toArray(MessageFactoryProvider[]::new)).write(Path.of(args[0]));
     }
 
     /**
@@ -79,12 +69,12 @@ public class MessageIdsWriter {
         List<String> lines = new ArrayList<>();
 
         for (short id : factory.registeredDirectTypes()) {
-            Class<?> cls = factory.create(id).getClass();
+            String clsName = factory.create(id).getClass().getName();
 
-            if (!handWritten.contains(cls) && !Files.exists(dir.resolve("messages/" + cls.getName() + ".json")))
-                throw new IllegalStateException("No wire format description [cls=" + cls.getName() + ']');
+            if (!MessageProcessor.SKIP_MESSAGES.contains(clsName) && !Files.exists(dir.resolve("messages/" + clsName + ".json")))
+                throw new IllegalStateException("No wire format description [cls=" + clsName + ']');
 
-            lines.add("  \"" + id + "\": \"" + cls.getName() + '"');
+            lines.add("  \"" + id + "\": \"" + clsName + '"');
         }
 
         Files.writeString(dir.resolve("ids.json"), "{\n" + String.join(",\n", lines) + "\n}\n");
