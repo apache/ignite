@@ -287,6 +287,44 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --groups cache-group1,cach
 control.(sh|bat) --snapshot restore snapshot_09062021 --increment 1
 ----
 
+== Listing Snapshots
+
+To list snapshots created on the cluster, use the following command.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+# List all snapshots in the default snapshot directory.
+control.sh --snapshot list
+
+# List all snapshots in the "/tmp/ignite/snapshots" folder.
+control.sh --snapshot list --src /tmp/ignite/snapshots
+----
+
+tab:Windows[]
+[source,shell]
+----
+# List all snapshots in the default snapshot directory.
+control.bat --snapshot list
+
+# List all snapshots in the "C:\tmp\ignite\snapshots" folder.
+control.bat --snapshot list --src C:\tmp\ignite\snapshots
+----
+--
+
+=== List operation notes
+
+* The list operation is read-only. It does not modify any snapshot data.
+* A snapshot is detected by its metadata. If the metadata is missing or cannot be read, the snapshot is ignored.
+* The operation reads snapshot metadata and incremental snapshot metadata. On most platforms, this does not interfere
+with concurrent modification or deletion of snapshots. On Windows, if a snapshot is deleted at the exact moment its metadata is being read, the deletion may end up incomplete; repeat the command or check the results manually. The probability of this is low.
+* Listing and size calculation do not validate snapshots or verify checksums.
+* If a snapshot is being created or deleted, or is corrupted, it might be skipped or reported partially
+(for example, with an underestimated size). The operation reads what it can and ignores most errors.
+* The list operation is expected to be fast, so, unlike snapshot creation or restoration, it cannot be canceled and has no status.
+
 == Deleting Snapshot
 
 You can delete a snapshot using the `control.sh|bat` script.
@@ -333,7 +371,7 @@ If the metadata isn't found or cannot be read, snapshot isn't deleted.
 
 == Getting Snapshot Operation Status
 
-The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script or JMX interface:
+The status of the create/restore snapshot operations in the cluster can be obtained using the `control.sh|bat` script or JMX interface:
 
 [tabs]
 --

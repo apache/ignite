@@ -15,12 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.offheap;
+package org.apache.ignite.internal.systemview;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Off-heap event listener.
+ * Marks a getter of a sensitive configuration property (password, secret key, etc.) that must not be exposed
+ * in the configuration system view. Doesn't affect {@code toString()} output.
  */
-public interface GridOffHeapEventListener {
-    /** Event notification. */
-    public void onEvent(GridOffHeapEvent evt);
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface SensitiveProperty {
+    // No-op.
 }

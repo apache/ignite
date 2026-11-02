@@ -22,11 +22,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
@@ -121,6 +124,35 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         assertNull(resMsg.isolations);
         assertNull(resMsg.isolationsMap);
         assertNull(resMsg.isolationsList);
+    }
+
+    /** Raw field larger than the writer's temporary buffer is serialized in several pieces. */
+    @Test
+    public void testLargeRawField() {
+        byte[] val = new byte[40_000];
+
+        new Random(42).nextBytes(val);
+
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+
+        ByteBuffer buf = ByteBuffer.allocate(1 << 16);
+
+        writer.setBuffer(buf);
+
+        writer.addPendingRawField(1, w -> w.writeByteArray(val));
+
+        assertTrue(writer.writeRawFields(null));
+
+        buf.flip();
+
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+
+        reader.setBuffer(buf);
+
+        RawField f = reader.readRawFields().get(0);
+
+        assertEquals(1, f.tag());
+        assertArrayEquals(val, reader.deserializeRawField(f, MessageReader::readByteArray));
     }
 
     /**

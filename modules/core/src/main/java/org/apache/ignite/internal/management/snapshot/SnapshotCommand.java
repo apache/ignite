@@ -29,6 +29,7 @@ public class SnapshotCommand extends CommandRegistryImpl {
             new SnapshotCheckCommand(),
             new SnapshotRestoreCommand(),
             new SnapshotStatusCommand(),
+            new SnapshotListCommand(),
             new SnapshotDeleteCommand()
         );
     }

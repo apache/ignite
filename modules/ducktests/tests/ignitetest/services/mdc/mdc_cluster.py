@@ -34,6 +34,7 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, TcpCommunicationSpi
+from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, from_ignite_cluster, \
     from_ignite_services
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
@@ -101,9 +102,12 @@ class MdcCluster:
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
                  client_connector: bool = False,
                  network_timeout: int = 5_000,
-                 tcp_connect_timeout: int = 5_000):
+                 tcp_connect_timeout: int = 5_000,
+                 data_storage: DataStorageConfiguration = None,
+                 jvm_opts: List[str] = None):
         self.test_context = test.test_context
         self.logger = test.logger
+        self._jvm_opts = jvm_opts or []
 
         # A single discovery SPI (hence a single ip finder) shared by both DCs' server
         # services is what makes the two DCs form ONE cluster: prepare_on_start()
@@ -115,7 +119,8 @@ class MdcCluster:
             "version": IgniteVersion(ignite_version),
             "discovery_spi": TcpDiscoverySpi(),
             "network_timeout": network_timeout,
-            "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout)
+            "communication_spi": TcpCommunicationSpi(connect_timeout=tcp_connect_timeout),
+            "data_storage": data_storage
         }
 
         if client_connector:
@@ -126,7 +131,8 @@ class MdcCluster:
         self.srv_per_dc = _per_dc(srv_per_dc)
 
         self.servers: Dict[str, IgniteService] = {
-            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc),
+            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num,
+                              jvm_opts=dc_jvm_opts(dc) + self._jvm_opts,
                               startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
             for dc, num in self.srv_per_dc.items() if num > 0}
 
@@ -162,9 +168,11 @@ class MdcCluster:
             service.config = service.config._replace(discovery_spi=discovery_spi)
 
     def _app_service(self, dc: str) -> IgniteApplicationService:
-        client_cfg = self.ignite_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(self.servers[dc]))
+        client_cfg = self.ignite_config._replace(
+            client_mode=True, discovery_spi=from_ignite_cluster(self.servers[dc]),
+            data_storage=None)
 
-        return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
+        return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc) + self._jvm_opts)
 
     def register(self, dc: str, service):
         """

@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.QueryBloc
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RecursiveCteIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.RowKeyEqualityIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ScalarInIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SelectByKeyFieldTest;
@@ -133,6 +134,7 @@ import org.junit.platform.suite.api.Suite;
     TableDmlIntegrationTest.class,
     DataTypesTest.class,
     NestedResultTypesIntegrationTest.class,
+    RowKeyEqualityIntegrationTest.class,
     IndexSpoolIntegrationTest.class,
     HashSpoolIntegrationTest.class,
     IndexScanlIntegrationTest.class,
