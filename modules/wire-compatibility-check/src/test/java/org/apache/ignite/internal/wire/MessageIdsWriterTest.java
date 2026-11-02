@@ -80,7 +80,7 @@ public class MessageIdsWriterTest {
     private static void createTestMessageDescription(Path dir) throws IOException {
         Path msgs = Files.createDirectories(dir.resolve("messages"));
 
-        Files.writeString(msgs.resolve(TestMessage.class.getName() + ".json"), "{}");
+        Files.createFile(msgs.resolve(TestMessage.class.getName() + ".json"));
     }
 
     /** @param includeCompressed Whether to register the hand-written message as well. */
