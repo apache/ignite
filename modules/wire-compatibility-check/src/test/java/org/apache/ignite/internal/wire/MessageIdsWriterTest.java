@@ -36,10 +36,12 @@ import static org.junit.Assert.assertTrue;
 /** */
 public class MessageIdsWriterTest {
     /** */
-    @Rule public TemporaryFolder tmp = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder tmp = new TemporaryFolder();
 
     /** */
-    @Test public void testWrite() throws IOException {
+    @Test
+    public void testWrite() throws IOException {
         Path dir = tmp.getRoot().toPath();
 
         createTestMessageDescription(dir);
@@ -52,7 +54,8 @@ public class MessageIdsWriterTest {
     }
 
     /** */
-    @Test public void testMissingDescription() {
+    @Test
+    public void testMissingDescription() {
         IllegalStateException e = assertThrows(IllegalStateException.class,
             () -> new MessageIdsWriter(providers(false)).write(tmp.getRoot().toPath()));
 
@@ -60,7 +63,8 @@ public class MessageIdsWriterTest {
     }
 
     /** */
-    @Test public void testHandWrittenMessageWithoutDescription() throws IOException, URISyntaxException {
+    @Test
+    public void testHandWrittenMessageWithoutDescription() throws IOException, URISyntaxException {
         Path dir = tmp.getRoot().toPath();
 
         createTestMessageDescription(dir);
