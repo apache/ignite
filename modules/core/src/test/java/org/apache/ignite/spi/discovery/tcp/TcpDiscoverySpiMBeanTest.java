@@ -130,8 +130,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 assertEquals((cnt - 1) - i, bean.getNodesJoined());
                 assertEquals((cnt - 1) - i, discoReg.<IntMetric>findMetric("JoinedNodes").value());
 
-                int expectedClientJoins = (i < cliIdx) ? 1 : 0;
-                assertEquals(expectedClientJoins, discoReg.<IntMetric>findMetric("JoinedClientNodes").value());
+                assertEquals((i < cliIdx) ? 1 : 0, discoReg.<IntMetric>findMetric("JoinedClientNodes").value());
 
                 assertEquals(0L, bean.getNodesFailed());
                 assertEquals(0, discoReg.<IntMetric>findMetric("FailedNodes").value());

@@ -304,8 +304,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
 
-        MetricRegistry srvReg = grid(0).context().metric().registry(DISCO_METRICS);
-        assertEquals(1L, srvReg.<LongMetric>findMetric("JoinedClientNodes").value());
+        assertEquals(1L, grid(0).context().metric().registry(DISCO_METRICS).<LongMetric>findMetric("JoinedClientNodes").value());
 
         startGrid(2);
 

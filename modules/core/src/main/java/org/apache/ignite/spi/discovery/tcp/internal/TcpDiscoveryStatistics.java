@@ -140,9 +140,7 @@ public class TcpDiscoveryStatistics {
         joinedNodesCnt.increment();
     }
 
-    /**
-     * Increments joined client nodes count.
-     */
+    /** Increments joined client nodes count. */
     public void onClientNodeJoined() {
         joinedClientNodesCnt.increment();
     }
