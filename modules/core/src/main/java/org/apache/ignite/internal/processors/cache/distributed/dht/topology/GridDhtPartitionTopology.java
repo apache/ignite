@@ -452,6 +452,7 @@ public interface GridDhtPartitionTopology {
     /**
      * Callback on exchange done.
      *
+     * @param fut Exchange future, or {@code null} if called outside an exchange.
      * @param assignment New affinity assignment.
      * @param updateRebalanceVer {@code True} if need check rebalance state.
      * @return {@code True} if the state of at least one local partition changed.
