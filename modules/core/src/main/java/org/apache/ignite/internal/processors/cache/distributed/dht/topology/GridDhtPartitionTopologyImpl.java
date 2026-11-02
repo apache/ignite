@@ -1619,6 +1619,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         this.lostParts = new HashSet<>(lostParts);
 
                         if (exchFut != null && !exchFut.activateCluster()) {
+                            boolean ownerReports =
+                                ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+
                             for (Integer part : lostParts) {
                                 GridDhtLocalPartition locPart = localPartition(part);
 
@@ -1626,7 +1629,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 // part.clearFuture lifecycle will be broken after resetting.
                                 // New partition should be created instead.
                                 if (locPart != null && locPart.state() != EVICTED) {
-                                    changed |= locPart.markLost();
+                                    if (locPart.markLost() && ownerReports)
+                                        changed = true;
 
                                     GridDhtPartitionMap locMap = partMap.get(ctx.localNodeId());
 
@@ -2102,7 +2106,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @return {@code True} if a local partition was owned.
      */
     private boolean ownOrphans() {
-        boolean updRmtMaps = !ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+        boolean ownerReports = ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
         boolean changed = false;
 
@@ -2124,10 +2128,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (locPart.state() == MOVING && locPart.own()) {
                         changed = true;
 
-                        updateLocal(p, OWNING, updateSeq.incrementAndGet(), readyTopVer);
+                        if (ownerReports)
+                            updateLocal(p, OWNING, updateSeq.incrementAndGet(), readyTopVer);
                     }
 
-                    if (updRmtMaps) {
+                    if (!ownerReports) {
                         for (GridDhtPartitionMap map : node2part.values()) {
                             if (map.get(p) != null)
                                 map.put(p, OWNING);
