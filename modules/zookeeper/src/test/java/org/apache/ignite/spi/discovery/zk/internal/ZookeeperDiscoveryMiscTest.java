@@ -251,7 +251,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
                 assertEquals(cnt - i - 1, bean.getNodesJoined());
                 assertEquals(cnt - i - 1, discoReg.<LongMetric>findMetric("JoinedNodes").value());
 
-                Arrays.asList("LeftNodes", "FailedNodes", "CommunicationErrors").forEach(name -> {
+                Arrays.asList("LeftNodes", "FailedNodes", "CommunicationErrors", "JoinedClientNodes").forEach(name -> {
                     assertEquals(0, discoReg.<LongMetric>findMetric(name).value());
                 });
 
@@ -303,6 +303,9 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
             assertEquals(1, node.cluster().forClients().nodes().size());
             assertEquals(1, node.cluster().forServers().nodes().size());
         }
+
+        MetricRegistry srvReg = grid(0).context().metric().registry(DISCO_METRICS);
+        assertEquals(1L, srvReg.<LongMetric>findMetric("JoinedClientNodes").value());
 
         startGrid(2);
 
