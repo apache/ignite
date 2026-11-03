@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompact
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionAndTdeTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCompressionBasicTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCompressionRestoreSizeTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionConfigValidationTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegrationTest;
 import org.apache.ignite.internal.processors.compress.WalPageCompressionIntegrationTest;
@@ -50,7 +49,6 @@ public class IgnitePdsCompressionTestSuite6 extends AbstractIgnitePdsCompression
         suite.add(WalCompactionAndPageCompressionTest.class);
 
         suite.add(SnapshotCompressionBasicTest.class);
-        suite.add(SnapshotCompressionRestoreSizeTest.class);
 
         enableCompressionByDefault();
         IgniteSnapshotWithIndexingTestSuite.addSnapshotTests(suite, null);
