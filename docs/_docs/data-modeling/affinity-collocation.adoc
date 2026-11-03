@@ -132,7 +132,7 @@ tab:C++[unsupported]
 
 In Java, `CacheConfiguration.setIndexedTypes(...)` also derives affinity key configurations from `@AffinityKeyMapped` annotations on the supplied key types.
 
-Each derived configuration replaces any existing `CacheKeyConfiguration` for the same type, including one explicitly supplied through`setKeyConfiguration(...)`. Configurations for other types are preserved, including those derived from earlier `setIndexedTypes(...)` calls.
+Each derived configuration replaces any existing `CacheKeyConfiguration` for the same type, including one explicitly supplied through `setKeyConfiguration(...)`. Configurations for other types are preserved, including those derived from earlier `setIndexedTypes(...)` calls.
 
 If no affinity mapping is derived for a type, its existing configuration is preserved. Passing an empty array or `null` to `setIndexedTypes(...)` does not remove affinity key configurations.
 
