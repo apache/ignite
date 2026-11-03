@@ -18,60 +18,61 @@
 package org.apache.ignite.internal.ssl;
 
 import java.security.cert.X509Certificate;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
+import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SslBundle;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.ssl.SslCertificates.describe;
-
-/** Owns one factory's context and reloads on this node; transports using that factory share its context. */
+/** Registers the transports using a factory; the factory owns their current context and reload results. */
 public class SslContextProvider {
-    /** */
+    /** Factory configured by the user, retained for registration by identity. */
     private final Factory<SSLContext> factory;
+
+    /** Factory that owns the context, adapting a plain factory when necessary. */
+    private final AbstractSslContextFactory sslFactory;
 
     /** */
     private final Set<String> transports = new ConcurrentSkipListSet<>();
 
-    /** Context and certificate metadata in use. */
-    private volatile SslBundle bundle;
-
-    /** Stable context handed to every transport using this factory. */
-    private final SSLContext sharedCtx;
-
-    /** Snapshot of the last successful reload and subsequent failures. */
-    private volatile ReloadOutcome outcome = new ReloadOutcome(0, 0, null, 0);
-
-    /** @param factory Factory to build the context with. */
+    /** @param factory Factory the transports are configured with. */
     SslContextProvider(Factory<SSLContext> factory) {
         this.factory = factory;
 
-        bundle = createBundle();
-        bundle.context().createSSLEngine();
+        sslFactory = factory instanceof AbstractSslContextFactory f ? f : new SslContextFactory() {
+            /** {@inheritDoc} */
+            @Override public SslBundle createSslBundle() {
+                return new SslBundle(factory.create(), null);
+            }
+        };
 
-        sharedCtx = new CurrentSslContext(this::context);
+        sslFactory.create();
     }
 
-    /** @return Factory the context is built with. */
+    /** @return Factory the transport is configured with. */
     Factory<SSLContext> factory() {
         return factory;
     }
 
     /** @return Context to open the next connection with. */
     SSLContext context() {
-        return bundle.context();
+        return bundle().context();
+    }
+
+    /** @return Context and certificate metadata currently accepted by the factory. */
+    SslBundle bundle() {
+        return sslFactory.sslBundle();
     }
 
     /** @return Stable context shared by every transport configured with this factory. */
     SSLContext sharedContext() {
-        return sharedCtx;
+        return sslFactory.create();
     }
 
     /** @param transport Transport the context is handed to. */
@@ -86,109 +87,16 @@ public class SslContextProvider {
 
     /** @return Chains by key alias, or {@code null} when the factory supplies no metadata. */
     public @Nullable Map<String, List<X509Certificate>> certificateChains() {
-        return bundle.certificateChains();
+        return bundle().certificateChains();
     }
 
-    /** @return A new bundle, with unknown certificate metadata for factories that only return a context. */
-    private SslBundle createBundle() {
-        return factory instanceof AbstractSslContextFactory f ? f.createSslBundle() : new SslBundle(factory.create(), null);
-    }
-
-    /**
-     * Builds and installs a new context for new connections, recording success or failure. Rejects material known to have no
-     * X.509 certificate chains. Every supplied certificate must be within its validity period.
-     * The administrator must ensure that peers trust the new certificates and can connect with the new context.
-     *
-     * @return Context and certificate metadata installed by this reload.
-     * @throws IgniteCheckedException If the new context fails a check or the factory returns the context in use. On any failure,
-     *      including a factory exception, the current context is retained.
-     */
-    public synchronized SslBundle reload() throws IgniteCheckedException {
-        try {
-            SslBundle rebuilt = build();
-
-            if (rebuilt.context() == bundle.context())
-                throw new IgniteCheckedException("The SSL context factory returns the context in use, so the node gets no new " +
-                    "certificates from it");
-
-            check(rebuilt.certificateChains());
-
-            bundle = rebuilt;
-        }
-        catch (Throwable e) {
-            onFailure(e);
-
-            throw e;
-        }
-
-        onSuccess();
-
-        return bundle;
-    }
-
-    /**
-     * @return Bundle built anew, or the context in use if a custom factory caches it.
-     * @throws IgniteCheckedException If the loaded material has no X.509 certificate chains.
-     */
-    private SslBundle build() throws IgniteCheckedException {
-        SslBundle rebuilt = createBundle();
-        Map<String, List<X509Certificate>> chains = rebuilt.certificateChains();
-
-        if (chains != null && chains.isEmpty())
-            throw new IgniteCheckedException("The new key material has no X.509 certificate chains, " +
-                "so the node would present no certificate");
-
-        rebuilt.context().createSSLEngine();
-
-        return rebuilt;
-    }
-
-    /**
-     * @param next Chains loaded with the new context, {@code null} if they are unknown.
-     * @throws IgniteCheckedException If a certificate is outside its validity period.
-     */
-    private void check(@Nullable Map<String, List<X509Certificate>> next) throws IgniteCheckedException {
-        if (next == null)
-            return;
-
-        long now = System.currentTimeMillis();
-
-        for (Map.Entry<String, List<X509Certificate>> entry : next.entrySet()) {
-            X509Certificate invalid = SslCertificates.invalidAt(entry.getValue(), now);
-
-            if (invalid != null) {
-                throw new IgniteCheckedException("The new certificate chain is not valid now [alias=" + entry.getKey() + ", " +
-                    describe(invalid) + ", now=" + Instant.ofEpochMilli(now) + ']');
-            }
-        }
-    }
-
-    /** Records a successful reload. */
-    private void onSuccess() {
-        outcome = new ReloadOutcome(System.currentTimeMillis(), 0, null, 0);
-    }
-
-    /** @param e Why the reload failed. */
-    private void onFailure(Throwable e) {
-        ReloadOutcome o = outcome;
-
-        outcome = new ReloadOutcome(o.successTime(), System.currentTimeMillis(), SslCertificates.reason(e), o.failures() + 1);
+    /** @return Context and certificate metadata accepted by the factory's initialization. */
+    public SslBundle reload() {
+        return sslFactory.init();
     }
 
     /** @return Snapshot of the last successful reload and subsequent failures. */
     public ReloadOutcome reloadOutcome() {
-        return outcome;
-    }
-
-    /**
-     * Snapshot of the last successful reload and subsequent failures.
-     *
-     * @param successTime Time of the last successful reload, {@code 0} if there was none.
-     * @param failureTime Time of the last failed reload since the last successful one, {@code 0} if there was none.
-     * @param failureReason Reason of the last failed reload since the last successful one, {@code null} if there was none.
-     * @param failures Failed reloads in a row since the last successful one.
-     */
-    public record ReloadOutcome(long successTime, long failureTime, @Nullable String failureReason, int failures) {
-        // No-op.
+        return sslFactory.reloadOutcome();
     }
 }
