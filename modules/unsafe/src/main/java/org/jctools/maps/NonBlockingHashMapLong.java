@@ -405,13 +405,18 @@ public class NonBlockingHashMapLong<TypeV>
         if (key == NO_KEY)
         {
             Object curVal = _val_1;
-            if (oldVal == NO_MATCH_OLD || // Do we care about expected-Value at all?
+            // Retry until the CAS succeeds or the expected value stops matching.  A single CAS attempt followed
+            // by a re-read of _val_1 is not enough: the re-read is not the CAS witness, so another thread may have
+            // flipped the value back in between and putIfAbsent/remove would report an update they did not make.
+            // See https://github.com/JCTools/JCTools/issues/434
+            while (oldVal == NO_MATCH_OLD || // Do we care about expected-Value at all?
                 curVal == oldVal ||       // No instant match already?
                 (oldVal == MATCH_ANY && curVal != TOMBSTONE) ||
                 oldVal.equals(curVal))
             { // Expensive equals check
-                if (!CAS(_val_1_offset, curVal, newVal)) // One shot CAS update attempt
-                    curVal = _val_1;                      // Failed; get failing witness
+                if (CAS(_val_1_offset, curVal, newVal)) // CAS update attempt
+                    break;
+                curVal = _val_1;                      // Failed; get failing witness and retry
             }
             return curVal == TOMBSTONE ? null : (TypeV) curVal; // Return the last value present
         }
