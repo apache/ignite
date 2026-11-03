@@ -257,9 +257,10 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         store.setEntry("secret", new KeyStore.SecretKeyEntry(KeyGenerator.getInstance("AES").generateKey()),
             prot);
         store.setKeyEntry("non-x509-chain", first.getKey(firstAlias, PWD), PWD,
-            new Certificate[] {mock(Certificate.class), first.getCertificate(firstAlias)});
+            new Certificate[] {first.getCertificate(firstAlias), mock(Certificate.class)});
 
-        KeyMaterial material = new KeyMaterial(store, PWD, SslContextFactory.DFLT_KEY_ALGORITHM);
+        // PKIX defers key selection, allowing metadata filtering to inspect the entire mixed certificate chain.
+        KeyMaterial material = new KeyMaterial(store, PWD, "PKIX");
 
         assertEquals(Map.of(firstAlias, chain(first), secondAlias, chain(second)), material.certificateChains());
     }
@@ -279,8 +280,9 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Initialized managers remain usable after clearing the password or changing a returned manager array. */
     @Test
     public void testLoadedMaterialKeepsInitializedKeyManagers() throws Exception {
+        String alias = "node";
         char[] pwd = PWD.clone();
-        KeyMaterial material = new KeyMaterial(ca.keyStoreWithPrivateKey("node"), pwd, SslContextFactory.DFLT_KEY_ALGORITHM);
+        KeyMaterial material = new KeyMaterial(ca.keyStoreWithPrivateKey(alias), pwd, SslContextFactory.DFLT_KEY_ALGORITHM);
 
         Arrays.fill(pwd, '?');
 
@@ -289,7 +291,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         mgrs[0] = null;
 
-        assertNotNull(mgr.getPrivateKey("node"));
+        assertNotNull(mgr.getPrivateKey(alias));
         assertSame(mgr, material.keyManagers()[0]);
     }
 

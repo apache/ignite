@@ -120,7 +120,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws IgniteException If the context could not be created.
      */
-    public SslBundle createSslBundle() {
+    protected SslBundle createSslBundle() {
         try {
             checkParameters();
 
