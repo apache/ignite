@@ -32,7 +32,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Owns the SSL context and its certificate metadata. {@link #init()} loads replacement material before publishing it;
  * {@link #create()} returns a stable context. Its newly created engines and newly obtained socket factories use the
  * accepted material; previously obtained engines, socket factories and sockets retain their original material.
- * Configure the factory before its first use.
+ * Configure the factory before its first use. Reusing an initialized factory, including after a node restart, retains
+ * its material until {@code init()} is called.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -117,7 +118,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * that material. The factory does not retain the result.
      *
      * Override this method to load a candidate from another source. It must not change the material already in use.
-     * Use {@link #sslBundle()} to inspect the accepted material.
+     * Outside loading hooks, use {@link #sslBundle()} to inspect the accepted material.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws IgniteException If the context could not be created.
