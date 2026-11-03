@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.List;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -93,7 +94,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
      */
     public static class SslFactory extends SslContextFactory {
         /** {@inheritDoc} */
-        @Override public SslBundle createSslBundle() {
+        @Override public SslBundle createSslBundle() throws SSLException {
             factoryUsed = true;
 
             return super.createSslBundle();

@@ -259,8 +259,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    @Override protected KeyMaterial loadKeyMaterial() throws SSLException {
-        return new KeyMaterial(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
+    @Override protected SslBundle createSslBundle() throws SSLException {
+        checkParameters();
+
+        return createSslBundle(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
     }
 
     /** {@inheritDoc} */
