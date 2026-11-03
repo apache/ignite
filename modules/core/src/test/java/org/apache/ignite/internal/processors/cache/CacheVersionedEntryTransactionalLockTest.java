@@ -33,7 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -49,6 +51,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests transactional locks acquired only for unchanged cache entry versions.
@@ -483,6 +486,210 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
 
         assertEquals(Integer.valueOf(2), cache.get(keys.get(0)));
         assertEquals(Integer.valueOf(2), cache.get(keys.get(4)));
+    }
+
+    /** A delayed old unlock must finish before the same transaction can retry its keys. */
+    @Test
+    public void testAllOrNothingWaitsForPrimaryUnlock() throws Exception {
+        checkAcknowledgedUnlock(0, false);
+    }
+
+    /** Receiving the request is insufficient: the primary must acknowledge cleanup. */
+    @Test
+    public void testAllOrNothingWaitsForPrimaryAcknowledgement() throws Exception {
+        checkAcknowledgedUnlock(1, false);
+    }
+
+    /** A primary cannot acknowledge while a backup still has the old lock. */
+    @Test
+    public void testAllOrNothingWaitsForBackupUnlock() throws Exception {
+        assumeTrue(replicated || backups > 0);
+
+        checkAcknowledgedUnlock(2, false);
+    }
+
+    /** Both local and remote primaries wait for backup acknowledgements. */
+    @Test
+    public void testAllOrNothingWaitsForBackupAcknowledgement() throws Exception {
+        assumeTrue(replicated || backups > 0);
+
+        checkAcknowledgedUnlock(3, false);
+    }
+
+    /** A client near reader must acknowledge removal of its old state before retry. */
+    @Test
+    public void testAllOrNothingWaitsForNearAcknowledgement() throws Exception {
+        assumeTrue(useNearCache);
+
+        checkAcknowledgedUnlock(4, false);
+    }
+
+    /** Losing the primary before its acknowledgement fails the API and prevents reuse of the transaction. */
+    @Test
+    public void testAllOrNothingUnlockNodeLeft() throws Exception {
+        assumeTrue(!replicated && backups == 1 && !batch);
+
+        checkAcknowledgedUnlock(5, false);
+    }
+
+    /** A backup cleanup failure is propagated through the primary acknowledgement. */
+    @Test
+    public void testAllOrNothingUnlockBackupLeft() throws Exception {
+        assumeTrue(!replicated && backups == 1 && !batch);
+
+        checkAcknowledgedUnlock(6, false);
+    }
+
+    /** The transaction deadline bounds cleanup even when lock acquisition used NOWAIT. */
+    @Test
+    public void testAllOrNothingUnlockTimeout() throws Exception {
+        checkAcknowledgedUnlock(1, true);
+    }
+
+    /**
+     * @param stage Message to delay: primary request/response, backup request/response, near response, departing node.
+     * @param timeout Whether to let the transaction expire while awaiting acknowledgement.
+     */
+    private void checkAcknowledgedUnlock(int stage, boolean timeout) throws Exception {
+        transactionalCache(ignite0);
+
+        Ignite primary = grid(stage >= 2 && batch ? 1 : 2);
+        IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> holderCache = ignite0.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> competitorCache = grid(3).cache(DEFAULT_CACHE_NAME);
+        List<Integer> keys = new ArrayList<>();
+
+        if (stage == 6) {
+            for (int key = 0; keys.size() < 4; key++) {
+                if (primary.affinity(DEFAULT_CACHE_NAME).isPrimary(primary.cluster().localNode(), key)
+                    && primary.affinity(DEFAULT_CACHE_NAME).isBackup(grid(3).cluster().localNode(), key))
+                    keys.add(key);
+            }
+        }
+        else
+            keys.addAll(primaryKeys(primary.cache(DEFAULT_CACHE_NAME), 4));
+
+        int blockedKey = primaryKey(holderCache);
+
+        for (Integer key : List.of(keys.get(0), keys.get(1), keys.get(2), keys.get(3), blockedKey))
+            cache.put(key, 0);
+
+        List<CacheEntry<Integer, Integer>> entries = new ArrayList<>();
+
+        // Exercise both retaining an existing DHT transaction and removing an empty transaction container.
+        if (!batch)
+            entries.add(cache.getEntry(keys.get(0)));
+
+        entries.add(cache.getEntry(keys.get(1)));
+        entries.add(cache.getEntry(keys.get(2)));
+        entries.add(cache.getEntry(blockedKey));
+
+        CacheEntry<Integer, Integer> retryEntry = cache.getEntry(keys.get(2));
+        CacheEntry<Integer, Integer> freshEntry = cache.getEntry(keys.get(3));
+        TestRecordingCommunicationSpi spi;
+        int stoppedNode = -1;
+
+        if (stage == 0)
+            spi = TestRecordingCommunicationSpi.spi(ignite1);
+        else if (stage == 3 || stage == 6) {
+            String backupName = primary.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(keys.get(1)).stream()
+                .filter(node -> !node.id().equals(primary.cluster().localNode().id()))
+                .findFirst().get().attribute(org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
+
+            spi = TestRecordingCommunicationSpi.spi(grid(backupName));
+        }
+        else if (stage == 4) {
+            IgniteCache<Integer, Integer> reader = client.getOrCreateNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
+
+            reader.get(keys.get(1));
+            reader.get(keys.get(2));
+
+            spi = TestRecordingCommunicationSpi.spi(client);
+        }
+        else
+            spi = TestRecordingCommunicationSpi.spi(primary);
+
+        try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 30_000, 0);
+             Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout ? 2_000 : 20_000, 0)) {
+            holderCache.put(blockedKey, 1);
+
+            if (!batch)
+                cache.get(keys.get(0));
+
+            spi.blockMessages((node, msg) -> {
+                if (stage == 0)
+                    return msg.getClass() == GridNearUnlockRequest.class
+                        && ((GridNearUnlockRequest)msg).unlockOptions != null;
+
+                if (stage == 2)
+                    return msg instanceof GridDhtUnlockRequest && ((GridDhtUnlockRequest)msg).unlockOptions != null;
+
+                return msg instanceof GridCacheUnlockResponse;
+            });
+
+            try {
+                IgniteInternalFuture<Map<CacheEntry<Integer, Integer>, Boolean>> fut = internalCache(cache)
+                    .lockTxEntriesAsync(entries, -1, false);
+
+                assertTrue("Expected unlock message was not sent", spi.waitForBlocked(1, 10_000));
+                assertFalse("API completed before distributed cleanup", GridTestUtils.waitForCondition(fut::isDone, 100));
+
+                if (stage >= 5) {
+                    spi.stopBlock(false);
+
+                    stoppedNode = stage == 5 ? 2 : 3;
+
+                    stopGrid(stoppedNode);
+
+                    GridTestUtils.assertThrows(log, () -> fut.get(10_000), ClusterTopologyCheckedException.class, null);
+
+                    assertTrue(tx.isRollbackOnly());
+                }
+                else if (timeout) {
+                    GridTestUtils.assertThrows(log, () -> fut.get(10_000), IgniteTxTimeoutCheckedException.class, null);
+
+                    assertTrue(tx.isRollbackOnly());
+                }
+                else {
+                    spi.stopBlock();
+
+                    Map<CacheEntry<Integer, Integer>, Boolean> results = fut.get(10_000);
+
+                    for (int i = 0; i < entries.size(); i++)
+                        assertEquals(Boolean.valueOf(!batch && i == 0), results.get(entries.get(i)));
+
+                    // Retry immediately, without a competing transaction implicitly waiting for the old unlock.
+                    assertFalse(internalCache(cache).lockTxEntries(List.of(retryEntry, freshEntry), 1_000, false)
+                        .containsValue(false));
+
+                    try (Transaction competitor = grid(3).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+                        assertFalse("An old unlock released a successful retry",
+                            internalCache(competitorCache).lockTxEntry(retryEntry, -1));
+
+                        if (!batch)
+                            assertFalse(internalCache(competitorCache).lockTxEntry(entries.get(0), -1));
+                    }
+
+                    tx.commit();
+                }
+            }
+            finally {
+                spi.stopBlock();
+            }
+        }
+        finally {
+            spi.stopBlock();
+
+            if (stoppedNode != -1) {
+                startGrid(stoppedNode);
+
+                awaitPartitionMapExchange();
+            }
+        }
+
+        assertTrue("Unlock future was not unregistered", GridTestUtils.waitForCondition(() ->
+            internalCache(cache).context().mvcc().activeFutures().stream()
+                .noneMatch(fut -> fut instanceof GridCacheUnlockFuture), 5_000));
     }
 
     /** A lock conflict stops an all-or-nothing attempt and releases successful earlier batches. */

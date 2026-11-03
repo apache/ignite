@@ -113,5 +113,5 @@ public class CoreFeatureRegistry {
     public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
 
     /** Primary-side data version validation for transactional locks. */
-    public static final IgniteFeature VERSIONED_TX_LOCK_FEATURE = new IgniteCoreFeature(1);
+    public static final IgniteFeature VERSIONED_TX_LOCK_FEATURE = new IgniteCoreFeature(5);
 }

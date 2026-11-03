@@ -1368,6 +1368,9 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * as {@code false}. With {@code skipLocked}, other entries are still attempted and successful locks are retained
      * until transaction end (or an explicit rollback to a savepoint). Otherwise the first rejection stops the attempt,
      * newly acquired locks are released, and entries not locked before the call are reported as {@code false}.
+     * The result is returned only after primary, backup and near participants acknowledge cleanup. This wait is
+     * bounded by the transaction timeout, independently of {@code waitTimeout}. A cleanup error fails the operation
+     * and marks the transaction rollback-only.
      * Locks already owned before the call are reused, are reported as {@code true}, and are never released
      * by a failed attempt, regardless of {@code skipLocked}.
      * Infrastructure failures complete the operation exceptionally and are not per-entry rejections.
