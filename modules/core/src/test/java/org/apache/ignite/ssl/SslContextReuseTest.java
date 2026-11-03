@@ -39,7 +39,7 @@ import org.junit.rules.TemporaryFolder;
 import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
 import static org.junit.Assert.assertArrayEquals;
 
-/** Consumers retain one SSL context while initialization changes the material used by new connections. */
+/** Context snapshots keep their material; consumers obtain a replacement from the factory after initialization. */
 public class SslContextReuseTest extends GridCommonAbstractTest {
     /** Stores generated independently for each test. */
     @Rule public final TemporaryFolder tmp = new TemporaryFolder();
@@ -51,9 +51,9 @@ public class SslContextReuseTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /** New engines and socket factories use initialized TLS settings; previously obtained ones retain their settings. */
+    /** A new context uses initialized TLS settings; the previous context, engines and socket factories keep their settings. */
     @Test
-    public void testNewEnginesAndSocketFactoriesUseInitializedContext() throws Exception {
+    public void testCreateReturnsInitializedContextSnapshot() throws Exception {
         SslContextFactory factory = fileFactory();
         String[] firstProtocols = {"TLSv1.2"};
         String[] firstCiphers = {"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"};
@@ -61,9 +61,9 @@ public class SslContextReuseTest extends GridCommonAbstractTest {
         factory.setProtocols(firstProtocols);
         factory.setCipherSuites(firstCiphers);
 
-        SSLContext shared = factory.create();
-        SSLEngine existing = shared.createSSLEngine();
-        SSLSocketFactory capturedFactory = shared.getSocketFactory();
+        SSLContext previous = factory.create();
+        SSLEngine existing = previous.createSSLEngine();
+        SSLSocketFactory capturedFactory = previous.getSocketFactory();
         String[] replacementProtocols = {"TLSv1.3"};
         String[] replacementCiphers = {"TLS_AES_128_GCM_SHA256"};
 
@@ -71,31 +71,29 @@ public class SslContextReuseTest extends GridCommonAbstractTest {
         factory.setCipherSuites(replacementCiphers);
 
         SslBundle replacement = factory.init();
+        SSLContext cur = factory.create();
         String host = "peer.example";
         int port = 10800;
-        SSLEngine addressed = shared.createSSLEngine(host, port);
-        SSLEngine unaddressed = shared.createSSLEngine();
+        SSLEngine addressed = cur.createSSLEngine(host, port);
+        SSLEngine fromPrevious = previous.createSSLEngine();
 
-        assertSame(shared, factory.create());
-        assertSame(replacement.context().getClientSessionContext(), shared.getClientSessionContext());
-        assertSame(replacement.context().getServerSessionContext(), shared.getServerSessionContext());
+        assertSame(replacement.context(), cur);
+        assertNotSame(previous, cur);
         assertEquals(host, addressed.getPeerHost());
         assertEquals(port, addressed.getPeerPort());
         assertArrayEquals(replacementProtocols, addressed.getEnabledProtocols());
         assertArrayEquals(replacementCiphers, addressed.getEnabledCipherSuites());
-        assertNull(unaddressed.getPeerHost());
-        assertEquals(-1, unaddressed.getPeerPort());
-        assertArrayEquals(replacementProtocols, unaddressed.getEnabledProtocols());
-        assertArrayEquals(replacementCiphers, unaddressed.getEnabledCipherSuites());
         assertArrayEquals(firstProtocols, existing.getEnabledProtocols());
         assertArrayEquals(firstCiphers, existing.getEnabledCipherSuites());
+        assertArrayEquals(firstProtocols, fromPrevious.getEnabledProtocols());
+        assertArrayEquals(firstCiphers, fromPrevious.getEnabledCipherSuites());
 
         try (SSLSocket captured = (SSLSocket)capturedFactory.createSocket();
-             SSLSocket current = (SSLSocket)shared.getSocketFactory().createSocket()) {
+             SSLSocket replacementSocket = (SSLSocket)cur.getSocketFactory().createSocket()) {
             assertArrayEquals(firstProtocols, captured.getEnabledProtocols());
             assertArrayEquals(firstCiphers, captured.getEnabledCipherSuites());
-            assertArrayEquals(replacementProtocols, current.getEnabledProtocols());
-            assertArrayEquals(replacementCiphers, current.getEnabledCipherSuites());
+            assertArrayEquals(replacementProtocols, replacementSocket.getEnabledProtocols());
+            assertArrayEquals(replacementCiphers, replacementSocket.getEnabledCipherSuites());
         }
     }
 

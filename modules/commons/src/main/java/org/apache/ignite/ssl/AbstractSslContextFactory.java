@@ -44,10 +44,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Owns the SSL context and its certificate metadata. {@link #init()} loads replacement material before publishing it;
- * {@link #create()} returns a stable context. Its newly created engines and newly obtained socket factories use the
- * accepted material; previously obtained engines, socket factories and sockets retain their original material.
+ * {@link #create()} returns the accepted context. Obtain it again after initialization to use the replacement;
+ * previously obtained contexts, engines, socket factories and sockets retain their original material.
  * Configure the factory before its first use. Reusing an initialized factory, including after a node restart, retains
- * its material until {@code init()} is called.
+ * its material until {@code init()} or automatic renewal accepts a replacement.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -61,9 +61,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
     private transient volatile SslBundle bundle;
-
-    /** Stable context returned to consumers after the first successful initialization. */
-    private transient volatile SSLContext sharedCtx;
 
     /** Snapshot of the last successful reload and subsequent failures. */
     private transient volatile ReloadOutcome outcome;
@@ -279,8 +276,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads keys and trust settings and atomically replaces the accepted context and its metadata. A failed initialization
-     * leaves the previous material in use. New engines and socket factories obtained through {@link #create()} use the
-     * replacement; already opened connections keep their original material.
+     * leaves the previous material in use. Call {@link #create()} again to obtain the replacement; previously obtained
+     * contexts and their connections keep their original material.
      *
      * The first initialization permits material without certificate chains and certificates outside their validity period,
      * matching node startup. Later calls reject a context already in use, known empty certificate metadata and chains with
@@ -487,13 +484,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             SslCertificates.chainNotAfter(replacement) > SslCertificates.chainNotAfter(cur)))
             renewalFailures = 0;
 
-        SSLContext shared = sharedCtx;
-
-        if (shared == null)
-            shared = new CurrentSslContext(next.context(), () -> bundle.context());
-
         bundle = next;
-        sharedCtx = shared;
     }
 
     /** Records a successful replacement and plans renewal from the new material. */
@@ -538,27 +529,29 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IgniteException If the first initialization fails.
      */
     public final SslBundle sslBundle() {
-        create();
+        SslBundle cur = bundle;
 
-        return bundle;
-    }
-
-    /**
-     * Returns the same forwarding context on every call, initializing it on first use. Obtain new engines and socket
-     * factories from this context to use the material accepted by the last successful {@link #init()}. Repeated calls
-     * do not read the key or trust stores.
-     *
-     * @return Stable initialized context.
-     * @throws IgniteException If the first initialization fails.
-     */
-    @Override public final SSLContext create() {
-        if (sharedCtx == null) {
+        if (cur == null) {
             synchronized (this) {
-                if (sharedCtx == null)
-                    init();
+                cur = bundle;
+
+                if (cur == null)
+                    cur = init();
             }
         }
 
-        return sharedCtx;
+        return cur;
+    }
+
+    /**
+     * Returns the accepted context, initializing it on first use. Repeated calls do not read the key or trust stores.
+     * After {@link #init()} or automatic renewal accepts a replacement, call this method again to obtain it. Returned contexts
+     * retain their original material. Do not reinitialize the returned context directly.
+     *
+     * @return Currently accepted context.
+     * @throws IgniteException If the first initialization fails.
+     */
+    @Override public final SSLContext create() {
+        return sslBundle().context();
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ssl;
+package org.apache.ignite.internal.ssl;
 
 import java.security.SecureRandom;
 import java.util.function.Supplier;

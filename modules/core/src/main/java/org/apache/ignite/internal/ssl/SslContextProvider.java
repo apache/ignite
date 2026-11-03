@@ -40,6 +40,9 @@ public class SslContextProvider {
     /** Factory that owns the context, adapting a plain factory when necessary. */
     private final AbstractSslContextFactory sslFactory;
 
+    /** Stable context that forwards new engines and socket factories to the factory's accepted material. */
+    private final SSLContext sharedCtx;
+
     /** */
     private final Set<String> transports = new ConcurrentSkipListSet<>();
 
@@ -54,7 +57,7 @@ public class SslContextProvider {
             }
         };
 
-        sslFactory.create();
+        sharedCtx = new CurrentSslContext(sslFactory.create(), sslFactory::create);
     }
 
     /** @return Factory the transport is configured with. */
@@ -69,7 +72,7 @@ public class SslContextProvider {
 
     /** @return Stable context shared by every transport configured with this factory. */
     SSLContext sharedContext() {
-        return sslFactory.create();
+        return sharedCtx;
     }
 
     /** @param transport Transport the context is handed to. */
