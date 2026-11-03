@@ -24,11 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/**
- * Tests cache puts in mixed mode.
- *
- * TODO IGNITE-10345: Remove test in ignite 3.0.
- */
+/** Tests cache puts in mixed mode. */
 public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
