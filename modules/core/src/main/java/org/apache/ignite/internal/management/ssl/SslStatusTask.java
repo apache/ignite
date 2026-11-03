@@ -110,8 +110,10 @@ public class SslStatusTask extends AbstractSslTask {
                 else if (outcome.successTime() > 0)
                     lines.add(DOUBLE_INDENT + "last reload succeeded at " + Instant.ofEpochMilli(outcome.successTime()));
 
-                if (provider.nextRenewalTime() > 0)
-                    lines.add(DOUBLE_INDENT + "next automatic renewal at " + Instant.ofEpochMilli(provider.nextRenewalTime()));
+                long nextRenewalTime = provider.nextRenewalTime();
+
+                if (nextRenewalTime > 0)
+                    lines.add(DOUBLE_INDENT + "next automatic renewal at " + Instant.ofEpochMilli(nextRenewalTime));
             }
 
             return new IgniteBiTuple<>(!invalid, String.join("\n", lines));
