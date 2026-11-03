@@ -94,7 +94,8 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
     public IgniteCache<K, V> withApplicationAttributes(Map<String, String> appAttrs);
 
     /**
-     * @return Internal proxy.
+     * @return Internal proxy with the operation context of the current thread, not of this proxy:
+     *      {@link #withKeepBinary()} and other {@code with*} methods applied to this proxy are ignored.
      */
     public GridCacheProxyImpl<K, V> internalProxy();
 
