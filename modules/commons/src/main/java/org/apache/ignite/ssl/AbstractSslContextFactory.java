@@ -210,6 +210,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      *
      * @return Context and metadata accepted by this initialization.
      * @throws IgniteException If the material cannot be loaded or the context cannot be created.
+     * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
      */
     public final synchronized SslBundle init() {
         SslBundle next = createSslBundle();

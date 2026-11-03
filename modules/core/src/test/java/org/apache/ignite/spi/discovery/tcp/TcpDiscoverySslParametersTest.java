@@ -181,6 +181,14 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
         );
     }
 
+    /** A node with a protocol the JVM does not know must not start, even alone. */
+    @Test
+    public void testNonExistentProtocolRefusedAtStart() {
+        protocols = new String[] {"SSLvDoesNotExist"};
+
+        GridTestUtils.assertThrows(log, () -> startGrid(0), IgniteCheckedException.class, "SSLvDoesNotExist");
+    }
+
     /**
      * @throws Exception If failed.
      */

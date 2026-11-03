@@ -33,8 +33,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
@@ -46,7 +44,7 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /**
- * Creates test stores protected by {@link #PWD}. Private keys use EC P-256, and trust stores hold authority certificates.
+ * Creates test stores protected by {@link #PWD}. Private keys use EC P-256.
  * Certificates use SHA256withECDSA signatures. Issued leaf certificates allow both server and client authentication,
  * so the same material works for node-to-node TLS.
  */
@@ -130,15 +128,6 @@ public class TestCertificateAuthority {
         return store;
     }
 
-    /** @return Trust store with this authority alone. */
-    public KeyStore trustStore() throws Exception {
-        KeyStore store = emptyStore();
-
-        store.setCertificateEntry(name.getName(), cert);
-
-        return store;
-    }
-
     /**
      * @param keyStore Store with exactly one private key.
      * @return Its certificate chain in the form certificate metadata uses.
@@ -162,18 +151,6 @@ public class TestCertificateAuthority {
             throw new IllegalArgumentException("The test key store must contain exactly one private key");
 
         return chain;
-    }
-
-    /**
-     * @param trustStore Store with the authorities to trust.
-     * @return Trust managers that trust them.
-     */
-    public static TrustManager[] trustManagers(KeyStore trustStore) throws Exception {
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-
-        tmf.init(trustStore);
-
-        return tmf.getTrustManagers();
     }
 
     /**
