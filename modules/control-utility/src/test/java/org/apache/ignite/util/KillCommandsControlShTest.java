@@ -281,7 +281,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
      *
      */
     @Test
-    public void testCancelConsistencyTaskParallel() throws Exception {
+    public void testCancelConsistencyTaskParallel() throws InterruptedException {
         testCancelConsistencyTask(true);
     }
 
@@ -289,14 +289,14 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
      *
      */
     @Test
-    public void testCancelConsistencyTaskSequential() throws Exception {
+    public void testCancelConsistencyTaskSequential() throws InterruptedException {
         testCancelConsistencyTask(false);
     }
 
     /**
      *
      */
-    private void testCancelConsistencyTask(boolean parallel) throws Exception {
+    private void testCancelConsistencyTask(boolean parallel) throws InterruptedException {
         Assume.assumeTrue(cliCommandHandler());
 
         String consistencyCacheName = "consistencyCache";
@@ -427,13 +427,11 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
         testOut.reset();
 
-        boolean cleared = GridTestUtils.waitForCondition(() -> {
-            assertEquals(EXIT_CODE_OK, execute("--consistency", "status"));
+        int res = execute("--consistency", "status");
 
-            return testOut.toString().contains(ConsistencyStatusTask.NOTHING_FOUND);
-        }, 5_000);
+        assertEquals(EXIT_CODE_OK, res);
 
-        assertTrue("Consistency status did not clear:\n" + testOut, cleared);
+        assertContains(log, testOut.toString(), ConsistencyStatusTask.NOTHING_FOUND);
         assertNotContains(log, testOut.toString(), "Status");
     }
 }
