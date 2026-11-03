@@ -1325,11 +1325,14 @@ Every node of the cluster, including thick client nodes and the nodes embedded i
 
 The following features work only when the query is executed by the H2 engine: the `ignite-indexing` module must be on the classpath of every node, and the H2 engine must be selected for the query or the connection, or configured as the default engine.
 
-* The link:sql-reference/operational-commands#copy[COPY] and link:sql-reference/operational-commands#set-streaming[SET STREAMING] commands and the streaming modes of the JDBC and ODBC drivers.
+* The link:sql-reference/operational-commands#copy[COPY] and link:sql-reference/operational-commands#set-streaming[SET STREAMING] commands and the streaming modes of the JDBC and ODBC drivers, including the `streaming`, `streamingAllowOverwrite`, `streamingFlushFrequency`, `streamingPerNodeBufferSize` and `streamingPerNodeParallelOperations` parameters of the link:SQL/JDBC/jdbc-client-driver[JDBC Client Driver].
 * link:SQL/JDBC/jdbc-driver#partition-awareness[Partition awareness] of the JDBC thin driver. The Calcite-based engine does not return the partition information to the driver, so the driver sends the queries of such a connection to a random node of the cluster.
 * The `USE INDEX` syntax. The Calcite-based engine provides the `FORCE_INDEX` and `NO_INDEX` <<hints,hints>>.
 * Spatial indexes (`CREATE SPATIAL INDEX`) and the `GEOMETRY` data type.
-* The query flags `distributedJoins`, `collocated` and `skipReducerOnUpdate` of `SqlFieldsQuery`, of the JDBC connection string and of the ODBC connection string. The Calcite-based engine accepts and ignores them; it plans distributed joins and aggregations on its own. The `replicatedOnly` flag is deprecated since version 2.8 and is ignored by both engines.
+* The query flags that tune the execution of the H2 engine. The Calcite-based engine accepts and ignores them; it plans distributed joins, aggregations and updates on its own:
+** `distributedJoins`, `collocated` and `skipReducerOnUpdate` of `SqlFieldsQuery`, of the JDBC thin driver and the link:SQL/JDBC/jdbc-client-driver[JDBC Client Driver] connection strings, and `DISTRIBUTED_JOINS`, `COLLOCATED` and `SKIP_REDUCER_ON_UPDATE` of the ODBC connection string;
+** `updateBatchSize` and `dataPageScanEnabled` of the JDBC thin driver connection string.
+* The `replicatedOnly` flag (`REPLICATED_ONLY` for ODBC): deprecated since version 2.8 and ignored by both engines. The `local` and `enforceJoinOrder` flags, in contrast, are honoured by both engines.
 * `CacheConfiguration.queryParallelism` and the `PARALLELISM` option of `CREATE TABLE`. The Calcite-based engine executes a query fragment in a single thread on each node and merges the segments of a segmented index, so keep the value `1` for the tables that are queried by the Calcite-based engine.
 * The `sql.disabledFunctions` distributed property. The Calcite-based engine does not block the functions listed in it.
 * The H2 SQL dialect: functions, type conversions and statement syntax that exist in H2 but not in the Calcite-based engine, for example the H2 form of the `MERGE` statement and the DDL elements listed in <<DDL>>.

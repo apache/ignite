@@ -97,6 +97,7 @@ Applies to the legacy H2 engine only; the Calcite-based engine ignores it.
 |`streaming`
 
 |Turns on bulk data load mode via INSERT statements for this connection. Refer to the <<Streaming Mode>> section for more details.
+The streaming mode and the `streaming*` parameters below are implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only.
 
 |`false`
 
@@ -165,6 +166,8 @@ The cache to which the driver is connected is treated as the default schema. To 
 ====
 
 === Streaming Mode
+
+NOTE: The streaming mode is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only: it requires the `ignite-indexing` module on the classpath of the driver and of all server nodes. With the Calcite-based engine use the link:data-streaming[data streamer] or JDBC batch statements (`Statement.addBatch()`) instead.
 
 It's feasible to add data into a cluster in streaming mode (bulk mode) using the JDBC driver. In this mode, the driver instantiates `IgniteDataStreamer` internally and feeds data to it. To activate this mode, add the `streaming` parameter set to `true` to a JDBC connection string:
 
