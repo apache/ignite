@@ -17,16 +17,29 @@
 
 package org.apache.ignite.ssl;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Owns the SSL context and its certificate metadata. {@link #init()} loads replacement material before publishing it;
@@ -111,26 +124,107 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Checks the factory parameters, loads its key material once, and builds a fresh context with the certificate chains from
-     * that material. The factory does not retain the result.
-     *
-     * Override this method to load a candidate from another source. It must not change the material already in use.
-     * Outside loading hooks, use {@link #sslBundle()} to inspect the accepted material.
+     * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
+     * loading it. The result must not change material already in use. Outside loading hooks, use {@link #sslBundle()} to
+     * inspect the accepted material.
      *
      * @return Fresh context and the certificate metadata available to this factory.
-     * @throws IgniteException If the context could not be created.
+     * @throws SSLException If the context could not be created.
      */
-    protected SslBundle createSslBundle() {
+    protected abstract SslBundle createSslBundle() throws SSLException;
+
+    /**
+     * Creates a context and certificate metadata from one loaded key store, using this factory's trust and TLS settings.
+     * Do not modify the store while the context is in use: key managers such as PKIX read it during handshakes.
+     * Load replacement material into a separate store.
+     *
+     * @param store Loaded key store, never {@code null}. For a context without private keys, use an empty store initialized
+     *      with {@code KeyStore.load(null, null)}.
+     * @param keyPwd Password for the loaded store's private keys, or {@code null} if no password is required.
+     * @param algorithm Key manager algorithm.
+     * @return Context and nonempty X.509 chains of key entries, ordered by alias. An empty map means no such chains were found.
+     * @throws SSLException If the store cannot be read or the context cannot be created.
+     */
+    protected final SslBundle createSslBundle(KeyStore store, @Nullable char[] keyPwd, String algorithm) throws SSLException {
+        A.notNull(store, "store", algorithm, "algorithm");
+
+        KeyManager[] keyMgrs;
+
         try {
-            checkParameters();
+            KeyManagerFactory factory = KeyManagerFactory.getInstance(algorithm);
 
-            KeyMaterial material = loadKeyMaterial();
+            factory.init(store, keyPwd);
 
-            return new SslBundle(createSslContext(material.keyManagers()), material.certificateChains());
+            keyMgrs = factory.getKeyManagers();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported key algorithm: " + algorithm, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to initialize Key Manager (security exception occurred)", e);
+        }
+
+        Map<String, List<X509Certificate>> chains = certificateChains(store);
+
+        return new SslBundle(createSslContext(keyMgrs), chains);
+    }
+
+    /** @return Fresh candidate with factory context added to checked SSL errors. */
+    private SslBundle prepareSslBundle() {
+        try {
+            return createSslBundle();
         }
         catch (SSLException e) {
             throw new IgniteException(e.getMessage() + " [factory=" + this + ']', e);
         }
+    }
+
+    /**
+     * @param store Loaded key store.
+     * @return Nonempty X.509 chains of key entries; entries without such a chain are omitted.
+     * @throws SSLException If the store cannot be read.
+     */
+    private static Map<String, List<X509Certificate>> certificateChains(KeyStore store) throws SSLException {
+        try {
+            Map<String, List<X509Certificate>> chains = new TreeMap<>();
+
+            for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
+                String alias = aliases.nextElement();
+
+                if (!store.isKeyEntry(alias))
+                    continue;
+
+                List<X509Certificate> chain = certificateChain(store.getCertificateChain(alias));
+
+                if (!chain.isEmpty())
+                    chains.put(alias, chain);
+            }
+
+            return chains;
+        }
+        catch (KeyStoreException e) {
+            throw new SSLException("Failed to read certificate chains from key store", e);
+        }
+    }
+
+    /**
+     * @param certs Chain from the store, if present.
+     * @return X.509 chain, or an empty list if it is absent or contains another certificate type.
+     */
+    private static List<X509Certificate> certificateChain(@Nullable Certificate[] certs) {
+        if (certs == null)
+            return Collections.emptyList();
+
+        List<X509Certificate> chain = new ArrayList<>(certs.length);
+
+        for (Certificate cert : certs) {
+            if (!(cert instanceof X509Certificate))
+                return Collections.emptyList();
+
+            chain.add((X509Certificate)cert);
+        }
+
+        return chain;
     }
 
     /**
@@ -186,16 +280,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract void checkParameters() throws SSLException;
 
     /**
-     * Loads the key store and initializes its key managers and certificate metadata. Called once per context, after the
-     * parameters are checked.
-     * For a context without private keys, return material over an empty store initialized with {@code KeyStore.load(null, null)}.
-     *
-     * @return Loaded key material, never {@code null}.
-     * @throws SSLException If the key material cannot be loaded.
-     */
-    protected abstract KeyMaterial loadKeyMaterial() throws SSLException;
-
-    /**
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
@@ -211,7 +295,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
      */
     public final synchronized SslBundle init() {
-        SslBundle next = createSslBundle();
+        SslBundle next = prepareSslBundle();
 
         next.context().createSSLEngine();
 

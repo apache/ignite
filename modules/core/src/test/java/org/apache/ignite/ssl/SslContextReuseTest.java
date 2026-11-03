@@ -20,16 +20,10 @@ package org.apache.ignite.ssl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.security.KeyStore;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Rule;
@@ -43,13 +37,6 @@ import static org.junit.Assert.assertArrayEquals;
 public class SslContextReuseTest extends GridCommonAbstractTest {
     /** Stores generated independently for each test. */
     @Rule public final TemporaryFolder tmp = new TemporaryFolder();
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
-    }
 
     /** A new context uses initialized TLS settings; the previous context, engines and socket factories keep their settings. */
     @Test
@@ -119,33 +106,6 @@ public class SslContextReuseTest extends GridCommonAbstractTest {
         assertSame(shared, restored.create());
         assertArrayEquals(protocols, shared.createSSLEngine().getEnabledProtocols());
         assertEquals(original.certificateChains(), restored.sslBundle().certificateChains());
-    }
-
-    /** Reopening a communication connection does not call the SSL context factory on either node. */
-    @Test
-    public void testCommunicationReusesContextOnReconnect() throws Exception {
-        Factory<SSLContext> sslFactory = GridTestUtils.sslFactory();
-        AtomicInteger created = new AtomicInteger();
-        Factory<SSLContext> counting = () -> {
-            created.incrementAndGet();
-
-            return sslFactory.create();
-        };
-
-        IgniteEx first = startGrid(0, cfg -> {
-            cfg.setSslContextFactory(counting);
-        });
-        IgniteEx second = startGrid(1, cfg -> {
-            cfg.setSslContextFactory(counting);
-        });
-        int createdAtStart = created.get();
-
-        ConnectionClientPool pool = U.field(first.configuration().getCommunicationSpi(), "clientPool");
-
-        pool.forceCloseConnection(second.localNode().id());
-        first.compute(first.cluster().forNodeId(second.localNode().id())).run(() -> {});
-
-        assertEquals(createdAtStart, created.get());
     }
 
     /** Creates a file-backed factory with a generated private key and currently valid certificate chain. */

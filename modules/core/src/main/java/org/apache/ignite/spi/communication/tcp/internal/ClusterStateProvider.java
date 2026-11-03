@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import java.util.function.Supplier;
+import javax.net.ssl.SSLEngine;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -105,6 +106,13 @@ public class ClusterStateProvider {
      */
     public boolean isSslEnabled() {
         return ignite.configuration().getSslContextFactory() != null;
+    }
+
+    /**
+     * @return {@link SSLEngine} for ssl connections.
+     */
+    public SSLEngine createSSLEngine() {
+        return ignite.configuration().getSslContextFactory().create().createSSLEngine();
     }
 
     /**

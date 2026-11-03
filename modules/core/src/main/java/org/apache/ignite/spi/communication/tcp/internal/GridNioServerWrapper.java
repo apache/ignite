@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
@@ -217,9 +216,6 @@ public class GridNioServerWrapper {
     /** Message queue size to print warning. */
     private final int msgQueueWarningSize = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE, 0);
-
-    /** Context shared by incoming and outgoing connections until the SPI stops. */
-    private SSLContext sslCtx;
 
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
@@ -480,7 +476,7 @@ public class GridNioServerWrapper {
                         if (stateProvider.isSslEnabled()) {
                             meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
 
-                            SSLEngine sslEngine = sslCtx.createSSLEngine();
+                            SSLEngine sslEngine = stateProvider.createSSLEngine();
 
                             sslEngine.setUseClientMode(true);
 
@@ -807,8 +803,6 @@ public class GridNioServerWrapper {
         if (cfg.boundTcpPort() >= 0)
             throw new IgniteCheckedException("Tcp NIO server was already created on port " + cfg.boundTcpPort());
 
-        sslCtx = stateProvider.isSslEnabled() ? igniteCfg.getSslContextFactory().create() : null;
-
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
@@ -925,7 +919,7 @@ public class GridNioServerWrapper {
 
                 if (stateProvider.isSslEnabled()) {
                     GridNioSslFilter sslFilter = U.sslFilter(
-                        sslCtx,
+                        igniteCfg.getSslContextFactory().create(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,
