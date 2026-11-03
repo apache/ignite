@@ -89,7 +89,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         p.reload();
 
-        assertSame(next.context(), p.context());
+        assertSame(next.context(), p.bundle().context());
         assertEquals(Map.of("a", chain(a), "b", chain(b)), p.certificateChains());
         verify(f, times(2)).createSslBundle();
         assertTrue(p.reloadOutcome().successTime() > 0);
@@ -111,7 +111,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         f.init();
 
         assertSame(next, p.bundle());
-        assertSame(next.context(), p.context());
+        assertSame(next.context(), p.bundle().context());
         assertEquals(next.certificateChains(), p.certificateChains());
         assertSame(shared, p.sharedContext());
         assertSame(f.reloadOutcome(), p.reloadOutcome());
@@ -147,7 +147,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         ReloadOutcome failed = p.reloadOutcome();
 
-        assertSame(reloaded.context(), p.context());
+        assertSame(reloaded.context(), p.bundle().context());
         assertEquals(reloaded.certificateChains(), p.certificateChains());
         assertTrue(failed.failureTime() >= failureStart);
         assertEquals(new ReloadOutcome(successTime, failed.failureTime(), "Failed to load: bad file", 2), failed);
@@ -275,13 +275,13 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
      * @param reason Expected part of the failure message; also names the case in assertion messages.
      */
     private void assertReloadRejected(SslContextProvider p, String reason) {
-        SSLContext inUse = p.context();
+        SSLContext inUse = p.bundle().context();
         Map<String, List<X509Certificate>> chains = p.certificateChains();
         int failures = p.reloadOutcome().failures();
 
         GridTestUtils.assertThrows(log, p::reload, Exception.class, reason);
 
-        Assert.assertSame(reason, inUse, p.context());
+        Assert.assertSame(reason, inUse, p.bundle().context());
         assertEquals(reason, chains, p.certificateChains());
         assertEquals(reason, failures + 1, p.reloadOutcome().failures());
         assertContains(log, p.reloadOutcome().failureReason(), reason);

@@ -43,7 +43,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.Level;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
@@ -147,7 +146,6 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
                 .setSslEnabled(true).setSslClientAuth(false).setUseIgniteSslContextFactory(false).setSslContextFactory(clientFactory));
         });
         SslContextProvider node = provider(g, COMMUNICATION);
-        SslContextProvider client = provider(g, CLIENT_CONNECTOR);
         ReadOnlyMetricRegistry ssl = g.context().metric().registry("ssl");
         Iterator<Metric> metrics = ssl.iterator();
         IntMetric failures = ssl.findMetric("ConsecutiveRenewalFailures");
@@ -155,15 +153,15 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         assertEquals("ssl.ConsecutiveRenewalFailures", metrics.next().name());
         assertFalse(metrics.hasNext());
 
-        node.renew(node.context());
-        client.renew(client.context());
-        client.renew(client.context());
+        nodeFactory.renew(nodeFactory.sslBundle().context());
+        clientFactory.renew(clientFactory.sslBundle().context());
+        clientFactory.renew(clientFactory.sslBundle().context());
 
         assertEquals("Both factories", 3, failures.value());
 
         save(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), nodeKeys);
 
-        node.renew(node.context());
+        nodeFactory.renew(nodeFactory.sslBundle().context());
 
         assertEquals("Node factory renewed", 2, failures.value());
         assertEquals(0, node.nextRenewalTime());

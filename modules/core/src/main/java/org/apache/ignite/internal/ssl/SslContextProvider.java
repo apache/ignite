@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
@@ -61,11 +60,6 @@ public class SslContextProvider {
     /** @return Factory the transport is configured with. */
     Factory<SSLContext> factory() {
         return factory;
-    }
-
-    /** @return Context to open the next connection with. */
-    SSLContext context() {
-        return bundle().context();
     }
 
     /** @return Context and certificate metadata currently accepted by the factory. */
@@ -109,15 +103,6 @@ public class SslContextProvider {
     /** @return Unsuccessful automatic attempts since the earliest chain expiry advanced. */
     int renewalFailures() {
         return sslFactory.renewalFailures();
-    }
-
-    /**
-     * @param expected Context the renewal was planned for.
-     * @return Installed bundle, or {@code null} if unchanged or already replaced.
-     * @throws IgniteCheckedException If renewal is interrupted.
-     */
-    @Nullable SslBundle renew(SSLContext expected) throws IgniteCheckedException {
-        return sslFactory.renew(expected);
     }
 
     /** @return Context and certificate metadata accepted by the factory's initialization. */
