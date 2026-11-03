@@ -109,10 +109,10 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         assertNotNull("The reload must ask for confirmation", new SslReloadCommand().confirmationPrompt(new NoArg()));
 
         TestCertificateAuthority ca = new TestCertificateAuthority("cli-ca");
-        String initial = "initial-key";
+        String oldAlias = "initial-key";
         String replacement = "replacement-key";
 
-        save(ca.keyStoreWithPrivateKey(initial), keyStore);
+        save(ca.keyStoreWithPrivateKey(oldAlias), keyStore);
         save(ca.keyStoreWithPrivateKey(), clientKeyStore);
 
         IgniteEx srv0 = startGrid(0);
@@ -139,7 +139,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         transports.forEach((g, t) -> assertContains(log, statusOutput, node(g) + ": " + t + '\n'));
 
         assertContains(log, statusOutput, loaded);
-        assertNotContains(log, statusOutput, "subject=CN=" + initial);
+        assertNotContains(log, statusOutput, "subject=CN=" + oldAlias);
 
         List<Instant> succeeded = Pattern.compile("last reload succeeded at (\\S+)").matcher(statusOutput).results()
             .map(m -> Instant.parse(m.group(1))).collect(Collectors.toList());
