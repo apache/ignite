@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.ssl;
+
+package org.apache.ignite.ssl;
 
 import java.security.SecureRandom;
 import java.util.function.Supplier;
@@ -30,9 +31,12 @@ import javax.net.ssl.TrustManager;
 
 /** Delegates to the current SSL context so that new connections use reloaded certificates. */
 class CurrentSslContext extends SSLContext {
-    /** @param ctx Supplier of the context currently in use. */
-    CurrentSslContext(Supplier<SSLContext> ctx) {
-        super(new Spi(ctx), ctx.get().getProvider(), ctx.get().getProtocol());
+    /**
+     * @param initial First accepted context, used for its provider and protocol.
+     * @param ctx Supplier of the context currently in use.
+     */
+    CurrentSslContext(SSLContext initial, Supplier<SSLContext> ctx) {
+        super(new Spi(ctx), initial.getProvider(), initial.getProtocol());
     }
 
     /** */
