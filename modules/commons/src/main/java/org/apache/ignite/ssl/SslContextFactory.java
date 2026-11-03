@@ -308,8 +308,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
         return buf.toString();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void checkParameters() throws SSLException {
+    /**
+     * Checks that all required parameters are set.
+     *
+     * @throws SSLException If any of required parameters is missing.
+     */
+    protected void checkParameters() throws SSLException {
         assert keyStoreType != null;
         assert proto != null;
 

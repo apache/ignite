@@ -343,13 +343,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Checks that all required parameters are set.
-     *
-     * @throws SSLException If any of required parameters is missing.
-     */
-    protected abstract void checkParameters() throws SSLException;
-
-    /**
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
