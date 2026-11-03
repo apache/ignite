@@ -88,6 +88,12 @@ public class GridCacheUnlockFuture extends GridCacheFutureAdapter<Void> {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean cancel() {
+        // Cancelling the waiter does not retract the unlock; full rollback owns the remaining cleanup.
+        return onCancelled();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
     }

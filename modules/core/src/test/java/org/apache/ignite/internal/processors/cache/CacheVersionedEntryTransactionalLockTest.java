@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockReq
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -486,6 +487,93 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
 
         assertEquals(Integer.valueOf(2), cache.get(keys.get(0)));
         assertEquals(Integer.valueOf(2), cache.get(keys.get(4)));
+    }
+
+    /** Forced rollback releases all locks without waiting for an unlock acknowledgement. */
+    @Test
+    public void testForcedRollbackDuringUnlock() throws Exception {
+        // A local primary needs a backup to have an outstanding acknowledgement.
+        assumeTrue(!batch || replicated || backups > 0);
+
+        transactionalCache(ignite0);
+
+        Ignite primary = batch ? ignite1 : grid(2);
+        IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> holderCache = ignite0.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> competitorCache = grid(3).cache(DEFAULT_CACHE_NAME);
+        List<Integer> keys = primaryKeys(primary.cache(DEFAULT_CACHE_NAME), 2);
+        int blockedKey = primaryKey(holderCache);
+
+        for (int key : List.of(keys.get(0), keys.get(1), blockedKey))
+            cache.put(key, 0);
+
+        CacheEntry<Integer, Integer> heldEntry = cache.getEntry(keys.get(0));
+        CacheEntry<Integer, Integer> newEntry = cache.getEntry(keys.get(1));
+        List<CacheEntry<Integer, Integer>> entries = List.of(newEntry, cache.getEntry(blockedKey));
+        TestRecordingCommunicationSpi spi;
+
+        if (batch) {
+            String backupName = primary.affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(keys.get(1)).stream()
+                .filter(node -> !node.id().equals(primary.cluster().localNode().id()))
+                .findFirst().get().attribute(org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
+
+            spi = TestRecordingCommunicationSpi.spi(grid(backupName));
+        }
+        else
+            spi = TestRecordingCommunicationSpi.spi(primary);
+
+        try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 30_000, 0);
+             Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+            holderCache.put(blockedKey, 1);
+            cache.get(keys.get(0));
+
+            spi.blockMessages((node, msg) -> msg instanceof GridCacheUnlockResponse);
+
+            IgniteInternalFuture<?> rollback = null;
+
+            try {
+                IgniteInternalFuture<Map<CacheEntry<Integer, Integer>, Boolean>> fut = internalCache(cache)
+                    .lockTxEntriesAsync(entries, -1, false);
+
+                assertTrue(spi.waitForBlocked(1, 5_000));
+                assertFalse(fut.isDone());
+
+                // The same forced rollback path is used by transaction management and partition exchange.
+                rollback = internalCache(cache).context().tm().userTx().rollbackNearTxLocalAsync(false, false);
+
+                assertTrue("Forced rollback is waiting for an unlock acknowledgement",
+                    GridTestUtils.waitForCondition(rollback::isDone, 5_000));
+
+                rollback.get();
+
+                GridTestUtils.assertThrows(log, () -> fut.get(5_000), IgniteTxRollbackCheckedException.class, null);
+
+                assertTrue("Cancelled unlock waiters remain registered", internalCache(cache).context().mvcc()
+                    .activeFutures().stream().noneMatch(f -> f instanceof GridCacheUnlockFuture));
+
+                // Both the attempt's locks and previously held locks must be free before the old ACK arrives.
+                try (Transaction competitor = grid(3).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+                    assertFalse(internalCache(competitorCache).lockTxEntries(List.of(heldEntry, newEntry), -1, false)
+                        .containsValue(false));
+
+                    spi.stopBlock();
+
+                    competitorCache.put(keys.get(1), 2);
+                    competitor.commit();
+                }
+            }
+            finally {
+                spi.stopBlock();
+
+                if (rollback != null)
+                    rollback.get(5_000);
+            }
+        }
+        finally {
+            spi.stopBlock();
+        }
+
+        assertEquals(Integer.valueOf(2), cache.get(keys.get(1)));
     }
 
     /** A delayed old unlock must finish before the same transaction can retry its keys. */

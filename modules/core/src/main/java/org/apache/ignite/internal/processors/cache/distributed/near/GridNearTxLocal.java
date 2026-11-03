@@ -89,7 +89,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -3242,36 +3241,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         Collection<IgniteTxEntry> entries,
         Map<KeyCacheObject, IgniteTxEntry> snapshots
     ) {
-        GridCompoundFuture<Void, Void> cleanup = new GridCompoundFuture<>();
-        GridFutureAdapter<Void> res = new GridFutureAdapter<>();
+        GridNearTxUnlockFuture cleanup = new GridNearTxUnlockFuture(this, entries, snapshots);
 
         if (!updateLockFuture(null, cleanup))
             return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
-
-        cleanup.listen(fut -> {
-            clearLockFuture(cleanup);
-
-            try {
-                fut.get();
-
-                if (remainingTime() == -1)
-                    throw timeoutException();
-
-                if (isRollbackOnly())
-                    throw rollbackException();
-
-                // Keep mappings until every participant has acknowledged: rollback still needs them on failure.
-                for (IgniteTxEntry entry : entries)
-                    removeFailedLockEntry(entry, snapshots.get(entry.key()));
-
-                res.onDone();
-            }
-            catch (IgniteCheckedException | RuntimeException e) {
-                setRollbackOnly();
-
-                res.onDone(e);
-            }
-        });
 
         try {
             Map<GridCacheContext<?, ?>, Map<UUID, Collection<KeyCacheObject>>> mappings = new HashMap<>();
@@ -3301,6 +3274,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 GridCacheContext<?, ?> cacheCtx = byCache.getKey();
 
                 for (Map.Entry<UUID, Collection<KeyCacheObject>> byNode : byCache.getValue().entrySet()) {
+                    if (cleanup.isCancelled())
+                        break;
+
                     if (cctx.localNodeId().equals(byNode.getKey())) {
                         GridCacheContext<?, ?> dhtCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
 
@@ -3327,7 +3303,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         cleanup.markInitialized();
 
-        return res;
+        return cleanup;
     }
 
     /**

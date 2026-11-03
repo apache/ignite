@@ -3221,7 +3221,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             res.onDone(results);
                         }
                         catch (IgniteCheckedException | RuntimeException e) {
-                            res.onDone(e);
+                            res.onDone(unlockFut.isCancelled() ? tx.rollbackException() : e);
                         }
                     });
 
