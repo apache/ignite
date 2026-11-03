@@ -154,6 +154,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Whether a rejected key leaves the remaining lock attempts active. */
+    private final boolean skipLocked;
+
     /** Transaction. */
     private final GridDhtTxLocalAdapter tx;
 
@@ -210,6 +213,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      */
     public GridDhtLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -228,7 +232,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         boolean skipStore,
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean skipLocked) {
         super(CU.boolReducer());
 
         assert nearNodeId != null;
@@ -244,6 +249,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.needReturnVal = needReturnVal;
         this.timeout = timeout;
         this.waitTimeout = waitTimeout;
+        this.skipLocked = skipLocked;
         this.tx = tx;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
@@ -371,6 +377,25 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             entry.removeLock(lockVer);
     }
 
+    /** Rejects this whole conditional batch before acknowledging failure to the initiator. */
+    private synchronized void rejectVersionedLocks() {
+        // Removing a candidate can promote the next candidate of this transaction and reenter map().
+        mapped = true;
+
+        for (GridDhtCacheEntry entry : versionedEntries.keySet()) {
+            try {
+                rejectEntry(entry);
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                tx.entry(entry.txKey()).versionedLockResult(false);
+                pendingLocks.remove(entry.key());
+            }
+        }
+
+        // The caller releases earlier primary batches; the transaction itself remains usable.
+        onComplete(false, false, false, false);
+    }
+
     /**
      * Need of synchronization here is explained in the field's {@link GridDhtLockFuture#entries} comment.
      *
@@ -471,10 +496,14 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         if (c == null && lockTimeout() < 0) {
             if (log.isDebugEnabled())
-                log.debug("Failed to acquire lock with negative timeout: " + entry);
+                log.debug("Failed to acquire lock immediately: " + entry);
 
-            if (versionedEntries.containsKey(entry))
-                rejectEntry(entry);
+            if (versionedEntries.containsKey(entry)) {
+                if (skipLocked)
+                    rejectEntry(entry);
+                else
+                    rejectVersionedLocks();
+            }
             else if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
                 onComplete(false, false, false, false);
             else
@@ -669,6 +698,12 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     if (lockTimeout() < 0) {
                         if (owners == null || !owners.hasCandidate(lockVer)) {
                             if (versionedEntries.containsKey(entry)) {
+                                if (!skipLocked) {
+                                    rejectVersionedLocks();
+
+                                    return;
+                                }
+
                                 rejectEntry((GridDhtCacheEntry)entry);
 
                                 break;
@@ -926,10 +961,21 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                 if (entry.getKey().checkLockVersion(lockVer, entry.getValue()))
                     tx.entry(entry.getKey().txKey()).versionedLockResult(true);
-                else
+                else if (skipLocked)
                     rejectEntry(entry.getKey());
+                else {
+                    rejectVersionedLocks();
+
+                    return;
+                }
             }
             catch (GridCacheEntryRemovedException e) {
+                if (!skipLocked) {
+                    rejectVersionedLocks();
+
+                    return;
+                }
+
                 tx.entry(entry.getKey().txKey()).versionedLockResult(false);
             }
             catch (IgniteCheckedException e) {
@@ -1276,6 +1322,12 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     return;
 
                 if (!versionedEntries.isEmpty() && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+                    if (!skipLocked) {
+                        rejectVersionedLocks();
+
+                        return;
+                    }
+
                     for (GridDhtCacheEntry entry : versionedEntries.keySet()) {
                         if (!pendingLocks.contains(entry.key()))
                             continue;

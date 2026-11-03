@@ -1336,12 +1336,15 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Map<CacheEntry<K, V>, Boolean> lockTxEntries(Collection<CacheEntry<K, V>> entries, long waitTimeout)
-        throws IgniteCheckedException {
+    @Override public Map<CacheEntry<K, V>, Boolean> lockTxEntries(
+        Collection<CacheEntry<K, V>> entries,
+        long waitTimeout,
+        boolean skipLocked
+    ) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.lockTxEntries(entries, waitTimeout);
+            return delegate.lockTxEntries(entries, waitTimeout, skipLocked);
         }
         finally {
             gate.leave(prev);
@@ -1351,12 +1354,13 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<CacheEntry<K, V>, Boolean>> lockTxEntriesAsync(
         Collection<CacheEntry<K, V>> entries,
-        long waitTimeout
+        long waitTimeout,
+        boolean skipLocked
     ) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.lockTxEntriesAsync(entries, waitTimeout);
+            return delegate.lockTxEntriesAsync(entries, waitTimeout, skipLocked);
         }
         finally {
             gate.leave(prev);

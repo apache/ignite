@@ -654,7 +654,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     isolation,
                     isInvalidate(),
                     -1L,
-                    -1L);
+                    -1L,
+                    false);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(
@@ -831,7 +832,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     isolation,
                     isInvalidate(),
                     -1L,
-                    -1L);
+                    -1L,
+                    false);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(
@@ -1736,7 +1738,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 isolation,
                 isInvalidate(),
                 -1L,
-                -1L);
+                -1L,
+                false);
 
             PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                 /** {@inheritDoc} */
@@ -1931,7 +1934,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     isolation,
                     isInvalidate(),
                     createTtl,
-                    accessTtl);
+                    accessTtl,
+                    false);
 
                 final ExpiryPolicy expiryPlc0 = expiryPlc;
 
@@ -3225,6 +3229,24 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * Releases an unsuccessful all-or-nothing lock attempt and restores entries enlisted before it.
+     * Entries whose locks were already owned before the attempt must not be included.
+     *
+     * @param entries Entries enlisted by the attempt, including successful earlier primary batches.
+     * @param snapshots Previous entry states, indexed by key.
+     */
+    public void removeAndUnlockTxEntries(
+        Collection<IgniteTxEntry> entries,
+        Map<KeyCacheObject, IgniteTxEntry> snapshots
+    ) {
+        // The failed primary batch has already released its candidates before replying.
+        unlockTxEntries(F.view(entries, entry -> Boolean.TRUE.equals(entry.versionedLockResult())));
+
+        for (IgniteTxEntry entry : entries)
+            removeFailedLockEntry(entry, snapshots.get(entry.key()));
+    }
+
+    /**
      * Removes the initiating-side state of a conditional lock rejected and cleaned up by the primary.
      * No distributed unlock is needed: the primary has not replicated or acknowledged this lock.
      *
@@ -4252,6 +4274,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param waitTimeout Lock wait timeout.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
@@ -4264,7 +4287,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
-        long waitTimeout) {
+        long waitTimeout,
+        boolean skipLocked) {
         assert pessimistic();
 
         try {
@@ -4305,7 +4329,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             skipStore,
             skipReadThrough,
             keepBinaryInInterceptor,
-            keepBinary);
+            keepBinary,
+            skipLocked);
 
         return new GridEmbeddedFuture<>(
             fut,

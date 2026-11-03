@@ -140,6 +140,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Whether a rejected key leaves the remaining lock attempts active. */
+    private final boolean skipLocked;
+
     /** Time when the first primary batch starts, or zero before mapping. */
     private long lockWaitStartTime;
 
@@ -205,6 +208,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -220,7 +224,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
-        boolean recovery
+        boolean recovery,
+        boolean skipLocked
     ) {
         super(CU.boolReducer());
 
@@ -233,6 +238,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.retval = retval;
         this.timeout = timeout;
         this.waitTimeout = waitTimeout;
+        this.skipLocked = skipLocked;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
@@ -1247,6 +1253,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             lockLocally(mappedKeys, req.topologyVersion(), remainingWaitTimeout);
         else {
             req.waitTimeout(remainingWaitTimeout);
+            req.skipLocked(skipLocked);
 
             final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
@@ -1300,7 +1307,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             skipStore,
             skipReadThrough,
             keepBinaryInInterceptor,
-            keepBinary);
+            keepBinary,
+            skipLocked);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(

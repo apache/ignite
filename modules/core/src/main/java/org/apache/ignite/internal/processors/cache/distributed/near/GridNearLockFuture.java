@@ -137,6 +137,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Whether a rejected key leaves the remaining lock attempts active. */
+    private final boolean skipLocked;
+
     /** Time when the first primary batch starts, or zero before mapping. */
     private long lockWaitStartTime;
 
@@ -203,6 +206,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param recovery Recovery flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      */
     public GridNearLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -218,7 +222,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
-        boolean recovery
+        boolean recovery,
+        boolean skipLocked
     ) {
         super(CU.boolReducer());
 
@@ -232,6 +237,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.retval = retval;
         this.timeout = timeout;
         this.waitTimeout = waitTimeout;
+        this.skipLocked = skipLocked;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
@@ -383,7 +389,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         if (c == null && timeout < 0) {
             if (log.isDebugEnabled())
-                log.debug("Failed to acquire lock with negative timeout: " + entry);
+                log.debug("Failed to acquire lock immediately: " + entry);
 
             onFailed(false);
 
@@ -1244,6 +1250,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         }
 
         req.waitTimeout(remainingWaitTimeout);
+        req.skipLocked(skipLocked);
 
         if (node.isLocal()) {
             req.miniId(-1);

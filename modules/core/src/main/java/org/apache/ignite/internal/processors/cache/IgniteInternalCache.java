@@ -1365,8 +1365,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Attempts to acquire a transactional lock for each entry, validating its data version on the primary while
      * owning the transactional lock and holding the entry mutex. This method works only in a
      * {@link TransactionConcurrency#PESSIMISTIC} transaction. A conflicting, missing or changed entry is reported
-     * as {@code false}; other entries are still attempted. Successful locks are retained until transaction end
-     * (or an explicit rollback to a savepoint), even when other entries fail. Already owned entries are reused.
+     * as {@code false}. With {@code skipLocked}, other entries are still attempted and successful locks are retained
+     * until transaction end (or an explicit rollback to a savepoint). Otherwise the first rejection stops the attempt,
+     * newly acquired locks are released, and entries not locked before the call are reported as {@code false}.
+     * Locks already owned before the call are reused, are reported as {@code true}, and are never released
+     * by a failed attempt, regardless of {@code skipLocked}.
      * Infrastructure failures complete the operation exceptionally and are not per-entry rejections.
      *
      * @param entries Entries whose keys, values and versions should be used.
@@ -1374,12 +1377,16 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *      ({@code 0} to use the transaction timeout, {@code -1} for immediate failure if
      *      locks cannot be acquired immediately).
      *      A positive limit is shared by all entries; once it expires the remaining attempts do not wait.
-     * @return Lock result for each supplied entry, in input iteration order.
+     * @param skipLocked Whether to continue after a per-entry rejection and allow partial success.
+     * @return Lock result for each supplied entry.
      * @throws IgniteCheckedException If lock acquisition resulted in an error.
      * @throws NullPointerException If entries is {@code null}.
      */
-    public Map<CacheEntry<K, V>, Boolean> lockTxEntries(Collection<CacheEntry<K, V>> entries, long waitTimeout)
-        throws IgniteCheckedException;
+    public Map<CacheEntry<K, V>, Boolean> lockTxEntries(
+        Collection<CacheEntry<K, V>> entries,
+        long waitTimeout,
+        boolean skipLocked
+    ) throws IgniteCheckedException;
 
     /**
      * Asynchronously acquires a transactional lock for the cached object represented by the given entry if the current
@@ -1397,18 +1404,20 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<K, V> entry, long waitTimeout);
 
     /**
-     * Asynchronous counterpart of {@link #lockTxEntries(Collection, long)} with the same partial-success semantics.
+     * Asynchronous counterpart of {@link #lockTxEntries(Collection, long, boolean)}.
      *
      * @param entries Entries whose keys, values and versions should be used.
      * @param waitTimeout Timeout in milliseconds to wait for locks to be acquired
      *      ({@code 0} to use the transaction timeout, {@code -1} for immediate failure if
      *      locks cannot be acquired immediately).
+     * @param skipLocked Whether to continue after a per-entry rejection and allow partial success.
      * @return Future containing a lock result for each supplied entry.
      * @throws NullPointerException If entries is {@code null}.
      */
     public IgniteInternalFuture<Map<CacheEntry<K, V>, Boolean>> lockTxEntriesAsync(
         Collection<CacheEntry<K, V>> entries,
-        long waitTimeout
+        long waitTimeout,
+        boolean skipLocked
     );
 
     /**

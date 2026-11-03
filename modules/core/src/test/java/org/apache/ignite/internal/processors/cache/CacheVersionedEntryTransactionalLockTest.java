@@ -451,8 +451,8 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
 
             try (Transaction tx = initiator.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 Map<CacheEntry<Integer, Integer>, Boolean> res = batch
-                    ? internalCache(cache).lockTxEntriesAsync(entries, -1).get()
-                    : internalCache(cache).lockTxEntries(entries, -1);
+                    ? internalCache(cache).lockTxEntriesAsync(entries, -1, true).get()
+                    : internalCache(cache).lockTxEntries(entries, -1, true);
 
                 assertEquals(5, res.size());
                 assertEquals(Boolean.TRUE, res.get(entries.get(0)));
@@ -483,6 +483,110 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
 
         assertEquals(Integer.valueOf(2), cache.get(keys.get(0)));
         assertEquals(Integer.valueOf(2), cache.get(keys.get(4)));
+    }
+
+    /** A lock conflict stops an all-or-nothing attempt and releases successful earlier batches. */
+    @Test
+    public void testAllOrNothingLockConflict() throws Exception {
+        transactionalCache(ignite0);
+
+        checkAllOrNothingFailure(false, false);
+        checkAllOrNothingFailure(true, false);
+    }
+
+    /** A version mismatch rejects the entire attempt without invalidating the transaction. */
+    @Test
+    public void testAllOrNothingVersionMismatch() throws Exception {
+        transactionalCache(ignite0);
+
+        checkAllOrNothingFailure(false, true);
+        checkAllOrNothingFailure(true, true);
+    }
+
+    /**
+     * @param localFailure Whether the rejecting primary is the initiating node.
+     * @param versionMismatch Whether rejection is caused by a changed version instead of a held lock.
+     */
+    private void checkAllOrNothingFailure(boolean localFailure, boolean versionMismatch) throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> holderCache = ignite0.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> competitorCache = grid(3).cache(DEFAULT_CACHE_NAME);
+        List<Integer> firstKeys = primaryKeys(grid(2).cache(DEFAULT_CACHE_NAME), 2);
+        List<Integer> failedKeys = primaryKeys(grid(localFailure ? 1 : 0).cache(DEFAULT_CACHE_NAME), 2);
+        int lastKey = primaryKey(competitorCache);
+        List<CacheEntry<Integer, Integer>> entries = new ArrayList<>();
+
+        for (Integer key : List.of(firstKeys.get(0), firstKeys.get(1), failedKeys.get(0), failedKeys.get(1), lastKey)) {
+            cache.put(key, 0);
+            entries.add(cache.getEntry(key));
+        }
+
+        if (versionMismatch)
+            holderCache.put(failedKeys.get(0), 1);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite1);
+
+        try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 0)) {
+            if (!versionMismatch)
+                holderCache.put(failedKeys.get(0), 1);
+
+            try (Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 10_000, 0)) {
+                // A lock owned before this invocation must survive its failure.
+                assertEquals(Integer.valueOf(0), cache.get(firstKeys.get(0)));
+
+                spi.record(GridNearLockRequest.class);
+
+                Map<CacheEntry<Integer, Integer>, Boolean> results = batch
+                    ? internalCache(cache).lockTxEntriesAsync(entries, 200, false).get()
+                    : internalCache(cache).lockTxEntries(entries, -1, false);
+
+                assertEquals(entries.size(), results.size());
+
+                assertEquals(Boolean.TRUE, results.get(entries.get(0)));
+
+                for (int idx = 1; idx < entries.size(); idx++)
+                    assertEquals(Boolean.FALSE, results.get(entries.get(idx)));
+
+                List<Object> requests = spi.recordedMessages(true);
+
+                assertEquals(localFailure ? 1 : 2, requests.size());
+
+                for (Object msg : requests) {
+                    GridNearLockRequest req = (GridNearLockRequest)msg;
+
+                    assertFalse(req.skipLocked());
+                    assertFalse("The primary after the failed batch must not be contacted", req.keys().contains(
+                        internalCache(cache).context().toCacheKeyObject(lastKey)));
+                }
+
+                try (Transaction competitor = grid(3).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+                    assertFalse(acquireLockForEntry(competitorCache, entries.get(0), -1));
+
+                    // Earlier successful keys, later keys in the failed batch and unsent keys must all be free.
+                    for (int idx : new int[] {1, 3, 4})
+                        assertTrue(acquireLockForEntry(competitorCache, entries.get(idx), 1_000));
+                }
+
+                holder.rollback();
+
+                if (versionMismatch)
+                    entries.set(2, holderCache.getEntry(failedKeys.get(0)));
+
+                results = internalCache(cache).lockTxEntries(entries, 1_000, false);
+
+                for (Boolean locked : results.values())
+                    assertEquals(Boolean.TRUE, locked);
+
+                tx.commit();
+            }
+        }
+        finally {
+            spi.recordedMessages(true);
+        }
+
+        try (Transaction competitor = grid(3).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+            assertFalse(internalCache(competitorCache).lockTxEntries(entries, 1_000, false).containsValue(false));
+        }
     }
 
     /** Each primary receives one batch with individual outcomes, including partial failure and wait expiry. */
@@ -523,7 +627,7 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
 
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 Map<CacheEntry<Integer, Integer>, Boolean> results = internalCache(cache)
-                    .lockTxEntries(entries, batch ? 200 : -1);
+                    .lockTxEntries(entries, batch ? 200 : -1, true);
 
                 assertEquals(entries.size(), results.size());
 
@@ -539,6 +643,7 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
 
                     assertEquals(3, req.keys().size());
                     assertEquals(3, req.expectedVersions().length);
+                    assertTrue(req.skipLocked());
                 }
 
                 for (Map.Entry<CacheEntry<Integer, Integer>, Boolean> result : results.entrySet()) {
@@ -581,7 +686,7 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
             cache.put(key, 1);
 
             try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 200, 0)) {
-                GridTestUtils.assertThrows(log, () -> internalCache(remote).lockTxEntries(List.of(entry), 0),
+                GridTestUtils.assertThrows(log, () -> internalCache(remote).lockTxEntries(List.of(entry), 0, false),
                     IgniteTxTimeoutCheckedException.class, null);
             }
         }
@@ -859,6 +964,7 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
         List<CacheEntry<Integer, Integer>> entries,
         long timeout
     ) throws IgniteCheckedException {
-        return !cache.unwrap(IgniteCacheProxy.class).internalProxy().lockTxEntries(entries, timeout).containsValue(false);
+        return !cache.unwrap(IgniteCacheProxy.class).internalProxy().lockTxEntries(entries, timeout, true)
+            .containsValue(false);
     }
 }

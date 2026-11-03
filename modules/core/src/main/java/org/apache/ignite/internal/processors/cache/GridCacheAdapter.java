@@ -552,6 +552,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param invalidate Invalidate flag.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Locks future.
      */
     public abstract IgniteInternalFuture<Boolean> txLockAsync(
@@ -564,7 +565,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         TransactionIsolation isolation,
         boolean invalidate,
         long createTtl,
-        long accessTtl);
+        long accessTtl,
+        boolean skipLocked);
 
     /**
      * Post constructor initialization for subclasses.
@@ -3047,16 +3049,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public Map<CacheEntry<K, V>, Boolean> lockTxEntries(
         Collection<CacheEntry<K, V>> entries,
-        long waitTimeout
+        long waitTimeout,
+        boolean skipLocked
     ) throws IgniteCheckedException {
-        return lockTxEntriesAsync(entries, waitTimeout).get();
+        return lockTxEntriesAsync(entries, waitTimeout, skipLocked).get();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockTxEntryAsync(CacheEntry<K, V> entry, long waitTimeout) {
         A.notNull(entry, "entry");
 
-        return lockTxEntriesAsync(Collections.singleton(entry), waitTimeout).chain(fut -> {
+        return lockTxEntriesAsync(Collections.singleton(entry), waitTimeout, false).chain(fut -> {
             try {
                 return fut.get().get(entry);
             }
@@ -3069,7 +3072,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Map<CacheEntry<K, V>, Boolean>> lockTxEntriesAsync(
         Collection<CacheEntry<K, V>> entries,
-        long waitTimeout
+        long waitTimeout,
+        boolean skipLocked
     ) {
         A.notNull(entries, "entries");
 
@@ -3190,7 +3194,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             tx.isolation(),
             false,
             0L,
-            0L
+            0L,
+            skipLocked
         );
 
         lockFut.listen(fut -> {
@@ -3203,23 +3208,36 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (tx.isRollbackOnly())
                     throw tx.rollbackException();
 
-                for (CacheEntry<K, V> entry : inputs) {
-                    if (!results.containsKey(entry)) {
-                        IgniteTxEntry txEntry = enlisted.get(ctx.toCacheKeyObject(entry.getKey()));
+                if (!skipLocked && !completed) {
+                    tx.removeAndUnlockTxEntries(enlisted.values(), snapshots);
 
-                        assert !completed || txEntry.versionedLockResult() != null;
-
-                        results.put(entry, completed && Boolean.TRUE.equals(txEntry.versionedLockResult()));
+                    for (CacheEntry<K, V> entry : inputs) {
+                        if (!results.containsKey(entry))
+                            results.put(entry, false);
                     }
+
+                    res.onDone(results);
+
+                    return;
                 }
 
-                for (Map.Entry<KeyCacheObject, IgniteTxEntry> entry : enlisted.entrySet()) {
-                    IgniteTxEntry txEntry = entry.getValue();
+                for (CacheEntry<K, V> entry : inputs) {
+                    if (results.containsKey(entry))
+                        continue;
 
-                    if (completed && Boolean.TRUE.equals(txEntry.versionedLockResult()))
+                    KeyCacheObject key = ctx.toCacheKeyObject(entry.getKey());
+                    IgniteTxEntry txEntry = enlisted.get(key);
+
+                    assert !completed || txEntry.versionedLockResult() != null;
+
+                    boolean locked = completed && Boolean.TRUE.equals(txEntry.versionedLockResult());
+
+                    results.put(entry, locked);
+
+                    if (locked)
                         txEntry.markLocked();
                     else
-                        tx.removeFailedLockEntry(txEntry, snapshots.get(entry.getKey()));
+                        tx.removeFailedLockEntry(txEntry, snapshots.get(key));
                 }
 
                 res.onDone(results);

@@ -46,6 +46,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
+    /** Continue a conditional lock request after a per-key rejection. */
+    private static final int SKIP_LOCKED_FLAG_MASK = 0x10;
+
     /** Topology version. */
     @Order(0)
     AffinityTopologyVersion topVer;
@@ -100,6 +103,16 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** @param timeout Remaining wait budget when this primary batch is sent. */
     public void waitTimeout(long timeout) {
         waitTimeout = timeout;
+    }
+
+    /** @param skipLocked Whether per-key rejections allow the remaining locks to be attempted. */
+    public void skipLocked(boolean skipLocked) {
+        setFlag(skipLocked, SKIP_LOCKED_FLAG_MASK);
+    }
+
+    /** @return Whether the request permits partial lock acquisition. */
+    public boolean skipLocked() {
+        return isFlag(SKIP_LOCKED_FLAG_MASK);
     }
 
     /** @return Expected data versions, or {@code null} for unconditional locks. */

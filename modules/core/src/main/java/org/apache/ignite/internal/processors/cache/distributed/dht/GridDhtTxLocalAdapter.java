@@ -557,6 +557,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param keepBinary Keep binary flag.
      * @param nearCache {@code True} if near cache enabled on originating node.
      * @param expectedVers Expected data versions for conditional locks, or {@code null}.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -574,7 +575,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean keepBinary,
         long waitTimeout,
         boolean nearCache,
-        @Nullable GridCacheVersion[] expectedVers
+        @Nullable GridCacheVersion[] expectedVers,
+        boolean skipLocked
     ) {
         try {
             checkValid();
@@ -696,7 +698,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 skipReadThrough,
                 keepBinaryInInterceptor,
                 keepBinary,
-                waitTimeout);
+                waitTimeout,
+                skipLocked);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
@@ -716,6 +719,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Future for lock acquisition.
      */
     private IgniteInternalFuture<GridCacheReturn> obtainLockAsync(
@@ -730,7 +734,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
-        long waitTimeout) {
+        long waitTimeout,
+        boolean skipLocked) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [keys=" + passedKeys + ']');
 
@@ -766,7 +771,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             skipStore,
             skipReadThrough,
             keepBinaryInInterceptor,
-            keepBinary);
+            keepBinary,
+            skipLocked);
 
         return new GridEmbeddedFuture<>(
             fut,
