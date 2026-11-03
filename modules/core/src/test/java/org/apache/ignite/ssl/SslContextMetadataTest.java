@@ -31,6 +31,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.KeyGenerator;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
@@ -51,8 +52,8 @@ import static org.mockito.Mockito.spy;
 
 /**
  * Factory initialization publishes a context and metadata from one store read; failed initialization preserves the previous
- * bundle. Reading the accepted bundle or context does not reload stores. {@link KeyMaterial} reports nonempty X.509 chains
- * without recovering keys and keeps its own key password. {@link SslBundle} keeps sorted immutable metadata, or {@code null}.
+ * bundle. Reading the accepted bundle or context does not reload stores. {@link KeyMaterial} initializes key managers and
+ * reports nonempty X.509 chains. {@link SslBundle} keeps sorted immutable metadata, or {@code null}.
  */
 public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Authority that signs the test certificates. */
@@ -238,7 +239,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(0, factory.loads);
     }
 
-    /** Metadata includes only nonempty X.509 chains of key entries, without recovering the keys. */
+    /** Metadata includes only nonempty X.509 chains of key entries. */
     @Test
     public void testOnlyKeyEntriesWithX509Chains() throws Exception {
         String firstAlias = "first-key";
@@ -254,9 +255,9 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         store.setEntry(secondAlias, second.getEntry(secondAlias, prot), prot);
         store.setCertificateEntry("trusted", first.getCertificate(firstAlias));
         store.setEntry("secret", new KeyStore.SecretKeyEntry(KeyGenerator.getInstance("AES").generateKey()),
-            new KeyStore.PasswordProtection("unrelated-password".toCharArray()));
+            prot);
         store.setKeyEntry("non-x509-chain", first.getKey(firstAlias, PWD), PWD,
-            new Certificate[] {first.getCertificate(firstAlias), mock(Certificate.class)});
+            new Certificate[] {mock(Certificate.class), first.getCertificate(firstAlias)});
 
         KeyMaterial material = new KeyMaterial(store, PWD, SslContextFactory.DFLT_KEY_ALGORITHM);
 
@@ -275,17 +276,21 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(Map.of(), bundle.certificateChains());
     }
 
-    /** Material keeps its own copy of the key password, so clearing the caller's array does not lock the keys. */
+    /** Initialized managers remain usable after clearing the password or changing a returned manager array. */
     @Test
-    public void testLoadedMaterialCopiesKeyPassword() throws Exception {
+    public void testLoadedMaterialKeepsInitializedKeyManagers() throws Exception {
         char[] pwd = PWD.clone();
         KeyMaterial material = new KeyMaterial(ca.keyStoreWithPrivateKey("node"), pwd, SslContextFactory.DFLT_KEY_ALGORITHM);
 
         Arrays.fill(pwd, '?');
 
-        X509KeyManager mgr = (X509KeyManager)material.keyManagers()[0];
+        KeyManager[] mgrs = material.keyManagers();
+        X509KeyManager mgr = (X509KeyManager)mgrs[0];
+
+        mgrs[0] = null;
 
         assertNotNull(mgr.getPrivateKey("node"));
+        assertSame(mgr, material.keyManagers()[0]);
     }
 
     /** A bundle orders aliases and copies the map and its lists, so later changes to the input do not reach it. */
