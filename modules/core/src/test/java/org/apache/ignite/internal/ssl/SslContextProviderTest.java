@@ -22,10 +22,14 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
@@ -49,6 +53,7 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.bundle;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
 import static org.apache.ignite.testframework.TestCertificateAuthority.context;
 import static org.apache.ignite.testframework.TestCertificateAuthority.merged;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -95,25 +100,60 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertTrue(p.reloadOutcome().successTime() > 0);
     }
 
-    /** Calling the factory directly updates the provider's material and outcome without replacing its shared context. */
+    /** Direct initialization updates new provider engines, while captured contexts and engines retain their material. */
     @Test
     public void testDirectFactoryInitUpdatesProvider() throws Exception {
+        SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore());
         SslBundle next = bundle(ca.keyStoreWithPrivateKey("replacement"), ca.trustStore());
+        SSLParameters firstParams = new SSLParameters();
+        SSLParameters nextParams = new SSLParameters();
+
+        firstParams.setProtocols(new String[] {"TLSv1.2"});
+        nextParams.setProtocols(new String[] {"TLSv1.3"});
+
+        startup = new SslBundle(new SSLContextWrapper(startup.context(), firstParams), startup.certificateChains());
+        next = new SslBundle(new SSLContextWrapper(next.context(), nextParams), next.certificateChains());
+
         AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
 
-        doReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()), next).when(f).createSslBundle();
+        doReturn(startup, next).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
         SSLContext shared = p.sharedContext();
+        SSLContext captured = f.create();
+        SSLEngine existing = shared.createSSLEngine();
+        SSLSocketFactory capturedSockets = shared.getSocketFactory();
 
+        assertSame(startup.context(), captured);
         assertEquals(new ReloadOutcome(0, 0, null, 0), p.reloadOutcome());
 
         f.init();
 
         assertSame(next, p.bundle());
+        assertSame(next.context(), f.create());
         assertSame(next.context(), p.bundle().context());
         assertEquals(next.certificateChains(), p.certificateChains());
         assertSame(shared, p.sharedContext());
+        assertSame(next.context().getClientSessionContext(), shared.getClientSessionContext());
+        assertSame(next.context().getServerSessionContext(), shared.getServerSessionContext());
+        assertArrayEquals(firstParams.getProtocols(), captured.createSSLEngine().getEnabledProtocols());
+        assertArrayEquals(firstParams.getProtocols(), existing.getEnabledProtocols());
+        assertArrayEquals(nextParams.getProtocols(), shared.createSSLEngine().getEnabledProtocols());
+
+        String host = "peer.example";
+        int port = 10800;
+        SSLEngine addressed = shared.createSSLEngine(host, port);
+
+        assertEquals(host, addressed.getPeerHost());
+        assertEquals(port, addressed.getPeerPort());
+        assertArrayEquals(nextParams.getProtocols(), addressed.getEnabledProtocols());
+
+        try (SSLSocket old = (SSLSocket)capturedSockets.createSocket();
+             SSLSocket current = (SSLSocket)shared.getSocketFactory().createSocket()) {
+            assertArrayEquals(firstParams.getProtocols(), old.getEnabledProtocols());
+            assertArrayEquals(nextParams.getProtocols(), current.getEnabledProtocols());
+        }
+
         assertSame(f.reloadOutcome(), p.reloadOutcome());
         assertTrue(p.reloadOutcome().successTime() > 0);
     }
@@ -196,8 +236,23 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
     @Test
     public void testContextInUseNotReloaded() throws Exception {
         SSLContext ctx = context(ca.keyStoreWithPrivateKey(), ca.trustStore());
+        AtomicInteger loads = new AtomicInteger();
+        SslContextProvider p = new SslContextProvider(() -> {
+            loads.incrementAndGet();
 
-        assertReloadRejected(new SslContextProvider(() -> ctx), "The SSL context factory returns the context in use");
+            return ctx;
+        });
+
+        p.sharedContext().createSSLEngine();
+        p.sharedContext().createSSLEngine("peer.example", 10800);
+
+        assertEquals(1, loads.get());
+
+        assertReloadRejected(p, "The SSL context factory returns the context in use");
+
+        p.sharedContext().createSSLEngine();
+
+        assertEquals(2, loads.get());
     }
 
     /** Every certificate of every chain must be valid now: a later key that is not valid yet and an expired authority are refused. */

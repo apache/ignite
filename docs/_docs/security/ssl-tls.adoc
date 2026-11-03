@@ -302,9 +302,11 @@ This section is for developers integrating a certificate source, such as a PKI s
 
 To support reload with certificate status, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory].
 Its `createSslBundle()` method builds a fresh link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SslBundle.html[SslBundle] containing the initialized context and the certificate chains loaded with it, indexed by key alias.
-The factory owns the accepted bundle. Its final `create()` method initializes the factory on first use and returns the same forwarding context on subsequent calls, without loading the stores again.
+The factory owns the accepted bundle. Its final `create()` method initializes the factory on first use and returns the context from its current bundle, without loading the stores again.
 Call `init()` to load and validate a replacement; the node's reload command calls this method too. A successful call replaces the context and its metadata together. If loading or validation fails, the factory keeps the previous bundle.
-Outside loading hooks, use `sslBundle()` to inspect the accepted material. New engines and socket factories obtained from the forwarding context use that material. Previously obtained engines, socket factories and sockets keep their original material.
+Outside loading hooks, use `sslBundle()` to inspect the accepted material. A context already returned by `create()` keeps its original material after `init()` succeeds; call `create()` again to obtain the replacement.
+
+Node transports follow successful replacements through the node's shared SSL context. New engines and newly obtained socket factories use the accepted material. Previously obtained engines, socket factories and sockets keep their original material.
 
 State belongs to the factory instance. Reusing an initialized factory, including across embedded node restarts, retains its material until `init()` is called. Create a separate factory instance for each node.
 
@@ -324,7 +326,7 @@ The protected `sslCtx` cache and the no-argument `createKeyManagers()` hook have
 
 * Move custom store loading into `loadKeyMaterial()`, returning the loaded store and its settings. If the old `createKeyManagers()` override customizes key managers, build the context in `createSslBundle()` and return matching certificate metadata with it.
 * Remove `create()` overrides. If the override customizes an already built context, perform that customization in `createSslBundle()` after calling `super.createSslBundle()`, and retain its certificate chains in the returned bundle.
-* Remove custom context caching. The base factory retains the accepted bundle and provides a stable context through `create()`. Use `init()` to load replacement material.
+* Remove custom context caching. The base factory retains the accepted bundle until a successful `init()` replaces it. Use `create()` to obtain the currently accepted context.
 
 A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override as long as it returns a loaded store, never `null`. For a client context without private keys, return an empty loaded store.
 
