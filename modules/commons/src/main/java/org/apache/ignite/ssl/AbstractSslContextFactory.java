@@ -195,7 +195,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract void checkParameters() throws SSLException;
 
     /**
-     * Loads the key store and the settings used to read its keys. Called once per context, after the parameters are checked.
+     * Loads the key store and initializes its key managers and certificate metadata. Called once per context, after the
+     * parameters are checked.
      * For a context without private keys, return material over an empty store initialized with {@code KeyStore.load(null, null)}.
      *
      * @return Loaded key material, never {@code null}.
