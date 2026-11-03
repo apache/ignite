@@ -1799,7 +1799,8 @@ public class SnapshotRestoreProcess {
         try (FileIO src = ioFactory.create(from, READ); FileIO dest = ioFactory.create(to, CREATE, WRITE)) {
             long len = src.size();
 
-            // XFS preallocates blocks on extending writes, and those between the pages would stay allocated.
+            // The file gets its final size first: XFS preallocates blocks on extending writes, and those between the pages
+            // would stay allocated, see "speculative preallocation" in https://xfs.org/index.php/XFS_FAQ.
             try (RandomAccessFile file = new RandomAccessFile(to, "rw")) {
                 file.setLength(len);
             }

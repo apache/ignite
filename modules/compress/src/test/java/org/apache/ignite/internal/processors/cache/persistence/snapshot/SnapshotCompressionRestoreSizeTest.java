@@ -37,7 +37,10 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 
 /** Checks the disk space of a compressed cache group restored from a snapshot. */
 public class SnapshotCompressionRestoreSizeTest extends GridCommonAbstractTest {
-    /** Makes partition files much larger than 64 KiB: XFS doesn't preallocate blocks for smaller ones. */
+    /**
+     * Partition files must be well above 64 KiB: the end-of-file preallocation that can make the copy dense (XFS does it)
+     * starts at that size.
+     */
     private static final int KEYS = 4_000;
 
     /** {@inheritDoc} */
@@ -84,6 +87,7 @@ public class SnapshotCompressionRestoreSizeTest extends GridCommonAbstractTest {
         long size = mreg.<LongMetric>findMetric("StorageSize").value();
         long sparseSize = mreg.<LongMetric>findMetric("SparseStorageSize").value();
 
+        // Zero-filled values compress every 8 KiB page into one 4 KiB block, so a sparse group takes about half of its size.
         assertTrue("sparseSize=" + sparseSize + ", size=" + size, sparseSize < 0.75 * size);
     }
 }
