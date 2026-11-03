@@ -85,7 +85,7 @@ In link:clustering/multi-data-center[multi data center deployments], this settin
 located in the same data center when such a backup is available.
 |  `true`
 
-|`queryPrallelism` | The number of threads in a single node to process a SQL query executed on the cache. Refer to the link:SQL/sql-tuning#query-parallelism[Query Parallelism] section in the Performance guide for more information.
+|`queryParallelism` | The number of threads in a single node to process a SQL query executed on the cache. Used by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only; keep `1` for the Calcite-based engine. Refer to the link:perf-and-troubleshooting/sql-tuning#query-parallelism[Query Parallelism] section in the Performance guide for more information.
 | 1
 |===
 
