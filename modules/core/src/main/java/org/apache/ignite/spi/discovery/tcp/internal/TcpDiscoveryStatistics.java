@@ -91,8 +91,7 @@ public class TcpDiscoveryStatistics {
 
         failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
 
-        joinedClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedClientNodes"),
-            "Joined client nodes count.");
+        joinedClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedClientNodes"), "Joined client nodes count.");
 
         leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
 
