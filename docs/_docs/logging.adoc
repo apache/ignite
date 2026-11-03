@@ -47,7 +47,7 @@ If you start Ignite using the `ignite.sh|bat` script from the distribution packa
 You can override the default logging directory by setting the `IGNITE_LOG_DIR` environment variable of the node process. This variable is read once at startup and applies to the built-in JUL logger only; if you use Log4j2, change the file paths in the Log4j2 configuration instead.
 
 NOTE: The default log directory is located inside the work directory, which Ignite also uses to store metadata and, by default, data files.
-For production server nodes, move the logs to a dedicated file system and bound their total retention, so that a log growth cannot exhaust the space required by checkpoints, WAL, and node startup.
+For production server nodes, bound total log retention and, where practical, use a separate file system, so that log growth cannot exhaust the space required by checkpoints, WAL, and node startup.
 See link:server-node-file-system-layout[Server Node File System Layout].
 
 If you use Ignite as a library in your application, the default logging configuration includes only console handler at INFO level.

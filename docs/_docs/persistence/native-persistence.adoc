@@ -156,11 +156,9 @@ tab:C++[unsupported]
 
 You can also change the WAL and WAL archive paths to point to directories outside of the storage directory. Refer to the next section for details.
 
-NOTE: On production server nodes, place data, the active WAL, the WAL archive, the work directory, snapshots, logs, and diagnostic output on separate file systems where the available storage allows it, and keep logs and diagnostic output away from the space that data and WAL need.
-If several roles share a file system, plan for their combined volume and leave free space for checkpoints and WAL rotation.
-Two roles cannot be moved away: the CDC directory and the snapshot root of an incremental snapshot chain have to be on the same file system as the WAL archive, because both use hard links to archived segments.
-If the Ignite paths are left unset, data, the active WAL, the WAL archive, and CDC all live in the work directory and therefore on one file system.
-See link:server-node-file-system-layout[Server Node File System Layout] for the placement and sizing recommendations.
+NOTE: If the Ignite paths are left unset, data, the active WAL, the WAL archive, and CDC all live in the work directory and therefore on one file system.
+The CDC directory and the snapshot root of an incremental snapshot chain have to be on the same file system as the WAL archive, because both use hard links to archived segments.
+See link:server-node-file-system-layout[Server Node File System Layout] for the recommended placement of the node directories, the capacity they need, and how the write load affects the layout.
 
 == Write-Ahead Log
 
@@ -261,6 +259,8 @@ tab:C++[unsupported]
 WARNING: Disabling or enabling WAL should only be done on stable topology: all baseline nodes should be present, no nodes should join or leave the cluster for the duration of this operation. Otherwise, cache may be stuck in inconsistent state. If that happens, it is advised to destroy the affected cache(s).
 
 There are situations when it is reasonable to have the WAL disabled to get better performance. For instance, it is useful to disable WAL during initial data loading and enable it after the pre-loading is complete.
+Disabling the WAL is a planned administrative operation with recovery implications, not a way to reclaim disk space: follow the procedure in this section and keep the files that the recovery needs.
+Do not remove WAL segments, checkpoint files, or other files of the persistent store manually outside a documented maintenance or recovery procedure. Manual changes to the internal persistent structure are not supported, and correct cluster operation is not guaranteed after such an intervention.
 
 ////
 todo: add c++ examples
@@ -291,13 +291,18 @@ ALTER TABLE Person LOGGING
 tab:C++[unsupported]
 --
 
-WARNING: If WAL is disabled and you restart a node, all data is removed from the persistent storage on that node. This is implemented because without WAL data consistency cannot be guaranteed in case of node crash or restart.
+WARNING: Disabling WAL through the runtime API removes local crash-recovery guarantees for the affected cache groups.
+If a node stops while WAL is disabled, recovery may require maintenance and cleanup of affected persistent files.
+`WALMode.NONE` has different shutdown and recovery behavior; see <<WAL Modes>>.
 
 === WAL Archive Compaction
+WAL archiving and WAL archive compaction are different mechanisms: archiving copies completed segments to the archive directory without compressing them, while compaction is a separate step that compresses segments that are already archived.
+
 You can enable WAL Archive compaction to reduce the space occupied by the WAL Archive.
 Compaction applies to the segments that are already archived; how much history is kept is defined by `minWalArchiveSize` and `maxWalArchiveSize`, not by a checkpoint count.
 If compaction is enabled, all archived segments that are 1 checkpoint old are compressed in ZIP format.
 If the segments are needed (for example, to re-balance data between nodes), they are uncompressed to RAW format.
+Compaction reduces the space the archive occupies, but it uses CPU and adds I/O, so the actual cost depends on the load and on the compression level.
 
 See the <<Configuration Properties>> section below to learn how to enable WAL archive compaction.
 
@@ -345,6 +350,7 @@ It is safe to disable WAL archiving because a cluster without the WAL archive pr
 
 To disable archiving, set the WAL path and the WAL archive path to the same value.
 In this case, Ignite does not copy segments to the archive; instead, it creates new segments in the WAL folder.
+WAL recording itself stays enabled: only the separate archive directory and the copying of segments to it are disabled.
 Old segments are deleted as the WAL grows, based on the WAL Archive size setting.
 
 
@@ -358,7 +364,17 @@ Checkpointing and write-ahead logging are designed to ensure durability of data 
 
 image:images/checkpointing-persistence.png[]
 
-This process helps to utilize disk space frugally by keeping pages in the most up-to-date state on disk. After a checkpoint is passed, you can delete the WAL segments that were created before that point in time.
+This process helps to utilize disk space frugally by keeping pages in the most up-to-date state on disk. After a checkpoint completes, Ignite can clean up older WAL segments when they are no longer needed.
+
+[[checkpoint-marker-retention]]
+=== Checkpoint Marker Retention
+
+Checkpoint progress is recorded in START and END marker files in the `cp` directory of the node storage directory.
+With a finite `maxWalArchiveSize`, obsolete checkpoint marker files are removed as the WAL cleanup boundary advances.
+If the WAL is written slowly, a large `walSegmentSize` can hold the records of many checkpoints before the boundary moves to the next segment.
+Frequent checkpoints with changes can therefore leave many marker files in `cp`.
+Consider `checkpointFrequency`, `walSegmentSize`, the WAL write rate, and the archive retention together.
+When automatic WAL archive cleanup is disabled, Ignite attempts to trim checkpoint history after each checkpoint according to the `IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE` system property. WAL reservations can delay this cleanup.
 
 See the following related documentation:
 
