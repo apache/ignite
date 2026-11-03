@@ -334,8 +334,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IgniteException If renewal is already attached to another running node or certificate metadata is unavailable.
      */
     public final synchronized void startRenewal(ScheduledExecutorService exec, IgniteLogger log, Supplier<String> transports) {
+        boolean enabled = isRenewalEnabled();
+
         if (renewalExec != null && !renewalExec.isShutdown()) {
-            if (renewalExec != exec && (renewal != null || renewalEnabled))
+            if (renewalExec != exec && (renewal != null || enabled))
                 throw new IgniteException("The SSL context factory already renews certificates for another running node; " +
                     "configure a separate factory instance on each node");
 
@@ -345,15 +347,15 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         renewal = null;
         renewalExec = null;
 
-        if (renewalEnabled && SslCertificates.renewalChain(sslBundle()) == null) {
+        if (enabled && SslCertificates.renewalChain(sslBundle()) == null) {
             throw new IgniteException("The SSL context factory must provide at least one X.509 certificate chain " +
                 "to renew automatically [transports=" + transports.get() + ']');
         }
 
         renewalExec = exec;
 
-        if (renewalEnabled) {
-            renewal = new SslRenewal(this, renewBeforeFraction, exec, log, transports);
+        if (enabled) {
+            renewal = new SslRenewal(this, getRenewBeforeFraction(), exec, log, transports);
             renewal.replan();
         }
     }

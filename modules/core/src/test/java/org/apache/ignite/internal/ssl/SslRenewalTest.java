@@ -64,12 +64,14 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.merged;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
- * Renewal without nodes: its settings, {@link SslContextProvider#renew(SSLContext)}, the count of unsuccessful renewals and the
+ * Renewal without nodes: its settings, {@link AbstractSslContextFactory#renew(SSLContext)}, the count of unsuccessful renewals and the
  * scheduler. Renewal is off by default. renew installs all new chains, even in place of an expired certificate. Its refusals
  * follow the order of the checks in the code: it applies the checks of reload, waits while the factory returns the chains in
  * use, refuses a cached context with new metadata and refuses chains that do not advance the earliest expiry. It ignores a
@@ -399,6 +401,53 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, () -> unknownProvider.startRenewal(exec, renewalLog), IgniteException.class, reason);
         GridTestUtils.assertThrows(log, () -> noChainsProvider.startRenewal(exec, renewalLog), IgniteException.class, reason);
+    }
+
+    /** A subclass can disable renewal even when configured, without requiring chains or using the executor. */
+    @Test
+    public void testRenewalCanBeDisabledBySubclass() throws Exception {
+        SslBundle noChains = bundle(ca.trustStore(), ca.trustStore());
+        AbstractSslContextFactory factory = new SslContextFactory() {
+            @Override public boolean isRenewalEnabled() {
+                return false;
+            }
+
+            @Override public SslBundle createSslBundle() {
+                return noChains;
+            }
+        };
+        ScheduledExecutorService exec = mock(ScheduledExecutorService.class);
+
+        factory.setRenewalEnabled(true);
+        factory.init();
+        factory.startRenewal(exec, renewalLog, () -> "");
+
+        assertSame(noChains, factory.sslBundle());
+        assertEquals(0, factory.nextRenewalTime());
+        verifyNoInteractions(exec);
+    }
+
+    /** Renewal uses the fraction supplied by a subclass when the node attaches its executor. */
+    @Test
+    public void testRenewalWindowUsesOverriddenFraction() throws Exception {
+        long now = System.currentTimeMillis() / SECOND * SECOND;
+        SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + 3 * HOUR), ca.trustStore());
+        AbstractSslContextFactory factory = new SslContextFactory() {
+            @Override public double getRenewBeforeFraction() {
+                return QUARTER;
+            }
+
+            @Override public SslBundle createSslBundle() {
+                return startup;
+            }
+        };
+        RecordingExecutor exec = new RecordingExecutor();
+
+        factory.setRenewalEnabled(true);
+        factory.startRenewal(exec, renewalLog, () -> "");
+        exec.runNext();
+
+        assertEquals(now + 2 * HOUR, factory.nextRenewalTime());
     }
 
     /** A factory accepts one renewal executor, and attaching it again does not duplicate its schedule. */
