@@ -59,6 +59,8 @@
       url: understanding-configuration
     - title: Setting Up
       url: setup
+    - title: Server Node File System Layout
+      url: server-node-file-system-layout
     - title: Configuring Logging
       url: logging
     - title: Resources Injection
