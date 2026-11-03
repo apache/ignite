@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.util.Map;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 
 /** */
@@ -42,5 +43,10 @@ public class TestCacheContinuousQueryUtils {
     /** */
     public static GridAtomicLong maxReceivedBackupAcknowledgeUpdateCounter(CacheContinuousQueryEventBuffer buf) {
         return buf.maxReceivedBackupAckUpdCntr;
+    }
+
+    /** */
+    public static GridTimeoutProcessor.CancelableTask cancelableTask(CacheContinuousQueryManager<?, ?> mgr) {
+        return mgr.getCancelableTask();
     }
 }

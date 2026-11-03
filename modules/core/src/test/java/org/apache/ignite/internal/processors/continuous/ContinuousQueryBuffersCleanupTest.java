@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -58,6 +56,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.GridCacheM
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler.DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheContinuousQueryUtils.backupQueueSize;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheContinuousQueryUtils.bufferedEntries;
+import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheContinuousQueryUtils.cancelableTask;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheContinuousQueryUtils.maxReceivedBackupAcknowledgeUpdateCounter;
 import static org.apache.ignite.internal.processors.cache.query.continuous.TestCacheContinuousQueryUtils.partitionContinuesQueryEntryBuffers;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -160,8 +159,7 @@ public class ContinuousQueryBuffersCleanupTest extends GridCommonAbstractTest {
             .setBackups(2));
 
         // Disable acknowledgement by timeout, so the single acknowledgement covers both topology versions.
-        GridTestUtils.<Closeable>getFieldValue(grid(0).cachex(DEFAULT_CACHE_NAME).context().continuousQueries(),
-            "cancelableTask").close();
+        cancelableTask(grid(0).cachex(DEFAULT_CACHE_NAME).context().continuousQueries()).close();
 
         try (QueryCursor<?> ignored = cache.query(new ContinuousQuery<>().setLocalListener(evts -> {}))) {
             for (int i = 0; i < DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD; i++) {
