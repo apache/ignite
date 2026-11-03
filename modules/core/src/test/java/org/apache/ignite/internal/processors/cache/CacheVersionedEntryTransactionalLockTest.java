@@ -612,6 +612,98 @@ public class CacheVersionedEntryTransactionalLockTest extends GridCommonAbstract
         checkAcknowledgedUnlock(4, false);
     }
 
+    /** Closing a near reader before unlock delivery must not prevent acknowledgement or a subsequent retry. */
+    @Test
+    public void testAllOrNothingUnlockNearCacheClosed() throws Exception {
+        assumeTrue(useNearCache);
+
+        transactionalCache(ignite0);
+
+        Ignite primary = batch ? ignite1 : grid(2);
+        IgniteCache<Integer, Integer> cache = ignite1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> holderCache = ignite0.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> competitorCache = grid(3).cache(DEFAULT_CACHE_NAME);
+        List<Integer> keys = primaryKeys(primary.cache(DEFAULT_CACHE_NAME), 2);
+        int blockedKey = primaryKey(holderCache);
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(primary);
+
+        // Check both an unlimited transaction and one with a deadline.
+        for (long timeout : new long[] {0, 20_000}) {
+            for (int key : List.of(keys.get(0), keys.get(1), blockedKey))
+                cache.put(key, 0);
+
+            List<CacheEntry<Integer, Integer>> entries = List.of(cache.getEntry(keys.get(0)),
+                cache.getEntry(keys.get(1)), cache.getEntry(blockedKey));
+            IgniteCache<Integer, Integer> reader = client.getOrCreateNearCache(DEFAULT_CACHE_NAME,
+                new NearCacheConfiguration<>());
+            GridCacheContext<?, ?> readerCtx = internalCache(reader).context();
+
+            assertEquals(Integer.valueOf(0), reader.get(keys.get(1)));
+
+            try (Transaction holder = ignite0.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 30_000, 0);
+                 Transaction tx = ignite1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
+                holderCache.put(blockedKey, 1);
+                cache.get(keys.get(0));
+
+                spi.blockMessages((node, msg) -> node.id().equals(client.cluster().localNode().id())
+                    && msg instanceof GridDhtUnlockRequest && ((GridDhtUnlockRequest)msg).unlockOptions != null);
+
+                IgniteInternalFuture<Map<CacheEntry<Integer, Integer>, Boolean>> fut = internalCache(cache)
+                    .lockTxEntriesAsync(entries, -1, false);
+
+                try {
+                    assertTrue("Expected near unlock request was not sent", spi.waitForBlocked(1, 5_000));
+                    assertFalse(fut.isDone());
+
+                    reader.close();
+
+                    assertNull(readerCtx.shared().cacheContext(readerCtx.cacheId()));
+
+                    spi.stopBlock();
+
+                    Map<CacheEntry<Integer, Integer>, Boolean> results = fut.get(5_000);
+
+                    assertEquals(Boolean.TRUE, results.get(entries.get(0)));
+                    assertEquals(Boolean.FALSE, results.get(entries.get(1)));
+                    assertEquals(Boolean.FALSE, results.get(entries.get(2)));
+                    assertFalse(tx.isRollbackOnly());
+
+                    assertTrue(internalCache(cache).lockTxEntry(entries.get(1), -1));
+
+                    try (Transaction competitor = grid(3).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 5_000, 0)) {
+                        assertFalse(internalCache(competitorCache).lockTxEntry(entries.get(0), -1));
+                        assertFalse(internalCache(competitorCache).lockTxEntry(entries.get(1), -1));
+                    }
+
+                    for (Ignite node : List.of(primary, ignite1)) {
+                        assertTrue("Unlock waiter remains registered", GridTestUtils.waitForCondition(() ->
+                            internalCache(node.cache(DEFAULT_CACHE_NAME)).context().mvcc().activeFutures().stream()
+                                .noneMatch(f -> f instanceof GridCacheUnlockFuture), 5_000));
+                    }
+
+                    cache.put(keys.get(1), 2);
+                    tx.commit();
+                }
+                finally {
+                    spi.stopBlock();
+
+                    // A failed assertion must not leave an unlimited transaction waiting in close().
+                    if (!fut.isDone())
+                        internalCache(cache).context().tm().userTx().rollbackNearTxLocalAsync(false, false).get(5_000);
+                }
+            }
+            finally {
+                spi.stopBlock();
+            }
+
+            // Reopening the near cache must read the value committed after cleanup.
+            try (IgniteCache<Integer, Integer> reopened = client.getOrCreateNearCache(DEFAULT_CACHE_NAME,
+                new NearCacheConfiguration<>())) {
+                assertEquals(Integer.valueOf(2), reopened.get(keys.get(1)));
+            }
+        }
+    }
+
     /** Losing the primary before its acknowledgement fails the API and prevents reuse of the transaction. */
     @Test
     public void testAllOrNothingUnlockNodeLeft() throws Exception {
