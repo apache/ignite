@@ -35,6 +35,11 @@ In Java, queryable fields can be configured in two ways:
 * using annotations
 * by defining query entities
 
+[IMPORTANT]
+====
+For a Java `CacheConfiguration`, use either `setIndexedTypes(...)` or `setQueryEntities(...)`. Calling both methods on the same configuration instance throws `CacheException`, regardless of the call order. This also applies to the `indexedTypes` and `queryEntities` properties of a Spring XML cache configuration bean.
+====
+
 
 === @QuerySqlField Annotation
 
@@ -87,6 +92,27 @@ include::code-snippets/dotnet/UsingSqlApi.cs[tag=queryEntities,indent=0]
 ----
 tab:C++[unsupported]
 --
+
+=== Repeated Configuration Calls
+
+The Java `CacheConfiguration.setIndexedTypes(...)` and `CacheConfiguration.setQueryEntities(...)` methods use last-call-wins semantics when called repeatedly through the same API:
+
+* Each `setIndexedTypes(...)` call replaces the previously configured indexed types and query entities. Pass all required key/value type pairs in the same call.
+* Each `setQueryEntities(...)` call replaces the entire query entities collection, including entities with the same value type. Pass the complete collection in the final call.
+* Passing an empty array or `null` to `setIndexedTypes(...)` clears the indexed types and query entities.
+* Passing an empty collection or `null` to `setQueryEntities(...)` clears the query entities.
+
+An empty or `null` argument still selects the corresponding configuration API. Calling `clearQueryEntities()` does not reset that choice and does not allow switching between the two APIs.
+
+These setters configure the cache before creation. Calling them does not update the schema of an already running cache.
+
+When migrating existing configuration code:
+
+* Replace mixed `setIndexedTypes(...)` and `setQueryEntities(...)` calls with a single configuration API. If you use query entities, include all required fields and indexes in those entities.
+* Replace additive `setQueryEntities(...)` calls with one call containing the complete collection.
+* If a configuration helper receives no indexed types and is expected to leave SQL configuration unspecified, skip `setIndexedTypes(...)` rather than calling it with an empty array.
+
+Affinity key configurations have separate update rules; see link:data-modeling/affinity-collocation#configuring-affinity-with-indexed-types[Configuring Affinity with Indexed Types].
 
 == Querying
 

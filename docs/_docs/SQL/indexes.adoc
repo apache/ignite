@@ -159,6 +159,8 @@ tab:C++[unsupported]
 
 This method accepts only pairs of types: one for key class and another for value class. Primitives are passed as boxed types.
 
+In Java, repeated `CacheConfiguration.setIndexedTypes(...)` calls replace the previously registered types and query entities. To register multiple key/value type pairs, pass all pairs in the same call. Do not combine this method with `CacheConfiguration.setQueryEntities(...)` on the same configuration instance.
+
 [NOTE]
 ====
 [discrete]
@@ -196,6 +198,15 @@ NOTE: Annotating a field with `@QuerySqlField.Group` outside of `@QuerySqlField(
 Indexes and queryable fields can also be configured via the `org.apache.ignite.cache.QueryEntity` class which is convenient for Spring XML based configuration.
 
 All concepts that are discussed as part of the annotation based configuration above are also valid for the `QueryEntity` based approach. Furthermore, the types whose fields are configured with the `@QuerySqlField` annotation and are registered with the `CacheConfiguration.setIndexedTypes()` method are internally converted into query entities.
+
+[IMPORTANT]
+====
+The internal conversion does not allow combining the two Java configuration APIs. Calling both `setIndexedTypes(...)` and `setQueryEntities(...)` on the same `CacheConfiguration` throws `CacheException`.
+
+When using `setQueryEntities(...)`, provide the complete collection of query entities with all required index definitions. Repeated calls replace the collection rather than merge it.
+
+See link:SQL/sql-api#repeated-configuration-calls[Repeated Configuration Calls].
+====
 
 The example below shows how to define a single field index, group indexes, and queryable fields.
 
