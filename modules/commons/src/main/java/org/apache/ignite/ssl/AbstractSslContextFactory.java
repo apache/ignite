@@ -29,8 +29,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Builds a fresh SSL context and its certificate metadata on each call. The component using the context is responsible for
- * retaining it between connections.
+ * Owns the SSL context and its certificate metadata. {@link #init()} loads replacement material before publishing it;
+ * {@link #create()} returns a stable context. Its newly created engines and newly obtained socket factories use the
+ * accepted material; previously obtained engines, socket factories and sockets retain their original material.
+ * Configure the factory before its first use.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -38,6 +40,12 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
+    private transient volatile SslBundle bundle;
+
+    /** Stable context returned to consumers after the first successful initialization. */
+    private transient volatile SSLContext sharedCtx;
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -107,6 +115,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /**
      * Checks the factory parameters, loads its key material once, and builds a fresh context with the certificate chains from
      * that material. The factory does not retain the result.
+     *
+     * Override this method to load a candidate from another source. It must not change the material already in use.
+     * Use {@link #sslBundle()} to inspect the accepted material.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws IgniteException If the context could not be created.
@@ -192,12 +203,57 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Builds a fresh context through {@link #createSslBundle()}. Override that method to customize both entry points.
+     * Loads keys and trust settings and atomically replaces the accepted context and its metadata. A failed initialization
+     * leaves the previous material in use. New engines and socket factories obtained through {@link #create()} use the
+     * replacement; already opened connections keep their original material.
      *
-     * @return Fresh initialized context.
-     * @throws IgniteException If the context could not be created.
+     * @return Context and metadata accepted by this initialization.
+     * @throws IgniteException If the material cannot be loaded or the context cannot be created.
+     */
+    public final synchronized SslBundle init() {
+        SslBundle next = createSslBundle();
+
+        next.context().createSSLEngine();
+
+        SSLContext shared = sharedCtx;
+
+        if (shared == null)
+            shared = new CurrentSslContext(next.context(), () -> bundle.context());
+
+        bundle = next;
+        sharedCtx = shared;
+
+        return next;
+    }
+
+    /**
+     * Returns the accepted context and its metadata, initializing the factory on first use.
+     *
+     * @return One snapshot of the material in use.
+     * @throws IgniteException If the first initialization fails.
+     */
+    public final SslBundle sslBundle() {
+        create();
+
+        return bundle;
+    }
+
+    /**
+     * Returns the same forwarding context on every call, initializing it on first use. Obtain new engines and socket
+     * factories from this context to use the material accepted by the last successful {@link #init()}. Repeated calls
+     * do not read the key or trust stores.
+     *
+     * @return Stable initialized context.
+     * @throws IgniteException If the first initialization fails.
      */
     @Override public final SSLContext create() {
-        return createSslBundle().context();
+        if (sharedCtx == null) {
+            synchronized (this) {
+                if (sharedCtx == null)
+                    init();
+            }
+        }
+
+        return sharedCtx;
     }
 }

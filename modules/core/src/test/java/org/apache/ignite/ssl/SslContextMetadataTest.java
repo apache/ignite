@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.KeyGenerator;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -43,10 +45,9 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.keyStoreW
 import static org.mockito.Mockito.mock;
 
 /**
- * Each factory call reads the key store once into a fresh context, throws when the read fails and reads again on the next call,
- * and checks parameters before reading. {@link KeyMaterial} reports nonempty X.509 chains of key entries without recovering
- * their keys, and keeps its own key password. {@link SslBundle} keeps a sorted immutable copy of the metadata, or {@code null},
- * and rejects empty per-alias chains. {@link SslContextFactory} names the store whose key it cannot open.
+ * Factory initialization publishes a context and metadata from one store read; failed initialization preserves the previous
+ * bundle. Reading the accepted bundle or context does not reload stores. {@link KeyMaterial} reports nonempty X.509 chains
+ * without recovering keys and keeps its own key password. {@link SslBundle} keeps sorted immutable metadata, or {@code null}.
  */
 public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Authority that signs the test certificates. */
@@ -57,44 +58,131 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         ca = new TestCertificateAuthority("metadata-ca");
     }
 
-    /** Each bundle reads the key store once, builds a new context and takes its metadata from that read. */
+    /** Each initialization publishes a fresh context with metadata from the same, single key store read. */
     @Test
-    public void testEachBundleReadsKeyStoreOnce() throws Exception {
+    public void testInitPublishesBundleFromOneKeyStoreRead() throws Exception {
         KeyStore first = ca.keyStoreWithPrivateKey("first");
         InMemoryStoreFactory factory = new InMemoryStoreFactory(first);
 
-        SslBundle firstBundle = factory.createSslBundle();
+        SslBundle firstBundle = factory.init();
 
         assertEquals(1, factory.loads);
+        assertSame(firstBundle, factory.sslBundle());
         assertEquals(Map.of("first", chain(first)), firstBundle.certificateChains());
 
+        SSLContext shared = factory.create();
         KeyStore second = ca.keyStoreWithPrivateKey("second");
 
         factory.store = second;
 
-        SslBundle secondBundle = factory.createSslBundle();
+        SslBundle secondBundle = factory.init();
 
         assertEquals(2, factory.loads);
+        assertSame(secondBundle, factory.sslBundle());
         assertEquals(Map.of("second", chain(second)), secondBundle.certificateChains());
+        assertEquals(Map.of("first", chain(first)), firstBundle.certificateChains());
         assertNotSame(firstBundle.context(), secondBundle.context());
+        assertSame(shared, factory.create());
     }
 
-    /** A failed read is thrown instead of reusing an earlier context, and the next call reads the store again. */
+    /** Concurrent first calls initialize once; obtaining the context and accepted snapshot never reloads the store. */
     @Test
-    public void testFailedLoadCanBeRetried() throws Exception {
+    public void testCreateAndSnapshotDoNotReloadStore() throws Exception {
         InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
+        int threadCnt = 4;
+        CyclicBarrier start = new CyclicBarrier(threadCnt);
+        AtomicReference<SSLContext> sharedRef = new AtomicReference<>();
 
-        factory.create();
+        GridTestUtils.runMultiThreaded(() -> {
+            start.await();
+
+            SSLContext ctx = factory.create();
+
+            sharedRef.compareAndSet(null, ctx);
+            assertSame(sharedRef.get(), ctx);
+
+            return null;
+        }, threadCnt, "ssl-context-create");
+
+        SslBundle accepted = factory.sslBundle();
+        SSLContext shared = sharedRef.get();
+
+        factory.loadFailure = "Store must not be read again";
+
+        assertSame(shared, factory.create());
+        assertSame(accepted, factory.sslBundle());
+        assertEquals(1, factory.loads);
+    }
+
+    /** A failed reload leaves both the accepted snapshot and the forwarding context usable, and can be retried. */
+    @Test
+    public void testFailedInitRetainsAcceptedBundle() throws Exception {
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
+        SslBundle accepted = factory.init();
+        SSLContext shared = factory.create();
 
         factory.loadFailure = "Key store is unavailable";
 
-        Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, "Key store is unavailable");
+        Throwable err = GridTestUtils.assertThrows(log, factory::init, IgniteException.class, factory.loadFailure);
 
         assertTrue(err.getCause() instanceof SSLException);
+        assertSame(accepted, factory.sslBundle());
+        assertSame(shared, factory.create());
+        assertNotNull(shared.createSSLEngine());
+        assertEquals(2, factory.loads);
 
         factory.loadFailure = null;
 
-        factory.create();
+        SslBundle replacement = factory.init();
+
+        assertNotSame(accepted, replacement);
+        assertSame(replacement, factory.sslBundle());
+        assertSame(shared, factory.create());
+        assertEquals(3, factory.loads);
+    }
+
+    /** A failed first initialization leaves the factory able to initialize on the next context request. */
+    @Test
+    public void testFirstInitializationFailureCanBeRetried() throws Exception {
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
+
+        factory.loadFailure = "Key store is unavailable";
+
+        GridTestUtils.assertThrows(log, factory::create, IgniteException.class, factory.loadFailure);
+
+        factory.loadFailure = null;
+
+        SSLContext shared = factory.create();
+
+        assertSame(shared, factory.create());
+        assertNotNull(factory.sslBundle().context().createSSLEngine());
+        assertEquals(2, factory.loads);
+    }
+
+    /** Unsupported TLS parameters are rejected before a replacement becomes visible. */
+    @Test
+    public void testInvalidTlsParametersDoNotReplaceAcceptedBundle() throws Exception {
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
+        SslBundle accepted = factory.init();
+        SSLContext shared = factory.create();
+
+        factory.setProtocols("unsupported-protocol");
+
+        GridTestUtils.assertThrows(log, factory::init, IllegalArgumentException.class, null);
+
+        assertSame(accepted, factory.sslBundle());
+        assertSame(shared, factory.create());
+        assertNotNull(shared.createSSLEngine());
+
+        factory.setProtocols((String[])null);
+        factory.setCipherSuites("unsupported-cipher-suite");
+
+        GridTestUtils.assertThrows(log, factory::init, IllegalArgumentException.class, null);
+
+        assertSame(accepted, factory.sslBundle());
+        assertSame(shared, factory.create());
+        assertNotNull(shared.createSSLEngine());
+        assertEquals(3, factory.loads);
     }
 
     /** Missing parameters are reported before the key store is read. */
@@ -145,7 +233,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
 
         empty.load(null, null);
 
-        SslBundle bundle = new InMemoryStoreFactory(empty).createSslBundle();
+        SslBundle bundle = new InMemoryStoreFactory(empty).init();
 
         assertEquals(Map.of(), bundle.certificateChains());
     }
