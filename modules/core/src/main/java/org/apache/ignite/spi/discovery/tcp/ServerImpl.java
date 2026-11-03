@@ -5075,6 +5075,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.verified() && !locNodeId.equals(nodeId) && state != CONNECTING && fireEvt) {
                 spi.stats.onNodeJoined();
 
+                if (node.isClient())
+                    spi.stats.onClientNodeJoined();
+
                 // Make sure that node with greater order will never get EVT_NODE_JOINED
                 // on node with less order.
                 assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
