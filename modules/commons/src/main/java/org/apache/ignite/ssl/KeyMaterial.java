@@ -36,45 +36,33 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A loaded key store and the settings needed to create its key managers. Both managers and certificate metadata are read from
- * this store without loading it again. Do not modify the store while any context created from it is in use: key managers
- * such as PKIX read it during handshakes. Load replacement material into a separate store.
+ * Key managers and certificate metadata initialized from one loaded key store. Do not modify the store while any context
+ * created from it is in use: key managers such as PKIX read it during handshakes. Load replacement material into a separate
+ * store.
  */
 public final class KeyMaterial {
     /** */
-    private final KeyStore store;
+    private final KeyManager[] keyMgrs;
 
     /** */
-    private final char[] keyPwd;
-
-    /** */
-    private final String algorithm;
+    private final Map<String, List<X509Certificate>> chains;
 
     /**
      * @param store Loaded key store, never {@code null}. For a context without private keys, initialize an empty store with
      *      {@code KeyStore.load(null, null)}.
      * @param keyPwd Password for its private keys, or {@code null} if the store requires no password.
      * @param algorithm Key manager algorithm.
+     * @throws SSLException If the algorithm is unavailable or the store cannot be read.
      */
-    public KeyMaterial(KeyStore store, @Nullable char[] keyPwd, String algorithm) {
+    public KeyMaterial(KeyStore store, @Nullable char[] keyPwd, String algorithm) throws SSLException {
         A.notNull(store, "store", algorithm, "algorithm");
 
-        this.store = store;
-        this.keyPwd = keyPwd == null ? null : keyPwd.clone();
-        this.algorithm = algorithm;
-    }
-
-    /**
-     * @return Key managers initialized from the loaded store.
-     * @throws SSLException If the algorithm is unavailable or the keys cannot be read.
-     */
-    public KeyManager[] keyManagers() throws SSLException {
         try {
             KeyManagerFactory factory = KeyManagerFactory.getInstance(algorithm);
 
             factory.init(store, keyPwd);
 
-            return factory.getKeyManagers();
+            keyMgrs = factory.getKeyManagers();
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + algorithm, e);
@@ -82,15 +70,29 @@ public final class KeyMaterial {
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred)", e);
         }
+
+        chains = certificateChains(store);
+    }
+
+    /** @return A copy of the array of initialized key managers. */
+    public KeyManager[] keyManagers() {
+        return keyMgrs.clone();
     }
 
     /**
      * @return Immutable, nonempty X.509 chains of key entries, ordered by alias and with each key's own certificate first.
      *      Entries without a chain or with a non-X.509 certificate are omitted. An empty map means no such chains were found.
-     *      Reading the chains does not recover the keys.
+     */
+    public Map<String, List<X509Certificate>> certificateChains() {
+        return chains;
+    }
+
+    /**
+     * @param store Loaded key store.
+     * @return Immutable certificate metadata.
      * @throws SSLException If the loaded store cannot be read.
      */
-    public Map<String, List<X509Certificate>> certificateChains() throws SSLException {
+    private static Map<String, List<X509Certificate>> certificateChains(KeyStore store) throws SSLException {
         try {
             Map<String, List<X509Certificate>> chains = new TreeMap<>();
 
