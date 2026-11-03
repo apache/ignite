@@ -353,6 +353,7 @@ This section is for developers integrating a certificate source, such as a PKI s
 
 To support reload and automatic renewal with certificate status, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory].
 Its protected `createSslBundle()` method builds a fresh link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SslBundle.html[SslBundle] containing the initialized context and the certificate chains loaded with it, indexed by key alias.
+The hook may throw `SSLException`; initialization adds the factory details to that failure.
 The factory owns the accepted bundle. Its final `create()` method initializes the factory on first use and returns the context from its current bundle, without loading the stores again.
 Call `init()` to load and validate a replacement; the node's reload command calls this method too. A successful call replaces the context and its metadata together. If loading or validation fails, the factory keeps the previous bundle.
 Outside loading hooks, use `sslBundle()` to inspect the accepted material. A context already returned by `create()` keeps its original material after `init()` succeeds; call `create()` again to obtain the replacement.
@@ -361,9 +362,9 @@ Node transports follow successful replacements through the node's shared SSL con
 
 State belongs to the factory instance. Reusing an initialized factory, including across embedded node restarts, does not reload its material. A successful `init()` or automatic renewal replaces it. Create a separate factory instance for each node.
 
-If the source provides a key store, override `loadKeyMaterial()` to construct link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/KeyMaterial.html[KeyMaterial] from that store, its key password and key manager algorithm.
-`KeyMaterial` initializes the key managers and captures its certificate chains once.
-The base factory builds the context and metadata from the same store load. Keep that store unchanged for as long as a context built from it is in use; load a new store to change certificates.
+If the source provides a key store, override `createSslBundle()` to check source parameters, load the store once and return `createSslBundle(store, keyPassword, algorithm)`.
+This protected helper initializes the key managers and builds the context and metadata from that store, using the factory's trust and TLS settings.
+Keep the store unchanged for as long as its context is in use; load a new store to change certificates.
 
 To use custom key managers, override `createSslBundle()` to initialize a fresh `SSLContext` with those managers and return it with matching certificate metadata in an `SslBundle`.
 The override must configure the context's trust managers and TLS settings as well. Load the material once so that the context and reported chains describe the same certificates, and leave the accepted material unchanged: `init()` publishes the candidate after validation.
@@ -381,8 +382,8 @@ See the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ign
 
 The protected `sslCtx` cache and the no-argument `createKeyManagers()` hook have been removed, and `create()` is now final. Update affected subclasses and recompile before upgrading:
 
-* Move custom store loading into `loadKeyMaterial()`, constructing `KeyMaterial` from the loaded store and its settings. If the old `createKeyManagers()` override customizes key managers, build the context in `createSslBundle()` and return matching certificate metadata with it.
-* Remove `create()` overrides. If the override customizes an already built context, perform that customization in `createSslBundle()` after calling `super.createSslBundle()`, and retain its certificate chains in the returned bundle.
+* Move custom store loading into `createSslBundle()`: check source parameters, load the store once and return `createSslBundle(store, keyPassword, algorithm)`. Declare `throws SSLException` when needed. If the old `createKeyManagers()` override customizes key managers, build the context in `createSslBundle()` and return matching certificate metadata with it.
+* Remove `create()` overrides. A subclass of `SslContextFactory` that customizes an already built context can do so in `createSslBundle()` after calling `super.createSslBundle()`. Retain its certificate chains in the returned bundle and propagate `SSLException` from the loading hook.
 * Remove custom context caching. The base factory retains the accepted bundle until a successful `init()` or automatic renewal replaces it. Use `create()` to obtain the currently accepted context.
 
 A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override as long as it returns a loaded store, never `null`. For a client context without private keys, return an empty loaded store.
