@@ -265,7 +265,8 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     @Test
     public void testJettyProxyProtocolRefused() {
         GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_PROXY).setHttpSslFactory(new SslContextFactory()));
+            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_PROXY)
+                .setHttpSslFactory(new SslContextFactory()));
         }), IgniteCheckedException.class, "with no PROXY protocol in front");
     }
 
