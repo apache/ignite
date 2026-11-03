@@ -345,7 +345,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
     /** Exposes the loading hook so tests can stub the material source. */
     private static class TestSslContextFactory extends SslContextFactory {
         /** {@inheritDoc} */
-        @Override public SslBundle createSslBundle() {
+        @Override public SslBundle createSslBundle() throws SSLException {
             return super.createSslBundle();
         }
     }

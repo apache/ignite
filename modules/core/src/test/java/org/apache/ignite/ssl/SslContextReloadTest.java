@@ -584,8 +584,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Factory that reads the stores. */
-        private final SslContextFactory delegate;
+        /** Key store file. */
+        private final Path keys;
+
+        /** Trust store file. */
+        private final Path trust;
 
         /** Calls of {@link #create()}. */
         private final AtomicInteger loads = new AtomicInteger();
@@ -595,14 +598,15 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
          * @param trust Trust store file.
          */
         private CountingFactory(Path keys, Path trust) {
-            delegate = storeFactory(keys, trust);
+            this.keys = keys;
+            this.trust = trust;
         }
 
         /** {@inheritDoc} */
         @Override public SSLContext create() {
             loads.incrementAndGet();
 
-            return delegate.createSslBundle().context();
+            return storeFactory(keys, trust).create();
         }
     }
 }

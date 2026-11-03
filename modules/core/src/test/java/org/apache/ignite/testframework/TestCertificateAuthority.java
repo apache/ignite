@@ -33,7 +33,9 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.KeyManager;
@@ -42,7 +44,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
-import org.apache.ignite.ssl.KeyMaterial;
 import org.apache.ignite.ssl.SslBundle;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
@@ -229,17 +230,22 @@ public class TestCertificateAuthority {
     }
 
     /**
-     * @param keyStore Store with the certificates to present.
+     * @param keyStore Generated store with zero or more private keys.
      * @param trustStore Store with the authorities to trust.
      * @return Context and certificate chains from the supplied stores.
      */
     public static SslBundle bundle(KeyStore keyStore, KeyStore trustStore) throws Exception {
-        KeyMaterial material = new KeyMaterial(keyStore, PWD, KeyManagerFactory.getDefaultAlgorithm());
-        SSLContext ctx = SSLContext.getInstance("TLS");
+        Map<String, List<X509Certificate>> chains = new HashMap<>();
 
-        ctx.init(material.keyManagers(), trustManagers(trustStore), null);
+        for (String alias : Collections.list(keyStore.aliases())) {
+            if (keyStore.entryInstanceOf(alias, KeyStore.PrivateKeyEntry.class)) {
+                Certificate[] certs = keyStore.getCertificateChain(alias);
 
-        return new SslBundle(ctx, material.certificateChains());
+                chains.put(alias, List.of(Arrays.copyOf(certs, certs.length, X509Certificate[].class)));
+            }
+        }
+
+        return new SslBundle(context(keyStore, trustStore), chains);
     }
 
     /**
