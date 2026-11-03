@@ -19,18 +19,35 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.ssl.SslCertificates;
+import org.apache.ignite.internal.ssl.SslRenewal;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Builds a fresh SSL context and its certificate metadata on each call. The component using the context is responsible for
- * retaining it between connections.
+ * Owns the SSL context and its certificate metadata. {@link #init()} loads replacement material before publishing it;
+ * {@link #create()} returns a stable context. Its newly created engines and newly obtained socket factories use the
+ * accepted material; previously obtained engines, socket factories and sockets retain their original material.
+ * Configure the factory before its first use. Reusing an initialized factory, including after a node restart, retains
+ * its material until {@code init()} is called.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -42,6 +59,24 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default share of the certificate lifetime left when a node starts to renew it. */
     public static final double DFLT_RENEW_BEFORE_FRACTION = 0.15;
 
+    /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
+    private transient volatile SslBundle bundle;
+
+    /** Stable context returned to consumers after the first successful initialization. */
+    private transient volatile SSLContext sharedCtx;
+
+    /** Snapshot of the last successful reload and subsequent failures. */
+    private transient volatile ReloadOutcome outcome;
+
+    /** Automatic renewal attached by the node; the node owns its executor. */
+    private transient volatile SslRenewal renewal;
+
+    /** Executor whose attachment fixes the renewal settings until that node stops. */
+    private transient ScheduledExecutorService renewalExec;
+
+    /** Failed automatic attempts since the earliest expiry across all chains was advanced. */
+    private transient volatile int renewalFailures;
+
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
 
@@ -51,10 +86,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Enabled protocols. */
     protected String[] protocols;
 
-    /** Whether a node builds its SSL context again before the certificate expires, to pick up a new certificate. */
+    /** Whether automatic renewal is requested when a node attaches its renewal executor. */
     private boolean renewalEnabled;
 
-    /** Share of the certificate lifetime left when a node starts to renew it. */
+    /** Share of the certificate lifetime left when renewal starts. */
     private double renewBeforeFraction = DFLT_RENEW_BEFORE_FRACTION;
 
     /**
@@ -155,10 +190,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /**
      * Checks the factory parameters, loads its key material once, and builds a fresh context with the certificate chains from
      * that material. The factory does not retain the result.
-     * <p>
-     * The node uses this method at startup, for {@code control.sh --ssl reload} and for automatic renewal. A node never calls this
-     * method concurrently for one factory object. A factory shared by several nodes in one JVM, or also used by application code,
-     * must be thread-safe. A factory that fetches certificates remotely must bound each request and respond to thread interruption.
+     *
+     * Override this method to load a candidate from another source. It must not change the material already in use.
+     * Outside loading hooks, use {@link #sslBundle()} to inspect the accepted material.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws IgniteException If the context could not be created.
@@ -244,12 +278,284 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Builds a fresh context through {@link #createSslBundle()}. Override that method to customize both entry points.
+     * Loads keys and trust settings and atomically replaces the accepted context and its metadata. A failed initialization
+     * leaves the previous material in use. New engines and socket factories obtained through {@link #create()} use the
+     * replacement; already opened connections keep their original material.
      *
-     * @return Fresh initialized context.
-     * @throws IgniteException If the context could not be created.
+     * The first initialization permits material without certificate chains and certificates outside their validity period,
+     * matching node startup. Later calls reject a context already in use, known empty certificate metadata and chains with
+     * any expired or not-yet-valid certificate. Peers must trust the replacement; this method does not test connections.
+     * While automatic renewal is attached, replacement metadata must contain at least one chain. A successful replacement
+     * replans renewal and clears its unsuccessful-attempt count only when the earliest chain expiry advances.
+     *
+     * @return Context and metadata accepted by this initialization.
+     * @throws IgniteException If the material cannot be loaded, the context cannot be created or a replacement is rejected.
+     */
+    public final synchronized SslBundle init() {
+        try {
+            SslBundle next;
+            boolean reload = bundle != null;
+
+            if (reload) {
+                next = buildReplacement();
+
+                checkReplacement(next, renewal != null);
+            }
+            else {
+                next = createSslBundle();
+                next.context().createSSLEngine();
+            }
+
+            putInUse(next);
+
+            if (reload)
+                onSuccess();
+
+            return next;
+        }
+        catch (Throwable e) {
+            if (bundle != null)
+                onFailure(e);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Attaches the node's automatic renewal executor. The current renewal settings apply until that executor stops.
+     * Repeated attachment to the same running node changes nothing. A factory with renewal enabled cannot serve two running
+     * nodes with separate renewal executors; configure a separate factory instance on each node. After a node stops, its
+     * factory can attach to a new executor, using the settings configured for that restart.
+     *
+     * @param exec Renewal executor owned and stopped by the node.
+     * @param log Renewal logger.
+     * @param transports Names of the transports currently using this factory, evaluated when logging.
+     * @throws IgniteException If renewal is already attached to another running node or certificate metadata is unavailable.
+     */
+    public final synchronized void startRenewal(ScheduledExecutorService exec, IgniteLogger log, Supplier<String> transports) {
+        if (renewalExec != null && !renewalExec.isShutdown()) {
+            if (renewalExec != exec && (renewal != null || renewalEnabled))
+                throw new IgniteException("The SSL context factory already renews certificates for another running node; " +
+                    "configure a separate factory instance on each node");
+
+            return;
+        }
+
+        renewal = null;
+        renewalExec = null;
+
+        if (renewalEnabled && SslCertificates.renewalChain(sslBundle()) == null) {
+            throw new IgniteException("The SSL context factory must provide at least one X.509 certificate chain " +
+                "to renew automatically [transports=" + transports.get() + ']');
+        }
+
+        renewalExec = exec;
+
+        if (renewalEnabled) {
+            renewal = new SslRenewal(this, renewBeforeFraction, exec, log, transports);
+            renewal.replan();
+        }
+    }
+
+    /**
+     * Installs replacement material only if its earliest chain expiry is later than the current earliest expiry.
+     * Unchanged chains count as an unsuccessful renewal without recording a reload failure. An interrupted attempt retains
+     * the current material and does not count as unsuccessful. The node's renewal scheduler calls this method.
+     *
+     * @param expected Accepted context from {@link #sslBundle()} when the renewal was planned.
+     * @return Installed bundle, or {@code null} if its chains are unchanged or the expected context has already been replaced.
+     * @throws IgniteException If the replacement fails initialization checks, has no certificate metadata or does not advance
+     *      the earliest expiry across all chains.
+     * @throws IgniteCheckedException If renewal is interrupted; the interrupt flag stays set when the factory sets it.
+     */
+    public final synchronized @Nullable SslBundle renew(SSLContext expected) throws IgniteCheckedException {
+        if (bundle == null || bundle.context() != expected)
+            return null;
+
+        try {
+            SslBundle next = buildReplacement();
+
+            if (Thread.currentThread().isInterrupted())
+                throw new IgniteInterruptedCheckedException("TLS certificate renewal was interrupted");
+
+            Map<String, List<X509Certificate>> chains = next.certificateChains();
+
+            if (chains != null && chains.equals(bundle.certificateChains())) {
+                renewalFailures++;
+
+                return null;
+            }
+
+            checkReplacement(next, true);
+
+            List<X509Certificate> cur = SslCertificates.renewalChain(bundle);
+            long nextExpiry = SslCertificates.chainNotAfter(SslCertificates.renewalChain(next));
+
+            if (cur != null && nextExpiry <= SslCertificates.chainNotAfter(cur)) {
+                throw new IgniteException("The new certificate chains expire no later than the ones in use; if a certificate " +
+                    "authority expires first, renew it [chainNotAfter=" + Instant.ofEpochMilli(nextExpiry) +
+                    ", inUseChainNotAfter=" + Instant.ofEpochMilli(SslCertificates.chainNotAfter(cur)) + ']');
+            }
+
+            putInUse(next);
+        }
+        catch (Throwable e) {
+            if (!Thread.currentThread().isInterrupted() &&
+                !X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class, IgniteInterruptedCheckedException.class)) {
+                renewalFailures++;
+
+                onFailure(e);
+            }
+
+            throw e;
+        }
+
+        onSuccess();
+
+        return bundle;
+    }
+
+    /** @return Failed automatic attempts since the earliest expiry across all chains was advanced. */
+    public final int renewalFailures() {
+        return renewalFailures;
+    }
+
+    /** @return Time of the next automatic renewal, {@code 0} if none is planned or the node has stopped. */
+    public final long nextRenewalTime() {
+        SslRenewal cur = renewal;
+
+        return cur == null ? 0 : cur.nextRenewalTime();
+    }
+
+    /** @return Newly built replacement with a usable context and no known absence of certificate chains. */
+    private SslBundle buildReplacement() {
+        SslBundle next = createSslBundle();
+        Map<String, List<X509Certificate>> chains = next.certificateChains();
+
+        if (chains != null && chains.isEmpty()) {
+            throw new IgniteException("The new key material has no X.509 certificate chains, " +
+                "so the node would present no certificate");
+        }
+
+        next.context().createSSLEngine();
+
+        return next;
+    }
+
+    /**
+     * @param next Replacement to check before it is published.
+     * @param requireChains Whether certificate metadata must remain available for automatic renewal.
+     * @throws IgniteException If the context is already in use, required metadata is missing or a certificate is invalid.
+     */
+    private void checkReplacement(SslBundle next, boolean requireChains) {
+        if (next.context() == bundle.context()) {
+            throw new IgniteException("The SSL context factory returns the context in use, so the node gets no new " +
+                "certificates from it");
+        }
+
+        Map<String, List<X509Certificate>> chains = next.certificateChains();
+
+        if (requireChains && chains == null) {
+            throw new IgniteException("The new SSL context must provide at least one X.509 certificate chain " +
+                "to renew automatically");
+        }
+
+        if (chains == null)
+            return;
+
+        long now = System.currentTimeMillis();
+
+        for (Map.Entry<String, List<X509Certificate>> entry : chains.entrySet()) {
+            X509Certificate invalid = SslCertificates.invalidAt(entry.getValue(), now);
+
+            if (invalid != null) {
+                throw new IgniteException("The new certificate chain is not valid now [alias=" + entry.getKey() + ", " +
+                    SslCertificates.describe(invalid) + ", now=" + Instant.ofEpochMilli(now) + ']');
+            }
+        }
+    }
+
+    /** @param next Material that has passed the applicable initialization or renewal checks. */
+    private void putInUse(SslBundle next) {
+        List<X509Certificate> cur = bundle == null ? null : SslCertificates.renewalChain(bundle);
+        List<X509Certificate> replacement = SslCertificates.renewalChain(next);
+
+        if (replacement != null && (cur == null ||
+            SslCertificates.chainNotAfter(replacement) > SslCertificates.chainNotAfter(cur)))
+            renewalFailures = 0;
+
+        SSLContext shared = sharedCtx;
+
+        if (shared == null)
+            shared = new CurrentSslContext(next.context(), () -> bundle.context());
+
+        bundle = next;
+        sharedCtx = shared;
+    }
+
+    /** Records a successful replacement and plans renewal from the new material. */
+    private void onSuccess() {
+        outcome = new ReloadOutcome(System.currentTimeMillis(), 0, null, 0);
+
+        if (renewal != null)
+            renewal.replan();
+    }
+
+    /** @param e Why replacement failed. */
+    private void onFailure(Throwable e) {
+        ReloadOutcome previous = reloadOutcome();
+
+        outcome = new ReloadOutcome(previous.successTime(), System.currentTimeMillis(),
+            SslCertificates.reason(e), previous.failures() + 1);
+    }
+
+    /** @return Snapshot of the last successful reload and subsequent failures; zero times before any reload. */
+    public final ReloadOutcome reloadOutcome() {
+        ReloadOutcome res = outcome;
+
+        return res == null ? new ReloadOutcome(0, 0, null, 0) : res;
+    }
+
+    /**
+     * Snapshot of the last successful reload and subsequent failures.
+     *
+     * @param successTime Time of the last successful reload, {@code 0} if there was none.
+     * @param failureTime Time of the last failed reload since the last successful one, {@code 0} if there was none.
+     * @param failureReason Reason of the last failed reload since the last successful one, {@code null} if there was none.
+     * @param failures Failed reloads in a row since the last successful one, {@code 0} if there were none.
+     */
+    public record ReloadOutcome(long successTime, long failureTime, @Nullable String failureReason, int failures) {
+        // No-op.
+    }
+
+    /**
+     * Returns the accepted context and its metadata, initializing the factory on first use.
+     *
+     * @return One snapshot of the material in use.
+     * @throws IgniteException If the first initialization fails.
+     */
+    public final SslBundle sslBundle() {
+        create();
+
+        return bundle;
+    }
+
+    /**
+     * Returns the same forwarding context on every call, initializing it on first use. Obtain new engines and socket
+     * factories from this context to use the material accepted by the last successful {@link #init()}. Repeated calls
+     * do not read the key or trust stores.
+     *
+     * @return Stable initialized context.
+     * @throws IgniteException If the first initialization fails.
      */
     @Override public final SSLContext create() {
-        return createSslBundle().context();
+        if (sharedCtx == null) {
+            synchronized (this) {
+                if (sharedCtx == null)
+                    init();
+            }
+        }
+
+        return sharedCtx;
     }
 }

@@ -29,11 +29,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.ssl.SslContextProvider.ReloadOutcome;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -216,6 +216,40 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         assertEquals(List.of(), logged(Level.WARN));
         assertEquals(List.of(), logged(Level.ERROR));
         assertTrue(waitForCondition(() -> !renewalThreadAlive(name), 10_000));
+    }
+
+    /** Restarting a node with the same factory attaches renewal to the new executor and picks up replacement material. */
+    @Test
+    public void testSameFactoryRenewsAfterNodeRestart() throws Exception {
+        long now = System.currentTimeMillis();
+        Path keys = dir.resolve("node.jks");
+        SslContextFactory factory = readingKeys(new SslContextFactory(), keys);
+        KeyStore replacement = ca.keyStoreWithPrivateKey("replacement", now - HOUR, now + 2 * HOUR);
+
+        save(ca.keyStoreWithPrivateKey("in-window", now - 110 * MINUTE, now + 10 * MINUTE), keys);
+        factory.setRenewalEnabled(true);
+
+        startGrid(0, cfg -> {
+            cfg.setSslContextFactory(factory);
+        });
+
+        assertTrue(waitForCondition(() -> factory.renewalFailures() > 0, 10_000));
+
+        stopGrid(0);
+
+        assertEquals(0, factory.nextRenewalTime());
+
+        save(replacement, keys);
+
+        IgniteEx restarted = startGrid(0, cfg -> {
+            cfg.setSslContextFactory(factory);
+        });
+
+        assertTrue(waitForCondition(() -> factory.sslBundle().certificateChains().containsKey("replacement"), 10_000));
+        assertEquals(0, factory.renewalFailures());
+        assertEquals(chain(replacement).get(0), servedCertificate(context(ca.keyStoreWithPrivateKey("probe"), ca.trustStore()),
+            discoveryPort(restarted)));
+        assertTrue(renewalThreadAlive(restarted.name()));
     }
 
     /**

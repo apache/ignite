@@ -17,23 +17,110 @@
 
 package org.apache.ignite.ssl;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.security.KeyStore;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
-/** Communication keeps one SSL context: new connections do not call the SSL context factory on either node. */
+import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
+import static org.junit.Assert.assertArrayEquals;
+
+/** Consumers retain one SSL context while initialization changes the material used by new connections. */
 public class SslContextReuseTest extends GridCommonAbstractTest {
+    /** Stores generated independently for each test. */
+    @Rule public final TemporaryFolder tmp = new TemporaryFolder();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
         super.afterTest();
+    }
+
+    /** New engines and socket factories use initialized TLS settings; previously obtained ones retain their settings. */
+    @Test
+    public void testNewEnginesAndSocketFactoriesUseInitializedContext() throws Exception {
+        SslContextFactory factory = fileFactory();
+        String[] firstProtocols = {"TLSv1.2"};
+        String[] firstCiphers = {"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"};
+
+        factory.setProtocols(firstProtocols);
+        factory.setCipherSuites(firstCiphers);
+
+        SSLContext shared = factory.create();
+        SSLEngine existing = shared.createSSLEngine();
+        SSLSocketFactory capturedFactory = shared.getSocketFactory();
+        String[] replacementProtocols = {"TLSv1.3"};
+        String[] replacementCiphers = {"TLS_AES_128_GCM_SHA256"};
+
+        factory.setProtocols(replacementProtocols);
+        factory.setCipherSuites(replacementCiphers);
+
+        SslBundle replacement = factory.init();
+        String host = "peer.example";
+        int port = 10800;
+        SSLEngine addressed = shared.createSSLEngine(host, port);
+        SSLEngine unaddressed = shared.createSSLEngine();
+
+        assertSame(shared, factory.create());
+        assertSame(replacement.context().getClientSessionContext(), shared.getClientSessionContext());
+        assertSame(replacement.context().getServerSessionContext(), shared.getServerSessionContext());
+        assertEquals(host, addressed.getPeerHost());
+        assertEquals(port, addressed.getPeerPort());
+        assertArrayEquals(replacementProtocols, addressed.getEnabledProtocols());
+        assertArrayEquals(replacementCiphers, addressed.getEnabledCipherSuites());
+        assertNull(unaddressed.getPeerHost());
+        assertEquals(-1, unaddressed.getPeerPort());
+        assertArrayEquals(replacementProtocols, unaddressed.getEnabledProtocols());
+        assertArrayEquals(replacementCiphers, unaddressed.getEnabledCipherSuites());
+        assertArrayEquals(firstProtocols, existing.getEnabledProtocols());
+        assertArrayEquals(firstCiphers, existing.getEnabledCipherSuites());
+
+        try (SSLSocket captured = (SSLSocket)capturedFactory.createSocket();
+             SSLSocket current = (SSLSocket)shared.getSocketFactory().createSocket()) {
+            assertArrayEquals(firstProtocols, captured.getEnabledProtocols());
+            assertArrayEquals(firstCiphers, captured.getEnabledCipherSuites());
+            assertArrayEquals(replacementProtocols, current.getEnabledProtocols());
+            assertArrayEquals(replacementCiphers, current.getEnabledCipherSuites());
+        }
+    }
+
+    /** An initialized factory serializes its configuration and initializes fresh runtime state after deserialization. */
+    @Test
+    public void testInitializedFactorySerializationKeepsConfiguration() throws Exception {
+        SslContextFactory factory = fileFactory();
+        String[] protocols = {"TLSv1.2"};
+
+        factory.setProtocols(protocols);
+
+        SslBundle original = factory.init();
+        SslContextFactory restored = TEST_JDK_MARSHALLER.unmarshal(TEST_JDK_MARSHALLER.marshal(factory),
+            getClass().getClassLoader());
+
+        assertEquals(factory.getKeyStoreFilePath(), restored.getKeyStoreFilePath());
+        assertEquals(factory.getTrustStoreFilePath(), restored.getTrustStoreFilePath());
+        assertArrayEquals(protocols, restored.getProtocols());
+
+        SSLContext shared = restored.create();
+
+        assertNotSame(factory.create(), shared);
+        assertSame(shared, restored.create());
+        assertArrayEquals(protocols, shared.createSSLEngine().getEnabledProtocols());
+        assertEquals(original.certificateChains(), restored.sslBundle().certificateChains());
     }
 
     /** Reopening a communication connection does not call the SSL context factory on either node. */
@@ -61,5 +148,26 @@ public class SslContextReuseTest extends GridCommonAbstractTest {
         first.compute(first.cluster().forNodeId(second.localNode().id())).run(() -> {});
 
         assertEquals(createdAtStart, created.get());
+    }
+
+    /** Creates a file-backed factory with a generated private key and currently valid certificate chain. */
+    private SslContextFactory fileFactory() throws Exception {
+        KeyStore store = new TestCertificateAuthority("context-reuse-ca").keyStoreWithPrivateKey();
+        File storeFile = tmp.newFile("context.jks");
+
+        try (FileOutputStream out = new FileOutputStream(storeFile)) {
+            store.store(out, PWD);
+        }
+
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreType(store.getType());
+        factory.setKeyStoreFilePath(storeFile.getAbsolutePath());
+        factory.setKeyStorePassword(PWD);
+        factory.setTrustStoreType(store.getType());
+        factory.setTrustStoreFilePath(storeFile.getAbsolutePath());
+        factory.setTrustStorePassword(PWD);
+
+        return factory;
     }
 }

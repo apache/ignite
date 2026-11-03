@@ -602,7 +602,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         @Override public SSLContext create() {
             loads.incrementAndGet();
 
-            return delegate.create();
+            return delegate.createSslBundle().context();
         }
     }
 }

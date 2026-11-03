@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,15 +34,14 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.ssl.SslContextProvider.ReloadOutcome;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
+import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -61,10 +61,12 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.bundle;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
 import static org.apache.ignite.testframework.TestCertificateAuthority.context;
 import static org.apache.ignite.testframework.TestCertificateAuthority.merged;
-import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Renewal without nodes: its settings, {@link SslContextProvider#renew(SSLContext)}, the count of unsuccessful renewals and the
@@ -76,9 +78,9 @@ import static org.mockito.Mockito.when;
  * at the window of the earliest chain, then no sooner than a minute after a success, backs off on failures and logs each one,
  * replans on reload, drops an outdated attempt and runs without the operator context. The log names the installed certificate,
  * sets the level of a failure by the time left and reports a wait once per lateness, again on expiry. Tests enable renewal on
- * a factory mock and script its bundles; pauses are the production ones, a minute to an hour. Renewal plans and attempts in
- * tasks of an executor that records them with their delays and runs one only when a test calls {@code runNext()}. Only one
- * test waits: the operator context test runs on the kind of executor a node uses and waits for its attempt. The expiry test
+ * a factory and script its fresh bundles; pauses are the production ones, a minute to an hour. Renewal plans and attempts in
+ * tasks of an executor that records them with their delays and runs one only when a test calls {@code runNext()}. The operator
+ * context test runs on the kind of executor a node uses, and a concurrent initialization test coordinates two threads. The expiry test
  * advances the scheduler's clock explicitly. An appender on the logger of {@link SslRenewal} captures what renewal logs.
  */
 public class SslRenewalTest extends GridCommonAbstractTest {
@@ -151,7 +153,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         SslBundle renewed = bundle(merged(new1, new2), ca.trustStore());
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(bundle(merged(old1, old2), ca.trustStore()), renewed);
+        doReturn(bundle(merged(old1, old2), ca.trustStore()), renewed).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -170,7 +172,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         SslBundle replacement = bundle(remaining, ca.trustStore());
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(bundle(merged(removed, remaining), ca.trustStore()), replacement);
+        doReturn(bundle(merged(removed, remaining), ca.trustStore()), replacement).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -185,9 +187,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         KeyStore valid = ca.keyStoreWithPrivateKey("valid", now - HOUR, now + HOUR);
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(ca.keyStoreWithPrivateKey("expired", now - 2 * HOUR, now - HOUR), ca.trustStore()),
-            bundle(valid, ca.trustStore()));
+            bundle(valid, ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -202,10 +204,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         long now = System.currentTimeMillis();
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + HOUR), ca.trustStore()),
             bundle(ca.trustStore(), ca.trustStore()),
-            bundle(ca.keyStoreWithPrivateKey("not-yet-valid", now + 10 * MINUTE, now + 2 * HOUR), ca.trustStore()));
+            bundle(ca.keyStoreWithPrivateKey("not-yet-valid", now + 10 * MINUTE, now + 2 * HOUR), ca.trustStore()))
+            .when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -227,8 +230,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory caching = renewingFactory(QUARTER);
         AbstractSslContextFactory expiredAgain = renewingFactory(QUARTER);
 
-        when(caching.createSslBundle()).thenReturn(cached);
-        when(expiredAgain.createSslBundle()).thenReturn(bundle(expired, ca.trustStore()), bundle(expired, ca.trustStore()));
+        doReturn(cached).when(caching).createSslBundle();
+        doReturn(bundle(expired, ca.trustStore()), bundle(expired, ca.trustStore())).when(expiredAgain).createSslBundle();
 
         SslContextProvider cachingProvider = new SslContextProvider(caching);
         SslContextProvider expiredProvider = new SslContextProvider(expiredAgain);
@@ -250,7 +253,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         KeyStore renewed = ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR);
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(startup, new SslBundle(startup.context(), Map.of("renewed", chain(renewed))));
+        doReturn(startup, new SslBundle(startup.context(), Map.of("renewed", chain(renewed)))).when(f).createSslBundle();
 
         assertRenewalRejected("Cached context", new SslContextProvider(f), "The SSL context factory returns the context in use");
     }
@@ -269,11 +272,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         KeyStore renewedA = ca.keyStoreWithPrivateKey("a", now - HOUR, now + 2 * HOUR);
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(merged(a, b), ca.trustStore()),
             bundle(ca.keyStoreWithPrivateKey("other", now - HOUR, now + HOUR), ca.trustStore()),
             bundle(merged(renewedA, b), ca.trustStore()),
-            bundle(shortCa.keyStoreWithPrivateKey("short-ca-leaf", now - HOUR, now + 2 * HOUR), ca.trustStore()));
+            bundle(shortCa.keyStoreWithPrivateKey("short-ca-leaf", now - HOUR, now + 2 * HOUR), ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -287,14 +290,14 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testRenewForReplacedContextDoesNothing() throws Exception {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()),
-            bundle(ca.keyStoreWithPrivateKey("reloaded"), ca.trustStore()));
+            bundle(ca.keyStoreWithPrivateKey("reloaded"), ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
         SSLContext planned = p.context();
 
-        p.reload();
+        f.init();
 
         SslBundle reloaded = p.bundle();
 
@@ -316,18 +319,17 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         SslBundle renewed = bundle(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), ca.trustStore());
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle())
-            .thenReturn(bundle(startup, ca.trustStore()))
-            .thenAnswer(inv -> {
+        doReturn(bundle(startup, ca.trustStore()))
+            .doAnswer(inv -> {
                 Thread.currentThread().interrupt();
 
                 return same;
             })
-            .thenAnswer(inv -> {
+            .doAnswer(inv -> {
                 Thread.currentThread().interrupt();
 
                 return renewed;
-            });
+            }).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
         SslBundle inUse = p.bundle();
@@ -356,8 +358,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * With renewal enabled at creation, reload refuses a bundle without certificate metadata, even after the factory has turned
-     * renewal off: the renewal settings are fixed when the provider is created. renew refuses such a bundle too.
+     * With renewal attached, direct initialization refuses a bundle without certificate metadata, even after the factory has turned
+     * renewal off: the renewal settings are fixed until the attached node stops. renew refuses such a bundle too.
      */
     @Test
     public void testReloadCannotLoseMetadataWithRenewal() throws Exception {
@@ -366,13 +368,15 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         SslBundle unknown = new SslBundle(context(ca.keyStoreWithPrivateKey("unknown"), ca.trustStore()), null);
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle()).thenReturn(startup, unknown, unknown);
+        doReturn(startup, unknown, unknown).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
+        RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.isRenewalEnabled()).thenReturn(false);
+        p.startRenewal(exec, renewalLog);
+        f.setRenewalEnabled(false);
 
-        GridTestUtils.assertThrows(log, p::reload, IgniteCheckedException.class, reason);
+        GridTestUtils.assertThrows(log, f::init, IgniteException.class, reason);
 
         assertSame(startup, p.bundle());
         assertRenewalRejected("Renewal", p, reason);
@@ -387,14 +391,157 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         RecordingExecutor exec = new RecordingExecutor();
         String reason = "The SSL context factory must provide at least one X.509 certificate chain to renew automatically";
 
-        when(unknown.createSslBundle()).thenReturn(new SslBundle(ctx, null));
-        when(noChains.createSslBundle()).thenReturn(bundle(ca.trustStore(), ca.trustStore()));
+        doReturn(new SslBundle(ctx, null)).when(unknown).createSslBundle();
+        doReturn(bundle(ca.trustStore(), ca.trustStore())).when(noChains).createSslBundle();
 
         SslContextProvider unknownProvider = new SslContextProvider(unknown);
         SslContextProvider noChainsProvider = new SslContextProvider(noChains);
 
         GridTestUtils.assertThrows(log, () -> unknownProvider.startRenewal(exec, renewalLog), IgniteException.class, reason);
         GridTestUtils.assertThrows(log, () -> noChainsProvider.startRenewal(exec, renewalLog), IgniteException.class, reason);
+    }
+
+    /** A factory accepts one renewal executor, and attaching it again does not duplicate its schedule. */
+    @Test
+    public void testRenewalAttachesOnce() throws Exception {
+        AbstractSslContextFactory f = renewingFactory(QUARTER);
+        RecordingExecutor exec = new RecordingExecutor();
+        RecordingExecutor other = new RecordingExecutor();
+
+        doReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore())).when(f).createSslBundle();
+
+        f.create();
+        f.startRenewal(exec, renewalLog, () -> "communication");
+
+        Task first = exec.last();
+
+        f.startRenewal(exec, renewalLog, () -> "communication");
+
+        assertEquals(List.of(first), exec.pending());
+        GridTestUtils.assertThrows(log, () -> f.startRenewal(other, renewalLog, () -> "discovery"),
+            IgniteException.class, "another running node");
+        assertTrue(other.pending().isEmpty());
+        assertEquals(List.of(first), exec.pending());
+    }
+
+    /** Settings apply at attachment and stay fixed until the node stops, including when a factory was already initialized. */
+    @Test
+    public void testRenewalSettingsAppliedAtAttachmentAndRestart() throws Exception {
+        long now = System.currentTimeMillis() / SECOND * SECOND;
+        SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + 3 * HOUR), ca.trustStore());
+        SslBundle replacement = bundle(ca.keyStoreWithPrivateKey("replacement", now - HOUR, now + 5 * HOUR), ca.trustStore());
+        AbstractSslContextFactory f = renewingFactory(QUARTER);
+        RecordingExecutor first = new RecordingExecutor();
+        RecordingExecutor restarted = new RecordingExecutor();
+
+        doReturn(startup, replacement).when(f).createSslBundle();
+
+        f.setRenewalEnabled(false);
+        f.create();
+        f.setRenewalEnabled(true);
+        f.startRenewal(first, renewalLog, () -> "communication");
+        first.runNext();
+
+        assertEquals(now + 2 * HOUR, f.nextRenewalTime());
+
+        first.shutdownNow();
+
+        assertEquals(0, f.nextRenewalTime());
+
+        f.setRenewBeforeFraction(0.5);
+        f.startRenewal(restarted, renewalLog, () -> "communication");
+        restarted.runNext();
+
+        assertEquals(now + HOUR, f.nextRenewalTime());
+
+        f.setRenewBeforeFraction(0.75);
+        f.startRenewal(restarted, renewalLog, () -> "communication");
+        f.init();
+        restarted.runNext();
+
+        assertEquals("The active node keeps its configured fraction", now + 2 * HOUR, f.nextRenewalTime());
+        assertSame(replacement, f.sslBundle());
+    }
+
+    /** A restarted node can disable renewal and accept unknown metadata without retaining the stopped node's schedule. */
+    @Test
+    public void testRenewalCanBeDisabledOnRestart() throws Exception {
+        AbstractSslContextFactory f = renewingFactory(QUARTER);
+        RecordingExecutor first = new RecordingExecutor();
+        RecordingExecutor restarted = new RecordingExecutor();
+        SslBundle unknown = new SslBundle(context(ca.keyStoreWithPrivateKey("unknown"), ca.trustStore()), null);
+
+        doReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()), unknown).when(f).createSslBundle();
+
+        f.startRenewal(first, renewalLog, () -> "communication");
+        first.runNext();
+        first.shutdownNow();
+        f.setRenewalEnabled(false);
+        f.startRenewal(restarted, renewalLog, () -> "communication");
+        f.init();
+
+        assertSame(unknown, f.sslBundle());
+        assertEquals(0, f.nextRenewalTime());
+        assertTrue(restarted.pending().isEmpty());
+
+        f.setRenewalEnabled(true);
+        f.startRenewal(restarted, renewalLog, () -> "communication");
+
+        assertEquals("Enabling renewal waits for another restart", 0, f.nextRenewalTime());
+        assertTrue(restarted.pending().isEmpty());
+    }
+
+    /** Direct initialization waits for an in-flight renewal, then resets its failure count and replans from its own material. */
+    @Test
+    public void testDirectInitSerializesWithRenewal() throws Exception {
+        long now = System.currentTimeMillis() / SECOND * SECOND;
+        SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + HOUR), ca.trustStore());
+        SslBundle replacement = bundle(ca.keyStoreWithPrivateKey("replacement", now, now + 2 * HOUR), ca.trustStore());
+        AbstractSslContextFactory f = renewingFactory(QUARTER);
+        RecordingExecutor exec = new RecordingExecutor();
+        CountDownLatch renewing = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+
+        doReturn(startup).doAnswer(inv -> {
+            renewing.countDown();
+            assertTrue(release.await(10, TimeUnit.SECONDS));
+
+            return startup;
+        }).doReturn(replacement).when(f).createSslBundle();
+
+        f.startRenewal(exec, renewalLog, () -> "communication");
+        exec.runNext();
+
+        FutureTask<SslBundle> renewal = new FutureTask<>(() -> f.renew(startup.context()));
+        FutureTask<SslBundle> init = new FutureTask<>(f::init);
+        Thread renewalThread = new Thread(renewal, "test-factory-renewal");
+        Thread initThread = new Thread(init, "test-factory-init");
+
+        renewalThread.start();
+
+        try {
+            assertTrue(renewing.await(10, TimeUnit.SECONDS));
+
+            initThread.start();
+
+            assertTrue(waitForCondition(() -> initThread.getState() == Thread.State.BLOCKED || init.isDone(), 10_000));
+            assertFalse("Initialization must wait while renewal loads its candidate", init.isDone());
+        }
+        finally {
+            release.countDown();
+            renewalThread.join(10_000);
+            initThread.join(10_000);
+        }
+
+        assertNull(renewal.get(10, TimeUnit.SECONDS));
+        assertSame(replacement, init.get(10, TimeUnit.SECONDS));
+        assertSame(replacement, f.sslBundle());
+        assertEquals(0, f.renewalFailures());
+        assertEquals(0, f.reloadOutcome().failures());
+
+        exec.runNext();
+
+        assertEquals(now + 2 * HOUR - 30 * MINUTE, f.nextRenewalTime());
     }
 
     /** Both the chains in use and a factory failure count as unsuccessful renewals, and a renewal clears the count. */
@@ -404,10 +551,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         KeyStore inUse = ca.keyStoreWithPrivateKey("in-use", now - HOUR, now + HOUR);
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle())
-            .thenReturn(bundle(inUse, ca.trustStore()), bundle(inUse, ca.trustStore()))
-            .thenThrow(new IgniteException(ISSUER_DOWN))
-            .thenReturn(bundle(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), ca.trustStore()));
+        doReturn(bundle(inUse, ca.trustStore()), bundle(inUse, ca.trustStore()))
+            .doThrow(new IgniteException(ISSUER_DOWN))
+            .doReturn(bundle(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -433,31 +579,30 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         KeyStore inUse = ca.keyStoreWithPrivateKey("in-use", now - HOUR, now + HOUR);
         AbstractSslContextFactory f = renewingFactory(QUARTER);
 
-        when(f.createSslBundle())
-            .thenReturn(bundle(inUse, ca.trustStore()), bundle(inUse, ca.trustStore()))
-            .thenThrow(new IgniteException(ISSUER_DOWN))
-            .thenReturn(
+        doReturn(bundle(inUse, ca.trustStore()), bundle(inUse, ca.trustStore()))
+            .doThrow(new IgniteException(ISSUER_DOWN))
+            .doReturn(
                 bundle(ca.keyStoreWithPrivateKey("same-expiry", now - HOUR, now + HOUR), ca.trustStore()),
                 bundle(shortCa.keyStoreWithPrivateKey("later-leaf", now - HOUR, now + 2 * HOUR), ca.trustStore()),
-                bundle(ca.keyStoreWithPrivateKey("later-chain", now - HOUR, now + 2 * HOUR), ca.trustStore()));
+                bundle(ca.keyStoreWithPrivateKey("later-chain", now - HOUR, now + 2 * HOUR), ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
         p.renew(p.context());
 
-        GridTestUtils.assertThrows(log, p::reload, IgniteException.class, ISSUER_DOWN);
+        GridTestUtils.assertThrows(log, f::init, IgniteException.class, ISSUER_DOWN);
 
         assertEquals("Failed reload", 1, p.renewalFailures());
 
-        p.reload();
+        f.init();
 
         assertEquals("Same expiry", 1, p.renewalFailures());
 
-        p.reload();
+        f.init();
 
         assertEquals("Later leaf, authority expires at the same time", 1, p.renewalFailures());
 
-        p.reload();
+        f.init();
 
         assertEquals("Later chain expiry", 0, p.renewalFailures());
     }
@@ -497,10 +642,10 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup", now - 100 * MINUTE, now + 20 * MINUTE), ca.trustStore()),
             bundle(ca.keyStoreWithPrivateKey("renewed", now - 95 * MINUTE, now + 25 * MINUTE), ca.trustStore()),
-            bundle(ca.keyStoreWithPrivateKey("reloaded", now - 90 * MINUTE, now + 30 * MINUTE), ca.trustStore()));
+            bundle(ca.keyStoreWithPrivateKey("reloaded", now - 90 * MINUTE, now + 30 * MINUTE), ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -511,7 +656,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         assertEquals("Renewal", p.reloadOutcome().successTime() + MINUTE, p.nextRenewalTime());
 
-        p.reload();
+        f.init();
         exec.runNext();
 
         assertEquals("Reload", p.reloadOutcome().successTime() + MINUTE, p.nextRenewalTime());
@@ -527,9 +672,8 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle())
-            .thenReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()))
-            .thenThrow(new IgniteException(ISSUER_DOWN));
+        doReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()))
+            .doThrow(new IgniteException(ISSUER_DOWN)).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -566,7 +710,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(startup, startup, reloaded, reloaded);
+        doReturn(startup, startup, reloaded, reloaded).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -576,7 +720,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         ScheduledFuture<?> retry = exec.last();
 
-        p.reload();
+        f.init();
         exec.runNext();
 
         assertTrue(retry.isCancelled());
@@ -602,9 +746,9 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()),
-            bundle(ca.keyStoreWithPrivateKey("reloaded"), ca.trustStore()));
+            bundle(ca.keyStoreWithPrivateKey("reloaded"), ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -613,7 +757,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         Task stale = exec.last();
 
-        p.reload();
+        f.init();
 
         Task plan = exec.last();
 
@@ -636,11 +780,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         ScheduledExecutorService exec = newSingleThreadScheduledExecutor("ssl-renewal", getTestIgniteInstanceName());
 
-        when(f.createSslBundle()).thenAnswer(inv -> {
+        doAnswer(inv -> {
             operators.add(OperationContext.get(OPERATOR));
 
             return inWindow;
-        });
+        }).when(f).createSslBundle();
 
         try {
             try (Scope ignored = OperationContext.set(OPERATOR, "operator")) {
@@ -664,25 +808,26 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(
+        doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + HOUR), ca.trustStore()),
             bundle(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), ca.trustStore()),
-            bundle(ca.keyStoreWithPrivateKey("reloaded", now - HOUR, now + 3 * HOUR), ca.trustStore()));
+            bundle(ca.keyStoreWithPrivateKey("reloaded", now - HOUR, now + 3 * HOUR), ca.trustStore())).when(f).createSslBundle();
 
-        SslContextProvider p = new SslContextProvider(f) {
-            /** {@inheritDoc} */
-            @Override SslBundle renew(SSLContext expected) throws IgniteCheckedException {
-                SslBundle renewed = super.renew(expected);
+        SslContextProvider p = new SslContextProvider(f);
 
-                super.reload();
+        doAnswer(inv -> {
+            SslBundle renewed = (SslBundle)inv.callRealMethod();
 
-                return renewed;
-            }
-        };
+            f.init();
+
+            return renewed;
+        }).when(f).renew(any(SSLContext.class));
 
         p.startRenewal(exec, renewalLog);
         exec.runNext();
         exec.runNext();
+
+        assertTrue(p.certificateChains().containsKey("reloaded"));
 
         List<String> reloadedLogs = appender.events().stream().map(e -> e.getMessage().getFormattedMessage())
             .filter(msg -> msg.startsWith("TLS certificates reloaded [")).toList();
@@ -724,7 +869,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(inUse);
+        doReturn(inUse).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -750,11 +895,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(bundle(inUse, ca.trustStore()));
+        doReturn(bundle(inUse, ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
-        new SslRenewal(p, QUARTER, exec, renewalLog, now::get).replan();
+        new SslRenewal(f, QUARTER, exec, renewalLog, p::transports, now::get).replan();
         exec.runNext();
         exec.runNext();
 
@@ -768,13 +913,13 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /**
      * @param fraction Share of the lifetime left when renewal starts.
-     * @return Factory mock with renewal enabled; tests script its bundles.
+     * @return Factory with renewal enabled; tests script its fresh bundles.
      */
     private static AbstractSslContextFactory renewingFactory(double fraction) {
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class);
+        AbstractSslContextFactory f = spy(new SslContextFactory());
 
-        when(f.isRenewalEnabled()).thenReturn(true);
-        when(f.getRenewBeforeFraction()).thenReturn(fraction);
+        f.setRenewalEnabled(true);
+        f.setRenewBeforeFraction(fraction);
 
         return f;
     }
@@ -788,7 +933,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(fraction);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(bundle(keys, ca.trustStore()));
+        doReturn(bundle(keys, ca.trustStore())).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
 
@@ -810,7 +955,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         SslBundle inUse = p.bundle();
         int failures = p.renewalFailures();
 
-        GridTestUtils.assertThrows(log, () -> p.renew(inUse.context()), IgniteCheckedException.class, reason, desc + ": not refused");
+        GridTestUtils.assertThrows(log, () -> p.renew(inUse.context()), IgniteException.class, reason, desc + ": not refused");
 
         Assert.assertSame(desc, inUse, p.bundle());
         assertEquals(desc, failures + 1, p.renewalFailures());
@@ -829,7 +974,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         AbstractSslContextFactory f = renewingFactory(fraction);
         RecordingExecutor exec = new RecordingExecutor();
 
-        when(f.createSslBundle()).thenReturn(bundle(inUse, ca.trustStore())).thenThrow(new IgniteException(ISSUER_DOWN));
+        doReturn(bundle(inUse, ca.trustStore())).doThrow(new IgniteException(ISSUER_DOWN)).when(f).createSslBundle();
 
         SslContextProvider p = new SslContextProvider(f);
         int before = problems().size();

@@ -22,9 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.ssl.SslBundle;
 import org.jetbrains.annotations.Nullable;
 
-/** Certificate dates and descriptions used by SSL reload, renewal and status. */
+/** Certificate dates and descriptions used by SSL reload and status. */
 public class SslCertificates {
     /** */
     private SslCertificates() {
@@ -42,6 +43,34 @@ public class SslCertificates {
             res = Math.min(res, cert.getNotAfter().getTime());
 
         return res;
+    }
+
+    /**
+     * Chooses the first chain to expire, using the earliest leaf validity start to break ties.
+     *
+     * @param bundle Context and its chains.
+     * @return Chain that determines renewal, or {@code null} if certificate metadata is unknown or contains no chains.
+     */
+    public static @Nullable List<X509Certificate> renewalChain(SslBundle bundle) {
+        Map<String, List<X509Certificate>> chains = bundle.certificateChains();
+
+        if (chains == null || chains.isEmpty())
+            return null;
+
+        List<X509Certificate> earliest = null;
+        long earliestExpiry = Long.MAX_VALUE;
+
+        for (List<X509Certificate> chain : chains.values()) {
+            long expiry = chainNotAfter(chain);
+
+            if (earliest == null || expiry < earliestExpiry ||
+                expiry == earliestExpiry && chain.get(0).getNotBefore().before(earliest.get(0).getNotBefore())) {
+                earliest = chain;
+                earliestExpiry = expiry;
+            }
+        }
+
+        return earliest;
     }
 
     /**

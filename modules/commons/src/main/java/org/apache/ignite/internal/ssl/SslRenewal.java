@@ -26,11 +26,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslBundle;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
  * Renews one factory's certificates before expiry when {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal is enabled}.
  * Renewal planning and attempts run in the node's renewal thread.
  */
-class SslRenewal {
+public class SslRenewal {
     /** How the node log names an automatic renewal in {@code initiator=}. */
     private static final String INITIATOR = "automatic renewal";
 
@@ -55,7 +56,10 @@ class SslRenewal {
     private static long maxPause = 3_600_000L;
 
     /** */
-    private final SslContextProvider provider;
+    private final AbstractSslContextFactory factory;
+
+    /** Transports using this factory, including those registered after renewal starts. */
+    private final Supplier<String> transports;
 
     /** Share of the certificate lifetime left when the renewal window opens. */
     private final double renewBeforeFraction;
@@ -91,30 +95,40 @@ class SslRenewal {
     private int waitLoggedLateness;
 
     /**
-     * @param provider Provider whose context the factory builds.
+     * @param factory Factory that owns the accepted material.
      * @param renewBeforeFraction Share of the certificate lifetime left when the renewal window opens.
      * @param exec Renewal thread.
      * @param log Logger.
+     * @param transports Names of the transports currently using this factory.
      */
-    SslRenewal(SslContextProvider provider, double renewBeforeFraction, ScheduledExecutorService exec, IgniteLogger log) {
-        this(provider, renewBeforeFraction, exec, log, System::currentTimeMillis);
-    }
-
-    /**
-     * @param provider Provider whose context the factory builds.
-     * @param renewBeforeFraction Share of the certificate lifetime left when the renewal window opens.
-     * @param exec Renewal thread.
-     * @param log Logger.
-     * @param currentTimeMillis Current time in milliseconds.
-     */
-    SslRenewal(
-        SslContextProvider provider,
+    public SslRenewal(
+        AbstractSslContextFactory factory,
         double renewBeforeFraction,
         ScheduledExecutorService exec,
         IgniteLogger log,
+        Supplier<String> transports
+    ) {
+        this(factory, renewBeforeFraction, exec, log, transports, System::currentTimeMillis);
+    }
+
+    /**
+     * @param factory Factory that owns the accepted material.
+     * @param renewBeforeFraction Share of the certificate lifetime left when the renewal window opens.
+     * @param exec Renewal thread.
+     * @param log Logger.
+     * @param transports Names of the transports currently using this factory.
+     * @param currentTimeMillis Current time in milliseconds.
+     */
+    SslRenewal(
+        AbstractSslContextFactory factory,
+        double renewBeforeFraction,
+        ScheduledExecutorService exec,
+        IgniteLogger log,
+        Supplier<String> transports,
         LongSupplier currentTimeMillis
     ) {
-        this.provider = provider;
+        this.factory = factory;
+        this.transports = transports;
         this.renewBeforeFraction = renewBeforeFraction;
         this.exec = exec;
         this.log = log;
@@ -122,12 +136,12 @@ class SslRenewal {
     }
 
     /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
-    long nextRenewalTime() {
-        return nextRenewalTime;
+    public long nextRenewalTime() {
+        return exec.isShutdown() ? 0 : nextRenewalTime;
     }
 
     /** Plans the next renewal in the renewal thread. */
-    void replan() {
+    public void replan() {
         submit(this::plan, 0);
     }
 
@@ -135,8 +149,8 @@ class SslRenewal {
     private void plan() {
         pause = waitLogTime = 0;
 
-        SslBundle planned = provider.bundle();
-        List<X509Certificate> chain = SslContextProvider.renewalChain(planned);
+        SslBundle planned = factory.sslBundle();
+        List<X509Certificate> chain = SslCertificates.renewalChain(planned);
 
         chainNotAfter = SslCertificates.chainNotAfter(chain);
 
@@ -145,11 +159,11 @@ class SslRenewal {
         window = (long)(lifetime * renewBeforeFraction);
 
         long at = Math.max(chainNotAfter - window,
-            Math.max(provider.reloadOutcome().successTime() + minPause, currentTimeMillis.getAsLong()));
+            Math.max(factory.reloadOutcome().successTime() + minPause, currentTimeMillis.getAsLong()));
 
         schedule(at, planned.context());
 
-        U.log(log, "TLS certificates will be renewed automatically [transports=" + provider.transports() +
+        CommonUtils.log(log, "TLS certificates will be renewed automatically [transports=" + transports.get() +
             ", nextRenewal=" + Instant.ofEpochMilli(at) + ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ']');
     }
 
@@ -160,13 +174,13 @@ class SslRenewal {
      */
     private void attempt(SSLContext planned) {
         try {
-            SslBundle renewed = provider.renew(planned);
+            SslBundle renewed = factory.renew(planned);
 
             if (renewed != null) {
-                U.log(log, "TLS certificates reloaded [transports=" + provider.transports() + ", " +
+                CommonUtils.log(log, "TLS certificates reloaded [transports=" + transports.get() + ", " +
                     SslCertificates.describeChains(renewed.certificateChains()) + ", initiator=" + INITIATOR + ']');
             }
-            else if (provider.context() == planned)
+            else if (factory.sslBundle().context() == planned)
                 retry(planned, null);
         }
         catch (Throwable e) {
@@ -208,14 +222,14 @@ class SslRenewal {
         String msg = (e == null ? "The SSL context factory has no newer TLS certificates yet, the ones in use stay" :
             "Failed to reload TLS certificates, the ones in use stay") +
             (lateness == 2 ? ", though they have expired" : lateness == 1 ? " and expire soon" : "") +
-            " [transports=" + provider.transports() +
+            " [transports=" + transports.get() +
             (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + SslCertificates.reason(e)) +
             ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ", nextRenewal=" + Instant.ofEpochMilli(at) + ']';
 
         if (soon)
-            U.error(log, msg, e);
+            CommonUtils.error(log, msg, e);
         else
-            U.warn(log, msg, e);
+            CommonUtils.warn(log, msg, e);
     }
 
     /**
@@ -229,6 +243,9 @@ class SslRenewal {
         nextRenewalTime = at;
 
         next = submit(() -> attempt(planned), Math.max(0, at - currentTimeMillis.getAsLong()));
+
+        if (next == null)
+            nextRenewalTime = 0;
     }
 
     /**
