@@ -57,7 +57,6 @@ import org.apache.ignite.internal.systemview.CacheExplicitLockViewWalker;
 import org.apache.ignite.internal.systemview.CacheLockViewWalker;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.collection.NonBlockingHashMapLong;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -76,6 +75,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.CacheLockView;
 import org.apache.ignite.util.deque.FastSizeDeque;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;

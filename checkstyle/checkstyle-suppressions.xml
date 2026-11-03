@@ -65,4 +65,12 @@
 
     <suppress-xpath checks="AnnotationOnSameLine"
                     query="//ANNOTATION[.//IDENT[not(@text='Override')]]"/>
+
+    <suppress checks="AnnotationOnSameLine" files="[\\/]jctools[\\/]"/>
+    <suppress checks="ModifierOrder" files="[\\/]jctools[\\/]"/>
+    <suppress checks="WhitespaceAfter" files="[\\/]jctools[\\/]"/>
+    <suppress checks="NoWhitespaceAfter" files="[\\/]jctools[\\/]"/>
+    <suppress checks="(?&lt;!Missing)JavadocType" files="[\\/]jctools[\\/]"/>
+    <suppress checks="RightCurly|LeftCurly|EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator" files="[\\/]jctools[\\/]"/>
+    <suppress checks="Javadoc" files="[\\/]jctools[\\/]"/>
 </suppressions>

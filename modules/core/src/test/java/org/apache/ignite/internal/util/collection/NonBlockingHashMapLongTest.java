@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jctools.maps.NonBlockingHashMapLong;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -240,8 +241,8 @@ public class NonBlockingHashMapLongTest {
         // Non-boxing iteration.
         Set<Long> seen = new HashSet<>();
 
-        NonBlockingHashMapLong<String>.LongKeyIterator iter =
-            (NonBlockingHashMapLong<String>.LongKeyIterator)map.keySet().iterator();
+        NonBlockingHashMapLong<String>.IteratorLong iter =
+            (NonBlockingHashMapLong<String>.IteratorLong)map.keySet().iterator();
 
         while (iter.hasNext())
             seen.add(iter.nextLong());
@@ -302,7 +303,6 @@ public class NonBlockingHashMapLongTest {
     }
 
     /** */
-    @SuppressWarnings("unchecked")
     @Test
     public void testSerializationAndClone() throws Exception {
         NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
