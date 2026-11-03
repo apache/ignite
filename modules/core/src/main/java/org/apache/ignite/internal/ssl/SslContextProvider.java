@@ -50,7 +50,7 @@ public class SslContextProvider {
 
         sslFactory = factory instanceof AbstractSslContextFactory f ? f : new SslContextFactory() {
             /** {@inheritDoc} */
-            @Override public SslBundle createSslBundle() {
+            @Override protected SslBundle createSslBundle() {
                 return new SslBundle(factory.create(), null);
             }
         };

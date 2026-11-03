@@ -22,7 +22,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,11 +30,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.KeyGenerator;
-import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509KeyManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -52,8 +49,8 @@ import static org.mockito.Mockito.spy;
 
 /**
  * Factory initialization publishes a context and metadata from one store read; failed initialization preserves the previous
- * bundle. Reading the accepted bundle or context does not reload stores. {@link KeyMaterial} initializes key managers and
- * reports nonempty X.509 chains. {@link SslBundle} keeps sorted immutable metadata, or {@code null}.
+ * bundle. Reading the accepted bundle or context does not reload stores. Metadata includes nonempty X.509 chains.
+ * {@link SslBundle} keeps sorted immutable metadata, or {@code null}.
  */
 public class SslContextMetadataTest extends GridCommonAbstractTest {
     /** Authority that signs the test certificates. */
@@ -260,9 +257,11 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             new Certificate[] {first.getCertificate(firstAlias), mock(Certificate.class)});
 
         // PKIX defers key selection, allowing metadata filtering to inspect the entire mixed certificate chain.
-        KeyMaterial material = new KeyMaterial(store, PWD, "PKIX");
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(store);
 
-        assertEquals(Map.of(firstAlias, chain(first), secondAlias, chain(second)), material.certificateChains());
+        factory.setKeyAlgorithm("PKIX");
+
+        assertEquals(Map.of(firstAlias, chain(first), secondAlias, chain(second)), factory.init().certificateChains());
     }
 
     /** An empty key store yields a context without private keys and an empty map. */
@@ -277,22 +276,31 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(Map.of(), bundle.certificateChains());
     }
 
-    /** Initialized managers remain usable after clearing the password or changing a returned manager array. */
+    /** A source can supply a key password different from the factory configuration without loading its store twice. */
     @Test
-    public void testLoadedMaterialKeepsInitializedKeyManagers() throws Exception {
-        String alias = "node";
-        char[] pwd = PWD.clone();
-        KeyMaterial material = new KeyMaterial(ca.keyStoreWithPrivateKey(alias), pwd, SslContextFactory.DFLT_KEY_ALGORITHM);
+    public void testBundleUsesPasswordSuppliedWithStore() throws Exception {
+        String alias = "source-key";
+        KeyStore store = ca.keyStoreWithPrivateKey(alias);
+        char[] srcPwd = "source-key-password".toCharArray();
 
-        Arrays.fill(pwd, '?');
+        store.setKeyEntry(alias, store.getKey(alias, PWD), srcPwd, store.getCertificateChain(alias));
 
-        KeyManager[] mgrs = material.keyManagers();
-        X509KeyManager mgr = (X509KeyManager)mgrs[0];
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(store) {
+            /** {@inheritDoc} */
+            @Override protected SslBundle createSslBundle() throws SSLException {
+                checkParameters();
 
-        mgrs[0] = null;
+                KeyStore loaded = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
 
-        assertNotNull(mgr.getPrivateKey(alias));
-        assertSame(mgr, material.keyManagers()[0]);
+                return createSslBundle(loaded, srcPwd, keyAlgorithm);
+            }
+        };
+
+        SslBundle bundle = factory.init();
+
+        assertEquals(1, factory.loads);
+        assertEquals(Map.of(alias, chain(store)), bundle.certificateChains());
+        assertSame(bundle.context(), factory.create());
     }
 
     /** A bundle orders aliases and copies the map and its lists, so later changes to the input do not reach it. */

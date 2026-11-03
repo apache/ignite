@@ -17,10 +17,8 @@
 
 package org.apache.ignite.util;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadCommand;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.junit.Assume;
 import org.junit.Test;
 
@@ -41,6 +39,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.ssl.SslTestUtils.node;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
+import static org.apache.ignite.testframework.TestCertificateAuthority.save;
 
 /**
  * {@code --ssl reload} and {@code --ssl status} through control.sh. Only the CLI handler runs the test: it connects to a node over
@@ -50,6 +50,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractTest {
     /** Key store the nodes run on; replaced on disk to rotate the certificate. */
     private Path keyStore;
+
+    /** CLI credentials, kept readable when the node key store is replaced or corrupted. */
+    private Path clientKeyStore;
 
     /** {@inheritDoc} */
     @Override protected boolean sslEnabled() {
@@ -61,10 +64,15 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         SslContextFactory factory = new SslContextFactory();
 
         factory.setKeyStoreFilePath(keyStore.toString());
-        factory.setKeyStorePassword(GridTestUtils.keyStorePassword().toCharArray());
+        factory.setKeyStorePassword(PWD);
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
 
         return factory;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void extendSslParams(List<String> params) {
+        params.addAll(List.of("--keystore", clientKeyStore.toString(), "--keystore-password", new String(PWD)));
     }
 
     /** {@inheritDoc} */
@@ -72,8 +80,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         Assume.assumeTrue(cliCommandHandler());
 
         keyStore = Files.createTempFile("ignite-cli-ssl-reload-", ".jks");
-
-        place("node01", keyStore);
+        clientKeyStore = Files.createTempFile("ignite-cli-ssl-client-", ".jks");
 
         super.beforeTest();
 
@@ -88,6 +95,9 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
 
         if (keyStore != null)
             Files.deleteIfExists(keyStore);
+
+        if (clientKeyStore != null)
+            Files.deleteIfExists(clientKeyStore);
     }
 
     /**
@@ -97,6 +107,13 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
     @Test
     public void testReloadAndStatus() throws Exception {
         assertNotNull("The reload must ask for confirmation", new SslReloadCommand().confirmationPrompt(new NoArg()));
+
+        TestCertificateAuthority ca = new TestCertificateAuthority("cli-ca");
+        String initial = "initial-key";
+        String replacement = "replacement-key";
+
+        save(ca.keyStoreWithPrivateKey(initial), keyStore);
+        save(ca.keyStoreWithPrivateKey(), clientKeyStore);
 
         IgniteEx srv0 = startGrid(0);
         IgniteEx srv1 = startGrid(1);
@@ -108,11 +125,9 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
             srv1, "binary REST, client connector, communication, discovery",
             cli, "client connector, communication, discovery");
 
-        String replacement = "node02";
-        String replacementSubj = "CN=" + replacement;
-        String loaded = "loaded alias=" + replacement + ", subject=" + replacementSubj;
+        String loaded = "loaded alias=" + replacement + ", subject=CN=" + replacement;
 
-        place(replacement, keyStore);
+        save(ca.keyStoreWithPrivateKey(replacement), keyStore);
 
         long start = System.currentTimeMillis();
         String reloadOutput = executeCommand(EXIT_CODE_OK, "--ssl", "reload");
@@ -124,7 +139,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         transports.forEach((g, t) -> assertContains(log, statusOutput, node(g) + ": " + t + '\n'));
 
         assertContains(log, statusOutput, loaded);
-        assertNotContains(log, statusOutput, "subject=CN=node01");
+        assertNotContains(log, statusOutput, "subject=CN=" + initial);
 
         List<Instant> succeeded = Pattern.compile("last reload succeeded at (\\S+)").matcher(statusOutput).results()
             .map(m -> Instant.parse(m.group(1))).collect(Collectors.toList());
@@ -135,13 +150,5 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         Files.write(keyStore, "not a key store".getBytes());
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--ssl", "reload"), "Failed to initialize key store");
-    }
-
-    /**
-     * @param name Test store, as {@code tests.properties} names it.
-     * @param dest File to replace.
-     */
-    private static void place(String name, Path dest) throws IOException {
-        Files.copy(Path.of(GridTestUtils.keyStorePath(name)), dest, StandardCopyOption.REPLACE_EXISTING);
     }
 }
