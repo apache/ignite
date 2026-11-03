@@ -32,10 +32,10 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
-import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SSLContextWrapper;
 import org.apache.ignite.ssl.SslBundle;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -86,7 +86,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         KeyStore a = otherCa.keyStoreWithPrivateKey("a");
         KeyStore b = otherCa.keyStoreWithPrivateKey("b");
         SslBundle next = bundle(merged(a, b), ca.trustStore());
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()), next).when(f).createSslBundle();
 
@@ -114,7 +114,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         startup = new SslBundle(new SSLContextWrapper(startup.context(), firstParams), startup.certificateChains());
         next = new SslBundle(new SSLContextWrapper(next.context(), nextParams), next.certificateChains());
 
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(startup, next).when(f).createSslBundle();
 
@@ -167,7 +167,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         SslBundle reloaded = bundle(ca.keyStoreWithPrivateKey("reloaded"), ca.trustStore());
         KeyStore recoveredKeys = ca.keyStoreWithPrivateKey("recovered");
         IgniteException failure = new IgniteException("Failed to load", new SSLException(new IOException("bad file")));
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()), reloaded)
             .doThrow(failure, failure)
@@ -204,7 +204,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
     /** Key material with no certificate chains, such as a trust store put in place of the key store, is not applied. */
     @Test
     public void testMaterialWithoutCertificateChainsNotApplied() throws Exception {
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()),
@@ -222,7 +222,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         params.setProtocols(new String[] {"SSLvDoesNotExist"});
 
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()),
@@ -262,7 +262,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         KeyStore valid = ca.keyStoreWithPrivateKey("a-valid");
         KeyStore notYetValid = ca.keyStoreWithPrivateKey("z-not-yet-valid", now + HOUR, now + 2 * HOUR);
         KeyStore expiredCaLeaf = new TestCertificateAuthority("expired-ca", now - 2 * HOUR, now - HOUR).keyStoreWithPrivateKey("leaf");
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(
             bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()),
@@ -305,7 +305,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
     /** Registration warns when the key material has no certificate chains, here a trust store put in place of the key store. */
     @Test
     public void testRegistryWarnsAboutMissingCertificateChains() throws Exception {
-        AbstractSslContextFactory f = mock(AbstractSslContextFactory.class, CALLS_REAL_METHODS);
+        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
 
         doReturn(bundle(ca.trustStore(), ca.trustStore())).when(f).createSslBundle();
 
@@ -340,5 +340,13 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertEquals(reason, chains, p.certificateChains());
         assertEquals(reason, failures + 1, p.reloadOutcome().failures());
         assertContains(log, p.reloadOutcome().failureReason(), reason);
+    }
+
+    /** Exposes the loading hook so tests can stub the material source. */
+    private static class TestSslContextFactory extends SslContextFactory {
+        /** {@inheritDoc} */
+        @Override public SslBundle createSslBundle() {
+            return super.createSslBundle();
+        }
     }
 }

@@ -301,7 +301,7 @@ Reload leaves existing connections open. After preventing new connections with t
 This section is for developers integrating a certificate source, such as a PKI service.
 
 To support reload with certificate status, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory].
-Its `createSslBundle()` method builds a fresh link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SslBundle.html[SslBundle] containing the initialized context and the certificate chains loaded with it, indexed by key alias.
+Its protected `createSslBundle()` method builds a fresh link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SslBundle.html[SslBundle] containing the initialized context and the certificate chains loaded with it, indexed by key alias.
 The factory owns the accepted bundle. Its final `create()` method initializes the factory on first use and returns the context from its current bundle, without loading the stores again.
 Call `init()` to load and validate a replacement; the node's reload command calls this method too. A successful call replaces the context and its metadata together. If loading or validation fails, the factory keeps the previous bundle.
 Outside loading hooks, use `sslBundle()` to inspect the accepted material. A context already returned by `create()` keeps its original material after `init()` succeeds; call `create()` again to obtain the replacement.
