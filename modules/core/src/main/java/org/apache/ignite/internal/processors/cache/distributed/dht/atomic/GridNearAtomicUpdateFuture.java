@@ -488,7 +488,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             e.add(remapKeys, cause);
 
-            completeFuture(null, e, null);
+            completeFuture(null, e);
 
             return;
         }
@@ -621,8 +621,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 null,
                 cctx.shared().cache().isCacheRestarting(cache.name()) ?
                     new IgniteCacheRestartingException(cache.name()) :
-                    new CacheStoppedException(cache.name()),
-                null);
+                    new CacheStoppedException(cache.name()));
 
             return;
         }
@@ -633,7 +632,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             Throwable err = fut.validateCache(cctx, recovery, false, null, keys);
 
             if (err != null) {
-                completeFuture(null, err, null);
+                completeFuture(null, err);
 
                 return;
             }
@@ -707,7 +706,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         }
 
         if (syncMode == FULL_ASYNC)
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null);
     }
 
     /** {@inheritDoc} */
@@ -724,8 +723,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         if (F.isEmpty(topNodes)) {
             completeFuture(null,
-                new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes left the grid)."),
-                null);
+                new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes left the grid)."));
 
             return;
         }
@@ -904,7 +902,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      */
     private Map<UUID, PrimaryRequestState> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
-        Long futId,
+        long futId,
         @Nullable Collection<KeyCacheObject> remapKeys,
         boolean mappingKnown) throws Exception {
         Iterator<?> it = null;
@@ -1042,7 +1040,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Request.
      * @throws Exception If failed.
      */
-    private PrimaryRequestState mapSingleUpdate(AffinityTopologyVersion topVer, Long futId, boolean mappingKnown)
+    private PrimaryRequestState mapSingleUpdate(AffinityTopologyVersion topVer, long futId, boolean mappingKnown)
         throws Exception {
         Object key = F.first(keys);
 

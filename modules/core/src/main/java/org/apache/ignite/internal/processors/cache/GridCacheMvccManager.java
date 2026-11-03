@@ -57,6 +57,7 @@ import org.apache.ignite.internal.systemview.CacheExplicitLockViewWalker;
 import org.apache.ignite.internal.systemview.CacheLockViewWalker;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.collection.NonBlockingHashMapLong;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -136,7 +137,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, Collection<GridCacheVersionedFuture<?>>> verFuts = newMap();
 
     /** Pending atomic futures. */
-    private final ConcurrentHashMap<Long, GridCacheAtomicFuture<?>> atomicFuts = new ConcurrentHashMap<>();
+    private final NonBlockingHashMapLong<GridCacheAtomicFuture<?>> atomicFuts = new NonBlockingHashMapLong<>();
 
     /** Pending data streamer futures. */
     private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();

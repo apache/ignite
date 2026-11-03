@@ -220,6 +220,13 @@ This product bundles netlib-java, which is available under a
 https://github.com/fommil/netlib-java/blob/master/LICENSE.txt.
 
 ==============================================================================
+For NonBlockingHashMapLong in "org.apache.ignite.internal.util.collection" package
+==============================================================================
+This product bundles a port of NonBlockingHashMapLong from JCTools, which is
+available under the Apache License, Version 2.0. For details, see
+https://github.com/JCTools/JCTools/blob/master/LICENSE
+
+==============================================================================
 For JSR 166 classes in "org.jsr166" package
 ==============================================================================
 This product bundles JSR-166 classes which are donated to public domain.
