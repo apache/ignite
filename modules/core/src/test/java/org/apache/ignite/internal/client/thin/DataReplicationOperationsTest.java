@@ -22,6 +22,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
@@ -170,6 +173,21 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
 
         assertTrue(cache.containsKeys(put0.keySet()));
         assertTrue(cache.containsKeys(put1.keySet()));
+    }
+
+    /** */
+    @Test
+    public void testWithExpiryPolicy() throws Exception {
+        TcpClientCache<Object, Object> cacheWithExpiryPlc = (TcpClientCache<Object, Object>)cache
+            .withExpirePolicy(new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, TTL)));
+
+        Map<Object, T3<Object, GridCacheVersion, Long>> data = createPutAllData(CU.EXPIRE_TIME_ETERNAL);
+
+        cacheWithExpiryPlc.putAllConflict(data);
+        cacheWithExpiryPlc.put("expiringKey", "val");
+
+        assertTrue(waitForCondition(() -> !cacheWithExpiryPlc.containsKey("expiringKey"), 2 * TTL));
+        assertTrue(cacheWithExpiryPlc.containsKeys(data.keySet()));
     }
 
     /** */
