@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -111,7 +112,7 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         Path keys = dir.resolve("node.jks");
         SslContextFactory factory = readingKeys(new SslContextFactory() {
             /** {@inheritDoc} */
-            @Override public SslBundle createSslBundle() {
+            @Override protected SslBundle createSslBundle() throws SSLException {
                 return new SslBundle(super.createSslBundle().context(), null);
             }
         }, keys);
@@ -179,7 +180,7 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         CountDownLatch attempting = new CountDownLatch(1);
         SslContextFactory factory = readingKeys(new SslContextFactory() {
             /** {@inheritDoc} */
-            @Override public SslBundle createSslBundle() {
+            @Override protected SslBundle createSslBundle() throws SSLException {
                 if (Thread.currentThread().getName().startsWith("ssl-renewal")) {
                     attempting.countDown();
 
