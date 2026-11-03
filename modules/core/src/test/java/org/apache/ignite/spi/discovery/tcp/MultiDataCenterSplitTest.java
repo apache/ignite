@@ -145,7 +145,7 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         startDCs(dcCnt);
 
-        // When blocking DCS, we rely on the ports. It is important for the test. Ensure the strict port order.
+        // When blocking DCs, we rely on the ports. It is important for the test. Ensure the strict port order.
         for (int g = 0; g < srvrsPerDc * dcCnt; ++g) {
             int port = discoSpi(grid(g)).locNode.discoveryPort();
 
