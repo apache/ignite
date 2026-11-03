@@ -29,7 +29,7 @@ import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-/** Delegates to the current SSL context so that new connections use reloaded certificates. */
+/** Delegates new engines and newly obtained socket factories to the current SSL context. */
 class CurrentSslContext extends SSLContext {
     /**
      * @param initial First accepted context, used for its provider and protocol.

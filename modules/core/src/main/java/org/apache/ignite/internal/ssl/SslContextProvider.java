@@ -60,11 +60,6 @@ public class SslContextProvider {
         return factory;
     }
 
-    /** @return Context to open the next connection with. */
-    SSLContext context() {
-        return bundle().context();
-    }
-
     /** @return Context and certificate metadata currently accepted by the factory. */
     SslBundle bundle() {
         return sslFactory.sslBundle();
