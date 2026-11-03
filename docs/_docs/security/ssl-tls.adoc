@@ -327,6 +327,7 @@ See the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ign
 The protected `sslCtx` cache and the no-argument `createKeyManagers()` hook have been removed, and `create()` is now final. Update affected subclasses and recompile before upgrading:
 
 * Move custom store loading into `createSslBundle()`: check source parameters, load the store once and return `createSslBundle(store, keyPassword, algorithm)`. Declare `throws SSLException` when needed. If the old `createKeyManagers()` override customizes key managers, build the context in `createSslBundle()` and return matching certificate metadata with it.
+* Direct subclasses of `AbstractSslContextFactory` that retain `checkParameters()` must remove its `@Override` and call it from `createSslBundle()`. Subclasses of `SslContextFactory` can keep that override.
 * Remove `create()` overrides. A subclass of `SslContextFactory` that customizes an already built context can do so in `createSslBundle()` after calling `super.createSslBundle()`. Retain its certificate chains in the returned bundle and propagate `SSLException` from the loading hook.
 * Remove custom context caching. The base factory retains the accepted bundle until a successful `init()` replaces it. Use `create()` to obtain the currently accepted context.
 
