@@ -1543,7 +1543,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                             for (ClusterNode node : ctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), topVer)) {
                                 if (!node.isLocal()) {
                                     // Try to send the same message only once per node.
-                                    if (sentToNodes != null && !sentToNodes.add(nodeId))
+                                    if (sentToNodes != null && !sentToNodes.add(node.id()))
                                         continue;
 
                                     try {
