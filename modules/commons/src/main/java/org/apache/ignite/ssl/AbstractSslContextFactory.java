@@ -269,7 +269,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Context and nonempty X.509 chains of key entries, ordered by alias. An empty map means no such chains were found.
      * @throws SSLException If the store cannot be read or the context cannot be created.
      */
-    protected final SslBundle createSslBundle(@Nullable KeyStore store, @Nullable char[] keyPwd, String algorithm)
+    protected final SslBundle createSslBundle(@Nullable KeyStore store, char @Nullable [] keyPwd, String algorithm)
         throws SSLException {
         A.notNull(algorithm, "algorithm");
 
