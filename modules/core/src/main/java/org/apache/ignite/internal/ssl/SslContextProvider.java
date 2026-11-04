@@ -24,15 +24,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
 
-/** Registers the transports using a factory; the factory owns their current context and reload results. */
+/** Shares one TLS context among the transports configured with the same factory. */
 public class SslContextProvider {
     /** Factory configured by the user, retained for registration by identity. */
     private final Factory<SSLContext> factory;
@@ -97,6 +97,6 @@ public class SslContextProvider {
 
     /** @return Snapshot of the last successful reload and subsequent failures. */
     public ReloadOutcome reloadOutcome() {
-        return sslFactory.reloadOutcome();
+        return NODE_ACCESS.reloadOutcome(sslFactory);
     }
 }

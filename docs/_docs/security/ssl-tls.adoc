@@ -185,6 +185,8 @@ A custom factory can return a context without certificate information. Status th
 
 With `SslContextFactory`, status lists only keys with a nonempty X.509 certificate chain. Keys without a chain, or whose chain contains a non-X.509 certificate, are omitted. After reload, check that every alias you expect appears in status.
 
+A node can start with expired or not-yet-valid certificates. It logs a warning, and `--ssl status` reports which chain needs replacement.
+
 Reload also rejects a replacement with no X.509 certificate chains. A node can still start with such a store, but it logs a warning. Follow the `no X.509 certificate chains` row in link:tools/control-script#checking-certificates[Checking Certificates] to correct the store before running reload.
 
 You must check that peers trust the replacement and that protocols, cipher suites and client authentication settings remain compatible. Reload does not test connections or undo a successful replacement if connections later fail.
@@ -307,9 +309,9 @@ The factory owns the accepted bundle. Its final `create()` method initializes th
 If startup needs a fresh certificate, your subclass can call the protected `init()` method and take the chain from the returned bundle.
 The node's reload command also loads and validates a replacement. If loading or validation fails, the factory keeps its previous bundle. After a successful reload, call `create()` again to obtain the new context.
 
-Node transports follow successful replacements through the node's shared SSL context. New engines and newly obtained socket factories use the accepted material. Previously obtained engines, socket factories and sockets keep their original material.
+Node transports follow successful replacements through the context shared by transports using that factory. New engines and newly obtained socket factories use the accepted material. Previously obtained engines, socket factories and sockets keep their original material.
 
-State belongs to the factory instance. Reusing an initialized factory, including across embedded node restarts, retains its material until `init()` is called. Create a separate factory instance for each node.
+State belongs to the factory instance. Reusing an initialized factory, including across embedded node restarts, keeps its material until a replacement succeeds. Create a separate factory instance for each node.
 
 If the source provides a key store, override `createSslBundle()` to check source parameters, load the store once and return `createSslBundle(store, keyPassword, algorithm)`.
 This protected helper initializes the key managers and builds the context and metadata from that store, using the factory's trust and TLS settings.

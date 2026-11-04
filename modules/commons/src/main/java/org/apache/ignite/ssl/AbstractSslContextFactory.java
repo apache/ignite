@@ -41,6 +41,7 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslFactoryAccess;
+import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,8 +63,22 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * Gives the node access to the accepted material and the same reload path used by subclasses.
      * @hidden
      */
-    public static final SslFactoryAccess NODE_ACCESS =
-        new SslFactoryAccess(AbstractSslContextFactory::sslBundle, AbstractSslContextFactory::init);
+    public static final SslFactoryAccess NODE_ACCESS = new SslFactoryAccess() {
+        /** {@inheritDoc} */
+        @Override protected SslBundle current(AbstractSslContextFactory factory) {
+            return factory.sslBundle();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected SslBundle reload(AbstractSslContextFactory factory) {
+            return factory.init();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected ReloadOutcome reloadOutcome(AbstractSslContextFactory factory) {
+            return factory.reloadOutcome();
+        }
+    };
 
     /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
     private transient volatile SslBundle bundle;
@@ -301,6 +316,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * leaves the previous material in use. Call {@link #create()} again to obtain the replacement; previously obtained
      * contexts and their connections keep their original material.
      *
+     * <p>
      * The first initialization permits material without certificate chains and certificates outside their validity period,
      * matching node startup. Later calls reject a context already in use, known empty certificate metadata and chains with
      * any expired or not-yet-valid certificate. Peers must trust the replacement; this method does not test connections.
@@ -350,8 +366,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
 
         if (next.context() == bundle.context()) {
-            throw new IgniteException("The SSL context factory returns the context in use, so the node gets no new " +
-                "certificates from it");
+            throw new IgniteException("The SSL context factory returned the context already in use. " +
+                "Build a fresh SSLContext on each load to apply new certificates.");
         }
 
         if (chains == null)
@@ -370,22 +386,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /** @return Snapshot of the last successful reload and subsequent failures; zero times before any reload. */
-    public final ReloadOutcome reloadOutcome() {
+    private ReloadOutcome reloadOutcome() {
         ReloadOutcome res = outcome;
 
         return res == null ? new ReloadOutcome(0, 0, null, 0) : res;
-    }
-
-    /**
-     * Snapshot of the last successful reload and subsequent failures.
-     *
-     * @param successTime Time of the last successful reload, {@code 0} if there was none.
-     * @param failureTime Time of the last failed reload since the last successful one, {@code 0} if there was none.
-     * @param failureReason Reason of the last failed reload since the last successful one, {@code null} if there was none.
-     * @param failures Failed reloads in a row since the last successful one, {@code 0} if there were none.
-     */
-    public record ReloadOutcome(long successTime, long failureTime, @Nullable String failureReason, int failures) {
-        // No-op.
     }
 
     /**
