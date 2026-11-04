@@ -253,6 +253,31 @@ Replacing a certificate does not prevent someone from using the old certificate 
 
 Reload leaves existing connections open. After preventing new connections with the old certificate, restart nodes one at a time to close existing connections.
 
+== Custom SSL Context Factories
+
+A subclass of `AbstractSslContextFactory` implements `createSslBundle()` to build an initialized context and report the certificate chains loaded with it.
+For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`. For custom key managers, initialize the context with those managers, the intended trust managers and TLS settings. Return it with the matching chains indexed by alias.
+Use a null chain map if the source cannot report certificates. An empty map means the store has no X.509 key chains.
+
+Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.
+A failed initialization leaves the previous context in use.
+
+A node reload validates a replacement before publishing it. It rejects a reused context, an empty chain map, or a chain containing an expired or not-yet-valid certificate.
+If the factory cannot supply metadata, reload can replace the context but cannot check certificate dates. Check peer trust with a new connection.
+Transports sharing a factory use its new context for new connections. Previously obtained contexts and sockets keep their material. Use a separate factory instance for each node.
+
+=== Migrating an Existing Factory
+
+Update and recompile subclasses that use the old `createKeyManagers()` hook, override `create()` or access the protected `sslCtx` field.
+
+* Move key loading and custom context configuration into `createSslBundle()`. A subclass of `SslContextFactory` can use `super.createSslBundle()` and retain its certificate chains when customizing the context. The hook can throw `SSLException`.
+* Remove custom context caching. The base factory retains the accepted bundle. After a replacement, call the final `create()` method again to obtain the new context.
+* Direct subclasses of `AbstractSslContextFactory` that implement `checkParameters()` must remove its `@Override` and call it before loading in `createSslBundle()`. Subclasses of `SslContextFactory` can keep that override.
+* Rename any existing no-argument `init()` in your subclass. The base factory defines it as final.
+
+A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override. A client that authenticates only the server can return a null key store.
+A plain `Factory<SSLContext>` is called when its first transport registers and on each reload. It must return a fresh context to apply a replacement. Status cannot report chains for this factory.
+
 == SslContextFactory Properties
 
 `SslContextFactory` supports the following properties:
@@ -297,45 +322,3 @@ Reload leaves existing connections open. After preventing new connections with t
 |A list of pre-configured trust managers.
 |`N/A`
 |=================
-
-== Custom SSL Context Factories
-
-This section is for developers integrating a certificate source, such as a PKI service.
-
-To support reload with certificate status, extend link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html[AbstractSslContextFactory].
-Its protected `createSslBundle()` method builds a fresh link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/SslBundle.html[SslBundle] containing the initialized context and the certificate chains loaded with it, indexed by key alias.
-The hook may throw `SSLException`; initialization adds the factory details to that failure.
-The factory owns the accepted bundle. Its final `create()` method initializes the factory on first use and returns the context from its current bundle, without loading the stores again.
-If startup needs a fresh certificate, your subclass can call the protected `init()` method and take the chain from the returned bundle.
-The node's reload command also loads and validates a replacement. If loading or validation fails, the factory keeps its previous bundle. After a successful reload, call `create()` again to obtain the new context.
-
-Node transports follow successful replacements through the context shared by transports using that factory. New engines and newly obtained socket factories use the accepted material. Previously obtained engines, socket factories and sockets keep their original material.
-
-State belongs to the factory instance. Reusing an initialized factory, including across embedded node restarts, keeps its material until a replacement succeeds. Create a separate factory instance for each node.
-
-If the source provides a key store, override `createSslBundle()` to check source parameters, load the store once and return `createSslBundle(store, keyPassword, algorithm)`.
-This protected helper initializes the key managers and builds the context and metadata from that store, using the factory's trust and TLS settings.
-Keep the store unchanged for as long as its context is in use; load a new store to change certificates.
-
-To use custom key managers, override `createSslBundle()` to initialize a fresh `SSLContext` with those managers and return it with matching certificate metadata in an `SslBundle`.
-The override must configure the context's trust managers and TLS settings as well. Load the material once so that the context and reported chains describe the same certificates, and leave the accepted material unchanged: `init()` publishes the candidate after validation.
-
-The bundle lists nonempty X.509 certificate chains associated with key entries, indexed by alias. Entries without such a chain are omitted. Key availability and selection still depend on the configured key managers.
-An empty map means no such chains were found, and node reload rejects it. Use `null` when certificate metadata is unknown. Every list in a supplied map must be nonempty.
-See the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html#init()[initialization contract] for the validation applied at startup and on subsequent calls.
-
-=== Migrating an Existing Factory
-
-The protected `sslCtx` cache and the no-argument `createKeyManagers()` hook have been removed, and `create()` is now final. Update affected subclasses and recompile before upgrading:
-
-* Move custom store loading into `createSslBundle()`: check source parameters, load the store once and return `createSslBundle(store, keyPassword, algorithm)`. Declare `throws SSLException` when needed. If the old `createKeyManagers()` override customizes key managers, build the context in `createSslBundle()` and return matching certificate metadata with it.
-* Direct subclasses of `AbstractSslContextFactory` that retain `checkParameters()` must remove its `@Override` and call it from `createSslBundle()`. Subclasses of `SslContextFactory` can keep that override.
-* Remove `create()` overrides. A subclass of `SslContextFactory` that customizes an already built context can do so in `createSslBundle()` after calling `super.createSslBundle()`. Retain its certificate chains in the returned bundle and propagate `SSLException` from the loading hook.
-* Rename any existing no-argument `init()` method in your subclass. The base factory now defines this method as final.
-* Remove custom context caching. The base factory retains the accepted bundle until a successful `init()` replaces it. Use `create()` to obtain the currently accepted context.
-
-A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override as long as it returns a loaded store, never `null`. For a client context without private keys, return an empty loaded store.
-
-If the source provides a ready-made `SSLContext` instead of a key store, use a plain `Factory<SSLContext>`.
-It can support reload by returning a fresh context on every call. Returning the context already in use makes reload fail.
-It supplies no metadata: status cannot report certificate dates, and reload cannot validate them.
