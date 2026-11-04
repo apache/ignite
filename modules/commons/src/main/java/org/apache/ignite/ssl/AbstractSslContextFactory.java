@@ -122,7 +122,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. Keep the material in use intact. Calling {@link #create()} from this hook would recurse on first use.
+     * loading it. Leave the accepted context and its key managers intact. Calling {@link #create()} from this hook would recurse on first use.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws SSLException If the context could not be created.
@@ -275,8 +275,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads and validates fresh material before replacing the accepted context and its metadata. Calls run one at a time.
-     * A failed initialization leaves the previous material in use.
+     * Loads fresh material and checks that the configured protocols and cipher suites can be applied before publishing
+     * the context and its metadata. Calls run one at a time. A failed initialization leaves the previous material in use.
      *
      * @return Context and metadata accepted by this initialization.
      * @throws IgniteException If the material cannot be loaded or the context cannot be created.
