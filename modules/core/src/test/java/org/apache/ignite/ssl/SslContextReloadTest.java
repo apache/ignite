@@ -302,6 +302,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         Instant reloadStarted = Instant.ofEpochMilli(System.currentTimeMillis());
         String res = reloadFailure(g);
+        Instant reloadFinished = Instant.ofEpochMilli(System.currentTimeMillis());
 
         assertContains(log, res, node(g) + ": failed on " + COMMUNICATION + ", " + DISCOVERY +
             " (Certificate provider class is unavailable)\n" +
@@ -314,7 +315,10 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             "(\\S+): Certificate provider class is unavailable").matcher(status);
 
         assertTrue(status, failure.find());
-        assertFalse(status, Instant.parse(failure.group(1)).isBefore(reloadStarted));
+        Instant failureTime = Instant.parse(failure.group(1));
+
+        assertFalse(status, failureTime.isBefore(reloadStarted));
+        assertFalse(status, failureTime.isAfter(reloadFinished));
         assertContains(log, status, "last reload succeeded at");
     }
 

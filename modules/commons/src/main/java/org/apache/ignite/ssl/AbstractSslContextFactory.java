@@ -314,7 +314,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * the context and its metadata. Calls run one at a time. A failed initialization leaves the previous material in use.
      *
      * <p>
-     * The first load, including a retry after failure, can accept no certificate chains or certificates outside their
+     * The first load, including a retry after failure, accepts material with no certificate chains or with certificates outside their
      * validity period. After a successful load, calls reject the context already in use, an empty chain map, or an expired
      * or not-yet-valid certificate in any chain. Check peer trust with a new connection.
      *

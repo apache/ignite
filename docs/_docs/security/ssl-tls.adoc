@@ -62,7 +62,7 @@ tab:C#/.NET[]
 tab:C++[unsupported]
 --
 
-The keystore must contain the node's certificate and private key.
+The keystore must contain the node's certificate, including its private key.
 
 The trust store defines which peer certificates the node accepts. Configure trust on all nodes and clients before replacing certificates.
 
@@ -263,8 +263,8 @@ Use a null chain map if the source cannot report certificates. An empty map mean
 Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.
 A failed initialization leaves the previous context in use.
 
-After the first successful initialization, both the reload command and a subclass calling `init()` must supply a fresh context. The factory rejects a replacement if it reports no X.509 chains or any certificate in a chain is expired or not yet valid.
-These checks also apply when the subclass calls `init()` on node restart. The `--ssl status` command reports the result as a reload.
+After the first successful initialization, every `init()` call, from the reload command or from a subclass, needs a fresh context from `createSslBundle()`. The factory rejects a replacement with an empty chain map or with an expired or not-yet-valid certificate in any chain.
+These checks also apply when the subclass calls `init()` on node restart, so such a call rejects material that a new factory accepts at startup. The `--ssl status` command reports the result as a reload.
 If the factory cannot supply metadata, reload can replace the context but cannot check certificate dates. Check peer trust with a new connection.
 Transports sharing a factory use its new context for new connections. Previously obtained contexts and sockets keep their material.
 Use a separate factory instance for each node. Nodes sharing an instance also share its reload results and switch to new material together.
