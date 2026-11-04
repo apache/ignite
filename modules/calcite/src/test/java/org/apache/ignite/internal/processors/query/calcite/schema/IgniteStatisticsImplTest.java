@@ -141,9 +141,9 @@ public class IgniteStatisticsImplTest extends GridCommonAbstractWrapperTest {
     /** */
     private IgniteStatisticsImpl statistics() {
         CalciteQueryProcessor proc = Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
-        CacheTableImpl table = (CacheTableImpl) proc.schemaHolder().schema("PUBLIC").getTable(TBL_NAME);
+        CacheTableImpl table = (CacheTableImpl)proc.schemaHolder().schema("PUBLIC").getTable(TBL_NAME);
 
-        return (IgniteStatisticsImpl) table.getStatistic();
+        return (IgniteStatisticsImpl)table.getStatistic();
     }
 
     /**  */
