@@ -63,9 +63,9 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.save;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * HTTPS of HTTP REST set up with {@link ConnectorConfiguration#setHttpSslFactory}: reload, client authentication, TLS parameters,
- * Jetty XML connectors and refused configurations. HTTP REST starts on old-key from old-ca and trusts both authorities unless a test
- * says otherwise; probes trust both authorities and present no client certificate unless a test needs one.
+ * HTTPS of HTTP REST set up with {@link ConnectorConfiguration#setHttpSslFactory}. Tests that call {@link #prepareStores()} start
+ * HTTP REST on old-key from old-ca trusting both authorities unless they say otherwise; probes trust both authorities and present
+ * no client certificate unless a test needs one.
  */
 public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** Bounds connection, handshake and response reads on the loopback probes. */
@@ -246,7 +246,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             .setHttpSslFactory(new SslContextFactory())), IgniteCheckedException.class, "HTTP as its default protocol");
     }
 
-    /** The node starts an HTTP-only factory before Jetty asks for its context and stops it on shutdown. */
+    /** The node starts an HTTP-only factory before taking an SSL context from it and stops it on shutdown. */
     @Test
     public void testHttpFactoryLifecycle() throws Exception {
         LifecycleSslFactory factory = new LifecycleSslFactory(SSLContext.getDefault());
