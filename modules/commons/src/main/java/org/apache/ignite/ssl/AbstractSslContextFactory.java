@@ -196,7 +196,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * A node reads this setting at startup, including when a subclass overrides it.
+     * A node reads this setting at startup.
      *
      * @return Whether the node automatically loads replacement certificates before expiry.
      */
@@ -218,7 +218,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * A node with renewal enabled reads this setting at startup, including when a subclass overrides it.
+     * A node with renewal enabled reads this setting at startup.
      *
      * @return Share of the certificate lifetime left when renewal starts, strictly between zero and one.
      */

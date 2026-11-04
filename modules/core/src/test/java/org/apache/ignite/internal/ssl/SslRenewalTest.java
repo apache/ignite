@@ -68,7 +68,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Tests certificate replacement and retries on a factory. The recording executor runs scheduled attempts only when the
@@ -360,57 +359,6 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             IgniteException.class, reason);
         GridTestUtils.assertThrows(log, () -> NODE_ACCESS.startRenewal(noChains, exec, renewalLog, () -> ""),
             IgniteException.class, reason);
-    }
-
-    /** A subclass can disable renewal even when configured, without requiring chains or using the executor. */
-    @Test
-    public void testRenewalCanBeDisabledBySubclass() throws Exception {
-        SslBundle noChains = bundle(ca.trustStore(), ca.trustStore());
-        AbstractSslContextFactory factory = new SslContextFactory() {
-            /** {@inheritDoc} */
-            @Override public boolean isRenewalEnabled() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override protected SslBundle createSslBundle() {
-                return noChains;
-            }
-        };
-        ScheduledExecutorService exec = mock(ScheduledExecutorService.class);
-
-        factory.setRenewalEnabled(true);
-        factory.create();
-        NODE_ACCESS.startRenewal(factory, exec, renewalLog, () -> "");
-
-        assertSame(noChains, NODE_ACCESS.current(factory));
-        assertEquals(0, NODE_ACCESS.nextRenewalTime(factory));
-        verifyNoInteractions(exec);
-    }
-
-    /** Renewal uses the fraction supplied by a subclass when the node attaches its executor. */
-    @Test
-    public void testRenewalWindowUsesOverriddenFraction() throws Exception {
-        long now = currentCertificateTime();
-        SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + 3 * HOUR), ca.trustStore());
-        AbstractSslContextFactory factory = new SslContextFactory() {
-            /** {@inheritDoc} */
-            @Override public double getRenewBeforeFraction() {
-                return QUARTER;
-            }
-
-            /** {@inheritDoc} */
-            @Override protected SslBundle createSslBundle() {
-                return startup;
-            }
-        };
-        RecordingExecutor exec = new RecordingExecutor();
-
-        factory.setRenewalEnabled(true);
-        NODE_ACCESS.startRenewal(factory, exec, renewalLog, () -> "");
-        exec.runNext();
-
-        assertEquals(now + 2 * HOUR, NODE_ACCESS.nextRenewalTime(factory));
     }
 
     /** A subclass must supply a valid window before its renewal schedule can start. */
