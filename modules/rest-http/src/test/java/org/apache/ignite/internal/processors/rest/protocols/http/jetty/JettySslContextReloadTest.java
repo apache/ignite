@@ -24,8 +24,11 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -34,6 +37,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestCertificateAuthority;
@@ -242,6 +246,31 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
             .setHttpSslFactory(new SslContextFactory())), IgniteCheckedException.class, "HTTP as its default protocol");
     }
 
+    /** The node starts an HTTP-only factory before Jetty asks for its context and stops it on shutdown. */
+    @Test
+    public void testHttpFactoryLifecycle() throws Exception {
+        LifecycleSslFactory factory = new LifecycleSslFactory(SSLContext.getDefault());
+
+        assertFactoryLifecycle(factory, new ConnectorConfiguration().setHttpSslFactory(factory));
+    }
+
+    /** Sharing one factory between HTTPS and binary REST gives it one pair of lifecycle callbacks. */
+    @Test
+    public void testSharedRestFactoryLifecycle() throws Exception {
+        LifecycleSslFactory factory = new LifecycleSslFactory(SSLContext.getDefault());
+
+        assertFactoryLifecycle(factory, new ConnectorConfiguration().setHttpSslFactory(factory)
+            .setSslEnabled(true).setSslFactory(factory));
+    }
+
+    /** Checks the lifecycle calls made by a running node. */
+    private void assertFactoryLifecycle(LifecycleSslFactory factory, ConnectorConfiguration cfg) throws Exception {
+        startNode(cfg);
+        stopGrid(0);
+
+        assertEquals(List.of("start", "create", "stop"), factory.calls);
+    }
+
     /** Starts a test node with the given HTTP REST configuration. */
     private IgniteEx startNode(ConnectorConfiguration connCfg) throws Exception {
         return startGrid(0, cfg -> {
@@ -314,5 +343,36 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         assertNotNull("HTTP REST must answer a version request [host=" + host + ']', statusLine);
 
         return Integer.parseInt(statusLine.split(" ")[1]);
+    }
+
+    /** Records when the node obtains the SSL context relative to lifecycle callbacks. */
+    private static class LifecycleSslFactory implements Factory<SSLContext>, LifecycleAware {
+        /** Context returned to REST. */
+        private final SSLContext ctx;
+
+        /** Calls in the order the node made them. */
+        private final List<String> calls = new ArrayList<>();
+
+        /** @param ctx Context returned to REST. */
+        LifecycleSslFactory(SSLContext ctx) {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            calls.add("start");
+        }
+
+        /** {@inheritDoc} */
+        @Override public SSLContext create() {
+            calls.add("create");
+
+            return ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            calls.add("stop");
+        }
     }
 }

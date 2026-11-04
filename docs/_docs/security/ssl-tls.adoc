@@ -172,7 +172,7 @@ Use link:tools/control-script#reloading-certificates[`control.sh --ssl reload`] 
 |Store path, password, store type, protocols, cipher suites or other factory settings
 |Update the node configuration and restart the node. Reload uses the settings the node started with.
 |HTTP REST certificates configured directly in Jetty XML
-|These certificates are managed by Jetty. To use the Ignite reload command, link:restapi#https-and-certificate-reload[move TLS to `httpSslFactory`] and restart the node.
+|Restart the node. To use the Ignite reload command, link:restapi#https-and-certificate-reload[move TLS to `httpSslFactory`].
 |Stores used by thin clients or JDBC and ODBC applications
 |Load them in the applications as described in <<1. Trust the New Certificates,stage 1 below>>. The node reload command does not update applications.
 |===

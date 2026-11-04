@@ -86,12 +86,12 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |`null`
 
 |`setHttpSslFactory(Factory<SSLContext>)`
-|Certificate source for HTTPS on the HTTP REST port. Supports certificate reload. See <<HTTPS and Certificate Reload>>.
+|SSL context factory for HTTPS on the HTTP REST port. Supports certificate reload. See <<HTTPS and Certificate Reload>>.
 |Yes
 |`null`
 
 |`setHttpSslClientAuth(boolean)`
-|Requires HTTPS clients to present a trusted certificate. HTTP REST cannot start with this enabled unless you set `httpSslFactory`.
+|Requires HTTPS clients to present a certificate trusted by `httpSslFactory`. A node that runs HTTP REST fails to start if you enable this without setting `httpSslFactory`.
 |Yes
 |`false`
 
@@ -112,7 +112,7 @@ To require a client certificate trusted by this factory, also enable `httpSslCli
 cfg.setConnectorConfiguration(new ConnectorConfiguration().setHttpSslFactory(restTls).setHttpSslClientAuth(true));
 ----
 
-link:tools/control-script#checking-certificates[`control.sh --ssl status`] lists the certificates as `HTTP REST`. Replace them with link:tools/control-script#reloading-certificates[`control.sh --ssl reload`].
+After replacing the certificates in the factory's source, run link:tools/control-script#reloading-certificates[`control.sh --ssl reload`]. Check the certificates listed under `HTTP REST` with link:tools/control-script#checking-certificates[`control.sh --ssl status`].
 Transports sharing the same factory object appear together and reload in one step. The `sslEnabled` and `sslFactory` properties configure binary REST independently.
 By default HTTP REST accepts a `Host` header even when the name or address is absent from the certificate. To require a match, configure a Jetty `SecureRequestCustomizer` with `sniHostCheck=true`.
 
@@ -120,7 +120,7 @@ If TLS is configured directly in Jetty XML, its certificates are outside Ignite'
 
 ===== Migrate TLS from Jetty XML
 
-. Keep the HTTP connector and remove its own TLS configuration (an `SslConnectionFactory` or an `SslContextFactory$Server` constructor argument). The connector's default protocol must be HTTP. Keep TLS in Jetty XML if it must handle PROXY first.
+. Keep the HTTP connector and remove its own TLS configuration (an `SslConnectionFactory` or an `SslContextFactory$Server` constructor argument). The node fails to start if HTTP REST finds a connector with its own TLS or a default protocol other than HTTP. Keep TLS in Jetty XML if the connector must handle PROXY first.
 . Assign an Ignite `SslContextFactory` to `httpSslFactory`. Give it the HTTP REST key store and either a trust store or trust managers, even when client authentication is off. If Jetty selected one key alias, put just that key in the store. Use the store password for its private keys.
 . If Jetty checked client certificates for revocation, configure equivalent CRL or OCSP checks in the factory's `trustManagers`, or keep TLS in Jetty XML. Explicit trust managers take precedence over the trust store. See link:security/ssl-tls#reload-or-restart[Reload or Restart].
 . Set the factory's `protocols` and `cipherSuites` to the protocols and cipher suites your clients use, or keep the JVM defaults. Jetty applies its default exclusions to both lists. Clients cannot connect if all their protocols or cipher suites are excluded. Keep TLS in Jetty XML if you need custom exclusions.
