@@ -133,7 +133,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertThrowsWithCause(() -> factory.setRenewBeforeFraction(1), IllegalArgumentException.class);
     }
 
-    /** renew installs all new chains together; their aliases need not match the ones in use. */
+    /** Renewal replaces all chains together, even if their aliases have changed. */
     @Test
     public void testRenewInstallsAllNewChains() throws Exception {
         long now = System.currentTimeMillis();
@@ -167,7 +167,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(Map.of("remaining", chain(remaining)), NODE_ACCESS.current(f).certificateChains());
     }
 
-    /** renew replaces an expired certificate in use with a valid one. */
+    /** Renewal replaces an expired certificate in use with a valid one. */
     @Test
     public void testExpiredCertificateRenewed() throws Exception {
         long now = System.currentTimeMillis();
@@ -183,7 +183,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(Map.of("valid", chain(valid)), NODE_ACCESS.current(f).certificateChains());
     }
 
-    /** renew applies the checks of reload: here a candidate without certificate chains and one that is not valid yet are refused. */
+    /** Renewal rejects a replacement without certificate chains or with a certificate that is not yet valid. */
     @Test
     public void testRenewalAppliesReloadChecks() throws Exception {
         long now = System.currentTimeMillis();
@@ -243,8 +243,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * renew refuses new chains unless the earliest expiry across them, authorities included, is later than the one in use: here
-     * another key with the same expiry, one of two keys renewed, and a later leaf from an authority that expires no later.
+     * Renewal rejects new chains when another key or the issuing authority still expires at the old earliest expiry.
      */
     @Test
     public void testRenewalMustAdvanceEarliestExpiry() throws Exception {
@@ -309,6 +308,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             exec.runNext(); // Plan renewal.
             exec.runNext(); // Load the replacement.
 
+            assertTrue(exec.isShutdown());
             assertSame(inUse, NODE_ACCESS.current(factory));
             assertEquals(0, NODE_ACCESS.renewalFailures(factory));
             assertEquals(new ReloadOutcome(0, 0, null, 0), NODE_ACCESS.reloadOutcome(factory));
@@ -367,11 +367,13 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     public void testRenewalCanBeDisabledBySubclass() throws Exception {
         SslBundle noChains = bundle(ca.trustStore(), ca.trustStore());
         AbstractSslContextFactory factory = new SslContextFactory() {
+            /** {@inheritDoc} */
             @Override public boolean isRenewalEnabled() {
                 return false;
             }
 
-            @Override public SslBundle createSslBundle() {
+            /** {@inheritDoc} */
+            @Override protected SslBundle createSslBundle() {
                 return noChains;
             }
         };
@@ -389,14 +391,16 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /** Renewal uses the fraction supplied by a subclass when the node attaches its executor. */
     @Test
     public void testRenewalWindowUsesOverriddenFraction() throws Exception {
-        long now = System.currentTimeMillis() / SECOND * SECOND;
+        long now = currentCertificateTime();
         SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + 3 * HOUR), ca.trustStore());
         AbstractSslContextFactory factory = new SslContextFactory() {
+            /** {@inheritDoc} */
             @Override public double getRenewBeforeFraction() {
                 return QUARTER;
             }
 
-            @Override public SslBundle createSslBundle() {
+            /** {@inheritDoc} */
+            @Override protected SslBundle createSslBundle() {
                 return startup;
             }
         };
@@ -480,7 +484,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /** Settings apply at attachment and stay fixed until the node stops, including when a factory was already initialized. */
     @Test
     public void testRenewalSettingsAppliedAtAttachmentAndRestart() throws Exception {
-        long now = System.currentTimeMillis() / SECOND * SECOND;
+        long now = currentCertificateTime();
         SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + 3 * HOUR), ca.trustStore());
         SslBundle replacement = bundle(ca.keyStoreWithPrivateKey("replacement", now - HOUR, now + 5 * HOUR), ca.trustStore());
         TestSslContextFactory f = renewingFactory(QUARTER);
@@ -547,7 +551,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     /** A subclass waits for renewal before it reloads, resets failures and schedules renewal for its replacement. */
     @Test
     public void testSubclassInitSerializesWithRenewal() throws Exception {
-        long now = System.currentTimeMillis() / SECOND * SECOND;
+        long now = currentCertificateTime();
         SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - HOUR, now + HOUR), ca.trustStore());
         SslBundle replacement = bundle(ca.keyStoreWithPrivateKey("replacement", now, now + 2 * HOUR), ca.trustStore());
         TestSslContextFactory f = renewingFactory(QUARTER);
@@ -663,8 +667,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      */
     @Test
     public void testFirstAttemptAtWindowOfEarliestChain() throws Exception {
-        // X.509 keeps whole seconds.
-        long now = System.currentTimeMillis() / SECOND * SECOND;
+        long now = currentCertificateTime();
         TestCertificateAuthority shortCa = new TestCertificateAuthority("short-ca", now - 2 * HOUR, now + HOUR);
 
         KeyStore earliestExpiry = merged(
@@ -749,8 +752,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReloadReplans() throws Exception {
-        // X.509 keeps whole seconds.
-        long now = System.currentTimeMillis() / SECOND * SECOND;
+        long now = currentCertificateTime();
         SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup", now - 100 * MINUTE, now + 20 * MINUTE), ca.trustStore());
         SslBundle reloaded = bundle(ca.keyStoreWithPrivateKey("reloaded", now, now + 2 * HOUR), ca.trustStore());
         TestSslContextFactory f = renewingFactory(QUARTER);
@@ -880,13 +882,12 @@ public class SslRenewalTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A failure is a warning while more than half of the window is left and an error once less is left, the retry a minute later
-     * comes after expiry or the certificates have expired. In each case the first failure is logged with its reason and stack trace.
+     * Renewal logs a warning in the first half of the window. It logs an error in the second half, after expiry or when the next
+     * retry would fall after expiry. Both levels include the reason and stack trace.
      */
     @Test
     public void testFailureLogLevelFollowsTimeLeft() throws Exception {
-        // X.509 keeps whole seconds.
-        long now = System.currentTimeMillis() / SECOND * SECOND;
+        long now = currentCertificateTime();
 
         assertFailureLogged("More than half of the window left",
             ca.keyStoreWithPrivateKey("early", now - 100 * MINUTE, now + 20 * MINUTE), QUARTER, "WARN " + FAILED);
@@ -988,6 +989,11 @@ public class SslRenewalTest extends GridCommonAbstractTest {
             .toList();
     }
 
+    /** @return Current time in milliseconds, truncated to the whole seconds stored in X.509 certificates. */
+    private static long currentCertificateTime() {
+        return System.currentTimeMillis() / SECOND * SECOND;
+    }
+
     /** Lets tests supply bundles and initialize the factory from a subclass. */
     private static class TestSslContextFactory extends SslContextFactory {
         /** Reloads material through the protected factory method. */
@@ -996,7 +1002,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public SslBundle createSslBundle() throws SSLException {
+        @Override protected SslBundle createSslBundle() throws SSLException {
             return super.createSslBundle();
         }
     }

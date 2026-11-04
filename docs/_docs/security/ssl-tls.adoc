@@ -300,7 +300,7 @@ To change how early renewal starts, set `renewBeforeFraction` as described in th
 
 === Check Renewal
 
-Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to check the loaded certificate and the next attempt time.
+Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to check the loaded certificate and next attempt time for each transport. At startup the renewal log lists only the transports registered so far.
 
 If the source still returns the current certificates or the replacement fails validation or loading, the node keeps its current context. It retries after 60 to 90 seconds, then at increasing intervals of up to 90 minutes. Retries continue after expiry.
 The link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric counts these unsuccessful attempts. Check the node log for the cause, fix certificate delivery or configuration, and use reload if you need to apply the correction immediately.

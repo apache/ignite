@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
-/** SSL contexts of a node: one provider per configured factory, with automatic renewals and their node-wide failure metric. */
+/** Node SSL context providers shared by transports using the same factory, with automatic renewal and a node-wide failure metric. */
 public class SslContextRegistry extends GridProcessorAdapter {
     /** */
     public static final String COMMUNICATION = "communication";

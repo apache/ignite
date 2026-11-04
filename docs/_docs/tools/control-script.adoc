@@ -1802,7 +1802,7 @@ control.sh|bat --ssl status
 ----
 
 For each factory, the output lists its transports and last reload result, including automatic renewals. Each reported certificate chain has a `loaded` line identified by its key alias.
-If automatic renewal is scheduled, it also shows the next attempt time:
+When automatic renewal is scheduled, the output also shows the next attempt time:
 
 [source,text]
 ----

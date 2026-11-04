@@ -100,7 +100,7 @@ public class SslContextProvider {
         NODE_ACCESS.startRenewal(sslFactory, exec, log, this::transports);
     }
 
-    /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
+    /** @return Time of the next automatic renewal, or {@code 0} if none is planned or the node has stopped. */
     public long nextRenewalTime() {
         return NODE_ACCESS.nextRenewalTime(sslFactory);
     }

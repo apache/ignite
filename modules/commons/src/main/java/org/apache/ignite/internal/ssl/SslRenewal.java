@@ -126,7 +126,7 @@ public class SslRenewal {
         this.currentTimeMillis = currentTimeMillis;
     }
 
-    /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
+    /** @return Time of the next automatic renewal, or {@code 0} if none is planned or the node has stopped. */
     public long nextRenewalTime() {
         return exec.isShutdown() ? 0 : nextRenewalTime;
     }

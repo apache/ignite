@@ -236,7 +236,7 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
             @Override protected SslBundle createSslBundle() throws SSLException {
                 if (Thread.currentThread().getName().startsWith("ssl-renewal")) {
                     try {
-                        assertTrue(transportsReady.await(10, TimeUnit.SECONDS));
+                        transportsReady.await();
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();

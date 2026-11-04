@@ -36,7 +36,7 @@ public abstract class SslFactoryAccess {
     /** @return Last successful reload and any failures since then. */
     protected abstract ReloadOutcome reloadOutcome(AbstractSslContextFactory factory);
 
-    /** Attaches this node's renewal executor. */
+    /** Attaches the node's renewal executor. */
     protected abstract void startRenewal(
         AbstractSslContextFactory factory,
         ScheduledExecutorService exec,
