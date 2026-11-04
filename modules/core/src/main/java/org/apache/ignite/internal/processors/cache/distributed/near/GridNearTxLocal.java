@@ -648,7 +648,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
-                    timeout,
+                    /*waitTimeout*/0,
                     this,
                     /*read*/entryProc != null, // Needed to force load from store.
                     retval,
@@ -826,7 +826,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
-                    timeout,
+                    /*waitTimeout*/0,
                     this,
                     /*read*/invokeVals != null, // Needed to force load from store.
                     retval,
@@ -1732,7 +1732,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                 timeout,
-                timeout,
+                /*waitTimeout*/0,
                 this,
                 false,
                 retval,
@@ -1928,7 +1928,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     timeout,
-                    timeout,
+                    /*waitTimeout*/0,
                     this,
                     true,
                     true,
