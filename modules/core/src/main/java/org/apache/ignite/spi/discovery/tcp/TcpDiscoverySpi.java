@@ -1690,7 +1690,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory()
             .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
 
-        // Accepted discovery connections use server mode and require a peer certificate.
         sslSock.setUseClientMode(false);
         sslSock.setNeedClientAuth(true);
 
