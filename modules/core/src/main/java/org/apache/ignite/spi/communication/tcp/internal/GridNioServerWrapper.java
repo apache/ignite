@@ -349,7 +349,9 @@ public class GridNioServerWrapper {
      * </p>
      * <p>
      * <em>Note.</em> The {@link HandshakeTimeoutObject} is created to control execution timeout during the
-     * whole handshaking process.
+     * handshaking process and the NIO session registration; the socket connection itself is bounded by its
+     * own connect timeout. The attempt is only reported as timed out if the deadline actually fired (the
+     * timeout task closes the channel), not if the timeout task merely could no longer be cancelled.
      * </p>
      *
      * @param node Remote node identifier to connect with.
@@ -357,6 +359,7 @@ public class GridNioServerWrapper {
      * @return A {@link GridNioSession} connection representation.
      * @throws IgniteCheckedException If establish connection fails.
      */
+    @SuppressWarnings("ThrowFromFinallyBlock")
     public GridNioSession createNioSession(ClusterNode node, int connIdx) throws IgniteCheckedException {
         boolean locNodeIsSrv = !locNodeSupplier.get().isClient();
 
@@ -489,50 +492,82 @@ public class GridNioServerWrapper {
                             throw new IgniteCheckedException("Local node has not been started or " +
                                 "fully initialized [isStopping=" + stateProvider.isStopping() + ']');
 
+                        // The handshake window, re-verified against the strategy's total timeout (the call
+                        // does not advance the backoff state, so the per-attempt backoff progression is
+                        // unchanged).
                         timeout = connTimeoutStgy.nextTimeout(timeout);
 
-                        rcvCnt = safeTcpHandshake(ch,
-                            node.id(),
-                            timeout,
-                            sslMeta,
-                            new HandshakeMessage(locNode.id(),
-                                recoveryDesc.incrementConnectCount(),
-                                recoveryDesc.received(),
-                                connIdx));
+                        long handshakeTimeout = timeout;
 
-                        if (rcvCnt == ALREADY_CONNECTED)
-                            return null;
-                        else if (rcvCnt == NODE_STOPPING) {
-                            // Safe to remap on remote node stopping.
-                            throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
+                        // The deadline covers the handshake and the NIO session registration: when it
+                        // elapses, the channel is closed, which aborts the in-progress handshake and makes
+                        // the registration fail with a ClosedChannelException - the latter only once the
+                        // responsible NIO worker processes the queued registration operation, so the
+                        // registration wait is bounded only under that precondition. It is armed after the
+                        // socket connect, which is bounded by its own connect timeout, so the connect does
+                        // not consume the deadline and the handshake keeps the full window the strategy
+                        // allocated to it.
+                        HandshakeTimeoutObject timeoutObj = new HandshakeTimeoutObject(ch);
+
+                        handshakeTimeoutExecutorService.schedule(timeoutObj, handshakeTimeout, TimeUnit.MILLISECONDS);
+
+                        boolean deadlineCancelled = false;
+
+                        try {
+                            rcvCnt = safeTcpHandshake(ch,
+                                node.id(),
+                                sslMeta,
+                                new HandshakeMessage(locNode.id(),
+                                    recoveryDesc.incrementConnectCount(),
+                                    recoveryDesc.received(),
+                                    connIdx));
+
+                            if (rcvCnt == ALREADY_CONNECTED)
+                                return null;
+                            else if (rcvCnt == NODE_STOPPING) {
+                                // Safe to remap on remote node stopping.
+                                throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
+                            }
+                            else if (rcvCnt == UNKNOWN_NODE)
+                                throw new IgniteCheckedException("Remote node does not observe current node " +
+                                    "in topology : " + node.id());
+                            else if (rcvCnt == NEED_WAIT) {
+                                // Should wait for discovery lag without applying connTimeoutStgy, otherwise cache operations
+                                // may hang on waiting inexistent topology, see IgniteClientConnectTest for test
+                                // scenarios with delayed client node join.
+                                if (log.isDebugEnabled())
+                                    log.debug("NEED_WAIT received, handshake after delay [node = "
+                                        + node + ", outOfTopologyDelay = " + DFLT_NEED_WAIT_DELAY + "ms]");
+
+                                // The peer-requested discovery lag delay is not a step of the connection
+                                // establishment: end the deadline before the wait, the next attempt arms a
+                                // fresh one.
+                                deadlineCancelled = timeoutObj.cancel();
+
+                                U.sleep(DFLT_NEED_WAIT_DELAY);
+
+                                continue;
+                            }
+                            else if (rcvCnt < 0)
+                                throw new IgniteCheckedException("Unsupported negative receivedCount [rcvCnt=" + rcvCnt +
+                                    ", senderNode=" + node + ']');
+
+                            recoveryDesc.onHandshake(rcvCnt);
+
+                            meta.put(CONSISTENT_ID_META, node.consistentId());
+                            meta.put(CONN_IDX_META, connKey);
+                            meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
+                            meta.put(MSG_SER_CTX.ordinal(), buildForPeers(stateProvider.ignite(), node));
+
+                            ses = nioSrv.createSession(ch, meta, false, null).get();
                         }
-                        else if (rcvCnt == UNKNOWN_NODE)
-                            throw new IgniteCheckedException("Remote node does not observe current node " +
-                                "in topology : " + node.id());
-                        else if (rcvCnt == NEED_WAIT) {
-                            // Should wait for discovery lag without applying connTimeoutStgy, otherwise cache operations
-                            // may hang on waiting inexistent topology, see IgniteClientConnectTest for test
-                            // scenarios with delayed client node join.
-                            if (log.isDebugEnabled())
-                                log.debug("NEED_WAIT received, handshake after delay [node = "
-                                    + node + ", outOfTopologyDelay = " + DFLT_NEED_WAIT_DELAY + "ms]");
-
-                            U.sleep(DFLT_NEED_WAIT_DELAY);
-
-                            continue;
+                        finally {
+                            // A lost cancel can only mean the deadline actually fired and the timeout task
+                            // closes the channel: report the attempt as timed out, the established session
+                            // (if any) is unusable.
+                            if (!deadlineCancelled && !timeoutObj.cancel() && timeoutObj.timedOut())
+                                throw handshakeTimeoutException();
                         }
-                        else if (rcvCnt < 0)
-                            throw new IgniteCheckedException("Unsupported negative receivedCount [rcvCnt=" + rcvCnt +
-                                ", senderNode=" + node + ']');
-
-                        recoveryDesc.onHandshake(rcvCnt);
-
-                        meta.put(CONSISTENT_ID_META, node.consistentId());
-                        meta.put(CONN_IDX_META, connKey);
-                        meta.put(RECOVERY_DESC_META_KEY, recoveryDesc);
-                        meta.put(MSG_SER_CTX.ordinal(), buildForPeers(stateProvider.ignite(), node));
-
-                        ses = nioSrv.createSession(ch, meta, false, null).get();
                     }
                     finally {
                         if (ses == null) {
@@ -1207,35 +1242,23 @@ public class GridNioServerWrapper {
     }
 
     /**
-     * Performs handshake in timeout-safe way.
+     * Performs the TCP handshake. The deadline that terminates this blocking call belongs to the whole
+     * connection establishment and is managed by the caller.
      *
      * @param ch Socket channel.
      * @param rmtNodeId Remote node.
-     * @param timeout Timeout for handshake.
      * @param sslMeta Session meta.
      * @param msg {@link HandshakeMessage} to send.
      * @return Handshake response.
-     * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
+     * @throws IgniteCheckedException If handshake failed.
      */
-    @SuppressWarnings("ThrowFromFinallyBlock")
     private long safeTcpHandshake(
         SocketChannel ch,
         UUID rmtNodeId,
-        long timeout,
         GridSslMeta sslMeta,
         HandshakeMessage msg
     ) throws IgniteCheckedException {
-        HandshakeTimeoutObject timeoutObj = new HandshakeTimeoutObject(ch);
-
-        handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
-
-        try {
-            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, stateProvider.getSpiContext());
-        }
-        finally {
-            if (!timeoutObj.cancel())
-                throw handshakeTimeoutException();
-        }
+        return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, stateProvider.getSpiContext());
     }
 
     /**
