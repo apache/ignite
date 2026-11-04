@@ -30,6 +30,8 @@ import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
+
 /** Registers the transports using a factory; the factory owns their current context and reload results. */
 public class SslContextProvider {
     /** Factory configured by the user, retained for registration by identity. */
@@ -65,7 +67,7 @@ public class SslContextProvider {
 
     /** @return Context and certificate metadata currently accepted by the factory. */
     SslBundle bundle() {
-        return sslFactory.sslBundle();
+        return NODE_ACCESS.current(sslFactory);
     }
 
     /** @return Stable context shared by every transport configured with this factory. */
@@ -90,7 +92,7 @@ public class SslContextProvider {
 
     /** @return Context and certificate metadata accepted by the factory's initialization. */
     public SslBundle reload() {
-        return sslFactory.init();
+        return NODE_ACCESS.reload(sslFactory);
     }
 
     /** @return Snapshot of the last successful reload and subsequent failures. */

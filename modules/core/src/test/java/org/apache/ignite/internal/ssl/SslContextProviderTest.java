@@ -127,7 +127,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertSame(startup.context(), captured);
         assertEquals(new ReloadOutcome(0, 0, null, 0), p.reloadOutcome());
 
-        f.init();
+        f.reloadFromSource();
 
         assertSame(next, p.bundle());
         assertSame(next.context(), f.create());
@@ -344,6 +344,11 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
     /** Exposes the loading hook so tests can stub the material source. */
     private static class TestSslContextFactory extends SslContextFactory {
+        /** A subclass can reload its material without going through the node. */
+        void reloadFromSource() {
+            init();
+        }
+
         /** {@inheritDoc} */
         @Override public SslBundle createSslBundle() throws SSLException {
             return super.createSslBundle();

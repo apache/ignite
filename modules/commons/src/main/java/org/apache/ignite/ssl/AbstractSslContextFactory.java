@@ -40,6 +40,7 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.ssl.SslCertificates;
+import org.apache.ignite.internal.ssl.SslFactoryAccess;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,6 +57,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /**
+     * Gives the node access to the accepted material and the same reload path used by subclasses.
+     * @hidden
+     */
+    public static final SslFactoryAccess NODE_ACCESS =
+        new SslFactoryAccess(AbstractSslContextFactory::sslBundle, AbstractSslContextFactory::init);
 
     /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
     private transient volatile SslBundle bundle;
@@ -130,8 +138,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. The result must not change material already in use. Outside loading hooks, use {@link #sslBundle()} to
-     * inspect the accepted material.
+     * loading it. The result must not change material already in use.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws SSLException If the context could not be created.
@@ -303,7 +310,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
      * @throws UnsupportedOperationException If the context does not support stream sockets.
      */
-    public final synchronized SslBundle init() {
+    protected final synchronized SslBundle init() {
         try {
             SslBundle next = prepareSslBundle();
             boolean reload = bundle != null;
@@ -387,7 +394,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return One snapshot of the material in use.
      * @throws IgniteException If the first initialization fails.
      */
-    public final SslBundle sslBundle() {
+    final SslBundle sslBundle() {
         SslBundle cur = bundle;
 
         if (cur == null) {
