@@ -104,7 +104,7 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 [[https-and-certificate-reload]]
 ==== HTTPS and Certificate Reload
 
-Set `ConnectorConfiguration.httpSslFactory` to a link:security/ssl-tls#_ssltls_for_nodes[configured SSL context factory]. The built-in HTTP REST port or the HTTP connector in your Jetty XML file will then accept HTTPS only.
+Set `ConnectorConfiguration.httpSslFactory` to a link:security/ssl-tls#ssltls-for-nodes[configured SSL context factory]. The built-in HTTP REST port or the HTTP connector in your Jetty XML file will then accept HTTPS only.
 To require a client certificate trusted by this factory, also enable `httpSslClientAuth`. For example, given a configured factory called `restTls`:
 
 [source,java]
