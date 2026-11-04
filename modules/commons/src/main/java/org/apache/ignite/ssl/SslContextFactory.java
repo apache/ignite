@@ -37,8 +37,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
  *
- * The first {@link #create()} call loads the stores. Subsequent calls reuse the accepted material. Call {@link #init()}
- * to read the stores again and publish the replacement material.
+ * The first {@link #create()} call loads the stores. Subsequent calls reuse the accepted material. A subclass can call {@link #init()}
+ * to reread the stores.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
