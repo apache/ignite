@@ -34,9 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
-import static org.jctools.maps.UnsafeAccess.UNSAFE;
-import static org.jctools.maps.UnsafeAccess.fieldOffset;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 
 /**
@@ -113,8 +111,8 @@ public class NonBlockingHashMapLong<TypeV>
     private static final int REPROBE_LIMIT = 10; // Too many reprobes then force a table-resize
 
     // --- Bits to allow Unsafe access to arrays
-    private static final int _Obase = UNSAFE.arrayBaseOffset(Object[].class);
-    private static final int _Oscale = UNSAFE.arrayIndexScale(Object[].class);
+    private static final int _Obase = GridUnsafe.arrayBaseOffset(Object[].class);
+    private static final int _Oscale = GridUnsafe.arrayIndexScale(Object[].class);
 
     private static long rawIndex(final Object[] ary, final int idx)
     {
@@ -124,8 +122,8 @@ public class NonBlockingHashMapLong<TypeV>
         return _Obase + ((long) idx * _Oscale);
     }
 
-    private static final int _Lbase = UNSAFE.arrayBaseOffset(long[].class);
-    private static final int _Lscale = UNSAFE.arrayIndexScale(long[].class);
+    private static final int _Lbase = GridUnsafe.arrayBaseOffset(long[].class);
+    private static final int _Lscale = GridUnsafe.arrayIndexScale(long[].class);
 
     private static long rawIndex(final long[] ary, final int idx)
     {
@@ -136,12 +134,25 @@ public class NonBlockingHashMapLong<TypeV>
     }
 
     // --- Bits to allow Unsafe CAS'ing of the CHM field
-    private static final long _chm_offset = fieldOffset(NonBlockingHashMapLong.class, "_chm");
-    private static final long _val_1_offset = fieldOffset(NonBlockingHashMapLong.class, "_val_1");
+    private static final long _chm_offset;
+    private static final long _val_1_offset;
+
+    static
+    {
+        try
+        {
+            _chm_offset = GridUnsafe.objectFieldOffset(NonBlockingHashMapLong.class.getDeclaredField("_chm"));
+            _val_1_offset = GridUnsafe.objectFieldOffset(NonBlockingHashMapLong.class.getDeclaredField("_val_1"));
+        }
+        catch (NoSuchFieldException e)
+        {
+            throw new Error(e);
+        }
+    }
 
     private final boolean CAS(final long offset, final Object old, final Object nnn)
     {
-        return UNSAFE.compareAndSwapObject(this, offset, old, nnn);
+        return GridUnsafe.compareAndSwapObject(this, offset, old, nnn);
     }
 
     // --- Adding a 'prime' bit onto Values via wrapping with a junk wrapper class
@@ -627,12 +638,12 @@ public class NonBlockingHashMapLong<TypeV>
         // Access K,V for a given idx
         private boolean CAS_key(int idx, long old, long key)
         {
-            return UNSAFE.compareAndSwapLong(_keys, rawIndex(_keys, idx), old, key);
+            return GridUnsafe.compareAndSwapLong(_keys, rawIndex(_keys, idx), old, key);
         }
 
         private boolean CAS_val(int idx, Object old, Object val)
         {
-            return UNSAFE.compareAndSwapObject(_vals, rawIndex(_vals, idx), old, val);
+            return GridUnsafe.compareAndSwapObject(_vals, rawIndex(_vals, idx), old, val);
         }
 
         final long[] _keys;

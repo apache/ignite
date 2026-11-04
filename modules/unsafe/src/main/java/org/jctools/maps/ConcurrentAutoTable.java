@@ -18,8 +18,8 @@ package org.jctools.maps;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.apache.ignite.internal.util.GridUnsafe;
 
-import static org.jctools.maps.UnsafeAccess.UNSAFE;
 
 
 /**
@@ -162,8 +162,8 @@ public class ConcurrentAutoTable implements Serializable
     {
 
         // Unsafe crud: get a function which will CAS arrays
-        private static final int _Lbase = UNSAFE.arrayBaseOffset(long[].class);
-        private static final int _Lscale = UNSAFE.arrayIndexScale(long[].class);
+        private static final int _Lbase = GridUnsafe.arrayBaseOffset(long[].class);
+        private static final int _Lscale = GridUnsafe.arrayIndexScale(long[].class);
 
         private static long rawIndex(long[] ary, int i)
         {
@@ -173,7 +173,7 @@ public class ConcurrentAutoTable implements Serializable
 
         private static boolean CAS(long[] A, int idx, long old, long nnn)
         {
-            return UNSAFE.compareAndSwapLong(A, rawIndex(A, idx), old, nnn);
+            return GridUnsafe.compareAndSwapLong(A, rawIndex(A, idx), old, nnn);
         }
 
         //volatile long _resizers;    // count of threads attempting a resize
