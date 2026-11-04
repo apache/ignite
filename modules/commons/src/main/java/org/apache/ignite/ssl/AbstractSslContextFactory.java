@@ -244,10 +244,16 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         return new SslBundle(createSslContext(keyMgrs), chains);
     }
 
-    /** @return Fresh candidate with factory context added to checked SSL errors. */
+    /** @return Fresh candidate that can create engines and supply sockets for TCP discovery. */
     private SslBundle prepareSslBundle() {
         try {
-            return createSslBundle();
+            SslBundle next = createSslBundle();
+            SSLContext ctx = next.context();
+
+            ctx.createSSLEngine();
+            ctx.getSocketFactory();
+
+            return next;
         }
         catch (SSLException e) {
             throw new IgniteException(e.getMessage() + " [factory=" + this + ']', e);
@@ -367,21 +373,15 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Context and metadata accepted by this initialization.
      * @throws IgniteException If the material cannot be loaded, the context cannot be created or a replacement is rejected.
      * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
+     * @throws UnsupportedOperationException If the context does not support stream sockets.
      */
     public final synchronized SslBundle init() {
         try {
-            SslBundle next;
             boolean reload = bundle != null;
+            SslBundle next = reload ? buildReplacement() : prepareSslBundle();
 
-            if (reload) {
-                next = buildReplacement();
-
+            if (reload)
                 checkReplacement(next, renewal != null);
-            }
-            else {
-                next = prepareSslBundle();
-                next.context().createSSLEngine();
-            }
 
             putInUse(next);
 
@@ -529,8 +529,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             throw new IgniteException("The new key material has no X.509 certificate chains, " +
                 "so the node would present no certificate");
         }
-
-        next.context().createSSLEngine();
 
         return next;
     }

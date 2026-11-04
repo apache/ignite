@@ -220,6 +220,26 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(3, factory.loads);
     }
 
+    /** DTLS supports engines but cannot supply the TLS sockets used by discovery. */
+    @Test
+    public void testDatagramContextRejectedAtStartupAndReload() throws Exception {
+        InMemoryStoreFactory factory = new InMemoryStoreFactory(ca.keyStoreWithPrivateKey());
+        String datagramProtocol = "DTLS";
+
+        factory.setProtocol(datagramProtocol);
+
+        GridTestUtils.assertThrows(log, factory::init, UnsupportedOperationException.class, null);
+
+        factory.setProtocol("TLS");
+
+        SslBundle accepted = factory.init();
+
+        factory.setProtocol(datagramProtocol);
+
+        GridTestUtils.assertThrows(log, factory::init, UnsupportedOperationException.class, null);
+        assertSame(accepted, factory.sslBundle());
+    }
+
     /** Missing parameters are reported before the key store is read. */
     @Test
     public void testInvalidParametersDoNotLoadStore() throws Exception {
