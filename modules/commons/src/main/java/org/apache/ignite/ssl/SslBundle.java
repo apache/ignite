@@ -39,7 +39,7 @@ public final class SslBundle {
 
     /**
      * @param ctx Initialized SSL context.
-     * @param chains Nonempty X.509 chains of key entries, by alias, own certificate first. {@code null} means certificate
+     * @param chains Nonempty X.509 chains of key entries, by alias, the key's certificate first. {@code null} means certificate
      *      metadata is unavailable; an empty map means there are no chains. Trusted certificate entries and secret keys
      *      must not be included.
      * @throws IllegalArgumentException If a chain is empty.

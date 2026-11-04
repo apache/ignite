@@ -27,9 +27,9 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -42,11 +42,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Owns the SSL context and its certificate metadata. {@link #init()} loads replacement material before publishing it;
- * {@link #create()} returns the accepted context. Obtain it again after initialization to use the replacement;
- * previously obtained contexts, engines, socket factories and sockets retain their original material.
- * Configure the factory before its first use. Reusing an initialized factory, including after a node restart, retains
- * its material until {@code init()} succeeds.
+ * Owns the SSL context and the certificate chains loaded with it. An initialized factory retains its material across
+ * node restarts. A subclass can call {@link #init()} to replace it. Configure the factory before use.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -55,7 +52,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
-    /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
+    /** Accepted context and the metadata loaded with it. */
     private transient volatile SslBundle bundle;
 
     /** SSL protocol. */
@@ -125,7 +122,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. The result must not change material already in use.
+     * loading it. Keep the material in use intact. Calling {@link #create()} from this hook would recurse on first use.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws SSLException If the context could not be created.
@@ -137,15 +134,15 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * Do not modify the store while the context is in use: key managers such as PKIX read it during handshakes.
      * Load replacement material into a separate store.
      *
-     * @param store Loaded key store, never {@code null}. For a context without private keys, use an empty store initialized
-     *      with {@code KeyStore.load(null, null)}.
+     * @param store Loaded key store, or {@code null} for a client without private keys.
      * @param keyPwd Password for the loaded store's private keys, or {@code null} if no password is required.
      * @param algorithm Key manager algorithm.
      * @return Context and nonempty X.509 chains of key entries, ordered by alias. An empty map means no such chains were found.
      * @throws SSLException If the store cannot be read or the context cannot be created.
      */
-    protected final SslBundle createSslBundle(KeyStore store, @Nullable char[] keyPwd, String algorithm) throws SSLException {
-        A.notNull(store, "store", algorithm, "algorithm");
+    protected final SslBundle createSslBundle(@Nullable KeyStore store, @Nullable char[] keyPwd, String algorithm)
+        throws SSLException {
+        A.notNull(algorithm, "algorithm");
 
         KeyManager[] keyMgrs;
 
@@ -157,24 +154,24 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             keyMgrs = factory.getKeyManagers();
         }
         catch (NoSuchAlgorithmException e) {
-            throw new SSLException("Unsupported key algorithm: " + algorithm, e);
+            throw new SSLException("Unsupported key algorithm: " + algorithm + " [factory=" + this + ']', e);
         }
         catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to initialize Key Manager (security exception occurred)", e);
+            throw new SSLException("Failed to initialize Key Manager (security exception occurred) [factory=" + this + ']', e);
         }
 
-        Map<String, List<X509Certificate>> chains = certificateChains(store);
+        Map<String, List<X509Certificate>> chains = store == null ? Collections.emptyMap() : certificateChains(store);
 
         return new SslBundle(createSslContext(keyMgrs), chains);
     }
 
-    /** @return Fresh candidate with factory context added to checked SSL errors. */
+    /** @return Fresh context and certificate chains. */
     private SslBundle prepareSslBundle() {
         try {
             return createSslBundle();
         }
         catch (SSLException e) {
-            throw new IgniteException(e.getMessage() + " [factory=" + this + ']', e);
+            throw new IgniteException(e);
         }
     }
 
@@ -185,7 +182,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     private static Map<String, List<X509Certificate>> certificateChains(KeyStore store) throws SSLException {
         try {
-            Map<String, List<X509Certificate>> chains = new TreeMap<>();
+            Map<String, List<X509Certificate>> chains = new HashMap<>();
 
             for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
                 String alias = aliases.nextElement();
@@ -278,13 +275,12 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads keys and trust settings and atomically replaces the accepted context and its metadata. A failed initialization
-     * leaves the previous material in use. Call {@link #create()} again to obtain the replacement; previously obtained
-     * contexts and their connections keep their original material.
+     * Loads and validates fresh material before replacing the accepted context and its metadata. Calls run one at a time.
+     * A failed initialization leaves the previous material in use.
      *
      * @return Context and metadata accepted by this initialization.
      * @throws IgniteException If the material cannot be loaded or the context cannot be created.
-     * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
+     * @throws IllegalArgumentException If the JVM does not recognize a name in {@link #setProtocols} or {@link #setCipherSuites}.
      */
     protected final synchronized SslBundle init() {
         SslBundle next = prepareSslBundle();
@@ -299,8 +295,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /**
      * Returns the accepted context and its metadata, initializing the factory on first use.
      *
-     * @return One snapshot of the material in use.
-     * @throws IgniteException If the first initialization fails.
+     * @return Accepted bundle.
+     * @throws IgniteException If the first initialization fails to load the material or create the context.
+     * @throws IllegalArgumentException If the JVM does not recognize a configured protocol or cipher suite name.
      */
     final SslBundle sslBundle() {
         SslBundle cur = bundle;
@@ -318,12 +315,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Returns the accepted context, initializing it on first use. Repeated calls do not read the key or trust stores.
-     * After a successful {@link #init()}, call this method again to obtain the replacement. Previously returned contexts
-     * retain their original material. Do not reinitialize the returned context directly.
+     * Initializes the context on first use. Once a context is available, callers can use it while {@link #init()}
+     * loads a replacement. Obtain the context again after a successful replacement. Previously returned contexts,
+     * engines and sockets retain their original material. Do not reinitialize the returned context directly.
      *
      * @return Currently accepted context.
-     * @throws IgniteException If the first initialization fails.
+     * @throws IgniteException If the first initialization fails to load the material or create the context.
+     * @throws IllegalArgumentException If the JVM does not recognize a configured protocol or cipher suite name.
      */
     @Override public final SSLContext create() {
         return sslBundle().context();

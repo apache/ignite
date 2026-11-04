@@ -179,6 +179,27 @@ Now all nodes trust the new certificates.
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
 
+== Custom SSL Context Factories
+
+A subclass of `AbstractSslContextFactory` implements `createSslBundle()` to build an initialized context and report the certificate chains loaded with it.
+For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`. For a custom key manager, return an `SslBundle` with the chains for its private keys, indexed by alias.
+Use a null chain map if the source cannot report certificates. An empty map means the store has no X.509 key chains.
+
+Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.
+A failed initialization leaves the previous context in use.
+
+=== Migrating an Existing Factory
+
+Update and recompile subclasses that use the old `createKeyManagers()` hook, override `create()` or access the protected `sslCtx` field.
+
+* Move key loading and custom context configuration into `createSslBundle()`. A subclass of `SslContextFactory` can use `super.createSslBundle()` and retain its certificate chains when customizing the context. The hook can throw `SSLException`.
+* Remove custom context caching. The base factory retains the accepted bundle. After a replacement, call the final `create()` method again to obtain the new context.
+* Direct subclasses of `AbstractSslContextFactory` that implement `checkParameters()` must remove its `@Override` and call it before loading in `createSslBundle()`. Subclasses of `SslContextFactory` can keep that override.
+* Rename any existing no-argument `init()` in your subclass. The base factory defines it as final.
+
+A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override. A client that authenticates only the server can return a null key store.
+Implementations of `Factory<SSLContext>` can continue to supply a context directly.
+
 == SslContextFactory Properties
 
 `SslContextFactory` supports the following properties:
