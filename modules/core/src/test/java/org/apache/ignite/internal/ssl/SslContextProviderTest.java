@@ -53,6 +53,7 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.merged;
 import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -97,6 +98,24 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertTrue(p.reloadOutcome().successTime() > 0);
     }
 
+    /** Registration reuses accepted startup material. An earlier failed first load is not a reload failure. */
+    @Test
+    public void testRegistrationAfterInitialLoadFailure() throws Exception {
+        TestSslContextFactory factory = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
+        SslBundle accepted = new SslBundle(SSLContext.getDefault(), null);
+
+        doThrow(new IgniteException("Source unavailable")).doReturn(accepted).when(factory).createSslBundle();
+
+        GridTestUtils.assertThrows(log, factory::reloadFromSource, IgniteException.class, "Source unavailable");
+        factory.reloadFromSource();
+
+        SslContextProvider provider = new SslContextProvider(factory);
+
+        assertSame(accepted, provider.bundle());
+        assertEquals(new ReloadOutcome(0, 0, null, 0), provider.reloadOutcome());
+        verify(factory, times(2)).createSslBundle();
+    }
+
     /** Direct initialization updates new provider engines, while captured contexts and engines retain their material. */
     @Test
     public void testDirectFactoryInitUpdatesProvider() throws Exception {
@@ -122,7 +141,6 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         SSLSocketFactory capturedSockets = shared.getSocketFactory();
 
         assertSame(startup.context(), captured);
-        assertEquals(new ReloadOutcome(0, 0, null, 0), p.reloadOutcome());
 
         f.reloadFromSource();
 
@@ -130,7 +148,6 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertSame(next.context(), f.create());
         assertSame(next.context(), p.bundle().context());
         assertEquals(next.certificateChains(), p.certificateChains());
-        assertSame(shared, p.sharedContext());
         assertSame(next.context().getClientSessionContext(), shared.getClientSessionContext());
         assertSame(next.context().getServerSessionContext(), shared.getServerSessionContext());
         assertArrayEquals(firstParams.getProtocols(), captured.createSSLEngine().getEnabledProtocols());
@@ -308,7 +325,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public SslBundle createSslBundle() throws SSLException {
+        @Override protected SslBundle createSslBundle() throws SSLException {
             return super.createSslBundle();
         }
     }

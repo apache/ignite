@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -299,6 +300,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         placeKeys(newKeys);
         fail.set(true);
 
+        Instant reloadStarted = Instant.ofEpochMilli(System.currentTimeMillis());
         String res = reloadFailure(g);
 
         assertContains(log, res, node(g) + ": failed on " + COMMUNICATION + ", " + DISCOVERY +
@@ -308,8 +310,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         String status = status(g);
 
-        assertContains(log, status, "last reload failed 1 time(s) in a row");
-        assertContains(log, status, "Certificate provider class is unavailable");
+        Matcher failure = Pattern.compile(Pattern.quote("last reload failed 1 time(s) in a row, the last at ") +
+            "(\\S+): Certificate provider class is unavailable").matcher(status);
+
+        assertTrue(status, failure.find());
+        assertFalse(status, Instant.parse(failure.group(1)).isBefore(reloadStarted));
         assertContains(log, status, "last reload succeeded at");
     }
 

@@ -664,7 +664,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 }
             }, SQLException.class, "Unsupported key algorithm: INVALID");
 
-            assertTrue(err.getMessage().contains("keyStoreFile=" + CLI_KEY_STORE_PATH));
+            GridTestUtils.assertContains(log, err.getMessage(), "keyStoreFile=" + CLI_KEY_STORE_PATH);
         }
         finally {
             stopAllGrids();

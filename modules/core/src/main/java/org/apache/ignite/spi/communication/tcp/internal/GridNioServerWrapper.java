@@ -220,7 +220,7 @@ public class GridNioServerWrapper {
     private final int msgQueueWarningSize = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE, 0);
 
-    /** Context shared by incoming and outgoing connections until the SPI stops. */
+    /** SSL context for incoming and outgoing connections, or {@code null} if SSL is disabled. */
     private SSLContext sslCtx;
 
     /** NIO server. */
