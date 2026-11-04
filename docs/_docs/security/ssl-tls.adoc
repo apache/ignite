@@ -295,12 +295,13 @@ Configure the factory used by each connection type:
 |===
 
 Connection types on one node that share a factory renew together. Use a separate factory instance for each node with renewal enabled.
+A node with renewal enabled does not start if another running node already uses the same instance.
 
 To change how early renewal starts, set `renewBeforeFraction` as described in the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html#setRenewBeforeFraction(double)[AbstractSslContextFactory Javadoc]. Changes to these settings take effect after a node restart.
 
 === Check Renewal
 
-Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to check the loaded certificate and next attempt time for each transport. At startup the renewal log lists only the transports registered so far.
+Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to check the loaded certificate and the next attempt time for each factory and its transports. The startup log line `TLS certificates will be renewed automatically` can omit transports that register later. Status lists all of them.
 
 If the source still returns the current certificates or the replacement fails validation or loading, the node keeps its current context. It retries after 60 to 90 seconds, then at increasing intervals of up to 90 minutes. Retries continue after expiry.
 The link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric counts these unsuccessful attempts. Check the node log for the cause, fix certificate delivery or configuration, and use reload if you need to apply the correction immediately.

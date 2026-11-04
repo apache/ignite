@@ -218,9 +218,10 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * A node with renewal enabled reads this setting at startup.
+     * A node with renewal enabled reads this setting at startup and does not start unless its value is greater than
+     * {@code 0} and less than {@code 1}.
      *
-     * @return Share of the certificate lifetime left when renewal starts, strictly between zero and one.
+     * @return Share of the certificate lifetime left when renewal starts.
      */
     public double getRenewBeforeFraction() {
         return renewBeforeFraction;
@@ -429,7 +430,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             SslBundle next = reload ? buildReplacement() : prepareSslBundle();
 
             if (reload)
-                checkReplacement(next, renewal != null && !renewalExec.isShutdown());
+                checkReplacement(next, renewal != null && !renewalStopped());
 
             putInUse(next);
 

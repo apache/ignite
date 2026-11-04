@@ -273,11 +273,23 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         TestSslContextFactory factory = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        doReturn(startup).doThrow(new SSLException(ISSUER_DOWN, new InterruptedException())).when(factory).createSslBundle();
+        doReturn(startup).doAnswer(inv -> {
+            Thread.currentThread().interrupt();
+
+            throw new SSLException(ISSUER_DOWN, new InterruptedException());
+        }).when(factory).createSslBundle();
 
         NODE_ACCESS.startRenewal(factory, exec, renewalLog, () -> "");
         exec.runNext(); // Plan renewal.
-        exec.runNext(); // Load the replacement.
+
+        try {
+            exec.runNext(); // Load the replacement.
+
+            assertTrue("Source's interrupt flag", Thread.currentThread().isInterrupted());
+        }
+        finally {
+            Thread.interrupted();
+        }
 
         assertSame(startup, NODE_ACCESS.current(factory));
         assertEquals(1, NODE_ACCESS.renewalFailures(factory));
@@ -315,7 +327,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
     /**
      * With renewal attached, reload refuses a bundle without certificate metadata, even after the factory has turned
-     * renewal off: the renewal settings are fixed until the attached node stops. renew refuses such a bundle too.
+     * renewal off: the renewal settings are fixed until the attached node stops. Renewal refuses such a bundle too.
      */
     @Test
     public void testReloadCannotLoseMetadataWithRenewal() throws Exception {
