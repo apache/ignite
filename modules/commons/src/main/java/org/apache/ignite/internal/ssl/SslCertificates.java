@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
-/** Certificate dates and descriptions used by SSL reload and status. */
+/** Validity dates and descriptions of X.509 certificate chains. */
 public class SslCertificates {
     /** */
     private SslCertificates() {
