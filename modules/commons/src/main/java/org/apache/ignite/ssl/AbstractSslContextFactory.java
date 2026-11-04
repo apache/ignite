@@ -77,7 +77,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
     };
 
-    /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
+    /** Accepted context and the metadata loaded with it. */
     private transient volatile SslBundle bundle;
 
     /** Snapshot of the last successful reload and subsequent failures. */
@@ -319,7 +319,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      *
      * @return Context and metadata accepted by this initialization.
      * @throws IgniteException If the material cannot be loaded, the context cannot be created or a replacement is rejected.
-     * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
+     * @throws IllegalArgumentException If the JVM does not recognize a name in {@link #setProtocols} or {@link #setCipherSuites}.
      * @throws UnsupportedOperationException If the context does not support stream sockets.
      */
     protected final synchronized SslBundle init() {
@@ -411,9 +411,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Initializes the context on first use. Once a context is available, callers can use it while {@link #init()}
-     * loads a replacement. Obtain the context again after a successful replacement. Previously returned contexts,
-     * engines and sockets retain their original material. Do not reinitialize the returned context directly.
+     * Returns the accepted context, initializing the factory on first use. While a replacement loads, callers receive
+     * the current context without waiting. Call this method again after a successful replacement to obtain the new context.
+     * Previously returned contexts, engines and sockets retain their original material. Do not reinitialize the context directly.
      *
      * @return Currently accepted context.
      * @throws IgniteException If the first initialization fails to load the material or create the context.
