@@ -1118,6 +1118,12 @@ control.bat --metric --configure-max-value max-value-metric-name 60000
 
 NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
 
+NOTE: For the `PageTimestampHistogram` metric, the values set
+link:monitoring-metrics/system-views#pages_timestamp_histogram[time intervals] rather than bounds:
+the interval length in milliseconds is the difference between the first two values, the number of intervals is
+the number of values, and the other values are ignored.
+For example, `0,600000,0` sets three 10-minute intervals.
+
 == Indexes Management
 
 The commands below allow to get a specific information on indexes and to trigger the indexes rebuild process.

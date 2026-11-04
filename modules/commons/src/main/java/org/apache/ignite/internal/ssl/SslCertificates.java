@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ssl.SslBundle;
 import org.jetbrains.annotations.Nullable;
 
-/** Validity dates and descriptions of X.509 certificate chains. */
+/** Checks X.509 chain dates and formats certificates and failure reasons as message text. */
 public class SslCertificates {
     /** */
     private SslCertificates() {

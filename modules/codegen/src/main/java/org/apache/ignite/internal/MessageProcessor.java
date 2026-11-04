@@ -129,6 +129,16 @@ public class MessageProcessor extends AbstractProcessor {
     /** */
     private MessageJsonGenerator jsonGen;
 
+    /** Returns whether the message class is listed in {@link #SKIP_MESSAGES}. */
+    public static boolean isSkippedMessage(String clsName) {
+        for (String name : SKIP_MESSAGES) {
+            if (name.equals(clsName))
+                return true;
+        }
+
+        return false;
+    }
+
     /** Processes all classes implementing the {@code Message} interface and generates corresponding serializer code. */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeElement msgEl = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE);
