@@ -1775,7 +1775,7 @@ Reload does not test connections or roll back changes if new connections fail.
 Reload covers communication, discovery, the client connector, binary REST, and HTTP REST configured with `ConnectorConfiguration.httpSslFactory`.
 New connections use the reloaded certificates. Existing connections stay open with their current SSL context.
 
-The command does not update thin clients or JDBC and ODBC applications. HTTP REST configured directly in Jetty XML also needs a restart.
+Thin clients, JDBC and ODBC applications, and HTTP REST certificates managed directly by Jetty are outside the scope of this command.
 See link:security/ssl-tls#reload-or-restart[Reload or Restart] for changes that reload can apply.
 
 Nodes absent from the topology, such as reconnecting client nodes, are neither updated nor listed in the output.
