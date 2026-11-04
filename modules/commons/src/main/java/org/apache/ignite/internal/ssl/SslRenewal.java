@@ -36,6 +36,8 @@ import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslBundle;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
+
 /**
  * Renews one factory's certificates before expiry when {@link AbstractSslContextFactory#setRenewalEnabled(boolean) renewal is enabled}.
  * Renewal planning and attempts run in the node's renewal thread.
@@ -149,7 +151,7 @@ public class SslRenewal {
     private void plan() {
         pause = waitLogTime = 0;
 
-        SslBundle planned = factory.sslBundle();
+        SslBundle planned = NODE_ACCESS.current(factory);
         List<X509Certificate> chain = SslCertificates.renewalChain(planned);
 
         chainNotAfter = SslCertificates.chainNotAfter(chain);
@@ -180,7 +182,7 @@ public class SslRenewal {
                 CommonUtils.log(log, "TLS certificates reloaded [transports=" + transports.get() + ", " +
                     SslCertificates.describeChains(renewed.certificateChains()) + ", initiator=" + INITIATOR + ']');
             }
-            else if (factory.sslBundle().context() == planned)
+            else if (factory.create() == planned)
                 retry(planned, null);
         }
         catch (Throwable e) {

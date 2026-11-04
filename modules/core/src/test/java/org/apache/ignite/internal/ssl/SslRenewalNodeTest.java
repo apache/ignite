@@ -153,15 +153,15 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         assertEquals("ssl.ConsecutiveRenewalFailures", metrics.next().name());
         assertFalse(metrics.hasNext());
 
-        nodeFactory.renew(nodeFactory.sslBundle().context());
-        clientFactory.renew(clientFactory.sslBundle().context());
-        clientFactory.renew(clientFactory.sslBundle().context());
+        nodeFactory.renew(nodeFactory.create());
+        clientFactory.renew(clientFactory.create());
+        clientFactory.renew(clientFactory.create());
 
         assertEquals("Both factories", 3, failures.value());
 
         save(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), nodeKeys);
 
-        nodeFactory.renew(nodeFactory.sslBundle().context());
+        nodeFactory.renew(nodeFactory.create());
 
         assertEquals("Node factory renewed", 2, failures.value());
         assertEquals(0, node.nextRenewalTime());
@@ -243,7 +243,9 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
             cfg.setSslContextFactory(factory);
         });
 
-        assertTrue(waitForCondition(() -> factory.sslBundle().certificateChains().containsKey("replacement"), 10_000));
+        SslContextProvider discovery = provider(restarted, DISCOVERY);
+
+        assertTrue(waitForCondition(() -> discovery.certificateChains().containsKey("replacement"), 10_000));
         assertEquals(0, factory.renewalFailures());
         assertEquals(chain(replacement).get(0), servedCertificate(context(ca.keyStoreWithPrivateKey("probe"), ca.trustStore()),
             discoveryPort(restarted)));

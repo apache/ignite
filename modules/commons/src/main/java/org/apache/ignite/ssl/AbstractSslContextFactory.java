@@ -46,6 +46,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.ssl.SslCertificates;
+import org.apache.ignite.internal.ssl.SslFactoryAccess;
 import org.apache.ignite.internal.ssl.SslRenewal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -67,6 +68,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Default share of the certificate lifetime left when a node starts to renew it. */
     public static final double DFLT_RENEW_BEFORE_FRACTION = 0.15;
+
+    /**
+     * Gives the node access to the accepted material and the same reload path used by subclasses.
+     * @hidden
+     */
+    public static final SslFactoryAccess NODE_ACCESS =
+        new SslFactoryAccess(AbstractSslContextFactory::sslBundle, AbstractSslContextFactory::init);
 
     /** Accepted context and the metadata loaded with it. Runtime state is not serialized with configuration. */
     private transient volatile SslBundle bundle;
@@ -200,8 +208,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. The result must not change material already in use. Outside loading hooks, use {@link #sslBundle()} to
-     * inspect the accepted material.
+     * loading it. The result must not change material already in use.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws SSLException If the context could not be created.
@@ -375,7 +382,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
      * @throws UnsupportedOperationException If the context does not support stream sockets.
      */
-    public final synchronized SslBundle init() {
+    protected final synchronized SslBundle init() {
         try {
             boolean reload = bundle != null;
             SslBundle next = reload ? buildReplacement() : prepareSslBundle();
@@ -450,7 +457,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * Unchanged chains count as an unsuccessful renewal without recording a reload failure. An interrupted attempt retains
      * the current material and does not count as unsuccessful. The node's renewal scheduler calls this method.
      *
-     * @param expected Accepted context from {@link #sslBundle()} when the renewal was planned.
+     * @param expected Context in use when the renewal was planned.
      * @return Installed bundle, or {@code null} if its chains are unchanged or the expected context has already been replaced.
      * @throws IgniteException If the replacement fails initialization checks, has no certificate metadata or does not advance
      *      the earliest expiry across all chains.
@@ -619,7 +626,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return One snapshot of the material in use.
      * @throws IgniteException If the first initialization fails.
      */
-    public final SslBundle sslBundle() {
+    final SslBundle sslBundle() {
         SslBundle cur = bundle;
 
         if (cur == null) {
