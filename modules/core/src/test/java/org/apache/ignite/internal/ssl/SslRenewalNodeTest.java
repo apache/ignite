@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -187,8 +186,8 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
                     try {
                         Thread.sleep(Long.MAX_VALUE);
                     }
-                    catch (InterruptedException e) {
-                        throw new IgniteInterruptedException(e);
+                    catch (InterruptedException ignored) {
+                        throw new SSLException("Key store read cancelled");
                     }
                 }
 

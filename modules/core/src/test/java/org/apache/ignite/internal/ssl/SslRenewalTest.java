@@ -364,6 +364,30 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals("New chains", new ReloadOutcome(0, 0, null, 0), f.reloadOutcome());
     }
 
+    /** Material returned by the key source after the renewal executor stops must not be installed. */
+    @Test
+    public void testRenewalDiscardsMaterialLoadedDuringShutdown() throws Exception {
+        long now = System.currentTimeMillis();
+        SslBundle inUse = bundle(ca.keyStoreWithPrivateKey("in-use", now - HOUR, now + HOUR), ca.trustStore());
+        SslBundle later = bundle(ca.keyStoreWithPrivateKey("later", now - HOUR, now + 2 * HOUR), ca.trustStore());
+        TestSslContextFactory factory = renewingFactory(QUARTER);
+        RecordingExecutor exec = new RecordingExecutor();
+
+        doReturn(inUse).doAnswer(inv -> {
+            exec.shutdownNow();
+
+            return later;
+        }).when(factory).createSslBundle();
+
+        factory.startRenewal(exec, renewalLog, () -> "");
+        exec.runNext(); // Plan renewal.
+        exec.runNext(); // Load the replacement.
+
+        assertTrue(exec.isShutdown());
+        assertSame(inUse, factory.sslBundle());
+        assertEquals(new ReloadOutcome(0, 0, null, 0), factory.reloadOutcome());
+    }
+
     /**
      * With renewal attached, direct initialization refuses a bundle without certificate metadata, even after the factory has turned
      * renewal off: the renewal settings are fixed until the attached node stops. renew refuses such a bundle too.
@@ -454,6 +478,25 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         exec.runNext();
 
         assertEquals(now + 2 * HOUR, factory.nextRenewalTime());
+    }
+
+    /** A subclass must supply a valid window before its renewal schedule can start. */
+    @Test
+    public void testInvalidOverriddenFractionPreventsRenewal() throws Exception {
+        TestSslContextFactory factory = renewingFactory(QUARTER);
+        RecordingExecutor exec = new RecordingExecutor();
+
+        doReturn(bundle(ca.keyStoreWithPrivateKey(), ca.trustStore())).when(factory).createSslBundle();
+        doReturn(Double.NaN).when(factory).getRenewBeforeFraction();
+
+        GridTestUtils.assertThrows(log, () -> factory.startRenewal(exec, renewalLog, () -> ""),
+            IgniteException.class, "renewBeforeFraction must be greater than 0 and less than 1");
+        assertTrue(exec.pending().isEmpty());
+
+        doReturn(QUARTER).when(factory).getRenewBeforeFraction();
+
+        factory.startRenewal(exec, renewalLog, () -> "");
+        assertEquals(1, exec.pending().size());
     }
 
     /** A factory accepts one renewal executor, and attaching it again does not duplicate its schedule. */
