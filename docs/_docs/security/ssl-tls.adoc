@@ -30,7 +30,7 @@ This certificate must be trusted by all other server nodes.
 
 To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the node configuration.
 You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
-//You can also implement your own `SSLContext` factory.
+To implement your own `SSLContext` factory, see <<Custom SSL Context Factories>>.
 
 [CAUTION]
 ====
@@ -64,6 +64,8 @@ tab:C++[unsupported]
 
 The keystore must contain the node's certificate, including its private key.
 The trust store must contain the trusted certificates for all other cluster nodes.
+
+If the JVM does not recognize a configured protocol or cipher suite name, the node fails to start.
 
 You can define other properties, such as key algorithm, key store type, or trust manager. See the description of the properties in the <<SslContextFactory Properties>> section.
 
@@ -182,7 +184,8 @@ Now all nodes trust the new certificates.
 == Custom SSL Context Factories
 
 A subclass of `AbstractSslContextFactory` implements `createSslBundle()` to build an initialized context and report the certificate chains loaded with it.
-For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`. For a custom key manager, return an `SslBundle` with the chains for its private keys, indexed by alias.
+For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`.
+For custom key managers, initialize the context with those managers and the intended trust managers. Apply the configured protocols and cipher suites, then return the context and its private-key chains indexed by alias.
 Use a null chain map if the source cannot report certificates. An empty map means the store has no X.509 key chains.
 
 Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.

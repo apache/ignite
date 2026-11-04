@@ -315,9 +315,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Initializes the context on first use. Once a context is available, callers can use it while {@link #init()}
-     * loads a replacement. Obtain the context again after a successful replacement. Previously returned contexts,
-     * engines and sockets retain their original material. Do not reinitialize the returned context directly.
+     * Returns the accepted context, initializing the factory on first use. While a replacement loads, callers receive
+     * the current context without waiting. Call this method again after a successful replacement to obtain the new context.
+     * Previously returned contexts, engines and sockets retain their original material. Do not reinitialize the context directly.
      *
      * @return Currently accepted context.
      * @throws IgniteException If the first initialization fails to load the material or create the context.
