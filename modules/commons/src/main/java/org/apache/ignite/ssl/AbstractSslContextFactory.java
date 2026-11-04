@@ -40,16 +40,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.ssl.SslCertificates;
 import org.apache.ignite.internal.ssl.SslFactoryAccess;
 import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.internal.ssl.SslRenewal;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
@@ -98,10 +94,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
 
         /** {@inheritDoc} */
-        @Override protected @Nullable SslBundle renew(
-            AbstractSslContextFactory factory,
-            SSLContext expected
-        ) throws IgniteCheckedException {
+        @Override protected @Nullable SslBundle renew(AbstractSslContextFactory factory, SSLContext expected) {
             return factory.renew(expected);
         }
 
@@ -494,24 +487,23 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Installs replacement material only if its earliest chain expiry is later than the current earliest expiry.
-     * Unchanged chains count as an unsuccessful renewal without recording a reload failure. An interrupted attempt retains
-     * the current material and does not count as unsuccessful.
+     * Unchanged chains count as an unsuccessful renewal without recording a reload failure. If the node stops the executor
+     * during the load, the factory retains its material and failure counts.
      *
      * @param expected Context in use when the renewal was planned.
-     * @return Installed bundle, or {@code null} if its chains are unchanged or the expected context has already been replaced.
-     * @throws IgniteException If the replacement fails initialization checks, has no certificate metadata or does not advance
-     *      the earliest expiry across all chains.
-     * @throws IgniteCheckedException If renewal is interrupted; the interrupt flag stays set when the factory sets it.
+     * @return Installed bundle, or {@code null} if the attempt was superseded, the executor stopped or the chains are unchanged.
+     * @throws IgniteException If the replacement cannot be loaded, fails initialization checks, has no certificate metadata
+     *      or does not advance the earliest expiry across all chains.
      */
-    private synchronized @Nullable SslBundle renew(SSLContext expected) throws IgniteCheckedException {
+    private synchronized @Nullable SslBundle renew(SSLContext expected) {
         if (bundle == null || bundle.context() != expected)
             return null;
 
         try {
             SslBundle next = buildReplacement();
 
-            if (renewalInterrupted())
-                throw new IgniteInterruptedCheckedException("TLS certificate renewal was interrupted");
+            if (renewalStopped())
+                return null;
 
             Map<String, List<X509Certificate>> chains = next.certificateChains();
 
@@ -535,8 +527,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             putInUse(next);
         }
         catch (Throwable e) {
-            if (!renewalInterrupted() &&
-                !X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class, IgniteInterruptedCheckedException.class)) {
+            if (!renewalStopped()) {
                 renewalFailures++;
 
                 onFailure(e);
@@ -550,9 +541,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         return bundle;
     }
 
-    /** @return Whether the renewal thread was interrupted or its node stopped the executor during the load. */
-    private boolean renewalInterrupted() {
-        return Thread.currentThread().isInterrupted() || (renewalExec != null && renewalExec.isShutdown());
+    /** @return Whether the node stopped its renewal executor. */
+    private boolean renewalStopped() {
+        return renewalExec != null && renewalExec.isShutdown();
     }
 
     /** @return Unsuccessful automatic attempts since the earliest expiry across all chains was advanced. */

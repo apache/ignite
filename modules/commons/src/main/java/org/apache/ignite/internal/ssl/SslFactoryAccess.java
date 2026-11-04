@@ -20,7 +20,6 @@ package org.apache.ignite.internal.ssl;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslBundle;
@@ -46,7 +45,7 @@ public abstract class SslFactoryAccess {
     );
 
     /** Renews the material if the scheduled context is still current. */
-    protected abstract @Nullable SslBundle renew(AbstractSslContextFactory factory, SSLContext expected) throws IgniteCheckedException;
+    protected abstract @Nullable SslBundle renew(AbstractSslContextFactory factory, SSLContext expected);
 
     /** Reads the unsuccessful attempt count. */
     protected abstract int renewalFailures(AbstractSslContextFactory factory);

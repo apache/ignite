@@ -37,7 +37,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
@@ -270,77 +269,50 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertRenewalRejected("A later leaf from an authority that expires no later", f, reason);
     }
 
-    /**
-     * Renewal interrupted while the factory loads changes nothing and keeps the interrupt flag, whether the factory returns the chains
-     * in use or new ones: the interrupt is checked before both the comparison with the chains in use and the installation.
-     */
+    /** An interrupted key source counts as a failed attempt while the node is still running. */
     @Test
-    public void testInterruptedRenewalChangesNothing() throws Exception {
-        long now = System.currentTimeMillis();
-        KeyStore startup = ca.keyStoreWithPrivateKey("startup", now - HOUR, now + HOUR);
-        SslBundle same = bundle(startup, ca.trustStore());
-        SslBundle renewed = bundle(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), ca.trustStore());
-        TestSslContextFactory f = renewingFactory(QUARTER);
-
-        doReturn(bundle(startup, ca.trustStore()))
-            .doAnswer(inv -> interrupted(same))
-            .doAnswer(inv -> interrupted(renewed))
-            .doAnswer(inv -> {
-                Thread.currentThread().interrupt();
-
-                throw new SSLException("Key read interrupted");
-            }).when(f).createSslBundle();
-
-        SslBundle inUse = NODE_ACCESS.current(f);
-
-        assertInterruptedRenewal(f, inUse, IgniteInterruptedCheckedException.class);
-        assertInterruptedRenewal(f, inUse, IgniteInterruptedCheckedException.class);
-        assertInterruptedRenewal(f, inUse, IgniteException.class);
-    }
-
-    /** Returns the loader's result with the cancellation flag still set. */
-    private static SslBundle interrupted(SslBundle result) {
-        Thread.currentThread().interrupt();
-
-        return result;
-    }
-
-    /** The last accepted material and both failure counters survive an interrupted source read. */
-    private void assertInterruptedRenewal(TestSslContextFactory f, SslBundle inUse, Class<? extends Throwable> error) {
-        try {
-            GridTestUtils.assertThrows(log, () -> NODE_ACCESS.renew(f, inUse.context()), error, null);
-        }
-        finally {
-            assertTrue("Loader's interrupt flag", Thread.interrupted());
-        }
-
-        assertSame(inUse, NODE_ACCESS.current(f));
-        assertEquals(0, NODE_ACCESS.renewalFailures(f));
-        assertEquals(new ReloadOutcome(0, 0, null, 0), NODE_ACCESS.reloadOutcome(f));
-    }
-
-    /** Material returned by the key source after the renewal executor stops must not be installed. */
-    @Test
-    public void testRenewalDiscardsMaterialLoadedDuringShutdown() throws Exception {
-        long now = System.currentTimeMillis();
-        SslBundle inUse = bundle(ca.keyStoreWithPrivateKey("in-use", now - HOUR, now + HOUR), ca.trustStore());
-        SslBundle later = bundle(ca.keyStoreWithPrivateKey("later", now - HOUR, now + 2 * HOUR), ca.trustStore());
+    public void testInterruptedSourceCountsAsRenewalFailure() throws Exception {
+        SslBundle startup = bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore());
         TestSslContextFactory factory = renewingFactory(QUARTER);
         RecordingExecutor exec = new RecordingExecutor();
 
-        doReturn(inUse).doAnswer(inv -> {
-            exec.shutdownNow();
-
-            return later;
-        }).when(factory).createSslBundle();
+        doReturn(startup).doThrow(new SSLException(ISSUER_DOWN, new InterruptedException())).when(factory).createSslBundle();
 
         NODE_ACCESS.startRenewal(factory, exec, renewalLog, () -> "");
         exec.runNext(); // Plan renewal.
         exec.runNext(); // Load the replacement.
 
-        assertTrue(exec.isShutdown());
-        assertSame(inUse, NODE_ACCESS.current(factory));
-        assertEquals(new ReloadOutcome(0, 0, null, 0), NODE_ACCESS.reloadOutcome(factory));
+        assertSame(startup, NODE_ACCESS.current(factory));
+        assertEquals(1, NODE_ACCESS.renewalFailures(factory));
+        assertEquals(1, NODE_ACCESS.reloadOutcome(factory).failures());
+        assertEquals(1, exec.pending().size());
+    }
+
+    /** If shutdown stops the executor during a source read, neither unchanged nor newer material affects the factory. */
+    @Test
+    public void testRenewalDiscardsMaterialLoadedDuringShutdown() throws Exception {
+        long now = System.currentTimeMillis();
+        SslBundle inUse = bundle(ca.keyStoreWithPrivateKey("in-use", now - HOUR, now + HOUR), ca.trustStore());
+        SslBundle later = bundle(ca.keyStoreWithPrivateKey("later", now - HOUR, now + 2 * HOUR), ca.trustStore());
+
+        for (SslBundle loaded : List.of(inUse, later)) {
+            TestSslContextFactory factory = renewingFactory(QUARTER);
+            RecordingExecutor exec = new RecordingExecutor();
+
+            doReturn(inUse).doAnswer(inv -> {
+                exec.shutdownNow();
+
+                return loaded;
+            }).when(factory).createSslBundle();
+
+            NODE_ACCESS.startRenewal(factory, exec, renewalLog, () -> "");
+            exec.runNext(); // Plan renewal.
+            exec.runNext(); // Load the replacement.
+
+            assertSame(inUse, NODE_ACCESS.current(factory));
+            assertEquals(0, NODE_ACCESS.renewalFailures(factory));
+            assertEquals(new ReloadOutcome(0, 0, null, 0), NODE_ACCESS.reloadOutcome(factory));
+        }
     }
 
     /**
@@ -811,10 +783,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         assertEquals(List.of("WARN " + WAITING, "WARN " + WAITING), problems());
     }
 
-    /**
-     * An attempt planned for a context that a reload has replaced, here run before the plan of the reload, does not call the
-     * factory, log or schedule a retry: only the plan of the reload stays pending.
-     */
+    /** A successful reload supersedes the old attempt without recording a failure or scheduling another retry. */
     @Test
     public void testStaleAttemptNotRetried() throws Exception {
         TestSslContextFactory f = renewingFactory(QUARTER);
@@ -838,6 +807,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
         stale.run();
 
         verify(f, times(2)).createSslBundle();
+        assertEquals(0, NODE_ACCESS.renewalFailures(f));
         assertEquals(List.of(), problems());
         assertEquals(List.of(plan), exec.pending());
     }
