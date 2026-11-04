@@ -101,7 +101,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** Both authorities: HTTP REST trusts them at start, probes always. */
     private KeyStore trustBoth;
 
-    /** Creates the stores used by tests that establish HTTPS connections through the factory. */
+    /** Creates the key and trust stores read by {@link #factory()}. */
     private void prepareStores() throws Exception {
         keyFile = Files.createTempFile("ignite-https-key-", ".jks");
         trustFile = Files.createTempFile("ignite-https-trust-", ".jks");
