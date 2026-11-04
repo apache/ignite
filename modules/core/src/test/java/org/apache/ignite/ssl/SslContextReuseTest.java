@@ -20,12 +20,10 @@ package org.apache.ignite.ssl;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
