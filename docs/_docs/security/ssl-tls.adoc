@@ -30,7 +30,7 @@ This certificate must be trusted by all other server nodes.
 
 To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the node configuration.
 You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
-You can also implement your own `SSLContext` factory, see <<Custom SSL Context Factories>>.
+To implement your own `SSLContext` factory, see <<Custom SSL Context Factories>>.
 
 [CAUTION]
 ====
@@ -66,7 +66,7 @@ The keystore must contain the node's certificate and private key.
 
 The trust store defines which peer certificates the node accepts. Configure trust on all nodes and clients before replacing certificates.
 
-Configured protocol and cipher suite names must be supported by the JVM. An unsupported name prevents the node from starting.
+If the JVM does not recognize a configured protocol or cipher suite name, the node fails to start.
 
 You can define other properties, such as key algorithm, key store type, or trust manager. See the description of the properties in the <<SslContextFactory Properties>> section.
 
@@ -308,15 +308,18 @@ The link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] me
 == Custom SSL Context Factories
 
 A subclass of `AbstractSslContextFactory` implements `createSslBundle()` to build an initialized context and report the certificate chains loaded with it.
-For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`. For custom key managers, initialize the context with those managers, the intended trust managers and TLS settings. Return it with the matching chains indexed by alias.
+For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`.
+For custom key managers, initialize the context with those managers and the intended trust managers. Apply the configured protocols and cipher suites, then return the context and its private-key chains indexed by alias.
 Use a null chain map if the source cannot report certificates. An empty map means the store has no X.509 key chains.
 
 Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.
 A failed initialization leaves the previous context in use.
 
-A node reload validates a replacement before publishing it. It rejects a reused context, an empty chain map, or a chain containing an expired or not-yet-valid certificate.
+After the first successful initialization, both the reload command and a subclass calling `init()` must supply a fresh context. The factory rejects a replacement if it reports no X.509 chains or any certificate in a chain is expired or not yet valid.
+These checks also apply when the subclass calls `init()` on node restart. The `--ssl status` command reports the result as a reload.
 If the factory cannot supply metadata, reload can replace the context but cannot check certificate dates. Check peer trust with a new connection.
-Transports sharing a factory use its new context for new connections. Previously obtained contexts and sockets keep their material. Use a separate factory instance for each node.
+Transports sharing a factory use its new context for new connections. Previously obtained contexts and sockets keep their material.
+Use a separate factory instance for each node. Nodes sharing an instance also share its reload results and switch to new material together.
 
 With automatic renewal enabled, each bundle must report at least one X.509 chain. Initialization and renewal call `createSslBundle()` one at a time on the same factory. A successful replacement schedules renewal from the new material.
 One thread renews all factories on a node. Stopping the node interrupts a running attempt and waits for it to finish. Set timeouts on remote requests and respond to interruption so a slow source does not delay other factories or shutdown.
