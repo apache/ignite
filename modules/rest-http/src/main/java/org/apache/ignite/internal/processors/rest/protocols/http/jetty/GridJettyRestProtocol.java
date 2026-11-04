@@ -212,7 +212,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory http)
             || connector.getConnectionFactory(SslConnectionFactory.class) != null) {
             throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory requires a Jetty connector with HTTP as its default " +
-                "protocol and no TLS configuration of its own [jettyPath=" + config().getJettyPath() + ", protocols=" + connector.getProtocols() + ']');
+                "protocol and no TLS configuration of its own [jettyPath=" + config().getJettyPath() +
+                ", protocols=" + connector.getProtocols() + ']');
         }
 
         SslContextFactory.Server ssl = new SslContextFactory.Server();
