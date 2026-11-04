@@ -42,7 +42,7 @@ public @interface Argument {
     /**
      * Required to keep compatibility with existing {@code control.sh} output.
      *
-     * @return {@code True} if paramter name in java style.
+     * @return {@code True} if parameter name in java style.
      */
     public boolean javaStyleName() default false;
 
