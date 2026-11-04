@@ -1765,7 +1765,7 @@ After preparing replacement certificates or updating trust stores, run:
 control.sh|bat --ssl reload [--yes]
 ----
 
-The command asks for confirmation. Add `--yes` to skip the prompt when running from a script. It does not bypass certificate or permission checks.
+The command asks for confirmation. In scripts, add `--yes` to confirm the operation.
 
 Before replacing certificates, follow link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] to prepare trust stores and check the change on one node first.
 Reload does not test connections or roll back changes if new connections fail.
@@ -1788,7 +1788,7 @@ If that update fails, those transports keep their previous context. Successful u
 
 The command lists failed nodes first and exits with an error if any update failed.
 Correct the reported cause and run reload again.
-Each factory reload attempt is also recorded in the node log, including the user's login and network address when security is enabled.
+The command logs successful updates at INFO and failures at WARN. When security is enabled, the log includes the user's login and network address.
 
 A successful result means the new SSL context is in use for new connections. Use `--ssl status` to check the loaded certificates, then test new connections as described in link:security/ssl-tls#upgrading-certificates[Upgrading Certificates].
 
@@ -1818,7 +1818,7 @@ Status does not test connections or verify that other nodes and clients trust th
 |Output |Meaning and next action
 |`last reload failed N time(s) in a row`
 |Check the reason and time on this line, correct the cause, and run reload again.
-|`PROBLEM: the loaded certificate is not valid now`
+|`PROBLEM: the loaded certificate chain is not valid now`
 |A certificate in the loaded chain has expired or is not yet valid. Install a valid chain and run reload.
 |`certificate metadata is unavailable`
 |The factory did not supply metadata, so status cannot check certificate dates. Check them directly in the key store or other certificate source. For a custom factory, see link:security/ssl-tls#custom-ssl-context-factories[Custom SSL Context Factories].

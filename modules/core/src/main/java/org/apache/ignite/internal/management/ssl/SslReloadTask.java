@@ -93,7 +93,10 @@ public class SslReloadTask extends AbstractSslTask {
 
                     lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; loaded " + desc));
                 }
-                catch (Exception | LinkageError e) {
+                catch (Throwable e) {
+                    if (e instanceof VirtualMachineError || e instanceof ThreadDeath)
+                        throw e;
+
                     failed = true;
 
                     String reason = reason(e);

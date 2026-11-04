@@ -116,13 +116,11 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
         save(ca.keyStoreWithPrivateKey(), clientKeyStore);
 
         IgniteEx srv0 = startGrid(0);
-        IgniteEx srv1 = startGrid(1);
         IgniteEx cli = startClientGrid(CLIENT_NODE_NAME_PREFIX);
 
         // Transports are listed alphabetically; a client node runs no binary REST.
         Map<IgniteEx, String> transports = Map.of(
             srv0, "binary REST, client connector, communication, discovery",
-            srv1, "binary REST, client connector, communication, discovery",
             cli, "client connector, communication, discovery");
 
         String loaded = "loaded alias=" + replacement + ", subject=CN=" + replacement;

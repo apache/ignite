@@ -59,11 +59,11 @@ public class SslCertificates {
     }
 
     /**
-     * @param cert Certificate, {@code null} if unknown.
-     * @return Subject, issuer, serial and validity of the certificate; an empty string if it is unknown.
+     * @param cert Certificate to describe.
+     * @return Subject, issuer, serial number and validity period.
      */
-    public static String describe(@Nullable X509Certificate cert) {
-        return cert == null ? "" : "subject=" + cert.getSubjectX500Principal() + ", issuer=" + cert.getIssuerX500Principal() +
+    public static String describe(X509Certificate cert) {
+        return "subject=" + cert.getSubjectX500Principal() + ", issuer=" + cert.getIssuerX500Principal() +
             ", serial=" + cert.getSerialNumber().toString(16) + ", notBefore=" + cert.getNotBefore().toInstant() +
             ", notAfter=" + cert.getNotAfter().toInstant();
     }
