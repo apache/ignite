@@ -199,6 +199,10 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
                 () -> bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), new long[0]),
                 IllegalArgumentException.class);
 
+            assertThrowsWithCause(
+                () -> bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), new long[] {100, 50}),
+                IllegalArgumentException.class);
+
             bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), BOUNDS);
 
             HistogramMetric sysTime = g.context().metric().registry(TX_METRICS)
@@ -226,11 +230,25 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             // Check buckets count including dummy bucket.
             assertEquals(PeriodicHistogramMetricImpl.DFLT_BUCKETS_CNT + 1, histogram.bucketsCount());
 
+            // Buckets interval is set by the first two bounds.
+            assertThrowsWithCause(
+                () -> bean.configureHistogramMetric(metricName(registry, metricName), new long[] {60_000L}),
+                IllegalArgumentException.class);
+
             // Reconfigure with 5 buckets and 1 minute interval.
             long interval = 60_000L;
             long[] bounds = new long[] {0L, interval, 0L, 0L, 0L};
 
             bean.configureHistogramMetric(metricName(registry, metricName), bounds);
+
+            assertEquals(bounds.length + 1, histogram.bucketsCount());
+            assertEquals(interval, histogram.bucketsInterval());
+
+            // Check configuration after reactivation.
+            g.cluster().state(ClusterState.INACTIVE);
+            g.cluster().state(ClusterState.ACTIVE);
+
+            histogram = g.context().metric().registry(registry).findMetric(metricName);
 
             assertEquals(bounds.length + 1, histogram.bucketsCount());
             assertEquals(interval, histogram.bucketsInterval());

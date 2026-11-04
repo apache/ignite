@@ -319,11 +319,11 @@ public class MetricRegistryImpl implements MetricRegistry {
     private void configureMetrics(Metric metric) {
         assert !customMetric(name()) : "Custom metrics cannot be configured yet";
 
-        if (metric instanceof HistogramMetricImpl) {
+        if (metric instanceof ConfigurableHistogramMetric) {
             long[] cfgBounds = histogramCfgProvider.apply(metric.name());
 
             if (cfgBounds != null)
-                ((HistogramMetricImpl)metric).reset(cfgBounds);
+                ((ConfigurableHistogramMetric)metric).bounds(cfgBounds);
         }
         else if (metric instanceof HitRateMetric) {
             Long cfgRateTimeInterval = hitRateCfgProvider.apply(metric.name());

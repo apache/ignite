@@ -228,6 +228,13 @@ This utility can do the following commands:
   Kill consistency task:
     control.(sh|bat) --kill consistency
 
+  Kill explicit lock by xid:
+    control.(sh|bat) --kill lock xid [--node-id node_id] [--yes]
+
+    Parameters:
+      xid                - Lock identifier (xid from CACHE_EXPLICIT_LOCKS view).
+      --node-id node_id  - Node id the lock is acquired on.
+
   Create cluster snapshot:
     control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync] [--incremental]
 
