@@ -96,7 +96,7 @@ public class SslStatusTask extends AbstractSslTask {
                         if (invalidAt(chain, System.currentTimeMillis()) != null) {
                             invalid = true;
 
-                            lines.add(DOUBLE_INDENT + "PROBLEM: the loaded certificate is not valid now [" + alias + ']');
+                            lines.add(DOUBLE_INDENT + "PROBLEM: the loaded certificate chain is not valid now [" + alias + ']');
                         }
                     }
                 }

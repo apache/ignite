@@ -26,15 +26,15 @@ import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslBundle;
 import org.jetbrains.annotations.Nullable;
 
-/** Access to a factory's accepted material and renewal state for node transports and management. */
+/** Operations the node uses to report and replace a factory's TLS material. */
 public abstract class SslFactoryAccess {
-    /** Reads the current material, initializing it on first use. */
+    /** @return Material in use, initialized on first use. */
     protected abstract SslBundle current(AbstractSslContextFactory factory);
 
-    /** Loads and publishes a replacement. */
+    /** @return Fresh material accepted by the factory. */
     protected abstract SslBundle reload(AbstractSslContextFactory factory);
 
-    /** Reads the outcome of the last reload. */
+    /** @return Last successful reload and any failures since then. */
     protected abstract ReloadOutcome reloadOutcome(AbstractSslContextFactory factory);
 
     /** Attaches this node's renewal executor. */

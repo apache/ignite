@@ -94,7 +94,7 @@ public class GridCommandHandlerWithSslFactoryTest extends GridCommandHandlerWith
      */
     public static class SslFactory extends SslContextFactory {
         /** {@inheritDoc} */
-        @Override public SslBundle createSslBundle() throws SSLException {
+        @Override protected SslBundle createSslBundle() throws SSLException {
             factoryUsed = true;
 
             return super.createSslBundle();

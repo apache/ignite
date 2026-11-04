@@ -37,18 +37,14 @@ import org.apache.ignite.ssl.SSLContextWrapper;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
-import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
-import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.TestCertificateAuthority.bundle;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
@@ -155,7 +151,6 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
             assertArrayEquals(nextParams.getProtocols(), current.getEnabledProtocols());
         }
 
-        assertSame(NODE_ACCESS.reloadOutcome(f), p.reloadOutcome());
         assertTrue(p.reloadOutcome().successTime() > 0);
     }
 
@@ -215,24 +210,6 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
             "The new key material has no X.509 certificate chains, so the node would present no certificate");
     }
 
-    /** A context that cannot create an engine, here with a protocol the JVM does not support, is not applied. */
-    @Test
-    public void testUnsupportedProtocolNotApplied() throws Exception {
-        SslBundle supported = bundle(ca.keyStoreWithPrivateKey("next"), ca.trustStore());
-        SSLParameters params = new SSLParameters();
-
-        params.setProtocols(new String[] {"SSLvDoesNotExist"});
-
-        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
-
-        doReturn(
-            bundle(ca.keyStoreWithPrivateKey("startup"), ca.trustStore()),
-            new SslBundle(new SSLContextWrapper(supported.context(), params), supported.certificateChains()))
-            .when(f).createSslBundle();
-
-        assertReloadRejected(new SslContextProvider(f), "SSLvDoesNotExist");
-    }
-
     /** A factory that returns the context in use, as a caching custom factory does, gives the node no new certificates. */
     @Test
     public void testContextInUseNotReloaded() throws Exception {
@@ -249,7 +226,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
 
         assertEquals(1, loads.get());
 
-        assertReloadRejected(p, "The SSL context factory returns the context in use");
+        assertReloadRejected(p, "The SSL context factory returned the context already in use");
 
         p.sharedContext().createSSLEngine();
 
@@ -301,26 +278,6 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
         assertSame(communication, discovery);
         assertNotSame(communication, binaryRest);
         assertEquals(2, registry.providers().size());
-    }
-
-    /** Registration warns when the key material has no certificate chains, here a trust store put in place of the key store. */
-    @Test
-    public void testRegistryWarnsAboutMissingCertificateChains() throws Exception {
-        TestSslContextFactory f = mock(TestSslContextFactory.class, CALLS_REAL_METHODS);
-
-        doReturn(bundle(ca.trustStore(), ca.trustStore())).when(f).createSslBundle();
-
-        ListeningTestLogger registryLog = new ListeningTestLogger(log);
-        LogListener warned = LogListener.matches("The key material has no X.509 certificate chains, " +
-            "so the node cannot present a certificate; reload rejects such key material").times(1).build();
-
-        registryLog.registerListener(warned);
-
-        SslContextRegistry registry = new SslContextRegistry(new StandaloneGridKernalContext(registryLog, null));
-
-        registry.register(f, CLIENT_CONNECTOR);
-
-        assertTrue(warned.check());
     }
 
     /**

@@ -240,7 +240,7 @@ public class SslRenewalTest extends GridCommonAbstractTest {
 
         f.create();
 
-        assertRenewalRejected("Cached context", f, "The SSL context factory returns the context in use");
+        assertRenewalRejected("Cached context", f, "The SSL context factory returned the context already in use");
     }
 
     /**

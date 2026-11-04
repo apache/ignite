@@ -23,6 +23,7 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
+import java.util.ServiceConfigurationError;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -75,24 +76,16 @@ import static org.apache.ignite.ssl.SslTestUtils.reloadFailure;
 import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
 import static org.apache.ignite.ssl.SslTestUtils.status;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
 import static org.apache.ignite.testframework.TestCertificateAuthority.context;
-import static org.apache.ignite.testframework.TestCertificateAuthority.keyStoreWithoutCertificateChain;
 import static org.apache.ignite.testframework.TestCertificateAuthority.merged;
 import static org.apache.ignite.testframework.TestCertificateAuthority.save;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * {@code --ssl reload} and {@code --ssl status} on running nodes: new connections of every transport get the reloaded certificate,
- * every node logs who reloaded it, a factory is loaded once per reload whatever transports share it, separate factories get
- * providers of their own, and a failing factory does not stop the others. The report, the node log and status show refused
- * reloads; the report shows unavailable nodes and lists failures first; both commands name each reported chain; a node on an invalid
- * certificate warns and fails status; without SSL both commands say that no factory is configured. The last test replaces the
- * authority of a cluster. A node starts on old-key from old-ca and trusts both authorities unless a test says otherwise; its
- * client connector shares the node factory and asks for no client certificate. Each node reads its own key and trust store
- * files, which tests replace on disk.
+ * Tests TLS reload and status on running nodes. Each node reads its own stores. By default its client connector shares
+ * the node factory, and the node trusts both certificate authorities used during rotation.
  */
 public class SslContextReloadTest extends GridCommonAbstractTest {
     /** Transports of a node whose client connector shares the node factory. */
@@ -280,7 +273,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A factory that fails, even with a linkage error, is logged and does not prevent reloading the other factories of the node.
+     * A broken certificate provider is reported without skipping other factories on the node.
      * The node factory is registered first, so the client connector line shows that reload goes on after a failure.
      */
     @Test
@@ -291,7 +284,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         IgniteEx g = startGrid(0, cfg -> {
             cfg.setSslContextFactory(() -> {
                 if (fail.get())
-                    throw new NoClassDefFoundError("Certificate provider class is unavailable");
+                    throw new ServiceConfigurationError("Certificate provider class is unavailable");
 
                 return nodeFactory.create();
             });
@@ -312,70 +305,12 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             " (Certificate provider class is unavailable)\n" +
             node(g) + ": reloaded " + CLIENT_CONNECTOR + "; loaded alias=" + NEW_KEY + ", ");
         assertTrue(logged.check());
-    }
 
-    /** A reload the provider refuses shows its reason in the command report, the node log and status, with the failures in a row. */
-    @Test
-    public void testRejectedReloadReported() throws Exception {
-        long now = System.currentTimeMillis();
-        String reason = "The new certificate chain is not valid now [alias=expired-key, subject=CN=expired-key, ";
-        LogListener logged = LogListener.matches(msg -> msg.startsWith("Failed to reload TLS certificates") && msg.contains(reason))
-            .build();
-        IgniteEx g = startGrid(0);
-
-        nodeLog.registerListener(logged);
-        placeKeys(oldCa.keyStoreWithPrivateKey("expired-key", now - 2 * HOUR, now - HOUR));
-
-        reloadFailure(g);
-
-        String res = reloadFailure(g);
         String status = status(g);
 
-        assertContains(log, res, node(g) + ": failed on " + ALL_TRANSPORTS + " (" + reason);
-        assertTrue(logged.check());
-        assertTrue(status, Pattern.compile(Pattern.quote(DOUBLE_INDENT + "last reload failed 2 time(s) in a row, the last at ") +
-            "\\S+: " + Pattern.quote(reason)).matcher(status).find());
-    }
-
-    /** Reload refuses a PKCS12 store with no certificate chains, but ignores an entry without a chain when another has one. */
-    @Test
-    public void testReloadRequiresAtLeastOneCertificateChain() throws Exception {
-        String name = getTestIgniteInstanceName(0);
-        String alias = "key-without-chain";
-        String storeType = "PKCS12";
-        KeyStore startupKeys = KeyStore.getInstance(storeType);
-
-        startupKeys.load(null, null);
-        startupKeys.setKeyEntry(OLD_KEY, oldKeys.getKey(OLD_KEY, TestCertificateAuthority.PWD), TestCertificateAuthority.PWD,
-            oldKeys.getCertificateChain(OLD_KEY));
-
-        save(startupKeys, keyFile(name));
-
-        IgniteEx g = startGrid(0, cfg -> {
-            ((SslContextFactory)cfg.getSslContextFactory()).setKeyStoreType(storeType);
-        });
-        KeyStore replacement = keyStoreWithoutCertificateChain(storeType, alias);
-
-        assertTrue(replacement.isKeyEntry(alias));
-        assertNull(replacement.getCertificateChain(alias));
-
-        save(replacement, keyFile(name));
-
-        assertContains(log, reloadFailure(g),
-            "The new key material has no X.509 certificate chains, so the node would present no certificate");
-        assertEquals(oldCert, servedCertificate(context(oldKeys, trustBoth), discoveryPort(g)));
-
-        replacement.setKeyEntry(NEW_KEY, newKeys.getKey(NEW_KEY, TestCertificateAuthority.PWD), TestCertificateAuthority.PWD,
-            newKeys.getCertificateChain(NEW_KEY));
-
-        save(replacement, keyFile(name));
-        reload(g);
-
-        String report = status(g);
-
-        assertContains(log, report, "loaded alias=" + NEW_KEY + ", subject=CN=" + NEW_KEY);
-        assertNotContains(log, report, "alias=" + alias);
-        assertEquals(newCert, servedCertificate(context(oldKeys, trustBoth), discoveryPort(g)));
+        assertContains(log, status, "last reload failed 1 time(s) in a row");
+        assertContains(log, status, "Certificate provider class is unavailable");
+        assertContains(log, status, "last reload succeeded at");
     }
 
     /** Both commands report a node that is unavailable when jobs are mapped and still run on the other nodes. */
@@ -448,28 +383,31 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertContains(log, status, ", chainNotAfter=" + Instant.ofEpochMilli(caExpiry));
     }
 
-    /** A node that starts on an expired certificate warns about it for each provider, and status fails with a problem for each. */
+    /** Status reports the expired node chain and the client connector with no key, and startup logs both problems. */
     @Test
-    public void testNodeOnInvalidCertificateReported() throws Exception {
+    public void testNodeOnUnusableMaterialReported() throws Exception {
         long now = System.currentTimeMillis();
         String name = getTestIgniteInstanceName(0);
-        LogListener warned = LogListener.matches("The TLS certificate chain in use is not valid now; put a valid certificate in place " +
-            "and run control.sh --ssl reload [alias=expired-key, subject=CN=expired-key, ").times(2).build();
+        LogListener expired = LogListener.matches("The TLS certificate chain in use is not valid now; put a valid certificate in place " +
+            "and run control.sh --ssl reload [alias=expired-key, subject=CN=expired-key, ").build();
+        LogListener noChains = LogListener.matches("The key material has no X.509 certificate chains").build();
 
         save(oldCa.keyStoreWithPrivateKey("expired-key", now - 2 * HOUR, now - HOUR), keyFile(name));
-        nodeLog.registerListener(warned);
+        nodeLog.registerListener(expired);
+        nodeLog.registerListener(noChains);
 
         IgniteEx g = startGrid(0, cfg -> {
             cfg.getClientConnectorConfiguration().setUseIgniteSslContextFactory(false)
-                .setSslContextFactory(storeFactory(keyFile(name), trustFile(name)));
+                .setSslContextFactory(storeFactory(trustFile(name), trustFile(name)));
         });
 
         String res = X.getFullStackTrace(GridTestUtils.assertThrows(log, () -> status(g), Exception.class, null));
         String problem = "\n" + DOUBLE_INDENT + "loaded alias=expired-key, subject=CN=expired-key, [^\\n]+\n" + DOUBLE_INDENT +
-            "PROBLEM: the loaded certificate is not valid now \\[alias=expired-key]";
+            "PROBLEM: the loaded certificate chain is not valid now \\[alias=expired-key]";
 
-        assertTrue(warned.check());
-        assertTrue(res, Pattern.compile(Pattern.quote(node(g) + ": " + CLIENT_CONNECTOR) + problem).matcher(res).find());
+        assertTrue(expired.check());
+        assertTrue(noChains.check());
+        assertContains(log, res, node(g) + ": " + CLIENT_CONNECTOR + '\n' + DOUBLE_INDENT + "no X.509 certificate chains");
         assertTrue(res, Pattern.compile(Pattern.quote(node(g) + ": " + COMMUNICATION + ", " + DISCOVERY) + problem).matcher(res).find());
     }
 

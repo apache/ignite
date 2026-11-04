@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
 
-/** Registers the transports using a factory; the factory owns their current context and reload results. */
+/** Shares one TLS context among the transports configured with the same factory. */
 public class SslContextProvider {
     /** Factory configured by the user, retained for registration by identity. */
     private final Factory<SSLContext> factory;
