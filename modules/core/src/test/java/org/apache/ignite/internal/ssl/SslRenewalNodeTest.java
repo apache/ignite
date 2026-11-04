@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,11 +28,9 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -45,6 +42,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
+import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
 import static org.apache.ignite.ssl.SslTestUtils.discoveryPort;
 import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
 import static org.apache.ignite.ssl.SslTestUtils.status;
@@ -55,11 +53,7 @@ import static org.apache.ignite.testframework.TestCertificateAuthority.context;
 import static org.apache.ignite.testframework.TestCertificateAuthority.save;
 
 /**
- * Renewal on a node: a factory without certificate metadata stops the node from starting with renewal; the node exposes the sum of
- * unsuccessful renewals of its factories as the only SSL metric; stopping the node interrupts an attempt without a failure and
- * stops the renewal thread; the file-based factory puts a replaced key store in use with no command. Nodes run
- * {@link SslContextFactory} on key store files of the test and trust the test authority. Nodes that run renewal start on
- * a certificate with 10 of its 120 minutes left, inside the default window of 18 minutes, so the first attempt comes at once.
+ * Tests renewal with running nodes, including certificate delivery over discovery, restart, shutdown and node metrics.
  */
 public class SslRenewalNodeTest extends GridCommonAbstractTest {
     /** */
@@ -70,9 +64,6 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
 
     /** */
     private static final long HOUR = 60 * MINUTE;
-
-    /** How renewal logs an attempt that got the chains in use, before the expiry state. */
-    private static final String WAITING = "The SSL context factory has no newer TLS certificates yet, the ones in use stay";
 
     /** Authority of the test certificates. */
     private TestCertificateAuthority ca;
@@ -105,18 +96,13 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         }
     }
 
-    /** A node whose factory enables renewal but gives no certificate metadata does not start. */
+    /** A node configured to renew certificates must have a chain whose expiry can be monitored. */
     @Test
-    public void testUnknownCertificateRefusedAtStart() throws Exception {
+    public void testNodeWithoutChainsRefusesRenewal() throws Exception {
         Path keys = dir.resolve("node.jks");
-        SslContextFactory factory = readingKeys(new SslContextFactory() {
-            /** {@inheritDoc} */
-            @Override protected SslBundle createSslBundle() throws SSLException {
-                return new SslBundle(super.createSslBundle().context(), null);
-            }
-        }, keys);
+        SslContextFactory factory = readingKeys(new SslContextFactory(), keys);
 
-        save(ca.keyStoreWithPrivateKey("node"), keys);
+        save(ca.trustStore(), keys);
         factory.setRenewalEnabled(true);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfg -> {
@@ -124,48 +110,33 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         }), IgniteException.class, "The SSL context factory must provide at least one X.509 certificate chain");
     }
 
-    /**
-     * The node exposes the unsuccessful renewals of all its factories as {@code ssl.ConsecutiveRenewalFailures}, the only metric
-     * of the {@code ssl} registry; a renewal clears the count of its factory only. Renewal is off, so that renewal attempts of the
-     * node do not change the counts while the test renews by hand; the node then plans no renewal and runs no renewal thread.
-     */
+    /** The node counts automatic attempts across distinct factories. Advancing one factory's expiry clears only its count. */
     @Test
     public void testRenewalFailuresMetric() throws Exception {
         long now = System.currentTimeMillis();
         Path nodeKeys = dir.resolve("node.jks");
         Path clientKeys = dir.resolve("client-connector.jks");
-        KeyStore inUse = ca.keyStoreWithPrivateKey("in-use", now - HOUR, now + HOUR);
+        KeyStore inWindow = ca.keyStoreWithPrivateKey("in-window", now - 110 * MINUTE, now + 10 * MINUTE);
         SslContextFactory nodeFactory = readingKeys(new SslContextFactory(), nodeKeys);
         SslContextFactory clientFactory = readingKeys(new SslContextFactory(), clientKeys);
 
-        save(inUse, nodeKeys);
-        save(inUse, clientKeys);
+        nodeFactory.setRenewalEnabled(true);
+        clientFactory.setRenewalEnabled(true);
+        save(inWindow, nodeKeys);
+        save(inWindow, clientKeys);
 
         IgniteEx g = startGrid(0, cfg -> {
             cfg.setSslContextFactory(nodeFactory).setClientConnectorConfiguration(new ClientConnectorConfiguration()
                 .setSslEnabled(true).setSslClientAuth(false).setUseIgniteSslContextFactory(false).setSslContextFactory(clientFactory));
         });
-        SslContextProvider node = provider(g, COMMUNICATION);
-        ReadOnlyMetricRegistry ssl = g.context().metric().registry("ssl");
-        Iterator<Metric> metrics = ssl.iterator();
-        IntMetric failures = ssl.findMetric("ConsecutiveRenewalFailures");
+        IntMetric failures = g.context().metric().registry("ssl").findMetric("ConsecutiveRenewalFailures");
 
-        assertEquals("ssl.ConsecutiveRenewalFailures", metrics.next().name());
-        assertFalse(metrics.hasNext());
-
-        nodeFactory.renew(nodeFactory.create());
-        clientFactory.renew(clientFactory.create());
-        clientFactory.renew(clientFactory.create());
-
-        assertEquals("Both factories", 3, failures.value());
+        assertTrue("One automatic attempt per factory", waitForCondition(() -> failures.value() == 2, 10_000));
 
         save(ca.keyStoreWithPrivateKey("renewed", now - HOUR, now + 2 * HOUR), nodeKeys);
+        provider(g, COMMUNICATION).reload();
 
-        nodeFactory.renew(nodeFactory.create());
-
-        assertEquals("Node factory renewed", 2, failures.value());
-        assertEquals(0, node.nextRenewalTime());
-        assertFalse(renewalThreadAlive(g.name()));
+        assertEquals("Only the client connector is still waiting", 1, failures.value());
     }
 
     /**
@@ -231,11 +202,11 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
             cfg.setSslContextFactory(factory);
         });
 
-        assertTrue(waitForCondition(() -> factory.renewalFailures() > 0, 10_000));
+        assertTrue(waitForCondition(() -> NODE_ACCESS.renewalFailures(factory) > 0, 10_000));
 
         stopGrid(0);
 
-        assertEquals(0, factory.nextRenewalTime());
+        assertEquals(0, NODE_ACCESS.nextRenewalTime(factory));
 
         save(replacement, keys);
 
@@ -246,60 +217,64 @@ public class SslRenewalNodeTest extends GridCommonAbstractTest {
         SslContextProvider discovery = provider(restarted, DISCOVERY);
 
         assertTrue(waitForCondition(() -> discovery.certificateChains().containsKey("replacement"), 10_000));
-        assertEquals(0, factory.renewalFailures());
+        assertEquals(0, NODE_ACCESS.renewalFailures(factory));
         assertEquals(chain(replacement).get(0), servedCertificate(context(ca.keyStoreWithPrivateKey("probe"), ca.trustStore()),
             discoveryPort(restarted)));
         assertTrue(renewalThreadAlive(restarted.name()));
     }
 
-    /**
-     * The file-based factory with renewal enabled waits while its key store file holds the certificate in use and puts the file
-     * replaced on disk in use with no command: the node logs the renewal, new discovery connections get the new certificate, and
-     * status shows the next renewal at the default window of the new certificate, 18 minutes before its expiry.
-     */
+    /** The first renewal reads the replacement file. Discovery serves its certificate and status shows its next renewal. */
     @Test
     public void testReplacedKeyStoreFileRenewed() throws Exception {
-        // X.509 keeps whole seconds.
         long now = System.currentTimeMillis() / SECOND * SECOND;
         Path keys = dir.resolve("node.jks");
+        CountDownLatch transportsReady = new CountDownLatch(1);
         KeyStore renewed = ca.keyStoreWithPrivateKey("renewed", now, now + 2 * HOUR);
         long nextRenewal = now + 2 * HOUR - 18 * MINUTE;
-        SslContextFactory factory = readingKeys(new SslContextFactory(), keys);
-        long minPause = GridTestUtils.getFieldValue(SslRenewal.class, "minPause");
-        long maxPause = GridTestUtils.getFieldValue(SslRenewal.class, "maxPause");
+        SslContextFactory factory = readingKeys(new SslContextFactory() {
+            /** {@inheritDoc} */
+            @Override protected SslBundle createSslBundle() throws SSLException {
+                if (Thread.currentThread().getName().startsWith("ssl-renewal")) {
+                    try {
+                        assertTrue(transportsReady.await(10, TimeUnit.SECONDS));
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new SSLException(e);
+                    }
+                }
+
+                return super.createSslBundle();
+            }
+        }, keys);
 
         save(ca.keyStoreWithPrivateKey("in-window", now - 110 * MINUTE, now + 10 * MINUTE), keys);
         factory.setRenewalEnabled(true);
 
-        // Retries at least a minute apart would make the test wait that long for the replaced file.
-        GridTestUtils.setFieldValue(SslRenewal.class, "minPause", 100L);
-        GridTestUtils.setFieldValue(SslRenewal.class, "maxPause", 1_000L);
+        IgniteEx g;
 
         try {
-            IgniteEx g = startGrid(0, cfg -> {
+            g = startGrid(0, cfg -> {
                 cfg.setSslContextFactory(factory);
             });
-            SslContextProvider p = provider(g, COMMUNICATION);
-
-            assertTrue(waitForCondition(() -> logged(Level.WARN).stream().anyMatch(msg -> msg.startsWith(WAITING)), 10_000));
 
             save(renewed, keys);
-
-            assertTrue(waitForCondition(() -> logged(Level.INFO).stream().anyMatch(msg -> msg.startsWith("TLS certificates reloaded " +
-                "[transports=" + COMMUNICATION + ", " + DISCOVERY + ", alias=renewed, subject=CN=renewed, ") &&
-                msg.endsWith(", initiator=automatic renewal]")), 10_000));
-
-            assertEquals(chain(renewed).get(0), servedCertificate(context(ca.keyStoreWithPrivateKey("probe"), ca.trustStore()),
-                discoveryPort(g)));
-
-            // The renewal thread plans the next attempt after it logs the renewal.
-            assertTrue(waitForCondition(() -> p.nextRenewalTime() == nextRenewal, 10_000));
-            assertContains(log, status(g), "next automatic renewal at " + Instant.ofEpochMilli(nextRenewal));
         }
         finally {
-            GridTestUtils.setFieldValue(SslRenewal.class, "minPause", minPause);
-            GridTestUtils.setFieldValue(SslRenewal.class, "maxPause", maxPause);
+            transportsReady.countDown();
         }
+
+        assertTrue(waitForCondition(() -> logged(Level.INFO).stream().anyMatch(msg -> msg.startsWith("TLS certificates reloaded " +
+            "[transports=" + COMMUNICATION + ", " + DISCOVERY + ", alias=renewed, subject=CN=renewed, ") &&
+            msg.endsWith(", initiator=automatic renewal]")), 10_000));
+        assertEquals(chain(renewed).get(0), servedCertificate(context(ca.keyStoreWithPrivateKey("probe"), ca.trustStore()),
+            discoveryPort(g)));
+
+        SslContextProvider p = provider(g, COMMUNICATION);
+
+        assertTrue(waitForCondition(() -> p.nextRenewalTime() == nextRenewal, 10_000));
+        assertContains(log, status(g), "next automatic renewal at " + Instant.ofEpochMilli(nextRenewal));
     }
 
     /**

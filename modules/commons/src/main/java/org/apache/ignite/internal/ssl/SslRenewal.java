@@ -46,16 +46,11 @@ public class SslRenewal {
     /** How the node log names an automatic renewal in {@code initiator=}. */
     private static final String INITIATOR = "automatic renewal";
 
-    /**
-     * Interval between warnings that the factory has no newer certificates. A change in expiry status bypasses this interval.
-     */
-    private static final long WAIT_LOG_INTERVAL = TimeUnit.DAYS.toMillis(1);
-
     /** Initial retry pause and minimum interval between renewal attempts, in milliseconds. */
-    private static long minPause = 60_000L;
+    private static final long MIN_PAUSE = TimeUnit.MINUTES.toMillis(1);
 
     /** Maximum retry pause before adding jitter, in milliseconds. */
-    private static long maxPause = 3_600_000L;
+    private static final long MAX_PAUSE = TimeUnit.HOURS.toMillis(1);
 
     /** */
     private final AbstractSslContextFactory factory;
@@ -89,12 +84,6 @@ public class SslRenewal {
 
     /** Current retry pause before adding jitter; {@link #plan()} resets it to {@code 0}. */
     private long pause;
-
-    /** When the node last logged that the factory has no newer certificates; {@link #plan()} resets it to {@code 0}. */
-    private long waitLogTime;
-
-    /** How late the certificates in use were when that was logged: {@code 0} in time, {@code 1} expiring soon, {@code 2} expired. */
-    private int waitLoggedLateness;
 
     /**
      * @param factory Factory that owns the accepted material.
@@ -149,7 +138,7 @@ public class SslRenewal {
 
     /** Plans renewal from the first chain to expire, with the earliest window breaking ties. */
     private void plan() {
-        pause = waitLogTime = 0;
+        pause = 0;
 
         SslBundle planned = NODE_ACCESS.current(factory);
         List<X509Certificate> chain = SslCertificates.renewalChain(planned);
@@ -161,7 +150,7 @@ public class SslRenewal {
         window = (long)(lifetime * renewBeforeFraction);
 
         long at = Math.max(chainNotAfter - window,
-            Math.max(factory.reloadOutcome().successTime() + minPause, currentTimeMillis.getAsLong()));
+            Math.max(NODE_ACCESS.reloadOutcome(factory).successTime() + MIN_PAUSE, currentTimeMillis.getAsLong()));
 
         schedule(at, planned.context());
 
@@ -176,7 +165,7 @@ public class SslRenewal {
      */
     private void attempt(SSLContext planned) {
         try {
-            SslBundle renewed = factory.renew(planned);
+            SslBundle renewed = NODE_ACCESS.renew(factory, planned);
 
             if (renewed != null) {
                 CommonUtils.log(log, "TLS certificates reloaded [transports=" + transports.get() + ", " +
@@ -191,8 +180,7 @@ public class SslRenewal {
     }
 
     /**
-     * Schedules a retry with exponential backoff and logs why renewal did not succeed. Exceptions are logged on every attempt.
-     * Unchanged certificates are logged once a day, or sooner if an attempt finds they are close to expiry or expired.
+     * Schedules a retry with exponential backoff and logs why renewal did not succeed.
      * Does nothing during shutdown, since stopping the node interrupts the current attempt.
      *
      * @param planned Context the attempt was planned for.
@@ -204,26 +192,17 @@ public class SslRenewal {
 
         long now = currentTimeMillis.getAsLong();
 
-        pause = pause == 0 ? minPause : Math.min(pause * 2, maxPause);
+        pause = pause == 0 ? MIN_PAUSE : Math.min(pause * 2, MAX_PAUSE);
 
         long at = now + pause + ThreadLocalRandom.current().nextLong(pause / 2 + 1);
 
         schedule(at, planned);
 
         boolean soon = now >= chainNotAfter - window / 2 || at >= chainNotAfter;
-        int lateness = now >= chainNotAfter ? 2 : soon ? 1 : 0;
-
-        if (e == null) {
-            if (now - waitLogTime < WAIT_LOG_INTERVAL && lateness <= waitLoggedLateness)
-                return;
-
-            waitLogTime = now;
-            waitLoggedLateness = lateness;
-        }
 
         String msg = (e == null ? "The SSL context factory has no newer TLS certificates yet, the ones in use stay" :
             "Failed to reload TLS certificates, the ones in use stay") +
-            (lateness == 2 ? ", though they have expired" : lateness == 1 ? " and expire soon" : "") +
+            (now >= chainNotAfter ? ", though they have expired" : soon ? " and expire soon" : "") +
             " [transports=" + transports.get() +
             (e == null ? "" : ", initiator=" + INITIATOR + ", reason=" + SslCertificates.reason(e)) +
             ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) + ", nextRenewal=" + Instant.ofEpochMilli(at) + ']';
@@ -251,7 +230,7 @@ public class SslRenewal {
     }
 
     /**
-     * Runs the task in the renewal thread under the node's operation context. This prevents automatic renewal from inheriting
+     * Runs the renewal task with an empty operation context. This prevents automatic renewal from inheriting
      * the security subject of an operator who ran {@code --ssl reload}.
      *
      * @param task Task.

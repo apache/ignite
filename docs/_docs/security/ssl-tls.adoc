@@ -260,10 +260,11 @@ For manual file replacement, use <<Upgrading Certificates>> and run reload after
 
 === Prepare Certificate Delivery
 
-Renewal follows the first certificate to expire across the TLS certificate chains loaded by the factory, including CA certificates.
-For that chain, the renewal window is the last share of its lifetime set by the factory property `renewBeforeFraction`. The lifetime runs from the leaf certificate's start date to the earliest expiry in the chain. Ignite starts trying to load replacement certificates when the renewal window opens. If several chains expire at exactly the same time, renewal starts when the first of their windows opens.
+Renewal follows the first certificate to expire in the TLS chains of all key entries, including their CA certificates. Certificates found only in the trust store do not determine the renewal time.
+For that chain, the renewal window is the last part of its lifetime (15% by default), set with `renewBeforeFraction`. The lifetime runs from the leaf certificate's start date to the earliest expiry in the chain. Ignite starts trying to load replacement certificates when the renewal window opens. If several chains expire at exactly the same time, renewal starts when the first of their windows opens.
 
-The delivery system must make a valid replacement available before the window opens. Ignite reads the files at each scheduled attempt, not when they change.
+Deliver the replacement before the window opens. A file-based factory picks up a later delivery on the next scheduled attempt.
+With `SslContextFactory`, protect each private key with the key store password. A PKIX key manager may first try to open a key during a handshake, after renewal has already accepted the store.
 The replacement must move that earliest expiry forward. Renewing only one key is insufficient if another chain still expires at the original time. If a CA certificate expires first, replace it too.
 
 Provide at least one private key with its X.509 certificate chain. Entries whose chains are missing, empty or contain a non-X.509 certificate are omitted from certificate status and renewal scheduling. A custom factory must supply the TLS certificate chains used by its context.
@@ -291,7 +292,7 @@ Configure the factory used by each connection type:
 |The node's factory, or `ConnectorConfiguration.sslFactory`
 |===
 
-Connection types that share one factory renew together.
+Connection types on one node that share a factory renew together. Use a separate factory instance for each node with renewal enabled.
 
 To change how early renewal starts, set `renewBeforeFraction` as described in the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html#setRenewBeforeFraction(double)[AbstractSslContextFactory Javadoc]. Changes to these settings take effect after a node restart.
 
@@ -299,7 +300,7 @@ To change how early renewal starts, set `renewBeforeFraction` as described in th
 
 Use link:tools/control-script#checking-certificates[`control.sh --ssl status`] to check the loaded certificate and the next attempt time.
 
-If the source still returns the current certificate, or loading the replacement fails, the node keeps its current context and retries.
+If the source still returns the current certificates or the replacement fails validation or loading, the node keeps its current context. It retries after 60 to 90 seconds, then at increasing intervals of up to 90 minutes. Retries continue after expiry.
 The link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] metric counts these unsuccessful attempts. Check the node log for the cause, fix certificate delivery or configuration, and use reload if you need to apply the correction immediately.
 
 == SslContextFactory Properties
@@ -313,6 +314,14 @@ The link:monitoring-metrics/new-metrics#ssl[`ssl.ConsecutiveRenewalFailures`] me
 |`keyAlgorithm`
 |The key manager algorithm that will be used to create a key manager.
 |`SunX509`
+
+|`renewalEnabled`
+|Whether the node loads replacement certificates automatically. See <<Renewing Certificates Automatically>>.
+|`false`
+
+|`renewBeforeFraction`
+|Share of the certificate lifetime left when renewal starts. Must be greater than 0 and less than 1.
+|`0.15`
 
 |`keyStoreFilePath`
 |The path to the key store file. This is a mandatory parameter since the SSL context can not be initialized without a key manager.
@@ -373,9 +382,9 @@ The bundle lists nonempty X.509 certificate chains associated with key entries, 
 An empty map means no such chains were found, and node reload rejects it. Use `null` when certificate metadata is unknown. Every list in a supplied map must be nonempty.
 
 With automatic renewal enabled, the bundle must contain at least one X.509 chain at startup and on each replacement. Without renewal, metadata is optional.
-The factory serializes initialization and renewal and owns their outcome and failure counters. A direct call to `init()` also replans automatic renewal. Bound remote requests and respond to thread interruption so that stopping the node can stop a renewal attempt.
+Initialization and automatic renewal call `createSslBundle()` one at a time on the same factory. A successful reload schedules renewal from the new material.
+One thread renews all factories on a node. Stopping the node interrupts a running attempt and waits for it to finish. Set timeouts on remote requests and respond to interruption so a slow source does not delay other factories or shutdown.
 
-Automatic renewal uses the node's executor. Once that executor stops, the same factory can attach to the restarted node.
 See the link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/ssl/AbstractSslContextFactory.html#init()[initialization contract] for the validation applied at startup and on subsequent calls.
 
 === Migrating an Existing Factory

@@ -32,7 +32,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
-import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
+import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.ssl.SSLContextWrapper;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -48,6 +48,7 @@ import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
+import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.TestCertificateAuthority.bundle;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
@@ -154,7 +155,7 @@ public class SslContextProviderTest extends GridCommonAbstractTest {
             assertArrayEquals(nextParams.getProtocols(), current.getEnabledProtocols());
         }
 
-        assertSame(f.reloadOutcome(), p.reloadOutcome());
+        assertSame(NODE_ACCESS.reloadOutcome(f), p.reloadOutcome());
         assertTrue(p.reloadOutcome().successTime() > 0);
     }
 

@@ -523,9 +523,9 @@ Register name: `ssl`
 |ConsecutiveRenewalFailures | integer | Sum of consecutive unsuccessful automatic renewal attempts across the node's SSL context factories. An unchanged certificate chain, a loading error or a rejected certificate counts as an unsuccessful attempt. A shared factory is counted once.
 |===
 
-When automatic renewal or manual reload moves the earliest expiry across all of a factory's private-key chains forward, that factory's count resets to zero. CA certificates also count toward that earliest expiry. Other factories' counts stay unchanged. Failed manual reloads do not increase the metric.
+When automatic renewal or manual reload moves the earliest expiry across all of a factory's reported certificate chains forward, that factory's count resets to zero. CA certificates also count toward that earliest expiry. Failed manual reloads do not increase the metric.
 
-Nodes without automatic renewal report zero.
+A factory that has never attempted renewal contributes zero. Reusing a factory after a node restart retains its count, even if renewal is disabled for the new node.
 
 == Discovery IO
 

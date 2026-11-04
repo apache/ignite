@@ -28,9 +28,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;

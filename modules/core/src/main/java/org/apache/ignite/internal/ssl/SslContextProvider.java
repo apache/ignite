@@ -26,8 +26,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.apache.ignite.ssl.AbstractSslContextFactory.ReloadOutcome;
 import org.apache.ignite.ssl.SslBundle;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -97,17 +97,17 @@ public class SslContextProvider {
      * @param log Renewal logger.
      */
     void startRenewal(ScheduledExecutorService exec, IgniteLogger log) {
-        sslFactory.startRenewal(exec, log, this::transports);
+        NODE_ACCESS.startRenewal(sslFactory, exec, log, this::transports);
     }
 
     /** @return Time of the next automatic renewal, {@code 0} if none is planned. */
     public long nextRenewalTime() {
-        return sslFactory.nextRenewalTime();
+        return NODE_ACCESS.nextRenewalTime(sslFactory);
     }
 
     /** @return Unsuccessful automatic attempts since the earliest chain expiry advanced. */
     int renewalFailures() {
-        return sslFactory.renewalFailures();
+        return NODE_ACCESS.renewalFailures(sslFactory);
     }
 
     /** @return Context and certificate metadata accepted by the factory's initialization. */
@@ -117,6 +117,6 @@ public class SslContextProvider {
 
     /** @return Snapshot of the last successful reload and subsequent failures. */
     public ReloadOutcome reloadOutcome() {
-        return sslFactory.reloadOutcome();
+        return NODE_ACCESS.reloadOutcome(sslFactory);
     }
 }
