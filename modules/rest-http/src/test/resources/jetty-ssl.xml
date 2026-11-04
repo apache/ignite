@@ -25,16 +25,26 @@
             <New class="org.eclipse.jetty.server.ServerConnector">
                 <Arg><Ref refid="Server"/></Arg>
                 <Arg>
-                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-                        <Set name="keyStorePath">
-                            <Call class="org.apache.ignite.testframework.GridTestUtils" name="keyStorePath">
-                                <Arg>node01</Arg>
-                            </Call>
-                        </Set>
-                        <Set name="keyStorePassword">
-                            <Call class="org.apache.ignite.testframework.GridTestUtils" name="keyStorePassword"/>
-                        </Set>
-                    </New>
+                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
+                        <Item>
+                            <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                                <Arg>
+                                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+                                        <Set name="keyStorePath">
+                                            <Call class="org.apache.ignite.testframework.GridTestUtils" name="keyStorePath">
+                                                <Arg>node01</Arg>
+                                            </Call>
+                                        </Set>
+                                        <Set name="keyStorePassword">
+                                            <Call class="org.apache.ignite.testframework.GridTestUtils" name="keyStorePassword"/>
+                                        </Set>
+                                    </New>
+                                </Arg>
+                                <Arg>http/1.1</Arg>
+                            </New>
+                        </Item>
+                        <Item><New class="org.eclipse.jetty.server.HttpConnectionFactory"/></Item>
+                    </Array>
                 </Arg>
                 <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>
             </New>

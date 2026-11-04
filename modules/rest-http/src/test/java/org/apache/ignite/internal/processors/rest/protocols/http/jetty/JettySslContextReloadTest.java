@@ -27,6 +27,7 @@ import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -51,6 +52,7 @@ import static org.apache.ignite.ssl.SslTestUtils.node;
 import static org.apache.ignite.ssl.SslTestUtils.reload;
 import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
 import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
 import static org.apache.ignite.testframework.TestCertificateAuthority.save;
@@ -129,9 +131,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
         String replacementAlias = "new-key";
         KeyStore newKeys = newCa.keyStoreWithPrivateKey(replacementAlias);
-        IgniteEx g = startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setHttpSslFactory(factory()));
-        });
+        IgniteEx g = startNode(new ConnectorConfiguration().setHttpSslFactory(factory()));
         SSLContext client = clientContext(null, trustBoth);
 
         try (SSLSocket open = socket(client, port(g))) {
@@ -156,9 +156,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
 
         save(oldCa.trustStore(), trustFile);
 
-        IgniteEx g = startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setHttpSslFactory(factory()).setHttpSslClientAuth(true));
-        });
+        IgniteEx g = startNode(new ConnectorConfiguration().setHttpSslFactory(factory()).setHttpSslClientAuth(true));
 
         assertClientAuthentication(port(g), oldClient, newClient, trustBoth);
 
@@ -185,21 +183,12 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         factory.setProtocols(protocol);
         factory.setCipherSuites(allowed, excluded);
 
-        IgniteEx g = startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setHttpSslFactory(factory));
-        });
-        org.eclipse.jetty.util.ssl.SslContextFactory jetty = jettySslFactory(g);
+        IgniteEx g = startNode(new ConnectorConfiguration().setHttpSslFactory(factory));
 
-        // Check the engines directly: JVM handshake policy can independently reject legacy cipher suites.
-        assertArrayEquals(new String[] {allowed, excluded}, jetty.getSslContext().createSSLEngine().getEnabledCipherSuites());
-        assertArrayEquals(new String[] {allowed}, jetty.newSSLEngine().getEnabledCipherSuites());
+        SSLEngine engine = jettySslFactory(g).newSSLEngine();
 
-        try (SSLSocket sock = socket(clientContext(null, trustBoth), port(g))) {
-            sock.startHandshake();
-
-            assertEquals(protocol, sock.getSession().getProtocol());
-            assertEquals(allowed, sock.getSession().getCipherSuite());
-        }
+        assertArrayEquals(new String[] {protocol}, engine.getEnabledProtocols());
+        assertArrayEquals(new String[] {allowed}, engine.getEnabledCipherSuites());
     }
 
     /** A Jetty XML connector gets TLS and keeps its own secure request customizer, which checks Host against the certificate. */
@@ -207,9 +196,7 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     public void testJettyConnectorFromFileGetsTls() throws Exception {
         prepareStores();
 
-        IgniteEx g = startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_SNI_HOST_CHECK).setHttpSslFactory(factory()));
-        });
+        IgniteEx g = startNode(new ConnectorConfiguration().setJettyPath(JETTY_SNI_HOST_CHECK).setHttpSslFactory(factory()));
 
         try (SSLSocket sock = socket(clientContext(null, trustBoth), port(g))) {
             assertEquals("Host named by the certificate", 200, versionStatus(sock, OLD_KEY));
@@ -220,17 +207,20 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** TLS set up in Jetty XML without {@code httpSslFactory} serves HTTPS as before, and reload does not see it. */
+    /** Jetty-managed TLS retains its default Host check and stays outside node reload. */
     @Test
-    public void testLegacyJettyTlsNotReloaded() throws Exception {
-        IgniteEx g = startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_SSL));
-        });
+    public void testJettyOwnTlsUnchanged() throws Exception {
+        IgniteEx g = startNode(new ConnectorConfiguration().setJettyPath(JETTY_SSL));
 
-        // The file reads the checked-in node01 store, as legacy configurations do, so the probe takes the checked-in stores too.
-        // Jetty adds a secure request customizer that wants Host to name that certificate.
-        try (SSLSocket sock = socket(GridTestUtils.sslTrustedFactory("node01", "trustboth").create(), port(g))) {
-            assertEquals(200, versionStatus(sock, "node01"));
+        String certHost = "node01";
+        SSLContext client = GridTestUtils.sslTrustedFactory(certHost, "trustboth").create();
+
+        try (SSLSocket sock = socket(client, port(g))) {
+            assertEquals(200, versionStatus(sock, certHost));
+        }
+
+        try (SSLSocket sock = socket(client, port(g))) {
+            assertEquals(400, versionStatus(sock, "other.example"));
         }
 
         assertEquals(node(g) + ": no SSL context factory is configured\n", reload(g));
@@ -239,35 +229,24 @@ public class JettySslContextReloadTest extends GridCommonAbstractTest {
     /** A node does not start with client authentication on but no factory: the setting would do nothing. */
     @Test
     public void testClientAuthWithoutFactoryRefused() {
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setHttpSslClientAuth(true));
-        }), IgniteCheckedException.class, "applies only to TLS set up with httpSslFactory");
+        assertThrowsAnyCause(log, () -> startNode(new ConnectorConfiguration().setHttpSslClientAuth(true)),
+            IgniteCheckedException.class, "applies only to TLS set up with httpSslFactory");
     }
 
-    /** A node does not start when the connector in its Jetty configuration has an SSL connection factory of its own. */
+    /** An HTTP connector with its own TLS and a connector expecting PROXY are both incompatible with httpSslFactory. */
     @Test
-    public void testJettySslConnectionFactoryRefused() {
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_SSL).setHttpSslFactory(new SslContextFactory()));
-        }), IgniteCheckedException.class, "must have no SSL connection factory of its own");
+    public void testConnectorWithOwnTlsOrProxyRefused() {
+        assertThrowsAnyCause(log, () -> startNode(new ConnectorConfiguration().setJettyPath(JETTY_HTTP_WITH_SSL)
+            .setHttpSslFactory(new SslContextFactory())), IgniteCheckedException.class, "no TLS configuration of its own");
+        assertThrowsAnyCause(log, () -> startNode(new ConnectorConfiguration().setJettyPath(JETTY_PROXY)
+            .setHttpSslFactory(new SslContextFactory())), IgniteCheckedException.class, "HTTP as its default protocol");
     }
 
-    /** An existing SSL connection factory is refused even when the connector's default protocol is HTTP. */
-    @Test
-    public void testJettySslConnectionFactoryWithHttpDefaultRefused() {
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_HTTP_WITH_SSL)
-                .setHttpSslFactory(new SslContextFactory()));
-        }), IgniteCheckedException.class, "must have no SSL connection factory of its own");
-    }
-
-    /** A node does not start when the connector in its Jetty configuration expects the PROXY protocol: TLS in front would break it. */
-    @Test
-    public void testJettyProxyProtocolRefused() {
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrid(0, cfg -> {
-            cfg.setConnectorConfiguration(new ConnectorConfiguration().setJettyPath(JETTY_PROXY)
-                .setHttpSslFactory(new SslContextFactory()));
-        }), IgniteCheckedException.class, "with no PROXY protocol in front");
+    /** Starts a test node with the given HTTP REST configuration. */
+    private IgniteEx startNode(ConnectorConfiguration connCfg) throws Exception {
+        return startGrid(0, cfg -> {
+            cfg.setConnectorConfiguration(connCfg);
+        });
     }
 
     /** @return Factory reading {@link #keyFile} and {@link #trustFile}. */

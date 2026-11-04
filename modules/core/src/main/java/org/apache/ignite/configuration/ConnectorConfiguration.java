@@ -526,14 +526,13 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Sets the SSL context factory for HTTP REST. HTTP REST then serves HTTPS with the certificates of this factory.
-     * {@code control.sh --ssl reload} and {@code --ssl status} cover these certificates like those of the other transports of the node.
-     * Protocols and cipher suites come from the factory, except the cipher suites Jetty turns off by default.
-     * Client authentication comes from {@link #setHttpSslClientAuth(boolean)}.
+     * Sets the certificate source for HTTPS on the HTTP REST port. The node includes these certificates in
+     * {@code control.sh --ssl reload} and {@code --ssl status}. Jetty applies its default protocol and cipher exclusions
+     * to the factory's settings. To require client certificates, set {@link #setHttpSslClientAuth(boolean)}.
      * <p>
-     * Ignite adds TLS to the built-in Jetty connector or to the connector from the Jetty XML file that {@link #setJettyPath(String)}
-     * points to. The node does not start if that connector sets up TLS itself or uses the PROXY protocol. Unless the Jetty XML file
-     * sets a {@code SecureRequestCustomizer} of its own, HTTP REST answers requests to any host name or IP address.
+     * The built-in connector and a connector configured through {@link #setJettyPath(String)} must have HTTP as their default
+     * protocol and leave TLS to this factory. An explicit {@code SecureRequestCustomizer} retains its Host checks.
+     * By default, HTTP REST accepts a {@code Host} name or address absent from the certificate.
      *
      * @param httpSslFactory SSL context factory.
      * @return {@code this} for chaining.
@@ -556,7 +555,7 @@ public class ConnectorConfiguration {
     /**
      * Sets whether HTTP REST served with {@link #setHttpSslFactory(Factory)} requires a certificate from clients.
      * The trust managers in the factory's SSL context must accept the client certificate.
-     * If you turn this on without {@link #setHttpSslFactory(Factory)}, the node does not start. Off by default.
+     * If HTTP REST starts with client authentication enabled, {@link #setHttpSslFactory(Factory)} is required. Off by default.
      *
      * @param httpSslClientAuth Whether HTTP REST requires a certificate from clients.
      * @return {@code this} for chaining.

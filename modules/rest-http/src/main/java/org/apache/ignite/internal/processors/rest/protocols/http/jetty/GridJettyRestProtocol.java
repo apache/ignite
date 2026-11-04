@@ -202,7 +202,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Adds TLS to an HTTP connector using {@code httpSslFactory}. New connections use the current SSL context.
+     * Adds TLS to an HTTP connector. New connections use the current factory context. An explicit secure request customizer
+     * retains its Host checks. Otherwise clients can send a host name or address absent from the certificate.
      *
      * @param connector Jetty connector.
      * @throws IgniteCheckedException If the connector already has TLS or its default connection factory does not handle HTTP.
@@ -210,9 +211,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     private void addTls(AbstractNetworkConnector connector) throws IgniteCheckedException {
         if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory http)
             || connector.getConnectionFactory(SslConnectionFactory.class) != null) {
-            throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory sets up TLS for HTTP REST, so the Jetty connector " +
-                "must have no SSL connection factory of its own and must pass connections to HTTP first, with no PROXY protocol in " +
-                "front [jettyPath=" + config().getJettyPath() + ", protocols=" + connector.getProtocols() + ']');
+            throw new IgniteCheckedException("ConnectorConfiguration.httpSslFactory requires a Jetty connector with HTTP as its default " +
+                "protocol and no TLS configuration of its own [jettyPath=" + config().getJettyPath() + ", protocols=" + connector.getProtocols() + ']');
         }
 
         SslContextFactory.Server ssl = new SslContextFactory.Server();
@@ -222,7 +222,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         connector.addFirstConnectionFactory(new SslConnectionFactory(ssl, http.getProtocol()));
 
-        // Allow HTTP Host values absent from the certificate, such as an IP or load-balancer name.
         if (http.getHttpConfiguration().getCustomizer(SecureRequestCustomizer.class) == null)
             http.getHttpConfiguration().addCustomizer(new SecureRequestCustomizer(false));
     }

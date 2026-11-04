@@ -85,9 +85,8 @@ class CurrentSslContext extends SSLContext {
         }
 
         /**
-         * Returns a new engine's parameters so Jetty uses the factory's configured protocols and cipher suites.
-         * {@link org.apache.ignite.ssl.SslContextFactory} applies these settings to engines, but its context's default parameters
-         * are the JVM defaults.
+         * Returns the effective TLS parameters of a new engine. A factory can restrict its engines' protocols and cipher suites
+         * while its underlying context still reports JVM defaults.
          */
         @Override protected SSLParameters engineGetDefaultSSLParameters() {
             return ctx.get().createSSLEngine().getSSLParameters();

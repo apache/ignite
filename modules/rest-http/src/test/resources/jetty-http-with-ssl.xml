@@ -24,20 +24,8 @@
         <Arg>
             <New class="org.eclipse.jetty.server.ServerConnector">
                 <Arg><Ref refid="Server"/></Arg>
-                <Arg>
-                    <New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-                        <Set name="keyStorePath">
-                            <Call class="org.apache.ignite.testframework.GridTestUtils" name="keyStorePath">
-                                <Arg>node01</Arg>
-                            </Call>
-                        </Set>
-                        <Set name="keyStorePassword">
-                            <Call class="org.apache.ignite.testframework.GridTestUtils" name="keyStorePassword"/>
-                        </Set>
-                    </New>
-                </Arg>
+                <Arg><New class="org.eclipse.jetty.util.ssl.SslContextFactory$Server"/></Arg>
                 <Set name="defaultProtocol">http/1.1</Set>
-                <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>
             </New>
         </Arg>
     </Call>

@@ -30,7 +30,6 @@
                         <Item><New class="org.eclipse.jetty.server.HttpConnectionFactory"/></Item>
                     </Array>
                 </Arg>
-                <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="11443"/></Set>
             </New>
         </Arg>
     </Call>
