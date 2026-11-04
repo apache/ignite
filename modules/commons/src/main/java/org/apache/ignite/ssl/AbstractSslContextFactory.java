@@ -125,8 +125,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. The result must not change material already in use. Outside loading hooks, use {@link #sslBundle()} to
-     * inspect the accepted material.
+     * loading it. The result must not change material already in use.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws SSLException If the context could not be created.
@@ -287,7 +286,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IgniteException If the material cannot be loaded or the context cannot be created.
      * @throws IllegalArgumentException If a configured protocol or cipher suite is unsupported.
      */
-    public final synchronized SslBundle init() {
+    protected final synchronized SslBundle init() {
         SslBundle next = prepareSslBundle();
 
         next.context().createSSLEngine();
@@ -303,7 +302,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return One snapshot of the material in use.
      * @throws IgniteException If the first initialization fails.
      */
-    public final SslBundle sslBundle() {
+    final SslBundle sslBundle() {
         SslBundle cur = bundle;
 
         if (cur == null) {
