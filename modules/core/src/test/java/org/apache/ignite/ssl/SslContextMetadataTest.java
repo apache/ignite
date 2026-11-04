@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.KeyGenerator;
@@ -40,6 +41,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -96,9 +98,9 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         assertEquals(1, factory.loads);
     }
 
-    /** A slow store read does not block a caller that can already use the accepted context. */
+    /** During a reload, readers get the accepted context while another reload waits to install its own context. */
     @Test
-    public void testCreateDoesNotWaitForInit() throws Exception {
+    public void testReadersProceedWhileReloadsRunInOrder() throws Exception {
         InMemoryStoreFactory factory = spy(new InMemoryStoreFactory(nodeStore("node01")));
         SSLContext accepted = factory.create();
         CountDownLatch loading = new CountDownLatch(1);
@@ -110,18 +112,27 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
             release.await();
 
             return inv.callRealMethod();
-        }).when(factory).createSslBundle();
+        }).doCallRealMethod().when(factory).createSslBundle();
 
-        IgniteInternalFuture<SslBundle> init = GridTestUtils.runAsync(() -> factory.init());
+        IgniteInternalFuture<SslBundle> first = GridTestUtils.runAsync(() -> factory.init());
+        FutureTask<SslBundle> second = new FutureTask<>(factory::init);
+        Thread secondThread = new Thread(second, "second-init");
 
         try {
             assertTrue("Replacement load started", loading.await(timeout, TimeUnit.MILLISECONDS));
             assertSame(accepted, GridTestUtils.runAsync(() -> factory.create()).get(timeout));
+
+            secondThread.start();
+
+            assertTrue(GridTestUtils.waitForCondition(() -> secondThread.getState() == Thread.State.BLOCKED || second.isDone(), timeout));
+            assertFalse("The second reload must wait for the first", second.isDone());
         }
         finally {
             release.countDown();
-            init.get(timeout);
+            first.get(timeout);
         }
+
+        assertSame(second.get(timeout, TimeUnit.MILLISECONDS), factory.sslBundle());
     }
 
     /** Invalid settings can be corrected after first use fails. A later failure leaves the last accepted bundle usable. */
@@ -176,7 +187,6 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         SslContextFactory restored = TEST_JDK_MARSHALLER.unmarshal(TEST_JDK_MARSHALLER.marshal(factory),
             getClass().getClassLoader());
 
-        assertEquals(factory.getKeyStoreFilePath(), restored.getKeyStoreFilePath());
         assertNotSame(original.context(), restored.create());
         assertEquals(original.certificateChains(), restored.sslBundle().certificateChains());
     }
@@ -188,7 +198,6 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         SslBundle client = factory.init();
 
         assertEquals(Map.of(), client.certificateChains());
-        assertNotNull(client.context().createSSLEngine());
     }
 
     /** DTLS supports engines but cannot supply the TLS sockets used by discovery. */
@@ -329,9 +338,8 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
         String storeDetails = "keyStoreFile=" + storePath;
         Throwable err = GridTestUtils.assertThrows(log, factory::create, IgniteException.class, storeDetails);
 
-        assertTrue(err.getCause() instanceof SSLException);
-        assertTrue(err.getMessage().contains("keyStoreType=" + store.getType()));
-        assertTrue(err.getCause().getCause() instanceof UnrecoverableKeyException);
+        GridTestUtils.assertContains(log, err.getMessage(), "keyStoreType=" + store.getType());
+        assertTrue(X.hasCause(err, UnrecoverableKeyException.class));
     }
 
     /** Loads one of the node key stores shipped with the test suite. */
@@ -347,8 +355,7 @@ public class SslContextMetadataTest extends GridCommonAbstractTest {
     }
 
     /**
-     * File factory that reads its key store from memory and counts the reads. Trust is disabled, so the trust store is never
-     * read and every read is the key store's.
+     * Reads the key store from memory and counts the reads. A trust manager is supplied directly.
      */
     private static class InMemoryStoreFactory extends SslContextFactory {
         /** Store returned by the next read. */

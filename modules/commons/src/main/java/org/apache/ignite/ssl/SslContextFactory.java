@@ -347,7 +347,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @param keyStoreType Type of key store.
      * @param storeFilePath Path to key store file.
      * @param keyStorePwd Store password.
-     * @return Initialized store. An override may return {@code null} for a client without a private key or to use the JVM trust store.
+     * @return Initialized key store.
      * @throws SSLException If key store could not be initialized.
      */
     protected KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)
