@@ -43,7 +43,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.ssl.SslContextRegistry.BINARY_REST;
-import static org.apache.ignite.internal.ssl.SslContextRegistry.CLIENT_CONNECTOR;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.ssl.SslContextRegistry.DISCOVERY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
