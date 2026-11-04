@@ -64,41 +64,49 @@ public class SqlTransactionsTopologyChangeTest extends GridCommonAbstractWrapper
         IgniteEx server = startGrid(0);
         IgniteEx node = client ? startClientGrid(1) : server;
 
-        node.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
         sql(node, "CREATE TABLE test (id INT PRIMARY KEY, val INT) WITH atomicity=TRANSACTIONAL");
         sql(node, "INSERT INTO test VALUES (1, 0)");
         sql(node, "CREATE INDEX test_val ON test(val)");
+        sql(node, "CREATE VIEW test_view AS SELECT id, val FROM test");
 
         GridCachePartitionExchangeManager<?, ?> exchange = node.context().cache().context().exchange();
-        AffinityTopologyVersion topVer = exchange.readyAffinityVersion();
-        IgniteInternalFuture<?> destroyFut;
+        // Reuse the same SELECT plans in another transaction after the topology changes.
+        for (int val = 1; val <= 2; val++) {
+            node.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        // Bound the transaction timeout so a regression cannot hang the test indefinitely during planning.
-        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 1)) {
-            assertEquals(1L, sql(node, "UPDATE test SET val = 1 WHERE id = 1").get(0).get(0));
+            AffinityTopologyVersion topVer = exchange.readyAffinityVersion();
+            IgniteInternalFuture<?> destroyFut;
 
-            destroyFut = runAsync(() -> node.destroyCache(DEFAULT_CACHE_NAME));
+            // Bound the transaction timeout so a regression cannot hang the test indefinitely during planning.
+            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 1)) {
+                assertEquals(1L, sql(node, "UPDATE test SET val = ? WHERE id = 1", val).get(0).get(0));
 
-            assertTrue("Cache stop exchange did not start", waitForCondition(
-                () -> exchange.lastTopologyFuture().initialVersion().after(topVer), 5_000));
+                destroyFut = runAsync(() -> node.destroyCache(DEFAULT_CACHE_NAME));
 
-            assertFalse(destroyFut.isDone());
-            assertEquals(List.of(List.of(1, 1)), sql(node, "SELECT id, val FROM test"));
-            assertEquals(List.of(List.of(1, 1)), sql(node, "SELECT /*+ FORCE_INDEX(TEST_VAL) */ id, val FROM test WHERE val = 1"));
+                assertTrue("Cache stop exchange did not start", waitForCondition(
+                    () -> exchange.lastTopologyFuture().initialVersion().after(topVer), 5_000));
 
-            tx.commit();
+                assertFalse(destroyFut.isDone());
+                assertEquals(List.of(List.of(1, val)), sql(node, "SELECT id, val FROM test"));
+                assertEquals(List.of(List.of(1, val)), sql(node, "SELECT id, val FROM test_view"));
+                assertEquals(
+                    List.of(List.of(1, val)),
+                    sql(node, "SELECT /*+ FORCE_INDEX(TEST_VAL) */ id, val FROM test WHERE val = ?", val)
+                );
+
+                tx.commit();
+            }
+
+            destroyFut.get(5_000);
+
+            assertFalse(node.cacheNames().contains(DEFAULT_CACHE_NAME));
+            assertEquals(List.of(List.of(1, val)), sql(node, "SELECT id, val FROM test"));
         }
-
-        destroyFut.get(5_000);
-
-        assertFalse(node.cacheNames().contains(DEFAULT_CACHE_NAME));
-        assertEquals(List.of(List.of(1, 1)), sql(node, "SELECT id, val FROM test"));
     }
 
-    /** Executes SQL through the configured Calcite engine. */
-    private List<List<?>> sql(IgniteEx node, String sql) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC").setTimeout(5, SECONDS);
+    /** */
+    private static List<List<?>> sql(IgniteEx node, String sql, Object... args) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC").setTimeout(5, SECONDS).setArgs(args);
 
         try (FieldsQueryCursor<List<?>> cur = node.context().query().querySqlFields(qry, false, false).get(0)) {
             return cur.getAll();

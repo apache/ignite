@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImplTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.ParserCodegenResourcesTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
@@ -52,6 +53,7 @@ import org.junit.platform.suite.api.Suite;
     SqlTransactionsUnsupportedModesTest.class,
     SqlTransactionsSavepointTest.class,
     SqlTransactionsTopologyChangeTest.class,
+    IgniteStatisticsImplTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
