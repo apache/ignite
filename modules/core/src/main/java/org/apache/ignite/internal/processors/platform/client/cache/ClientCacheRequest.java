@@ -85,7 +85,7 @@ public abstract class ClientCacheRequest extends ClientRequest {
      * @return Cache.
      */
     protected IgniteInternalCache<?, ?> internalCache(ClientConnectionContext ctx) {
-        return ((IgniteCacheProxy<?, ?>)cache(ctx)).internalProxy();
+        return ((IgniteCacheProxy<?, ?>)rawCache(ctx)).internalProxy().keepBinary();
     }
 
     /**

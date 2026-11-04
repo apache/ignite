@@ -21,6 +21,7 @@ Upgrade is an important part of the lifecycle of any software system. This page 
 Updating node version is as simple as replacing the Apache Ignite binaries with a new version. However, there are several things to keep in mind when performing the upgrade:
 
 - Ignite cluster cannot have nodes that run on different Ignite versions. You need to stop the cluster and start it again on the new Ignite version.
+- Starting with version 2.19, the default SQL engine is the Calcite-based engine. See the link:SQL/sql-calcite#upgrade-notes[Upgrade Notes] of the SQL Engines page for the behaviour changes and for the errors that indicate the use of a feature of the legacy H2 engine.
 - It is possible to accidentally overwrite your persistent storage or other important data during the upgrade. It is recommended to move this data outside of intallation folder if you are planning upgrades:
 * The work directory is used to store application data and all data required for the node to work. You can change its location as described in tge link:setup#configuring-work-directory[Configuring Work Directory] section.
 * The persistent storage holds all information stored on the node. You can change its location as described in the link:persistence/native-persistence#configuring-persistent-storage-directory[Configuring Persistent Storage Directory] section.

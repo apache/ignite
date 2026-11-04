@@ -150,7 +150,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. Preserve the accepted key managers. Calling {@link #create()} from this hook would recurse on first use.
+     * loading it. Do not modify a key store or key managers that the accepted context uses. Calling {@link #create()}
+     * from this hook would recurse on first use.
      *
      * @return Fresh context and the certificate metadata available to this factory.
      * @throws SSLException If the context could not be created.

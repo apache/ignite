@@ -106,4 +106,48 @@ public class PersistenceTuning {
         ignite.close();
     }
 
+    void fileSystemLayout() {
+        // tag::layout-paths[]
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        // Work directory: node metadata, marshaller mappings, and other node files.
+        cfg.setWorkDirectory("/mnt/node-meta/work");
+
+        // Destination of full snapshots.
+        cfg.setSnapshotPath("/mnt/snapshots");
+
+        DataStorageConfiguration storeCfg = new DataStorageConfiguration();
+
+        // Enabling native persistence for the default data region.
+        storeCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+
+        // Data and indexes.
+        storeCfg.setStoragePath("/mnt/ignite-data/db");
+
+        // Active WAL segments.
+        storeCfg.setWalPath("/mnt/wal/db/wal");
+
+        // Retained WAL segments.
+        storeCfg.setWalArchivePath("/mnt/wal-archive/db/wal/archive");
+
+        // The CDC directory has to be on the same file system as the WAL archive.
+        storeCfg.setCdcWalPath("/mnt/wal-archive/db/wal/cdc");
+
+        cfg.setDataStorageConfiguration(storeCfg);
+        // end::layout-paths[]
+    }
+
+    void extraSnapshotPaths() {
+        // tag::extra-snapshot-paths[]
+        DataStorageConfiguration storeCfg = new DataStorageConfiguration();
+
+        // Two data directories.
+        storeCfg.setExtraStoragePaths("/mnt/ignite-data-1/db", "/mnt/ignite-data-2/db");
+
+        // A snapshot location for each data directory. The arrays must have the same length,
+        // and the entries at the same index correspond to each other.
+        storeCfg.setExtraSnapshotPaths("/mnt/snapshots-1", "/mnt/snapshots-2");
+        // end::extra-snapshot-paths[]
+    }
+
 }

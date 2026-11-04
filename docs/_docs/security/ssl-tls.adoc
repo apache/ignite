@@ -257,7 +257,7 @@ Reload leaves existing connections open. After preventing new connections with t
 
 A subclass of `AbstractSslContextFactory` implements `createSslBundle()` to build an initialized context and report the certificate chains loaded with it.
 For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`.
-For custom key managers, initialize the context with those managers and the intended trust managers. Apply the configured protocols and cipher suites, then return the context and its private-key chains indexed by alias.
+For custom key managers, create the context with `SSLContext.getInstance(getProtocol())` and initialize it with those managers and the intended trust managers. Apply the configured protocols and cipher suites, then return the context and its private-key chains indexed by alias.
 Use a null chain map if the source cannot report certificates. An empty map means the store has no X.509 key chains.
 
 Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.

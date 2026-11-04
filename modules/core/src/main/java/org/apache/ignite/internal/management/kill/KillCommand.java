@@ -33,7 +33,8 @@ public class KillCommand extends CommandRegistryImpl {
             new KillContinuousCommand(),
             new KillClientCommand(),
             new KillSnapshotCommand(),
-            new KillConsistencyCommand()
+            new KillConsistencyCommand(),
+            new KillLockCommand()
         );
     }
 }
