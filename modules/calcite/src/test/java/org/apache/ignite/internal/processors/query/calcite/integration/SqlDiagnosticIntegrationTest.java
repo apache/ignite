@@ -737,8 +737,11 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 }
             });
 
-            assertEquals(13, qryCnt.get()); // CREATE AS SELECT counts as two queries.
-            assertEquals(8, planCnt.get()); // DDL queries don't produce plans, except CREATE AS SELECT.
+            // CREATE AS SELECT counts as two queries.
+            assertTrue("qryCnt = " + qryCnt.get(), waitForCondition(() -> qryCnt.get() == 13, 5_000));
+
+            // DDL queries don't produce plans, except CREATE AS SELECT.
+            assertTrue("planCnt = " + planCnt.get(), waitForCondition(() -> planCnt.get() == 8, 5_000));
         }
         finally {
             QueryUtils.INCLUDE_SENSITIVE = true;
