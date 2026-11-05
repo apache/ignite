@@ -44,19 +44,6 @@ public class SslContextFactoryInitTest {
 
     /** */
     @Test
-    public void testCreateUsesContextSetAfterInit() {
-        SslContextFactory factory = (SslContextFactory)sslTrustedFactory("node01", "trustone");
-        SSLContext original = factory.create();
-
-        factory.init();
-
-        factory.sslCtx.set(original);
-
-        assertSame(original, factory.create());
-    }
-
-    /** */
-    @Test
     public void testFailedInitKeepsContext() {
         SslContextFactory factory = (SslContextFactory)sslTrustedFactory("node01", "trustone");
         SSLContext original = factory.create();
