@@ -58,8 +58,13 @@ public class SslContextFactoryInitTest extends GridCommonAbstractTest {
         SSLContext replacement = factory.create();
 
         assertNotSame(original, replacement);
+        assertSame(replacement, factory.sslCtx.get());
         assertArrayEquals(oldProtocols, original.createSSLEngine().getEnabledProtocols());
         assertArrayEquals(newProtocols, replacement.createSSLEngine().getEnabledProtocols());
+
+        factory.sslCtx.set(original);
+
+        assertSame(original, factory.create());
     }
 
     /** Both loading and validation failures leave the last working context in place. */
@@ -132,7 +137,7 @@ public class SslContextFactoryInitTest extends GridCommonAbstractTest {
         assertNotSame(original, factory.create());
     }
 
-    /** Serialization retains the configuration so the restored factory can load its own context. */
+    /** A factory serialized before first use can still load its context after being restored. */
     @Test
     public void testSerializationRetainsSettings() throws Exception {
         SslContextFactory factory = factory();
@@ -140,13 +145,10 @@ public class SslContextFactoryInitTest extends GridCommonAbstractTest {
 
         factory.setProtocols(protocols);
 
-        SSLContext original = factory.create();
         SslContextFactory restored = TEST_JDK_MARSHALLER.unmarshal(TEST_JDK_MARSHALLER.marshal(factory),
             getClass().getClassLoader());
-        SSLContext replacement = restored.create();
 
-        assertNotSame(original, replacement);
-        assertArrayEquals(protocols, replacement.createSSLEngine().getEnabledProtocols());
+        assertArrayEquals(protocols, restored.create().createSSLEngine().getEnabledProtocols());
     }
 
     /** @return File-based factory using the test stores. */

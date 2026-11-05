@@ -19,6 +19,7 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -48,8 +49,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Enabled protocols. */
     protected String[] protocols;
 
-    /** Currently initialized SSL context. */
-    private transient volatile SSLContext sslCtx;
+    /** Cached instance of an {@link SSLContext}. */
+    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /**
      * Gets protocol for secure transport.
@@ -183,6 +184,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @throws IllegalArgumentException If an enabled protocol or cipher suite is unsupported.
      */
     protected final synchronized void init() {
+        sslCtx.set(createCheckedSslContext());
+    }
+
+    /** @return A new context with its TLS settings checked. */
+    private SSLContext createCheckedSslContext() {
         try {
             SSLContext ctx = createSslContext();
 
@@ -191,7 +197,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
                 ctx.createSSLEngine();
             }
 
-            sslCtx = ctx;
+            return ctx;
         }
         catch (SSLException e) {
             throw new IgniteException(e);
@@ -204,16 +210,22 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Current SSL context.
      */
     @Override public SSLContext create() {
-        SSLContext ctx = sslCtx;
+        SSLContext ctx = sslCtx.get();
 
         if (ctx != null)
             return ctx;
 
         synchronized (this) {
-            if (sslCtx == null)
-                init();
+            ctx = sslCtx.get();
 
-            return sslCtx;
+            if (ctx != null)
+                return ctx;
+
+            SSLContext candidate = createCheckedSslContext();
+
+            ctx = sslCtx.compareAndExchange(null, candidate);
+
+            return ctx == null ? candidate : ctx;
         }
     }
 }

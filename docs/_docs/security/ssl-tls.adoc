@@ -185,7 +185,6 @@ A subclass of `AbstractSslContextFactory` can call the protected `init()` method
 It reloads the context using the factory's key and trust managers. If the load fails, the base implementation of `create()` still returns the previous context.
 An unrecognized protocol or cipher suite name fails initialization, including on first use.
 
-Subclasses that accessed the old protected `sslCtx` field should use `create()` to get the current context and `init()` to replace it.
 If your subclass already declares a no-argument `init()` method, rename it before recompiling.
 
 == SslContextFactory Properties
