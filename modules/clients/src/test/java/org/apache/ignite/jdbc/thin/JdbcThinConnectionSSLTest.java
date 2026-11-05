@@ -447,28 +447,41 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    /** An unknown cipher suite prevents a node from starting or a client from connecting. */
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testInvalidCustomCipher() throws Exception {
         setSslCtxFactoryToCli = true;
         supportedCiphers = new String[] {"TLS_RSA_WITH_INVALID_SHA256"};
         sslCtxFactory = getTestSslContextFactory();
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> startGrids(1), IllegalArgumentException.class, "TLS_RSA_WITH_INVALID_SHA256");
-
-        supportedCiphers = null;
-        sslCtxFactory = getTestSslContextFactory();
-
         startGrids(1);
 
-        GridTestUtils.assertThrows(log, () ->
-            DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                "&sslCipherSuites=TLS_RSA_WITH_INVALID_SHA256" +
-                "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
-                "&sslClientCertificateKeyStorePassword=123456" +
-                "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
-                "&sslTrustCertificateKeyStorePassword=123456"),
-            SQLException.class, "Failed to connect to server");
+        try {
+            // Same invalid cipher.
+            GridTestUtils.assertThrows(log, () -> {
+                return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                    "&sslCipherSuites=TLS_RSA_WITH_INVALID_SHA256" +
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
+            }, SQLException.class, "Failed to connect to server");
+
+            // Default ciphers.
+            GridTestUtils.assertThrows(log, () -> {
+                return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
+            }, SQLException.class, "Failed to SSL connect to server");
+        }
+        finally {
+            stopAllGrids();
+        }
+
     }
 
     /**

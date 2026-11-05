@@ -182,8 +182,7 @@ Now all nodes trust the new certificates.
 == Custom SSL Context Factories
 
 A subclass of `AbstractSslContextFactory` can call the protected `init()` method when a node restarts with the same factory.
-It reloads the context using the factory's key and trust managers. If the load fails, the base implementation of `create()` still returns the previous context.
-An unrecognized protocol or cipher suite name fails initialization, including on first use.
+If the load fails, the base implementation of `create()` still returns the previous context.
 
 If your subclass already declares a no-argument `init()` method, rename it before recompiling.
 

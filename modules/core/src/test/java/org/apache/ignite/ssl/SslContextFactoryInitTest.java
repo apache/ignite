@@ -18,9 +18,7 @@
 package org.apache.ignite.ssl;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -37,11 +35,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
-/** Tests replacement and lazy initialization of the factory's context. */
+/** */
 public class SslContextFactoryInitTest extends GridCommonAbstractTest {
-    /** Initialization applies the new settings while previously returned contexts keep theirs. */
+    /** */
     @Test
     public void testInitReplacesContext() {
         SslContextFactory factory = factory();
@@ -67,48 +64,19 @@ public class SslContextFactoryInitTest extends GridCommonAbstractTest {
         assertSame(original, factory.create());
     }
 
-    /** Both loading and validation failures leave the last working context in place. */
+    /** */
     @Test
     public void testFailedInitKeepsContext() {
         SslContextFactory factory = factory();
         SSLContext original = factory.create();
-        String invalidProtocol = "unsupported-protocol";
 
-        factory.setProtocols(invalidProtocol);
-
-        assertThrows(IllegalArgumentException.class, factory::init);
-        assertSame(original, factory.create());
-
-        factory.setProtocols("TLSv1.2");
         factory.setKeyStorePassword("wrong-password".toCharArray());
 
         assertThrows(IgniteException.class, factory::init);
         assertSame(original, factory.create());
     }
 
-    /** Concurrent first callers share the same context and read the key store once. */
-    @Test
-    public void testConcurrentFirstCreateLoadsOnce() throws Exception {
-        SslContextFactory factory = spy(factory());
-        int threads = 4;
-        CyclicBarrier start = new CyclicBarrier(threads);
-        AtomicReference<SSLContext> shared = new AtomicReference<>();
-
-        GridTestUtils.runMultiThreaded(() -> {
-            start.await();
-
-            SSLContext ctx = factory.create();
-
-            shared.compareAndSet(null, ctx);
-            assertSame(shared.get(), ctx);
-
-            return null;
-        }, threads, "ssl-create");
-
-        verify(factory).loadKeyStore(anyString(), eq(keyStorePath("node01")), any(char[].class));
-    }
-
-    /** Reading the current context does not wait for the replacement key store. */
+    /** */
     @Test
     public void testCreateReturnsCurrentContextDuringInit() throws Exception {
         SslContextFactory factory = spy(factory());
@@ -137,21 +105,7 @@ public class SslContextFactoryInitTest extends GridCommonAbstractTest {
         assertNotSame(original, factory.create());
     }
 
-    /** A factory serialized before first use can still load its context after being restored. */
-    @Test
-    public void testSerializationRetainsSettings() throws Exception {
-        SslContextFactory factory = factory();
-        String[] protocols = {"TLSv1.2"};
-
-        factory.setProtocols(protocols);
-
-        SslContextFactory restored = TEST_JDK_MARSHALLER.unmarshal(TEST_JDK_MARSHALLER.marshal(factory),
-            getClass().getClassLoader());
-
-        assertArrayEquals(protocols, restored.create().createSSLEngine().getEnabledProtocols());
-    }
-
-    /** @return File-based factory using the test stores. */
+    /** */
     private static SslContextFactory factory() {
         return (SslContextFactory)sslTrustedFactory("node01", "trustone");
     }

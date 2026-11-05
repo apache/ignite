@@ -29,10 +29,7 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-/**
- * Base class for SSL context factories. The first {@link #create()} call loads a context.
- * A subclass can call {@link #init()} to reload it.
- */
+/** Base class for SSL context factories that let subclasses {@linkplain #init() reload} the cached context. */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -178,54 +175,35 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads and checks a new SSL context. If initialization fails, the previous context stays in use.
+     * Loads a new SSL context. If loading fails, the previous context stays in use.
      *
      * @throws IgniteException If the context cannot be initialized.
-     * @throws IllegalArgumentException If an enabled protocol or cipher suite is unsupported.
      */
     protected final synchronized void init() {
-        sslCtx.set(createCheckedSslContext());
-    }
-
-    /** @return A new context with its TLS settings checked. */
-    private SSLContext createCheckedSslContext() {
         try {
-            SSLContext ctx = createSslContext();
-
-            if (ctx instanceof SSLContextWrapper) {
-                // The wrapper applies configured TLS parameters when it creates an engine.
-                ctx.createSSLEngine();
-            }
-
-            return ctx;
+            sslCtx.set(createSslContext());
         }
         catch (SSLException e) {
             throw new IgniteException(e);
         }
     }
 
-    /**
-     * Returns the current context, initializing it on first use. During a reload, callers get the previous context.
-     *
-     * @return Current SSL context.
-     */
+    /** {@inheritDoc} */
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 
-        if (ctx != null)
-            return ctx;
+        if (ctx == null) {
+            try {
+                ctx = createSslContext();
 
-        synchronized (this) {
-            ctx = sslCtx.get();
-
-            if (ctx != null)
-                return ctx;
-
-            SSLContext candidate = createCheckedSslContext();
-
-            ctx = sslCtx.compareAndExchange(null, candidate);
-
-            return ctx == null ? candidate : ctx;
+                if (!sslCtx.compareAndSet(null, ctx))
+                    ctx = sslCtx.get();
+            }
+            catch (SSLException e) {
+                throw new IgniteException(e);
+            }
         }
+
+        return ctx;
     }
 }
