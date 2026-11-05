@@ -68,5 +68,4 @@
 
     <suppress-xpath checks="AnnotationOnSameLine"
                     query="//ANNOTATION[.//IDENT[not(@text='Override')]]"/>
-
 </suppressions>
