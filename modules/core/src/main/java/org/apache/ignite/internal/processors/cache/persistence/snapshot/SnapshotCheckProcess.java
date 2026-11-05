@@ -693,7 +693,7 @@ public class SnapshotCheckProcess {
 
         clusterOpFut.listen(fut -> clusterOpFuts.remove(reqId0));
 
-        clusterOpFuts.put(reqId, clusterOpFut);
+        clusterOpFuts.put(reqId0, clusterOpFut);
 
         phase1CheckMetas.start(req.requestId(), req);
 
