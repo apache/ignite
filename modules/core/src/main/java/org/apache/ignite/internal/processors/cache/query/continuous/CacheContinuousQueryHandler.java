@@ -1290,7 +1290,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                 log.debug("Failed to send event notification to node, node left cluster " +
                     "[node=" + nodeId + ", err=" + ex + ']');
         }
-        catch (IgniteCheckedException ex) {
+        catch (Exception ex) {
             U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), "Failed to send event notification to node: " + nodeId, ex);
         }
     }
@@ -1747,7 +1747,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
      *
      * @param transVal Transformer result.
      * @param evt Event to transform.
-     * @return Entry contains only transformed data if transformer exists. Unchanged event if transformer is not set.
+     * @return Entry contains only transformed data if transformer exists.
      * @see #getTransformer()
      */
     private CacheContinuousQueryEntry transformToEntry(Object transVal,
