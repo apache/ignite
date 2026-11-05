@@ -27,6 +27,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -57,32 +58,20 @@ public class IgniteBinaryTxPutAfterInvokeSelfTest extends GridCommonAbstractTest
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(ccfg);
 
-        try {
-            BinaryObjectBuilder keyBuilder = ignite.binary().builder("org.apache.ignite.nonexistent.TestKeyType");
+        BinaryObjectBuilder keyBuilder = ignite.binary().builder("org.apache.ignite.nonexistent.TestKeyType");
 
-            keyBuilder.setField("id", 42);
+        keyBuilder.setField("id", 42);
 
-            BinaryObject key = keyBuilder.build();
+        BinaryObject key = keyBuilder.build();
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                cache.withKeepBinary().invoke(key, new SetValueEntryProcessor<>(1));
+        try (Transaction tx = ignite.transactions().txStart()) {
+            cache.withKeepBinary().invoke(key, new SetValueEntryProcessor<>(1));
 
+            GridTestUtils.assertThrows(log, () -> {
                 cache.withKeepBinary().put(key, 2);
 
-                fail("Update in transaction after EntryProcessor must fail");
-            }
-            catch (CacheException e) {
-                Throwable root = e;
-
-                while (root.getCause() != null)
-                    root = root.getCause();
-
-                assertTrue("Unexpected root cause: " + root,
-                    root.getMessage().contains("cannot have update value in transaction after EntryProcessor is applied"));
-            }
-        }
-        finally {
-            ignite.destroyCache(DEFAULT_CACHE_NAME);
+                return null;
+            }, CacheException.class, "cannot have update value in transaction after EntryProcessor is applied");
         }
     }
 
