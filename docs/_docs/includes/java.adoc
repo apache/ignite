@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Ignite supports Java 17 and Java 21. Other Java versions are not supported.
+Ignite supports Java 17 and Java 21. Earlier versions are not supported; later versions are not tested.
 
 To run Ignite with Java 17 or 21, follow these steps:
 
