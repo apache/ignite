@@ -445,6 +445,50 @@ public class ConcurrentLongHashMapTest {
     }
 
     /**
+     * All threads hammer one key with {@code putIfAbsent} and {@code remove(key, value)}, so every operation races
+     * with every other one on the same bin. The pattern of the JCTools issue 434 reproducer: the results reported
+     * to the callers must agree with the map content, since every successful remove was preceded by a successful
+     * putIfAbsent and the key is present exactly when the wins exceed the removals by one.
+     */
+    @Test
+    public void testConcurrentSingleKey() throws Exception {
+        ConcurrentLongHashMap<Integer> map = new ConcurrentLongHashMap<>();
+
+        int threads = 8;
+        int iterations = 100_000;
+        int runs = 5;
+
+        Integer one = 1;
+
+        for (long key : new long[] {0L, 1L, -1L, Long.MIN_VALUE, Long.MAX_VALUE}) {
+            for (int run = 0; run < runs; run++) {
+                AtomicInteger wins = new AtomicInteger();
+                AtomicInteger removals = new AtomicInteger();
+
+                GridTestUtils.runMultiThreaded(() -> {
+                    for (int i = 0; i < iterations; i++) {
+                        if (map.putIfAbsent(key, one) == null) {
+                            wins.incrementAndGet();
+
+                            continue;
+                        }
+
+                        if (map.remove(key, one))
+                            removals.incrementAndGet();
+                    }
+                }, threads, "single-key-churner");
+
+                assertEquals("key " + key + ", run " + run + ": putIfAbsent/remove results disagree with the map content",
+                    wins.get() - removals.get(), map.size());
+
+                assertEquals(map.size() == 1 ? one : null, map.get(key));
+
+                map.clear();
+            }
+        }
+    }
+
+    /**
      * Iterators must return every entry that existed when they were created exactly once, even while the table is
      * resized several times underneath them.
      */
