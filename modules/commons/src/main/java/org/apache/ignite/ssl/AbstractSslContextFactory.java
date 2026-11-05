@@ -29,7 +29,10 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-/** Base class for SSL context factories that let subclasses {@linkplain #init() reload} the cached context. */
+/**
+ * Base class for SSL context factories. {@link #create()} caches the first successfully loaded
+ * {@link SSLContext} and returns it until {@link #init()} replaces it.
+ */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -175,11 +178,12 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads a new SSL context. If loading fails, the previous context stays in use.
+     * Loads a new SSL context and makes the base implementation of {@link #create()} return it.
+     * If a context is already cached, the base implementation keeps returning it until a load succeeds.
      *
      * @throws IgniteException If the context cannot be initialized.
      */
-    protected final synchronized void init() {
+    protected final void init() {
         try {
             sslCtx.set(createSslContext());
         }

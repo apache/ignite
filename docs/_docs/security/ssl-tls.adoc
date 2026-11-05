@@ -30,7 +30,7 @@ This certificate must be trusted by all other server nodes.
 
 To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the node configuration.
 You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
-To implement your own `SSLContext` factory, see <<Custom SSL Context Factories>>.
+//You can also implement your own `SSLContext` factory.
 
 [CAUTION]
 ====
@@ -178,13 +178,6 @@ Now all nodes trust the new certificates.
 
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
-
-== Custom SSL Context Factories
-
-A subclass of `AbstractSslContextFactory` can call the protected `init()` method when a node restarts with the same factory.
-If the load fails, the base implementation of `create()` still returns the previous context.
-
-If your subclass already declares a no-argument `init()` method, rename it before recompiling.
 
 == SslContextFactory Properties
 
