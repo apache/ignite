@@ -41,12 +41,14 @@ public class SslContextFactoryInitTest {
 
         SSLContext original = factory.create();
         AtomicReference<SSLContext> duringInit = new AtomicReference<>();
+        String keyStorePath = factory.getKeyStoreFilePath();
 
+        // Pause init() just before it opens the key store and read the cached context from another thread.
         doAnswer(inv -> {
             duringInit.set(runAsync(factory::create).get(10_000));
 
             return inv.callRealMethod();
-        }).doCallRealMethod().when(factory).createKeyManagers();
+        }).doCallRealMethod().when(factory).openFileInputStream(keyStorePath);
 
         factory.setProtocols("TLSv1.3");
         factory.init();
