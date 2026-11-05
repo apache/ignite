@@ -1542,6 +1542,17 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Gets reference value from object field with volatile semantic.
+     *
+     * @param obj Object.
+     * @param off Offset.
+     * @return Reference value.
+     */
+    public static Object getObjectVolatile(Object obj, long off) {
+        return UNSAFE.getObjectVolatile(obj, off);
+    }
+
+    /**
      * Returns page size.
      *
      * @return Page size.

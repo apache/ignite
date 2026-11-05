@@ -85,11 +85,11 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterTest;
 import org.apache.ignite.internal.processors.metastorage.persistence.InMemoryCachedDistributedMetaStorageBridgeTest;
 import org.apache.ignite.internal.util.collection.BitSetIntSetTest;
+import org.apache.ignite.internal.util.collection.ConcurrentLongHashMapTest;
 import org.apache.ignite.internal.util.collection.CopyOnWriteIntMapTest;
 import org.apache.ignite.internal.util.collection.ImmutableIntSetTest;
 import org.apache.ignite.internal.util.collection.IntHashMapTest;
 import org.apache.ignite.internal.util.collection.IntRWHashMapTest;
-import org.apache.ignite.internal.util.collection.NonBlockingHashMapLongTest;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.MarshallerContextSelfTest;
 import org.apache.ignite.plugin.PluginConfigurationTest;
@@ -147,7 +147,7 @@ import org.junit.runners.Suite;
     ImmutableIntSetTest.class,
     IntHashMapTest.class,
     IntRWHashMapTest.class,
-    NonBlockingHashMapLongTest.class,
+    ConcurrentLongHashMapTest.class,
 
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,

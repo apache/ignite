@@ -17,40 +17,38 @@
 
 package org.apache.ignite.internal.util.collection;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.PrimitiveIterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jctools.maps.NonBlockingHashMapLong;
+import org.jsr166.ConcurrentLongHashMap;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link NonBlockingHashMapLong}.
+ * Tests for {@link ConcurrentLongHashMap}.
  */
-public class NonBlockingHashMapLongTest {
-    /** Keys covering the special zero key, negative keys and the extremes. */
+public class ConcurrentLongHashMapTest {
+    /** Keys covering the zero key, negative keys and the extremes. */
     private static final long[] EDGE_KEYS = {0L, 1L, -1L, 42L, Long.MIN_VALUE, Long.MAX_VALUE, 1L << 32, -(1L << 40)};
 
     /** */
     @Test
     public void testPutGetRemove() {
-        NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
+        ConcurrentLongHashMap<String> map = new ConcurrentLongHashMap<>();
 
         assertTrue(map.isEmpty());
 
@@ -63,6 +61,7 @@ public class NonBlockingHashMapLongTest {
         }
 
         assertEquals(EDGE_KEYS.length, map.size());
+        assertEquals(EDGE_KEYS.length, map.mappingCount());
 
         for (long k : EDGE_KEYS)
             assertEquals("v" + k, map.put(k, "u" + k));
@@ -82,17 +81,19 @@ public class NonBlockingHashMapLongTest {
     /** */
     @Test
     public void testConditionalOperations() {
-        NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
+        ConcurrentLongHashMap<String> map = new ConcurrentLongHashMap<>();
 
         for (long k : EDGE_KEYS) {
             assertNull(map.replace(k, "x")); // Absent: no replace.
             assertFalse(map.replace(k, "x", "y"));
             assertFalse(map.remove(k, "x"));
             assertNull(map.get(k));
+            assertEquals("def", map.getOrDefault(k, "def"));
 
             assertNull(map.putIfAbsent(k, "a"));
             assertEquals("a", map.putIfAbsent(k, "b"));
             assertEquals("a", map.get(k));
+            assertEquals("a", map.getOrDefault(k, "def"));
 
             assertEquals("a", map.replace(k, "c"));
             assertFalse(map.replace(k, "a", "d"));
@@ -110,7 +111,7 @@ public class NonBlockingHashMapLongTest {
     /** */
     @Test
     public void testComputeIfAbsent() {
-        NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
+        ConcurrentLongHashMap<String> map = new ConcurrentLongHashMap<>();
 
         AtomicInteger calls = new AtomicInteger();
 
@@ -134,8 +135,44 @@ public class NonBlockingHashMapLongTest {
 
     /** */
     @Test
+    public void testCompute() {
+        ConcurrentLongHashMap<String> map = new ConcurrentLongHashMap<>();
+
+        for (long k : EDGE_KEYS) {
+            // Absent: the function sees null, a null result leaves the map unchanged.
+            assertNull(map.compute(k, (key, old) -> {
+                assertEquals(k, key);
+                assertNull(old);
+
+                return null;
+            }));
+
+            assertFalse(map.containsKey(k));
+
+            assertEquals("a", map.compute(k, (key, old) -> "a"));
+            assertEquals("a", map.get(k));
+
+            // Present: update in place.
+            assertEquals("ab", map.compute(k, (key, old) -> old + "b"));
+            assertEquals("ab", map.get(k));
+
+            // Present: a null result removes the mapping.
+            assertNull(map.compute(k, (key, old) -> {
+                assertEquals("ab", old);
+
+                return null;
+            }));
+
+            assertFalse(map.containsKey(k));
+        }
+
+        assertEquals(0, map.size());
+    }
+
+    /** */
+    @Test
     public void testNullValuesRejected() {
-        NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
+        ConcurrentLongHashMap<String> map = new ConcurrentLongHashMap<>();
 
         for (long k : new long[] {0L, 7L}) {
             assertNpe(() -> map.put(k, null));
@@ -143,9 +180,13 @@ public class NonBlockingHashMapLongTest {
             assertNpe(() -> map.replace(k, null));
             assertNpe(() -> map.remove(k, null));
             assertNpe(() -> map.replace(k, "a", null));
+            assertNpe(() -> map.replace(k, null, "a"));
         }
 
-        assertFalse(map.containsValue(null));
+        assertNpe(() -> map.containsValue(null));
+        assertNpe(() -> map.forEach(null));
+        assertNpe(() -> map.computeIfAbsent(1L, null));
+        assertNpe(() -> map.compute(1L, null));
         assertTrue(map.isEmpty());
     }
 
@@ -166,11 +207,11 @@ public class NonBlockingHashMapLongTest {
     /** */
     @Test
     public void testResizeKeepsAllEntries() {
-        NonBlockingHashMapLong<Long> map = new NonBlockingHashMapLong<>(2);
+        ConcurrentLongHashMap<Long> map = new ConcurrentLongHashMap<>(2);
 
         int cnt = 200_000;
 
-        // Non-sequential keys to exercise the hash and the reprobe path.
+        // Non-sequential keys to exercise the hash.
         for (int i = 0; i < cnt; i++) {
             long k = (long)i * 0x9E3779B97F4A7C15L;
 
@@ -187,14 +228,14 @@ public class NonBlockingHashMapLongTest {
 
         assertEquals(cnt / 2, map.size());
 
-        long[] keys = map.keySetLong();
+        long[] keys = keys(map);
 
         assertEquals(cnt / 2, keys.length);
 
         for (long k : keys)
             assertEquals(1, map.get(k) & 1);
 
-        // Churn on a fixed key set triggers same-size resizes which clean out the dead slots.
+        // Put/remove churn on a fixed key set must not change the live set.
         for (int round = 0; round < 50; round++) {
             for (int i = 0; i < 1000; i++) {
                 map.put(-i - 1, Long.valueOf(round));
@@ -210,10 +251,38 @@ public class NonBlockingHashMapLongTest {
         assertNull(map.get(0x9E3779B97F4A7C15L));
     }
 
+    /**
+     * Keys whose halves are equal all hash to the same bin, so a bin grows well past the threshold at which the JDK
+     * would convert it to a tree. The port grows the table while it is small and keeps long lists afterwards.
+     */
+    @Test
+    public void testCollidingKeys() {
+        ConcurrentLongHashMap<Integer> map = new ConcurrentLongHashMap<>();
+
+        int cnt = 2000;
+
+        for (int i = 1; i <= cnt; i++)
+            assertNull(map.put(((long)i << 32) | i, i));
+
+        assertEquals(cnt, map.size());
+
+        for (int i = 1; i <= cnt; i++)
+            assertEquals(Integer.valueOf(i), map.get(((long)i << 32) | i));
+
+        for (int i = 1; i <= cnt; i += 3)
+            assertEquals(Integer.valueOf(i), map.remove(((long)i << 32) | i));
+
+        for (int i = 1; i <= cnt; i++)
+            assertEquals(i % 3 == 1 ? null : Integer.valueOf(i), map.get(((long)i << 32) | i));
+
+        assertEquals(cnt - (cnt + 2) / 3, map.size());
+        assertEquals(cnt - (cnt + 2) / 3, keys(map).length);
+    }
+
     /** */
     @Test
-    public void testViewsAndIteration() {
-        NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
+    public void testValuesAndIteration() {
+        ConcurrentLongHashMap<String> map = new ConcurrentLongHashMap<>();
 
         Map<Long, String> expected = new HashMap<>();
 
@@ -222,13 +291,16 @@ public class NonBlockingHashMapLongTest {
             expected.put(k, "v" + k);
         }
 
-        assertEquals(expected, map);
-        assertEquals(expected.hashCode(), map.hashCode());
-        assertEquals(expected.keySet(), map.keySet());
-        assertEquals(expected.entrySet(), map.entrySet());
-        assertEquals(new HashSet<>(expected.values()), new HashSet<>(map.values()));
+        Collection<String> vals = map.values();
 
-        long[] keys = map.keySetLong();
+        assertEquals(EDGE_KEYS.length, vals.size());
+        assertFalse(vals.isEmpty());
+        assertEquals(new HashSet<>(expected.values()), new HashSet<>(vals));
+        assertTrue(vals.contains("v42"));
+        assertFalse(vals.contains("v43"));
+        assertTrue(map.containsValue("v0"));
+
+        long[] keys = keys(map);
 
         Arrays.sort(keys);
 
@@ -238,107 +310,72 @@ public class NonBlockingHashMapLongTest {
 
         assertTrue(Arrays.equals(expKeys, keys));
 
-        // Non-boxing iteration.
-        Set<Long> seen = new HashSet<>();
+        // Non-boxing traversal.
+        Map<Long, String> seen = new HashMap<>();
 
-        NonBlockingHashMapLong<String>.IteratorLong iter =
-            (NonBlockingHashMapLong<String>.IteratorLong)map.keySet().iterator();
+        map.forEach((k, v) -> assertNull(seen.put(k, v)));
 
-        while (iter.hasNext())
-            seen.add(iter.nextLong());
+        assertEquals(expected, seen);
 
-        assertEquals(expected.keySet(), seen);
+        // Removal through the key iterator.
+        PrimitiveIterator.OfLong keyIter = map.keyIterator();
 
-        // Removal through the views.
-        Iterator<Map.Entry<Long, String>> entryIter = map.entrySet().iterator();
+        long first = keyIter.nextLong();
 
-        Map.Entry<Long, String> first = entryIter.next();
+        keyIter.remove();
 
-        entryIter.remove();
-
-        assertFalse(map.containsKey(first.getKey()));
+        assertFalse(map.containsKey(first));
         assertEquals(EDGE_KEYS.length - 1, map.size());
 
-        assertTrue(map.values().remove("v42"));
+        // Removal through the values view.
+        assertTrue(vals.remove("v42"));
+        assertFalse(vals.remove("v42"));
         assertFalse(map.containsKey(42L));
 
-        map.keySet().removeIf(k -> k < 0);
+        Iterator<String> valIter = vals.iterator();
 
-        for (long k : map.keySetLong())
+        String firstVal = valIter.next();
+
+        valIter.remove();
+
+        assertFalse(map.containsValue(firstVal));
+        assertEquals(EDGE_KEYS.length - 3, map.size());
+
+        vals.removeIf(v -> v.startsWith("v-"));
+
+        for (long k : keys(map))
             assertTrue(k >= 0);
 
-        // Entry.setValue writes through.
-        Map.Entry<Long, String> e = map.entrySet().iterator().next();
+        try {
+            vals.add("x");
 
-        e.setValue("changed");
-
-        assertEquals("changed", map.get(e.getKey().longValue()));
-
-        map.entrySet().clear();
-
-        assertTrue(map.isEmpty());
-        assertFalse(map.keySet().iterator().hasNext());
-        assertFalse(map.values().iterator().hasNext());
-    }
-
-    /** */
-    @Test
-    public void testBoxedMapApi() {
-        ConcurrentMap<Long, String> map = new NonBlockingHashMapLong<>();
-
-        assertNull(map.put(1L, "a"));
-        assertEquals("a", map.get(1L));
-        assertTrue(map.containsKey(1L));
-        assertFalse(map.containsKey("1"));
-        assertNull(map.get("1"));
-        assertNull(map.remove("1"));
-        assertEquals("a", map.putIfAbsent(1L, "b"));
-        assertTrue(map.replace(1L, "a", "c"));
-        assertEquals("c", map.replace(1L, "d"));
-        assertTrue(map.containsValue("d"));
-        assertFalse(map.containsValue("c"));
-        assertFalse(map.remove(1L, "c"));
-        assertTrue(map.remove(1L, "d"));
-        assertTrue(map.isEmpty());
-    }
-
-    /** */
-    @Test
-    public void testSerializationAndClone() throws Exception {
-        NonBlockingHashMapLong<String> map = new NonBlockingHashMapLong<>();
-
-        for (long k : EDGE_KEYS)
-            map.put(k, "v" + k);
-
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-
-        try (ObjectOutputStream out = new ObjectOutputStream(bytes)) {
-            out.writeObject(map);
+            throw new AssertionError("Values view must not support add.");
+        }
+        catch (UnsupportedOperationException expected0) {
+            // No-op.
         }
 
-        NonBlockingHashMapLong<String> copy;
+        vals.clear();
 
-        try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
-            copy = (NonBlockingHashMapLong<String>)in.readObject();
+        assertTrue(map.isEmpty());
+        assertFalse(map.keyIterator().hasNext());
+        assertFalse(vals.iterator().hasNext());
+
+        // Exhausted iterators.
+        try {
+            map.keyIterator().nextLong();
+
+            throw new AssertionError("NoSuchElementException expected.");
         }
-
-        assertEquals(map, copy);
-        assertEquals(EDGE_KEYS.length, copy.size());
-
-        NonBlockingHashMapLong<String> cloned = map.clone();
-
-        assertEquals(map, cloned);
-
-        cloned.put(100L, "x");
-
-        assertFalse(map.containsKey(100L));
-        assertSame(map.get(1L), cloned.get(1L));
+        catch (java.util.NoSuchElementException expected0) {
+            // No-op.
+        }
     }
 
     /** */
     @Test
     public void testConcurrentDisjointKeys() throws Exception {
-        NonBlockingHashMapLong<Integer> map = new NonBlockingHashMapLong<>();
+        ConcurrentLongHashMap<Integer> map = new ConcurrentLongHashMap<>();
 
         int threads = 8;
         int perThread = 50_000;
@@ -373,7 +410,7 @@ public class NonBlockingHashMapLongTest {
     /** */
     @Test
     public void testConcurrentContendedKeys() throws Exception {
-        NonBlockingHashMapLong<Integer> map = new NonBlockingHashMapLong<>();
+        ConcurrentLongHashMap<Integer> map = new ConcurrentLongHashMap<>();
 
         int keys = 64;
         int iterations = 100_000;
@@ -403,7 +440,73 @@ public class NonBlockingHashMapLongTest {
         // Every successful remove was preceded by a successful putIfAbsent, and what remains is what was not removed.
         assertEquals(wins.get() - removals.get(), map.size());
 
-        for (long k : map.keySetLong())
+        for (long k : keys(map))
             assertEquals(Integer.valueOf(1), map.get(k));
+    }
+
+    /**
+     * Iterators must return every entry that existed when they were created exactly once, even while the table is
+     * resized several times underneath them.
+     */
+    @Test
+    public void testIterationExactlyOnceDuringResize() throws Exception {
+        for (int round = 0; round < 10; round++) {
+            ConcurrentLongHashMap<Long> map = new ConcurrentLongHashMap<>(16);
+
+            int init = 5_000;
+            int added = 200_000;
+
+            for (long k = 0; k < init; k++)
+                map.put(k, k);
+
+            CountDownLatch started = new CountDownLatch(1);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                started.await();
+
+                for (long k = init; k < init + added; k++)
+                    map.put(k, k);
+            });
+
+            PrimitiveIterator.OfLong keyIter = map.keyIterator();
+            Iterator<Long> valIter = map.values().iterator();
+
+            started.countDown();
+
+            Set<Long> seenKeys = new HashSet<>();
+            Set<Long> seenVals = new HashSet<>();
+
+            while (keyIter.hasNext())
+                assertTrue("Duplicate key from the iterator.", seenKeys.add(keyIter.nextLong()));
+
+            while (valIter.hasNext())
+                assertTrue("Duplicate value from the iterator.", seenVals.add(valIter.next()));
+
+            fut.get();
+
+            for (long k = 0; k < init; k++) {
+                assertTrue("Key present at iterator creation was not returned: " + k, seenKeys.contains(k));
+                assertTrue("Value present at iterator creation was not returned: " + k, seenVals.contains(k));
+            }
+
+            assertEquals(init + added, map.size());
+        }
+    }
+
+    /**
+     * @param map Map.
+     * @return Keys of the map in iteration order.
+     */
+    private static long[] keys(ConcurrentLongHashMap<?> map) {
+        long[] keys = new long[map.size()];
+
+        int i = 0;
+
+        for (PrimitiveIterator.OfLong it = map.keyIterator(); it.hasNext(); )
+            keys[i++] = it.nextLong();
+
+        assertEquals(keys.length, i);
+
+        return keys;
     }
 }

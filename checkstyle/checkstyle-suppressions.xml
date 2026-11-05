@@ -22,7 +22,7 @@
     "https://checkstyle.org/dtds/suppressions_1_2_xpath_experimental.dtd">
 <suppressions>
     <suppress checks="RightCurly|LeftCurly|EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
-              files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
+              files="BCrypt\.java|ConcurrentLinkedDeque8\.java|ConcurrentLongHashMap\.java"/>
 
     <suppress checks="NoWhitespaceBefore"
               files="ConcurrentLinkedHashMap\.java"/>
@@ -40,7 +40,10 @@
               files="[\\/]tests[\\/]"/>
 
     <suppress checks="Javadoc"
-              files="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java"/>
+              files="BCrypt\.java|HLL\.java|HLLMetadata\.java|HLLType\.java|BigEndianAscendingWordSerializer\.java|NumberUtil\.java|SchemaVersionOne\.java|BigEndianAscendingWordDeserializer\.java|CacheView\.java|ConcurrentLinkedDeque8\.java|ConcurrentHashMap8\.java|ConcurrentLinkedHashMap\.java|ConcurrentLongHashMap\.java"/>
+
+    <suppress checks="IgniteAbbrevationsRule"
+              files="ConcurrentLongHashMap\.java"/>
 
     <suppress checks="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"
               files="[\\/]internal[\\/]thread[\\/]"/>
@@ -66,11 +69,4 @@
     <suppress-xpath checks="AnnotationOnSameLine"
                     query="//ANNOTATION[.//IDENT[not(@text='Override')]]"/>
 
-    <suppress checks="AnnotationOnSameLine" files="[\\/]jctools[\\/]"/>
-    <suppress checks="ModifierOrder" files="[\\/]jctools[\\/]"/>
-    <suppress checks="WhitespaceAfter" files="[\\/]jctools[\\/]"/>
-    <suppress checks="NoWhitespaceAfter" files="[\\/]jctools[\\/]"/>
-    <suppress checks="(?&lt;!Missing)JavadocType" files="[\\/]jctools[\\/]"/>
-    <suppress checks="RightCurly|LeftCurly|EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator" files="[\\/]jctools[\\/]"/>
-    <suppress checks="Javadoc" files="[\\/]jctools[\\/]"/>
 </suppressions>

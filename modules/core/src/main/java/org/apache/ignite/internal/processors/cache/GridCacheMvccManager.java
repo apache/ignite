@@ -75,8 +75,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.CacheLockView;
 import org.apache.ignite.util.deque.FastSizeDeque;
-import org.jctools.maps.NonBlockingHashMapLong;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentLongHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -137,7 +137,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, Collection<GridCacheVersionedFuture<?>>> verFuts = newMap();
 
     /** Pending atomic futures. */
-    private final NonBlockingHashMapLong<GridCacheAtomicFuture<?>> atomicFuts = new NonBlockingHashMapLong<>();
+    private final ConcurrentLongHashMap<GridCacheAtomicFuture<?>> atomicFuts = new ConcurrentLongHashMap<>();
 
     /** Pending data streamer futures. */
     private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
