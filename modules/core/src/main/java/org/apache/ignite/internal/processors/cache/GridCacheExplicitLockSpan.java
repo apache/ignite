@@ -169,23 +169,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                     GridCacheMvccCandidate reentry = first.unenter();
 
                     if (reentry != null) {
-                        assert reentry.reentry() : reentry;
-
-                        boolean rmvd = false;
-
-                        Iterator<GridCacheMvccCandidate> it = deque.iterator();
-
-                        while (it.hasNext()) {
-                            if (it.next() == reentry) {
-                                it.remove();
-
-                                rmvd = true;
-
-                                break;
-                            }
-                        }
-
-                        assert rmvd : reentry;
+                        removeReentry(deque, reentry);
 
                         cand = reentry;
                     }
@@ -200,9 +184,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                     GridCacheMvccCandidate reentry = first.unenter(ver);
 
                     if (reentry != null) {
-                        boolean rmvd = deque.removeIf(c -> c == reentry);
-
-                        assert rmvd : reentry;
+                        removeReentry(deque, reentry);
 
                         cand = reentry;
                     }
@@ -219,6 +201,27 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         finally {
             unlock();
         }
+    }
+
+    /** */
+    private void removeReentry(Deque<GridCacheMvccCandidate> deque, GridCacheMvccCandidate reentry) {
+        assert reentry.reentry() : reentry;
+
+        boolean rmvd = false;
+
+        Iterator<GridCacheMvccCandidate> it = deque.iterator();
+
+        while (it.hasNext()) {
+            if (it.next() == reentry) {
+                it.remove();
+
+                rmvd = true;
+
+                break;
+            }
+        }
+
+        assert rmvd : reentry;
     }
 
     /**
