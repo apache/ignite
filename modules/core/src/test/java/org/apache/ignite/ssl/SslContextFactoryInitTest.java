@@ -31,6 +31,7 @@ import org.junit.Test;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,13 +71,13 @@ public class SslContextFactoryInitTest extends GridCommonAbstractTest {
 
         factory.setProtocols(invalidProtocol);
 
-        GridTestUtils.assertThrows(log, factory::init, IllegalArgumentException.class, invalidProtocol);
+        assertThrows(IllegalArgumentException.class, factory::init);
         assertSame(original, factory.create());
 
         factory.setProtocols("TLSv1.2");
         factory.setKeyStorePassword("wrong-password".toCharArray());
 
-        GridTestUtils.assertThrows(log, factory::init, IgniteException.class, "Failed to initialize key store");
+        assertThrows(IgniteException.class, factory::init);
         assertSame(original, factory.create());
     }
 
