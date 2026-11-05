@@ -84,9 +84,9 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
     public void testUnregisteredResultClassOnAtomicCache() throws Exception {
         List<Object> received = Collections.synchronizedList(new ArrayList<>());
 
-        ContinuousQueryWithTransformer<Integer, Object, PersonId> qry = new ContinuousQueryWithTransformer<>();
+        ContinuousQueryWithTransformer<Integer, Object, Person> qry = new ContinuousQueryWithTransformer<>();
 
-        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new ToPersonId()));
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new ToPerson()));
 
         qry.setLocalListener(evts -> {
             for (Object e : evts)
@@ -106,30 +106,32 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
 
             assertTrue("Received: " + received, allReceived);
 
-            for (Object o : received) {
-                assertTrue("Unexpected class: " + o.getClass().getName(), o instanceof PersonId);
+            for (int i = 0; i < received.size(); i++) {
+                Object o = received.get(i);
 
-                assertEquals(rmtKey, ((PersonId)o).id);
+                assertTrue("Unexpected class: " + o.getClass().getName(), o instanceof Person);
+
+                assertEquals(i + 1, ((Person)o).id);
             }
         }
     }
 
     /** */
-    private static class PersonId {
+    private static class Person {
         /** */
         final int id;
 
         /** */
-        PersonId(int id) {
+        Person(int id) {
             this.id = id;
         }
     }
 
     /** */
-    private static class ToPersonId implements IgniteClosure<CacheEntryEvent<? extends Integer, ?>, PersonId> {
+    private static class ToPerson implements IgniteClosure<CacheEntryEvent<? extends Integer, ?>, Person> {
         /** {@inheritDoc} */
-        @Override public PersonId apply(CacheEntryEvent<? extends Integer, ?> evt) {
-            return new PersonId(evt.getKey());
+        @Override public Person apply(CacheEntryEvent<? extends Integer, ?> evt) {
+            return new Person((Integer)evt.getValue());
         }
     }
 }

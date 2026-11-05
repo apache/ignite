@@ -50,6 +50,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -1198,16 +1200,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
             else {
                 Object transVal = trans != null && !entry.isFiltered() ? transform(trans, evt) : null;
 
-                // The transformer result is converted to a cache object, which may register its class. An ATOMIC update
-                // calls this listener under the topology lock, where registration is not allowed, so the conversion and
-                // sending are done in the async callback pool, ordered by partition.
-                if (trans != null && cctx.atomic() && !asyncCb) {
-                    ctx.pools().asyncCallbackPool().execute(
-                        () -> notifyRemoteListener(cctx, evt, true, transVal),
-                        evt.partitionId());
-                }
-                else
-                    notifyRemoteListener(cctx, evt, trans != null, transVal);
+                notifyRemoteListener(cctx, evt, trans != null, transVal);
             }
         }
         catch (ClusterTopologyCheckedException ex) {
@@ -1270,8 +1263,19 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
             CacheContinuousQueryEntry entry = evt.entry();
 
             if (!entry.isFiltered()) {
-                if (transformed)
-                    entry = transformToEntry(transVal, evt);
+                if (transformed) {
+                    try {
+                        entry = transformToEntry(transVal, evt);
+                    }
+                    catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
+                        // Registration is not allowed under the topology lock, so retry in the async callback pool.
+                        ctx.pools().asyncCallbackPool().execute(
+                            () -> notifyRemoteListener(cctx, evt, true, transVal),
+                            evt.partitionId());
+
+                        return;
+                    }
+                }
 
                 prepareEntry(cctx, nodeId, entry);
             }
@@ -1750,7 +1754,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
      * @return Entry contains only transformed data if transformer exists.
      * @see #getTransformer()
      */
-    private CacheContinuousQueryEntry transformToEntry(Object transVal,
+    private CacheContinuousQueryEntry transformToEntry(@Nullable Object transVal,
         CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
         CacheObject cacheObj = transVal == null ? null : cacheContext(ctx).toCacheObject(transVal);
 
