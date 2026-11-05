@@ -387,7 +387,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 cand.topologyVersion(topVer);
             }
             else
-                cand = cand.reenter();
+                cand = cand.reenter(lockVer);
 
             cctx.mvcc().addExplicitLock(threadId, cand, topVer);
         }
@@ -599,6 +599,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     catch (InterruptedException ignore) {
                         // Ignore interrupts.
                     }
+            }
+        }
+        else if (timeoutObj != null) {
+            // Serialized with the registration of explicit lock candidates, see map().
+            synchronized (timeoutObj) {
+                return onComplete(false, true);
             }
         }
 
@@ -933,10 +939,17 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      */
     private void map(Collection<KeyCacheObject> keys, boolean remap, boolean topLocked) {
         try {
-            map0(
-                keys,
-                remap,
-                topLocked);
+            if (tx != null || timeoutObj == null)
+                map0(keys, remap, topLocked);
+            else {
+                // Candidates registered after the future has been completed by the timeout or cancellation are never
+                // released: undoLocks() has already run. The completion holds the same monitor, so the mapping is
+                // atomic with it. Transactions release their candidates on rollback instead.
+                synchronized (timeoutObj) {
+                    if (!isDone())
+                        map0(keys, remap, topLocked);
+                }
+            }
         }
         catch (IgniteCheckedException ex) {
             onDone(false, ex);
