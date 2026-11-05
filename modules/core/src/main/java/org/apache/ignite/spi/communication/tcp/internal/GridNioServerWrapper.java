@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -171,6 +171,9 @@ public class GridNioServerWrapper {
     /** State provider. */
     private final ClusterStateProvider stateProvider;
 
+    /** Registered SSL context for new communication connections. */
+    private SslContextRegistry.Entry sslEntry;
+
     /** Exception registry supplier. */
     private final Supplier<IgniteExceptionRegistry> eRegistrySupplier;
 
@@ -219,9 +222,6 @@ public class GridNioServerWrapper {
     /** Message queue size to print warning. */
     private final int msgQueueWarningSize = IgniteSystemProperties.getInteger(
         IgniteSystemProperties.IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE, 0);
-
-    /** SSL context for incoming and outgoing connections, or {@code null} if SSL is disabled. */
-    private SSLContext sslCtx;
 
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
@@ -482,7 +482,8 @@ public class GridNioServerWrapper {
                         if (stateProvider.isSslEnabled()) {
                             meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
 
-                            SSLEngine sslEngine = sslCtx.createSSLEngine();
+                            SSLEngine sslEngine = sslEntry == null
+                                ? stateProvider.createSSLEngine() : sslEntry.context().createSSLEngine();
 
                             sslEngine.setUseClientMode(true);
 
@@ -809,8 +810,12 @@ public class GridNioServerWrapper {
         if (cfg.boundTcpPort() >= 0)
             throw new IgniteCheckedException("Tcp NIO server was already created on port " + cfg.boundTcpPort());
 
-        sslCtx = stateProvider.isSslEnabled() ? ((IgniteEx)stateProvider.ignite()).context().sslContexts()
-            .register(igniteCfg.getSslContextFactory(), COMMUNICATION) : null;
+        if (stateProvider.isSslEnabled() && stateProvider.ignite() instanceof IgniteEx ignite) {
+            SslContextRegistry registry = ignite.context().sslContexts();
+
+            if (registry != null)
+                sslEntry = registry.register(igniteCfg.getSslContextFactory(), COMMUNICATION);
+        }
 
         IgniteCheckedException lastEx = null;
 
@@ -927,8 +932,12 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
+                    Supplier<SSLEngine> engineFactory = sslEntry == null
+                        ? igniteCfg.getSslContextFactory().create()::createSSLEngine
+                        : () -> sslEntry.context().createSSLEngine();
+
                     GridNioSslFilter sslFilter = U.sslFilter(
-                        sslCtx,
+                        engineFactory,
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,

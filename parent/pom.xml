@@ -51,7 +51,7 @@
         <!-- IDE and jar manifest read it; javac is driven by source/target, see maven-compiler-plugin below. -->
         <maven.compiler.release>17</maven.compiler.release>
 
-        <revision>2.19.0-SNAPSHOT</revision>
+        <revision>2.20.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -68,7 +68,6 @@
         <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
-        <bouncycastle.version>1.86</bouncycastle.version>
         <commons.codec.version>1.23.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.io.version>2.22.0</commons.io.version>

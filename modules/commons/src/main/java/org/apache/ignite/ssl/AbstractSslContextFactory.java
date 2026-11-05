@@ -17,37 +17,26 @@
 
 package org.apache.ignite.ssl;
 
-import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.ssl.SslCertificates;
+import org.apache.ignite.internal.ssl.SslCertificateValidity;
 import org.apache.ignite.internal.ssl.SslFactoryAccess;
-import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Owns the SSL context and the certificate chains loaded with it. An initialized factory retains its material across
- * node restarts. A subclass can call {@link #init()} to replace it. Configure the factory before use.
+ * Base class for SSL context factories that cache their {@link SSLContext}.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -56,32 +45,27 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
-    /**
-     * Gives the node access to the accepted material and the same reload path used by subclasses.
-     * @hidden
-     */
+    /** Internal access for the node's TLS reload command. */
     public static final SslFactoryAccess NODE_ACCESS = new SslFactoryAccess() {
         /** {@inheritDoc} */
-        @Override protected SslBundle current(AbstractSslContextFactory factory) {
-            return factory.sslBundle();
+        @Override protected @Nullable SSLContext context(AbstractSslContextFactory factory) {
+            return factory.sslCtx.get();
         }
 
         /** {@inheritDoc} */
-        @Override protected SslBundle reload(AbstractSslContextFactory factory) {
-            return factory.init();
+        @Override protected @Nullable Map<String, SslCertificateValidity> certificates(AbstractSslContextFactory factory) {
+            synchronized (factory) {
+                ContextCertificates certs = factory.certs;
+
+                return certs != null && certs.ctx() == factory.sslCtx.get() ? certs.validity() : null;
+            }
         }
 
         /** {@inheritDoc} */
-        @Override protected ReloadOutcome reloadOutcome(AbstractSslContextFactory factory) {
-            return factory.reloadOutcome();
+        @Override protected void reload(AbstractSslContextFactory factory) throws SSLException {
+            factory.load(true, true);
         }
     };
-
-    /** Accepted context and the metadata loaded with it. */
-    private transient volatile SslBundle bundle;
-
-    /** Snapshot of the last successful reload and subsequent failures. */
-    private transient volatile ReloadOutcome outcome;
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -91,6 +75,12 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Enabled protocols. */
     protected String[] protocols;
+
+    /** Cached instance of an {@link SSLContext}. */
+    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
+
+    /** Certificate dates from the key store used to build the cached context. */
+    @Nullable private transient ContextCertificates certs;
 
     /**
      * Gets protocol for secure transport.
@@ -149,119 +139,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Loads a fresh context and matching certificate metadata from this factory's source. Check source parameters before
-     * loading it. Do not modify a key store or key managers that the accepted context uses. Calling {@link #create()}
-     * from this hook would recurse on first use.
+     * Creates an SSL context from the configured trust material and the loaded keys.
      *
-     * @return Fresh context and the certificate metadata available to this factory.
-     * @throws SSLException If the context could not be created.
-     */
-    protected abstract SslBundle createSslBundle() throws SSLException;
-
-    /**
-     * Creates a context and certificate metadata from one loaded key store, using this factory's trust and TLS settings.
-     * Do not modify the store while the context is in use: key managers such as PKIX read it during handshakes.
-     * Load replacement material into a separate store.
-     *
-     * @param store Loaded key store, or {@code null} for a client without private keys.
-     * @param keyPwd Password for the loaded store's private keys, or {@code null} if no password is required.
-     * @param algorithm Key manager algorithm.
-     * @return Context and nonempty X.509 chains of key entries, ordered by alias. An empty map means no such chains were found.
-     * @throws SSLException If the store cannot be read or the context cannot be created.
-     */
-    protected final SslBundle createSslBundle(@Nullable KeyStore store, char @Nullable [] keyPwd, String algorithm)
-        throws SSLException {
-        A.notNull(algorithm, "algorithm");
-
-        KeyManager[] keyMgrs;
-
-        try {
-            KeyManagerFactory factory = KeyManagerFactory.getInstance(algorithm);
-
-            factory.init(store, keyPwd);
-
-            keyMgrs = factory.getKeyManagers();
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new SSLException("Unsupported key algorithm: " + algorithm + " [factory=" + this + ']', e);
-        }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to initialize Key Manager (security exception occurred) [factory=" + this + ']', e);
-        }
-
-        Map<String, List<X509Certificate>> chains = store == null ? Collections.emptyMap() : certificateChains(store);
-
-        return new SslBundle(createSslContext(keyMgrs), chains);
-    }
-
-    /** @return Fresh candidate that can create engines and supply sockets for TCP discovery. */
-    private SslBundle prepareSslBundle() {
-        try {
-            SslBundle next = createSslBundle();
-            SSLContext ctx = next.context();
-
-            ctx.createSSLEngine();
-            ctx.getSocketFactory();
-
-            return next;
-        }
-        catch (SSLException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @param store Loaded key store.
-     * @return Nonempty X.509 chains of key entries; entries without such a chain are omitted.
-     * @throws SSLException If the store cannot be read.
-     */
-    private static Map<String, List<X509Certificate>> certificateChains(KeyStore store) throws SSLException {
-        try {
-            Map<String, List<X509Certificate>> chains = new HashMap<>();
-
-            for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
-                String alias = aliases.nextElement();
-
-                if (!store.isKeyEntry(alias))
-                    continue;
-
-                List<X509Certificate> chain = certificateChain(store.getCertificateChain(alias));
-
-                if (!chain.isEmpty())
-                    chains.put(alias, chain);
-            }
-
-            return chains;
-        }
-        catch (KeyStoreException e) {
-            throw new SSLException("Failed to read certificate chains from key store", e);
-        }
-    }
-
-    /**
-     * @param certs Chain from the store, if present.
-     * @return X.509 chain, or an empty list if it is absent or contains another certificate type.
-     */
-    private static List<X509Certificate> certificateChain(@Nullable Certificate[] certs) {
-        if (certs == null)
-            return Collections.emptyList();
-
-        List<X509Certificate> chain = new ArrayList<>(certs.length);
-
-        for (Certificate cert : certs) {
-            if (!(cert instanceof X509Certificate))
-                return Collections.emptyList();
-
-            chain.add((X509Certificate)cert);
-        }
-
-        return chain;
-    }
-
-    /**
-     * @param keyMgrs Key managers for the loaded material.
-     * @return Initialized context.
-     * @throws SSLException If trust managers or the context cannot be created.
+     * @param keyMgrs Key managers for this context.
+     * @return Initialized SSL context.
+     * @throws SSLException If SSL context could not be created.
      */
     private SSLContext createSslContext(KeyManager[] keyMgrs) throws SSLException {
         TrustManager[] trustMgrs = createTrustManagers();
@@ -304,125 +186,111 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
+     * Checks that all required parameters are set.
+     *
+     * @throws SSLException If any of required parameters is missing.
+     */
+    protected abstract void checkParameters() throws SSLException;
+
+    /**
+     * @return Created Key Managers.
+     * @throws SSLException If Key Managers could not be created.
+     */
+    protected abstract KeyManager[] createKeyManagers() throws SSLException;
+
+    /**
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads fresh material and checks that the configured protocols and cipher suites can be applied before publishing
-     * the context and its metadata. Calls run one at a time. A failed initialization leaves the previous material in use.
+     * Loads a new SSL context and caches it for the base implementation of {@link #create()}.
+     * When replacing a cached context, checks stream TLS support and any available certificate chains.
+     * If loading fails, the previously cached context is kept.
      *
-     * <p>
-     * The first load, including a retry after failure, accepts material with no certificate chains or with certificates outside their
-     * validity period. After a successful load, calls reject the context already in use, an empty chain map, or an expired
-     * or not-yet-valid certificate in any chain. Check peer trust with a new connection.
-     *
-     * @return Context and metadata accepted by this initialization.
-     * @throws IgniteException If the material cannot be loaded, the context cannot be created or a replacement is rejected.
-     * @throws IllegalArgumentException If the JVM does not recognize a name in {@link #setProtocols} or {@link #setCipherSuites}.
-     * @throws UnsupportedOperationException If the context does not support stream sockets.
+     * @throws IgniteException If the context cannot be initialized.
      */
-    protected final synchronized SslBundle init() {
+    protected final void init() {
         try {
-            SslBundle next = prepareSslBundle();
-            boolean reload = bundle != null;
-
-            if (reload)
-                checkReplacement(next);
-
-            bundle = next;
-
-            if (reload)
-                outcome = new ReloadOutcome(System.currentTimeMillis(), 0, null, 0);
-
-            return next;
+            load(true, false);
         }
-        catch (Throwable e) {
-            if (bundle != null) {
-                ReloadOutcome previous = reloadOutcome();
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
+    }
 
-                outcome = new ReloadOutcome(previous.successTime(), System.currentTimeMillis(),
-                    SslCertificates.reason(e), previous.failures() + 1);
-            }
+    /** {@inheritDoc} */
+    @Override public SSLContext create() {
+        SSLContext ctx = sslCtx.get();
 
-            throw e;
+        if (ctx != null)
+            return ctx;
+
+        try {
+            return load(false, false);
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e);
         }
     }
 
     /**
-     * @param next Replacement to check before it is published.
-     * @throws IgniteException If the context is already in use, known to have no certificate chains, or a certificate is invalid.
+     * @param replace Whether to replace a context already in the cache.
+     * @param reload Whether to validate the replacement for reload on a running node.
+     * @return Context in the cache after loading.
+     * @throws SSLException If loading or validation fails.
      */
-    private void checkReplacement(SslBundle next) {
-        Map<String, List<X509Certificate>> chains = next.certificateChains();
+    private synchronized SSLContext load(boolean replace, boolean reload) throws SSLException {
+        SSLContext cur = sslCtx.get();
 
-        if (chains != null && chains.isEmpty()) {
-            throw new IgniteException("The new key material has no X.509 certificate chains, " +
-                "so the node would present no certificate");
+        if (!replace && cur != null)
+            return cur;
+
+        boolean validate = reload || cur != null;
+
+        checkParameters();
+
+        Map<String, SslCertificateValidity> validity = null;
+        KeyManager[] keyMgrs;
+
+        if (this instanceof SslContextFactory fileFactory) {
+            validity = new TreeMap<>();
+            keyMgrs = fileFactory.loadKeyManagers(validity, validate);
         }
+        else
+            keyMgrs = createKeyManagers();
 
-        if (next.context() == bundle.context()) {
-            throw new IgniteException("The SSL context factory returned the context already in use. " +
-                "Build a fresh SSLContext on each load to apply new certificates.");
-        }
+        SSLContext candidate = createSslContext(keyMgrs);
 
-        if (chains == null)
-            return;
+        if (validate) {
+            SslFactoryAccess.checkContext(candidate);
 
-        long now = System.currentTimeMillis();
+            if (validity != null) {
+                if (validity.isEmpty())
+                    throw new SSLException("The TLS key store has no X.509 certificate chains");
 
-        for (Map.Entry<String, List<X509Certificate>> entry : chains.entrySet()) {
-            X509Certificate invalid = SslCertificates.invalidAt(entry.getValue(), now);
+                long now = System.currentTimeMillis();
 
-            if (invalid != null) {
-                throw new IgniteException("The new certificate chain is not valid now [alias=" + entry.getKey() + ", " +
-                    SslCertificates.describe(invalid) + ", now=" + Instant.ofEpochMilli(now) + ']');
-            }
-        }
-    }
-
-    /** @return Snapshot of the last successful reload and subsequent failures; zero times before any reload. */
-    private ReloadOutcome reloadOutcome() {
-        ReloadOutcome res = outcome;
-
-        return res == null ? new ReloadOutcome(0, 0, null, 0) : res;
-    }
-
-    /**
-     * Returns the accepted context and its metadata, initializing the factory on first use.
-     *
-     * @return Accepted bundle.
-     * @throws IgniteException If the first initialization fails to load the material or create the context.
-     * @throws IllegalArgumentException If the JVM does not recognize a configured protocol or cipher suite name.
-     * @throws UnsupportedOperationException If the context does not support stream sockets.
-     */
-    final SslBundle sslBundle() {
-        SslBundle cur = bundle;
-
-        if (cur == null) {
-            synchronized (this) {
-                cur = bundle;
-
-                if (cur == null)
-                    cur = init();
+                for (Map.Entry<String, SslCertificateValidity> entry : validity.entrySet()) {
+                    if (!entry.getValue().validAt(now))
+                        throw new SSLException("TLS certificate chain is not valid now [alias=" + entry.getKey() + ']');
+                }
             }
         }
 
-        return cur;
+        if (replace)
+            sslCtx.set(candidate);
+        else if (!sslCtx.compareAndSet(null, candidate))
+            return sslCtx.get();
+
+        certs = validity == null ? null : new ContextCertificates(candidate, Collections.unmodifiableMap(validity));
+
+        return candidate;
     }
 
-    /**
-     * Returns the accepted context, initializing the factory on first use. While a replacement loads, callers receive
-     * the current context without waiting. Call this method again after a successful replacement to obtain the new context.
-     * Previously returned contexts, engines and sockets retain their original material. Do not reinitialize the context directly.
-     *
-     * @return Currently accepted context.
-     * @throws IgniteException If the first initialization fails to load the material or create the context.
-     * @throws IllegalArgumentException If the JVM does not recognize a configured protocol or cipher suite name.
-     * @throws UnsupportedOperationException If the context does not support stream sockets.
-     */
-    @Override public final SSLContext create() {
-        return sslBundle().context();
+    /** Associates certificate dates with the context built from those keys. */
+    private record ContextCertificates(SSLContext ctx, Map<String, SslCertificateValidity> validity) {
+        // No-op.
     }
 }

@@ -19,21 +19,17 @@ package org.apache.ignite.internal.management.ssl;
 
 import java.io.Serial;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteException;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.ssl.SslContextProvider;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecuritySubject;
-
-import static org.apache.ignite.internal.ssl.SslCertificates.describeChains;
-import static org.apache.ignite.internal.ssl.SslCertificates.reason;
 
 /** Reloads TLS certificates on every mapped node. */
 @GridInternal
@@ -68,12 +64,12 @@ public class SslReloadTask extends AbstractSslTask {
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
+        @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) {
             String id = node(ignite.localNode());
 
-            Collection<SslContextProvider> providers = ignite.context().sslContexts().providers();
+            List<SslContextRegistry.Entry> entries = ignite.context().sslContexts().entries();
 
-            if (providers.isEmpty())
+            if (entries.isEmpty())
                 return new IgniteBiTuple<>(true, id + ": no SSL context factory is configured");
 
             String initiator = initiator();
@@ -82,21 +78,13 @@ public class SslReloadTask extends AbstractSslTask {
 
             boolean failed = false;
 
-            for (SslContextProvider provider : providers) {
-                String transports = provider.transports();
+            for (SslContextRegistry.Entry entry : entries) {
+                String transports = entry.transports();
 
                 try {
-                    String desc = describeChains(provider.reload().certificateChains());
-
-                    U.log(ignite.log(), "TLS certificates reloaded [transports=" + transports + (desc.isEmpty() ? "" : ", " + desc) +
-                        ", initiator=" + initiator + ']');
-
-                    lines.add(id + ": reloaded " + transports + (desc.isEmpty() ? "" : "; loaded " + desc));
+                    entry.reload();
                 }
-                catch (Throwable e) {
-                    if (e instanceof VirtualMachineError || e instanceof ThreadDeath)
-                        throw e;
-
+                catch (SSLException | RuntimeException | LinkageError e) {
                     failed = true;
 
                     String reason = reason(e);
@@ -105,7 +93,13 @@ public class SslReloadTask extends AbstractSslTask {
 
                     ignite.log().warning("Failed to reload TLS certificates, the ones in use stay [transports=" + transports +
                         ", initiator=" + initiator + ", reason=" + reason + ']', e);
+
+                    continue;
                 }
+
+                U.log(ignite.log(), "TLS certificates reloaded [transports=" + transports + ", initiator=" + initiator + ']');
+
+                lines.add(id + ": reloaded " + transports);
             }
 
             return new IgniteBiTuple<>(!failed, String.join("\n", lines));

@@ -17,30 +17,47 @@
 
 package org.apache.ignite.internal.ssl;
 
+import java.util.Map;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.apache.ignite.ssl.SslBundle;
 import org.jetbrains.annotations.Nullable;
 
-/** Operations the node uses to report and replace a factory's TLS material. */
+/** Node access to the SSL context and certificate information managed by a factory. */
 public abstract class SslFactoryAccess {
-    /** @return Material in use, initialized on first use. */
-    protected abstract SslBundle current(AbstractSslContextFactory factory);
-
-    /** @return Fresh material accepted by the factory. */
-    protected abstract SslBundle reload(AbstractSslContextFactory factory);
-
-    /** @return Last successful reload and any failures since then. */
-    protected abstract ReloadOutcome reloadOutcome(AbstractSslContextFactory factory);
+    /**
+     * @param factory Configured factory.
+     * @return Context cached by the base factory, if initialized.
+     */
+    protected abstract @Nullable SSLContext context(AbstractSslContextFactory factory);
 
     /**
-     * Snapshot of the last successful reload and subsequent failures.
-     *
-     * @param successTime Time of the last successful reload, {@code 0} if there was none.
-     * @param failureTime Time of the last failed reload since the last successful one, {@code 0} if there was none.
-     * @param failureReason Reason of the last failed reload since the last successful one, {@code null} if there was none.
-     * @param failures Failed reloads in a row since the last successful one, {@code 0} if there were none.
+     * @param factory Configured factory.
+     * @return Validity by key alias, or {@code null} if unavailable for this context.
      */
-    public record ReloadOutcome(long successTime, long failureTime, @Nullable String failureReason, int failures) {
-        // No-op.
+    protected abstract @Nullable Map<String, SslCertificateValidity> certificates(AbstractSslContextFactory factory);
+
+    /**
+     * @param factory Configured factory.
+     * @throws SSLException If the replacement cannot be loaded and validated.
+     */
+    protected abstract void reload(AbstractSslContextFactory factory) throws SSLException;
+
+    /**
+     * @param ctx Context to use for new connections.
+     * @throws SSLException If it cannot support TLS stream transports.
+     */
+    public static void checkContext(@Nullable SSLContext ctx) throws SSLException {
+        if (ctx == null)
+            throw new SSLException("SSL context factory returned null");
+
+        try {
+            ctx.createSSLEngine();
+            ctx.getSocketFactory();
+            ctx.getServerSocketFactory();
+        }
+        catch (RuntimeException e) {
+            throw new SSLException("SSL context cannot create TLS engines and stream sockets: " + e.getMessage(), e);
+        }
     }
 }

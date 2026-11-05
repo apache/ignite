@@ -17,42 +17,27 @@
 
 package org.apache.ignite.util;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.management.ssl.SslReloadCommand;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.apache.ignite.testframework.TestCertificateAuthority;
-import org.junit.Assume;
 import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.ssl.SslTestUtils.node;
+import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
-import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
-import static org.apache.ignite.testframework.TestCertificateAuthority.save;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
+import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 
-/**
- * {@code --ssl reload} and {@code --ssl status} through control.sh. Only the CLI handler runs the test: it connects to a node over
- * the client connector TLS that the command reloads, while the JMX handler calls the node in process and would only repeat
- * SslContextReloadTest.
- */
-public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractTest {
-    /** Key store the nodes run on; replaced on disk to rotate the certificate. */
-    private Path keyStore;
-
-    /** CLI credentials, kept readable when the node key store is replaced or corrupted. */
-    private Path clientKeyStore;
+/** Tests cluster-wide TLS reload through the control utility. */
+public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+    /** */
+    @Parameterized.Parameters(name = "cmdHnd={0}")
+    public static List<String> commandHandlers() {
+        return List.of(CLI_CMD_HND);
+    }
 
     /** {@inheritDoc} */
     @Override protected boolean sslEnabled() {
@@ -60,93 +45,46 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected Factory<SSLContext> sslFactory() {
-        SslContextFactory factory = new SslContextFactory();
-
-        factory.setKeyStoreFilePath(keyStore.toString());
-        factory.setKeyStorePassword(PWD);
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-
-        return factory;
+    @Override protected SslContextFactory sslFactory() {
+        return (SslContextFactory)sslTrustedFactory("node01", "trustboth");
     }
 
     /** {@inheritDoc} */
     @Override protected void extendSslParams(List<String> params) {
-        params.addAll(List.of("--keystore", clientKeyStore.toString(), "--keystore-password", new String(PWD)));
+        super.extendSslParams(params);
+
+        params.addAll(List.of("--truststore", keyStorePath("trustboth"), "--truststore-password", keyStorePassword()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(cliCommandHandler());
-
-        keyStore = Files.createTempFile("ignite-cli-ssl-reload-", ".jks");
-        clientKeyStore = Files.createTempFile("ignite-cli-ssl-client-", ".jks");
-
-        super.beforeTest();
-
-        injectTestSystemOut();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
-
-        if (keyStore != null)
-            Files.deleteIfExists(keyStore);
-
-        if (clientKeyStore != null)
-            Files.deleteIfExists(clientKeyStore);
-    }
-
-    /**
-     * The reload asks for confirmation. One command reloads every node, client ones included, and status shows the new
-     * certificate and the time of that reload; a broken store fails the command.
-     */
+    /** A client node failure leaves its certificate in service and the server reload still completes. */
     @Test
-    public void testReloadAndStatus() throws Exception {
-        assertNotNull("The reload must ask for confirmation", new SslReloadCommand().confirmationPrompt(new NoArg()));
+    public void testReloadReportsPartialFailure() throws Exception {
+        persistenceEnable(false);
+        injectTestSystemOut();
 
-        TestCertificateAuthority ca = new TestCertificateAuthority("cli-ca");
-        String oldAlias = "initial-key";
-        String replacement = "replacement-key";
+        IgniteEx srv = startGrid(0);
+        IgniteEx client = startClientGrid(CLIENT_NODE_NAME_PREFIX, cfg -> cfg.setConnectorConfiguration(null));
+        String port = Integer.toString(srv.context().clientListener().port());
 
-        save(ca.keyStoreWithPrivateKey(oldAlias), keyStore);
-        save(ca.keyStoreWithPrivateKey(), clientKeyStore);
+        ((SslContextFactory)srv.configuration().getSslContextFactory()).setKeyStoreFilePath(keyStorePath("node02"));
+        ((SslContextFactory)client.configuration().getSslContextFactory()).setKeyStoreFilePath(keyStorePath("node02old"));
 
-        IgniteEx srv0 = startGrid(0);
-        IgniteEx cli = startClientGrid(CLIENT_NODE_NAME_PREFIX);
+        String reload = executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--ssl", "reload", "--port", port);
 
-        // Transports are listed alphabetically; a client node runs no binary REST.
-        Map<IgniteEx, String> transports = Map.of(
-            srv0, "binary REST, client connector, communication, discovery",
-            cli, "client connector, communication, discovery");
+        assertContains(log, reload, node(client) + ": failed on ");
+        assertContains(log, reload, "alias=node02old");
+        assertContains(log, reload, node(srv) + ": reloaded ");
 
-        String loaded = "loaded alias=" + replacement + ", subject=CN=" + replacement;
+        String status = executeCommand(EXIT_CODE_OK, "--ssl", "status", "--port", port);
 
-        save(ca.keyStoreWithPrivateKey(replacement), keyStore);
+        assertContains(log, status, node(srv) + ": binary REST, client connector, communication, discovery\n" +
+            DOUBLE_INDENT + "loaded alias=node02,");
+        assertContains(log, status, node(client) + ": client connector, communication, discovery\n" +
+            DOUBLE_INDENT + "loaded alias=node01,");
+    }
 
-        long start = System.currentTimeMillis();
-        String reloadOutput = executeCommand(EXIT_CODE_OK, "--ssl", "reload");
-
-        transports.forEach((g, t) -> assertContains(log, reloadOutput, node(g) + ": reloaded " + t + "; " + loaded));
-
-        String statusOutput = executeCommand(EXIT_CODE_OK, "--ssl", "status");
-
-        transports.forEach((g, t) -> assertContains(log, statusOutput, node(g) + ": " + t + '\n'));
-
-        assertContains(log, statusOutput, loaded);
-        assertNotContains(log, statusOutput, "subject=CN=" + oldAlias);
-
-        List<Instant> succeeded = Pattern.compile("last reload succeeded at (\\S+)").matcher(statusOutput).results()
-            .map(m -> Instant.parse(m.group(1))).collect(Collectors.toList());
-
-        assertEquals(statusOutput, transports.size(), succeeded.size());
-        succeeded.forEach(t -> assertFalse(statusOutput, t.isBefore(Instant.ofEpochMilli(start))));
-
-        Files.write(keyStore, "not a key store".getBytes());
-
-        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, "--ssl", "reload"), "Failed to initialize key store");
+    /** Returns the node identifier used in command reports. */
+    private static String node(IgniteEx node) {
+        return node.localNode().id() + " [consistentId=" + node.localNode().consistentId() + ']';
     }
 }

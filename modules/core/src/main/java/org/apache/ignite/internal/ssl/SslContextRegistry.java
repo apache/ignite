@@ -17,20 +17,23 @@
 
 package org.apache.ignite.internal.ssl;
 
-import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import javax.net.ssl.SSLException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
-/** SSL contexts of a node: one provider per configured factory, shared by its transports. */
-public class SslContextRegistry extends GridProcessorAdapter {
+import static org.apache.ignite.ssl.AbstractSslContextFactory.NODE_ACCESS;
+
+/** Tracks the TLS factories used by a node's transports. */
+public final class SslContextRegistry {
     /** */
     public static final String COMMUNICATION = "communication";
 
@@ -43,63 +46,148 @@ public class SslContextRegistry extends GridProcessorAdapter {
     /** */
     public static final String BINARY_REST = "binary REST";
 
-    /** */
-    private final Collection<SslContextProvider> providers = new CopyOnWriteArrayList<>();
+    /** Entries in registration order. */
+    private final List<Entry> entries = new ArrayList<>();
 
-    /** @param ctx Kernal context. */
-    public SslContextRegistry(GridKernalContext ctx) {
-        super(ctx);
+    /** Node logger. */
+    @Nullable private final IgniteLogger log;
+
+    /** @param log Node logger. */
+    public SslContextRegistry(@Nullable IgniteLogger log) {
+        this.log = log;
     }
 
     /**
-     * @param factory Factory the transport is configured with.
-     * @param transport Transport name from the constants of this class.
-     * @return Context shared by the transports using this factory. New connections use its current material.
+     * @param factory Configured factory.
+     * @param transport Transport using this factory.
+     * @return Entry shared by transports using the same factory object.
      */
-    public synchronized SSLContext register(Factory<SSLContext> factory, String transport) {
-        SslContextProvider provider = providers.stream().filter(p -> p.factory() == factory).findFirst().orElse(null);
+    public synchronized Entry register(Factory<SSLContext> factory, String transport) {
+        for (Entry entry : entries) {
+            if (entry.factory == factory) {
+                entry.transports.add(transport);
 
-        if (provider == null) {
-            provider = new SslContextProvider(factory);
-            provider.addTransport(transport);
-            warnIfUnusable(provider);
-
-            providers.add(provider);
-        }
-        else
-            provider.addTransport(transport);
-
-        return provider.sharedContext();
-    }
-
-    /**
-     * Warns about key material the node starts with but reload would reject.
-     *
-     * @param provider Newly registered provider.
-     */
-    private void warnIfUnusable(SslContextProvider provider) {
-        Map<String, List<X509Certificate>> chains = provider.certificateChains();
-
-        if (chains == null)
-            return;
-
-        if (chains.isEmpty())
-            U.warn(log, "The key material has no X.509 certificate chains, so the node cannot present a certificate; " +
-                "reload rejects such key material");
-
-        for (Map.Entry<String, List<X509Certificate>> entry : chains.entrySet()) {
-            X509Certificate invalid = SslCertificates.invalidAt(entry.getValue(), System.currentTimeMillis());
-
-            if (invalid != null) {
-                U.warn(log, "The TLS certificate chain in use is not valid now" +
-                    "; put a valid certificate in place and run control.sh --ssl reload [alias=" + entry.getKey() + ", " +
-                    SslCertificates.describe(invalid) + ']');
+                return entry;
             }
         }
+
+        Entry entry = new Entry(factory);
+
+        entry.transports.add(transport);
+        entries.add(entry);
+
+        Map<String, SslCertificateValidity> certs = entry.certificates();
+
+        if (log != null && certs != null) {
+            if (certs.isEmpty())
+                log.warning("The TLS key store has no X.509 certificate chains [transport=" + transport + ']');
+
+            certs.forEach((alias, validity) -> {
+                if (!validity.validAt(System.currentTimeMillis()))
+                    log.warning("The TLS certificate chain is not valid now [transport=" + transport + ", alias=" + alias + ']');
+            });
+        }
+
+        return entry;
     }
 
-    /** @return One provider per factory object, in registration order; sharing a factory never adds another provider. */
-    public Collection<SslContextProvider> providers() {
-        return Collections.unmodifiableCollection(providers);
+    /**
+     * @param entry Factory entry.
+     * @param transport Transport that could not start.
+     */
+    public synchronized void unregister(Entry entry, String transport) {
+        entry.transports.remove(transport);
+
+        if (entry.transports.isEmpty())
+            entries.remove(entry);
+    }
+
+    /** @return Snapshot of the registered entries. */
+    public synchronized List<Entry> entries() {
+        return List.copyOf(entries);
+    }
+
+    /** Current TLS context for the transports using a factory. */
+    public static final class Entry {
+        /** */
+        private final Factory<SSLContext> factory;
+
+        /** Base factory when its own cache supplies the configured context. */
+        @Nullable private final AbstractSslContextFactory managed;
+
+        /** Current context for a factory that supplies contexts through create() only. */
+        @Nullable private volatile SSLContext ctx;
+
+        /** */
+        private final Set<String> transports = new ConcurrentSkipListSet<>();
+
+        /** @param factory Configured factory. */
+        private Entry(Factory<SSLContext> factory) {
+            this.factory = factory;
+
+            SSLContext init = factory.create();
+
+            try {
+                SslFactoryAccess.checkContext(init);
+            }
+            catch (SSLException e) {
+                throw new IgniteException(e);
+            }
+
+            if (factory instanceof AbstractSslContextFactory base && inheritsCreate(base) && NODE_ACCESS.context(base) == init)
+                managed = base;
+            else {
+                managed = null;
+                ctx = init;
+            }
+        }
+
+        /** @return Whether the factory relies on the base implementation of {@code create()}. */
+        private static boolean inheritsCreate(AbstractSslContextFactory factory) {
+            try {
+                return factory.getClass().getMethod("create").getDeclaringClass() == AbstractSslContextFactory.class;
+            }
+            catch (NoSuchMethodException e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        /** @return Context to use for a new connection. */
+        public SSLContext context() {
+            if (managed == null)
+                return ctx;
+
+            SSLContext cur = NODE_ACCESS.context(managed);
+
+            return cur == null ? managed.create() : cur;
+        }
+
+        /** @return Names of the transports sharing the context. */
+        public String transports() {
+            return String.join(", ", transports);
+        }
+
+        /** @return Certificate validity by alias, or {@code null} if unavailable. */
+        public @Nullable Map<String, SslCertificateValidity> certificates() {
+            return managed == null ? null : NODE_ACCESS.certificates(managed);
+        }
+
+        /** @throws SSLException If the factory cannot provide a usable replacement. */
+        public synchronized void reload() throws SSLException {
+            if (managed != null) {
+                NODE_ACCESS.reload(managed);
+
+                return;
+            }
+
+            SSLContext replacement = factory.create();
+
+            if (replacement == ctx)
+                throw new SSLException("SSL context factory returned the context already in use");
+
+            SslFactoryAccess.checkContext(replacement);
+
+            ctx = replacement;
+        }
     }
 }

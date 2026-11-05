@@ -27,7 +27,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 public class SslStatusCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Show the TLS certificates of all cluster nodes and the results of their last reloads";
+        return "Show the loaded TLS certificate validity dates on all cluster nodes";
     }
 
     /** {@inheritDoc} */

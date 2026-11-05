@@ -628,7 +628,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
 
     /**
-     * @return Registry of SSL contexts shared by the node transports.
+     * @return SSL context registry for this node, or {@code null} for a standalone context.
      */
     public SslContextRegistry sslContexts();
 

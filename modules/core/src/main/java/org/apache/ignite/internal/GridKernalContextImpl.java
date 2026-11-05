@@ -394,8 +394,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
-    /** */
-    private SslContextRegistry sslCtxs;
+    /** SSL context registry. */
+    private final SslContextRegistry sslCtxs;
 
     /** Failure processor. */
     private FailureProcessor failureProc;
@@ -410,7 +410,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * No-arg constructor is required by externalization.
      */
     public GridKernalContextImpl() {
-        // No-op.
+        sslCtxs = new SslContextRegistry(null);
     }
 
     /**
@@ -445,6 +445,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
         this.pauseDetector = pauseDetector;
+        sslCtxs = new SslContextRegistry(log);
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -580,8 +581,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
-        else if (comp instanceof SslContextRegistry)
-            sslCtxs = (SslContextRegistry)comp;
         else if (comp instanceof IgniteSecurity)
             security = (IgniteSecurity)comp;
         else if (comp instanceof CompressionProcessor)

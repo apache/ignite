@@ -31,10 +31,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.cache.configuration.Factory;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.systemview.ClientConnectionAttributeViewWalker;
 import org.apache.ignite.internal.systemview.ClientConnectionViewWalker;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -538,7 +541,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to create client listener " +
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
-            GridNioSslFilter sslFilter = U.sslFilter(ctx.sslContexts().register(sslCtxFactory, CLIENT_CONNECTOR),
+            SslContextRegistry registry = ctx.sslContexts();
+            SslContextRegistry.Entry sslEntry = registry == null ? null : registry.register(sslCtxFactory, CLIENT_CONNECTOR);
+            Supplier<SSLEngine> engineFactory = sslEntry == null ? sslCtxFactory.create()::createSSLEngine
+                : () -> sslEntry.context().createSSLEngine();
+
+            GridNioSslFilter sslFilter = U.sslFilter(engineFactory,
                 true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);

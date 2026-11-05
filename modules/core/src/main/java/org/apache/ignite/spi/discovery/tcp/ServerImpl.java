@@ -6297,7 +6297,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvrSock = spi.createServerSocket(port);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -6346,9 +6346,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         sock = spi.acceptedSocket(sock);
                     }
-                    catch (IOException | IllegalArgumentException e) {
-                        U.warn(log, "Failed to set up TLS on an accepted connection [rmtAddr=" + sock.getInetAddress() +
-                            ", err=" + e + ']');
+                    catch (IOException | RuntimeException e) {
+                        U.warn(log, "Failed to set up TLS on an accepted discovery connection [rmtAddr=" +
+                            sock.getInetAddress() + ", err=" + e + ']');
 
                         U.closeQuiet(sock);
 

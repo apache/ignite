@@ -32,8 +32,6 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.ssl.SslCertificates.reason;
-
 /**
  * Collects {@code --ssl} command results from all selected nodes, listing failures first.
  * Each job returns a success flag and a report. If a selected node is unavailable, or a job fails, the task fails with a report
@@ -60,6 +58,16 @@ public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, 
      */
     static String node(ClusterNode node) {
         return node.id() + " [consistentId=" + node.consistentId() + ']';
+    }
+
+    /**
+     * @param err Failure.
+     * @return Failure message or exception type if it has no message.
+     */
+    static String reason(Throwable err) {
+        String msg = err.getMessage();
+
+        return msg == null || msg.isEmpty() ? err.toString() : msg;
     }
 
     /** {@inheritDoc} */
@@ -89,6 +97,7 @@ public abstract class AbstractSslTask extends VisorMultiNodeTask<NoArg, String, 
             return String.join("\n", succeeded) + '\n';
 
         throw new IgniteException("Failed on " + failed.size() + " node(s):\n" + String.join("\n", failed) + '\n' +
-            (succeeded.isEmpty() ? "" : "\nSucceeded on " + succeeded.size() + " node(s):\n" + String.join("\n", succeeded) + '\n'));
+            (succeeded.isEmpty() ? "" : "\nSucceeded on " + succeeded.size() + " node(s):\n" +
+                String.join("\n", succeeded) + '\n'));
     }
 }

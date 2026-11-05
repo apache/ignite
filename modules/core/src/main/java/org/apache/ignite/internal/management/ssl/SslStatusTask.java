@@ -18,24 +18,18 @@
 package org.apache.ignite.internal.management.ssl;
 
 import java.io.Serial;
-import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.ssl.SslContextProvider;
-import org.apache.ignite.internal.ssl.SslFactoryAccess.ReloadOutcome;
+import org.apache.ignite.internal.ssl.SslCertificateValidity;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDENT;
-import static org.apache.ignite.internal.ssl.SslCertificates.chainNotAfter;
-import static org.apache.ignite.internal.ssl.SslCertificates.describe;
-import static org.apache.ignite.internal.ssl.SslCertificates.invalidAt;
 
 /** Reports loaded TLS certificate metadata; a known chain that is not valid now fails the command. */
 @GridInternal
@@ -61,54 +55,44 @@ public class SslStatusTask extends AbstractSslTask {
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) throws IgniteException {
+        @Override protected IgniteBiTuple<Boolean, String> run(NoArg arg) {
             String id = node(ignite.localNode());
 
-            Collection<SslContextProvider> providers = ignite.context().sslContexts().providers();
+            List<SslContextRegistry.Entry> entries = ignite.context().sslContexts().entries();
 
-            if (providers.isEmpty())
+            if (entries.isEmpty())
                 return new IgniteBiTuple<>(true, id + ": no SSL context factory is configured");
 
             List<String> lines = new ArrayList<>();
 
             boolean invalid = false;
+            long now = System.currentTimeMillis();
 
-            for (SslContextProvider provider : providers) {
-                lines.add(id + ": " + provider.transports());
+            for (SslContextRegistry.Entry entry : entries) {
+                lines.add(id + ": " + entry.transports());
 
-                Map<String, List<X509Certificate>> chains = provider.certificateChains();
+                Map<String, SslCertificateValidity> certificates = entry.certificates();
 
-                if (chains == null)
+                if (certificates == null)
                     lines.add(DOUBLE_INDENT + "certificate metadata is unavailable");
-                else if (chains.isEmpty())
+                else if (certificates.isEmpty())
                     lines.add(DOUBLE_INDENT + "no X.509 certificate chains");
                 else {
-                    for (Map.Entry<String, List<X509Certificate>> entry : chains.entrySet()) {
-                        List<X509Certificate> chain = entry.getValue();
-                        String alias = "alias=" + entry.getKey();
+                    for (Map.Entry<String, SslCertificateValidity> cert : certificates.entrySet()) {
+                        String alias = "alias=" + cert.getKey();
+                        SslCertificateValidity validity = cert.getValue();
 
-                        X509Certificate leaf = chain.get(0);
-                        long chainNotAfter = chainNotAfter(chain);
+                        lines.add(DOUBLE_INDENT + "loaded " + alias +
+                            ", notBefore=" + Instant.ofEpochMilli(validity.notBefore()) +
+                            ", notAfter=" + Instant.ofEpochMilli(validity.notAfter()));
 
-                        lines.add(DOUBLE_INDENT + "loaded " + alias + ", " + describe(leaf) +
-                            (chainNotAfter < leaf.getNotAfter().getTime() ? ", chainNotAfter=" + Instant.ofEpochMilli(chainNotAfter) : ""));
-
-                        if (invalidAt(chain, System.currentTimeMillis()) != null) {
+                        if (!validity.validAt(now)) {
                             invalid = true;
 
                             lines.add(DOUBLE_INDENT + "PROBLEM: the loaded certificate chain is not valid now [" + alias + ']');
                         }
                     }
                 }
-
-                ReloadOutcome outcome = provider.reloadOutcome();
-
-                if (outcome.failures() > 0) {
-                    lines.add(DOUBLE_INDENT + "last reload failed " + outcome.failures() + " time(s) in a row, the last at " +
-                        Instant.ofEpochMilli(outcome.failureTime()) + ": " + outcome.failureReason());
-                }
-                else if (outcome.successTime() > 0)
-                    lines.add(DOUBLE_INDENT + "last reload succeeded at " + Instant.ofEpochMilli(outcome.successTime()));
             }
 
             return new IgniteBiTuple<>(!invalid, String.join("\n", lines));

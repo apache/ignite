@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.io.StreamCorruptedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -38,9 +39,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
@@ -57,6 +62,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.UnknownMessageException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -416,9 +422,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL context used for new discovery connections, {@code null} if SSL is disabled. */
+    /** Startup SSL server socket factory, used by the standalone SPI. */
+    protected SSLServerSocketFactory sslSrvSockFactory;
+
+    /** Startup SSL socket factory, used by the standalone SPI. */
+    protected SSLSocketFactory sslSockFactory;
+
+    /** Registered SSL context for new discovery connections. */
     @GridToStringExclude
-    private SSLContext sslCtx;
+    private SslContextRegistry.Entry sslEntry;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1657,8 +1669,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         Socket sock = null;
 
         try {
-            if (isSslEnabled())
-                sock = sslCtx.getSocketFactory().createSocket();
+            if (isSslEnabled()) {
+                SSLSocketFactory factory = sslEntry == null ? sslSockFactory : sslEntry.context().getSocketFactory();
+
+                sock = factory.createSocket();
+            }
             else
                 sock = new Socket();
 
@@ -1677,17 +1692,34 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * @param sock Socket accepted by the server.
-     * @return Socket wrapped for server-side TLS using the current SSL context, or the original socket if SSL is disabled.
+     * Binds a discovery listener. A registered TLS context is applied to each accepted socket.
+     *
+     * @param port Local port to bind.
+     * @return Listening socket.
+     * @throws IOException If the socket cannot be bound.
+     */
+    ServerSocket createServerSocket(int port) throws IOException {
+        if (!isSslEnabled() || sslEntry != null)
+            return new ServerSocket(port, 0, locHost);
+
+        SSLServerSocket sock = (SSLServerSocket)sslSrvSockFactory.createServerSocket(port, 0, locHost);
+
+        sock.setNeedClientAuth(true);
+
+        return sock;
+    }
+
+    /**
+     * @param sock Socket accepted by the discovery listener.
+     * @return Socket configured for server-side mutual TLS if the context is registered, otherwise the original socket.
      * @throws IOException If TLS setup fails.
      */
     Socket acceptedSocket(Socket sock) throws IOException {
-        if (!isSslEnabled())
+        if (!isSslEnabled() || sslEntry == null)
             return sock;
 
-        // A null peer host can trigger reverse DNS lookup when jdk.tls.trustNameService=true.
-        // Use the numeric address to avoid delaying the accept loop.
-        SSLSocket sslSock = (SSLSocket)sslCtx.getSocketFactory()
+        // A numeric address keeps the accept loop from waiting for reverse DNS.
+        SSLSocket sslSock = (SSLSocket)sslEntry.context().getSocketFactory()
             .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
 
         sslSock.setUseClientMode(false);
@@ -2124,7 +2156,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (impl != null)
             return;
 
-        sslEnable = ignite.configuration().getSslContextFactory() != null;
+        Factory<SSLContext> sslFactory = ignite.configuration().getSslContextFactory();
+
+        sslEnable = sslFactory != null;
 
         initFailureDetectionTimeout();
 
@@ -2172,11 +2206,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                sslCtx = ignite.context().sslContexts().register(ignite.configuration().getSslContextFactory(), DISCOVERY);
+                SslContextRegistry registry = ignite.context().sslContexts();
+
+                sslEntry = registry == null ? null : registry.register(sslFactory, DISCOVERY);
+
+                SSLContext sslCtx = sslEntry == null ? sslFactory.create() : sslEntry.context();
+
+                sslSockFactory = sslCtx.getSocketFactory();
+                sslSrvSockFactory = sslCtx.getServerSocketFactory();
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
-                    + ignite.configuration().getSslContextFactory(), e);
+                    + sslFactory, e);
             }
         }
 
