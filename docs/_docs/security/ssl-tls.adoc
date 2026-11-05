@@ -30,7 +30,7 @@ This certificate must be trusted by all other server nodes.
 
 To enable SSL/TLS for cluster nodes, configure an `SSLContext` factory in the node configuration.
 You can use the `org.apache.ignite.ssl.SslContextFactory`, which is the default factory that uses a configurable keystore to initialize the SSL context.
-//You can also implement your own `SSLContext` factory.
+To implement your own `SSLContext` factory, see <<Custom SSL Context Factories>>.
 
 [CAUTION]
 ====
@@ -64,6 +64,8 @@ tab:C++[unsupported]
 
 The keystore must contain the node's certificate, including its private key.
 The trust store must contain the trusted certificates for all other cluster nodes.
+
+If the JVM does not recognize a configured protocol or cipher suite name, the node fails to start.
 
 You can define other properties, such as key algorithm, key store type, or trust manager. See the description of the properties in the <<SslContextFactory Properties>> section.
 
@@ -178,6 +180,29 @@ Now all nodes trust the new certificates.
 
 
 //Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
+
+== Custom SSL Context Factories
+
+A subclass of `AbstractSslContextFactory` implements `createSslContext(reportChains)` to return a fresh context.
+If the source supplies a key store, load it once and pass it to `createSslContext(store, keyPassword, algorithm, reportChains)`. The helper reports chains from the same store. Pass a null store for a client without private keys.
+If the source builds the context itself, apply the configured protocols and cipher suites.
+Call `reportChains.accept(chains)` before returning the context when the chains are available. Supply nonempty X.509 chains by alias, with the key's certificate first, or an empty map if there are no such chains. Ignite takes an immutable copy. Leave the callback unused when the chains are unavailable.
+
+Call `create()` to obtain the accepted context. On a restart that reuses the factory, a subclass can call the protected `init()` to load fresh material.
+If the subclass needs a certificate from that load, use one `synchronized (this)` block for `init()` and `certificateChains()`.
+A failed initialization leaves the previous context in use.
+
+=== Migrating an Existing Factory
+
+Update and recompile subclasses that use the old `createKeyManagers()` hook, override `create()` or access the protected `sslCtx` field.
+
+* Move key loading and custom context configuration into `createSslContext(reportChains)`. A subclass of `SslContextFactory` can call the superclass implementation to load its store and report its chains. The hook can throw `SSLException`.
+* Use the base factory's context cache. Call `create()` again after a successful replacement to obtain the new context.
+* Direct subclasses of `AbstractSslContextFactory` can call their parameter checks before loading in the new hook. Remove `@Override` from `checkParameters()` unless you extend `SslContextFactory`.
+* Rename any existing no-argument `init()` in your subclass. The base factory defines it as final.
+
+A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override.
+Implementations of `Factory<SSLContext>` can continue to supply a context directly.
 
 == SslContextFactory Properties
 
