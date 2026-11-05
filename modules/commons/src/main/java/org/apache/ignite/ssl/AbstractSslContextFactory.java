@@ -19,6 +19,9 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
@@ -27,7 +30,10 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.ssl.SslCertificateValidity;
+import org.apache.ignite.internal.ssl.SslFactoryAccess;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for SSL context factories that cache their {@link SSLContext}.
@@ -38,6 +44,28 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /** Internal access for the node's TLS reload command. */
+    public static final SslFactoryAccess NODE_ACCESS = new SslFactoryAccess() {
+        /** {@inheritDoc} */
+        @Override protected @Nullable SSLContext context(AbstractSslContextFactory factory) {
+            return factory.sslCtx.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected @Nullable Map<String, SslCertificateValidity> certificates(AbstractSslContextFactory factory) {
+            synchronized (factory) {
+                ContextCertificates certs = factory.certs;
+
+                return certs != null && certs.ctx() == factory.sslCtx.get() ? certs.validity() : null;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void reload(AbstractSslContextFactory factory) throws SSLException {
+            factory.load(true, true);
+        }
+    };
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -50,6 +78,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Cached instance of an {@link SSLContext}. */
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
+
+    /** Certificate dates from the key store used to build the cached context. */
+    @Nullable private transient ContextCertificates certs;
 
     /**
      * Gets protocol for secure transport.
@@ -108,16 +139,13 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * Creates SSL context based on factory settings.
+     * Creates an SSL context from the configured trust material and the loaded keys.
      *
+     * @param keyMgrs Key managers for this context.
      * @return Initialized SSL context.
      * @throws SSLException If SSL context could not be created.
      */
-    private SSLContext createSslContext() throws SSLException {
-        checkParameters();
-
-        KeyManager[] keyMgrs = createKeyManagers();
-
+    private SSLContext createSslContext(KeyManager[] keyMgrs) throws SSLException {
         TrustManager[] trustMgrs = createTrustManagers();
 
         try {
@@ -178,13 +206,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /**
      * Loads a new SSL context and caches it for the base implementation of {@link #create()}.
+     * When replacing a cached context, checks stream TLS support and any available certificate chains.
      * If loading fails, the previously cached context is kept.
      *
      * @throws IgniteException If the context cannot be initialized.
      */
     protected final void init() {
         try {
-            sslCtx.set(createSslContext());
+            load(true, false);
         }
         catch (SSLException e) {
             throw new IgniteException(e);
@@ -195,18 +224,73 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
+        if (ctx != null)
+            return ctx;
 
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
+        try {
+            return load(false, false);
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param replace Whether to replace a context already in the cache.
+     * @param reload Whether to validate the replacement for reload on a running node.
+     * @return Context in the cache after loading.
+     * @throws SSLException If loading or validation fails.
+     */
+    private synchronized SSLContext load(boolean replace, boolean reload) throws SSLException {
+        SSLContext cur = sslCtx.get();
+
+        if (!replace && cur != null)
+            return cur;
+
+        boolean validate = reload || cur != null;
+
+        checkParameters();
+
+        Map<String, SslCertificateValidity> validity = null;
+        KeyManager[] keyMgrs;
+
+        if (this instanceof SslContextFactory fileFactory) {
+            validity = new TreeMap<>();
+            keyMgrs = fileFactory.loadKeyManagers(validity, validate);
+        }
+        else
+            keyMgrs = createKeyManagers();
+
+        SSLContext candidate = createSslContext(keyMgrs);
+
+        if (validate) {
+            SslFactoryAccess.checkContext(candidate);
+
+            if (validity != null) {
+                if (validity.isEmpty())
+                    throw new SSLException("The TLS key store has no X.509 certificate chains");
+
+                long now = System.currentTimeMillis();
+
+                for (Map.Entry<String, SslCertificateValidity> entry : validity.entrySet()) {
+                    if (!entry.getValue().validAt(now))
+                        throw new SSLException("TLS certificate chain is not valid now [alias=" + entry.getKey() + ']');
+                }
             }
         }
 
-        return ctx;
+        if (replace)
+            sslCtx.set(candidate);
+        else if (!sslCtx.compareAndSet(null, candidate))
+            return sslCtx.get();
+
+        certs = validity == null ? null : new ContextCertificates(candidate, Collections.unmodifiableMap(validity));
+
+        return candidate;
+    }
+
+    /** Associates certificate dates with the context built from those keys. */
+    private record ContextCertificates(SSLContext ctx, Map<String, SslCertificateValidity> validity) {
+        // No-op.
     }
 }

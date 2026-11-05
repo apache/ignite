@@ -157,27 +157,26 @@ include::{javaFile}[tag=disable-validation,indent=0]
 --
 
 == Upgrading Certificates
-If your SSL certificates are about to expire or have been compromised, you can install new certificates without shutting down the whole cluster.
 
-The following is a procedure for updating certificate.
+Use the link:tools/control-script#tls-certificates[control utility] to update the contents of the configured key and trust stores on running nodes.
+Reload covers discovery, communication, the client connector, and binary REST.
+Changing the configured store paths, passwords, protocols, or cipher suites requires a restart with the updated configuration.
+To replace HTTPS certificates configured in Jetty, update the files and restart the affected nodes.
+Update TLS stores used by thin clients, JDBC, and other applications separately.
 
-. First of all, make sure the new certificates are trusted by all cluster nodes.
-This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
-+
---
-Repeat the following procedure for the nodes where the certificate is not trusted:
+. Prepare trust before replacing certificates. If the issuing CA changes, configure each peer to trust both the old and new CA during the transition.
+Update the node trust store files and run `control.sh --ssl reload` to apply them.
+Update application trust stores before rotating the certificates on the nodes they connect to.
+. Back up the current stores. Replace the key store files at their configured paths with stores that contain the new private keys and certificate chains.
+Run `control.sh --ssl reload` to load the replacements.
+. Run `control.sh --ssl status` and check the expected key aliases and validity dates for each transport and node.
+Open fresh connections from the relevant nodes and applications to verify that they trust the replacement.
+Existing connections stay open and cannot verify that the replacement is usable.
+. After every peer uses and trusts the replacement certificates, remove the old CA from trust stores if it is no longer needed, then reload the node stores again.
 
-.. Import the new certificate to the trusted store of the node.
-.. Gracefully restart the node.
-.. Repeat these steps for all server nodes.
-
-Now all nodes trust the new certificates.
---
-
-. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Then gracefully restart the node. Repeat this procedure for all certificates you want to update.
-
-
-//Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
+If a factory fails to reload, the transports using it keep their previous context. Other factories and nodes can still succeed.
+Correct the cause and retry. If reload succeeds but fresh connections fail, correct peer trust or restore the previous store files and reload again.
+If the control utility cannot connect, restore the previous store files and restart the affected node as needed.
 
 == SslContextFactory Properties
 

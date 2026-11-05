@@ -23,18 +23,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.Map;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.internal.ssl.SslCertificateValidity;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
@@ -259,12 +266,25 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+        return loadKeyManagers(null, false);
+    }
+
+    /**
+     * @param validity Receives the dates of the loaded X.509 chains, if requested.
+     * @param checkKeys Whether the private keys must be recoverable before replacing the context.
+     * @return Key managers for the loaded store.
+     * @throws SSLException If the key managers could not be initialized.
+     */
+    final KeyManager[] loadKeyManagers(@Nullable Map<String, SslCertificateValidity> validity, boolean checkKeys) throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
             KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
 
             keyMgrFactory.init(keyStore, keyStorePwd);
+
+            if (validity != null)
+                collectValidity(keyStore, validity, checkKeys);
 
             return keyMgrFactory.getKeyManagers();
         }
@@ -274,6 +294,53 @@ public class SslContextFactory extends AbstractSslContextFactory {
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
                 keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
+    }
+
+    /**
+     * @param store Store used to initialize the key managers.
+     * @param validity Validity of each complete X.509 key chain.
+     * @param checkKeys Whether to verify private key recovery.
+     * @throws KeyStoreException If the store cannot enumerate its entries.
+     * @throws SSLException If a private key cannot be recovered.
+     */
+    private void collectValidity(KeyStore store, Map<String, SslCertificateValidity> validity, boolean checkKeys)
+        throws KeyStoreException, SSLException {
+        for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements();) {
+            String alias = aliases.nextElement();
+            Certificate[] chain = store.getCertificateChain(alias);
+
+            if (chain == null || chain.length == 0)
+                continue;
+
+            long notBefore = Long.MIN_VALUE;
+            long notAfter = Long.MAX_VALUE;
+            boolean x509 = true;
+
+            for (Certificate cert : chain) {
+                if (!(cert instanceof X509Certificate x509Cert)) {
+                    x509 = false;
+
+                    break;
+                }
+
+                notBefore = Math.max(notBefore, x509Cert.getNotBefore().getTime());
+                notAfter = Math.min(notAfter, x509Cert.getNotAfter().getTime());
+            }
+
+            if (x509) {
+                if (checkKeys) {
+                    try {
+                        if (!(store.getKey(alias, keyStorePwd) instanceof PrivateKey))
+                            throw new SSLException("TLS certificate chain has no private key [alias=" + alias + ']');
+                    }
+                    catch (GeneralSecurityException e) {
+                        throw new SSLException("Cannot load TLS private key [alias=" + alias + ']', e);
+                    }
+                }
+
+                validity.put(alias, new SslCertificateValidity(notBefore, notAfter));
+            }
         }
     }
 

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -68,8 +69,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Array of enabled protocols. */
     private String[] enabledProtos;
 
-    /** SSL context to use. */
-    private SSLContext sslCtx;
+    /** Creates an SSL engine for each new session. */
+    private final Supplier<SSLEngine> sslEngineFactory;
 
     /** Order. */
     private ByteOrder order;
@@ -107,10 +108,31 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         @Nullable LongConsumer handshakeDuration,
         @Nullable Runnable rejectedSesCnt
     ) {
+        this(sslCtx::createSSLEngine, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+    }
+
+    /**
+     * Creates an SSL filter with a per-session engine factory.
+     *
+     * @param sslEngineFactory SSL engine factory.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param log Logger to use.
+     * @param handshakeDuration Records SSL handshake duration (ms), or {@code null} if metrics disabled.
+     * @param rejectedSesCnt Increments the rejected-sessions counter, or {@code null} if metrics disabled.
+     */
+    public GridNioSslFilter(
+        Supplier<SSLEngine> sslEngineFactory,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        @Nullable LongConsumer handshakeDuration,
+        @Nullable Runnable rejectedSesCnt
+    ) {
         super("SSL filter");
 
         this.log = log;
-        this.sslCtx = sslCtx;
+        this.sslEngineFactory = sslEngineFactory;
         this.directBuf = directBuf;
         this.order = order;
         this.handshakeDuration = handshakeDuration;
@@ -180,7 +202,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         if (sslMeta == null) {
             try {
-                engine = sslCtx.createSSLEngine();
+                engine = sslEngineFactory.get();
             }
             catch (IllegalArgumentException e) {
                 IgniteCheckedException ex = new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);

@@ -114,6 +114,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -134,6 +135,7 @@ import javax.management.ObjectName;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -7744,6 +7746,26 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteLogger log,
         @Nullable MetricRegistryImpl mreg
     ) {
+        return sslFilter(sslCtx::createSSLEngine, directBuf, order, log, mreg);
+    }
+
+    /**
+     * Creates an SSL NIO filter with a per-session engine factory and metrics from the given registry.
+     *
+     * @param sslEngineFactory SSL engine factory.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param log Logger to use.
+     * @param mreg Optional metric registry.
+     * @return SSL NIO filter.
+     */
+    public static GridNioSslFilter sslFilter(
+        Supplier<SSLEngine> sslEngineFactory,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        @Nullable MetricRegistryImpl mreg
+    ) {
         LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
             GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
             new long[] {250, 500, 1000},
@@ -7753,6 +7775,6 @@ public abstract class IgniteUtils extends CommonUtils {
             GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "TCP sessions count that were rejected due to SSL errors.")::increment;
 
-        return new GridNioSslFilter(sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+        return new GridNioSslFilter(sslEngineFactory, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }

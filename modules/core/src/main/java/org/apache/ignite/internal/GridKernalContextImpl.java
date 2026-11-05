@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
@@ -393,6 +394,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
+    /** SSL context registry. */
+    private final SslContextRegistry sslCtxs;
+
     /** Failure processor. */
     private FailureProcessor failureProc;
 
@@ -406,7 +410,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * No-arg constructor is required by externalization.
      */
     public GridKernalContextImpl() {
-        // No-op.
+        sslCtxs = new SslContextRegistry(null);
     }
 
     /**
@@ -441,6 +445,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
         this.pauseDetector = pauseDetector;
+        sslCtxs = new SslContextRegistry(log);
 
         marshCtx = new MarshallerContextImpl(plugins);
 
@@ -1028,6 +1033,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
         return internalSubscriptionProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SslContextRegistry sslContexts() {
+        return sslCtxs;
     }
 
     /**

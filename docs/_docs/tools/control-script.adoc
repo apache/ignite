@@ -1756,3 +1756,35 @@ Examples:
 ----
 control.sh|bat --event list --enabled
 ----
+
+
+== TLS Certificates [[tls-certificates]]
+
+Use the following commands to reload TLS stores and check the loaded certificate validity dates.
+
+[source, shell]
+----
+control.sh|bat --ssl reload [--yes]
+control.sh|bat --ssl status
+----
+
+Both commands run on the server and client nodes present when the command selects its targets.
+They require the `ADMIN_OPS` permission when security is enabled.
+Reload asks for confirmation. In scripts, pass `--yes` to confirm it.
+
+Reload applies the contents of the configured TLS stores for discovery, communication, the client connector, and binary REST.
+Each result lists the transports that share a factory. A failed reload leaves the previous context in use for those transports and the command continues with the other factories and nodes.
+If any reload fails or a selected node leaves before running the command, the utility exits with an error.
+If an absent node still needs the update, run the command again when it rejoins.
+The node log includes the initiator for successful reloads at INFO and for failures at WARN.
+
+Status lists the loaded key aliases and the validity dates for their certificate chains without rereading store files.
+It reports when metadata is unavailable or when a store has no usable X.509 chains.
+If a reported chain is invalid or a selected node is unavailable, status exits with an error.
+
+Custom factories that override `create()` must return a fresh stream TLS context when Ignite calls them on reload.
+Status reports their certificate metadata as unavailable.
+For TLS discovery, the context's socket factory must support wrapping an accepted TCP socket.
+Custom discovery SPI subclasses should use the SPI's connection paths for reload, since the protected socket factories refer to the startup context.
+
+See link:security/ssl-tls#_upgrading_certificates[Upgrading Certificates] for trust preparation and how to verify the result with new connections.

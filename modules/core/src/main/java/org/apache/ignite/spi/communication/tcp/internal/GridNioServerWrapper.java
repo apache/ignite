@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessageDeployer;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.function.ThrowableBiFunction;
@@ -107,6 +109,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionExcept
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForPeers;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.COMMUNICATION;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECOVERY_DESC_META_KEY;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_SER_CTX;
@@ -167,6 +170,9 @@ public class GridNioServerWrapper {
 
     /** State provider. */
     private final ClusterStateProvider stateProvider;
+
+    /** Registered SSL context for new communication connections. */
+    private SslContextRegistry.Entry sslEntry;
 
     /** Exception registry supplier. */
     private final Supplier<IgniteExceptionRegistry> eRegistrySupplier;
@@ -476,7 +482,8 @@ public class GridNioServerWrapper {
                         if (stateProvider.isSslEnabled()) {
                             meta.put(SSL_META.ordinal(), sslMeta = new GridSslMeta());
 
-                            SSLEngine sslEngine = stateProvider.createSSLEngine();
+                            SSLEngine sslEngine = sslEntry == null
+                                ? stateProvider.createSSLEngine() : sslEntry.context().createSSLEngine();
 
                             sslEngine.setUseClientMode(true);
 
@@ -803,6 +810,13 @@ public class GridNioServerWrapper {
         if (cfg.boundTcpPort() >= 0)
             throw new IgniteCheckedException("Tcp NIO server was already created on port " + cfg.boundTcpPort());
 
+        if (stateProvider.isSslEnabled() && stateProvider.ignite() instanceof IgniteEx ignite) {
+            SslContextRegistry registry = ignite.context().sslContexts();
+
+            if (registry != null)
+                sslEntry = registry.register(igniteCfg.getSslContextFactory(), COMMUNICATION);
+        }
+
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
@@ -918,8 +932,12 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
+                    Supplier<SSLEngine> engineFactory = sslEntry == null
+                        ? igniteCfg.getSslContextFactory().create()::createSSLEngine
+                        : () -> sslEntry.context().createSSLEngine();
+
                     GridNioSslFilter sslFilter = U.sslFilter(
-                        igniteCfg.getSslContextFactory().create(),
+                        engineFactory,
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,
