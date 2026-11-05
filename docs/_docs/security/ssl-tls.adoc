@@ -65,8 +65,6 @@ tab:C++[unsupported]
 The keystore must contain the node's certificate, including its private key.
 The trust store must contain the trusted certificates for all other cluster nodes.
 
-If the JVM does not recognize a configured protocol or cipher suite name, the node fails to start.
-
 You can define other properties, such as key algorithm, key store type, or trust manager. See the description of the properties in the <<SslContextFactory Properties>> section.
 
 After starting the node, you should see the following messages in the logs:
@@ -183,25 +181,12 @@ Now all nodes trust the new certificates.
 
 == Custom SSL Context Factories
 
-A subclass of `AbstractSslContextFactory` implements `createSslBundle()` to build an initialized context and report the certificate chains loaded with it.
-For a key store, load it once and pass it to `createSslBundle(store, keyPassword, algorithm)`.
-For custom key managers, create the context with `SSLContext.getInstance(getProtocol())` and initialize it with those managers and the intended trust managers. Apply the configured protocols and cipher suites, then return the context and its private-key chains indexed by alias.
-Use a null chain map if the source cannot report certificates. An empty map means the store has no X.509 key chains.
+A subclass of `AbstractSslContextFactory` can call the protected `init()` method when a node restarts with the same factory.
+It reloads the context using the factory's key and trust managers. If the load fails, the base implementation of `create()` still returns the previous context.
+An unrecognized protocol or cipher suite name fails initialization, including on first use.
 
-Call `create()` to obtain the accepted context. If a subclass needs a fresh certificate when a node restarts with the same factory, it can call the protected `init()` method and take the chain from the returned bundle.
-A failed initialization leaves the previous context in use.
-
-=== Migrating an Existing Factory
-
-Update and recompile subclasses that use the old `createKeyManagers()` hook, override `create()` or access the protected `sslCtx` field.
-
-* Move key loading and custom context configuration into `createSslBundle()`. A subclass of `SslContextFactory` can use `super.createSslBundle()` and retain its certificate chains when customizing the context. The hook can throw `SSLException`.
-* Remove custom context caching. The base factory retains the accepted bundle. After a replacement, call the final `create()` method again to obtain the new context.
-* Direct subclasses of `AbstractSslContextFactory` that implement `checkParameters()` must remove its `@Override` and call it before loading in `createSslBundle()`. Subclasses of `SslContextFactory` can keep that override.
-* Rename any existing no-argument `init()` in your subclass. The base factory defines it as final.
-
-A subclass that only overrides `SslContextFactory.loadKeyStore()` can keep that override. A client that authenticates only the server can return a null key store.
-Implementations of `Factory<SSLContext>` can continue to supply a context directly.
+Subclasses that accessed the old protected `sslCtx` field should use `create()` to get the current context and `init()` to replace it.
+If your subclass already declares a no-argument `init()` method, rename it before recompiling.
 
 == SslContextFactory Properties
 

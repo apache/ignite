@@ -27,6 +27,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -37,8 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
  *
- * The first {@link #create()} call loads the stores. Subsequent calls reuse the accepted material. A subclass can call {@link #init()}
- * to reread the stores.
+ * The first {@link #create()} call loads the stores. A subclass can call {@link #init()} to reread them.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
@@ -259,10 +261,23 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    @Override protected SslBundle createSslBundle() throws SSLException {
-        checkParameters();
+    @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+        try {
+            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
-        return createSslBundle(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd), keyStorePwd, keyAlgorithm);
+            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+            keyMgrFactory.init(keyStore, keyStorePwd);
+
+            return keyMgrFactory.getKeyManagers();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
+                keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -308,12 +323,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
         return buf.toString();
     }
 
-    /**
-     * Checks that all required parameters are set.
-     *
-     * @throws SSLException If any of required parameters is missing.
-     */
-    protected void checkParameters() throws SSLException {
+    /** {@inheritDoc} */
+    @Override protected void checkParameters() throws SSLException {
         assert keyStoreType != null;
         assert proto != null;
 
