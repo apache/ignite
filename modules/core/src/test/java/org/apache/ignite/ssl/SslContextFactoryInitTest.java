@@ -53,6 +53,15 @@ public class SslContextFactoryInitTest {
 
         assertSame(original, duringInit.get());
         assertArrayEquals(new String[] {"TLSv1.3"}, factory.create().createSSLEngine().getEnabledProtocols());
+    }
+
+    /** */
+    @Test
+    public void testCreateUsesContextSetAfterInit() {
+        SslContextFactory factory = (SslContextFactory)sslTrustedFactory("node01", "trustone");
+        SSLContext original = factory.create();
+
+        factory.init();
 
         factory.sslCtx.set(original);
 
