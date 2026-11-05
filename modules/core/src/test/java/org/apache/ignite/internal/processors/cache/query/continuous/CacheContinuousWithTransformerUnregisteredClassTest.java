@@ -47,7 +47,7 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -61,18 +61,22 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(DFLT_SERVER_NODE_CNT);
-
         super.beforeTestsStarted();
+
+        startGrids(DFLT_SERVER_NODE_CNT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids(true);
+
+        super.afterTestsStopped();
     }
 
     /** */
@@ -102,8 +106,11 @@ public class CacheContinuousWithTransformerUnregisteredClassTest extends GridCom
 
             assertTrue("Received: " + received, allReceived);
 
-            for (Object o : received)
+            for (Object o : received) {
                 assertTrue("Unexpected class: " + o.getClass().getName(), o instanceof PersonId);
+
+                assertEquals(rmtKey, ((PersonId)o).id);
+            }
         }
     }
 
