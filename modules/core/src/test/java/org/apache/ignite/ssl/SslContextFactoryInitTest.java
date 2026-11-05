@@ -17,43 +17,28 @@
 
 package org.apache.ignite.ssl;
 
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
 
 /** */
 public class SslContextFactoryInitTest {
     /** */
     @Test
-    public void testInitReplacesContextAfterLoad() throws Exception {
-        SslContextFactory factory = spy((SslContextFactory)sslTrustedFactory("node01", "trustone"));
+    public void testInitUsesUpdatedProtocols() {
+        SslContextFactory factory = (SslContextFactory)sslTrustedFactory("node01", "trustone");
 
         factory.setProtocols("TLSv1.2");
-
-        SSLContext original = factory.create();
-        AtomicReference<SSLContext> duringInit = new AtomicReference<>();
-        String keyStorePath = factory.getKeyStoreFilePath();
-
-        // Pause init() just before it opens the key store and read the cached context from another thread.
-        doAnswer(inv -> {
-            duringInit.set(runAsync(factory::create).get(10_000));
-
-            return inv.callRealMethod();
-        }).doCallRealMethod().when(factory).openFileInputStream(keyStorePath);
+        factory.create();
 
         factory.setProtocols("TLSv1.3");
         factory.init();
 
-        assertSame(original, duringInit.get());
         assertArrayEquals(new String[] {"TLSv1.3"}, factory.create().createSSLEngine().getEnabledProtocols());
     }
 

@@ -30,8 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Base class for SSL context factories. {@link #create()} caches the first successfully loaded
- * {@link SSLContext} and returns it until {@link #init()} replaces it.
+ * Base class for SSL context factories that cache their {@link SSLContext}.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -178,8 +177,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads a new SSL context and makes the base implementation of {@link #create()} return it.
-     * If a context is already cached, the base implementation keeps returning it until a load succeeds.
+     * Loads a new SSL context and caches it for the base implementation of {@link #create()}.
+     * If loading fails, the previously cached context is kept.
      *
      * @throws IgniteException If the context cannot be initialized.
      */
