@@ -528,10 +528,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
         IgniteFeatureManager features = cctx.kernalContext().rollingUpgrade().features();
 
-        boolean activationAhead = features.localVersionFeatures().contains(PART_STATE_FROM_OWNER_FEATURE)
+        boolean activationAhead = !cctx.kernalContext().clientNode()
+            && features.localVersionFeatures().contains(PART_STATE_FROM_OWNER_FEATURE)
             && !features.isActive(PART_STATE_FROM_OWNER_FEATURE);
 
-        // On activation every node resends its maps once: an owner whose last exchange ended before it sent none,
+        // On activation every server resends its maps once: an owner whose last exchange ended before it sent none,
         // and the others no longer write the owner's state.
         if (activationAhead)
             features.listenActivation(PART_STATE_FROM_OWNER_FEATURE, this::scheduleResendPartitions);
