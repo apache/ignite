@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,8 +33,11 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
+import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
+import static org.junit.Assert.assertThrows;
 
 /** Tests discovery after individual TLS setup failures. */
 public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest {
@@ -73,6 +77,38 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         // This context can be obtained, but applying its parameters to the layered socket fails.
         assertRejectsOneConnection(addr, factory, () -> new SSLContextWrapper(ctx, badParams));
         assertAcceptsTls(addr, ctx);
+    }
+
+    /** */
+    @Test
+    public void testOutgoingSocketSetupFailure() throws Exception {
+        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
+        AtomicReference<SSLContext> curCtx = new AtomicReference<>(ctx);
+        IgniteEx node = startNode(0, curCtx::get);
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)node.configuration().getDiscoverySpi();
+
+        SSLParameters badParams = new SSLParameters();
+        badParams.setProtocols(new String[]{"TestUnsupportedProtocol"});
+        curCtx.set(new SSLContextWrapper(ctx, badParams));
+
+        IOException err = assertThrows(IOException.class, () -> spi.createSocket().close());
+
+        assertTrue(err.getCause() instanceof IllegalArgumentException);
+
+        curCtx.set(ctx);
+
+        try (Socket sock = spi.createSocket()) {
+            assertTrue(sock.isBound());
+        }
+    }
+
+    /** */
+    @Test
+    public void testInvalidProtocolPreventsFirstNodeStartup() throws Exception {
+        SslContextFactory factory = (SslContextFactory)sslTrustedFactory("node01", "trustone");
+        factory.setProtocols("TestUnsupportedProtocol");
+
+        assertThrowsAnyCause(log, () -> startNode(0, factory), IllegalArgumentException.class, "TestUnsupportedProtocol");
     }
 
     /** */

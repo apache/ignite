@@ -186,6 +186,9 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 sslCtx = sslCtxFactory.create();
             }
             catch (RuntimeException e) {
+                if (rejectedSesCnt != null && ses.meta(HANDSHAKE_FUT_META_KEY) == null)
+                    rejectedSesCnt.run();
+
                 throw new IgniteCheckedException("Failed to obtain SSL context for a new connection.", e);
             }
 

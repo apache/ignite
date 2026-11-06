@@ -21,13 +21,17 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -47,10 +51,13 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
         sslCtx = GridTestUtils.sslContext();
     }
 
-    /** A failed context lookup leaves the NIO worker available. */
+    /** A failed context lookup is counted and leaves the NIO worker available. */
     @Test
     public void testContextLookupFailure() throws Exception {
         AtomicBoolean failLookup = new AtomicBoolean();
+        CountDownLatch sesClosed = new CountDownLatch(1);
+        CountDownLatch sesConnected = new CountDownLatch(1);
+        MetricRegistryImpl mreg = new MetricRegistryImpl("nio-ssl", name -> null, name -> null, name -> null, log);
 
         SslContextFactory sslCtxFactory = new SslContextFactory() {
             /** */
@@ -71,12 +78,14 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .listener(new GridNioServerListenerAdapter<>() {
                 /** {@inheritDoc} */
                 @Override public void onConnected(GridNioSession ses) {
-                    // No-op.
+                    sesConnected.countDown();
                 }
 
                 /** {@inheritDoc} */
                 @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-                    // No-op.
+                    // The close notification follows SSL filter cleanup; the error notification precedes it.
+                    if (e == null)
+                        sesClosed.countDown();
                 }
 
                 /** {@inheritDoc} */
@@ -87,8 +96,10 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .logger(log)
             .selectorCount(1)
             .byteOrder(ByteOrder.nativeOrder())
-            .filters(U.sslFilter(sslCtxFactory, false, ByteOrder.nativeOrder(), log, null))
+            .filters(U.sslFilter(sslCtxFactory, false, ByteOrder.nativeOrder(), log, mreg))
             .build();
+
+        IntMetric rejected = mreg.findMetric(GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME);
 
         srv.start();
 
@@ -105,15 +116,22 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
                 assertFalse(failLookup.get());
             }
 
+            assertTrue(sesClosed.await(5, TimeUnit.SECONDS));
+            assertEquals(1, rejected.value());
+
             try (SSLSocket sock = (SSLSocket)createSocket()) {
                 sock.connect(addr, 5_000);
                 sock.setSoTimeout(5_000);
                 sock.startHandshake();
+
+                assertTrue(sesConnected.await(5, TimeUnit.SECONDS));
             }
         }
         finally {
             srv.stop();
         }
+
+        assertEquals(1, rejected.value());
     }
 
     /** {@inheritDoc} */

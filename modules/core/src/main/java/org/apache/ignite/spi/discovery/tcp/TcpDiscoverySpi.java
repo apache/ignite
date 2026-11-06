@@ -1668,11 +1668,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             return sock;
         }
-        catch (IOException e) {
+        catch (IOException | RuntimeException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
-            throw e;
+            if (e instanceof IOException)
+                throw (IOException)e;
+
+            throw new IOException("Failed to create discovery socket.", e);
         }
     }
 
