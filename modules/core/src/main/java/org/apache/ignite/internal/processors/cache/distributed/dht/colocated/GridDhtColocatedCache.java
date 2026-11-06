@@ -824,7 +824,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(threadId, txKey, ver);
 
-            // Removing a reentry does not release the lock, the thread still holds it.
+            // A reentry is a nested hold: the thread still owns the key until the base candidate is removed.
             if (lock != null && !lock.reentry()) {
                 AffinityTopologyVersion topVer = lock.topologyVersion();
 

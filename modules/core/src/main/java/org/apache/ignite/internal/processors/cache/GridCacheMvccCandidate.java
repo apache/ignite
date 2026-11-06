@@ -239,6 +239,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
         if (reentry != null && (reentryVer == null || reentryVer.equals(reentry.reentryVer))) {
             GridCacheMvccCandidate old = reentry;
 
+            // Link to next.
             reentry = reentry.reentry;
 
             return old;
