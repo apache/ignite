@@ -34,6 +34,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Config;
@@ -262,6 +263,59 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         });
 
         assertEquals("local", flags.get());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testScanQueryCursorNotFullyRead() throws Exception {
+        checkCursorNotFullyRead(new ScanQuery<>().setPageSize(pageSize));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testIndexQueryCursorNotFullyRead() throws Exception {
+        checkCursorNotFullyRead(new IndexQuery<>(Integer.class).setPageSize(pageSize));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testSqlFieldsQueryCursorNotFullyRead() throws Exception {
+        checkCursorNotFullyRead(new SqlFieldsQuery("select * from " + DEFAULT_CACHE_NAME).setPageSize(pageSize));
+    }
+
+    /** Checks that a query is successful when its cursor is closed before all rows are read. */
+    private void checkCursorNotFullyRead(Query<?> qry) throws Exception {
+        Assume.assumeTrue("Query result fits into one page.", pageSize < ENTRY_COUNT);
+
+        cleanPerformanceStatisticsDir();
+
+        startCollectStatistics();
+
+        QueryCursor<?> cursor;
+
+        if (clientType == SERVER)
+            cursor = srv.cache(DEFAULT_CACHE_NAME).query(qry);
+        else if (clientType == CLIENT)
+            cursor = client.cache(DEFAULT_CACHE_NAME).query(qry);
+        else
+            cursor = thinClient.cache(DEFAULT_CACHE_NAME).query(qry);
+
+        cursor.iterator().next();
+
+        cursor.close();
+
+        AtomicInteger qryCnt = new AtomicInteger();
+
+        stopCollectStatisticsAndRead(new TestHandler() {
+            @Override public void query(UUID nodeId, GridCacheQueryType type, String text, long id, long queryStartTime,
+                long duration, boolean success) {
+                qryCnt.incrementAndGet();
+
+                assertTrue(success);
+            }
+        });
+
+        assertEquals(1, qryCnt.get());
     }
 
     /** Check query. */
