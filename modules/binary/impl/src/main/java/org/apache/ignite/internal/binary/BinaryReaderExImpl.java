@@ -2126,7 +2126,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return doReadDateArray(in);
 
             default:
-                in.position(in().position() - 1);
+                in.position(in.position() - 1);
 
                 if (binObjAllow) {
                     Object res = readObjectDetached();
