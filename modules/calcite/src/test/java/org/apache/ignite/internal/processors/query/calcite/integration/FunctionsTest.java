@@ -298,6 +298,36 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             "Increment can't be 0");
     }
 
+    /** */
+    @Test
+    public void testXmlTable() {
+        String xml = "<orders>" +
+            "<order id=\"1\"><name>Book</name><price>10</price></order>" +
+            "<order id=\"2\"><name>Pen</name><price>3</price></order>" +
+            "</orders>";
+
+        assertQuery("SELECT * FROM table(xml_table(?, '/orders/order', "
+            + "'@id', 'INTEGER', 'name', 'VARCHAR', 'price', 'INT'))")
+            .withParams(xml)
+            .returns(1, "Book", 10)
+            .returns(2, "Pen", 3)
+            .check();
+
+        assertQuery("SELECT c1, c2 FROM table(xml_table(?, '/orders/order', "
+            + "'@id', 'INTEGER', 'name', 'STRING')) WHERE c1 = 2")
+            .withParams(xml)
+            .returns(2, "Pen")
+            .check();
+
+        assertQuery("SELECT * FROM table(xml_table(NULL, '/orders/order', '@id', 'INTEGER'))").check();
+
+        assertQuery("SELECT * FROM table(xml_table(?, '/orders/order', CAST(NULL AS VARCHAR), 'VARCHAR'))")
+            .withParams(xml)
+            .returns(NULL_RESULT)
+            .returns(NULL_RESULT)
+            .check();
+    }
+
     /**
      * Important! Don`t change query call sequence in this test. This also tests correctness of
      * {@link org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl#SCALAR_CACHE} usage.
