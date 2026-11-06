@@ -43,7 +43,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 
 /**
@@ -191,12 +190,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Nested transactions are not supported!");
         }
 
-        Boolean dataPageScanEnabled = null;
         Integer updateBatchSize = null;
         EnumSet<JdbcThinFeature> features = EnumSet.noneOf(JdbcThinFeature.class);
 
         if (ver.compareTo(VER_2_8_0) >= 0) {
-            dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+            // Reserved byte (formerly the data page scan flag), read to keep the handshake format.
+            reader.readByte();
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
         }
@@ -269,9 +268,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, loc, skipReducerOnUpdate, qryEngine,
-            dataPageScanEnabled, updateBatchSize,
-            concurrency, isolation, timeout, lb,
-            ver, this);
+            updateBatchSize, concurrency, isolation, timeout, lb, ver, this);
     }
 
     /** {@inheritDoc} */

@@ -41,7 +41,7 @@ public class GridQueryNextPageRequest extends AbstractMessage {
     @Order(3)
     int pageSize;
 
-    /** */
+    /** Unused, reserved for wire compatibility (formerly the data page scan flag). */
     @Order(4)
     byte flags;
 
@@ -57,21 +57,12 @@ public class GridQueryNextPageRequest extends AbstractMessage {
      * @param qry Query.
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
-     * @param flags Flags.
      */
-    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize, byte flags) {
+    public GridQueryNextPageRequest(long qryReqId, int qry, int segmentId, int pageSize) {
         this.qryReqId = qryReqId;
         this.qry = qry;
         this.segmentId = segmentId;
         this.pageSize = pageSize;
-        this.flags = flags;
-    }
-
-    /**
-     * @return Flags.
-     */
-    public byte flags() {
-        return flags;
     }
 
     /**

@@ -44,35 +44,22 @@ public class ReduceQueryRun {
     private final int pageSize;
 
     /** */
-    private final Boolean dataPageScanEnabled;
-
-    /** */
     private final AtomicReference<State> state = new AtomicReference<>();
 
     /**
      * Constructor.
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
-     * @param dataPageScanEnabled If data page scan is enabled.
      */
     ReduceQueryRun(
         int idxsCnt,
-        int pageSize,
-        Boolean dataPageScanEnabled
+        int pageSize
     ) {
         assert pageSize > 0;
 
         idxs = new ArrayList<>(idxsCnt);
 
         this.pageSize = pageSize;
-        this.dataPageScanEnabled = dataPageScanEnabled;
-    }
-
-    /**
-     * @return {@code true} If data page scan is enabled.
-     */
-    public Boolean isDataPageScanEnabled() {
-        return dataPageScanEnabled;
     }
 
     /**

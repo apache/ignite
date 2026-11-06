@@ -298,9 +298,6 @@ public class CacheQuery<T> {
     private int taskHash;
 
     /** */
-    private final Boolean dataPageScanEnabled;
-
-    /** */
     private final Collection<KeyCacheObject> skipKeys;
 
     /**
@@ -312,8 +309,7 @@ public class CacheQuery<T> {
      * @param part Partition.
      * @param keepBinary Keep binary flag.
      * @param forceLocal Flag to force local query.
-     * @param dataPageScanEnabled Flag to enable data page scan.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -323,10 +319,9 @@ public class CacheQuery<T> {
         @Nullable Integer part,
         boolean keepBinary,
         boolean forceLocal,
-        Boolean dataPageScanEnabled,
         @Nullable Set<KeyCacheObject> skipKeys
     ) {
-        this(cctx, type, null, null, filter, part, false, keepBinary, dataPageScanEnabled, null, skipKeys);
+        this(cctx, type, null, null, filter, part, false, keepBinary, null, skipKeys);
 
         assert F.isEmpty(skipKeys) || type == SCAN;
 
@@ -345,8 +340,7 @@ public class CacheQuery<T> {
      * @param part Partition.
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
-     * @param dataPageScanEnabled Flag to enable data page scan.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -357,7 +351,6 @@ public class CacheQuery<T> {
         @Nullable Integer part,
         boolean incMeta,
         boolean keepBinary,
-        Boolean dataPageScanEnabled,
         IndexQueryDesc idxQryDesc,
         @Nullable Collection<KeyCacheObject> skipKeys
     ) {
@@ -373,7 +366,6 @@ public class CacheQuery<T> {
         this.part = part;
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
-        this.dataPageScanEnabled = dataPageScanEnabled;
         this.idxQryDesc = idxQryDesc;
         this.skipKeys = skipKeys;
 
@@ -399,8 +391,7 @@ public class CacheQuery<T> {
      * @param incMeta Include metadata flag.
      * @param keepBinary Keep binary flag.
      * @param taskHash Task hash.
-     * @param dataPageScanEnabled Flag to enable data page scan.
-     * @param skipKeys Set of keys that must be skiped during iteration.
+     * @param skipKeys Set of keys that must be skipped during iteration.
      */
     public CacheQuery(
         GridCacheContext<?, ?> cctx,
@@ -420,7 +411,6 @@ public class CacheQuery<T> {
         boolean incMeta,
         boolean keepBinary,
         int taskHash,
-        Boolean dataPageScanEnabled,
         @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         this.cctx = cctx;
@@ -440,7 +430,6 @@ public class CacheQuery<T> {
         this.incMeta = incMeta;
         this.keepBinary = keepBinary;
         this.taskHash = taskHash;
-        this.dataPageScanEnabled = dataPageScanEnabled;
         this.skipKeys = skipKeys;
     }
 
@@ -462,15 +451,10 @@ public class CacheQuery<T> {
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
-        this(cctx, type, clsName, null, filter, part, false, false, null, idxQryDesc, null);
+        this(cctx, type, clsName, null, filter, part, false, false, idxQryDesc, null);
     }
 
-    /** @return Flag to enable data page scan. */
-    public Boolean isDataPageScanEnabled() {
-        return dataPageScanEnabled;
-    }
-
-    /** @return Set of keys that must be skiped during iteration. */
+    /** @return Set of keys that must be skipped during iteration. */
     public Collection<KeyCacheObject> skipKeys() {
         return skipKeys;
     }

@@ -21,49 +21,28 @@ import java.util.Comparator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.jetbrains.annotations.TestOnly;
 
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
-import static org.apache.ignite.internal.util.GridArrays.clearTail;
 
 /**
  *
  */
 public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
-    /** */
-    private static final CacheDataRow[] EMPTY_ROWS = {};
-
-    /** */
-    private static Boolean lastFindWithDataPageScan;
-
-    /** */
-    private static final ThreadLocal<Boolean> dataPageScanEnabled =
-        ThreadLocal.withInitial(() -> false);
-
     /** */
     private final CacheDataRowStore rowStore;
 
@@ -115,186 +94,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
 
         initTree(initNew);
-    }
-
-    /**
-     * Enable or disable data page scan.
-     * @param enabled {code true} If enabled.
-     */
-    public static void setDataPageScanEnabled(boolean enabled) {
-        dataPageScanEnabled.set(enabled);
-    }
-
-    /**
-     * @return {@code true} If data page scan is enabled.
-     */
-    public static boolean isDataPageScanEnabled() {
-        return dataPageScanEnabled.get();
-    }
-
-    /**
-     * @return {@code true} If the last observed call to the method {@code find(...)} used data page scan.
-     */
-    @TestOnly
-    public static Boolean isLastFindWithDataPageScan() {
-        Boolean res = lastFindWithDataPageScan;
-        lastFindWithDataPageScan = null;
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCursor<CacheDataRow> find(
-        CacheSearchRow lower,
-        CacheSearchRow upper,
-        TreeRowClosure<CacheSearchRow, CacheDataRow> c,
-        Object x
-    ) throws IgniteCheckedException {
-        // If there is a group of caches, lower and upper bounds will not be null here.
-        if (lower == null
-                && upper == null
-                && grp.persistenceEnabled()
-                && dataPageScanEnabled.get()
-                && c == null)
-            return scanDataPages(asRowData(x));
-
-        lastFindWithDataPageScan = FALSE;
-        return super.find(lower, upper, c, x);
-    }
-
-    /**
-     * @param rowData Required row data.
-     * @return Cache row cursor.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridCursor<CacheDataRow> scanDataPages(CacheDataRowAdapter.RowData rowData)
-        throws IgniteCheckedException {
-        lastFindWithDataPageScan = TRUE;
-
-        checkDestroyed();
-
-        assert rowData != null;
-        assert grp.persistenceEnabled();
-
-        int partId = rowStore.getPartitionId();
-        GridCacheSharedContext shared = grp.shared();
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)shared.database();
-        PageStore pageStore = db.getPageStore(grpId, partId);
-
-        long startPageId = ((PageMemoryEx)pageMem).partitionMetaPageId(grp.groupId(), partId);
-
-        /** */
-        final class DataPageScanCursor implements GridCursor<CacheDataRow> {
-            /** */
-            int pagesCnt = pageStore.pages();
-
-            /** */
-            int curPage = -1;
-
-            /** */
-            CacheDataRow[] rows = EMPTY_ROWS;
-
-            /** */
-            int curRow = -1;
-
-            /** {@inheritDoc} */
-            @Override public boolean next() throws IgniteCheckedException {
-                if (rows == null)
-                    return false;
-
-                if (++curRow < rows.length && rows[curRow] != null)
-                    return true;
-
-                return readNextDataPage();
-            }
-
-            /**
-             * @return {@code true} If new rows were fetched.
-             * @throws IgniteCheckedException If failed.
-             */
-            private boolean readNextDataPage() throws IgniteCheckedException {
-                checkDestroyed();
-
-                for (;;) {
-                    if (++curPage >= pagesCnt) {
-                        // Reread number of pages when we reach it (it may grow).
-                        int newPagesCnt = pageStore.pages();
-
-                        if (newPagesCnt <= pagesCnt) {
-                            rows = null;
-                            return false;
-                        }
-
-                        pagesCnt = newPagesCnt;
-                    }
-
-                    long pageId = startPageId + curPage;
-                    long page = pageMem.acquirePage(grpId, pageId);
-
-                    try {
-                        boolean skipVer = CacheDataRowStore.getSkipVersion();
-
-                        long pageAddr = ((PageMemoryEx)pageMem).readLock(page, pageId, true, false);
-
-                        try {
-                            // TODO https://issues.apache.org/jira/browse/IGNITE-11998.
-                            // Here we should also exclude fragmented pages that don't contain the head of the entry.
-                            if (PageIO.getType(pageAddr) != T_DATA)
-                                continue; // Not a data page.
-
-                            DataPageIO io = PageIO.getPageIO(T_DATA, PageIO.getVersion(pageAddr));
-
-                            int rowsCnt = io.getRowsCount(pageAddr);
-
-                            if (rowsCnt == 0)
-                                continue; // Empty page.
-
-                            if (rowsCnt > rows.length)
-                                rows = new CacheDataRow[rowsCnt];
-                            else
-                                clearTail(rows, rowsCnt);
-
-                            int r = 0;
-
-                            for (int i = 0; i < rowsCnt; i++) {
-                                DataRow row = new DataRow();
-
-                                row.initFromDataPage(
-                                    io,
-                                    pageAddr,
-                                    i,
-                                    grp,
-                                    shared,
-                                    pageMem,
-                                    rowData,
-                                    skipVer
-                                );
-
-                                rows[r++] = row;
-                            }
-
-                            if (r == 0)
-                                continue; // No rows fetched in this page.
-
-                            curRow = 0;
-                            return true;
-                        }
-                        finally {
-                            pageMem.readUnlock(grpId, pageId, page);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grpId, pageId, page);
-                    }
-                }
-            }
-
-            /** {@inheritDoc} */
-            @Override public CacheDataRow get() {
-                return rows[curRow];
-            }
-        }
-
-        return new DataPageScanCursor();
     }
 
     /**

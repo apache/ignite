@@ -74,21 +74,8 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
      */
     public static final int FLAG_LAZY = 1 << 5;
 
-    /** */
+    /** Bit offset of the former data page scan flag. */
     private static final int FLAG_DATA_PAGE_SCAN_SHIFT = 6;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11 << FLAG_DATA_PAGE_SCAN_SHIFT;
-
-    /** */
-    @SuppressWarnings("PointlessBitwiseExpression")
-    private static final int FLAG_DATA_PAGE_SCAN_DFLT = 0b00 << FLAG_DATA_PAGE_SCAN_SHIFT;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_ENABLED = 0b01 << FLAG_DATA_PAGE_SCAN_SHIFT;
-
-    /** */
-    private static final int FLAG_DATA_PAGE_SCAN_DISABLED = 0b10 << FLAG_DATA_PAGE_SCAN_SHIFT;
 
     /** */
     @Order(0)
@@ -426,21 +413,6 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
     }
 
     /**
-     * @param flags Flags.
-     * @param dataPageScanEnabled {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
-     * @return Updated flags.
-     */
-    public static int setDataPageScanEnabled(int flags, Boolean dataPageScanEnabled) {
-        int x = dataPageScanEnabled == null ? FLAG_DATA_PAGE_SCAN_DFLT :
-            dataPageScanEnabled ? FLAG_DATA_PAGE_SCAN_ENABLED : FLAG_DATA_PAGE_SCAN_DISABLED;
-
-        flags &= ~FLAG_DATA_PAGE_SCAN_MASK; // Clear old bits.
-        flags |= x; // Set new bits.
-
-        return flags;
-    }
-
-    /**
      * Build query flags.
      *
      * @return  Query flags.
@@ -450,7 +422,6 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
         boolean lazy,
         boolean replicatedOnly,
         boolean explain,
-        Boolean dataPageScanEnabled,
         boolean treatReplicatedAsPartitioned) {
         int flags = enforceJoinOrder ? FLAG_ENFORCE_JOIN_ORDER : 0;
 
@@ -466,8 +437,6 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
 
         if (lazy)
             flags |= FLAG_LAZY;
-
-        flags = setDataPageScanEnabled(flags, dataPageScanEnabled);
 
         if (treatReplicatedAsPartitioned)
             flags |= FLAG_REPLICATED_AS_PARTITIONED;
@@ -494,33 +463,6 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
         qryId = queryId;
 
         return this;
-    }
-
-    /**
-     * Checks if data page scan enabled.
-     *
-     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
-     */
-    public Boolean isDataPageScanEnabled() {
-        return isDataPageScanEnabled(flags);
-    }
-
-    /**
-     * Checks if data page scan enabled.
-     *
-     * @param flags Flags.
-     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
-     */
-    public static Boolean isDataPageScanEnabled(int flags) {
-        switch (flags & FLAG_DATA_PAGE_SCAN_MASK) {
-            case FLAG_DATA_PAGE_SCAN_ENABLED:
-                return true;
-
-            case FLAG_DATA_PAGE_SCAN_DISABLED:
-                return false;
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
