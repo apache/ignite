@@ -918,8 +918,12 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
-                    GridNioSslFilter sslFilter = U.sslFilter(igniteCfg.getSslContextFactory(), true, ByteOrder.LITTLE_ENDIAN,
-                        log, metricMgr == null ? null : metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
+                    GridNioSslFilter sslFilter = U.sslFilter(
+                        igniteCfg.getSslContextFactory(),
+                        true,
+                        ByteOrder.LITTLE_ENDIAN,
+                        log,
+                        metricMgr == null ? null : metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
 
                     sslFilter.directMode(true);
 
