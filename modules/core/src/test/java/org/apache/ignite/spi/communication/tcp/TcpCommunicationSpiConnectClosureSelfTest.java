@@ -19,6 +19,9 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.BindException;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -39,6 +42,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,6 +52,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -55,17 +60,21 @@ import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridTestMessage;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectFuture;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 import org.apache.ignite.spi.communication.tcp.internal.ConnectionKey;
 import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.communication.tcp.internal.HandshakeTimeoutObject;
+import org.apache.ignite.spi.communication.tcp.internal.NodeUnreachableException;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -78,6 +87,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESSAGE_FACTORY;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Verifies the connection establishment of the TCP communication SPI when two nodes re-establish their
@@ -108,6 +119,17 @@ import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESS
  * establishment window of each attempt increases with the exponential connection backoff, so the
  * handshake and registration timeout progression across the retries is preserved.</p>
  *
+ * <p>The remaining tests bound the client reservation of the connection pool: a waiter on a connect
+ * future that never completes must give up after the total reserve budget instead of waiting
+ * indefinitely, an exhausted reserve budget must not prevent returning a client that a concurrent
+ * thread has established in the meantime, a disabled system worker blocked timeout must not abort
+ * the waiter immediately, a stopped SPI must complete the pending connect futures so that all
+ * waiters terminate, the wait for a peer-initiated (inverse) connection must be bounded by its own
+ * window (the connect timeout when the failure detection timeout is disabled) instead of the
+ * reservation budget that the failed direct attempts have already consumed, and a waiter on an
+ * in-progress connect future must still be released by its own reserve budget while the producer of
+ * that connection is in the inverse-connection phase.</p>
+ *
  * <p>The fault-injection variants of the pending connect closure path (a failed recovery handshake write
  * and a held recovery handshake completion) are intentionally not covered: they require a deterministic
  * recorder of NIO connection and write events embedded in the production classes, which was considered
@@ -124,31 +146,49 @@ import static org.apache.ignite.spi.communication.GridTestMessage.GRID_TEST_MESS
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSpi<Message>>
     extends GridSpiAbstractTest<T> {
-    /** Number of SPIs. */
+    /**
+     * Number of SPIs.
+     */
     private static final int SPI_CNT = 2;
 
-    /** Maximum number of reconnect attempts to observe a simultaneous connection establishment. */
+    /**
+     * Maximum number of reconnect attempts to observe a simultaneous connection establishment.
+     */
     private static final int MAX_ITERS = 50;
 
-    /** Wait timeout in seconds. */
+    /**
+     * Wait timeout in seconds.
+     */
     private static final long AWAIT_TIMEOUT = 10;
 
-    /** SPIs. */
+    /**
+     * SPIs.
+     */
     private final List<TcpCommunicationSpi> spis = new ArrayList<>();
 
-    /** Nodes. */
+    /**
+     * Nodes.
+     */
     private final List<ClusterNode> nodes = new ArrayList<>();
 
-    /** SPI test resources. */
+    /**
+     * SPI test resources.
+     */
     private final List<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
-    /** Communication listeners of the SPIs, indexed by SPI. */
+    /**
+     * Communication listeners of the SPIs, indexed by SPI.
+     */
     private final List<TestListener> listeners = new ArrayList<>();
 
-    /** Timeout processor. */
+    /**
+     * Timeout processor.
+     */
     private GridTimeoutProcessor timeoutProc;
 
-    /** Use SSL. */
+    /**
+     * Use SSL.
+     */
     protected boolean useSsl;
 
     /**
@@ -463,7 +503,7 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
                 // armed right after the socket connect, which happens right after the send is
                 // triggered): the deadline covers the stalled registration.
                 assertTrue("The stalled registration did not start before the deadline could fire "
-                    + "[entryOffsetMs=" + entryOffsetMs.get() + ", deadlineMs=" + deadlineMs + ']',
+                        + "[entryOffsetMs=" + entryOffsetMs.get() + ", deadlineMs=" + deadlineMs + ']',
                     entryOffsetMs.get() >= 0 && entryOffsetMs.get() < deadlineMs - 500);
 
                 // The failed first attempt must be retried, and the message must be delivered over
@@ -481,9 +521,9 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
                 // at a stable value around the connect timeout, not from the registration, which was
                 // stalled.
                 assertTrue("The connection establishment deadline did not close the stalled channel "
-                    + "while the registration was pending, or it fired at an unexpected offset from "
-                    + "the send trigger [closeOffsetMs=" + closeOffsetMs.get() + ", deadlineMs="
-                    + deadlineMs + "]",
+                        + "while the registration was pending, or it fired at an unexpected offset from "
+                        + "the send trigger [closeOffsetMs=" + closeOffsetMs.get() + ", deadlineMs="
+                        + deadlineMs + "]",
                     closeOffsetMs.get() >= deadlineMs - 1000 && closeOffsetMs.get() <= deadlineMs + 2000);
 
                 assertTrue("Message was not delivered over the re-established connection",
@@ -886,6 +926,959 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
     }
 
     /**
+     * Injects a pending connect future (an orphan that never completes, without any real connection
+     * attempt) into the connection pool and checks that a concurrent {@code reserveClient} waiter is
+     * bounded by the total reserve budget: it must give up with an {@link IgniteSpiException} after the
+     * budget elapses instead of waiting indefinitely on the orphan future, and it must not remove or
+     * complete the shared future.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReserveClientTimeoutWithOrphanConnectFuture() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // A small, controlled reserve budget: the explicit connect timeout disables the failure
+            // detection timeout, so the total reserve budget is
+            // totalBackoffTimeout(connectTimeout, maxConnectTimeout, reconCount); setting the maximum
+            // connect timeout equal to the connect timeout collapses that to the connect timeout itself.
+            spi0.setConnectTimeout(2000);
+
+            spi0.setMaxConnectTimeout(2000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            // An orphan connect future: pending forever, created without any real connection attempt.
+            GridFutureAdapter<GridCommunicationClient> orphan = new GridFutureAdapter<>();
+
+            ConnectionKey key = new ConnectionKey(node1.id(), 0, -1L);
+
+            clientFuts.put(key, orphan);
+
+            AtomicReference<Throwable> err = new AtomicReference<>();
+
+            long[] elapsedMs = new long[1];
+
+            Thread th = new Thread(() -> {
+                long start = System.currentTimeMillis();
+
+                try {
+                    pool0.reserveClient(node1, 0);
+
+                    err.compareAndSet(null, new IllegalStateException("reserveClient returned a client"));
+                }
+                catch (Throwable e) {
+                    elapsedMs[0] = System.currentTimeMillis() - start;
+
+                    err.compareAndSet(null, e);
+                }
+            });
+
+            th.setName("reserve-client-timeout-self-test");
+
+            th.setDaemon(true);
+
+            th.start();
+
+            th.join(AWAIT_TIMEOUT * 1000L);
+
+            assertFalse("reserveClient did not return within a bounded time (it waited indefinitely on "
+                    + "the orphan connect future)",
+                th.isAlive());
+
+            Throwable t = err.get();
+
+            assertNotNull("reserveClient returned neither a client nor an error", t);
+
+            assertTrue("Expected an IgniteSpiException, got: " + t, t instanceof IgniteSpiException);
+
+            assertTrue("Unexpected error message: " + t.getMessage(),
+                t.getMessage().contains("Failed to reserve a client"));
+
+            // It must have waited until the budget elapsed (it gives up only once
+            // totalReserveTimeout is exceeded), but returned in bounded time, not indefinitely.
+            assertTrue("reserveClient returned before the reserve budget elapsed [elapsedMs=" + elapsedMs[0]
+                    + ", budgetMs=2000]",
+                elapsedMs[0] >= 1900);
+
+            assertTrue("reserveClient did not return within a bounded time [elapsedMs=" + elapsedMs[0] + "]",
+                elapsedMs[0] <= 3000);
+
+            // The waiting caller must not remove or complete the shared future.
+            assertTrue("The waiting caller removed the shared connect future from the pool",
+                orphan == clientFuts.get(key));
+
+            assertFalse("The waiting caller completed the shared connect future", orphan.isDone());
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Injects a pending connect future (an orphan that never completes) into the connection pool whose
+     * per-wait timeout (derived from the workers registry's system worker blocked timeout) exceeds the
+     * whole reserve budget, and establishes a client for the same node and connection index after the
+     * waiter is verified from its stack trace to be blocked in the shared-future wait. By the time the
+     * waiter's wait wakes it up the reserve budget has elapsed, and it must then return the established
+     * client instead of giving up with the reserve timeout: the check for an already established client
+     * must happen before the elapsed budget can abort the reservation, because the budget bounds waiting
+     * for a connection, not the availability of an existing client.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReserveClientReturnsExistingClientAfterBudgetElapsed() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // A small, controlled reserve budget: the explicit connect timeout disables the failure
+            // detection timeout, so the total reserve budget is
+            // totalBackoffTimeout(connectTimeout, maxConnectTimeout, reconCount); setting the maximum
+            // connect timeout equal to the connect timeout collapses that to the connect timeout itself.
+            spi0.setConnectTimeout(2000);
+
+            spi0.setMaxConnectTimeout(2000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            // A per-wait timeout larger than the whole reserve budget: without it the waiter would wake
+            // up from its first wait long before the budget elapses (the default per-wait timeout derives
+            // from the connect timeout), find the client already installed, and return it, so the case
+            // under test - a client found only after the budget has elapsed - would not be reached. The
+            // registry is a final field that stays null in this self test, so it is written with a
+            // direct field put.
+            Field registryField = ConnectionClientPool.class.getDeclaredField("registry");
+
+            registryField.setAccessible(true);
+
+            GridUnsafe.putObjectField(pool0, GridUnsafe.objectFieldOffset(registryField),
+                new WorkersRegistry(null, 9000, null));
+
+            ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(pool0, "clients");
+
+            // An orphan connect future: pending forever, created without any real connection attempt.
+            GridFutureAdapter<GridCommunicationClient> orphan = new GridFutureAdapter<>();
+
+            ConnectionKey key = new ConnectionKey(node1.id(), 0, -1L);
+
+            clientFuts.put(key, orphan);
+
+            // The client that a concurrent thread establishes while the waiter is still waiting; it
+            // must be returned even though the reserve budget has elapsed by then.
+            GridCommunicationClient established = mock(GridCommunicationClient.class);
+
+            when(established.connectionIndex()).thenReturn(0);
+
+            when(established.reserve()).thenReturn(true);
+
+            AtomicReference<GridCommunicationClient> result = new AtomicReference<>();
+
+            AtomicReference<Throwable> err = new AtomicReference<>();
+
+            long[] elapsedMs = new long[1];
+
+            Thread th = new Thread(() -> {
+                long start = System.currentTimeMillis();
+
+                try {
+                    result.set(pool0.reserveClient(node1, 0));
+                }
+                catch (Throwable e) {
+                    err.compareAndSet(null, e);
+                }
+                finally {
+                    elapsedMs[0] = System.currentTimeMillis() - start;
+                }
+            });
+
+            th.setName("reserve-client-existing-after-budget-self-test");
+
+            th.setDaemon(true);
+
+            th.start();
+
+            // Install the client only after it is verified that the waiter is actually blocked in the
+            // shared-future wait (reaching reserveClient() alone is not enough: the client must be
+            // established while the waiter is waiting, not before it starts waiting): the per-wait
+            // timeout exceeds the reserve budget, so the waiter stays in its first wait until the
+            // budget has elapsed and only then finds the client.
+            long readyDeadlineMs = System.currentTimeMillis() + AWAIT_TIMEOUT * 1000L;
+
+            while (!isWaitingOnConnectFuture(th) && System.currentTimeMillis() < readyDeadlineMs)
+                Thread.sleep(10);
+
+            assertTrue("The client was installed before the waiter was blocked in the shared-future "
+                    + "wait, so the case under test was not reached",
+                isWaitingOnConnectFuture(th));
+
+            clients.put(node1.id(), new GridCommunicationClient[]{established});
+
+            th.join(AWAIT_TIMEOUT * 1000L);
+
+            assertFalse("reserveClient did not return within a bounded time", th.isAlive());
+
+            assertNull("reserveClient gave up with the reserve timeout instead of returning the "
+                    + "client established in the meantime",
+                err.get());
+
+            // The mock does not override equals, so this is an identity check.
+            assertEquals("reserveClient did not return the client established in the meantime",
+                established, result.get());
+
+            // The client was installed while the waiter was already blocked in the shared-future wait,
+            // and the per-wait timeout exceeds the reserve budget: the waiter therefore only re-checked
+            // for an established client after the budget had elapsed.
+            assertTrue("reserveClient returned the client before the reserve budget elapsed "
+                    + "[elapsedMs=" + elapsedMs[0] + ", budgetMs=2000]",
+                elapsedMs[0] >= 1900);
+
+            assertTrue("reserveClient did not return within a bounded time [elapsedMs=" + elapsedMs[0] + "]",
+                elapsedMs[0] <= 3000);
+
+            // The waiting caller must not remove or complete the shared future.
+            assertTrue("The waiting caller removed the shared connect future from the pool",
+                orphan == clientFuts.get(key));
+
+            assertFalse("The waiting caller completed the shared connect future", orphan.isDone());
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Injects a pending connect future (an orphan that never completes) into the connection pool with a
+     * workers registry whose system worker blocked timeout is disabled, so that the pool's per-wait
+     * timeout is 0. Checks that a concurrent {@code reserveClient} waiter is not aborted immediately by
+     * the zero per-wait timeout but waits until the total reserve budget elapses before giving up.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReserveClientTimeoutWithDisabledWorkerBlockedTimeout() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // A small, controlled reserve budget: the explicit connect timeout disables the failure
+            // detection timeout, and setting the maximum connect timeout equal to the connect timeout
+            // collapses the total backoff timeout to the connect timeout itself.
+            spi0.setConnectTimeout(2000);
+
+            spi0.setMaxConnectTimeout(2000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            // A non-positive system worker blocked timeout is normalized to infinite, so the registry
+            // reports a blocked timeout of 0 and the pool's per-wait timeout derives to 0, the case
+            // under test. The registry is a final field that stays null in this self test, so it is
+            // written with a direct field put.
+            Field registryField = ConnectionClientPool.class.getDeclaredField("registry");
+
+            registryField.setAccessible(true);
+
+            GridUnsafe.putObjectField(pool0, GridUnsafe.objectFieldOffset(registryField),
+                new WorkersRegistry(null, 0, null));
+
+            // An orphan connect future: pending forever, created without any real connection attempt.
+            GridFutureAdapter<GridCommunicationClient> orphan = new GridFutureAdapter<>();
+
+            ConnectionKey key = new ConnectionKey(node1.id(), 0, -1L);
+
+            clientFuts.put(key, orphan);
+
+            AtomicReference<Throwable> err = new AtomicReference<>();
+
+            long[] elapsedMs = new long[1];
+
+            Thread th = new Thread(() -> {
+                long start = System.currentTimeMillis();
+
+                try {
+                    pool0.reserveClient(node1, 0);
+
+                    err.compareAndSet(null, new IllegalStateException("reserveClient returned a client"));
+                }
+                catch (Throwable e) {
+                    elapsedMs[0] = System.currentTimeMillis() - start;
+
+                    err.compareAndSet(null, e);
+                }
+            });
+
+            th.setName("reserve-client-disabled-blocked-timeout-self-test");
+
+            th.setDaemon(true);
+
+            th.start();
+
+            th.join(AWAIT_TIMEOUT * 1000L);
+
+            assertFalse("reserveClient did not return within a bounded time (it waited indefinitely on "
+                    + "the orphan connect future)",
+                th.isAlive());
+
+            Throwable t = err.get();
+
+            assertNotNull("reserveClient returned neither a client nor an error", t);
+
+            assertTrue("Expected an IgniteSpiException, got: " + t, t instanceof IgniteSpiException);
+
+            assertTrue("Unexpected error message: " + t.getMessage(),
+                t.getMessage().contains("Failed to reserve a client"));
+
+            // The zero per-wait timeout must not abort the reservation immediately: the waiter falls
+            // back to the full remaining reserve budget and only gives up once it has elapsed.
+            assertTrue("reserveClient aborted on the zero per-wait timeout before the reserve budget "
+                    + "elapsed [elapsedMs=" + elapsedMs[0] + ", budgetMs=2000]",
+                elapsedMs[0] >= 1900);
+
+            assertTrue("reserveClient did not return within a bounded time [elapsedMs=" + elapsedMs[0] + "]",
+                elapsedMs[0] <= 3000);
+
+            // The waiting caller must not remove or complete the shared future.
+            assertTrue("The waiting caller removed the shared connect future from the pool",
+                orphan == clientFuts.get(key));
+
+            assertFalse("The waiting caller completed the shared connect future", orphan.isDone());
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Injects a pending {@link ConnectFuture} into the connection pool and has several threads reserve
+     * a client against it, so that they all become waiters on the same future. Calling {@code stop()}
+     * must then complete the pending future and release every waiter promptly with a stop error, instead
+     * of making them wait until the total reserve budget, and it must not publish a client.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopReleasesWaitersOnPendingConnectFuture() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // A large reserve budget, so that without the stop() completion the waiters would have to
+            // wait the whole budget instead of being released by stop().
+            spi0.setConnectTimeout(30000);
+
+            spi0.setMaxConnectTimeout(30000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(pool0, "clients");
+
+            // A pending connect future, created without any real connection attempt.
+            ConnectFuture pending = new ConnectFuture();
+
+            ConnectionKey key = new ConnectionKey(node1.id(), 0, -1L);
+
+            clientFuts.put(key, pending);
+
+            final int waiters = 3;
+
+            long releaseAwaitSecs = 5;
+
+            CountDownLatch released = new CountDownLatch(waiters);
+
+            Thread[] waiterThreads = new Thread[waiters];
+
+            Throwable[] errors = new Throwable[waiters];
+
+            long[] elapsedMs = new long[waiters];
+
+            for (int i = 0; i < waiters; i++) {
+                final int idx = i;
+
+                Thread th = new Thread(() -> {
+                    long start = System.currentTimeMillis();
+
+                    try {
+                        GridCommunicationClient client = pool0.reserveClient(node1, 0);
+
+                        errors[idx] = new IllegalStateException("reserveClient returned a client: " + client);
+                    }
+                    catch (Throwable e) {
+                        elapsedMs[idx] = System.currentTimeMillis() - start;
+
+                        errors[idx] = e;
+                    }
+                    finally {
+                        released.countDown();
+                    }
+                });
+
+                waiterThreads[i] = th;
+
+                th.setName("stop-release-waiter-" + i);
+
+                th.setDaemon(true);
+
+                th.start();
+            }
+
+            // Wait until every waiter is actually blocked in the shared-future wait of reserveClient,
+            // so that stop() releases them from that wait instead of from an earlier check. Reaching
+            // reserveClient() alone is not enough: a thread that has not entered the future wait yet
+            // can still be rejected by the stopping flag that stop() sets.
+            int inFutWait = 0;
+
+            long readyDeadlineMs = System.currentTimeMillis() + releaseAwaitSecs * 1000L;
+
+            while (System.currentTimeMillis() < readyDeadlineMs) {
+                inFutWait = 0;
+
+                for (Thread th : waiterThreads) {
+                    if (isWaitingOnConnectFuture(th))
+                        inFutWait++;
+                }
+
+                if (inFutWait == waiters)
+                    break;
+
+                Thread.sleep(10);
+            }
+
+            assertTrue("Not all waiters were blocked in the shared-future wait before stop() was called "
+                    + "[inFutWait=" + inFutWait + ", waiters=" + waiters + ']',
+                inFutWait == waiters);
+
+            pool0.stop();
+
+            // All waiters must be released promptly by stop(), well before the reserve budget.
+            boolean allReleased = released.await(releaseAwaitSecs, TimeUnit.SECONDS);
+
+            assertTrue("Not all waiters were released by stop() within " + releaseAwaitSecs
+                    + "s (they kept waiting toward the reserve budget)",
+                allReleased);
+
+            for (int i = 0; i < waiters; i++) {
+                Throwable t = errors[i];
+
+                assertNotNull("Waiter " + i + " returned neither a client nor an error", t);
+
+                // The specific stop-completion message proves the waiter was released by stop()
+                // completing the pending future, not by the reserve budget or the stopping check.
+                assertTrue("Waiter " + i + " was not released by the stop() future completion, got: " + t,
+                    t.getMessage() != null && t.getMessage().contains("SPI is being stopped"));
+
+                assertTrue("Waiter " + i + " was not released promptly [elapsedMs=" + elapsedMs[i]
+                        + ", budgetMs=30000]",
+                    elapsedMs[i] < releaseAwaitSecs * 1000L);
+            }
+
+            assertTrue("The pending connect future was not completed by stop()", pending.isDone());
+
+            assertNull("A client was published to node " + node1 + " after the shutdown",
+                clients.get(node1.id()));
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Stalls the NIO session registration of a new outgoing connection, holds it until the pool is
+     * stopped, and only then releases it: the creating thread therefore cannot complete the shared
+     * connect future before stop() does, so stop() is guaranteed to win the completion race. When the
+     * creating thread then tries to publish its client, it must find that stop() already completed the
+     * future with a stop error: the creating thread must not publish or return its client (the fast path
+     * is taken only when it won the completion race), and it has to be released with the stop error like
+     * any other waiter.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopWinsRaceAgainstCreatorCompletion() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // Large connect timeout: the connection establishment deadline must not fire during the
+            // stalled registration, so that only the explicit stop() can complete the shared connect future.
+            spi0.setConnectTimeout(30000);
+
+            spis.get(1).setConnectTimeout(30000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(pool0, "clients");
+
+            GridNioServer<?> srv0 = ((GridNioServerWrapper)U.field(spi0, "nioSrvWrapper")).nio();
+
+            AtomicInteger outgoingRegistrations = new AtomicInteger();
+
+            // The registrar signals when the creating thread enters the stalled registration and then
+            // holds the registration until the test releases it: the creating thread therefore cannot
+            // complete the shared connect future before stop() does, so stop() wins the completion race
+            // no matter how long the test thread takes between the two calls. The registration is then
+            // completed normally, so the creating thread does reach the onDone(client0) call with a
+            // valid client.
+            CountDownLatch registrationEntered = new CountDownLatch(1);
+
+            CountDownLatch releaseRegistration = new CountDownLatch(1);
+
+            srv0.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                GridNioSession ses = (GridNioSession)attachment;
+
+                if (!ses.accepted() && outgoingRegistrations.getAndIncrement() == 0) {
+                    registrationEntered.countDown();
+
+                    try {
+                        releaseRegistration.await(AWAIT_TIMEOUT, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            try {
+                GridCommunicationClient[] returned = new GridCommunicationClient[1];
+
+                Throwable[] error = new Throwable[1];
+
+                CountDownLatch done = new CountDownLatch(1);
+
+                // The creating thread: the one that inserts the shared connect future and establishes the
+                // client, i.e. the candidate for the own-client fast path.
+                Thread creator = new Thread(() -> {
+                    try {
+                        returned[0] = pool0.reserveClient(node1, 0);
+                    }
+                    catch (Throwable t) {
+                        error[0] = t;
+                    }
+                    finally {
+                        done.countDown();
+                    }
+                });
+
+                creator.setName("stop-race-creator");
+
+                creator.setDaemon(true);
+
+                creator.start();
+
+                // Wait until the creating thread is stalled in the session registration, i.e. the shared
+                // connect future is present and still pending.
+                assertTrue("Failed to reach the stalled session registration of the creating thread",
+                    registrationEntered.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                // Stop the pool while the registration is still held: stop() wins the completion race.
+                // Only then release the registration, so that the creating thread reaches onDone(client0)
+                // and finds the future already completed with the stop error.
+                pool0.stop();
+
+                releaseRegistration.countDown();
+
+                assertTrue("Creating thread did not finish after the stalled registration was released",
+                    done.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                assertNull("The creating thread returned a client although stop() completed the shared future",
+                    returned[0]);
+
+                assertNotNull("The creating thread returned neither a client nor an error", error[0]);
+
+                // The specific stop-completion message proves the creating thread was released by stop()
+                // completing the future (the lost completion race), not by the reserve budget.
+                assertTrue("The creating thread was not released by the stop() future completion, got: " + error[0],
+                    error[0].getMessage() != null && error[0].getMessage().contains("SPI is being stopped"));
+
+                GridCommunicationClient[] nodeClients = clients.get(node1.id());
+
+                assertNull("A client was published to node " + node1 + " after the shutdown",
+                    nodeClients == null ? null : nodeClients[0]);
+            }
+            finally {
+                // Release the registration even if an assertion above failed, so that the NIO worker
+                // is not left stalled.
+                releaseRegistration.countDown();
+
+                srv0.setChannelRegistrar(null);
+            }
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Checks the inverse (peer-initiated) connection wait of
+     * {@code ConnectionClientPool.handleUnreachableNodeException}: the inverse-connection requestor must be
+     * triggered exactly once, and the subsequent wait for the inverse connection must be bounded by its
+     * own window (the connect timeout, when the failure detection timeout is disabled) instead of the
+     * reservation budget: a requestor that consumes the entire reserve budget must not shrink the wait,
+     * and the whole path must still fail in bounded time when the inverse connection never arrives.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReserveClientInverseConnectionWithExhaustedReserveBudget() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // A small, controlled window: the explicit connect timeout disables the failure
+            // detection timeout, so both the total reserve budget and the inverse-connection wait
+            // window are the connect timeout itself (setting the maximum connect timeout equal to
+            // the connect timeout collapses the total backoff timeout to it).
+            spi0.setConnectTimeout(1000);
+
+            spi0.setMaxConnectTimeout(1000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            // The private method under test.
+            Method handle = ConnectionClientPool.class.getDeclaredMethod("handleUnreachableNodeException",
+                ClusterNode.class, int.class, GridFutureAdapter.class, NodeUnreachableException.class);
+
+            handle.setAccessible(true);
+
+            AtomicInteger requests = new AtomicInteger();
+
+            // The requestor records the trigger and consumes more than the entire reserve budget
+            // before returning, but never establishes the inverse connection itself: the wait for it
+            // must therefore still get its own full window (the connect timeout), not the budget that
+            // the request call has already exhausted.
+            spi0.setConnectionRequestor((node, connIdx) -> {
+                requests.incrementAndGet();
+
+                try {
+                    Thread.sleep(1200);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+
+            AtomicReference<Throwable> err = new AtomicReference<>();
+
+            long[] elapsedMs = new long[1];
+
+            Thread th = new Thread(() -> {
+                long start = System.nanoTime();
+
+                try {
+                    handle.invoke(pool0, node1, 0, new ConnectFuture(),
+                        new NodeUnreachableException("inverse connection"));
+
+                    err.set(new IllegalStateException("handleUnreachableNodeException returned normally"));
+                }
+                catch (InvocationTargetException e) {
+                    elapsedMs[0] = (System.nanoTime() - start) / 1_000_000L;
+
+                    err.set(e.getCause());
+                }
+                catch (ReflectiveOperationException e) {
+                    err.set(e);
+                }
+            });
+
+            th.setName("reserve-client-inverse-connection-self-test");
+
+            th.setDaemon(true);
+
+            th.start();
+
+            th.join(AWAIT_TIMEOUT * 1000L);
+
+            assertFalse("The inverse-connection path did not return within a bounded time", th.isAlive());
+
+            Throwable t = err.get();
+
+            assertNotNull("The inverse-connection path returned neither an error", t);
+
+            assertTrue("Expected an IgniteSpiException, got: " + t, t instanceof IgniteSpiException);
+
+            assertTrue("Unexpected cause (not the failed inverse-connection wait): " + t.getCause(),
+                t.getCause() instanceof NodeUnreachableException);
+
+            assertEquals("The inverse-connection requestor was not triggered exactly once",
+                1, requests.get());
+
+            // The requestor consumed ~1200 ms, more than the 1000 ms reserve budget: the wait must
+            // still have used its own full 1000 ms window (the connect timeout), so the whole path
+            // takes about 2200 ms. Capping the wait by the (already exhausted) reserve budget would
+            // have aborted it right after the request call, at ~1200 ms. This is a wall-clock
+            // regression bound on the window, not a precise measurement of the timeout that is
+            // passed to the internal future wait.
+            assertTrue("The inverse-connection wait was not bounded by its own window instead of the "
+                    + "reserve budget [elapsedMs=" + elapsedMs[0] + ", windowMs=1000, requestMs=1200]",
+                elapsedMs[0] >= 2000 && elapsedMs[0] <= 3200);
+
+            // The trigger-future state must not leak.
+            assertTrue("A trigger future leaked in the connection pool",
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return !clientFuts.containsKey(new ConnectionKey(node1.id(), 0, -1L));
+                    }
+                }, AWAIT_TIMEOUT * 1000L));
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Models a connection producer that has failed its direct attempts and is now in the
+     * inverse-connection phase (its requestor consumes a time span far beyond the reserve budget and
+     * never establishes the inverse connection) while a concurrent waiter reserves a client on the
+     * producer's connect future. The waiter must be released by its own reserve budget without waiting
+     * for the producer's inverse-connection phase to finish, and it must not remove or complete the
+     * shared future.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReserveClientTimeoutWithProducerInInverseConnectionPhase() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // A small, controlled reserve budget: the explicit connect timeout disables the failure
+            // detection timeout, so the total reserve budget and the producer's inverse-connection
+            // wait window are both the connect timeout itself.
+            spi0.setConnectTimeout(1000);
+
+            spi0.setMaxConnectTimeout(1000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<ConnectionKey, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            // The private method that runs the producer's inverse-connection phase.
+            Method handle = ConnectionClientPool.class.getDeclaredMethod("handleUnreachableNodeException",
+                ClusterNode.class, int.class, GridFutureAdapter.class, NodeUnreachableException.class);
+
+            handle.setAccessible(true);
+
+            // The producer's in-progress connect future, published in the pool before the producer
+            // enters the inverse-connection phase.
+            ConnectFuture producerFut = new ConnectFuture();
+
+            ConnectionKey key = new ConnectionKey(node1.id(), 0, -1L);
+
+            clientFuts.put(key, producerFut);
+
+            AtomicInteger requests = new AtomicInteger();
+
+            // The inverse-connection requestor stays far beyond the waiter's reserve budget and never
+            // establishes the inverse connection: the waiter must be released by its own budget, not
+            // by the producer's phase finishing.
+            spi0.setConnectionRequestor((node, connIdx) -> {
+                requests.incrementAndGet();
+
+                try {
+                    Thread.sleep(5000);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+
+            AtomicBoolean prodReturnedNormally = new AtomicBoolean();
+
+            AtomicReference<Throwable> prodErr = new AtomicReference<>();
+
+            // The producer: stuck in the inverse-connection phase (the request plus its own wait
+            // window, about 6000 ms in total).
+            Thread prodTh = new Thread(() -> {
+                try {
+                    handle.invoke(pool0, node1, 0, producerFut,
+                        new NodeUnreachableException("inverse connection"));
+
+                    prodReturnedNormally.set(true);
+                }
+                catch (InvocationTargetException e) {
+                    prodErr.set(e.getCause());
+                }
+                catch (ReflectiveOperationException e) {
+                    prodErr.set(e);
+                }
+            });
+
+            prodTh.setName("reserve-client-inverse-producer-self-test");
+
+            prodTh.setDaemon(true);
+
+            prodTh.start();
+
+            // Wait until the producer has published its trigger future and entered the request call,
+            // so that the waiter below starts while the producer is in the inverse-connection phase.
+            assertTrue("The inverse-connection requestor was not triggered",
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return requests.get() == 1;
+                    }
+                }, AWAIT_TIMEOUT * 1000L));
+
+            GridFutureAdapter<GridCommunicationClient> triggerFut = clientFuts.get(key);
+
+            assertNotNull("The producer did not publish its trigger future", triggerFut);
+
+            AtomicReference<Throwable> err = new AtomicReference<>();
+
+            long[] elapsedMs = new long[1];
+
+            Thread waiterTh = new Thread(() -> {
+                long start = System.currentTimeMillis();
+
+                try {
+                    pool0.reserveClient(node1, 0);
+
+                    err.compareAndSet(null, new IllegalStateException("reserveClient returned a client"));
+                }
+                catch (Throwable e) {
+                    elapsedMs[0] = System.currentTimeMillis() - start;
+
+                    err.compareAndSet(null, e);
+                }
+            });
+
+            waiterTh.setName("reserve-client-producer-inverse-self-test");
+
+            waiterTh.setDaemon(true);
+
+            waiterTh.start();
+
+            waiterTh.join(AWAIT_TIMEOUT * 1000L);
+
+            assertFalse("The waiter did not return within a bounded time (it waited for the producer's "
+                    + "inverse-connection phase)",
+                waiterTh.isAlive());
+
+            Throwable t = err.get();
+
+            assertNotNull("reserveClient returned neither a client nor an error", t);
+
+            assertTrue("Expected an IgniteSpiException, got: " + t, t instanceof IgniteSpiException);
+
+            assertTrue("Unexpected error message: " + t.getMessage(),
+                t.getMessage().contains("Failed to reserve a client"));
+
+            // The waiter must have given up on its own reserve budget, far before the producer's
+            // inverse-connection phase (~6000 ms) finished.
+            assertTrue("The waiter was not released by its own reserve budget [elapsedMs=" + elapsedMs[0]
+                    + ", budgetMs=1000]",
+                elapsedMs[0] >= 900 && elapsedMs[0] <= 3000);
+
+            // The waiter's release must not come from completing the shared futures: they are still
+            // pending and still published at this point.
+            assertFalse("The waiter was released by the producer's connect future completing instead "
+                    + "of its own reserve budget",
+                producerFut.isDone());
+
+            assertTrue("The waiter removed the shared trigger future from the pool",
+                triggerFut == clientFuts.get(key));
+
+            assertFalse("The waiter completed the shared trigger future", triggerFut.isDone());
+
+            prodTh.join(AWAIT_TIMEOUT * 1000L);
+
+            assertFalse("The producer's inverse-connection phase did not finish", prodTh.isAlive());
+
+            assertFalse("handleUnreachableNodeException returned normally although the inverse "
+                    + "connection never arrived",
+                prodReturnedNormally.get());
+
+            assertNotNull("The producer's inverse-connection path returned neither an error", prodErr.get());
+
+            assertTrue("Expected an IgniteSpiException from the producer, got: " + prodErr.get(),
+                prodErr.get() instanceof IgniteSpiException);
+
+            assertTrue("Unexpected producer cause (not the failed inverse-connection wait): "
+                    + prodErr.get().getCause(),
+                prodErr.get().getCause() instanceof NodeUnreachableException);
+
+            assertEquals("The inverse-connection requestor was not triggered exactly once",
+                1, requests.get());
+
+            // The trigger-future state must not leak, and the producer's failed phase must have
+            // completed the shared connect future with the error.
+            assertTrue("A trigger future leaked in the connection pool",
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return !clientFuts.containsKey(key);
+                    }
+                }, AWAIT_TIMEOUT * 1000L));
+
+            assertTrue("The producer's failed inverse-connection phase did not complete the connect "
+                    + "future",
+                producerFut.isDone());
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * @param th Thread to check.
+     * @return {@code True} if the thread is blocked in the connect-future wait of
+     * {@code ConnectionClientPool.reserveClient}.
+     */
+    private static boolean isWaitingOnConnectFuture(Thread th) {
+        boolean inFutGet = false;
+
+        for (StackTraceElement el : th.getStackTrace()) {
+            if (el.getClassName().equals("org.apache.ignite.internal.util.future.GridFutureAdapter")
+                && el.getMethodName().equals("get0"))
+                inFutGet = true;
+            else if (el.getClassName().equals("org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool")
+                && el.getMethodName().equals("reserveClient"))
+                return inFutGet;
+        }
+
+        return false;
+    }
+
+    /**
      * Closes all sessions of the given NIO server.
      *
      * @param srv NIO server.
@@ -954,9 +1947,9 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
     }
 
     /**
-     * @param spi0 SPI of node 1.
+     * @param spi0  SPI of node 1.
      * @param node1 Node 2.
-     * @param spi1 SPI of node 2.
+     * @param spi1  SPI of node 2.
      * @param node0 Node 1.
      * @return {@code True} if both connection pools hold no live clients.
      * @throws Exception If failed.
@@ -985,14 +1978,14 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
      * Delivery is verified at the receiving listener. The error holder only captures a failure of the
      * {@code sendMessage} call itself, which the caller can assert on after joining the send thread.
      *
-     * @param barrier Barrier both send threads are released by.
-     * @param spi SPI to send with.
-     * @param dstNode Destination node.
-     * @param srcNode Source node.
-     * @param msgId Message ID.
-     * @param err Synchronous send error holder, capturing a failure of the {@code sendMessage} call itself.
+     * @param barrier        Barrier both send threads are released by.
+     * @param spi            SPI to send with.
+     * @param dstNode        Destination node.
+     * @param srcNode        Source node.
+     * @param msgId          Message ID.
+     * @param err            Synchronous send error holder, capturing a failure of the {@code sendMessage} call itself.
      * @param attemptStartNs Anchor capturing the moment right before the {@code sendMessage} call, or
-     *        {@code null} when the anchor is not needed.
+     *                       {@code null} when the anchor is not needed.
      * @return Started thread.
      */
     private Thread startSendThread(CyclicBarrier barrier, TcpCommunicationSpi spi, ClusterNode dstNode,
@@ -1026,10 +2019,14 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
      * verified at the receiving node.
      */
     private class TestListener implements CommunicationListener<Message> {
-        /** Received message IDs. */
+        /**
+         * Received message IDs.
+         */
         private final Set<Long> receivedMsgIds = ConcurrentHashMap.newKeySet();
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public void onMessage(UUID nodeId, Message msg, IgniteRunnable msgC) {
             // Record the receipt before running the user callback, so that the tracked IDs document the
             // message arrival independently of the callback's behavior.
@@ -1039,12 +2036,16 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
             msgC.run();
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public void onDisconnected(UUID nodeId) {
             // No-op.
         }
 
-        /** @return Received message IDs. */
+        /**
+         * @return Received message IDs.
+         */
         public Set<Long> receivedMsgIds() {
             return receivedMsgIds;
         }
