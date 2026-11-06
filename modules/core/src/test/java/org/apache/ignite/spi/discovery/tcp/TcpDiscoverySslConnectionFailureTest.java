@@ -78,15 +78,18 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
 
     /** */
     @Test
-    public void testOrdinaryFactoryJoinsAndAcceptsTls() throws Exception {
+    public void testOrdinaryFactoryKeepsStartupContext() throws Exception {
         Factory<SSLContext> nodeFactory = sslTrustedFactory("node01", "trustone");
 
         startNode(0, nodeFactory);
 
-        Factory<SSLContext> delegate = sslTrustedFactory("node01", "trustone");
-        IgniteEx ordinaryNode = startNode(1, delegate::create);
+        AtomicReference<SSLContext> ctx = new AtomicReference<>(nodeFactory.create());
+        IgniteEx ordinaryNode = startNode(1, ctx::get);
 
         assertEquals(2, ordinaryNode.cluster().nodes().size());
+
+        ctx.set(sslTrustedFactory("node02", "trusttwo").create());
+
         assertAcceptsTls(address(ordinaryNode), nodeFactory.create());
     }
 
