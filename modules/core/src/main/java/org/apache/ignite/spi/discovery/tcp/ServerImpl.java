@@ -6345,7 +6345,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (spi.isSslEnabled()) {
                         try {
-                            // Use the numeric address to avoid a reverse DNS lookup on the accept thread.
                             SSLSocket sslSock = (SSLSocket)spi.sslSocketFactory()
                                 .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
 

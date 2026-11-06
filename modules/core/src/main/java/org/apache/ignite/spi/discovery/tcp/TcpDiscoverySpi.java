@@ -2166,7 +2166,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             try {
                 SSLContext sslCtx = sslFactory.create();
 
-                // Validate protocols and ciphers at startup, before binding the plain listener.
                 sslCtx.createSSLEngine();
                 sslCtx.getSocketFactory();
 
