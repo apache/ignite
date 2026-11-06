@@ -2125,7 +2125,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 GridDhtLocalPartition locPart = localPartition(p);
 
                 if (locPart != null && locPart.state() != EVICTED && locPart.state() != LOST) {
-                    if (locPart.state() == MOVING && locPart.own()) {
+                    if (locPart.own()) {
                         changed = true;
 
                         if (ownerReports)
