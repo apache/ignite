@@ -78,7 +78,7 @@ public class InlineRecommender {
         if (!inlineSizeCalculationCntr.compareAndSet(invokeCnt, invokeCnt + 1))
             return;
 
-        boolean throttle = invokeCnt + 1 % inlineSizeThrottleThreshold != 0;
+        boolean throttle = (invokeCnt + 1) % inlineSizeThrottleThreshold != 0;
 
         if (throttle)
             return;
