@@ -24,14 +24,16 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.exchangeFinished;
 import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.mismatches;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -66,7 +68,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
     /**
      * Before the upgrade the coordinator and the client see the new owners right after the exchange, with the owners'
      * maps held. Once all nodes are upgraded and the version is finalized, the feature is active, and they see the new
-     * owners only after the maps arrive.
+     * owners only after the maps arrive. On activation a server resends its maps, and a client doesn't.
      *
      * @throws Exception If failed.
      */
@@ -105,8 +107,22 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         upgradeNodeVersion(CLIENT, OLD_VER, MASTER_VER_REF);
         upgradeNodeVersion(0, OLD_VER, MASTER_VER_REF);
 
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi srvSpi = TestRecordingCommunicationSpi.spi(grid(coordinatorIndex() == 0 ? 1 : 0));
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(grid(CLIENT));
+
+        srvSpi.record((node, msg) -> sentOutsideExchange(msg));
+        clientSpi.record((node, msg) -> sentOutsideExchange(msg));
+
         // Also checks that every node has the features of the new version active.
         finalizeClusterVersion(1, MASTER_VER_REF);
+
+        assertTrue("The server didn't resend its partition map on activation",
+            waitForCondition(() -> !srvSpi.recordedMessages(false).isEmpty(), WAIT));
+
+        assertFalse("The client resent its partition map on activation",
+            waitForCondition(() -> !clientSpi.recordedMessages(false).isEmpty(), DFLT_PRELOAD_RESEND_TIMEOUT));
 
         startGrid(LEAVING, MASTER_VER_REF);
 
@@ -145,9 +161,8 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         for (Ignite g : G.allGrids()) {
             if (g != crd && !g.cluster().localNode().isClient()) {
-                TestRecordingCommunicationSpi.spi(g).blockMessages((node, msg) -> node.id().equals(crdId)
-                    && msg instanceof GridDhtPartitionsSingleMessage
-                    && ((GridDhtPartitionsSingleMessage)msg).exchangeId() == null);
+                TestRecordingCommunicationSpi.spi(g).blockMessages(
+                    (node, msg) -> node.id().equals(crdId) && sentOutsideExchange(msg));
             }
         }
 
@@ -155,15 +170,18 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         stopGrid(LEAVING);
 
-        for (Ignite g : G.allGrids()) {
-            assertTrue(waitForCondition(() -> {
-                GridDhtPartitionsExchangeFuture fut = ((IgniteEx)g).context().cache().context().exchange()
-                    .lastFinishedFuture();
-
-                return fut != null && fut.topologyVersion().topologyVersion() >= leaveVer;
-            }, getTestTimeout()));
-        }
+        for (Ignite g : G.allGrids())
+            assertTrue(waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer), getTestTimeout()));
 
         return crd;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Whether the message is a partition map sent outside an exchange.
+     */
+    private static boolean sentOutsideExchange(Message msg) {
+        return msg instanceof GridDhtPartitionsSingleMessage
+            && ((GridDhtPartitionsSingleMessage)msg).exchangeId() == null;
     }
 }
