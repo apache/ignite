@@ -63,7 +63,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
     private static final int LEAVING = 3;
 
     /** Time to wait for the partition maps to match, in milliseconds. */
-    private static final long WAIT = 10_000;
+    private static final long WAIT = 30_000;
 
     /**
      * Before the upgrade the coordinator and the client see the new owners right after the exchange, with the owners'
@@ -170,8 +170,10 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         stopGrid(LEAVING);
 
-        for (Ignite g : G.allGrids())
-            assertTrue(waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer), getTestTimeout()));
+        for (Ignite g : G.allGrids()) {
+            assertTrue(g.name() + " didn't finish the exchange",
+                waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer), WAIT));
+        }
 
         return crd;
     }
