@@ -41,12 +41,16 @@ import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -153,6 +157,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     /** Handle binary in interceptor operation flag. */
     protected boolean keepBinaryInInterceptor;
 
+    /** Near entries reserved against eviction for the time of update. */
+    private Map<KeyCacheObject, GridNearCacheEntry> reservedEntries;
+
     /**
      * Constructor.
      *
@@ -211,6 +218,8 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         nearEnabled = CU.isNearEnabled(cctx);
+
+        reservedEntries = nearEnabled ? new GridLeanMap<>() : null;
 
         this.remapCnt = remapCnt;
         this.appAttrs = appAttrs;
@@ -402,6 +411,104 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean onDone(@Nullable Object res, @Nullable Throwable err, boolean cancel) {
+        if (super.onDone(res, err, cancel)) {
+            releaseNearCacheEntries();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Creates near entries for the request keys and reserves them against eviction, so that a concurrent
+     * DHT update and the reordered response always find the entry and are ordered by version.
+     * Reservations are released on future completion; must be called before the future is published via
+     * {@code addAtomicFuture} — a reservation taken after a concurrent completion would never be released.
+     * On remap the future is already published, so a concurrent completion is possible: it is detected
+     * by the nulled reservation map and the reservation is skipped.
+     *
+     * @param req Mapped update request.
+     * @param topVer Update topology version.
+     */
+    protected final void reserveNearCacheEntries(GridNearAtomicAbstractUpdateRequest req, AffinityTopologyVersion topVer) {
+        if (!nearEnabled)
+            return;
+
+        GridNearAtomicCache nearCache = (GridNearAtomicCache)cctx.dht().near();
+
+        for (int i = 0; i < req.size(); i++)
+            reserveNearCacheEntry(nearCache, req.key(i), topVer);
+    }
+
+    /** */
+    private void reserveNearCacheEntry(GridNearAtomicCache nearCache, KeyCacheObject key, AffinityTopologyVersion topVer) {
+        if (cctx.affinityNode() && cctx.affinity().keyLocalNode(key, topVer))
+            return;
+
+        synchronized (this) {
+            // Completed concurrently on remap: a reservation taken now would never be released.
+            if (reservedEntries == null || reservedEntries.containsKey(key))
+                return;
+
+            while (true) {
+                try {
+                    GridNearCacheEntry entry = nearCache.entryExx(key, topVer);
+
+                    entry.reserveEviction();
+
+                    reservedEntries.put(key, entry);
+
+                    return;
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry while reserving near cache entry (will retry): " + key);
+                }
+            }
+        }
+    }
+
+    /**
+     * Releases the reservation for the key once its near update response is applied, so that the entry is
+     * evictable again by the time response processing offers it to the eviction policy.
+     *
+     * @param key Key.
+     */
+    public final void releaseNearCacheEntry(KeyCacheObject key) {
+        GridNearCacheEntry entry;
+
+        synchronized (this) {
+            entry = reservedEntries != null ? reservedEntries.remove(key) : null;
+        }
+
+        if (entry != null)
+            entry.releaseEviction();
+    }
+
+    /** */
+    private void releaseNearCacheEntries() {
+        Map<KeyCacheObject, GridNearCacheEntry> reservedEntries0;
+
+        synchronized (this) {
+            reservedEntries0 = reservedEntries;
+
+            // Null even when empty: marks the future completed for reserveNearCacheEntry.
+            reservedEntries = null;
+        }
+
+        if (reservedEntries0 == null)
+            return;
+
+        for (GridNearCacheEntry entry : reservedEntries0.values()) {
+            entry.releaseEviction();
+
+            entry.touch();
+        }
     }
 
     /**
