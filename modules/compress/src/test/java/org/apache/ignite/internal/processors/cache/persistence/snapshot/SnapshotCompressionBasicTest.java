@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
@@ -57,6 +58,8 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -67,6 +70,9 @@ import org.mockito.Mockito;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.Assume.assumeFalse;
 
 /** */
 public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
@@ -263,6 +269,40 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
             awaitPartitionMapExchange();
         }
+    }
+
+    /** */
+    @Test
+    public void testRestoredPartitionsAreSparse() throws Exception {
+        // Doesn't matter for a single node.
+        assumeFalse(onlyPrimary);
+
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Integer, byte[]> cache = ignite.createCache(new CacheConfiguration<Integer, byte[]>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 4))
+            .setDiskPageCompression(DISK_PAGE_COMPRESSION));
+
+        // Partition files must be well above 64 KiB: the end-of-file preallocation that can make the copy dense (XFS does it)
+        // starts at that size.
+        for (int i = 0; i < 4_000; i++)
+            cache.put(i, new byte[1024]);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        cache.destroy();
+
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        MetricRegistry mreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, DEFAULT_CACHE_NAME));
+
+        long size = mreg.<LongMetric>findMetric("StorageSize").value();
+        long sparseSize = mreg.<LongMetric>findMetric("SparseStorageSize").value();
+
+        // Zero-filled values compress every 8 KiB page into one 4 KiB block, so a sparse group takes about half of its size.
+        assertTrue("sparseSize=" + sparseSize + ", size=" + size, sparseSize < 0.75 * size);
     }
 
     /** {@inheritDoc} */
