@@ -51,7 +51,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     @GridToStringInclude
     private final UUID nodeId;
 
-    /** Lock version. */
+    /** Version of the lock, shared by the base candidate and its reentries. */
     @GridToStringInclude
     private final GridCacheVersion ver;
 
