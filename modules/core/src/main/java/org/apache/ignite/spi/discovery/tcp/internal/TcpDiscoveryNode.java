@@ -108,7 +108,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     /** */
     @GridToStringInclude
     @Order(5)
-    int discPort;
+    volatile int discPort;
 
     /** Node metrics. */
     @GridToStringExclude

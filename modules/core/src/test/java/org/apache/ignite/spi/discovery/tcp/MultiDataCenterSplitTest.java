@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -144,9 +145,15 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         startDCs(dcCnt);
 
-        // Ensure the ports order.
-        for (int g = 0; g < srvrsPerDc * dcCnt; ++g)
-            assertEquals(discoSpi(grid(g)).locNode.discoveryPort(), DFLT_PORT + g);
+        // When blocking DCs, we rely on the ports. It is important for the test. Ensure the strict port order.
+        for (int g = 0; g < srvrsPerDc * dcCnt; ++g) {
+            int port = discoSpi(grid(g)).locNode.discoveryPort();
+
+            if (log.isInfoEnabled())
+                log.info("Node port [nodeIdx=" + g + ", port=" + port + ']');
+
+            assertEquals(port, DFLT_PORT + g);
+        }
 
         // Register the log listeners.
         // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
@@ -251,6 +258,21 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
             for (int ig = srvrsPerDc; ig < srvrsPerDc * 2; ++ig)
                 discoSpi(grid(ig)).block = true;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx startGrid(int idx) throws Exception {
+        LogListener portLsnr = LogListener.matches("Successfully bound to TCP port [port=").build();
+        listeningLog.registerListener(portLsnr);
+
+        IgniteEx ign = super.startGrid(idx);
+
+        // Waits until the node occupies the next port.
+        assertTrue(portLsnr.check(10_000L));
+
+        listeningLog.clearListeners();
+
+        return ign;
     }
 
     /** Creates the test Discovery SPI. */
