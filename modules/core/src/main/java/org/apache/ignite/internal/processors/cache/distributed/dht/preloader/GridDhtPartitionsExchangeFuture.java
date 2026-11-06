@@ -2296,9 +2296,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean cleanIdxRebuildFutures = true;
 
-        Collection<CacheGroupContext> locChangedGrps = new HashSet<>();
-
         try {
+            Collection<CacheGroupContext> locChangedGrps = new HashSet<>();
+
             waitUntilNewCachesAreRegistered();
 
             if (err == null &&
@@ -3516,7 +3516,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * {@link GridDhtPartitionsFullMessage}.
      *
      * @param resTopVer Result topology version.
-     * @return Cache groups where the state of a local partition changed.
+     * @return Cache groups where the local partition map changed.
      */
     private Collection<CacheGroupContext> detectLostPartitions(AffinityTopologyVersion resTopVer) {
         Collection<CacheGroupContext> changedGrps = ConcurrentHashMap.newKeySet();
