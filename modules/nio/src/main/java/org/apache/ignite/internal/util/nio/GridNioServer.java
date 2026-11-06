@@ -285,6 +285,9 @@ public class GridNioServer<T> {
     /** Message factory. */
     private final MessageFactory msgFactory;
 
+    /** Channel registrar or {@code null} to register channels directly. */
+    @Nullable private volatile NioChannelRegistrar channelRegistrar;
+
     /**
      * @param addr Address.
      * @param port Port.
@@ -490,6 +493,25 @@ public class GridNioServer<T> {
      */
     public static <T> Builder<T> builder() {
         return new Builder<>();
+    }
+
+    /**
+     * Installs a channel registrar that intercepts the registration of channels with the selector while
+     * NIO sessions are established, or passes {@code null} to register channels directly again.
+     *
+     * <p>Intended for testing only: it lets a test stall or fail a registration deterministically, for
+     * example to verify that a channel closed before the registration completes the session creation
+     * future. The production code path never installs a registrar. The registrar is meant to be
+     * installed before or during a controlled test flow; swapping the registrar while a registration
+     * is in progress is not a defined use case.</p>
+     *
+     * <p>The method is public because the tests that use it live in a different build module, where
+     * package-private access is not possible.</p>
+     *
+     * @param registrar Channel registrar or {@code null} to register channels directly.
+     */
+    public void setChannelRegistrar(@Nullable NioChannelRegistrar registrar) {
+        this.channelRegistrar = registrar;
     }
 
     /**
@@ -2769,37 +2791,68 @@ public class GridNioServer<T> {
 
                 SelectionKey key;
 
+                if (!sockCh.isRegistered()) {
+                    assert fut.op == NioOperation.REGISTER : fut.op;
+
+                    NioChannelRegistrar registrar = channelRegistrar;
+
+                    try {
+                        key = registrar != null ?
+                            registrar.register(sockCh, selector, SelectionKey.OP_READ, ses) :
+                            sockCh.register(selector, SelectionKey.OP_READ, ses);
+                    }
+                    catch (ClosedChannelException e) {
+                        // The channel was closed before or while it was being registered: complete the future
+                        // with the registration error, so the caller observes the failure and can retry instead
+                        // of waiting on a future that stays pending. The registration failed, so there is no
+                        // session or selection key to clean up.
+                        CommonUtils.warn(log, "Failed to register socket channel to selector (channel was closed): "
+                            + sock.getRemoteSocketAddress(), e);
+
+                        fut.onDone(new IgniteCheckedException(
+                            "Failed to register socket channel to selector (channel was closed)", e));
+
+                        return;
+                    }
+                    catch (IOException e) {
+                        // Complete the future with the registration error, so the caller observes the failure
+                        // and can retry instead of waiting on a future that stays pending. The registration
+                        // failed, so there is no session or selection key to clean up.
+                        CommonUtils.error(log, "Failed to register socket channel to selector.", e);
+
+                        fut.onDone(new IgniteCheckedException("Failed to register socket channel to selector", e));
+
+                        return;
+                    }
+
+                    ses.key(key);
+
+                    resend(ses);
+                }
+                else {
+                    assert fut.op == NioOperation.CONNECT : fut.op;
+
+                    key = sockCh.keyFor(selector);
+
+                    key.attach(ses);
+
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_CONNECT));
+                    key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+
+                    ses.key(key);
+                }
+
+                sessions.add(ses);
+                workerSessions.add(ses);
+
                 try {
-                    if (!sockCh.isRegistered()) {
-                        assert fut.op == NioOperation.REGISTER : fut.op;
-
-                        key = sockCh.register(selector, SelectionKey.OP_READ, ses);
-
-                        ses.key(key);
-
-                        resend(ses);
-                    }
-                    else {
-                        assert fut.op == NioOperation.CONNECT : fut.op;
-
-                        key = sockCh.keyFor(selector);
-
-                        key.attach(ses);
-
-                        key.interestOps(key.interestOps() & (~SelectionKey.OP_CONNECT));
-                        key.interestOps(key.interestOps() | SelectionKey.OP_READ);
-
-                        ses.key(key);
-                    }
-
-                    sessions.add(ses);
-                    workerSessions.add(ses);
-
                     filterChain.onSessionOpened(ses);
 
                     fut.onDone(ses);
                 }
                 catch (IgniteCheckedException e) {
+                    // The session is registered at this point: close it to clean up the channel and the
+                    // selection key.
                     close(ses, e);
 
                     fut.onDone(e);
@@ -2809,11 +2862,21 @@ public class GridNioServer<T> {
                     ses.onServerStopped();
             }
             catch (ClosedChannelException e) {
-                CommonUtils.warn(log, "Failed to register accepted socket channel to selector (channel was closed): "
+                // The channel was closed while the socket addresses were being resolved, before the
+                // registration: complete the future so the caller does not wait on a future that stays
+                // pending. Nothing is registered yet, so there is no session or selection key to clean up.
+                CommonUtils.warn(log, "Failed to create NIO session (channel was closed): "
                     + sock.getRemoteSocketAddress(), e);
+
+                fut.onDone(new IgniteCheckedException("Failed to create NIO session (channel was closed)", e));
             }
             catch (IOException e) {
+                // Failed to resolve the socket addresses, before the registration: complete the future so the
+                // caller does not wait on a future that stays pending. Nothing is registered yet, so there is
+                // no session or selection key to clean up.
                 CommonUtils.error(log, "Failed to get socket addresses.", e);
+
+                fut.onDone(new IgniteCheckedException("Failed to get socket addresses.", e));
             }
         }
 

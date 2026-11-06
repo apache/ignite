@@ -160,7 +160,7 @@ public class ConnectionClientPool {
     private final ScheduledExecutorService handshakeTimeoutExecutorService;
 
     /** Enable forcible node kill. */
-    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
+    private final boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /** */
@@ -185,7 +185,7 @@ public class ConnectionClientPool {
         TcpCommunicationConfiguration cfg,
         AttributeNames attrs,
         IgniteLogger log,
-        TcpCommunicationMetricsListener metricsLsnr,
+        @Nullable TcpCommunicationMetricsListener metricsLsnr,
         Supplier<ClusterNode> locNodeSupplier,
         Function<UUID, ClusterNode> nodeGetter,
         Supplier<MessageFormatter> msgFormatterSupplier,
@@ -236,10 +236,8 @@ public class ConnectionClientPool {
         metrics.clear();
 
         for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
-            if (fut instanceof ConnectionRequestFuture) {
-                // There's no way it would be done by itself at this point.
-                fut.onDone(new IgniteSpiException("SPI is being stopped."));
-            }
+            // First completion wins: if the creating thread completes the future first, this call has no effect.
+            fut.onDone(new IgniteSpiException("SPI is being stopped."));
         }
 
         handshakeTimeoutExecutorService.shutdown();
@@ -277,6 +275,20 @@ public class ConnectionClientPool {
             if (log.isDebugEnabled())
                 log.debug("The node client is going to reserve a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + "]");
 
+            // Total budget for the whole reservation: the same overall timeout that bounds a connection
+            // establishment, so that threads waiting on a connect future are released within that budget
+            // instead of blocking indefinitely. The budget bounds only the time spent waiting for a
+            // connection to be established; a client that already exists is returned regardless of the
+            // budget. The wait for a peer-initiated (inverse) connection after a failed direct attempt is
+            // not covered by this budget: it has its own bounded window, because the failed direct
+            // attempts have already consumed it.
+            long totalReserveTimeout =
+                CommunicationTcpUtils.totalConnectionEstablishmentTimeout(cfg, clusterStateProvider, node);
+
+            // Use a monotonic clock for the budget: the system wall clock can be adjusted, which would make
+            // the elapsed-time based give-up check unreliable.
+            long reserveStartNanos = System.nanoTime();
+
             while (true) {
                 GridCommunicationClient[] curClients = clients.get(nodeId);
 
@@ -284,6 +296,13 @@ public class ConnectionClientPool {
                     curClients[connIdx] : null;
 
                 if (client == null) {
+                    // The reserve budget bounds waiting for a connection to be established, not the
+                    // availability of an existing client: check it only when no client is available, so
+                    // that a client established by a concurrent thread in the meantime is returned even
+                    // if the budget has already elapsed.
+                    if (reserveElapsedMillis(reserveStartNanos) >= totalReserveTimeout)
+                        throw reserveTimeoutException(node, totalReserveTimeout);
+
                     if (stopping)
                         throw new IgniteSpiException("Node is stopping.");
 
@@ -293,6 +312,15 @@ public class ConnectionClientPool {
                     ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
                     GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
+
+                    // Client established by this thread itself. When the thread reserving a connection is also
+                    // the one that creates it, it can return that client directly instead of waiting on the
+                    // shared future. The establishment already respected the connection deadline, so re-entering
+                    // the wait/budget loop below (meant for threads waiting on another thread's future) could only
+                    // reject a valid client once the reservation budget has elapsed. The fast path is taken only
+                    // when this thread won the completion race for the shared future; if stop() completed it
+                    // first, the client is dropped and the error carried by the future is propagated.
+                    GridCommunicationClient ownClient = null;
 
                     if (oldFut == null) {
                         try {
@@ -329,12 +357,30 @@ public class ConnectionClientPool {
                                 }
                             }
 
-                            fut.onDone(client0);
+                            // Fast path only if this call actually completed the shared future with the own
+                            // client. If stop() (or another completion) won the race, the future already
+                            // carries that outcome and the client must not be published: remove and close it,
+                            // then let the wait loop below propagate the pending error.
+                            if (fut.onDone(client0))
+                                ownClient = client0;
+                            else if (client0 != null) {
+                                if (removeNodeClient(nodeId, client0))
+                                    client0.forceClose();
+                            }
                         }
                         catch (NodeUnreachableException e) {
                             log.warning(e.getMessage());
 
                             fut = handleUnreachableNodeException(node, connIdx, fut, e);
+
+                            // The method returns only if the inverse connection has been established within
+                            // its own bounded wait window, so the returned future is already done: take the
+                            // client directly, like the own-client fast path above, instead of re-entering
+                            // the wait/budget loop below. That loop bounds threads waiting on another
+                            // thread's in-progress connection; the reservation budget has already been
+                            // consumed by the failed direct attempts, so re-entering it would reject a
+                            // valid client.
+                            ownClient = fut.get();
                         }
                         catch (Throwable e) {
                             if (e instanceof NodeUnreachableException)
@@ -355,33 +401,67 @@ public class ConnectionClientPool {
                     else
                         fut = oldFut;
 
-                    long clientReserveWaitTimeout = registry != null ? registry.getSystemWorkerBlockedTimeout() / 3
-                        : cfg.connectionTimeout() / 3;
+                    if (ownClient != null)
+                        client = ownClient;
 
-                    long currTimeout = System.currentTimeMillis();
+                    if (client == null) {
+                        long perWaitTimeout = registry != null ?
+                            registry.getSystemWorkerBlockedTimeout() / 3 : cfg.connectionTimeout() / 3;
 
-                    // This cycle will eventually quit when future is completed by concurrent thread reserving client.
-                    while (true) {
-                        try {
-                            client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
+                        long currTimeout = System.currentTimeMillis();
 
-                            break;
-                        }
-                        catch (IgniteFutureTimeoutCheckedException ignored) {
-                            currTimeout += clientReserveWaitTimeout;
+                        // This cycle will eventually quit when future is completed by concurrent thread reserving client.
+                        while (true) {
+                            // A concurrent thread may have established the client while this thread was
+                            // waiting: return it instead of waiting further or giving up, even if the
+                            // reserve budget has already elapsed — the budget bounds waiting for a
+                            // connection, not the availability of an existing client.
+                            GridCommunicationClient[] curClients0 = clients.get(nodeId);
 
-                            if (log.isDebugEnabled()) {
-                                log.debug(
-                                    "Still waiting for reestablishing connection to node " +
-                                        "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
-                                );
+                            GridCommunicationClient curClient = curClients0 != null && connIdx < curClients0.length ?
+                                curClients0[connIdx] : null;
+
+                            if (curClient != null) {
+                                client = curClient;
+
+                                break;
                             }
 
-                            if (registry != null) {
-                                GridWorker wrkr = registry.worker(Thread.currentThread().getName());
+                            // Recompute the remaining budget on every iteration and cap the individual
+                            // wait by it, so that the total reserve budget is enforced even when a single
+                            // wait would overshoot it. When the per-wait timeout is not configured (0),
+                            // e.g. because the system worker blocked timeout is set to a non-positive
+                            // value, wait the full remaining budget instead of aborting before it has
+                            // elapsed.
+                            long remainingReserveBudget = totalReserveTimeout - reserveElapsedMillis(reserveStartNanos);
 
-                                if (wrkr != null)
-                                    wrkr.updateHeartbeat();
+                            long clientReserveWaitTimeout = perWaitTimeout > 0 ?
+                                Math.min(perWaitTimeout, remainingReserveBudget) : remainingReserveBudget;
+
+                            if (clientReserveWaitTimeout <= 0)
+                                throw reserveTimeoutException(node, totalReserveTimeout);
+
+                            try {
+                                client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
+
+                                break;
+                            }
+                            catch (IgniteFutureTimeoutCheckedException ignored) {
+                                currTimeout += clientReserveWaitTimeout;
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug(
+                                        "Still waiting for reestablishing connection to node " +
+                                            "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
+                                    );
+                                }
+
+                                if (registry != null) {
+                                    GridWorker wrkr = registry.worker(Thread.currentThread().getName());
+
+                                    if (wrkr != null)
+                                        wrkr.updateHeartbeat();
+                                }
                             }
                         }
                     }
@@ -417,10 +497,39 @@ public class ConnectionClientPool {
     }
 
     /**
+     * @param startNanos Monotonic start timestamp from {@link System#nanoTime()}.
+     * @return Elapsed time in milliseconds, computed from the monotonic clock only.
+     */
+    private static long reserveElapsedMillis(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
+    /**
+     * @param node                Node to reserve a client to.
+     * @param totalReserveTimeout Total reserve budget in milliseconds.
+     * @return Exception that reports the exhausted reserve budget.
+     */
+    private static IgniteSpiException reserveTimeoutException(ClusterNode node, long totalReserveTimeout) {
+        return new IgniteSpiException("Failed to reserve a client to node " + node + " within " +
+            totalReserveTimeout + " ms");
+    }
+
+    /**
      * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open connection.
      * The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
      * Specifics of triggers implementation technically should be considered unknown, but for now it's not true and we
      * expect that {@link NodeUnreachableException} won't be thrown in {@link IgniteDiscoveryThread}.
+     *
+     * <p>The wait for the peer-initiated (inverse) connection is bounded by its own window (the failure
+     * detection timeout, or the connection timeout when the failure detection timeout is disabled)
+     * instead of the reservation budget of {@link #reserveClient(ClusterNode, int)}: the failed direct
+     * connection attempts that produced the {@link NodeUnreachableException} have already consumed that
+     * budget, so capping the wait by its remainder would suppress the inverse-connection protocol
+     * altogether. The synchronous {@code connectionRequestor().request(node, connIdx)} call precedes the
+     * bounded wait and its duration is not covered by that window either, so this path relies on the
+     * requestor returning promptly ({@link ConnectionRequestor#request(ClusterNode, int)}): a requestor
+     * that blocked there indefinitely would leave the triggering thread unreleased by the reservation
+     * budget as well.</p>
      *
      * @param node Node to open connection to.
      * @param connIdx Connection index.
@@ -462,6 +571,10 @@ public class ConnectionClientPool {
             try {
                 cfg.connectionRequestor().request(node, connIdx);
 
+                // The wait for the inverse connection gets its own bounded window (the failure
+                // detection timeout, or the connection timeout when the failure detection timeout is
+                // disabled) instead of the reservation budget, which the failed direct attempts have
+                // already consumed. The request call above is not covered by this window.
                 long failTimeout = cfg.failureDetectionTimeoutEnabled()
                     ? cfg.failureDetectionTimeout()
                     : cfg.connectionTimeout();
