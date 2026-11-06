@@ -799,23 +799,15 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType
-                && ldr != null
-                && !ldr.equals(CommonUtils.gridClassLoader())
-                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null) {
+            if (userType && isCustomLoader(ldr) && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
-            }
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType
-                && ldr != null
-                && !ldr.equals(CommonUtils.gridClassLoader())
-                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null) {
+            if (userType && isCustomLoader(ldr) && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
-            }
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
         }
