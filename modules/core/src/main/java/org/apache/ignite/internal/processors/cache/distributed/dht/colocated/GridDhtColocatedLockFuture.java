@@ -602,7 +602,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
         }
         else if (timeoutObj != null) {
-            // Serialized with the registration of explicit lock candidates, see map().
             synchronized (timeoutObj) {
                 return onComplete(false, true);
             }
@@ -942,9 +941,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (tx != null || timeoutObj == null)
                 map0(keys, remap, topLocked);
             else {
-                // Candidates registered after the future has been completed by the timeout or cancellation are never
-                // released: undoLocks() has already run. The completion holds the same monitor, so the mapping is
-                // atomic with it. Transactions release their candidates on rollback instead.
+                // Same monitor as in the timeout and cancel(); transactions release their candidates on rollback.
                 synchronized (timeoutObj) {
                     if (!isDone())
                         map0(keys, remap, topLocked);
