@@ -387,7 +387,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 cand.topologyVersion(topVer);
             }
             else
-                cand = cand.reenter();
+                cand = cand.reenter(lockVer);
 
             cctx.mvcc().addExplicitLock(threadId, cand, topVer);
         }
@@ -599,6 +599,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     catch (InterruptedException ignore) {
                         // Ignore interrupts.
                     }
+            }
+        }
+        else if (timeoutObj != null) {
+            synchronized (timeoutObj) {
+                return onComplete(false, true);
             }
         }
 
@@ -933,10 +938,15 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      */
     private void map(Collection<KeyCacheObject> keys, boolean remap, boolean topLocked) {
         try {
-            map0(
-                keys,
-                remap,
-                topLocked);
+            if (tx != null || timeoutObj == null)
+                map0(keys, remap, topLocked);
+            else {
+                // Same monitor as in the timeout and cancel(); transactions release their candidates on rollback.
+                synchronized (timeoutObj) {
+                    if (!isDone())
+                        map0(keys, remap, topLocked);
+                }
+            }
         }
         catch (IgniteCheckedException ex) {
             onDone(false, ex);

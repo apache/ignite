@@ -147,7 +147,8 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * Removes lock by key and optional version.
      *
      * @param key Key.
-     * @param ver Version (or {@code null} if any candidate should be removed.)
+     * @param ver Version of the lock or {@code null} to remove its latest candidate, the version of a nested lock
+     *     future to remove only its reentry.
      * @return Removed candidate if matches given parameters.
      */
     public GridCacheMvccCandidate removeCandidate(IgniteTxKey key, @Nullable GridCacheVersion ver) {
@@ -165,32 +166,33 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
                 GridCacheMvccCandidate first = deque.peekFirst();
 
-                if (ver == null || first.version().equals(ver)) {
-                    GridCacheMvccCandidate reentry = first.unenter();
+                boolean heldLock = ver == null || first.version().equals(ver);
 
-                    if (reentry != null) {
-                        assert reentry.reentry() : reentry;
+                GridCacheMvccCandidate reentry = first.unenter(heldLock ? null : ver);
 
-                        boolean rmvd = false;
+                if (reentry != null) {
+                    assert reentry.reentry() : reentry;
 
-                        Iterator<GridCacheMvccCandidate> it = deque.iterator();
+                    boolean rmvd = false;
 
-                        while (it.hasNext()) {
-                            if (it.next() == reentry) {
-                                it.remove();
+                    Iterator<GridCacheMvccCandidate> it = deque.iterator();
 
-                                rmvd = true;
+                    while (it.hasNext()) {
+                        if (it.next() == reentry) {
+                            it.remove();
 
-                                break;
-                            }
+                            rmvd = true;
+
+                            break;
                         }
-
-                        assert rmvd : reentry;
-
-                        cand = reentry;
                     }
-                    else
-                        cand = deque.removeFirst();
+
+                    assert rmvd : reentry;
+
+                    cand = reentry;
+                }
+                else if (heldLock) {
+                    cand = deque.removeFirst();
 
                     if (deque.isEmpty())
                         cands.remove(cand.key());

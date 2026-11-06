@@ -51,7 +51,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     @GridToStringInclude
     private final UUID nodeId;
 
-    /** Lock version. */
+    /** Version of the lock, shared by the base candidate and its reentries. */
     @GridToStringInclude
     private final GridCacheVersion ver;
 
@@ -69,6 +69,9 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
 
     /** Linked reentry. */
     private GridCacheMvccCandidate reentry;
+
+    /** Version of the explicit lock future that created this reentry, see {@link #unenter(GridCacheVersion)}. */
+    private GridCacheVersion reentryVer;
 
     /** Previous lock for the thread. */
     @GridToStringExclude
@@ -195,9 +198,10 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
+     * @param reentryVer Version of the lock future that creates the reentry.
      * @return Reentry candidate.
      */
-    public GridCacheMvccCandidate reenter() {
+    public GridCacheMvccCandidate reenter(GridCacheVersion reentryVer) {
         GridCacheMvccCandidate old = reentry;
 
         GridCacheMvccCandidate reentry = new GridCacheMvccCandidate(
@@ -217,6 +221,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
             read());
 
         reentry.topVer = topVer;
+        reentry.reentryVer = reentryVer;
 
         if (old != null)
             reentry.reentry = old;
@@ -227,10 +232,11 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
+     * @param reentryVer Version of the lock future that created the latest reentry, {@code null} to unlink it anyway.
      * @return Removed reentry candidate or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate unenter() {
-        if (reentry != null) {
+    @Nullable public GridCacheMvccCandidate unenter(@Nullable GridCacheVersion reentryVer) {
+        if (reentry != null && (reentryVer == null || reentryVer.equals(reentry.reentryVer))) {
             GridCacheMvccCandidate old = reentry;
 
             // Link to next.
