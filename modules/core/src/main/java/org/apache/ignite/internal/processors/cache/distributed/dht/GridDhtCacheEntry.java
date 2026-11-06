@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
@@ -314,6 +315,34 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         checkOwnerChanged(prev, owner, val);
 
         return cand;
+    }
+
+    /**
+     * Checks a conditional lock after this transaction became the MVCC owner and before acknowledging the lock.
+     * The entry mutex protects both the owner test and the data-version comparison. After it is released, the
+     * transaction's MVCC ownership prevents another transactional writer from changing the version until unlock.
+     * Merely registering an MVCC candidate is not sufficient: a preceding owner may commit while it is waiting.
+     *
+     * @param lockVer Transaction lock version (not the expected data version).
+     * @param expVer Expected data version.
+     * @return Whether this transaction owns a present entry with the expected version.
+     * @throws GridCacheEntryRemovedException If the entry is obsolete.
+     */
+    boolean checkLockVersion(GridCacheVersion lockVer, GridCacheVersion expVer)
+        throws GridCacheEntryRemovedException {
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            long expireTime = expireTimeExtras();
+
+            return lockedBy(lockVer) && hasValueUnlocked() && expVer.equals(ver)
+                && (expireTime == 0 || expireTime > U.currentTimeMillis());
+        }
+        finally {
+            unlockEntry();
+        }
     }
 
     /** {@inheritDoc} */

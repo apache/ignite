@@ -597,7 +597,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         boolean retval,
         @Nullable TransactionIsolation isolation,
         long createTtl,
-        long accessTtl) {
+        long accessTtl,
+        boolean skipLocked) {
         return dht.lockAllAsync(null, timeout);
     }
 

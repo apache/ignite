@@ -76,6 +76,8 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.ExchangeFailureMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheUnlockRequestOptions;
+import org.apache.ignite.internal.processors.cache.GridCacheUnlockResponse;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
@@ -530,6 +532,8 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(GridDistributedLockResponse.class);
         register(GridDhtTxOnePhaseCommitAckRequest.class);
         register(TransactionAttributesAwareRequest.class);
+        register(GridCacheUnlockRequestOptions.class);
+        register(GridCacheUnlockResponse.class);
 
         // [10300 - 10500]: Cache, DHT messages.
         msgIdx = 10300;

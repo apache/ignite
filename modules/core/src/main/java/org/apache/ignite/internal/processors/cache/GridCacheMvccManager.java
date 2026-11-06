@@ -306,6 +306,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         exchLog = cctx.logger(getClass().getName() + ".exchange");
 
+        cctx.io().addCacheHandler(GridCacheUnlockResponse.class, (nodeId, res) -> {
+            GridCacheFuture<?> fut = future(res.futId);
+
+            if (fut instanceof GridCacheUnlockFuture)
+                ((GridCacheUnlockFuture)fut).onResult(nodeId, res);
+        });
+
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         cctx.kernalContext().systemView().registerInnerCollectionView(

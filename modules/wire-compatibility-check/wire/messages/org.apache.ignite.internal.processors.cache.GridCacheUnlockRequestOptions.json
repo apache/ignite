@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.GridCacheUnlockRequestOptions",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"},
+    {"order": 1, "type": "long", "name": "timeout"}
+  ]
+}

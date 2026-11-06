@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicNearResponse;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -434,6 +436,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if message processed.
      */
     private boolean processMissedHandler(UUID nodeId, GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridDhtUnlockRequest) {
+            GridDhtUnlockRequest req = (GridDhtUnlockRequest)cacheMsg;
+
+            // A closed near reader has no state to release. Missing DHT handlers must not acknowledge backup locks.
+            if (req.unlockOptions != null && F.isEmpty(req.keys()) && !F.isEmpty(req.nearKeys())
+                && cctx.cacheContext(req.cacheId()) == null) {
+                sendMessageForMissedHandler(req,
+                    nodeId,
+                    new GridCacheUnlockResponse(req.unlockOptions.futId, null),
+                    nodeId,
+                    GridIoPolicy.SYSTEM_POOL);
+
+                return true;
+            }
+        }
+
         // It is possible to receive reader update after client near cache was closed.
         if (cacheMsg instanceof GridDhtAtomicAbstractUpdateRequest) {
             GridDhtAtomicAbstractUpdateRequest req = (GridDhtAtomicAbstractUpdateRequest)cacheMsg;
