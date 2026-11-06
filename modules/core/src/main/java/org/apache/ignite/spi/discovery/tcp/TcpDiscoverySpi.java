@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
@@ -418,18 +417,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
-
-    /**
-     * @deprecated Unused.
-     */
-    @Deprecated
-    protected SSLServerSocketFactory sslSrvSockFactory;
-
-    /**
-     * @deprecated Unused.
-     */
-    @Deprecated
-    protected SSLSocketFactory sslSockFactory;
 
     /** */
     @GridToStringExclude
@@ -2188,9 +2175,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
                 sslSockFactorySupplier = sslFactory instanceof AbstractSslContextFactory
                     ? () -> sslFactory.create().getSocketFactory() : () -> initSockFactory;
-
-                sslSockFactory = initSockFactory;
-                sslSrvSockFactory = sslCtx.getServerSocketFactory();
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: " + sslFactory, e);

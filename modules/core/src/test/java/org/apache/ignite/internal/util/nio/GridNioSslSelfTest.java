@@ -50,7 +50,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
     /** A failed context lookup leaves the NIO worker available. */
     @Test
     public void testContextLookupFailure() throws Exception {
-        AtomicBoolean failLookup = new AtomicBoolean(true);
+        AtomicBoolean failLookup = new AtomicBoolean();
 
         SslContextFactory sslCtxFactory = new SslContextFactory() {
             /** */
@@ -87,12 +87,14 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .logger(log)
             .selectorCount(1)
             .byteOrder(ByteOrder.nativeOrder())
-            .filters(U.sslFilter(sslCtxFactory, sslCtx, false, ByteOrder.nativeOrder(), log, null))
+            .filters(U.sslFilter(sslCtxFactory, false, ByteOrder.nativeOrder(), log, null))
             .build();
 
         srv.start();
 
         try {
+            failLookup.set(true);
+
             InetSocketAddress addr = new InetSocketAddress(U.getLocalHost(), srv.port());
 
             try (Socket sock = new Socket()) {

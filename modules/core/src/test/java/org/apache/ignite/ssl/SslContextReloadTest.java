@@ -20,9 +20,11 @@ package org.apache.ignite.ssl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.SocketException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -62,6 +64,44 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         stopAllGrids();
+    }
+
+    /** */
+    @Test
+    public void testRestRetainsContextOnPortRetry() throws Exception {
+        SSLContext replacement = sslTrustedFactory("node02", "trusttwo").create();
+        AtomicReference<SSLContext> ctx = new AtomicReference<>(sslTrustedFactory("node01", "trustone").create());
+
+        for (int attempt = 0; attempt < 10; attempt++) {
+            try (ServerSocket occupied = new ServerSocket()) {
+                occupied.bind(new InetSocketAddress("127.0.0.1", 0));
+
+                if (occupied.getLocalPort() > 65_525)
+                    continue;
+
+                IgniteEx node = startGrid(0, cfg -> {
+                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+                    cfg.setClientConnectorConfiguration(null)
+                        .setConnectorConfiguration(new ConnectorConfiguration()
+                            .setHost("127.0.0.1")
+                            .setPort(occupied.getLocalPort())
+                            .setPortRange(10)
+                            .setSslEnabled(true)
+                            .setSslClientAuth(true)
+                            .setSslFactory(() -> ctx.getAndSet(replacement)));
+                });
+
+                int port = node.localNode().attribute(ATTR_REST_TCP_PORT);
+
+                assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
+                assertCertificate(port, "node01", "trustone", "CN=node01");
+
+                return;
+            }
+        }
+
+        fail("Could not allocate a port with room for REST retries");
     }
 
     /** An established thin client survives rotation. */

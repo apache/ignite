@@ -7734,7 +7734,6 @@ public abstract class IgniteUtils extends CommonUtils {
      * Creates an SSL NIO filter, wiring its metrics from the given registry.
      *
      * @param sslCtxFactory Configured SSL context factory.
-     * @param sslCtx SSL context obtained at transport startup.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -7743,12 +7742,13 @@ public abstract class IgniteUtils extends CommonUtils {
      */
     public static GridNioSslFilter sslFilter(
         Factory<SSLContext> sslCtxFactory,
-        SSLContext sslCtx,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
         @Nullable MetricRegistryImpl mreg
     ) {
+        SSLContext sslCtx = sslCtxFactory.create();
+
         LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
             GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
             new long[] {250, 500, 1000},
