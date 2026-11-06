@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.SortedSegmente
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
@@ -220,7 +222,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
 
         for (int i = 0; i < idxFieldMapping.size(); ++i) {
             int fieldIdx = idxFieldMapping.getInt(i);
-            Object key = rowHnd.get(fieldIdx, bound);
+            Object key = transformIndexKey(rowHnd.get(fieldIdx, bound));
 
             if (key != ectx.unspecifiedValue()) {
                 key = TypeUtils.fromInternal(ectx, key, fieldsStoreTypes[fieldIdx]);
@@ -484,6 +486,22 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
+        }
+    }
+
+    Object transformIndexKey(Object o) {
+        if (idxFieldMapping.indexOf(2) < 0) {
+            return o;
+        }
+
+        try {
+            byte[] bytes = Base64.getDecoder().decode((String) o);
+
+            CacheObjectContext ctx = desc.cacheContext().cacheObjectContext();
+
+            return kctx.cacheObjects().unmarshal(ctx, bytes, null);
+        } catch (Exception e) {
+            throw new IgniteException("Failed to transform index key value: " + o, e);
         }
     }
 }
