@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.security;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,8 +29,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
 import org.junit.Assume;
 import org.junit.Test;
@@ -46,11 +50,17 @@ import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
  * Command line handler test with SSL and security.
  */
 public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFactoryAbstractTest {
+    /** Login of an operator other than the node, so that the log names the operator and not the node. */
+    private static final String OPERATOR = "sslOperator";
+
     /** Login. */
     private final String login = "testUsr";
 
     /** Password. */
     private final String pwd = "testPwd";
+
+    /** Captures reload messages from the node. */
+    private final ListeningTestLogger nodeLog = new ListeningTestLogger(log);
 
     /** System out. */
     protected static PrintStream sysOut;
@@ -98,8 +108,10 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false))
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+            .setPluginProviders(new TestSecurityPluginProvider(login, pwd, ALL_PERMISSIONS, null, false,
+                new TestSecurityData(OPERATOR, pwd, ALL_PERMISSIONS, new Permissions())))
+            .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
+            .setGridLogger(nodeLog);
 
         if (commandHandler.equals(CLI_CMD_HND)) {
             cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
@@ -199,6 +211,25 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommandHandlerFac
         assertContains(log, testOutput, "--password *****");
         assertContains(log, testOutput, "--keystore-password *****");
         assertContains(log, testOutput, "--truststore-password *****");
+    }
+
+    /** The node logs the login of whoever ran the reload. */
+    @Test
+    public void testReloadLogsLogin() throws Exception {
+        IgniteEx crd = startGrid();
+
+        LogListener logged = LogListener.matches("initiator=management command, originNodeId=" + crd.localNode().id() +
+            ", login=" + OPERATOR + ", address=").build();
+
+        nodeLog.registerListener(logged);
+
+        int exitCode = newCommandHandler().execute(Arrays.asList("--ssl", "reload", "--yes",
+            "--user", OPERATOR, "--password", pwd,
+            "--keystore", keyStorePath("thinClient"), "--keystore-password", keyStorePassword(),
+            "--truststore", keyStorePath("trusttwo"), "--truststore-password", keyStorePassword()));
+
+        assertEquals(EXIT_CODE_OK, exitCode);
+        assertTrue("The reload log must identify the operator", logged.check());
     }
 
     /**
