@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// The default eviction threshold.
         /// </summary>
-        public const double DefaultEvictionThreshold = 0.9;
+        public const double DefaultEvictionThreshold = 0.95;
 
         /// <summary>
         /// The default empty pages pool size.
@@ -179,6 +179,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Gets or sets the threshold for memory pages eviction initiation. For instance, if the threshold is 0.9
         /// it means that the page memory will start the eviction only after 90% of the memory region is occupied.
+        /// Default is 0.95.
         /// </summary>
         [DefaultValue(DefaultEvictionThreshold)]
         public double EvictionThreshold { get; set; }
