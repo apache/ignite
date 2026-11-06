@@ -650,10 +650,7 @@ public class TxTask
                 return new GridFinishedFuture<>();
 
             if (tx.state() == TransactionState.PREPARED)
-                remote.doneRemote(tx.xidVersion(),
-                    Collections.<GridCacheVersion>emptyList(),
-                    Collections.<GridCacheVersion>emptyList(),
-                    Collections.<GridCacheVersion>emptyList());
+                remote.doneRemote(tx.xidVersion());
 
             return tx.rollbackAsync();
         }

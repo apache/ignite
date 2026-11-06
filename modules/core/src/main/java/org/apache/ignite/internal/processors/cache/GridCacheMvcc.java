@@ -913,16 +913,9 @@ public final class GridCacheMvcc {
      * Sets remote candidate to done.
      *
      * @param ver Version.
-     * @param pending Pending versions.
-     * @param committed Committed versions.
-     * @param rolledback Rolledback versions.
      * @return Lock owner.
      */
-    @Nullable public CacheLockCandidates doneRemote(
-        GridCacheVersion ver,
-        Collection<GridCacheVersion> pending,
-        Collection<GridCacheVersion> committed,
-        Collection<GridCacheVersion> rolledback) {
+    @Nullable public CacheLockCandidates doneRemote(GridCacheVersion ver) {
         assert ver != null;
 
         if (log.isDebugEnabled())
@@ -939,31 +932,6 @@ public final class GridCacheMvcc {
 
             cand.setOwner();
             cand.setUsed();
-
-            List<GridCacheMvccCandidate> mvAfter = null;
-
-            for (ListIterator<GridCacheMvccCandidate> it = rmts.listIterator(); it.hasNext(); ) {
-                GridCacheMvccCandidate c = it.next();
-
-                assert !c.nearLocal() : "Remote candidate marked as near local: " + c;
-
-                if (c == cand) {
-                    if (mvAfter != null)
-                        for (GridCacheMvccCandidate mv : mvAfter)
-                            it.add(mv);
-
-                    break;
-                }
-                else if (!committed.contains(c.version()) && !rolledback.contains(c.version()) &&
-                    pending.contains(c.version())) {
-                    it.remove();
-
-                    if (mvAfter == null)
-                        mvAfter = new LinkedList<>();
-
-                    mvAfter.add(c);
-                }
-            }
         }
 
         return allOwners();

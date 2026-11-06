@@ -2272,10 +2272,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (tx instanceof IgniteTxRemoteEx) {
             IgniteTxRemoteEx rmtTx = (IgniteTxRemoteEx)tx;
 
-            rmtTx.doneRemote(tx.xidVersion(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList());
+            rmtTx.doneRemote(tx.xidVersion());
         }
 
         if (commit)
