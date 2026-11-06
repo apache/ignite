@@ -373,8 +373,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Runs a query over the cache on a node that may still see a lost partition without an owner. Does nothing here:
-     * scans and key operations don't fail in that case. The SQL subclass runs a SQL query.
+     * Does nothing: scans and key operations don't fail while a node sees no owner. The SQL subclass runs a query.
      *
      * @param node Node.
      */
@@ -409,17 +408,15 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Under the IGNORE policy runs a query on each viewer. Then checks that the partition map of each viewer matches
-     * the local states of the nodes.
+     * Runs a query on each viewer. Then checks that the partition map of each viewer matches the local states of the
+     * nodes.
      *
      * @param viewers Nodes whose partition maps are checked.
      * @throws Exception If failed.
      */
     private void checkNodes(IgniteEx... viewers) throws Exception {
-        if (plc == IGNORE) {
-            for (IgniteEx viewer : viewers)
-                runQuery(viewer);
-        }
+        for (IgniteEx viewer : viewers)
+            runQuery(viewer);
 
         for (IgniteEx viewer : viewers) {
             if (!waitForCondition(() -> mismatches(viewer, CACHE).isEmpty(), WAIT)) {
@@ -488,7 +485,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
      * @param topVer Topology version.
      * @return Whether the node has finished the exchange for the topology version.
      */
-    private boolean exchangeFinished(IgniteEx node, long topVer) {
+    static boolean exchangeFinished(IgniteEx node, long topVer) {
         GridDhtPartitionsExchangeFuture fut = node.context().cache().context().exchange().lastFinishedFuture();
 
         return fut != null && fut.topologyVersion().topologyVersion() >= topVer;
