@@ -758,6 +758,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         }
         finally {
             QueryUtils.INCLUDE_SENSITIVE = true;
+
+            qryMgr.unregisterQueryFinishedListener(lsnr);
         }
     }
 
