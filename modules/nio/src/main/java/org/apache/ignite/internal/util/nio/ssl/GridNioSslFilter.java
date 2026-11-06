@@ -93,25 +93,13 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /**
      * Creates SSL filter.
      *
-     * @param sslCtx SSL context.
+     * @param sslCtxSupplier SSL context supplier.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
      * @param handshakeDuration Records SSL handshake duration (ms), or {@code null} if metrics disabled.
      * @param rejectedSesCnt Increments the rejected-sessions counter, or {@code null} if metrics disabled.
      */
-    public GridNioSslFilter(
-        SSLContext sslCtx,
-        boolean directBuf,
-        ByteOrder order,
-        IgniteLogger log,
-        @Nullable LongConsumer handshakeDuration,
-        @Nullable Runnable rejectedSesCnt
-    ) {
-        this(() -> sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
-    }
-
-    /** */
     public GridNioSslFilter(
         Supplier<SSLContext> sslCtxSupplier,
         boolean directBuf,
