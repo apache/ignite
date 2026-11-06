@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -419,7 +418,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     @GridToStringExclude
-    private Supplier<SSLSocketFactory> sslSockFactorySupplier;
+    private Factory<SSLContext> sslCtxFactory;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1680,7 +1679,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** */
     SSLSocketFactory sslSocketFactory() throws IOException {
         try {
-            return sslSockFactorySupplier.get();
+            return sslCtxFactory.create().getSocketFactory();
         }
         catch (RuntimeException e) {
             throw new IOException("Failed to obtain the SSL socket factory for a discovery connection.", e);
@@ -2171,7 +2170,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 sslCtx.createSSLEngine();
                 sslCtx.getSocketFactory();
 
-                sslSockFactorySupplier = () -> sslFactory.create().getSocketFactory();
+                sslCtxFactory = sslFactory;
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: " + sslFactory, e);
