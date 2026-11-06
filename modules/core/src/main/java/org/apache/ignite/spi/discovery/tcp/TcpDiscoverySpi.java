@@ -37,12 +37,12 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
@@ -433,11 +433,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     @GridToStringExclude
-    private AbstractSslContextFactory reloadableSslFactory;
-
-    /** */
-    @GridToStringExclude
-    private SSLContext startupSslCtx;
+    private Supplier<SSLSocketFactory> sslSockFactorySupplier;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1677,7 +1673,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslContext().getSocketFactory().createSocket();
+                sock = sslSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1696,34 +1692,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** */
-    private SSLContext sslContext() throws IOException {
-        if (reloadableSslFactory == null)
-            return startupSslCtx;
-
+    SSLSocketFactory sslSocketFactory() throws IOException {
         try {
-            return reloadableSslFactory.create();
+            return sslSockFactorySupplier.get();
         }
         catch (RuntimeException e) {
-            throw new IOException("Failed to obtain the SSL context for a discovery connection.", e);
-        }
-    }
-
-    /** */
-    SSLSocket wrapAcceptedSocket(Socket sock) throws IOException {
-        // Use the numeric address to avoid a reverse DNS lookup on the accept thread.
-        SSLSocket sslSock = (SSLSocket)sslContext().getSocketFactory()
-            .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
-
-        try {
-            sslSock.setUseClientMode(false);
-            sslSock.setNeedClientAuth(true);
-
-            return sslSock;
-        }
-        catch (RuntimeException e) {
-            U.closeQuiet(sslSock);
-
-            throw e;
+            throw new IOException("Failed to obtain the SSL socket factory for a discovery connection.", e);
         }
     }
 
@@ -2210,12 +2184,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 // Validate protocols and ciphers at startup, before binding the plain listener.
                 sslCtx.createSSLEngine();
 
-                if (sslFactory instanceof AbstractSslContextFactory reloadable)
-                    reloadableSslFactory = reloadable;
-                else
-                    startupSslCtx = sslCtx;
+                SSLSocketFactory initSockFactory = sslCtx.getSocketFactory();
 
-                sslSockFactory = sslCtx.getSocketFactory();
+                sslSockFactorySupplier = sslFactory instanceof AbstractSslContextFactory
+                    ? () -> sslFactory.create().getSocketFactory() : () -> initSockFactory;
+
+                sslSockFactory = initSockFactory;
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();
             }
             catch (IgniteException e) {

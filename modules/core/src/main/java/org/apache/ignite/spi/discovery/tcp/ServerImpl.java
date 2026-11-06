@@ -6350,7 +6350,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (sslEnabled) {
                         try {
-                            sock = spi.wrapAcceptedSocket(sock);
+                            // Use the numeric address to avoid a reverse DNS lookup on the accept thread.
+                            SSLSocket sslSock = (SSLSocket)spi.sslSocketFactory()
+                                .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
+
+                            sock = sslSock;
+
+                            sslSock.setUseClientMode(false);
+                            sslSock.setNeedClientAuth(true);
                         }
                         catch (IOException | RuntimeException e) {
                             LT.warn(log, "Failed to set up TLS on an accepted discovery socket [rmtAddr=" +
