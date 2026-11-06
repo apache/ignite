@@ -400,7 +400,11 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             assert req.topologyVersion().equals(topVer) : req;
 
             if (res.remapTopologyVersion() != null) {
-                assert !req.topologyVersion().equals(res.remapTopologyVersion());
+                // Remote topology might be the same even if the remapping responded with. Remote node may respond
+                // when stopping. But if is stopping, might not accept and update topology version and would use some last
+                // kept version.
+                assert req.topologyVersion().compareTo(res.remapTopologyVersion()) <= 0
+                    : "Near atomic update response holds the same or lesser remap-to topology version";
 
                 if (remapKeys == null)
                     remapKeys = U.newHashSet(req.size());
