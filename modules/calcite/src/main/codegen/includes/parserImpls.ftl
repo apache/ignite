@@ -932,6 +932,58 @@ SqlNode SqlSelectForUpdate() :
     { return query; }
 }
 
+// TODO: https://issues.apache.org/jira/browse/IGNITE-29207 Use Calcite's CYCLE grammar after upgrading.
+void IgniteAddWithItem(List<SqlWithItem> list, SqlLiteral recursive) :
+{
+    final SqlIdentifier id;
+    final SqlNodeList columnList;
+    final SqlNode definition;
+    SqlCycleClause cycle = null;
+}
+{
+    id = SimpleIdentifier()
+    ( columnList = ParenthesizedSimpleIdentifierList() | { columnList = null; } )
+    <AS>
+    definition = ParenthesizedExpression(ExprContext.ACCEPT_QUERY)
+    [ cycle = CycleClause() ]
+    {
+        list.add(cycle == null
+            ? new SqlWithItem(id.getParserPosition(), id, columnList, definition, recursive)
+            : new IgniteSqlWithItem(id.getParserPosition(), id, columnList, definition, recursive, cycle));
+    }
+}
+
+SqlCycleClause CycleClause() :
+{
+    final Span s;
+    final List<SqlNode> columns = new ArrayList<SqlNode>();
+    SqlIdentifier column;
+    final SqlIdentifier markColumn;
+    final SqlNode markValue;
+    final SqlNode defaultValue;
+    final SqlIdentifier pathColumn;
+}
+{
+    <CYCLE> { s = span(); }
+    column = SimpleIdentifier() { columns.add(column); }
+    ( <COMMA> column = SimpleIdentifier() { columns.add(column); } )*
+    <SET> markColumn = SimpleIdentifier()
+    (
+        <TO> markValue = Expression(ExprContext.ACCEPT_NON_QUERY)
+        <DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NON_QUERY)
+    |
+        {
+            markValue = SqlLiteral.createBoolean(true, markColumn.getParserPosition());
+            defaultValue = SqlLiteral.createBoolean(false, markColumn.getParserPosition());
+        }
+    )
+    <USING> pathColumn = SimpleIdentifier()
+    {
+        return new SqlCycleClause(s.end(this), new SqlNodeList(columns, s.pos()),
+            markColumn, markValue, defaultValue, pathColumn);
+    }
+}
+
 // TODO: https://issues.apache.org/jira/browse/CALCITE-7592
 //  Remove this method and the corresponding replacement in pom.xml after upgrading to Calcite 1.43.
 JAVACODE

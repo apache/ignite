@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
+import org.apache.calcite.sql.SqlInternalOperator;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.InferTypes;
 import org.apache.calcite.sql.type.OperandTypes;
@@ -35,6 +36,14 @@ import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
  * {@link org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable}
  */
 public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
+    /** Appends a key tuple to a CYCLE path without modifying the previous path. */
+    public static final SqlInternalOperator CYCLE_PATH_APPEND = new SqlInternalOperator("$CYCLE_PATH_APPEND",
+        SqlKind.OTHER_FUNCTION, 2, true, ReturnTypes.ARG0, null, OperandTypes.ANY_ANY);
+
+    /** Tests a CYCLE path using SQL row equality, where UNKNOWN does not close a cycle. */
+    public static final SqlInternalOperator CYCLE_PATH_CONTAINS = new SqlInternalOperator("$CYCLE_PATH_CONTAINS",
+        SqlKind.OTHER_FUNCTION, 2, true, ReturnTypes.BOOLEAN_NOT_NULL, null, OperandTypes.ANY_ANY);
+
     /**
      * The table of contains Ignite-specific operators.
      */

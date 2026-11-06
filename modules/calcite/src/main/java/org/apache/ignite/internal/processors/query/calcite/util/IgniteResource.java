@@ -25,6 +25,32 @@ import org.apache.calcite.sql.validate.SqlValidatorException;
  */
 public interface IgniteResource {
     /** */
+    @Resources.BaseMessage("CYCLE requires WITH RECURSIVE")
+    Resources.ExInst<SqlValidatorException> cycleRequiresRecursive();
+
+    /** */
+    @Resources.BaseMessage("CYCLE requires a UNION [ALL] with a recursive SELECT containing exactly one direct " +
+        "reference to its WITH item")
+    Resources.ExInst<SqlValidatorException> cycleRequiresRecursiveSelect();
+
+    /** */
+    @Resources.BaseMessage("CYCLE is not supported with aggregation, DISTINCT, or window functions in the recursive SELECT")
+    Resources.ExInst<SqlValidatorException> cycleRecursiveSelectNotSupported();
+
+    /** */
+    @Resources.BaseMessage("CYCLE column ''{0}'' is not a column of WITH item ''{1}''")
+    Resources.ExInst<SqlValidatorException> cycleColumnNotFound(String column, String withItem);
+
+    /** */
+    @Resources.BaseMessage("CYCLE generated column ''{0}'' conflicts with another column")
+    Resources.ExInst<SqlValidatorException> cycleColumnConflict(String column);
+
+    /** */
+    @Resources.BaseMessage("CYCLE mark and default must be distinct, non-null Boolean or compatible " +
+        "single-character string literals")
+    Resources.ExInst<SqlValidatorException> cycleInvalidMarkValues();
+
+    /** */
     IgniteResource INSTANCE = Resources.create(IgniteResource.class);
 
     /** */

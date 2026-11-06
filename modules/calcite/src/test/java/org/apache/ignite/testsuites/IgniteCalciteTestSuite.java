@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrec
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.ParserCodegenResourcesTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
+import org.apache.ignite.internal.processors.query.calcite.sql.SqlCycleParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlSelectForUpdateParserTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
@@ -39,6 +40,7 @@ import org.junit.platform.suite.api.Suite;
 
     ParserCodegenResourcesTest.class,
     SqlCustomParserTest.class,
+    SqlCycleParserTest.class,
     SqlReservedWordsTest.class,
     SqlSelectForUpdateParserTest.class,
     LogicalRelImplementorTest.class,

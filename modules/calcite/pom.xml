@@ -451,6 +451,14 @@
                                     value="&lt;FETCH&gt; ( &lt;FIRST&gt; | &lt;NEXT&gt; ) offsetFetch[1] = FetchCount()"
                                     failOnNoReplacements="true"
                                 />
+                                <!-- TODO: https://issues.apache.org/jira/browse/IGNITE-29207
+                                     Use Calcite's CYCLE grammar after upgrading to 1.43. -->
+                                <replace
+                                    file="${project.build.directory}/generated-sources/fmpp/javacc/Parser.jj"
+                                    token="AddWithItem(list,"
+                                    value="IgniteAddWithItem(list,"
+                                    failOnNoReplacements="true"
+                                />
                             </target>
                         </configuration>
                     </execution>

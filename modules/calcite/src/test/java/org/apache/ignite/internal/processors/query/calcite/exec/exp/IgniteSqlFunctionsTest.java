@@ -18,16 +18,38 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
  */
 public class IgniteSqlFunctionsTest {
+    /** CYCLE path membership follows SQL row equality, including nested ROW and collection fields. */
+    @Test
+    public void testCyclePathContains() {
+        assertTrue(IgniteSqlFunctions.cyclePathContains(Collections.singletonList(new Object[] {1, "x"}),
+            new Object[] {1, "x"}));
+        assertFalse(IgniteSqlFunctions.cyclePathContains(Collections.singletonList(new Object[] {1, "x"}),
+            new Object[] {1, "y"}));
+        assertFalse(IgniteSqlFunctions.cyclePathContains(Collections.singletonList(new Object[] {null, 1}),
+            new Object[] {null, 1}));
+        assertFalse(IgniteSqlFunctions.cyclePathContains(Collections.singletonList(new Object[] {new Object[] {null}}),
+            new Object[] {new Object[] {null}}));
+        assertTrue(IgniteSqlFunctions.cyclePathContains(Collections.singletonList(new Object[] {Arrays.asList(1, null)}),
+            new Object[] {Arrays.asList(1, null)}));
+        assertTrue(IgniteSqlFunctions.cyclePathContains(Arrays.asList(new Object[] {null}, new Object[] {1}),
+            new Object[] {1}));
+        assertFalse(IgniteSqlFunctions.cyclePathContains(Collections.emptyList(), new Object[] {1}));
+    }
+
     /** */
     @Test
     public void testBigDecimalToString() {

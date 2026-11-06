@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +53,7 @@ import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
+import org.apache.calcite.sql.SqlWith;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlCase;
@@ -62,6 +64,8 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.DelegatingScope;
+import org.apache.calcite.sql.validate.IgniteWithItemNamespace;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlQualified;
 import org.apache.calcite.sql.validate.SqlValidator;
@@ -77,6 +81,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDecimalLiteral;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlWithItem;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMath;
@@ -117,6 +122,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private final @Nullable IgniteSqlSemantics sqlSem;
+
+    /** Items whose user-written recursive terms were checked before CYCLE introduced a derived table. */
+    private final Set<SqlWithItem> rewrittenCycles = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    /** Recursive references which must stay direct when normalizing NATURAL/USING joins for CYCLE. */
+    private final Map<SqlSelect, SqlIdentifier> cycleRecursiveSelects = new IdentityHashMap<>();
 
     /**
      * Creates a validator.
@@ -160,7 +171,40 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override public void validateWithItem(SqlWithItem withItem) {
         super.validateWithItem(withItem);
 
-        RecursiveCteValidator.validate(this, withItem);
+        if (!rewrittenCycles.contains(withItem))
+            RecursiveCteValidator.validate(this, withItem);
+    }
+
+    /**
+     * Validates the original projection before CYCLE adds its generated columns, as in CALCITE-7814.
+     * Calcite 1.42's registerWith is private, so use its namespace registration extension point.
+     * Keep the item identity: the already registered WITH scope refers to it.
+     */
+    @Override protected void registerNamespace(@Nullable SqlValidatorScope usingScope, @Nullable String alias,
+        SqlValidatorNamespace ns, boolean forceNullable) {
+        super.registerNamespace(usingScope, alias, ns, forceNullable);
+
+        if (!(ns.getNode() instanceof IgniteSqlWithItem))
+            return;
+
+        IgniteSqlWithItem item = (IgniteSqlWithItem)ns.getNode();
+
+        if (item.cycleClause == null)
+            return;
+
+        validateWithItem(item);
+
+        SqlValidatorScope parent = ((DelegatingScope)getWithScope(item)).getParent();
+        SqlWithItem rewritten = CycleRewriter.rewrite(this, parent, item);
+
+        item.query = rewritten.query;
+        item.columnList = rewritten.columnList;
+        item.cycleClause = null;
+        rewrittenCycles.add(item);
+
+        removeValidatedNodeType(item);
+        namespaces.put(item, new IgniteWithItemNamespace(this, item, ns.getEnclosingNode()));
+        registerQuery(parent, null, item.query, item, item.name.getSimple(), forceNullable);
     }
 
     /**
@@ -479,6 +523,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if (node instanceof SqlWithItem)
             RecursiveCteRewriter.rewriteOrderBy((SqlWithItem)node);
 
+        if (node instanceof IgniteSqlWithItem && ((IgniteSqlWithItem)node).cycleClause != null) {
+            IgniteSqlWithItem item = (IgniteSqlWithItem)node;
+
+            if (!item.recursive.booleanValue())
+                throw newValidationError(item.cycleClause, IgniteResource.INSTANCE.cycleRequiresRecursive());
+
+            SqlNode body = item.query;
+
+            while (body instanceof SqlWith)
+                body = ((SqlWith)body).body;
+
+            if (body.getKind() == SqlKind.UNION && ((SqlCall)body).operand(1) instanceof SqlSelect)
+                cycleRecursiveSelects.put(((SqlCall)body).operand(1), item.name);
+        }
+
         if (node instanceof SqlOrderBy) {
             SqlOrderBy orderBy = (SqlOrderBy)node;
 
@@ -507,7 +566,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                         hasStar = true;
                 }
 
-                performJoinRewrites((SqlJoin)select.getFrom(), hasStar);
+                performJoinRewrites((SqlJoin)select.getFrom(), hasStar, cycleRecursiveSelects.get(select));
             }
         }
 
@@ -523,12 +582,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** Rewrites JOIN clause if required */
-    private void performJoinRewrites(SqlJoin join, boolean hasStar) {
+    private void performJoinRewrites(SqlJoin join, boolean hasStar, @Nullable SqlIdentifier recursiveName) {
         if (join.getLeft() instanceof SqlJoin)
-            performJoinRewrites((SqlJoin)join.getLeft(), hasStar || join.isNatural());
+            performJoinRewrites((SqlJoin)join.getLeft(), hasStar || join.isNatural(), recursiveName);
 
         if (join.getRight() instanceof SqlJoin)
-            performJoinRewrites((SqlJoin)join.getRight(), hasStar || join.isNatural());
+            performJoinRewrites((SqlJoin)join.getRight(), hasStar || join.isNatural(), recursiveName);
 
         // Join with USING should be rewriten if SELECT conatins "star" in projects, NATURAL JOIN also has other issues
         // and should be rewritten in any case.
@@ -539,14 +598,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             // addToSelectList method (exclude _KEY and _VAL columns), to workaround the expandStar limitation we can
             // wrap each table to a subquery. In this case columns will be filtered out on the subquery level and
             // rowType of the subquery will have the same cardinality as selectList.
-            join.setLeft(rewriteTableToQuery(join.getLeft()));
-            join.setRight(rewriteTableToQuery(join.getRight()));
+            join.setLeft(rewriteTableToQuery(join.getLeft(), recursiveName));
+            join.setRight(rewriteTableToQuery(join.getRight(), recursiveName));
         }
     }
 
     /** Wrap table to subquery "SELECT * FROM table". */
-    private SqlNode rewriteTableToQuery(SqlNode from) {
+    private SqlNode rewriteTableToQuery(SqlNode from, @Nullable SqlIdentifier recursiveName) {
         SqlNode src = from.getKind() == SqlKind.AS ? ((SqlCall)from).getOperandList().get(0) : from;
+
+        // A recursive CTE has no cache system columns. Wrapping it would hide the direct reference required by CYCLE.
+        if (src instanceof SqlIdentifier && recursiveName != null && ((SqlIdentifier)src).names.equals(recursiveName.names))
+            return from;
 
         if (src.getKind() == SqlKind.IDENTIFIER || src.getKind() == SqlKind.TABLE_REF) {
             String alias = deriveAlias(from, 0);
