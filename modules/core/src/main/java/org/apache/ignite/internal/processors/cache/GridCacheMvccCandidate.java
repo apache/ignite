@@ -242,33 +242,14 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
+     * @param reentryVer Version of the future that created the reentry, {@code null} for the latest one.
      * @return Removed reentry candidate or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate unenter() {
-        if (reentry != null) {
-            GridCacheMvccCandidate old = reentry;
-
-            // Link to next.
-            reentry = reentry.reentry;
-
-            return old;
-        }
-
-        return null;
-    }
-
-    /**
-     * Unlinks the reentry created by the explicit lock future of the given version, so that a failed future reverts
-     * its reentry of a key the thread already holds.
-     *
-     * @param reentryVer Version of the future.
-     * @return Unlinked reentry or {@code null} if the future has not created a reentry of this candidate.
-     */
-    @Nullable public GridCacheMvccCandidate unenter(GridCacheVersion reentryVer) {
+    @Nullable public GridCacheMvccCandidate unenter(@Nullable GridCacheVersion reentryVer) {
         for (GridCacheMvccCandidate prev = this; prev.reentry != null; prev = prev.reentry) {
             GridCacheMvccCandidate reentry = prev.reentry;
 
-            if (reentryVer.equals(reentry.reentryVer)) {
+            if (reentryVer == null || reentryVer.equals(reentry.reentryVer)) {
                 prev.reentry = reentry.reentry;
 
                 return reentry;

@@ -165,29 +165,34 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
                 GridCacheMvccCandidate first = deque.peekFirst();
 
-                if (ver == null || first.version().equals(ver)) {
-                    GridCacheMvccCandidate reentry = first.unenter();
+                GridCacheMvccCandidate reentry = first.unenter(ver);
 
-                    if (reentry != null) {
-                        removeReentry(deque, reentry);
+                if (reentry != null) {
+                    assert reentry.reentry() : reentry;
 
-                        cand = reentry;
+                    boolean rmvd = false;
+
+                    Iterator<GridCacheMvccCandidate> it = deque.iterator();
+
+                    while (it.hasNext()) {
+                        if (it.next() == reentry) {
+                            it.remove();
+
+                            rmvd = true;
+
+                            break;
+                        }
                     }
-                    else
-                        cand = deque.removeFirst();
+
+                    assert rmvd : reentry;
+
+                    cand = reentry;
+                }
+                else if (ver == null || first.version().equals(ver)) {
+                    cand = deque.removeFirst();
 
                     if (deque.isEmpty())
                         cands.remove(cand.key());
-                }
-                else {
-                    // Another lock of the thread holds the key, the future of this version could add a reentry only.
-                    GridCacheMvccCandidate reentry = first.unenter(ver);
-
-                    if (reentry != null) {
-                        removeReentry(deque, reentry);
-
-                        cand = reentry;
-                    }
                 }
             }
 
@@ -201,27 +206,6 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         finally {
             unlock();
         }
-    }
-
-    /** */
-    private void removeReentry(Deque<GridCacheMvccCandidate> deque, GridCacheMvccCandidate reentry) {
-        assert reentry.reentry() : reentry;
-
-        boolean rmvd = false;
-
-        Iterator<GridCacheMvccCandidate> it = deque.iterator();
-
-        while (it.hasNext()) {
-            if (it.next() == reentry) {
-                it.remove();
-
-                rmvd = true;
-
-                break;
-            }
-        }
-
-        assert rmvd : reentry;
     }
 
     /**
