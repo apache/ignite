@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery;
 import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.zip.ZipInputStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
