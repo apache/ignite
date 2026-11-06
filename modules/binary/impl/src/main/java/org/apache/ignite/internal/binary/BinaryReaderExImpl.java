@@ -2947,7 +2947,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static boolean[] doReadBooleanArray(BinaryInputStream in) {
@@ -2957,7 +2956,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static short[] doReadShortArray(BinaryInputStream in) {
@@ -2967,7 +2965,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static char[] doReadCharArray(BinaryInputStream in) {
@@ -2977,7 +2974,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static int[] doReadIntArray(BinaryInputStream in) {
@@ -2987,7 +2983,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static long[] doReadLongArray(BinaryInputStream in) {
@@ -2997,7 +2992,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static float[] doReadFloatArray(BinaryInputStream in) {
@@ -3007,7 +3001,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static double[] doReadDoubleArray(BinaryInputStream in) {
@@ -3017,7 +3010,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static BigDecimal doReadDecimal(BinaryInputStream in) {
@@ -3038,7 +3030,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static UUID doReadUuid(BinaryInputStream in) {
@@ -3046,7 +3037,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static Date doReadDate(BinaryInputStream in) {
@@ -3056,7 +3046,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static Timestamp doReadTimestamp(BinaryInputStream in) {
@@ -3071,7 +3060,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      */
     private static Time doReadTime(BinaryInputStream in) {
@@ -3081,7 +3069,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3107,7 +3094,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3133,7 +3119,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3159,7 +3144,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3185,7 +3169,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3211,8 +3194,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
-     * @param ctx Context.
      * @return Value.
      */
     private static BinaryObject doReadBinaryObject(BinaryInputStream in, BinaryContext ctx, boolean detach) {
@@ -3276,10 +3257,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Value.
      */
     @SuppressWarnings("ConstantConditions")
@@ -3383,10 +3360,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Object.
      * @throws BinaryObjectException In case of error.
      */
@@ -3396,9 +3369,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3408,10 +3378,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3421,10 +3387,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     }
 
     /**
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3686,10 +3648,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /**
      * @param deserialize Deep flag.
      * @param factory Collection factory.
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3762,10 +3720,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /**
      * @param deserialize Deep flag.
      * @param factory Map factory.
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Value.
      * @throws BinaryObjectException In case of error.
      */
@@ -3823,10 +3777,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      * Deserialize or unmarshal the object.
      *
      * @param deserialize Deserialize.
-     * @param in Input stream.
-     * @param ctx Context.
-     * @param ldr Class loader.
-     * @param handles Handles holder.
      * @return Result.
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
@@ -3837,7 +3787,6 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /**
      * Get position to be used for handle. We assume here that the hdr byte was read, hence subtract -1.
      *
-     * @param in Input stream.
      * @return Position for handle.
      */
     private static int positionForHandle(BinaryInputStream in) {
