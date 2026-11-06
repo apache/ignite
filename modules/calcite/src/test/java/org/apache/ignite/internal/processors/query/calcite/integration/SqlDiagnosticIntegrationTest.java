@@ -1040,6 +1040,40 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         assertTrue(logLsnr.check(1000));
     }
 
+    /** Checks that query parameters are printed in the long query warning only when sensitive data is allowed. */
+    @Test
+    public void testLongQueryParametersInLog() throws Exception {
+        IgniteCache<Long, Long> cache = prepareTestCache(grid(0));
+
+        long arg = LONG_QRY_TIMEOUT + LONG_QRY_TIMEOUT / 2;
+
+        boolean includeSensitive = QueryUtils.INCLUDE_SENSITIVE;
+
+        try {
+            for (boolean incl : new boolean[] {true, false}) {
+                QueryUtils.INCLUDE_SENSITIVE = incl;
+
+                LogListener paramsLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG)
+                    .andMatches("params=[" + arg + "]").build();
+
+                LogListener finishedLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).build();
+
+                log.registerListener(paramsLsnr);
+                log.registerListener(finishedLsnr);
+
+                try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(arg))) {
+                    cur.getAll();
+                }
+
+                assertTrue(finishedLsnr.check(1000));
+                assertEquals(incl, paramsLsnr.check());
+            }
+        }
+        finally {
+            QueryUtils.INCLUDE_SENSITIVE = includeSensitive;
+        }
+    }
+
     /**
      * Verifies that query total execution time is correctly accumulated in the DURATION_TOTAL field of the
      * SQL_QUERIES_HISTORY system view.
