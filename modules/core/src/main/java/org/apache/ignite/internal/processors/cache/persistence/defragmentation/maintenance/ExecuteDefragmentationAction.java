@@ -23,12 +23,18 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.ACTIVE;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.CANCELLED;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.COMPLETED;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.FAILED;
 
 /**
  * Action which allows to start the defragmentation process.
@@ -45,6 +51,9 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
 
     /** */
     private final String igniteInstanceName;
+
+    /** */
+    private volatile MaintenanceTaskState state;
 
     /**
      * @param igniteInstanceName Ignite instance name.
@@ -66,11 +75,15 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
+        state.currAction(name()).state(ACTIVE);
+
         try {
             defrgMgr.beforeDefragmentation();
         }
         catch (IgniteCheckedException | IgniteException e) {
             log.error("Checkpoint before defragmentation failed", e);
+
+            state.state(FAILED);
 
             return false;
         }
@@ -78,9 +91,13 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
         Thread defrgThread = new IgniteThread(igniteInstanceName, "defragmentation-thread", () -> {
             try {
                 defrgMgr.executeDefragmentation();
+
+                if (!state.state().contains(CANCELLED)) state.state(COMPLETED);
             }
             catch (Throwable e) {
                 log.error("Defragmentation failed", e);
+
+                state.state(FAILED);
 
                 // TODO Check other options.
                 failureProc.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -102,5 +119,10 @@ class ExecuteDefragmentationAction implements MaintenanceAction<Boolean> {
     /** {@inheritDoc} */
     @Override public @Nullable String description() {
         return "Starting the process of defragmentation.";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(@NotNull MaintenanceTaskState state) {
+        this.state = state;
     }
 }

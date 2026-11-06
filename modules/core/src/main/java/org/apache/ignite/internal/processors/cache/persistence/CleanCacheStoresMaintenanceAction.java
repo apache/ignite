@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.ACTIVE;
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.COMPLETED;
 
 /**
  *
@@ -33,6 +37,9 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
     /** */
     private final File[] cacheStoreDirs;
 
+    /** */
+    private volatile MaintenanceTaskState state;
+
     /**
      * @param cacheStoreDirs
      */
@@ -42,6 +49,8 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
 
     /** {@inheritDoc} */
     @Override public Void execute() {
+        state.currAction(name()).state(ACTIVE);
+
         for (File cacheStoreDir : cacheStoreDirs) {
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File file : cacheStoreDir.listFiles()) {
@@ -50,6 +59,8 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
                 }
             }
         }
+
+        state.state(COMPLETED);
 
         return null;
     }
@@ -62,5 +73,10 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
     /** {@inheritDoc} */
     @Override public @Nullable String description() {
         return "Cleans data files of cache groups";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(@NotNull MaintenanceTaskState state) {
+        this.state = state;
     }
 }
