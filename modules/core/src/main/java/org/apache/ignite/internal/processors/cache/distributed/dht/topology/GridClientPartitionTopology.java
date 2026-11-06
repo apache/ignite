@@ -1042,8 +1042,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             // Calculate how loss data is handled.
             boolean safe = partLossPlc != PartitionLossPolicy.IGNORE || !compatibleWithIgnorePlc;
 
-            boolean changed = false;
-
             boolean ownerReports =
                 cctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
@@ -1084,7 +1082,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 }
             }
 
-            return changed;
+            return false;
         }
         finally {
             lock.writeLock().unlock();
