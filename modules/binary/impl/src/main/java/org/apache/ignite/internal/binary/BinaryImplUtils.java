@@ -17,13 +17,11 @@
 package org.apache.ignite.internal.binary;
 
 import java.io.ByteArrayInputStream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -370,7 +368,7 @@ public class BinaryImplUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, CommonUtils.resolveClassLoader(clsLdr, ctx.classLoader()));
+            return ctx.optimizedMarsh().unmarshal(input, ctx.resolveClassLoader(clsLdr));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -394,8 +392,7 @@ public class BinaryImplUtils {
                               @Nullable ClassLoader ldr, boolean registerMeta) {
         Class cls;
 
-        if (ldr == null)
-            ldr = ctx.classLoader();
+        ldr = ctx.resolveClassLoader(ldr);
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
             cls = ctx.descriptorForTypeId(true, typeId, ldr, registerMeta).describedClass();

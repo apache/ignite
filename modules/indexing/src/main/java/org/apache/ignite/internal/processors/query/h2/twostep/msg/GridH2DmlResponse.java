@@ -125,10 +125,8 @@ public class GridH2DmlResponse extends AbstractMessage implements GridCacheQuery
         if (errKeys != null || errKeysBytes == null)
             return;
 
-        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
-
         // To avoid deserializing of enum types.
-        errKeys = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(errKeysBytes, ldr));
+        errKeys = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(errKeysBytes, null));
     }
 
     /** {@inheritDoc} */
