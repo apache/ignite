@@ -34,7 +34,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
-import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 
 /** Tests discovery after individual TLS setup failures. */
 public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest {
@@ -74,23 +73,6 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         // This context can be obtained, but applying its parameters to the layered socket fails.
         assertRejectsOneConnection(addr, factory, () -> new SSLContextWrapper(ctx, badParams));
         assertAcceptsTls(addr, ctx);
-    }
-
-    /** */
-    @Test
-    public void testOrdinaryFactoryKeepsStartupContext() throws Exception {
-        Factory<SSLContext> nodeFactory = sslTrustedFactory("node01", "trustone");
-
-        startNode(0, nodeFactory);
-
-        AtomicReference<SSLContext> ctx = new AtomicReference<>(nodeFactory.create());
-        IgniteEx ordinaryNode = startNode(1, ctx::get);
-
-        assertEquals(2, ordinaryNode.cluster().nodes().size());
-
-        ctx.set(sslTrustedFactory("node02", "trusttwo").create());
-
-        assertAcceptsTls(address(ordinaryNode), nodeFactory.create());
     }
 
     /** */

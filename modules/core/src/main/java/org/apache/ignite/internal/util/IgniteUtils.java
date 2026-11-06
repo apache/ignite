@@ -114,7 +114,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -227,7 +226,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -7747,7 +7745,7 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteLogger log,
         @Nullable MetricRegistryImpl mreg
     ) {
-        SSLContext sslCtx = sslCtxFactory.create();
+        sslCtxFactory.create();
 
         LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
             GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
@@ -7758,8 +7756,6 @@ public abstract class IgniteUtils extends CommonUtils {
             GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "TCP sessions count that were rejected due to SSL errors.")::increment;
 
-        Supplier<SSLContext> sslCtxSupplier = sslCtxFactory instanceof AbstractSslContextFactory ? sslCtxFactory::create : () -> sslCtx;
-
-        return new GridNioSslFilter(sslCtxSupplier, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+        return new GridNioSslFilter(sslCtxFactory::create, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }

@@ -108,7 +108,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -2170,11 +2169,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
                 // Validate protocols and ciphers at startup, before binding the plain listener.
                 sslCtx.createSSLEngine();
+                sslCtx.getSocketFactory();
 
-                SSLSocketFactory initSockFactory = sslCtx.getSocketFactory();
-
-                sslSockFactorySupplier = sslFactory instanceof AbstractSslContextFactory
-                    ? () -> sslFactory.create().getSocketFactory() : () -> initSockFactory;
+                sslSockFactorySupplier = () -> sslFactory.create().getSocketFactory();
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: " + sslFactory, e);

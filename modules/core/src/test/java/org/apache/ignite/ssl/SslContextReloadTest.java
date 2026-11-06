@@ -24,7 +24,7 @@ import java.net.ServerSocket;
 import java.net.SocketException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -66,11 +66,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** */
+    /** Port retries do not repeat SSL context initialization. */
     @Test
-    public void testRestRetainsContextOnPortRetry() throws Exception {
-        SSLContext replacement = sslTrustedFactory("node02", "trusttwo").create();
-        AtomicReference<SSLContext> ctx = new AtomicReference<>(sslTrustedFactory("node01", "trustone").create());
+    public void testRestInitializesContextOnceOnPortRetry() throws Exception {
+        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
+        AtomicInteger calls = new AtomicInteger();
 
         for (int attempt = 0; attempt < 10; attempt++) {
             try (ServerSocket occupied = new ServerSocket()) {
@@ -89,12 +89,17 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
                             .setPortRange(10)
                             .setSslEnabled(true)
                             .setSslClientAuth(true)
-                            .setSslFactory(() -> ctx.getAndSet(replacement)));
+                            .setSslFactory(() -> {
+                                calls.incrementAndGet();
+
+                                return ctx;
+                            }));
                 });
 
                 int port = node.localNode().attribute(ATTR_REST_TCP_PORT);
 
                 assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
+                assertEquals("SSL context must be initialized once before the first connection", 1, calls.get());
                 assertCertificate(port, "node01", "trustone", "CN=node01");
 
                 return;
@@ -104,11 +109,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         fail("Could not allocate a port with room for REST retries");
     }
 
-    /** An established thin client survives rotation. */
+    /** A plain factory supplies rotated contexts while an established thin client survives rotation. */
     @Test
     public void testRotateKeyAndTrust() throws Exception {
         ReloadableSslContextFactory factory = new ReloadableSslContextFactory();
-        IgniteEx node = startNode(0, factory);
+        IgniteEx node = startNode(0, factory::create);
         int[] ports = tlsPorts(node);
 
         for (int port : ports)
