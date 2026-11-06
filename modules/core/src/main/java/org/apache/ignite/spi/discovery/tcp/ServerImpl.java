@@ -6283,9 +6283,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
-        /** */
-        private final boolean sslEnabled;
-
         /** Port to listen. */
         private int port;
 
@@ -6295,8 +6292,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         TcpServer(IgniteLogger log) throws IgniteSpiException {
             super(ctx.igniteInstanceName(), "tcp-disco-srvr-[]", log, ctx.workersRegistry());
-
-            sslEnabled = spi.isSslEnabled();
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -6348,7 +6343,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
 
-                    if (sslEnabled) {
+                    if (spi.isSslEnabled()) {
                         try {
                             // Use the numeric address to avoid a reverse DNS lookup on the accept thread.
                             SSLSocket sslSock = (SSLSocket)spi.sslSocketFactory()
