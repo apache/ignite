@@ -191,7 +191,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Returns the cached SSL context, creating it if the cache is empty.
+     * Ignite calls this method for each new discovery, communication, client connector or binary REST connection,
+     * including on NIO threads.
+     *
+     * @return Current SSL context.
+     * @throws IgniteException If the context cannot be initialized.
+     */
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 

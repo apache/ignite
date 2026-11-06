@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -38,6 +45,69 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
         super.beforeTestsStarted();
 
         sslCtx = GridTestUtils.sslContext();
+    }
+
+    /** A failed context lookup closes only its session and leaves the same NIO worker available. */
+    @Test
+    public void testContextLookupFailure() throws Exception {
+        AtomicBoolean failLookup = new AtomicBoolean(true);
+
+        SslContextFactory sslCtxFactory = new SslContextFactory() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            @Override public SSLContext create() {
+                if (failLookup.getAndSet(false))
+                    throw new IgniteException("Test SSL context lookup failure");
+
+                return GridNioSslSelfTest.sslCtx;
+            }
+        };
+
+        GridNioServer<ByteBuffer> srv = GridNioServer.<ByteBuffer>builder()
+            .address(U.getLocalHost())
+            .port(GridTestUtils.getFreeCommPort())
+            .listener(new GridNioServerListenerAdapter<>() {
+                @Override public void onConnected(GridNioSession ses) {
+                    // No-op.
+                }
+
+                @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+                    // No-op.
+                }
+
+                @Override public void onMessage(GridNioSession ses, ByteBuffer msg) {
+                    // No-op.
+                }
+            })
+            .logger(log)
+            .selectorCount(1)
+            .byteOrder(ByteOrder.nativeOrder())
+            .filters(U.sslFilter(sslCtxFactory, sslCtx, false, ByteOrder.nativeOrder(), log, null))
+            .build();
+
+        srv.start();
+
+        try {
+            InetSocketAddress addr = new InetSocketAddress(U.getLocalHost(), srv.port());
+
+            try (Socket sock = new Socket()) {
+                sock.connect(addr, 5_000);
+                sock.setSoTimeout(5_000);
+
+                assertEquals(-1, sock.getInputStream().read());
+                assertFalse(failLookup.get());
+            }
+
+            try (SSLSocket sock = (SSLSocket)createSocket()) {
+                sock.connect(addr, 5_000);
+                sock.setSoTimeout(5_000);
+                sock.startHandshake();
+            }
+        }
+        finally {
+            srv.stop();
+        }
     }
 
     /** {@inheritDoc} */

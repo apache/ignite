@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -68,8 +69,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Array of enabled protocols. */
     private String[] enabledProtos;
 
-    /** SSL context to use. */
-    private SSLContext sslCtx;
+    /** Supplies the SSL context for a new session. */
+    private final Supplier<SSLContext> sslCtxSupplier;
 
     /** Order. */
     private ByteOrder order;
@@ -107,10 +108,31 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         @Nullable LongConsumer handshakeDuration,
         @Nullable Runnable rejectedSesCnt
     ) {
+        this(() -> sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+    }
+
+    /**
+     * Creates an SSL filter that obtains a context for each new SSL engine.
+     *
+     * @param sslCtxSupplier SSL context supplier.
+     * @param directBuf Direct buffer flag.
+     * @param order Byte order.
+     * @param log Logger to use.
+     * @param handshakeDuration Records SSL handshake duration (ms), or {@code null} if metrics disabled.
+     * @param rejectedSesCnt Increments the rejected-sessions counter, or {@code null} if metrics disabled.
+     */
+    public GridNioSslFilter(
+        Supplier<SSLContext> sslCtxSupplier,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        @Nullable LongConsumer handshakeDuration,
+        @Nullable Runnable rejectedSesCnt
+    ) {
         super("SSL filter");
 
         this.log = log;
-        this.sslCtx = sslCtx;
+        this.sslCtxSupplier = sslCtxSupplier;
         this.directBuf = directBuf;
         this.order = order;
         this.handshakeDuration = handshakeDuration;
@@ -179,6 +201,15 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         GridSslMeta sslMeta = ses.meta(SSL_META.ordinal());
 
         if (sslMeta == null) {
+            SSLContext sslCtx;
+
+            try {
+                sslCtx = sslCtxSupplier.get();
+            }
+            catch (RuntimeException e) {
+                throw new IgniteCheckedException("Failed to obtain SSL context for a new connection.", e);
+            }
+
             try {
                 engine = sslCtx.createSSLEngine();
             }

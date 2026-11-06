@@ -38,9 +38,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
@@ -107,6 +109,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
@@ -416,11 +419,31 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL server socket factory. */
+    /**
+     * SSL server socket factory from the startup context.
+     *
+     * @deprecated Discovery no longer reads this field. Assigning it has no effect on connections,
+     *     and reloading the SSL context does not update it.
+     */
+    @Deprecated
     protected SSLServerSocketFactory sslSrvSockFactory;
 
-    /** SSL socket factory. */
+    /**
+     * SSL socket factory from the startup context.
+     *
+     * @deprecated Discovery no longer reads this field. Assigning it has no effect on connections,
+     *     and reloading the SSL context does not update it.
+     */
+    @Deprecated
     protected SSLSocketFactory sslSockFactory;
+
+    /** Reloadable factory, if configured. */
+    @GridToStringExclude
+    private AbstractSslContextFactory reloadableSslFactory;
+
+    /** Context obtained at startup for a factory that does not support reload. */
+    @GridToStringExclude
+    private SSLContext startupSslCtx;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1660,7 +1683,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslSockFactory.createSocket();
+                sock = sslContext().getSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1673,6 +1696,45 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         catch (IOException e) {
             if (sock != null)
                 U.closeQuiet(sock);
+
+            throw e;
+        }
+    }
+
+    /**
+     * @return SSL context for a new connection.
+     * @throws IOException If the factory cannot provide the context.
+     */
+    private SSLContext sslContext() throws IOException {
+        if (reloadableSslFactory == null)
+            return startupSslCtx;
+
+        try {
+            return reloadableSslFactory.create();
+        }
+        catch (RuntimeException e) {
+            throw new IOException("Failed to obtain the SSL context for a discovery connection.", e);
+        }
+    }
+
+    /**
+     * @param sock Accepted TCP socket.
+     * @return Socket configured for server-side mutual TLS.
+     * @throws IOException If the socket cannot be wrapped.
+     */
+    SSLSocket wrapAcceptedSocket(Socket sock) throws IOException {
+        // Use the numeric address to avoid a reverse DNS lookup on the accept thread.
+        SSLSocket sslSock = (SSLSocket)sslContext().getSocketFactory()
+            .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
+
+        try {
+            sslSock.setUseClientMode(false);
+            sslSock.setNeedClientAuth(true);
+
+            return sslSock;
+        }
+        catch (RuntimeException e) {
+            U.closeQuiet(sslSock);
 
             throw e;
         }
@@ -2106,7 +2168,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (impl != null)
             return;
 
-        sslEnable = ignite.configuration().getSslContextFactory() != null;
+        Factory<SSLContext> sslFactory = ignite.configuration().getSslContextFactory();
+
+        sslEnable = sslFactory != null;
 
         initFailureDetectionTimeout();
 
@@ -2154,14 +2218,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
+                SSLContext sslCtx = sslFactory.create();
+
+                // Validate protocols and ciphers at startup, before binding the plain listener.
+                sslCtx.createSSLEngine();
+
+                if (sslFactory instanceof AbstractSslContextFactory reloadable)
+                    reloadableSslFactory = reloadable;
+                else
+                    startupSslCtx = sslCtx;
 
                 sslSockFactory = sslCtx.getSocketFactory();
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();
             }
             catch (IgniteException e) {
-                throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
-                    + ignite.configuration().getSslContextFactory(), e);
+                throw new IgniteSpiException("Failed to create SSL context. SSL factory: " + sslFactory, e);
             }
         }
 

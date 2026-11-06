@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
@@ -918,8 +920,11 @@ public class GridNioServerWrapper {
                 filters.add(new GridConnectionBytesVerifyFilter(log));
 
                 if (stateProvider.isSslEnabled()) {
+                    Factory<SSLContext> sslCtxFactory = igniteCfg.getSslContextFactory();
+
                     GridNioSslFilter sslFilter = U.sslFilter(
-                        igniteCfg.getSslContextFactory().create(),
+                        sslCtxFactory,
+                        sslCtxFactory.create(),
                         true,
                         ByteOrder.LITTLE_ENDIAN,
                         log,

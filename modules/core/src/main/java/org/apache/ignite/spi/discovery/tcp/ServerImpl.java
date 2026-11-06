@@ -63,7 +63,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -6284,6 +6283,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
+        /** Whether this listener accepts TLS connections. */
+        private final boolean sslEnabled;
+
         /** Port to listen. */
         private int port;
 
@@ -6294,20 +6296,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         TcpServer(IgniteLogger log) throws IgniteSpiException {
             super(ctx.igniteInstanceName(), "tcp-disco-srvr-[]", log, ctx.workersRegistry());
 
+            sslEnabled = spi.isSslEnabled();
+
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled()) {
-                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
-                            .createServerSocket(port, 0, spi.locHost);
-
-                        sslSock.setNeedClientAuth(true);
-
-                        srvrSock = sslSock;
-                    }
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -6351,6 +6346,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         blockingSectionEnd();
+                    }
+
+                    if (sslEnabled) {
+                        try {
+                            sock = spi.wrapAcceptedSocket(sock);
+                        }
+                        catch (IOException | RuntimeException e) {
+                            LT.warn(log, "Failed to set up TLS on an accepted discovery socket [rmtAddr=" +
+                                sock.getRemoteSocketAddress() + ']', e);
+
+                            U.closeQuiet(sock);
+
+                            onIdle();
+
+                            continue;
+                        }
                     }
 
                     if (log.isInfoEnabled()) {

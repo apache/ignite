@@ -114,6 +114,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import java.util.jar.JarFile;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
@@ -125,6 +126,7 @@ import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanRegistrationException;
@@ -225,6 +227,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
@@ -7730,7 +7733,8 @@ public abstract class IgniteUtils extends CommonUtils {
     /**
      * Creates an SSL NIO filter, wiring its metrics from the given registry.
      *
-     * @param sslCtx SSL context.
+     * @param sslCtxFactory Configured SSL context factory.
+     * @param sslCtx SSL context obtained at transport startup.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -7738,6 +7742,7 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return SSL NIO filter.
      */
     public static GridNioSslFilter sslFilter(
+        Factory<SSLContext> sslCtxFactory,
         SSLContext sslCtx,
         boolean directBuf,
         ByteOrder order,
@@ -7753,6 +7758,9 @@ public abstract class IgniteUtils extends CommonUtils {
             GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "TCP sessions count that were rejected due to SSL errors.")::increment;
 
-        return new GridNioSslFilter(sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+        Supplier<SSLContext> sslCtxSupplier = sslCtxFactory instanceof AbstractSslContextFactory
+            ? sslCtxFactory::create : () -> sslCtx;
+
+        return new GridNioSslFilter(sslCtxSupplier, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }
