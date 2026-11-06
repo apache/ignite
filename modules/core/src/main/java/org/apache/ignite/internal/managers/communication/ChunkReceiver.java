@@ -51,9 +51,10 @@ class ChunkReceiver extends TransmissionReceiver {
         int chunkSize,
         BooleanSupplier stopChecker,
         Consumer<ByteBuffer> hnd,
-        IgniteLogger log
+        IgniteLogger log,
+        TimedSemaphore inBytePermits
     ) {
-        super(meta, stopChecker, log, chunkSize);
+        super(meta, stopChecker, log, chunkSize, inBytePermits);
 
         A.notNull(hnd, "ChunkHandler must be provided by transmission handler");
 
