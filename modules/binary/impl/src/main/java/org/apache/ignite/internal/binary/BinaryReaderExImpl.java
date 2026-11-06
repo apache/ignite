@@ -186,7 +186,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
-     * @param hnds Context.
+     * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     public BinaryReaderExImpl(BinaryContext ctx,
@@ -2077,7 +2077,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return readDouble();
 
             case GridBinaryMarshaller.STRING:
-                return BinaryUtils.doReadString(in());
+                return BinaryUtils.doReadString(in);
 
             case GridBinaryMarshaller.DECIMAL:
                 return doReadDecimal(in);
@@ -2098,7 +2098,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return doReadBooleanArray(in);
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(in());
+                return BinaryUtils.doReadByteArray(in);
 
             case GridBinaryMarshaller.CHAR_ARR:
                 return doReadCharArray(in);
@@ -2119,7 +2119,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return doReadDoubleArray(in);
 
             case GridBinaryMarshaller.STRING_ARR:
-                return BinaryUtils.doReadStringArray(in());
+                return BinaryUtils.doReadStringArray(in);
 
             case GridBinaryMarshaller.DECIMAL_ARR:
                 return doReadDecimalArray(in);
@@ -2137,7 +2137,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return doReadDateArray(in);
 
             default:
-                in().position(in().position() - 1);
+                in.position(in.position() - 1);
 
                 if (binObjAllow) {
                     Object res = readObjectDetached();

@@ -50,6 +50,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -1196,21 +1198,9 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                     notifyLocalListener(F.asList(evt), trans);
             }
             else {
-                if (!entry.isFiltered()) {
-                    if (trans != null)
-                        entry = transformToEntry(trans, evt);
+                Object transVal = trans != null && !entry.isFiltered() ? transform(trans, evt) : null;
 
-                    prepareEntry(cctx, nodeId, entry);
-                }
-
-                Object entryOrList = handleEntry(cctx, entry);
-
-                if (entryOrList != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Send the following event to listener: " + entryOrList);
-
-                    ctx.continuous().addNotification(nodeId, routineId, entryOrList, topic, sync, true);
-                }
+                notifyRemoteListener(cctx, evt, trans != null, transVal);
             }
         }
         catch (ClusterTopologyCheckedException ex) {
@@ -1256,6 +1246,56 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
                 evt.getOldValue(),
                 null
             ));
+        }
+    }
+
+    /**
+     * Converts the event for the listener on another node and sends it.
+     *
+     * @param cctx Cache context.
+     * @param evt Event.
+     * @param transformed Whether the query has a transformer.
+     * @param transVal Transformer result.
+     */
+    private void notifyRemoteListener(GridCacheContext<K, V> cctx, CacheContinuousQueryEvent<K, V> evt,
+        boolean transformed, @Nullable Object transVal) {
+        try {
+            CacheContinuousQueryEntry entry = evt.entry();
+
+            if (!entry.isFiltered()) {
+                if (transformed) {
+                    try {
+                        entry = transformToEntry(transVal, evt);
+                    }
+                    catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
+                        // Registration is not allowed under the topology lock, so retry in the async callback pool.
+                        ctx.pools().asyncCallbackPool().execute(
+                            () -> notifyRemoteListener(cctx, evt, true, transVal),
+                            evt.partitionId());
+
+                        return;
+                    }
+                }
+
+                prepareEntry(cctx, nodeId, entry);
+            }
+
+            Object entryOrList = handleEntry(cctx, entry);
+
+            if (entryOrList != null) {
+                if (log.isDebugEnabled())
+                    log.debug("Send the following event to listener: " + entryOrList);
+
+                ctx.continuous().addNotification(nodeId, routineId, entryOrList, topic, sync, true);
+            }
+        }
+        catch (ClusterTopologyCheckedException ex) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send event notification to node, node left cluster " +
+                    "[node=" + nodeId + ", err=" + ex + ']');
+        }
+        catch (Exception ex) {
+            U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY), "Failed to send event notification to node: " + nodeId, ex);
         }
     }
 
@@ -1707,17 +1747,15 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
     }
 
     /**
-     * Transform event data with {@link #getTransformer()} if exists.
+     * Creates an entry that holds the transformer result instead of the event data.
      *
-     * @param trans Transformer.
+     * @param transVal Transformer result.
      * @param evt Event to transform.
-     * @return Entry contains only transformed data if transformer exists. Unchanged event if transformer is not set.
+     * @return Entry contains only transformed data if transformer exists.
      * @see #getTransformer()
      */
-    private CacheContinuousQueryEntry transformToEntry(IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans,
+    private CacheContinuousQueryEntry transformToEntry(@Nullable Object transVal,
         CacheContinuousQueryEvent<? extends K, ? extends V> evt) {
-        Object transVal = transform(trans, evt);
-
         CacheObject cacheObj = transVal == null ? null : cacheContext(ctx).toCacheObject(transVal);
 
         EventType type = evt.entry().eventType();
