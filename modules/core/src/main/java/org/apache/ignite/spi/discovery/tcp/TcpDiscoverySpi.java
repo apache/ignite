@@ -305,6 +305,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
+    /** Number of resolved IP finder addresses that triggers a warning about potentially slow node join. */
+    static final int ADDRS_WARN_THRESHOLD = 20;
+
     /** Local address. */
     protected String locAddr;
 
@@ -1963,6 +1966,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 res.add(addr);
             }
         }
+
+        if (res.size() > ADDRS_WARN_THRESHOLD)
+            LT.warn(log, "Long list of addresses resolved from IP finder: connecting to an unavailable address " +
+                "usually blocks until socket timeout instead of failing fast (on Windows OS this may look like " +
+                "the node hangs for a while), so every unreachable address in the list slows down node join or " +
+                "reconnection. Make sure that all addresses are correct and reachable, consider reducing the " +
+                "address list or increasing 'joinTimeout' to bound the wait [addrsCnt=" + res.size() + "]");
 
         if (!res.isEmpty() && !skipAddrsRandomization)
             Collections.shuffle(res);
