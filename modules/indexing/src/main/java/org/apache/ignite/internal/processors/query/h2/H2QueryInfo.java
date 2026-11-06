@@ -78,7 +78,7 @@ public class H2QueryInfo implements TrackableQuery {
     private final String initiatorId;
 
     /** Query parameters. */
-    private final Object[] params;
+    private final @Nullable Object[] params;
 
     /** Query SQL plan. */
     private volatile String plan;

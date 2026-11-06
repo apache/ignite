@@ -579,7 +579,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         String sql,
         boolean includeSensitive
     ) throws InterruptedException {
-        int arg = LONG_QUERY_WARNING_TIMEOUT + 1;
+        int arg = LONG_QUERY_WARNING_TIMEOUT + LONG_QUERY_WARNING_TIMEOUT / 2;
 
         LogListener paramsLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches("type=" + type)
             .andMatches("params=[" + arg + "]").build();

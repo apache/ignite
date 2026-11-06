@@ -1045,7 +1045,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     public void testLongQueryParametersInLog() throws Exception {
         IgniteCache<Long, Long> cache = prepareTestCache(grid(0));
 
-        long arg = LONG_QRY_TIMEOUT + 1;
+        long arg = LONG_QRY_TIMEOUT + LONG_QRY_TIMEOUT / 2;
 
         boolean includeSensitive = QueryUtils.INCLUDE_SENSITIVE;
 
