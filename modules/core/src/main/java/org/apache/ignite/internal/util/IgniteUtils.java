@@ -7758,8 +7758,7 @@ public abstract class IgniteUtils extends CommonUtils {
             GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "TCP sessions count that were rejected due to SSL errors.")::increment;
 
-        Supplier<SSLContext> sslCtxSupplier = sslCtxFactory instanceof AbstractSslContextFactory
-            ? sslCtxFactory::create : () -> sslCtx;
+        Supplier<SSLContext> sslCtxSupplier = sslCtxFactory instanceof AbstractSslContextFactory ? sslCtxFactory::create : () -> sslCtx;
 
         return new GridNioSslFilter(sslCtxSupplier, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }

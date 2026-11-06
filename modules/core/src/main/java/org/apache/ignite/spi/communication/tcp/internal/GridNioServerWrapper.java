@@ -922,13 +922,8 @@ public class GridNioServerWrapper {
                 if (stateProvider.isSslEnabled()) {
                     Factory<SSLContext> sslCtxFactory = igniteCfg.getSslContextFactory();
 
-                    GridNioSslFilter sslFilter = U.sslFilter(
-                        sslCtxFactory,
-                        sslCtxFactory.create(),
-                        true,
-                        ByteOrder.LITTLE_ENDIAN,
-                        log,
-                        metricMgr == null ? null : metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
+                    GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory, sslCtxFactory.create(), true, ByteOrder.LITTLE_ENDIAN,
+                        log, metricMgr == null ? null : metricMgr.registry(COMMUNICATION_METRICS_GROUP_NAME));
 
                     sslFilter.directMode(true);
 

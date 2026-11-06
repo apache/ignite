@@ -204,13 +204,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             if (sslCtx != null) {
                 assert sslCtxFactory != null;
 
-                GridNioSslFilter sslFilter = U.sslFilter(
-                    sslCtxFactory,
-                    sslCtx,
-                    cfg.isDirectBuffer(),
-                    ByteOrder.nativeOrder(),
-                    log,
-                    mreg);
+                GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory, sslCtx, cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log, mreg);
 
                 sslFilter.directMode(false);
 
