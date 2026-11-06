@@ -41,7 +41,6 @@ import java.util.regex.Pattern;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
@@ -2164,9 +2163,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assertParameter(statsPrintFreq >= 0, "statsPrintFreq >= 0");
 
         if (isSslEnabled()) {
-            try (SSLSocket sock = (SSLSocket)sslFactory.create().getSocketFactory().createSocket()) {
-                sock.setUseClientMode(false);
-                sock.setNeedClientAuth(true);
+            try {
+                sslFactory.create().getSocketFactory().createSocket().close();
             }
             catch (IOException | IgniteException e) {
                 throw new IgniteSpiException("Failed to initialize discovery SSL. SSL factory: " + sslFactory, e);
