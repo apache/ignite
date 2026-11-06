@@ -1061,8 +1061,9 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 log.registerListener(paramsLsnr);
                 log.registerListener(finishedLsnr);
 
-                cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(arg))
-                    .getAll();
+                try (FieldsQueryCursor<List<?>> cur = cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(arg))) {
+                    cur.getAll();
+                }
 
                 assertTrue(finishedLsnr.check(1000));
                 assertEquals(incl, paramsLsnr.check());

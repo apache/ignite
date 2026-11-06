@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.running.TrackableQuery;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
@@ -226,7 +227,7 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", initiatorId=").append(initiatorId)
                 .append(", sql='").append(sql).append("'");
 
-        if (QueryUtils.INCLUDE_SENSITIVE && params != null && params.length != 0)
+        if (QueryUtils.INCLUDE_SENSITIVE && !F.isEmpty(params))
             msgSb.append(", params=").append(S.arrayToString(params));
 
         msgSb.append(", plan=").append(plan());

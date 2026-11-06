@@ -491,7 +491,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             .append(", initiatorId=").append(initiatorId)
             .append(", sql='").append(sql).append('\'');
 
-        if (QueryUtils.INCLUDE_SENSITIVE && params != null && params.length != 0)
+        if (QueryUtils.INCLUDE_SENSITIVE && !F.isEmpty(params))
             msgSb.append(", params=").append(S.arrayToString(params));
 
         msgSb.append(']');

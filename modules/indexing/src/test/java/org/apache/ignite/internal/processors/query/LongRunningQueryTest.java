@@ -589,7 +589,9 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         log.registerListener(paramsLsnr);
         log.registerListener(finishedLsnr);
 
-        ignite.cache("test").query(new SqlFieldsQuery(sql).setArgs(arg)).getAll();
+        try (FieldsQueryCursor<List<?>> cur = ignite.cache("test").query(new SqlFieldsQuery(sql).setArgs(arg))) {
+            cur.getAll();
+        }
 
         assertTrue(finishedLsnr.check(1000));
         assertEquals(includeSensitive, paramsLsnr.check());
