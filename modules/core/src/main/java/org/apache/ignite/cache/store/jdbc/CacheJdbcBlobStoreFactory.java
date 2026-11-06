@@ -72,6 +72,9 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
     /** Query to load entry. */
     private String loadQry = CacheJdbcBlobStore.DFLT_LOAD_QRY;
 
+    /** Query to load whole cache entry. */
+    private String loadCacheQry = CacheJdbcBlobStore.DFLT_LOAD_CACHE_QRY;
+
     /** Query to update entry. */
     private String updateQry = CacheJdbcBlobStore.DFLT_UPDATE_QRY;
 
@@ -109,6 +112,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
         store.setConnectionUrl(connUrl);
         store.setCreateTableQuery(createTblQry);
         store.setLoadQuery(loadQry);
+        store.setLoadCacheQuery(loadCacheQry);
         store.setUpdateQuery(updateQry);
         store.setInsertQuery(insertQry);
         store.setDeleteQuery(delQry);
@@ -189,6 +193,18 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
     public CacheJdbcBlobStoreFactory<K, V> setLoadQuery(String loadQry) {
         this.loadQry = loadQry;
 
+        return this;
+    }
+
+    /**
+     * Sets load whole cache query.
+     *
+     * @param loadCacheQry Load whole cache query
+     * @return {@code This} for chaining.
+     * @see CacheJdbcBlobStore#setLoadCacheQuery(String)
+     */
+    public CacheJdbcBlobStoreFactory<K, V> setLoadCacheQuery(String loadCacheQry) {
+        this.loadCacheQry = loadCacheQry;
         return this;
     }
 
