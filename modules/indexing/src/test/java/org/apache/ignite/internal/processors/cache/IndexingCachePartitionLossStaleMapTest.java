@@ -49,7 +49,7 @@ public class IndexingCachePartitionLossStaleMapTest extends CachePartitionLossSt
 
     /** {@inheritDoc} */
     @Test
-    @Ignore("No query runs under READ_WRITE_SAFE, so the test is the same as in CachePartitionLossStaleMapTest")
+    @Ignore("Under READ_WRITE_SAFE a SQL query fails on a lost partition by design")
     @Override public void testStaleMapBeforeLostPartitionMarkedLost() throws Exception {
         super.testStaleMapBeforeLostPartitionMarkedLost();
     }

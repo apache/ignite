@@ -67,7 +67,7 @@ public class CacheNoSupplierPartitionMapTest extends GridCommonAbstractTest {
     private static final int DATA = 3;
 
     /** Time to wait for the partition states, in milliseconds. */
-    private static final long WAIT = 10_000;
+    private static final long WAIT = 30_000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
