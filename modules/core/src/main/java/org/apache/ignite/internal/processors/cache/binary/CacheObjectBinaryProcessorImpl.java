@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,6 +42,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -171,6 +173,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** Cached affinity key field names. */
     private final IntMap<T1<BinaryField>> affKeyFields = new CopyOnWriteIntMap<>();
+
+    /** Types for which a warning about @AffinityKeyMapped on a cache value was already printed. */
+    private final Set<Integer> affKeyOnValueWarnedTypes = ConcurrentHashMap.newKeySet();
 
     /** Dummy {@code CacheObjectValueContext} used for mocking. */
     private CacheObjectValueContext fakeCacheObjCtx;
@@ -1178,15 +1183,49 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return toCacheObject0(obj, userObj);
         }
 
-        if (obj == null || obj instanceof CacheObject)
-            return (CacheObject)obj;
+        if (obj == null)
+            return null;
 
-        obj = toBinary(obj, failIfUnregistered);
+        if (!(obj instanceof CacheObject))
+            obj = toBinary(obj, failIfUnregistered);
 
-        if (obj instanceof CacheObject)
+        if (obj instanceof CacheObject) {
+            warnAffinityKeyMappedOnValue(obj);
+
             return (CacheObject)obj;
+        }
 
         return toCacheObject0(obj, userObj);
+    }
+
+    /**
+     * Checks whether the given binary cache value has a field annotated with {@link AffinityKeyMapped}.
+     * Such annotation has no effect on values, so a warning is printed in this case.
+     *
+     * @param obj Cache value.
+     */
+    private void warnAffinityKeyMappedOnValue(Object obj) {
+        if (!(obj instanceof BinaryObjectEx))
+            return;
+
+        int typeId = ((BinaryObjectEx)obj).typeId();
+
+        BinaryField affField = affinityKeyField(typeId);
+
+        if (affField == null)
+            return;
+
+        if (!affKeyOnValueWarnedTypes.add(typeId))
+            return;
+
+        BinaryType type = binaryCtx.metadata(typeId);
+
+        String typeName = type != null ? type.typeName() : "typeId=" + typeId;
+
+        U.warn(log, "Affinity key field '" + affField.name() + "' of class '" + typeName +
+            "' is ignored, because the class is used as a cache value. " +
+            "Affinity is calculated by the cache key: make sure that the affinity key field is defined " +
+            "on the key class (@AffinityKeyMapped has effect only for cache keys).");
     }
 
     /**
