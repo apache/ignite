@@ -71,81 +71,138 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** Port retries do not repeat SSL context initialization. */
+    /** */
     @Test
-    public void testRestInitializesContextOnceOnPortRetry() throws Exception {
-        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
-        AtomicInteger calls = new AtomicInteger();
-
-        for (int attempt = 0; attempt < 10; attempt++) {
-            try (ServerSocket occupied = new ServerSocket()) {
-                occupied.bind(new InetSocketAddress("127.0.0.1", 0));
-
-                if (occupied.getLocalPort() > 65_525)
-                    continue;
-
-                IgniteEx node = startGrid(0, cfg -> {
-                    ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-                    cfg.setClientConnectorConfiguration(null)
-                        .setConnectorConfiguration(new ConnectorConfiguration()
-                            .setHost("127.0.0.1")
-                            .setPort(occupied.getLocalPort())
-                            .setPortRange(10)
-                            .setSslEnabled(true)
-                            .setSslClientAuth(true)
-                            .setSslFactory(() -> {
-                                calls.incrementAndGet();
-
-                                return ctx;
-                            }));
-                });
-
-                int port = node.localNode().attribute(ATTR_REST_TCP_PORT);
-
-                assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
-                assertEquals("SSL context must be initialized once before the first connection", 1, calls.get());
-                assertCertificate(port, "node01", "trustone", "CN=node01");
-
-                return;
-            }
-        }
-
-        fail("Could not allocate a port with room for REST retries");
-    }
-
-    /** A plain factory supplies rotated contexts while an established thin client survives rotation. */
-    @Test
-    public void testRotateKeyAndTrust() throws Exception {
+    public void testNewConnectionsUseReloadedKeysAndTrust() throws Exception {
         ReloadableSslContextFactory factory = new ReloadableSslContextFactory();
         IgniteEx node = startNode(0, factory::create);
         int[] ports = tlsPorts(node);
 
         for (int port : ports)
-            assertCertificate(port, "node01", "trustone", "CN=node01");
+            assertServerCertificate(port, "node01", "trustone", "CN=node01");
 
-        // This client trusts only the original CA, so it cannot reconnect after the server rotates.
-        try (IgniteClient client = thinClient(node)) {
-            client.cacheNames();
+        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+
+        try (IgniteClient clientWithOldTrust = Ignition.startClient(clientCfg)) {
+            clientWithOldTrust.cacheNames();
 
             factory.reload("node02", "trusttwo");
 
             for (int port : ports) {
-                assertCertificate(port, "node03", "trusttwo", "CN=node02");
-                assertClientCertificateRejected(port);
+                assertServerCertificate(port, "node03", "trusttwo", "CN=node02");
+                assertOldClientCertificateRejected(port);
             }
+
+            clientWithOldTrust.cacheNames();
+        }
+
+        IgniteEx peerWithNewTrust = startNode(1, sslTrustedFactory("node03", "trusttwo"));
+
+        assertTrue(((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).pingNode(peerWithNewTrust.localNode().id()));
+
+        int result = node.compute(node.cluster().forNodeId(peerWithNewTrust.localNode().id())).call(() -> 1);
+
+        assertEquals(1, result);
+    }
+
+    /** */
+    @Test
+    public void testUsePreviousContextDuringAndAfterFailedReload() throws Exception {
+        String replacementKeyStore = keyStorePath("node02");
+        CountDownLatch reloadStarted = new CountDownLatch(1);
+        CountDownLatch allowReload = new CountDownLatch(1);
+
+        ReloadableSslContextFactory factory = new ReloadableSslContextFactory() {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            /** {@inheritDoc} */
+            @Override protected InputStream openFileInputStream(String path) throws IOException {
+                if (replacementKeyStore.equals(path)) {
+                    reloadStarted.countDown();
+
+                    try {
+                        if (!allowReload.await(60, TimeUnit.SECONDS))
+                            throw new IOException("Timed out waiting to open the replacement key store");
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IOException(e);
+                    }
+                }
+
+                return super.openFileInputStream(path);
+            }
+        };
+
+        IgniteEx node = startNode(0, factory);
+        int[] ports = tlsPorts(node);
+
+        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+
+        try (IgniteClient client = Ignition.startClient(clientCfg)) {
+            client.cacheNames();
+
+            factory.setKeyStorePassword("wrong-password".toCharArray());
+
+            IgniteInternalFuture<?> reload = GridTestUtils.runAsync(() -> {
+                assertThrows(IgniteException.class, () -> factory.reload("node02", "trusttwo"));
+            });
+
+            try {
+                assertTrue("Reload did not reach the replacement key store", reloadStarted.await(30, TimeUnit.SECONDS));
+
+                for (int port : ports)
+                    assertServerCertificate(port, "node01", "trustone", "CN=node01");
+
+                client.cacheNames();
+            }
+            finally {
+                allowReload.countDown();
+            }
+
+            reload.get(30, TimeUnit.SECONDS);
+
+            for (int port : ports)
+                assertServerCertificate(port, "node01", "trustone", "CN=node01");
 
             client.cacheNames();
         }
+    }
 
-        // The joining server trusts only the new CA. It did not exist before the reload.
-        IgniteEx peer = startNode(1, sslTrustedFactory("node03", "trusttwo"));
+    /** */
+    @Test
+    public void testRestInitializesContextOnceOnPortRetry() throws Exception {
+        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
+        AtomicInteger factoryCalls = new AtomicInteger();
 
-        assertTrue(((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).pingNode(peer.localNode().id()));
+        try (ServerSocket occupied = new ServerSocket()) {
+            occupied.bind(new InetSocketAddress("127.0.0.1", GridTestUtils.getFreeCommPort()));
 
-        int result = node.compute(node.cluster().forNodeId(peer.localNode().id())).call(() -> 1);
+            IgniteEx node = startGrid(0, cfg -> {
+                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        assertEquals(1, result);
+                cfg.setClientConnectorConfiguration(null)
+                    .setConnectorConfiguration(new ConnectorConfiguration()
+                        .setHost("127.0.0.1")
+                        .setPort(occupied.getLocalPort())
+                        .setPortRange(10)
+                        .setSslEnabled(true)
+                        .setSslClientAuth(true)
+                        .setSslFactory(() -> {
+                            factoryCalls.incrementAndGet();
+
+                            return ctx;
+                        }));
+            });
+
+            int port = node.localNode().attribute(ATTR_REST_TCP_PORT);
+
+            assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
+            assertEquals("SSL context must be initialized once before the first connection", 1, factoryCalls.get());
+            assertServerCertificate(port, "node01", "trustone", "CN=node01");
+        }
     }
 
     /** */
@@ -155,14 +212,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         ReloadableSslContextFactory clientFactory = new ReloadableSslContextFactory();
         IgniteEx node = startNode(0, serverFactory);
 
-        ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + node.context().clientListener().port())
-            .setTimeout(SOCKET_TIMEOUT)
-            .setSslMode(SslMode.REQUIRED)
-            .setSslContextFactory(clientFactory::create)
-            .setRetryPolicy(new ClientRetryNonePolicy())
-            .setPartitionAwarenessEnabled(false)
-            .setClusterDiscoveryEnabled(false);
+        ClientConfiguration cfg = clientConfiguration(node).setSslContextFactory(clientFactory::create);
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
             client.cacheNames();
@@ -177,6 +227,42 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             startNode(0, serverFactory);
 
             client.cacheNames();
+        }
+    }
+
+    /** */
+    @Test
+    public void testThinClientReconnectDoesNotReloadKeyStore() throws Exception {
+        Factory<SSLContext> serverFactory = sslTrustedFactory("node01", "trustone");
+        IgniteEx node = startNode(0, serverFactory);
+        Path keyStore = Files.createTempFile("thin-client-keys", ".jks");
+
+        try {
+            Files.copy(Path.of(keyStorePath("node01")), keyStore, StandardCopyOption.REPLACE_EXISTING);
+
+            ClientConfiguration cfg = clientConfiguration(node)
+                .setSslClientCertificateKeyStorePath(keyStore.toString())
+                .setSslClientCertificateKeyStoreType("JKS")
+                .setSslClientCertificateKeyStorePassword(keyStorePassword())
+                .setSslTrustCertificateKeyStorePath(keyStorePath("trustone"))
+                .setSslTrustCertificateKeyStoreType("JKS")
+                .setSslTrustCertificateKeyStorePassword(keyStorePassword());
+
+            try (IgniteClient client = Ignition.startClient(cfg)) {
+                client.cacheNames();
+
+                Files.delete(keyStore);
+                stopGrid(0);
+
+                assertThrows(ClientConnectionException.class, client::cacheNames);
+
+                startNode(0, serverFactory);
+
+                client.cacheNames();
+            }
+        }
+        finally {
+            Files.deleteIfExists(keyStore);
         }
     }
 
@@ -200,112 +286,6 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testThinClientReconnectDoesNotReloadFiles() throws Exception {
-        ReloadableSslContextFactory serverFactory = new ReloadableSslContextFactory();
-        IgniteEx node = startNode(0, serverFactory);
-        Path keys = Files.createTempFile("thin-client-keys", ".jks");
-
-        try {
-            Files.copy(Path.of(keyStorePath("node01")), keys, StandardCopyOption.REPLACE_EXISTING);
-
-            ClientConfiguration cfg = new ClientConfiguration()
-                .setAddresses("127.0.0.1:" + node.context().clientListener().port())
-                .setTimeout(SOCKET_TIMEOUT)
-                .setSslMode(SslMode.REQUIRED)
-                .setSslClientCertificateKeyStorePath(keys.toString())
-                .setSslClientCertificateKeyStoreType("JKS")
-                .setSslClientCertificateKeyStorePassword(keyStorePassword())
-                .setSslTrustCertificateKeyStorePath(keyStorePath("trustone"))
-                .setSslTrustCertificateKeyStoreType("JKS")
-                .setSslTrustCertificateKeyStorePassword(keyStorePassword())
-                .setRetryPolicy(new ClientRetryNonePolicy())
-                .setPartitionAwarenessEnabled(false)
-                .setClusterDiscoveryEnabled(false);
-
-            try (IgniteClient client = Ignition.startClient(cfg)) {
-                client.cacheNames();
-
-                Files.delete(keys);
-                stopGrid(0);
-
-                assertThrows(ClientConnectionException.class, client::cacheNames);
-
-                startNode(0, serverFactory);
-
-                client.cacheNames();
-            }
-        }
-        finally {
-            Files.deleteIfExists(keys);
-        }
-    }
-
-    /** Checks both new and established connections. */
-    @Test
-    public void testUsePreviousContextDuringAndAfterFailedReload() throws Exception {
-        String replacement = keyStorePath("node02");
-        CountDownLatch opening = new CountDownLatch(1);
-        CountDownLatch resume = new CountDownLatch(1);
-
-        ReloadableSslContextFactory factory = new ReloadableSslContextFactory() {
-            /** */
-            private static final long serialVersionUID = 0L;
-
-            /** {@inheritDoc} */
-            @Override protected InputStream openFileInputStream(String path) throws IOException {
-                if (replacement.equals(path)) {
-                    opening.countDown();
-
-                    try {
-                        if (!resume.await(60, TimeUnit.SECONDS))
-                            throw new IOException("Timed out waiting to open the replacement key store");
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-
-                        throw new IOException(e);
-                    }
-                }
-
-                return super.openFileInputStream(path);
-            }
-        };
-
-        IgniteEx node = startNode(0, factory);
-        int[] ports = tlsPorts(node);
-
-        try (IgniteClient client = thinClient(node)) {
-            client.cacheNames();
-
-            factory.setKeyStorePassword("wrong-password".toCharArray());
-
-            IgniteInternalFuture<?> reload = GridTestUtils.runAsync(() -> {
-                assertThrows(IgniteException.class, () -> factory.reload("node02", "trusttwo"));
-            });
-
-            try {
-                assertTrue("Reload did not reach the replacement key store", opening.await(30, TimeUnit.SECONDS));
-
-                for (int port : ports)
-                    assertCertificate(port, "node01", "trustone", "CN=node01");
-
-                client.cacheNames();
-            }
-            finally {
-                resume.countDown();
-            }
-
-            reload.get(30, TimeUnit.SECONDS);
-
-            for (int port : ports)
-                assertCertificate(port, "node01", "trustone", "CN=node01");
-
-            client.cacheNames();
-        }
-    }
-
-    /** All four listeners share one factory. */
     private IgniteEx startNode(int idx, Factory<SSLContext> factory) throws Exception {
         return startGrid(idx, cfg -> {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -332,30 +312,29 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         };
     }
 
-    /** Thin client that trusts only the original CA. */
-    private static IgniteClient thinClient(IgniteEx node) {
-        return Ignition.startClient(new ClientConfiguration()
+    /** */
+    private static ClientConfiguration clientConfiguration(IgniteEx node) {
+        return new ClientConfiguration()
             .setAddresses("127.0.0.1:" + node.context().clientListener().port())
             .setTimeout(SOCKET_TIMEOUT)
             .setSslMode(SslMode.REQUIRED)
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone"))
             .setRetryPolicy(new ClientRetryNonePolicy())
             .setPartitionAwarenessEnabled(false)
-            .setClusterDiscoveryEnabled(false));
+            .setClusterDiscoveryEnabled(false);
     }
 
-    /** Checks the server certificate after mutual TLS. */
-    private static void assertCertificate(int port, String keys, String trust, String subject) throws IOException {
-        try (SSLSocket sock = probeSocket(port, keys, trust)) {
+    /** */
+    private static void assertServerCertificate(int port, String keys, String trust, String expectedSubject) throws IOException {
+        try (SSLSocket sock = connectTlsSocket(port, keys, trust)) {
             sock.startHandshake();
 
-            assertEquals("Peer certificate on port " + port, subject, sock.getSession().getPeerPrincipal().getName());
+            assertEquals("Peer certificate on port " + port, expectedSubject, sock.getSession().getPeerPrincipal().getName());
         }
     }
 
     /** The probe trusts the replacement server certificate. */
-    private static void assertClientCertificateRejected(int port) throws IOException {
-        try (SSLSocket sock = probeSocket(port, "node01", "trustboth")) {
+    private static void assertOldClientCertificateRejected(int port) throws IOException {
+        try (SSLSocket sock = connectTlsSocket(port, "node01", "trustboth")) {
             try {
                 sock.startHandshake();
 
@@ -368,7 +347,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** A fresh TLS context prevents session resumption. */
-    private static SSLSocket probeSocket(int port, String keys, String trust) throws IOException {
+    private static SSLSocket connectTlsSocket(int port, String keys, String trust) throws IOException {
         SSLContext ctx = sslTrustedFactory(keys, trust).create();
         SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket();
 
@@ -387,7 +366,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Test factory with access to {@code init()}. */
+    /** */
     private static class ReloadableSslContextFactory extends SslContextFactory {
         /** */
         private static final long serialVersionUID = 0L;

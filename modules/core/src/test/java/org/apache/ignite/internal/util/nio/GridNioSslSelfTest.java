@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -51,25 +51,19 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
         sslCtx = GridTestUtils.sslContext();
     }
 
-    /** A failed context lookup is counted and leaves the NIO worker available. */
+    /** */
     @Test
-    public void testContextLookupFailure() throws Exception {
-        AtomicBoolean failLookup = new AtomicBoolean();
-        CountDownLatch sesClosed = new CountDownLatch(1);
-        CountDownLatch sesConnected = new CountDownLatch(1);
+    public void testContextLookupFailureCountsOneRejectionAndKeepsWorkerRunning() throws Exception {
+        AtomicBoolean failNextLookup = new AtomicBoolean();
+        CountDownLatch failedSesClosed = new CountDownLatch(1);
+        CountDownLatch serverConnected = new CountDownLatch(1);
         MetricRegistryImpl mreg = new MetricRegistryImpl("nio-ssl", name -> null, name -> null, name -> null, log);
 
-        SslContextFactory sslCtxFactory = new SslContextFactory() {
-            /** */
-            private static final long serialVersionUID = 0L;
+        Factory<SSLContext> sslCtxFactory = () -> {
+            if (failNextLookup.getAndSet(false))
+                throw new IgniteException("Test SSL context lookup failure");
 
-            /** {@inheritDoc} */
-            @Override public SSLContext create() {
-                if (failLookup.getAndSet(false))
-                    throw new IgniteException("Test SSL context lookup failure");
-
-                return GridNioSslSelfTest.sslCtx;
-            }
+            return sslCtx;
         };
 
         GridNioServer<ByteBuffer> srv = GridNioServer.<ByteBuffer>builder()
@@ -78,14 +72,14 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .listener(new GridNioServerListenerAdapter<>() {
                 /** {@inheritDoc} */
                 @Override public void onConnected(GridNioSession ses) {
-                    sesConnected.countDown();
+                    serverConnected.countDown();
                 }
 
                 /** {@inheritDoc} */
                 @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
                     // The close notification follows SSL filter cleanup; the error notification precedes it.
                     if (e == null)
-                        sesClosed.countDown();
+                        failedSesClosed.countDown();
                 }
 
                 /** {@inheritDoc} */
@@ -99,12 +93,12 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .filters(U.sslFilter(sslCtxFactory, false, ByteOrder.nativeOrder(), log, mreg))
             .build();
 
-        IntMetric rejected = mreg.findMetric(GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME);
+        IntMetric rejectedSessions = mreg.findMetric(GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME);
 
         srv.start();
 
         try {
-            failLookup.set(true);
+            failNextLookup.set(true);
 
             InetSocketAddress addr = new InetSocketAddress(U.getLocalHost(), srv.port());
 
@@ -113,25 +107,25 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
                 sock.setSoTimeout(5_000);
 
                 assertEquals(-1, sock.getInputStream().read());
-                assertFalse(failLookup.get());
+                assertFalse(failNextLookup.get());
             }
 
-            assertTrue(sesClosed.await(5, TimeUnit.SECONDS));
-            assertEquals(1, rejected.value());
+            assertTrue(failedSesClosed.await(5, TimeUnit.SECONDS));
+            assertEquals(1, rejectedSessions.value());
 
             try (SSLSocket sock = (SSLSocket)createSocket()) {
                 sock.connect(addr, 5_000);
                 sock.setSoTimeout(5_000);
                 sock.startHandshake();
 
-                assertTrue(sesConnected.await(5, TimeUnit.SECONDS));
+                assertTrue(serverConnected.await(5, TimeUnit.SECONDS));
             }
         }
         finally {
             srv.stop();
         }
 
-        assertEquals(1, rejected.value());
+        assertEquals(1, rejectedSessions.value());
     }
 
     /** {@inheritDoc} */
