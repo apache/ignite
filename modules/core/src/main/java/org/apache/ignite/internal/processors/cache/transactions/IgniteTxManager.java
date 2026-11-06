@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1420,61 +1419,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Collects versions for all pending locks for all entries within transaction
-     *
-     * @param dhtTxLoc Transaction being committed.
-     */
-    private void collectPendingVersions(GridDhtTxLocal dhtTxLoc) {
-        if (dhtTxLoc.needsCompletedVersions()) {
-            if (log.isDebugEnabled())
-                log.debug("Checking for pending locks with version less then tx version: " + dhtTxLoc);
-
-            Set<GridCacheVersion> vers = new LinkedHashSet<>();
-
-            collectPendingVersions(dhtTxLoc.readEntries(), dhtTxLoc.xidVersion(), vers);
-            collectPendingVersions(dhtTxLoc.writeEntries(), dhtTxLoc.xidVersion(), vers);
-
-            if (!vers.isEmpty())
-                dhtTxLoc.pendingVersions(vers);
-        }
-    }
-
-    /**
-     * Gets versions of all not acquired locks for collection of tx entries that are less than base version.
-     *
-     * @param entries Tx entries to process.
-     * @param baseVer Base version to compare with.
-     * @param vers Collection of versions that will be populated.
-     */
-    @SuppressWarnings("TypeMayBeWeakened")
-    private void collectPendingVersions(Iterable<IgniteTxEntry> entries,
-        GridCacheVersion baseVer, Set<GridCacheVersion> vers) {
-
-        // The locks are not released yet, so we can safely list pending candidates versions.
-        for (IgniteTxEntry txEntry : entries) {
-            GridCacheEntryEx cached = txEntry.cached();
-
-            try {
-                // If check should be faster than exception handling.
-                if (!cached.obsolete()) {
-                    for (GridCacheMvccCandidate cand : cached.localCandidates()) {
-                        if (!cand.owner() && cand.version().compareTo(baseVer) < 0) {
-                            if (log.isDebugEnabled())
-                                log.debug("Adding candidate version to pending set: " + cand);
-
-                            vers.add(cand.version());
-                        }
-                    }
-                }
-            }
-            catch (GridCacheEntryRemovedException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("There are no pending locks for entry (entry was deleted in transaction): " + txEntry);
-            }
-        }
-    }
-
-    /**
      * Go through all candidates for entries involved in transaction and find their min
      * version. We know that these candidates will commit after this transaction, and
      * therefore we can grab the min version, so we can send all committed and rolled
@@ -1556,12 +1500,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Must process completed entries before unlocking!
             processCompletedEntries(tx);
-
-            if (tx instanceof GridDhtTxLocal) {
-                GridDhtTxLocal dhtTxLoc = (GridDhtTxLocal)tx;
-
-                collectPendingVersions(dhtTxLoc);
-            }
 
             // 3. Unlock write resources.
             unlockMultiple(tx, tx.writeEntries());
