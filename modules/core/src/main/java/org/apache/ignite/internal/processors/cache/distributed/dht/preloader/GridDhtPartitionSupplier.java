@@ -37,6 +37,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -287,6 +288,19 @@ public class GridDhtPartitionSupplier {
                 }
 
                 iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
+
+                if (grp.caches().stream().anyMatch(GridCacheContext::statisticsEnabled)) {
+                    Map<Integer, Long> partSizes = new HashMap<>();
+
+                    // Not missing means reserved by the iterator: the partition exists and is OWNING.
+                    for (int p : demandMsg.partitions().fullSet()) {
+                        if (!iter.isPartitionMissing(p))
+                            partSizes.put(p, top.localPartition(p, demandMsg.topologyVersion(), false).fullSize());
+                    }
+
+                    if (!partSizes.isEmpty())
+                        supplyMsg.partSizes(partSizes);
+                }
             }
             else {
                 iter = sctx.iterator;
