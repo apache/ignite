@@ -2164,6 +2164,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
+                // Validate protocols and ciphers at startup, before binding the plain listener.
                 sslFactory.create().getSocketFactory().createSocket().close();
             }
             catch (IOException | IgniteException e) {
