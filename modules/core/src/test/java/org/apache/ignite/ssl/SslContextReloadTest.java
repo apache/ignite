@@ -22,6 +22,9 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,6 +34,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientRetryNonePolicy;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
@@ -141,6 +145,80 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         int result = node.compute(node.cluster().forNodeId(peer.localNode().id())).call(() -> 1);
 
         assertEquals(1, result);
+    }
+
+    /** */
+    @Test
+    public void testThinClientReconnectUsesReloadedContext() throws Exception {
+        ReloadableSslContextFactory serverFactory = new ReloadableSslContextFactory();
+        ReloadableSslContextFactory clientFactory = new ReloadableSslContextFactory();
+        IgniteEx node = startNode(0, serverFactory);
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + node.context().clientListener().port())
+            .setTimeout(SOCKET_TIMEOUT)
+            .setSslMode(SslMode.REQUIRED)
+            .setSslContextFactory(clientFactory::create)
+            .setRetryPolicy(new ClientRetryNonePolicy())
+            .setPartitionAwarenessEnabled(false)
+            .setClusterDiscoveryEnabled(false);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            client.cacheNames();
+
+            stopGrid(0);
+
+            assertThrows(ClientConnectionException.class, client::cacheNames);
+
+            serverFactory.reload("node02", "trusttwo");
+            clientFactory.reload("node03", "trusttwo");
+
+            startNode(0, serverFactory);
+
+            client.cacheNames();
+        }
+    }
+
+    /** */
+    @Test
+    public void testThinClientReconnectDoesNotReloadFiles() throws Exception {
+        ReloadableSslContextFactory serverFactory = new ReloadableSslContextFactory();
+        IgniteEx node = startNode(0, serverFactory);
+        Path keys = Files.createTempFile("thin-client-keys", ".jks");
+
+        try {
+            Files.copy(Path.of(keyStorePath("node01")), keys, StandardCopyOption.REPLACE_EXISTING);
+
+            ClientConfiguration cfg = new ClientConfiguration()
+                .setAddresses("127.0.0.1:" + node.context().clientListener().port())
+                .setTimeout(SOCKET_TIMEOUT)
+                .setSslMode(SslMode.REQUIRED)
+                .setSslClientCertificateKeyStorePath(keys.toString())
+                .setSslClientCertificateKeyStoreType("JKS")
+                .setSslClientCertificateKeyStorePassword(keyStorePassword())
+                .setSslTrustCertificateKeyStorePath(keyStorePath("trustone"))
+                .setSslTrustCertificateKeyStoreType("JKS")
+                .setSslTrustCertificateKeyStorePassword(keyStorePassword())
+                .setRetryPolicy(new ClientRetryNonePolicy())
+                .setPartitionAwarenessEnabled(false)
+                .setClusterDiscoveryEnabled(false);
+
+            try (IgniteClient client = Ignition.startClient(cfg)) {
+                client.cacheNames();
+
+                Files.delete(keys);
+                stopGrid(0);
+
+                assertThrows(ClientConnectionException.class, client::cacheNames);
+
+                startNode(0, serverFactory);
+
+                client.cacheNames();
+            }
+        }
+        finally {
+            Files.deleteIfExists(keys);
+        }
     }
 
     /** Checks both new and established connections. */

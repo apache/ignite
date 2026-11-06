@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
@@ -70,7 +70,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     private String[] enabledProtos;
 
     /** */
-    private final Supplier<SSLContext> sslCtxSupplier;
+    private final Factory<SSLContext> sslCtxFactory;
 
     /** Order. */
     private ByteOrder order;
@@ -93,7 +93,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /**
      * Creates SSL filter.
      *
-     * @param sslCtxSupplier SSL context supplier.
+     * @param sslCtxFactory SSL context factory.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -101,7 +101,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @param rejectedSesCnt Increments the rejected-sessions counter, or {@code null} if metrics disabled.
      */
     public GridNioSslFilter(
-        Supplier<SSLContext> sslCtxSupplier,
+        Factory<SSLContext> sslCtxFactory,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
@@ -111,7 +111,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         super("SSL filter");
 
         this.log = log;
-        this.sslCtxSupplier = sslCtxSupplier;
+        this.sslCtxFactory = sslCtxFactory;
         this.directBuf = directBuf;
         this.order = order;
         this.handshakeDuration = handshakeDuration;
@@ -183,7 +183,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             SSLContext sslCtx;
 
             try {
-                sslCtx = sslCtxSupplier.get();
+                sslCtx = sslCtxFactory.create();
             }
             catch (RuntimeException e) {
                 throw new IgniteCheckedException("Failed to obtain SSL context for a new connection.", e);
