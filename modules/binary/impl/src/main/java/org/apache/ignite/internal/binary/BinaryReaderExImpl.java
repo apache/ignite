@@ -1321,16 +1321,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        BinaryReaderHandles prevHnds = hnds;
-
-        hnds = null;
-
-        try {
-            return unmarshal(in, ctx, ldr, this, true, deserialize);
-        }
-        finally {
-            hnds = prevHnds;
-        }
+        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null), true, deserialize);
     }
 
     /** {@inheritDoc} */
