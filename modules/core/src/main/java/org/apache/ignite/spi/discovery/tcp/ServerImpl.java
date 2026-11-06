@@ -6283,7 +6283,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
-        /** Whether this listener accepts TLS connections. */
+        /** */
         private final boolean sslEnabled;
 
         /** Port to listen. */

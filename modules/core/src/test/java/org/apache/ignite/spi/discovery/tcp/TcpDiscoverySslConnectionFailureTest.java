@@ -36,12 +36,12 @@ import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 
-/** Tests that discovery keeps accepting connections when TLS setup fails for one socket. */
+/** Tests discovery after individual TLS setup failures. */
 public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest {
-    /** Timeout for connecting and reading from the discovery socket. */
+    /** */
     private static final int SOCK_TIMEOUT = 10_000;
 
-    /** Address finder shared by the nodes in one test. */
+    /** Discovery addresses shared within one test. */
     private final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -49,7 +49,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         stopAllGrids();
     }
 
-    /** A failed context lookup leaves the discovery listener available. */
+    /** */
     @Test
     public void testContextLookupFailureKeepsAccepting() throws Exception {
         FailingSslFactory factory = new FailingSslFactory();
@@ -61,7 +61,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         assertAcceptsTls(addr, factory.create());
     }
 
-    /** A failed socket wrap leaves the discovery listener available. */
+    /** */
     @Test
     public void testSocketWrapFailureKeepsAccepting() throws Exception {
         FailingSslFactory factory = new FailingSslFactory();
@@ -76,7 +76,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         assertAcceptsTls(addr, ctx);
     }
 
-    /** A plain factory uses the same TLS discovery path. */
+    /** */
     @Test
     public void testOrdinaryFactoryJoinsAndAcceptsTls() throws Exception {
         Factory<SSLContext> nodeFactory = sslTrustedFactory("node01", "trustone");
@@ -90,12 +90,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         assertAcceptsTls(address(ordinaryNode), nodeFactory.create());
     }
 
-    /**
-     * @param idx Node index.
-     * @param factory Node SSL context factory.
-     * @return Started node.
-     * @throws Exception If the node cannot start.
-     */
+    /** */
     private IgniteEx startNode(int idx, Factory<SSLContext> factory) throws Exception {
         return startGrid(idx, cfg -> {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -103,22 +98,14 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         });
     }
 
-    /**
-     * @param node Node with the discovery listener.
-     * @return Local address of its discovery listener.
-     */
+    /** */
     private static InetSocketAddress address(IgniteEx node) {
         int port = ((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).getLocalPort();
 
         return new InetSocketAddress("127.0.0.1", port);
     }
 
-    /**
-     * @param addr Discovery listener address.
-     * @param factory Factory to arm for one accepted socket.
-     * @param nextCtx Supplies a context that fails setup, or throws during lookup.
-     * @throws Exception If the failed connection is not closed.
-     */
+    /** Injects a TLS failure for one accepted socket. */
     private static void assertRejectsOneConnection(
         InetSocketAddress addr,
         FailingSslFactory factory,
@@ -135,11 +122,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         }
     }
 
-    /**
-     * @param addr Discovery listener address.
-     * @param ctx Client context with a trusted certificate.
-     * @throws Exception If the TLS handshake fails.
-     */
+    /** */
     private static void assertAcceptsTls(InetSocketAddress addr, SSLContext ctx) throws Exception {
         try (SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket()) {
             sock.connect(addr, SOCK_TIMEOUT);
@@ -148,12 +131,12 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         }
     }
 
-    /** Uses a different result once, when the discovery listener requests a context. */
+    /** One-shot context override on the discovery accept thread. */
     private static class FailingSslFactory extends SslContextFactory {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Result for the next context lookup on the accept thread. */
+        /** One-shot context supplier. */
         private final AtomicReference<Factory<SSLContext>> nextCtx = new AtomicReference<>();
 
         /** */

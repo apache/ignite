@@ -51,12 +51,12 @@ import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.junit.Assert.assertThrows;
 
-/** Tests how running TCP transports use a shared factory when its context is reloaded. */
+/** Tests TLS reload across TCP transports. */
 public class SslContextReloadTest extends GridCommonAbstractTest {
-    /** Timeout for opening and reading from a TLS probe socket. */
+    /** */
     private static final int SOCKET_TIMEOUT = 10_000;
 
-    /** Discovery addresses shared by the nodes of this test. */
+    /** Discovery addresses shared within one test. */
     private final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -64,7 +64,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /** New connections use the replacement key and trust. An established thin connection stays usable. */
+    /** An established thin client survives rotation. */
     @Test
     public void testRotateKeyAndTrust() throws Exception {
         ReloadableSslContextFactory factory = new ReloadableSslContextFactory();
@@ -98,7 +98,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         assertEquals(1, result);
     }
 
-    /** Fresh handshakes and an established thin connection work while a replacement loads and after it fails. */
+    /** Checks both new and established connections. */
     @Test
     public void testUsePreviousContextDuringAndAfterFailedReload() throws Exception {
         String replacement = keyStorePath("node02");
@@ -162,7 +162,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Starts discovery, communication and both client listeners with the same factory. */
+    /** All four listeners share one factory. */
     private IgniteEx startNode(int idx, Factory<SSLContext> factory) throws Exception {
         return startGrid(idx, cfg -> {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -179,7 +179,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         });
     }
 
-    /** Returns the ports of all four TLS listeners. */
+    /** */
     private static int[] tlsPorts(IgniteEx node) {
         return new int[] {
             ((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).getLocalPort(),
@@ -189,7 +189,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         };
     }
 
-    /** Connects a thin client which trusts the original server certificate. */
+    /** Thin client that trusts only the original CA. */
     private static IgniteClient thinClient(IgniteEx node) {
         return Ignition.startClient(new ClientConfiguration()
             .setAddresses("127.0.0.1:" + node.context().clientListener().port())
@@ -201,7 +201,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             .setClusterDiscoveryEnabled(false));
     }
 
-    /** Checks the server certificate after successful mutual TLS authentication. */
+    /** Checks the server certificate after mutual TLS. */
     private static void assertCertificate(int port, String keys, String trust, String subject) throws IOException {
         try (SSLSocket sock = probeSocket(port, keys, trust)) {
             sock.startHandshake();
@@ -210,7 +210,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Checks that the server no longer accepts the old client CA, even when the client trusts the new server. */
+    /** The probe trusts the replacement server certificate. */
     private static void assertClientCertificateRejected(int port) throws IOException {
         try (SSLSocket sock = probeSocket(port, "node01", "trustboth")) {
             try {
@@ -224,7 +224,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Uses a fresh context to avoid resuming a TLS session established before reload. */
+    /** A fresh TLS context prevents session resumption. */
     private static SSLSocket probeSocket(int port, String keys, String trust) throws IOException {
         SSLContext ctx = sslTrustedFactory(keys, trust).create();
         SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket();
@@ -244,7 +244,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Exposes the protected factory operation to the test. */
+    /** Test factory with access to {@code init()}. */
     private static class ReloadableSslContextFactory extends SslContextFactory {
         /** */
         private static final long serialVersionUID = 0L;
@@ -257,7 +257,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             setTrustStorePassword(keyStorePassword().toCharArray());
         }
 
-        /** Loads the configured replacement key and trust stores. */
+        /** */
         private void reload(String keys, String trust) {
             setKeyStoreFilePath(keyStorePath(keys));
             setTrustStoreFilePath(keyStorePath(trust));

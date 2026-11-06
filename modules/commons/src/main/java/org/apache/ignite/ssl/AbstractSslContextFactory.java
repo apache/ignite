@@ -191,12 +191,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>Ignite calls this method for each new discovery, communication, client connector or binary REST connection,
-     * including on NIO threads.
-     */
+    /** {@inheritDoc} */
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 

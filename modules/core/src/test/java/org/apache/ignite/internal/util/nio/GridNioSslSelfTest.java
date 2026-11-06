@@ -47,7 +47,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
         sslCtx = GridTestUtils.sslContext();
     }
 
-    /** A failed context lookup closes only its session and leaves the same NIO worker available. */
+    /** A failed context lookup leaves the NIO worker available. */
     @Test
     public void testContextLookupFailure() throws Exception {
         AtomicBoolean failLookup = new AtomicBoolean(true);
@@ -56,6 +56,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             /** */
             private static final long serialVersionUID = 0L;
 
+            /** {@inheritDoc} */
             @Override public SSLContext create() {
                 if (failLookup.getAndSet(false))
                     throw new IgniteException("Test SSL context lookup failure");
@@ -68,14 +69,17 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .address(U.getLocalHost())
             .port(GridTestUtils.getFreeCommPort())
             .listener(new GridNioServerListenerAdapter<>() {
+                /** {@inheritDoc} */
                 @Override public void onConnected(GridNioSession ses) {
                     // No-op.
                 }
 
+                /** {@inheritDoc} */
                 @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
                     // No-op.
                 }
 
+                /** {@inheritDoc} */
                 @Override public void onMessage(GridNioSession ses, ByteBuffer msg) {
                     // No-op.
                 }

@@ -420,28 +420,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
     /**
-     * SSL server socket factory from the startup context.
-     *
-     * @deprecated Discovery no longer reads this field. Assigning it has no effect on connections,
-     *     and reloading the SSL context does not update it.
+     * @deprecated Unused.
      */
     @Deprecated
     protected SSLServerSocketFactory sslSrvSockFactory;
 
     /**
-     * SSL socket factory from the startup context.
-     *
-     * @deprecated Discovery no longer reads this field. Assigning it has no effect on connections,
-     *     and reloading the SSL context does not update it.
+     * @deprecated Unused.
      */
     @Deprecated
     protected SSLSocketFactory sslSockFactory;
 
-    /** Reloadable factory, if configured. */
+    /** */
     @GridToStringExclude
     private AbstractSslContextFactory reloadableSslFactory;
 
-    /** Context obtained at startup for a factory that does not support reload. */
+    /** */
     @GridToStringExclude
     private SSLContext startupSslCtx;
 
@@ -1701,10 +1695,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
     }
 
-    /**
-     * @return SSL context for a new connection.
-     * @throws IOException If the factory cannot provide the context.
-     */
+    /** */
     private SSLContext sslContext() throws IOException {
         if (reloadableSslFactory == null)
             return startupSslCtx;
@@ -1717,11 +1708,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
     }
 
-    /**
-     * @param sock Accepted TCP socket.
-     * @return Socket configured for server-side mutual TLS.
-     * @throws IOException If the socket cannot be wrapped.
-     */
+    /** */
     SSLSocket wrapAcceptedSocket(Socket sock) throws IOException {
         // Use the numeric address to avoid a reverse DNS lookup on the accept thread.
         SSLSocket sslSock = (SSLSocket)sslContext().getSocketFactory()
