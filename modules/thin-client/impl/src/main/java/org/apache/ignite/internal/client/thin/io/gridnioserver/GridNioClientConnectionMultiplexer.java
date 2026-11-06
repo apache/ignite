@@ -84,16 +84,11 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioClientParser(), gridLog, false);
 
-        SSLContext sslCtx = ClientSslUtils.getSslContext(cfg);
+        Factory<SSLContext> sslCtxFactory = ClientSslUtils.getSslContextFactory(cfg);
 
-        sslEnabled = sslCtx != null;
+        sslEnabled = sslCtxFactory != null;
 
         if (sslEnabled) {
-            Factory<SSLContext> sslCtxFactory = cfg.getSslContextFactory();
-
-            if (sslCtxFactory == null)
-                sslCtxFactory = () -> sslCtx;
-
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory, true, ByteOrder.nativeOrder(), gridLog, null, null);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};

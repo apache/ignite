@@ -43,6 +43,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -177,6 +178,25 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
             client.cacheNames();
         }
+    }
+
+    /** */
+    @Test
+    public void testThinClientReportsContextFactoryFailure() throws Exception {
+        IgniteEx node = startNode(0, sslTrustedFactory("node01", "trustone"));
+        IllegalStateException failure = new IllegalStateException("Cannot load client TLS credentials");
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + node.context().clientListener().port())
+            .setHandshakeTimeout(SOCKET_TIMEOUT)
+            .setSslMode(SslMode.REQUIRED)
+            .setSslContextFactory(() -> {
+                throw failure;
+            });
+
+        ClientConnectionException err = assertThrows(ClientConnectionException.class, () -> Ignition.startClient(cfg).close());
+
+        assertSame(failure, X.cause(err, IllegalStateException.class));
     }
 
     /** */
