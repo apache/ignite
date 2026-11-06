@@ -41,14 +41,12 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientMessa
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
-import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -85,40 +83,17 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
-        GridNioParser parser = new GridTcpRestParser(false);
-
         try {
             host = resolveRestTcpHost(ctx.config());
 
-            GridNioSslFilter sslFilter = null;
-
-            if (cfg.isSslEnabled()) {
-                Factory<SSLContext> sslCtxFactory = cfg.getSslFactory();
-
-                if (sslCtxFactory == null)
-                    sslCtxFactory = ctx.config().getSslContextFactory();
-
-                if (sslCtxFactory == null)
-                    // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
-                    throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
-
-                sslFilter = U.sslFilter(sslCtxFactory, cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log,
-                    ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME));
-
-                sslFilter.directMode(false);
-
-                boolean auth = cfg.isSslClientAuth();
-
-                sslFilter.wantClientAuth(auth);
-                sslFilter.needClientAuth(auth);
-            }
+            GridNioFilter[] filters = makeFilters(cfg);
 
             int startPort = cfg.getPort();
             int portRange = cfg.getPortRange();
             int lastPort = portRange == 0 ? startPort : startPort + portRange - 1;
 
             for (int port0 = startPort; port0 <= lastPort; port0++) {
-                if (startTcpServer(host, port0, lsnr, parser, sslFilter, cfg)) {
+                if (startTcpServer(host, port0, lsnr, filters, cfg)) {
                     port = port0;
 
                     if (log.isInfoEnabled())
@@ -186,27 +161,49 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         return U.resolveLocalHost(host);
     }
 
+    /** */
+    private GridNioFilter[] makeFilters(ConnectorConfiguration cfg) throws SSLException {
+        GridNioFilter codec = new GridNioCodecFilter(new GridTcpRestParser(false), log, false);
+
+        if (!cfg.isSslEnabled())
+            return new GridNioFilter[] { codec };
+
+        Factory<SSLContext> sslCtxFactory = cfg.getSslFactory();
+
+        if (sslCtxFactory == null)
+            sslCtxFactory = ctx.config().getSslContextFactory();
+
+        if (sslCtxFactory == null)
+            // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
+            throw new SSLException("SSL is enabled, but SSL context factory is not specified.");
+
+        GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory, cfg.isDirectBuffer(), ByteOrder.nativeOrder(), log,
+            ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME));
+
+        sslFilter.directMode(false);
+
+        boolean auth = cfg.isSslClientAuth();
+
+        sslFilter.wantClientAuth(auth);
+        sslFilter.needClientAuth(auth);
+
+        return new GridNioFilter[] { codec, sslFilter };
+    }
+
     /**
      * Tries to start server with given parameters.
      *
      * @param hostAddr Host on which server should be bound.
      * @param port Port on which server should be bound.
      * @param lsnr Server message listener.
-     * @param parser Server message parser.
-     * @param sslFilter SSL filter if SSL is enabled.
+     * @param filters Protocol filters.
      * @param cfg Configuration for other parameters.
      * @return {@code True} if server successfully started, {@code false} if port is used and
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable GridNioSslFilter sslFilter, ConnectorConfiguration cfg) {
+        GridNioFilter[] filters, ConnectorConfiguration cfg) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
-
-            GridNioFilter[] filters = sslFilter == null
-                ? new GridNioFilter[] { codec }
-                : new GridNioFilter[] { codec, sslFilter };
-
             MetricRegistryImpl mreg = ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
             GridNioServer.Builder<GridClientMessage> builder = GridNioServer.<GridClientMessage>builder()
