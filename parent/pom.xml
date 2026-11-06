@@ -68,6 +68,7 @@
         <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
+        <bouncycastle.version>1.86</bouncycastle.version>
         <commons.codec.version>1.23.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.io.version>2.22.0</commons.io.version>

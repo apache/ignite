@@ -81,6 +81,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
@@ -169,6 +170,7 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
+import org.apache.ignite.internal.ssl.SslContextRegistry;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
@@ -935,6 +937,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             initializeMarshaller();
 
             startProcessor(new GridInternalSubscriptionProcessor(ctx));
+
+            startProcessor(new SslContextRegistry(ctx));
 
             ClusterProcessor clusterProc = new ClusterProcessor(ctx);
 
@@ -1931,9 +1935,14 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (cfg.getSegmentationResolvers() != null)
             Collections.addAll(objs, cfg.getSegmentationResolvers());
 
-        if (cfg.getConnectorConfiguration() != null) {
-            objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
-            objs.add(cfg.getConnectorConfiguration().getSslFactory());
+        ConnectorConfiguration connCfg = cfg.getConnectorConfiguration();
+
+        if (connCfg != null) {
+            objs.add(connCfg.getMessageInterceptor());
+            objs.add(connCfg.getSslFactory());
+
+            if (connCfg.getHttpSslFactory() != connCfg.getSslFactory())
+                objs.add(connCfg.getHttpSslFactory());
         }
 
         objs.add(ctx.marshaller());

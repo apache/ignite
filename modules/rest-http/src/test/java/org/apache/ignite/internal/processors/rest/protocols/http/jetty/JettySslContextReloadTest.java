@@ -1,0 +1,378 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyStore;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSocket;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rest.GridRestProtocol;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.TestCertificateAuthority;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
+import org.junit.Test;
+
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+import static org.apache.ignite.internal.ssl.SslContextRegistry.HTTP_REST;
+import static org.apache.ignite.ssl.SslTestUtils.assertClientAuthentication;
+import static org.apache.ignite.ssl.SslTestUtils.clientContext;
+import static org.apache.ignite.ssl.SslTestUtils.node;
+import static org.apache.ignite.ssl.SslTestUtils.reload;
+import static org.apache.ignite.ssl.SslTestUtils.servedCertificate;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.TestCertificateAuthority.PWD;
+import static org.apache.ignite.testframework.TestCertificateAuthority.chain;
+import static org.apache.ignite.testframework.TestCertificateAuthority.save;
+import static org.junit.Assert.assertArrayEquals;
+
+/**
+ * HTTPS of HTTP REST set up with {@link ConnectorConfiguration#setHttpSslFactory}. Tests that call {@link #prepareStores()} start
+ * HTTP REST on old-key from old-ca trusting both authorities unless they say otherwise; probes trust both authorities and present
+ * no client certificate unless a test needs one.
+ */
+public class JettySslContextReloadTest extends GridCommonAbstractTest {
+    /** Bounds connection, handshake and response reads on the loopback probes. */
+    private static final int SOCKET_TIMEOUT = 30_000;
+
+    /** Jetty configuration with a plain HTTP connector and a secure request customizer that checks Host against the certificate. */
+    private static final String JETTY_SNI_HOST_CHECK = "modules/rest-http/src/test/resources/jetty-http-customizer.xml";
+
+    /** Jetty configuration with a connector that has an SSL connection factory of its own. */
+    private static final String JETTY_SSL = "modules/rest-http/src/test/resources/jetty-ssl.xml";
+
+    /** Jetty configuration with HTTP as its default protocol and an SSL connection factory of its own. */
+    private static final String JETTY_HTTP_WITH_SSL = "modules/rest-http/src/test/resources/jetty-http-with-ssl.xml";
+
+    /** Jetty configuration with a connector that expects the PROXY protocol before HTTP. */
+    private static final String JETTY_PROXY = "modules/rest-http/src/test/resources/jetty-proxy.xml";
+
+    /** Alias and subject of the key HTTP REST starts on. */
+    private static final String OLD_KEY = "old-key";
+
+    /** Key store file of {@code httpSslFactory}, which tests replace on disk. */
+    private Path keyFile;
+
+    /** Trust store file of {@code httpSslFactory}, which tests replace on disk. */
+    private Path trustFile;
+
+    /** Authority of the key HTTP REST starts on. */
+    private TestCertificateAuthority oldCa;
+
+    /** Replacement authority. */
+    private TestCertificateAuthority newCa;
+
+    /** Both authorities: HTTP REST trusts them at start, probes always. */
+    private KeyStore trustBoth;
+
+    /** Creates the key and trust stores read by {@link #factory()}. */
+    private void prepareStores() throws Exception {
+        keyFile = Files.createTempFile("ignite-https-key-", ".jks");
+        trustFile = Files.createTempFile("ignite-https-trust-", ".jks");
+        oldCa = new TestCertificateAuthority("old-ca");
+        newCa = new TestCertificateAuthority("new-ca");
+        trustBoth = TestCertificateAuthority.trustStore(oldCa, newCa);
+
+        save(oldCa.keyStoreWithPrivateKey(OLD_KEY), keyFile);
+        save(trustBoth, trustFile);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        if (keyFile != null)
+            Files.deleteIfExists(keyFile);
+
+        if (trustFile != null)
+            Files.deleteIfExists(trustFile);
+    }
+
+    /**
+     * Reload reports HTTP REST, and a new connection using the same client context gets the new certificate.
+     * A connection opened before reload keeps working. The request names the host by an IP address that no
+     * certificate contains.
+     */
+    @Test
+    public void testNewConnectionsGetReloadedCertificate() throws Exception {
+        prepareStores();
+
+        String replacementAlias = "new-key";
+        KeyStore newKeys = newCa.keyStoreWithPrivateKey(replacementAlias);
+        IgniteEx g = startNode(new ConnectorConfiguration().setHttpSslFactory(factory()));
+        SSLContext client = clientContext(null, trustBoth);
+
+        try (SSLSocket open = socket(client, port(g))) {
+            open.startHandshake();
+
+            save(newKeys, keyFile);
+
+            assertContains(log, reload(g), node(g) + ": reloaded " + HTTP_REST + "; loaded alias=" + replacementAlias + ", ");
+            assertEquals(200, versionStatus(open, "127.0.0.1"));
+        }
+
+        assertEquals(chain(newKeys).get(0), servedCertificate(client, port(g)));
+    }
+
+    /** With client authentication, HTTP REST accepts a client of the authority it trusts now and refuses one it trusted before reload. */
+    @Test
+    public void testClientAuthFollowsReloadedTrustStore() throws Exception {
+        prepareStores();
+
+        KeyStore oldClient = oldCa.keyStoreWithPrivateKey("old-client");
+        KeyStore newClient = newCa.keyStoreWithPrivateKey("new-client");
+
+        save(oldCa.trustStore(), trustFile);
+
+        IgniteEx g = startNode(new ConnectorConfiguration().setHttpSslFactory(factory()).setHttpSslClientAuth(true));
+
+        assertClientAuthentication(port(g), oldClient, newClient, trustBoth);
+
+        save(newCa.trustStore(), trustFile);
+
+        reload(g);
+
+        assertClientAuthentication(port(g), newClient, oldClient, trustBoth);
+    }
+
+    /** Jetty takes the protocols and cipher suites of the factory at start and still removes the cipher suites it excludes. */
+    @Test
+    public void testFactoryTlsParametersAppliedWithJettyExclusions() throws Exception {
+        prepareStores();
+
+        String[] jettyExclusions = new org.eclipse.jetty.util.ssl.SslContextFactory.Server().getExcludeCipherSuites();
+        String excluded = Arrays.stream(SSLContext.getDefault().getSupportedSSLParameters().getCipherSuites())
+            .filter(cipher -> Arrays.stream(jettyExclusions).anyMatch(cipher::matches))
+            .findFirst().orElseThrow(() -> new AssertionError("The JVM must support a cipher suite excluded by Jetty"));
+        String allowed = "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256";
+        String protocol = "TLSv1.2";
+        SslContextFactory factory = factory();
+
+        factory.setProtocols(protocol);
+        factory.setCipherSuites(allowed, excluded);
+
+        IgniteEx g = startNode(new ConnectorConfiguration().setHttpSslFactory(factory));
+
+        SSLEngine engine = jettySslFactory(g).newSSLEngine();
+
+        assertArrayEquals(new String[] {protocol}, engine.getEnabledProtocols());
+        assertArrayEquals(new String[] {allowed}, engine.getEnabledCipherSuites());
+    }
+
+    /** A Jetty XML connector gets TLS and keeps its own secure request customizer, which checks Host against the certificate. */
+    @Test
+    public void testJettyConnectorFromFileGetsTls() throws Exception {
+        prepareStores();
+
+        IgniteEx g = startNode(new ConnectorConfiguration().setJettyPath(JETTY_SNI_HOST_CHECK).setHttpSslFactory(factory()));
+
+        try (SSLSocket sock = socket(clientContext(null, trustBoth), port(g))) {
+            assertEquals("Host named by the certificate", 200, versionStatus(sock, OLD_KEY));
+        }
+
+        try (SSLSocket sock = socket(clientContext(null, trustBoth), port(g))) {
+            assertEquals("Host absent from the certificate", 400, versionStatus(sock, "127.0.0.1"));
+        }
+    }
+
+    /** Jetty-managed TLS retains its default Host check and stays outside node reload. */
+    @Test
+    public void testJettyOwnTlsUnchanged() throws Exception {
+        IgniteEx g = startNode(new ConnectorConfiguration().setJettyPath(JETTY_SSL));
+
+        String certHost = "node01";
+        SSLContext client = GridTestUtils.sslTrustedFactory(certHost, "trustboth").create();
+
+        try (SSLSocket sock = socket(client, port(g))) {
+            assertEquals(200, versionStatus(sock, certHost));
+        }
+
+        try (SSLSocket sock = socket(client, port(g))) {
+            assertEquals(400, versionStatus(sock, "other.example"));
+        }
+
+        assertEquals(node(g) + ": no SSL context factory is configured\n", reload(g));
+    }
+
+    /** A node does not start with client authentication on but no factory: the setting would do nothing. */
+    @Test
+    public void testClientAuthWithoutFactoryRefused() {
+        assertThrowsAnyCause(log, () -> startNode(new ConnectorConfiguration().setHttpSslClientAuth(true)),
+            IgniteCheckedException.class, "applies only to TLS set up with httpSslFactory");
+    }
+
+    /** An HTTP connector with its own TLS and a connector expecting PROXY are both incompatible with httpSslFactory. */
+    @Test
+    public void testConnectorWithOwnTlsOrProxyRefused() {
+        assertThrowsAnyCause(log, () -> startNode(new ConnectorConfiguration().setJettyPath(JETTY_HTTP_WITH_SSL)
+            .setHttpSslFactory(new SslContextFactory())), IgniteCheckedException.class, "no TLS configuration of its own");
+        assertThrowsAnyCause(log, () -> startNode(new ConnectorConfiguration().setJettyPath(JETTY_PROXY)
+            .setHttpSslFactory(new SslContextFactory())), IgniteCheckedException.class, "HTTP as its default protocol");
+    }
+
+    /** The node starts an HTTP-only factory before taking an SSL context from it and stops it on shutdown. */
+    @Test
+    public void testHttpFactoryLifecycle() throws Exception {
+        LifecycleSslFactory factory = new LifecycleSslFactory(SSLContext.getDefault());
+
+        assertFactoryLifecycle(factory, new ConnectorConfiguration().setHttpSslFactory(factory));
+    }
+
+    /** Sharing one factory between HTTPS and binary REST gives it one pair of lifecycle callbacks. */
+    @Test
+    public void testSharedRestFactoryLifecycle() throws Exception {
+        LifecycleSslFactory factory = new LifecycleSslFactory(SSLContext.getDefault());
+
+        assertFactoryLifecycle(factory, new ConnectorConfiguration().setHttpSslFactory(factory)
+            .setSslEnabled(true).setSslFactory(factory));
+    }
+
+    /** Checks the lifecycle calls made by a running node. */
+    private void assertFactoryLifecycle(LifecycleSslFactory factory, ConnectorConfiguration cfg) throws Exception {
+        startNode(cfg);
+        stopGrid(0);
+
+        assertEquals(List.of("start", "create", "stop"), factory.calls);
+    }
+
+    /** Starts a test node with the given HTTP REST configuration. */
+    private IgniteEx startNode(ConnectorConfiguration connCfg) throws Exception {
+        return startGrid(0, cfg -> {
+            cfg.setConnectorConfiguration(connCfg);
+        });
+    }
+
+    /** @return Factory reading {@link #keyFile} and {@link #trustFile}. */
+    private SslContextFactory factory() {
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreType("JKS");
+        factory.setKeyStoreFilePath(keyFile.toString());
+        factory.setKeyStorePassword(PWD);
+        factory.setTrustStoreType("JKS");
+        factory.setTrustStoreFilePath(trustFile.toString());
+        factory.setTrustStorePassword(PWD);
+
+        return factory;
+    }
+
+    /** @return SSL factory of the running Jetty connector; Jetty exposes the engines it creates only through it. */
+    private static org.eclipse.jetty.util.ssl.SslContextFactory jettySslFactory(IgniteEx g) {
+        Collection<GridRestProtocol> protos = GridTestUtils.getFieldValue(g.context().rest(), "protos");
+
+        GridRestProtocol jetty = protos.stream().filter(GridJettyRestProtocol.class::isInstance).findFirst().orElseThrow();
+        Server srv = GridTestUtils.getFieldValue(jetty, "httpSrv");
+
+        return ((ServerConnector)srv.getConnectors()[0]).getConnectionFactory(SslConnectionFactory.class).getSslContextFactory();
+    }
+
+    /** @return HTTP REST port of the node. */
+    private static int port(IgniteEx g) {
+        return g.localNode().attribute(ATTR_REST_JETTY_PORT);
+    }
+
+    /**
+     * @param ctx Context to connect with.
+     * @param port Loopback port to connect to.
+     * @return TLS socket for a test that uses the connection after the handshake.
+     */
+    private static SSLSocket socket(SSLContext ctx, int port) throws IOException {
+        SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket();
+
+        try {
+            sock.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), SOCKET_TIMEOUT);
+            sock.setSoTimeout(SOCKET_TIMEOUT);
+
+            return sock;
+        }
+        catch (IOException | RuntimeException e) {
+            U.closeQuiet(sock);
+
+            throw e;
+        }
+    }
+
+    /**
+     * @param sock TLS connection to HTTP REST.
+     * @param host Value of the Host header.
+     * @return HTTP status of a version request; the server closes the connection after the response.
+     */
+    private static int versionStatus(SSLSocket sock, String host) throws IOException {
+        String req = "GET /ignite?cmd=version HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n";
+
+        sock.getOutputStream().write(req.getBytes(US_ASCII));
+
+        String statusLine = new BufferedReader(new InputStreamReader(sock.getInputStream(), US_ASCII)).readLine();
+
+        assertNotNull("HTTP REST must answer a version request [host=" + host + ']', statusLine);
+
+        return Integer.parseInt(statusLine.split(" ")[1]);
+    }
+
+    /** Records when the node obtains the SSL context relative to lifecycle callbacks. */
+    private static class LifecycleSslFactory implements Factory<SSLContext>, LifecycleAware {
+        /** Context returned to REST. */
+        private final SSLContext ctx;
+
+        /** Calls in the order the node made them. */
+        private final List<String> calls = new ArrayList<>();
+
+        /** @param ctx Context returned to REST. */
+        LifecycleSslFactory(SSLContext ctx) {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            calls.add("start");
+        }
+
+        /** {@inheritDoc} */
+        @Override public SSLContext create() {
+            calls.add("create");
+
+            return ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            calls.add("stop");
+        }
+    }
+}
