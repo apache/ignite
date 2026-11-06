@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableList;
@@ -25,10 +27,16 @@ import org.apache.calcite.rel.RelReferentialConstraint;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
+import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
@@ -36,10 +44,16 @@ public class IgniteStatisticsImpl implements Statistic {
     private static final int STATS_CLI_UPDATE_THRESHOLD = 200;
 
     /** */
+    private static final long LOCAL_CACHE_SIZE_TIMEOUT = 1_000;
+
+    /** */
+    private static final long DFLT_ROW_CNT = 1_000;
+
+    /** */
     AtomicInteger cliReqCnt = new AtomicInteger();
 
     /** */
-    private volatile long primaryRowCnt;
+    private volatile long primaryRowCnt = DFLT_ROW_CNT;
 
     /** Internal statistics implementation. */
     private final ObjectStatisticsImpl statistics;
@@ -76,7 +90,7 @@ public class IgniteStatisticsImpl implements Statistic {
         else if (desc != null)
             rows = getRowCountApproximation();
         else
-            rows = 1000;
+            rows = DFLT_ROW_CNT;
 
         return (double)rows;
     }
@@ -122,7 +136,10 @@ public class IgniteStatisticsImpl implements Statistic {
     private void refreshStatsIfNeededEx() {
         if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
             try {
-                primaryRowCnt = desc.cacheInfo().cacheContext().cache().sizeLong(new CachePeekMode[] {CachePeekMode.PRIMARY});
+                Long size = localCacheSize(desc.cacheInfo().cacheContext());
+
+                if (size != null)
+                    primaryRowCnt = size;
             }
             catch (IgniteCheckedException ignore) {
                 // No-op.
@@ -135,5 +152,21 @@ public class IgniteStatisticsImpl implements Statistic {
         refreshStatsIfNeededEx();
 
         return primaryRowCnt;
+    }
+
+    /** */
+    private static @Nullable Long localCacheSize(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+        Collection<ClusterNode> nodes = new ArrayList<>(cctx.grid().cluster().forDataNodes(cctx.name()).nodes());
+
+        if (nodes.isEmpty())
+            return null;
+
+        IgniteInternalFuture<Long> fut = cctx.kernalContext().task().execute(
+            new StatisticsCacheSizeTask(cctx.name()),
+            null,
+            options(nodes).withTimeout(LOCAL_CACHE_SIZE_TIMEOUT).withFailoverDisabled()
+        );
+
+        return fut.get();
     }
 }

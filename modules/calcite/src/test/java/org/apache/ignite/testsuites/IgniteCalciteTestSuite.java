@@ -20,12 +20,14 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImplTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.ParserCodegenResourcesTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlSelectForUpdateParserTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsSavepointTest;
+import org.apache.ignite.internal.processors.tx.SqlTransactionsTopologyChangeTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
@@ -50,6 +52,8 @@ import org.junit.platform.suite.api.Suite;
     SqlTransactionsIsolationTest.class,
     SqlTransactionsUnsupportedModesTest.class,
     SqlTransactionsSavepointTest.class,
+    SqlTransactionsTopologyChangeTest.class,
+    IgniteStatisticsImplTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
