@@ -1,0 +1,189 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.distributed;
+
+import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.junit.Test;
+
+import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.exchangeFinished;
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.mismatches;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+
+/**
+ * Checks that until {@code PART_STATE_FROM_OWNER_FEATURE} is active the nodes handle lost partitions as the previous
+ * version does: the other nodes write the new owners' state into their partition maps themselves. Once the feature is
+ * active, they take it from the owners' maps.
+ * <p>
+ * In both parts a server leaves with the only copies of some partitions under the IGNORE policy, while the maps that
+ * the other servers send outside an exchange are held, so the coordinator sees only the state it wrote itself. The
+ * coordinator and the client watch the new owners' partitions. The client hasn't started the cache, so it keeps the
+ * cache's partition map in a client topology.
+ */
+public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUpgradeTest {
+    /** */
+    private static final String CACHE = "cache";
+
+    /** */
+    private static final int PARTS = 64;
+
+    /** Version without {@code PART_STATE_FROM_OWNER_FEATURE}. */
+    private static final String OLD_VER = "2.18.0";
+
+    /** Index of the client node, as started by {@link #startCluster(String)}. */
+    private static final int CLIENT = 2;
+
+    /** Index of the server that leaves. */
+    private static final int LEAVING = 3;
+
+    /** Time to wait for the partition maps to match, in milliseconds. */
+    private static final long WAIT = 30_000;
+
+    /**
+     * Before the upgrade the coordinator and the client see the new owners right after the exchange, with the owners'
+     * maps held. Once all nodes are upgraded and the version is finalized, the feature is active, and they see the new
+     * owners only after the maps arrive. On activation a server resends its maps, and a client doesn't.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOwnersReportStateAfterUpgrade() throws Exception {
+        startCluster(OLD_VER);
+        startGrid(LEAVING, OLD_VER);
+
+        grid(0).createCache(new CacheConfiguration<Integer, Integer>(CACHE)
+            .setBackups(0)
+            .setPartitionLossPolicy(IGNORE)
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
+
+        awaitPartitionMapExchange();
+
+        IgniteEx oldCrd = stopLeavingWithMapsHeld();
+
+        for (IgniteEx viewer : new IgniteEx[] {oldCrd, grid(CLIENT)}) {
+            List<String> mismatches = mismatches(viewer, CACHE);
+
+            assertTrue(viewer.name() + " didn't write the new owners' state: " + mismatches, mismatches.isEmpty());
+        }
+
+        for (Ignite g : G.allGrids()) {
+            if (g != oldCrd && !g.cluster().localNode().isClient()) {
+                assertFalse(g.name() + " sent its partition map before the feature is active",
+                    TestRecordingCommunicationSpi.spi(g).hasBlockedMessages());
+            }
+        }
+
+        TestRecordingCommunicationSpi.stopBlockAll();
+
+        ru(0).enableVersionUpgrade();
+
+        upgradeNodeVersion(1, OLD_VER, MASTER_VER_REF);
+        upgradeNodeVersion(CLIENT, OLD_VER, MASTER_VER_REF);
+        upgradeNodeVersion(0, OLD_VER, MASTER_VER_REF);
+
+        awaitPartitionMapExchange();
+
+        TestRecordingCommunicationSpi srvSpi = TestRecordingCommunicationSpi.spi(grid(coordinatorIndex() == 0 ? 1 : 0));
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(grid(CLIENT));
+
+        srvSpi.record((node, msg) -> sentOutsideExchange(msg));
+        clientSpi.record((node, msg) -> sentOutsideExchange(msg));
+
+        // Also checks that every node has the features of the new version active.
+        finalizeClusterVersion(1, MASTER_VER_REF);
+
+        assertTrue("The server didn't resend its partition map on activation",
+            waitForCondition(() -> !srvSpi.recordedMessages(false).isEmpty(), WAIT));
+
+        assertFalse("The client resent its partition map on activation",
+            waitForCondition(() -> !clientSpi.recordedMessages(false).isEmpty(), DFLT_PRELOAD_RESEND_TIMEOUT));
+
+        startGrid(LEAVING, MASTER_VER_REF);
+
+        awaitPartitionMapExchange();
+
+        IgniteEx crd = stopLeavingWithMapsHeld();
+
+        for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)}) {
+            List<String> mismatches = mismatches(viewer, CACHE);
+
+            assertFalse(viewer.name() + " wrote the new owners' state itself", mismatches.isEmpty());
+
+            assertTrue(viewer.name() + " differs from the nodes in more than the new owners' partitions: " + mismatches,
+                mismatches.stream().allMatch(m -> m.contains(" local=OWNING ")));
+        }
+
+        TestRecordingCommunicationSpi.stopBlockAll();
+
+        for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)}) {
+            if (!waitForCondition(() -> mismatches(viewer, CACHE).isEmpty(), WAIT))
+                fail("The partition map of " + viewer.name() + " differs from the nodes: " + mismatches(viewer, CACHE));
+        }
+    }
+
+    /**
+     * Stops the leaving server while the other servers' partition maps sent outside an exchange are held, and waits
+     * for every node to finish the exchange.
+     *
+     * @return Coordinator.
+     * @throws Exception If failed.
+     */
+    private IgniteEx stopLeavingWithMapsHeld() throws Exception {
+        IgniteEx crd = grid(coordinatorIndex());
+
+        UUID crdId = crd.localNode().id();
+
+        for (Ignite g : G.allGrids()) {
+            if (g != crd && !g.cluster().localNode().isClient()) {
+                TestRecordingCommunicationSpi.spi(g).blockMessages(
+                    (node, msg) -> node.id().equals(crdId) && sentOutsideExchange(msg));
+            }
+        }
+
+        long leaveVer = crd.cluster().topologyVersion() + 1;
+
+        stopGrid(LEAVING);
+
+        for (Ignite g : G.allGrids()) {
+            assertTrue(g.name() + " didn't finish the exchange",
+                waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer), WAIT));
+        }
+
+        return crd;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Whether the message is a partition map sent outside an exchange.
+     */
+    private static boolean sentOutsideExchange(Message msg) {
+        return msg instanceof GridDhtPartitionsSingleMessage
+            && ((GridDhtPartitionsSingleMessage)msg).exchangeId() == null;
+    }
+}

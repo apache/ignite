@@ -84,6 +84,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PART_STATE_FROM_OWNER_FEATURE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
@@ -1606,6 +1607,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     return false;
                 }
 
+                boolean changed = false;
+
                 if (exchangeVer != null) {
                     assert exchangeVer.compareTo(readyTopVer) >= 0 && exchangeVer.compareTo(lastTopChangeVer) >= 0;
 
@@ -1616,6 +1619,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         this.lostParts = new HashSet<>(lostParts);
 
                         if (exchFut != null && !exchFut.activateCluster()) {
+                            boolean ownerReports =
+                                ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+
                             for (Integer part : lostParts) {
                                 GridDhtLocalPartition locPart = localPartition(part);
 
@@ -1623,7 +1629,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 // part.clearFuture lifecycle will be broken after resetting.
                                 // New partition should be created instead.
                                 if (locPart != null && locPart.state() != EVICTED) {
-                                    locPart.markLost();
+                                    if (locPart.markLost() && ownerReports)
+                                        changed = true;
 
                                     GridDhtPartitionMap locMap = partMap.get(ctx.localNodeId());
 
@@ -1671,8 +1678,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     diffFromAffinityVer = readyTopVer;
                 }
-
-                boolean changed = false;
 
                 GridDhtPartitionMap nodeMap = partMap.get(ctx.localNodeId());
 
@@ -2049,9 +2054,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(@Nullable GridDhtPartitionsExchangeFuture fut,
+    @Override public boolean onExchangeDone(@Nullable GridDhtPartitionsExchangeFuture fut,
         AffinityAssignment assignment,
         boolean updateRebalanceVer) {
+        boolean changed = false;
+
         lock.writeLock().lock();
 
         try {
@@ -2082,19 +2089,27 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             // Own orphan moving partitions (having no suppliers).
             if (fut != null && (fut.events().hasServerJoin() || fut.changedBaseline()))
-                ownOrphans();
+                changed = ownOrphans();
         }
         finally {
             lock.writeLock().unlock();
         }
+
+        return changed;
     }
 
     /**
      * Check if some local moving partitions have no suitable supplier and own them.
      * This can happen if a partition has been created by affinity assignment on new node and no supplier exists.
      * For example, if a node joins topology being a first data node for cache with node filter configured.
+     *
+     * @return {@code True} if a local partition was owned.
      */
-    private void ownOrphans() {
+    private boolean ownOrphans() {
+        boolean ownerReports = ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+
+        boolean changed = false;
+
         for (int p = 0; p < grp.affinity().partitions(); p++) {
             boolean hasOwner = false;
 
@@ -2110,15 +2125,24 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 GridDhtLocalPartition locPart = localPartition(p);
 
                 if (locPart != null && locPart.state() != EVICTED && locPart.state() != LOST) {
-                    locPart.own();
+                    if (locPart.own()) {
+                        changed = true;
 
-                    for (GridDhtPartitionMap map : node2part.values()) {
-                        if (map.get(p) != null)
-                            map.put(p, OWNING);
+                        if (ownerReports)
+                            updateLocal(p, OWNING, updateSeq.incrementAndGet(), readyTopVer);
+                    }
+
+                    if (!ownerReports) {
+                        for (GridDhtPartitionMap map : node2part.values()) {
+                            if (map.get(p) != null)
+                                map.put(p, OWNING);
+                        }
                     }
                 }
             }
         }
+
+        return changed;
     }
 
     /**
@@ -2225,6 +2249,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 boolean changed = false;
 
+                boolean ownerReports =
+                    ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+
                 for (int part = 0; part < grp.affinity().partitions(); part++) {
                     boolean lost = F.contains(lostParts, part);
 
@@ -2260,9 +2287,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             final GridDhtPartitionState prevState = locPart.state();
 
-                            changed = isLossIgnored ? locPart.own() : locPart.markLost();
+                            boolean locChanged = isLossIgnored ? locPart.own() : locPart.markLost();
 
-                            if (changed) {
+                            if (locChanged) {
+                                changed = true;
+
                                 long updSeq = updateSeq.incrementAndGet();
 
                                 updateLocal(locPart.id(), locPart.state(), updSeq, resTopVer);
@@ -2274,14 +2303,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
 
                         // Update remote maps according to policy.
-                        for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
-                            if (entry.getKey().equals(ctx.localNodeId()))
-                                continue;
+                        if (!ownerReports) {
+                            for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
+                                if (entry.getKey().equals(ctx.localNodeId()))
+                                    continue;
 
-                            GridDhtPartitionState p0 = entry.getValue().get(part);
+                                GridDhtPartitionState p0 = entry.getValue().get(part);
 
-                            if (p0 != null && p0 != EVICTED)
-                                entry.getValue().put(part, isLossIgnored ? OWNING : LOST);
+                                if (p0 != null && p0 != EVICTED)
+                                    entry.getValue().put(part, isLossIgnored ? OWNING : LOST);
+                            }
                         }
                     }
                 }

@@ -37,6 +37,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSe
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheNoSupplierPartitionMapTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchComplexOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchIsolationTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeCellularSwitchTxContinuationTest;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridExchangeFreeS
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.PartitionStateFromOwnerRollingUpgradeTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceMetricsTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
@@ -98,6 +101,9 @@ public class IgniteCacheTestSuite15 {
         GridTestUtils.addTestIfNeeded(suite, ClusterActivationFailureTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheCreateDestroyClusterReadOnlyModeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCachePartitionLossPolicySelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CachePartitionLossStaleMapTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheNoSupplierPartitionMapTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PartitionStateFromOwnerRollingUpgradeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheGroupsPartitionLossPolicySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheRebalancingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheManualRebalancingTest.class, ignoredTests);

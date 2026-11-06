@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -161,6 +162,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.PME_OPS_BLOCKED_DURATION_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.REBALANCED;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PART_STATE_FROM_OWNER_FEATURE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
@@ -524,6 +526,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param cache Cache.
      */
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
+        IgniteFeatureManager features = cctx.kernalContext().rollingUpgrade().features();
+
+        boolean activationAhead = !cctx.kernalContext().clientNode()
+            && features.localVersionFeatures().contains(PART_STATE_FROM_OWNER_FEATURE)
+            && !features.isActive(PART_STATE_FROM_OWNER_FEATURE);
+
+        // On activation every server resends its maps once: an owner that finished its last exchange before the
+        // activation didn't send its map, and the other nodes no longer write its state.
+        if (activationAhead)
+            features.listenActivation(PART_STATE_FROM_OWNER_FEATURE, this::scheduleResendPartitions);
+
         discoLsnr.onEvent(evt, cache);
     }
 
