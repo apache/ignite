@@ -638,6 +638,14 @@ public class TcpIgniteClient implements IgniteClient {
             BinaryMetadata oldMeta = oldType == null ? null : ((BinaryTypeImpl)oldType).metadata();
             BinaryMetadata newMeta = ((BinaryTypeImpl)meta).metadata();
 
+            // Meta handler cache can be concurrently cleared as the result of reconnect, thus old meta - not found
+            // and new meta can be registered with partially filled fields during the logic below, to prevent this
+            // we need to request a previous version of meta and merge it if required.
+            if (oldType == null && newMeta.isPartialFields()) {
+                BinaryType reRequestedMeta = metadata(typeId);
+                oldMeta = reRequestedMeta != null ? ((BinaryTypeImpl)reRequestedMeta).metadata() : null;
+            }
+
             // If type wasn't registered before or metadata changed, send registration request.
             if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {

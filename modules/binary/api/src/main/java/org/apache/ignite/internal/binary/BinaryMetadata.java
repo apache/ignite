@@ -76,6 +76,10 @@ public class BinaryMetadata implements Externalizable {
     /** Enum ordinal to name mapping. */
     private Map<Integer, String> ordinalToName;
 
+    /** Flag {@code true} if for optimization needs, already known object fields are not pushed into
+     * {@link #fields} structure. Not used during serialization. */
+    private boolean partialFields;
+
     /**
      * For {@link Externalizable}.
      */
@@ -96,6 +100,27 @@ public class BinaryMetadata implements Externalizable {
     public BinaryMetadata(int typeId, String typeName, @Nullable Map<String, BinaryFieldMetadata> fields,
         @Nullable String affKeyFieldName, boolean isEnum, @Nullable Map<String, Integer> enumMap) {
         this(typeId, typeName, fields, affKeyFieldName, null, isEnum, enumMap);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param typeId Type ID.
+     * @param typeName Type name.
+     * @param fields Fields map.
+     * @param affKeyFieldName Affinity key field name.
+     * @param schemas Schemas.
+     * @param isEnum Enum flag.
+     * @param enumMap Enum name to ordinal mapping.
+     * @param partialFields Flag {@code true} if for optimization needs, already known object fields are not pushed into
+     * {@link #fields} structure.
+     */
+    BinaryMetadata(int typeId, String typeName, @Nullable Map<String, BinaryFieldMetadata> fields,
+        @Nullable String affKeyFieldName, @Nullable Collection<BinarySchema> schemas, boolean isEnum,
+        @Nullable Map<String, Integer> enumMap, boolean partialFields) {
+        this(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
+
+        this.partialFields = partialFields;
     }
 
     /**
@@ -209,6 +234,12 @@ public class BinaryMetadata implements Externalizable {
      */
     public boolean isEnum() {
         return isEnum;
+    }
+
+    /** @return {@code true} if for optimization needs, already known object fields are not pushed
+     * into {@link #fields} structure. */
+    public boolean isPartialFields() {
+        return partialFields;
     }
 
     /**
