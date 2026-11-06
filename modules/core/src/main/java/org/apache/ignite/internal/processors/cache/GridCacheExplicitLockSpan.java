@@ -164,7 +164,6 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                 assert !deque.isEmpty();
 
                 GridCacheMvccCandidate first = deque.peekFirst();
-
                 GridCacheMvccCandidate reentry = first.unenter(ver);
 
                 if (reentry != null) {
