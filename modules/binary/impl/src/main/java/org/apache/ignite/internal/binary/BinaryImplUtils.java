@@ -362,6 +362,9 @@ public class BinaryImplUtils {
     /**
      * Read object serialized using optimized marshaller.
      *
+     * @param in Input stream.
+     * @param ctx Binary context.
+     * @param clsLdr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
      * @return Result.
      */
     public static Object doReadOptimized(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader clsLdr) {
