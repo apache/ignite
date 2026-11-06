@@ -94,7 +94,7 @@ public class ManagementApiVersionValidationTest extends AbstractRollingUpgradeTe
     }
 
     /** */
-    private static <R> R withCoreVersion(String ver, Callable<R> action) throws Exception {
+    public static <R> R withCoreVersion(String ver, Callable<R> action) throws Exception {
         IgniteCoreFeatureSet prev = IgniteCoreFeatureSet.INSTANCE;
         IgniteCoreFeatureSet.INSTANCE = createCoreFeatureSet(ver);
 

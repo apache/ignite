@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckStatusRollingUpgradeTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeleteRollingUpgradeTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeleteTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotListRollingUpgradeTest;
@@ -47,6 +48,7 @@ public class IgniteSnapshotTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotDeleteTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotListTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotListRollingUpgradeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterSnapshotCheckStatusRollingUpgradeTest.class, ignoredTests);
 
         return suite;
     }

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.snapshot.SnapshotStatusTask$SnapshotOperation",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.snapshot.SnapshotStatusTask$SnapshotOperation", "name": "CREATE"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.snapshot.SnapshotStatusTask$SnapshotOperation", "name": "RESTORE"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.snapshot.SnapshotStatusTask$SnapshotOperation", "name": "CHECK"}
+  ]
+}
