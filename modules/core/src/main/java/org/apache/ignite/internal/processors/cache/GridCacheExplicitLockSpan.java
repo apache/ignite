@@ -147,7 +147,8 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * Removes lock by key and optional version.
      *
      * @param key Key.
-     * @param ver Version (or {@code null} if any candidate should be removed.)
+     * @param ver Version of the lock or {@code null} to remove its latest candidate, the version of a nested lock
+     *     future to remove only its reentry.
      * @return Removed candidate if matches given parameters.
      */
     public GridCacheMvccCandidate removeCandidate(IgniteTxKey key, @Nullable GridCacheVersion ver) {
@@ -164,7 +165,10 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                 assert !deque.isEmpty();
 
                 GridCacheMvccCandidate first = deque.peekFirst();
-                GridCacheMvccCandidate reentry = first.unenter(ver);
+
+                boolean heldLock = ver == null || first.version().equals(ver);
+
+                GridCacheMvccCandidate reentry = first.unenter(heldLock ? null : ver);
 
                 if (reentry != null) {
                     assert reentry.reentry() : reentry;
@@ -187,7 +191,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
                     cand = reentry;
                 }
-                else if (ver == null || first.version().equals(ver)) {
+                else if (heldLock) {
                     cand = deque.removeFirst();
 
                     if (deque.isEmpty())

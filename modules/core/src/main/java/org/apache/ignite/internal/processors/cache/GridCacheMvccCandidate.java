@@ -71,7 +71,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     private GridCacheMvccCandidate reentry;
 
     /** Version of the explicit lock future that created this reentry, see {@link #unenter(GridCacheVersion)}. */
-    private final GridCacheVersion reentryVer;
+    private GridCacheVersion reentryVer;
 
     /** Previous lock for the thread. */
     @GridToStringExclude
@@ -115,7 +115,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
      * @param ver Cache version.
      * @param loc {@code True} if the lock is local.
      * @param reentry {@code True} if candidate is for reentry.
-     * @param reentryVer Version of the explicit lock future that creates the reentry, {@code null} otherwise.
      * @param tx Transaction flag.
      * @param singleImplicit Single-key-implicit-transaction flag.
      * @param nearLoc Near-local flag.
@@ -132,7 +131,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
         GridCacheVersion ver,
         boolean loc,
         boolean reentry,
-        @Nullable GridCacheVersion reentryVer,
         boolean tx,
         boolean singleImplicit,
         boolean nearLoc,
@@ -151,7 +149,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
         this.threadId = threadId;
         this.ver = ver;
         this.serOrder = serOrder;
-        this.reentryVer = reentryVer;
 
         mask(LOCAL, loc);
         mask(REENTRY, reentry);
@@ -201,17 +198,10 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
+     * @param reentryVer Version of the lock future that creates the reentry.
      * @return Reentry candidate.
      */
-    public GridCacheMvccCandidate reenter() {
-        return reenter(null);
-    }
-
-    /**
-     * @param reentryVer Version of the explicit lock future that creates the reentry, {@code null} otherwise.
-     * @return Reentry candidate.
-     */
-    public GridCacheMvccCandidate reenter(@Nullable GridCacheVersion reentryVer) {
+    public GridCacheMvccCandidate reenter(GridCacheVersion reentryVer) {
         GridCacheMvccCandidate old = reentry;
 
         GridCacheMvccCandidate reentry = new GridCacheMvccCandidate(
@@ -223,7 +213,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
             ver,
             local(),
             /*reentry*/true,
-            reentryVer,
             tx(),
             singleImplicit(),
             nearLocal(),
@@ -232,6 +221,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
             read());
 
         reentry.topVer = topVer;
+        reentry.reentryVer = reentryVer;
 
         if (old != null)
             reentry.reentry = old;
@@ -242,18 +232,16 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
-     * @param reentryVer Version of the future that created the reentry, {@code null} for the latest one.
+     * @param reentryVer Version of the lock future that created the latest reentry, {@code null} to unlink it anyway.
      * @return Removed reentry candidate or {@code null}.
      */
     @Nullable public GridCacheMvccCandidate unenter(@Nullable GridCacheVersion reentryVer) {
-        for (GridCacheMvccCandidate prev = this; prev.reentry != null; prev = prev.reentry) {
-            GridCacheMvccCandidate reentry = prev.reentry;
+        if (reentry != null && (reentryVer == null || reentryVer.equals(reentry.reentryVer))) {
+            GridCacheMvccCandidate old = reentry;
 
-            if (reentryVer == null || reentryVer.equals(reentry.reentryVer)) {
-                prev.reentry = reentry.reentry;
+            reentry = reentry.reentry;
 
-                return reentry;
-            }
+            return old;
         }
 
         return null;

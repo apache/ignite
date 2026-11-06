@@ -562,7 +562,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             GridCacheMvccCandidate c = mvcc.localCandidateByThreadOrVer(locId, threadId, ver);
 
             if (c != null)
-                return reenter ? c.reenter() : null;
+                return reenter ? c.reenter(ver) : null;
 
             prev = mvcc.allOwners();
 
