@@ -1432,6 +1432,19 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Object reference CAS.
+     *
+     * @param obj Object.
+     * @param off Offset.
+     * @param exp Expected.
+     * @param upd Upd.
+     * @return {@code True} if operation completed successfully, {@code false} - otherwise.
+     */
+    public static boolean compareAndSwapObject(Object obj, long off, Object exp, Object upd) {
+        return UNSAFE.compareAndSwapObject(obj, off, exp, upd);
+    }
+
+    /**
      * Atomically increments value stored in an integer pointed by {@code ptr}.
      *
      * @param ptr Pointer to an integer.
@@ -1526,6 +1539,17 @@ public abstract class GridUnsafe {
      */
     public static void putObjectVolatile(Object obj, long off, Object val) {
         UNSAFE.putObjectVolatile(obj, off, val);
+    }
+
+    /**
+     * Gets reference value from object field with volatile semantic.
+     *
+     * @param obj Object.
+     * @param off Offset.
+     * @return Reference value.
+     */
+    public static Object getObjectVolatile(Object obj, long off) {
+        return UNSAFE.getObjectVolatile(obj, off);
     }
 
     /**
