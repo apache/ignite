@@ -343,13 +343,13 @@ public interface GridDhtPartitionTopology {
     /**
      * Checks if there is at least one owner for each partition in the cache topology for a local node.
      * If not marks such a partition as LOST or OWNING depending on a policy.
-     * Changes only local partitions: the other nodes take their state from this node's partition map. Until
-     * {@code PART_STATE_FROM_OWNER_FEATURE} is active, it also writes the state into the other nodes' maps.
+     * Changes only local partitions: the other nodes learn the new states from this node's partition map. Until
+     * {@code PART_STATE_FROM_OWNER_FEATURE} is active, it also writes them into its copies of the other nodes' maps.
      *
      * @param resTopVer Exchange result version.
      * @param fut Exchange futute for topology events to detect.
      *
-     * @return {@code True} if the state of at least one local partition changed.
+     * @return {@code True} if the local partition map changed.
      */
     public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, GridDhtPartitionsExchangeFuture fut);
 
@@ -457,7 +457,7 @@ public interface GridDhtPartitionTopology {
      * @param fut Exchange future, or {@code null} if called outside an exchange.
      * @param assignment New affinity assignment.
      * @param updateRebalanceVer {@code True} if need check rebalance state.
-     * @return {@code True} if the state of at least one local partition changed.
+     * @return {@code True} if the local partition map changed.
      */
     public boolean onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment,
         boolean updateRebalanceVer);
