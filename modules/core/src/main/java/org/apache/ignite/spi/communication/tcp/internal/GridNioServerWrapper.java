@@ -108,7 +108,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.direct.IgniteMessageSerializationContext.buildForPeers;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
-import static org.apache.ignite.internal.util.nio.GridNioServer.RECOVERY_DESC_META_KEY;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_SER_CTX;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
@@ -377,17 +376,10 @@ public class GridNioServerWrapper {
         GridNioSession ses = null;
         IgniteCheckedException errs = null;
 
-        long totalTimeout;
-
-        if (cfg.failureDetectionTimeoutEnabled())
-            totalTimeout = node.isClient() ? stateProvider.clientFailureDetectionTimeout() : cfg.failureDetectionTimeout();
-        else {
-            totalTimeout = ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(
-                cfg.connectionTimeout(),
-                cfg.maxConnectionTimeout(),
-                cfg.reconCount()
-            );
-        }
+        // The same total timeout that the client pool uses as the reserve budget: it bounds the waits
+        // for connection attempts within a reservation, but not time spent inside a synchronous
+        // connection requestor call, whose duration is outside the pool's control.
+        long totalTimeout = CommunicationTcpUtils.totalConnectionEstablishmentTimeout(cfg, stateProvider, node);
 
         Set<InetSocketAddress> failedAddrsSet = new HashSet<>();
         int skippedAddrs = 0;
