@@ -70,11 +70,11 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
             throw new IgniteException("Test failure looking up the SSL context");
         });
 
-        assertConnectionClosed(addr);
+        connectAndAssertClosed(addr);
 
         assertSame(validFactory, nextFactory.get());
 
-        assertAcceptsTls(addr, validFactory.create());
+        connectAndHandshake(addr, validFactory.create());
     }
 
     /** */
@@ -88,11 +88,11 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
 
         nextCtx.set(new SSLContextWrapper(validCtx, invalidParams));
 
-        assertConnectionClosed(addr);
+        connectAndAssertClosed(addr);
 
         assertSame(validCtx, nextCtx.get());
 
-        assertAcceptsTls(addr, validCtx);
+        connectAndHandshake(addr, validCtx);
     }
 
     /** */
@@ -134,7 +134,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static void assertConnectionClosed(InetSocketAddress addr) throws Exception {
+    private static void connectAndAssertClosed(InetSocketAddress addr) throws Exception {
         try (Socket sock = new Socket()) {
             sock.connect(addr, SOCK_TIMEOUT);
             sock.setSoTimeout(SOCK_TIMEOUT);
@@ -144,7 +144,7 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static void assertAcceptsTls(InetSocketAddress addr, SSLContext ctx) throws Exception {
+    private static void connectAndHandshake(InetSocketAddress addr, SSLContext ctx) throws Exception {
         try (SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket()) {
             sock.connect(addr, SOCK_TIMEOUT);
             sock.setSoTimeout(SOCK_TIMEOUT);
