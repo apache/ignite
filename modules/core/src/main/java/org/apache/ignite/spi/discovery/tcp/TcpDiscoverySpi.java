@@ -1680,13 +1680,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /** */
-    SSLSocketFactory sslSocketFactory() throws IOException {
-        try {
-            return sslCtxFactory.create().getSocketFactory();
-        }
-        catch (RuntimeException e) {
-            throw new IOException("Failed to obtain the SSL socket factory for a discovery connection.", e);
-        }
+    SSLSocketFactory sslSocketFactory() {
+        return sslCtxFactory.create().getSocketFactory();
     }
 
     /**
