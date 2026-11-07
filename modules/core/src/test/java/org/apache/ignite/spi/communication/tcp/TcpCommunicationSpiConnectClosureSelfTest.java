@@ -1298,6 +1298,154 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
     }
 
     /**
+     * Stalls the NIO session registration of a new outgoing connection so that the creating thread's
+     * connection attempt consumes the whole reserve budget (collapsed to the connect timeout) without
+     * establishing a client. When the attempt fails, the shared connect future it inserted is already
+     * completed with the connection error, and the creating thread enters the wait loop with the
+     * reserve budget exhausted: it must be released with the error the connect future carries, not
+     * with the generic reserve timeout that would mask the real cause.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReserveClientPropagatesConnectErrorAfterBudgetElapsed() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+            TcpCommunicationSpi spi1 = spis.get(1);
+
+            ClusterNode node0 = nodes.get(0);
+            ClusterNode node1 = nodes.get(1);
+
+            // Establish the initial communication connection.
+            CountDownLatch ack = new CountDownLatch(1);
+
+            AtomicReference<Throwable> initErr = new AtomicReference<>();
+
+            spi0.sendMessage(node1, new GridTestMessage(node0.id(), 1, 0), err -> {
+                try {
+                    initErr.compareAndSet(null, err);
+                }
+                finally {
+                    ack.countDown();
+                }
+            });
+
+            assertTrue("Failed to establish initial connection", ack.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+            assertNull("Unexpected error during initial connection", initErr.get());
+
+            // Collapse the reserve budget to the connect timeout: the explicit connect timeout
+            // disables the failure detection timeout, and the maximum connect timeout equal to the
+            // connect timeout collapses the total establishment timeout to the connect timeout
+            // itself, so the single stalled attempt consumes the whole budget.
+            spi0.setConnectTimeout(3000);
+
+            spi0.setMaxConnectTimeout(3000);
+
+            spi1.setConnectTimeout(3000);
+
+            spi1.setMaxConnectTimeout(3000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            GridNioServer<?> srv0 = ((GridNioServerWrapper)U.field(spi0, "nioSrvWrapper")).nio();
+
+            GridNioServer<?> srv1 = ((GridNioServerWrapper)U.field(spi1, "nioSrvWrapper")).nio();
+
+            // Close the established connection, so that the reservation below creates a new outgoing
+            // connection whose registration is stalled.
+            closeAllSessions(srv0);
+
+            closeAllSessions(srv1);
+
+            assertTrue("Failed to wait for connection pools to become empty",
+                waitForPoolsEmpty(spi0, node1, spi1, node0));
+
+            AtomicInteger outgoingRegistrations = new AtomicInteger();
+
+            CountDownLatch registrationEntered = new CountDownLatch(1);
+
+            CountDownLatch releaseRegistration = new CountDownLatch(1);
+
+            // Hold the first outgoing registration on a latch the connection establishment deadline
+            // does not touch, so the creating thread's attempt consumes the whole reserve budget and
+            // fails with the connection error once the budget is used up.
+            srv0.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                GridNioSession ses = (GridNioSession)attachment;
+
+                if (!ses.accepted() && outgoingRegistrations.getAndIncrement() == 0) {
+                    registrationEntered.countDown();
+
+                    try {
+                        releaseRegistration.await(AWAIT_TIMEOUT * 3, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            try {
+                Throwable[] error = new Throwable[1];
+
+                // The creating thread: there is no client for the node (the pools are empty), so it
+                // creates the connection itself, inserts the shared connect future, and enters the
+                // wait loop with the exhausted budget once the stalled attempt fails.
+                Thread creator = new Thread(() -> {
+                    try {
+                        pool0.reserveClient(node1, 0);
+                    }
+                    catch (Throwable t) {
+                        error[0] = t;
+                    }
+                });
+
+                creator.setName("reserve-real-error-creator");
+
+                creator.setDaemon(true);
+
+                creator.start();
+
+                assertTrue("Failed to reach the stalled session registration",
+                    registrationEntered.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                creator.join(AWAIT_TIMEOUT * 1000L);
+
+                assertFalse("The creating thread did not finish within a bounded time", creator.isAlive());
+
+                Throwable t = error[0];
+
+                assertNotNull("reserveClient returned neither a client nor an error", t);
+
+                String msg = t.getMessage();
+
+                assertNotNull("The error carries no message", msg);
+
+                // The error the connection establishment produced, not the generic reserve timeout:
+                // the shared future is completed with that error when the attempt fails, and the
+                // exhausted reserve budget must propagate it instead of masking it.
+                assertTrue("Expected the connection establishment error, got: " + msg,
+                    msg.contains("Failed to connect to node"));
+
+                assertFalse("The generic reserve timeout masked the connect future's error, got: " + msg,
+                    msg.contains("Failed to reserve a client"));
+            }
+            finally {
+                releaseRegistration.countDown();
+
+                srv0.setChannelRegistrar(null);
+            }
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
      * Injects a pending connect future (an orphan that never completes) into the connection pool whose
      * per-wait timeout (derived from the workers registry's system worker blocked timeout) exceeds the
      * whole reserve budget, and establishes a client for the same node and connection index after the
