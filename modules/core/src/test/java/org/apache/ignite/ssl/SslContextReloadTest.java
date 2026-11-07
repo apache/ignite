@@ -185,11 +185,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
                 cfg.setClientConnectorConfiguration(null)
                     .setConnectorConfiguration(new ConnectorConfiguration()
-                        .setHost("127.0.0.1")
                         .setPort(occupied.getLocalPort())
-                        .setPortRange(10)
                         .setSslEnabled(true)
-                        .setSslClientAuth(true)
                         .setSslFactory(() -> {
                             factoryCalls.incrementAndGet();
 
@@ -295,8 +292,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             cfg.setSslContextFactory(factory)
                 .setClientConnectorConfiguration(new ClientConnectorConfiguration()
                     .setSslEnabled(true)
-                    .setSslClientAuth(true)
-                    .setUseIgniteSslContextFactory(true))
+                    .setSslClientAuth(true))
                 .setConnectorConfiguration(new ConnectorConfiguration().setSslEnabled(true).setSslClientAuth(true));
         });
     }

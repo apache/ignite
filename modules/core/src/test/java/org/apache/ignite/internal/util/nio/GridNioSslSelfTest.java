@@ -89,7 +89,6 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             })
             .logger(log)
             .selectorCount(1)
-            .byteOrder(ByteOrder.nativeOrder())
             .filters(U.sslFilter(sslCtxFactory, false, ByteOrder.nativeOrder(), log, mreg))
             .build();
 
