@@ -124,7 +124,9 @@ import static org.mockito.Mockito.when;
  * indefinitely, an exhausted reserve budget must not prevent returning a client that a concurrent
  * thread has established in the meantime, a disabled system worker blocked timeout must not abort
  * the waiter immediately, a stopped SPI must complete the pending connect futures so that all
- * waiters terminate, the wait for a peer-initiated (inverse) connection must be bounded by its own
+ * waiters terminate, a stop that wins the completion race of the shared connect future against the
+ * creating thread must not publish a client even when a concurrent waiter is present on that same
+ * future, the wait for a peer-initiated (inverse) connection must be bounded by its own
  * window (the connect timeout when the failure detection timeout is disabled) instead of the
  * reservation budget that the failed direct attempts have already consumed, and a waiter on an
  * in-progress connect future must still be released by its own reserve budget while the producer of
@@ -1540,6 +1542,533 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
     }
 
     /**
+     * Stalls the NIO session registration of a new outgoing connection, holds it until the pool is
+     * stopped, and only then releases it: stop() is therefore guaranteed to win the completion race
+     * of the shared connect future against the creating thread, while a second thread is a
+     * concurrent waiter on that same future. The creating thread must not publish or return its
+     * client, and the concurrent waiter must not take the client from the node client slot either:
+     * the slot must only ever hold a client whose creator completed the shared future
+     * successfully, so no client array for the node may exist at all once the creating thread lost
+     * the race to stop() (a publish that is rolled back afterwards would leave the array behind).
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopWinsRaceAgainstCreatorCompletionWithConcurrentWaiter() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // Large connect timeout: the connection establishment deadline must not fire during the
+            // stalled registration, so that only the explicit stop() can complete the shared connect future.
+            spi0.setConnectTimeout(30000);
+
+            spis.get(1).setConnectTimeout(30000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(pool0, "clients");
+
+            GridNioServer<?> srv0 = ((GridNioServerWrapper)U.field(spi0, "nioSrvWrapper")).nio();
+
+            AtomicInteger outgoingRegistrations = new AtomicInteger();
+
+            // The registrar signals when the creating thread enters the stalled registration and then
+            // holds the registration until the test releases it: the creating thread therefore cannot
+            // complete the shared connect future before stop() does, so stop() wins the completion race
+            // no matter how long the test thread takes between the two calls.
+            CountDownLatch registrationEntered = new CountDownLatch(1);
+
+            CountDownLatch releaseRegistration = new CountDownLatch(1);
+
+            srv0.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                GridNioSession ses = (GridNioSession)attachment;
+
+                if (!ses.accepted() && outgoingRegistrations.getAndIncrement() == 0) {
+                    registrationEntered.countDown();
+
+                    try {
+                        releaseRegistration.await(AWAIT_TIMEOUT, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            try {
+                GridCommunicationClient[] returned = new GridCommunicationClient[2];
+
+                Throwable[] error = new Throwable[2];
+
+                CountDownLatch creatorDone = new CountDownLatch(1);
+
+                CountDownLatch waiterDone = new CountDownLatch(1);
+
+                // The creating thread: the one that inserts the shared connect future and establishes the
+                // client, i.e. the candidate for the own-client fast path.
+                Thread creator = new Thread(() -> {
+                    try {
+                        returned[0] = pool0.reserveClient(node1, 0);
+                    }
+                    catch (Throwable t) {
+                        error[0] = t;
+                    }
+                    finally {
+                        creatorDone.countDown();
+                    }
+                });
+
+                creator.setName("stop-race-with-waiter-creator");
+
+                creator.setDaemon(true);
+
+                creator.start();
+
+                // Wait until the creating thread is stalled in the session registration, i.e. the shared
+                // connect future is present and still pending.
+                assertTrue("Failed to reach the stalled session registration of the creating thread",
+                    registrationEntered.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                // A concurrent waiter on the same shared connect future: it must be blocked in the
+                // shared-future wait of reserveClient before stop() is called, so that it is released by
+                // the stop() completion of the future instead of by an earlier check.
+                Thread waiter = new Thread(() -> {
+                    try {
+                        returned[1] = pool0.reserveClient(node1, 0);
+                    }
+                    catch (Throwable t) {
+                        error[1] = t;
+                    }
+                    finally {
+                        waiterDone.countDown();
+                    }
+                });
+
+                waiter.setName("stop-race-with-waiter-waiter");
+
+                waiter.setDaemon(true);
+
+                waiter.start();
+
+                boolean inFutWait = false;
+
+                long readyDeadlineMs = System.currentTimeMillis() + AWAIT_TIMEOUT * 1000L;
+
+                while (System.currentTimeMillis() < readyDeadlineMs) {
+                    if (isWaitingOnConnectFuture(waiter)) {
+                        inFutWait = true;
+
+                        break;
+                    }
+
+                    Thread.sleep(10);
+                }
+
+                assertTrue("The concurrent waiter was not blocked in the shared-future wait before stop() "
+                    + "was called", inFutWait);
+
+                // Stop the pool while the registration is still held: stop() wins the completion race.
+                pool0.stop();
+
+                // The concurrent waiter must be released promptly by stop() completing the future.
+                assertTrue("The concurrent waiter was not released by stop()",
+                    waiterDone.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                assertNotNull("The concurrent waiter returned neither a client nor an error", error[1]);
+
+                assertNull("The concurrent waiter returned a client although the SPI is stopped",
+                    returned[1]);
+
+                // The specific stop-completion message proves the waiter was released by stop()
+                // completing the future, not by the reserve budget or the stopping check.
+                assertTrue("The concurrent waiter was not released by the stop() future completion, got: "
+                        + error[1],
+                    error[1].getMessage() != null && error[1].getMessage().contains("SPI is being stopped"));
+
+                // Only then release the registration, so that the creating thread reaches the future
+                // completion and finds it already completed with the stop error.
+                releaseRegistration.countDown();
+
+                assertTrue("Creating thread did not finish after the stalled registration was released",
+                    creatorDone.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                assertNull("The creating thread returned a client although stop() completed the shared future",
+                    returned[0]);
+
+                assertNotNull("The creating thread returned neither a client nor an error", error[0]);
+
+                assertTrue("The creating thread was not released by the stop() future completion, got: " + error[0],
+                    error[0].getMessage() != null && error[0].getMessage().contains("SPI is being stopped"));
+
+                // The creating thread lost the completion race to stop(), so its client must not have
+                // been published: no client array for the node may exist at all, because a client that
+                // was published and removed again would leave the array behind.
+                assertNull("A client was published to node " + node1 + " although stop() completed the "
+                        + "shared connect future first",
+                    clients.get(node1.id()));
+            }
+            finally {
+                // Release the registration even if an assertion above failed, so that the NIO worker
+                // is not left stalled.
+                releaseRegistration.countDown();
+
+                srv0.setChannelRegistrar(null);
+            }
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Forces the interleaving in which the pool's stop() starts after the creating thread has
+     * established its client but before the creating thread's publication decision: the NIO session
+     * registration is stalled until the test releases it (so the creating thread cannot reach the
+     * decision yet), and the test releases the registration and stops the pool while holding the
+     * pool's stop lock, so that the creating thread — once its creation is done — can only be at
+     * the stop lock and the stop's flag set and future completions are guaranteed to be ordered
+     * before the decision. With a concurrent waiter blocked in the shared-future wait, the future
+     * must be completed with the stop error, not with the client: the waiter must not take the
+     * client through the future, no client array may be published, and the client the creating
+     * thread established must be closed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopAfterClientCreationDoesNotHandOutClient() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // Large connect timeout: the connection establishment deadline must not fire during the
+            // stalled registration, so that only the explicit stop() can order with the creating thread.
+            spi0.setConnectTimeout(30000);
+
+            spis.get(1).setConnectTimeout(30000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<UUID, GridCommunicationClient[]> clients = U.field(pool0, "clients");
+
+            ConcurrentMap<?, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            Object stopLock = U.field(pool0, "stopLock");
+
+            assertNotNull("The pool has no stop lock", stopLock);
+
+            GridNioServer<?> srv0 = ((GridNioServerWrapper)U.field(spi0, "nioSrvWrapper")).nio();
+
+            AtomicInteger outgoingRegistrations = new AtomicInteger();
+
+            AtomicReference<GridNioSession> creatorSes = new AtomicReference<>();
+
+            CountDownLatch registrationEntered = new CountDownLatch(1);
+
+            CountDownLatch releaseRegistration = new CountDownLatch(1);
+
+            // Capture the session the creating thread establishes, to verify that it is closed, and
+            // hold the registration until the test releases it, so that the creation (and therefore
+            // the publication decision) can be ordered with the stop: while the registration is
+            // held, the creating thread cannot reach the decision.
+            srv0.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                GridNioSession ses = (GridNioSession)attachment;
+
+                if (!ses.accepted() && outgoingRegistrations.getAndIncrement() == 0) {
+                    creatorSes.set(ses);
+
+                    registrationEntered.countDown();
+
+                    try {
+                        releaseRegistration.await(AWAIT_TIMEOUT, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            try {
+                GridCommunicationClient[] returned = new GridCommunicationClient[2];
+
+                Throwable[] error = new Throwable[2];
+
+                CountDownLatch creatorDone = new CountDownLatch(1);
+
+                CountDownLatch waiterDone = new CountDownLatch(1);
+
+                // The creating thread: the one that inserts the shared connect future and establishes
+                // the client.
+                Thread creator = new Thread(() -> {
+                    try {
+                        returned[0] = pool0.reserveClient(node1, 0);
+                    }
+                    catch (Throwable t) {
+                        error[0] = t;
+                    }
+                    finally {
+                        creatorDone.countDown();
+                    }
+                });
+
+                creator.setName("stop-after-client-creation-creator");
+
+                creator.setDaemon(true);
+
+                // A concurrent waiter on the same shared connect future: the candidate for taking the
+                // client through the future before the stop could order with the publication decision.
+                Thread waiter = new Thread(() -> {
+                    try {
+                        returned[1] = pool0.reserveClient(node1, 0);
+                    }
+                    catch (Throwable t) {
+                        error[1] = t;
+                    }
+                    finally {
+                        waiterDone.countDown();
+                    }
+                });
+
+                waiter.setName("stop-after-client-creation-waiter");
+
+                waiter.setDaemon(true);
+
+                creator.start();
+
+                // Wait until the creating thread is stalled in the session registration, i.e. the
+                // shared connect future is present and still pending.
+                assertTrue("Failed to reach the stalled session registration of the creating thread",
+                    registrationEntered.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                // Wait until the creating thread's shared connect future is visible in the pool: the
+                // creating thread inserts it before entering the client creation, so the waiter below
+                // always waits on the creator's future instead of becoming a creator itself.
+                long readyDeadlineMs = System.currentTimeMillis() + AWAIT_TIMEOUT * 1000L;
+
+                while (clientFuts.isEmpty() && System.currentTimeMillis() < readyDeadlineMs)
+                    Thread.sleep(10);
+
+                assertFalse("The creating thread did not insert the shared connect future in time",
+                    clientFuts.isEmpty());
+
+                GridFutureAdapter<GridCommunicationClient> fut = clientFuts.values().iterator().next();
+
+                waiter.start();
+
+                // The waiter must be blocked in the shared-future wait before stop() is called, so
+                // that it is released by the stop() completion of the future instead of by an
+                // earlier check.
+                while (System.currentTimeMillis() < readyDeadlineMs && !isWaitingOnConnectFuture(waiter))
+                    Thread.sleep(10);
+
+                assertTrue("The concurrent waiter was not blocked in the shared-future wait before "
+                        + "stop() was called",
+                    isWaitingOnConnectFuture(waiter));
+
+                // Release the registration and stop the pool while holding the stop lock: while the
+                // lock is held, the creating thread cannot be inside the publication decision, so
+                // once its creation is done (no client creation frames on its stack) it can only be
+                // at the stop lock, and the stop's flag set and future completions are ordered
+                // exactly before the decision — the future is completed with the stop error, not
+                // with the client.
+                synchronized (stopLock) {
+                    releaseRegistration.countDown();
+
+                    long decisionDeadlineMs = System.currentTimeMillis() + AWAIT_TIMEOUT * 1000L;
+
+                    while (System.currentTimeMillis() < decisionDeadlineMs && isInsideClientCreation(creator))
+                        Thread.sleep(10);
+
+                    assertFalse("The creating thread did not finish the client creation in time",
+                        isInsideClientCreation(creator));
+
+                    pool0.stop();
+                }
+
+                assertTrue("The concurrent waiter was not released by stop()",
+                    waiterDone.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                assertNull("The concurrent waiter returned a client although the SPI is stopped",
+                    returned[1]);
+
+                assertNotNull("The concurrent waiter returned neither a client nor an error", error[1]);
+
+                // The specific stop message proves the waiter was released by the stop() completion of
+                // the future, not by the reserve budget.
+                assertTrue("The concurrent waiter was not released by the stop() completion, got: " + error[1],
+                    error[1].getMessage() != null && error[1].getMessage().contains("SPI is being stopped"));
+
+                assertTrue("The creating thread did not finish after stop()",
+                    creatorDone.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                assertNull("The creating thread returned a client although the SPI is stopped",
+                    returned[0]);
+
+                assertNotNull("The creating thread returned neither a client nor an error", error[0]);
+
+                assertTrue("The creating thread was not released by the stop that was ordered before "
+                        + "its publication decision, got: " + error[0],
+                    error[0].getMessage() != null && error[0].getMessage().contains("SPI is being stopped"));
+
+                // The stop was ordered before the publication decision, so the client must not have
+                // been published: no client array for the node may exist at all, because a client that
+                // was published and removed again would leave the array behind.
+                assertNull("A client was published to node " + node1 + " although the stop was ordered "
+                        + "before the publication decision",
+                    clients.get(node1.id()));
+
+                // The future must carry no client: the stop completed it with the stop error before
+                // the creating thread could complete it with the client, so no waiter can take the
+                // client through the future.
+                assertTrue("The shared connect future was not completed", fut.isDone());
+
+                assertNull("The shared connect future carries a client although the stop was ordered "
+                        + "before the publication decision",
+                    fut.result());
+
+                // The client the creating thread established must have been closed, not handed out.
+                GridNioSession ses = creatorSes.get();
+
+                assertNotNull("The creating thread did not reach the session registration", ses);
+
+                assertTrue("The client established by the creating thread was not closed",
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return ses.closeTime() > 0;
+                        }
+                    }, AWAIT_TIMEOUT * 1000L));
+            }
+            finally {
+                // Release the registration even if an assertion above failed, so that the NIO worker
+                // is not left stalled.
+                releaseRegistration.countDown();
+
+                srv0.setChannelRegistrar(null);
+            }
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Orders the pool's stop() with the insertion of a new connect future in
+     * ConnectionClientPool.reserveClient(): the test holds the pool's stop lock while a competing
+     * thread enters reserveClient, so that the competing thread is provably blocked right at the
+     * stop check guarding the future insertion (waiting on the lock, in reserveClient, with no
+     * connect future in the pool yet), and stops the pool while it is still there: the stop is
+     * therefore ordered exactly before the future insertion, and the competing thread must see the
+     * stopping flag and be rejected before it inserts its future — a future inserted after the stop
+     * must not be left in the pool uncompleted by the stop, and the competing thread must not
+     * establish a client after the stop to drop it again.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopOrdersWithConnectFutureInsertion() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+
+            ClusterNode node1 = nodes.get(1);
+
+            // Large connect timeout: the connection establishment deadline must not fire, so that
+            // only the explicit stop() can order with the competing thread.
+            spi0.setConnectTimeout(30000);
+
+            spis.get(1).setConnectTimeout(30000);
+
+            ConnectionClientPool pool0 = U.field(spi0, "clientPool");
+
+            ConcurrentMap<?, GridFutureAdapter<GridCommunicationClient>> clientFuts =
+                U.field(pool0, "clientFuts");
+
+            Object stopLock = U.field(pool0, "stopLock");
+
+            assertNotNull("The pool has no stop lock", stopLock);
+
+            GridCommunicationClient[] returned = new GridCommunicationClient[1];
+
+            Throwable[] error = new Throwable[1];
+
+            CountDownLatch lateDone = new CountDownLatch(1);
+
+            // The competing thread: it starts reserveClient while this thread holds the stop lock,
+            // so it reaches the stop check guarding the connect-future insertion and blocks there.
+            Thread late = new Thread(() -> {
+                try {
+                    returned[0] = pool0.reserveClient(node1, 0);
+                }
+                catch (Throwable t) {
+                    error[0] = t;
+                }
+                finally {
+                    lateDone.countDown();
+                }
+            });
+
+            late.setName("stop-insertion-order-late");
+
+            late.setDaemon(true);
+
+            synchronized (stopLock) {
+                late.start();
+
+                // Wait until the competing thread is provably blocked at the stop check guarding
+                // the connect-future insertion: waiting on a monitor, in reserveClient, before the
+                // client creation, with no connect future in the pool yet.
+                long readyDeadlineMs = System.currentTimeMillis() + AWAIT_TIMEOUT * 1000L;
+
+                while (System.currentTimeMillis() < readyDeadlineMs
+                    && !isAtReserveClientEntryLock(late, clientFuts))
+                    Thread.sleep(10);
+
+                assertTrue("The competing thread was not blocked at the stop check of the "
+                        + "connect-future insertion before stop() was called",
+                    isAtReserveClientEntryLock(late, clientFuts));
+
+                // Stop the pool while the competing thread is at the entry check: the stop is
+                // therefore ordered exactly before the competing thread's future insertion.
+                pool0.stop();
+            }
+
+            assertTrue("The competing thread was not released by stop()",
+                lateDone.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+            assertNull("The competing thread returned a client although the SPI is stopped",
+                returned[0]);
+
+            assertNotNull("The competing thread returned neither a client nor an error", error[0]);
+
+            assertTrue("The competing thread was not rejected at the stop check before its future "
+                    + "insertion, got: " + error[0],
+                error[0].getMessage() != null && error[0].getMessage().contains("Node is stopping"));
+
+            // The stop was ordered before the future insertion, so the competing thread's future
+            // must not be in the pool: a future inserted after the stop would not be covered by
+            // the stop's future completions.
+            assertTrue("The competing thread's connect future was inserted into the pool although "
+                    + "the stop was ordered before the insertion",
+                clientFuts.isEmpty());
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
      * Checks the inverse (peer-initiated) connection wait of
      * {@code ConnectionClientPool.handleUnreachableNodeException}: the inverse-connection requestor must be
      * triggered exactly once, and the subsequent wait for the inverse connection must be bounded by its
@@ -1860,6 +2389,19 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
 
     /**
      * @param th Thread to check.
+     * @return {@code True} if the thread is inside the client creation of
+     * {@code ConnectionClientPool.reserveClient}.
+     */
+    private static boolean isInsideClientCreation(Thread th) {
+        for (StackTraceElement el : th.getStackTrace())
+            if (el.getClassName().equals("org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper"))
+                return true;
+
+        return false;
+    }
+
+    /**
+     * @param th Thread to check.
      * @return {@code True} if the thread is blocked in the connect-future wait of
      * {@code ConnectionClientPool.reserveClient}.
      */
@@ -1874,6 +2416,27 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
                 && el.getMethodName().equals("reserveClient"))
                 return inFutGet;
         }
+
+        return false;
+    }
+
+    /**
+     * @param th Thread to check.
+     * @param clientFuts The pool's connect futures.
+     * @return {@code True} if the thread is blocked at the stop lock guarding the connect-future
+     * insertion of {@code ConnectionClientPool.reserveClient}: waiting on a monitor, the topmost
+     * pool frame on its stack is the reserveClient call itself (not a deeper pool method such as
+     * the client creation), and no connect future is in the pool yet.
+     */
+    private static boolean isAtReserveClientEntryLock(Thread th, ConcurrentMap<?, ?> clientFuts) {
+        Thread.State state = th.getState();
+
+        if ((state != Thread.State.BLOCKED && state != Thread.State.WAITING) || !clientFuts.isEmpty())
+            return false;
+
+        for (StackTraceElement el : th.getStackTrace())
+            if (el.getClassName().equals("org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool"))
+                return el.getMethodName().equals("reserveClient");
 
         return false;
     }
