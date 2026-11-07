@@ -156,6 +156,18 @@ public class ConnectionClientPool {
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping = false;
 
+    /**
+     * Lock that orders the pool's {@link #stop()} with the two critical phases of
+     * {@link #reserveClient(ClusterNode, int)}: the insertion of a new connect future (the stop check
+     * and the insertion happen under the lock, so a future can never end up in the pool after the stop
+     * without the stop having completed it) and the publication of a newly established client (the
+     * creating thread decides under the lock whether its client may be handed out through the shared
+     * future at all, and publishes it only if the stop has not started in between). {@link #stop()}
+     * itself sets the {@link #stopping} flag and completes the still pending connect futures under the
+     * same lock.
+     */
+    private final Object stopLock = new Object();
+
     /** Scheduled executor service which closed the socket if handshake timeout is out. **/
     private final ScheduledExecutorService handshakeTimeoutExecutorService;
 
@@ -227,18 +239,25 @@ public class ConnectionClientPool {
      *
      */
     public void stop() {
-        this.stopping = true;
+        // Set the flag and complete the still pending connect futures under the stop lock: a creating
+        // thread decides under the same lock whether its client may be handed out through the shared
+        // future at all, so the shutdown's future completions must be ordered with that decision — a
+        // future this method completes here can never be completed with a client afterwards.
+        synchronized (stopLock) {
+            stopping = true;
+
+            for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
+                // First completion wins: if the creating thread completed the future first, this call
+                // has no effect.
+                fut.onDone(new IgniteSpiException("SPI is being stopped."));
+            }
+        }
 
         metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
 
         metrics.values().forEach(NodeConnectionMetrics::unregister);
 
         metrics.clear();
-
-        for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
-            // First completion wins: if the creating thread completes the future first, this call has no effect.
-            fut.onDone(new IgniteSpiException("SPI is being stopped."));
-        }
 
         handshakeTimeoutExecutorService.shutdown();
     }
@@ -303,24 +322,42 @@ public class ConnectionClientPool {
                     if (reserveElapsedMillis(reserveStartNanos) >= totalReserveTimeout)
                         throw reserveTimeoutException(node, totalReserveTimeout);
 
-                    if (stopping)
-                        throw new IgniteSpiException("Node is stopping.");
-
                     // Do not allow concurrent connects.
                     GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
 
                     ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
-                    GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
+                    // The stop check and the connect-future insertion must be ordered with stop(),
+                    // which sets the stopping flag and completes the still pending connect futures
+                    // under the same lock: either this thread sees the flag and bails out before
+                    // inserting its future, or stop() sees the inserted future and completes it with
+                    // the stop error — a connect future can never be left in the pool after the stop
+                    // without the stop having completed it, so every thread waiting on a connect
+                    // future is released by the stop.
+                    GridFutureAdapter<GridCommunicationClient> oldFut;
+
+                    synchronized (stopLock) {
+                        if (stopping)
+                            throw new IgniteSpiException("Node is stopping.");
+
+                        oldFut = clientFuts.putIfAbsent(connKey, fut);
+                    }
 
                     // Client established by this thread itself. When the thread reserving a connection is also
                     // the one that creates it, it can return that client directly instead of waiting on the
                     // shared future. The establishment already respected the connection deadline, so re-entering
                     // the wait/budget loop below (meant for threads waiting on another thread's future) could only
                     // reject a valid client once the reservation budget has elapsed. The fast path is taken only
-                    // when this thread won the completion race for the shared future; if stop() completed it
-                    // first, the client is dropped and the error carried by the future is propagated.
+                    // when this thread won the completion race for the shared future: the client is published
+                    // only after that completion, so a concurrent waiter can never take a client whose future
+                    // was completed with a stop error; if stop() completed it first, the client is dropped and
+                    // closed without ever being published, and the error carried by the future is propagated.
                     GridCommunicationClient ownClient = null;
+
+                    // Set when the pool's stop() has started right after this thread won the completion
+                    // race for the shared connect future: the client is dropped and closed instead of
+                    // being published, and the stop is reported to the caller.
+                    boolean stopRaceWon = false;
 
                     if (oldFut == null) {
                         try {
@@ -333,19 +370,18 @@ public class ConnectionClientPool {
                                 client0 = createCommunicationClient(node, connIdx);
 
                                 if (client0 != null) {
-                                    addNodeClient(node, connIdx, client0);
-
-                                    if (client0 instanceof GridTcpNioCommunicationClient) {
-                                        GridTcpNioCommunicationClient tcpClient = ((GridTcpNioCommunicationClient)client0);
-
-                                        if (tcpClient.session().closeTime() > 0 && removeNodeClient(nodeId, client0)) {
-                                            if (log.isDebugEnabled()) {
-                                                log.debug("Session was closed after client creation, will retry " +
-                                                    "[node=" + node + ", client=" + client0 + ']');
-                                            }
-
-                                            client0 = null;
+                                    if (client0 instanceof GridTcpNioCommunicationClient
+                                        && ((GridTcpNioCommunicationClient)client0).session().closeTime() > 0) {
+                                        // The session was closed after client creation: drop the client before
+                                        // it can be published and retry the establishment.
+                                        if (log.isDebugEnabled()) {
+                                            log.debug("Session was closed after client creation, will retry " +
+                                                "[node=" + node + ", client=" + client0 + ']');
                                         }
+
+                                        client0.forceClose();
+
+                                        client0 = null;
                                     }
                                 }
                                 else {
@@ -357,14 +393,42 @@ public class ConnectionClientPool {
                                 }
                             }
 
-                            // Fast path only if this call actually completed the shared future with the own
-                            // client. If stop() (or another completion) won the race, the future already
-                            // carries that outcome and the client must not be published: remove and close it,
-                            // then let the wait loop below propagate the pending error.
-                            if (fut.onDone(client0))
-                                ownClient = client0;
-                            else if (client0 != null) {
-                                if (removeNodeClient(nodeId, client0))
+                            // The publication decision — whether this client may be handed out through
+                            // the shared future at all — must fall before the future is completed, and
+                            // the decision together with the completion and the publication is
+                            // coordinated with stop() by the stop lock: stop() sets the stopping flag
+                            // and completes the still pending connect futures under the same lock, so
+                            // either the decision happens before the stop (the future is completed with
+                            // the client, the client is published, and a concurrent waiter may take it)
+                            // or the stop happens before the decision (the future is never completed
+                            // with this client, which is dropped and closed, and the wait loop below
+                            // propagates the outcome the future carries). A waiter can therefore never
+                            // take a client that the creating thread closes afterwards, and the node
+                            // client slot only ever holds a client whose creator completed the future
+                            // successfully.
+                            synchronized (stopLock) {
+                                if (stopping) {
+                                    if (client0 != null)
+                                        client0.forceClose();
+
+                                    stopRaceWon = true;
+                                }
+                                else if (fut.onDone(client0)) {
+                                    if (client0 != null) {
+                                        GridCommunicationClient published = addNodeClient(node, connIdx, client0);
+
+                                        if (published != client0)
+                                            // A concurrent establishment claimed the slot before this client could
+                                            // be published: the shared future already carries this client, so this
+                                            // thread adopts the published client, and a waiter still holding this
+                                            // one finds it closed (if it wrapped a different session) and
+                                            // re-reserves to the published client.
+                                            client0 = published;
+                                    }
+
+                                    ownClient = client0;
+                                }
+                                else if (client0 != null)
                                     client0.forceClose();
                             }
                         }
@@ -400,6 +464,13 @@ public class ConnectionClientPool {
                     }
                     else
                         fut = oldFut;
+
+                    // The pool's stop() has started right after this thread won the completion race for
+                    // the shared connect future: the client was dropped instead of being published, so
+                    // report the stop instead of returning it — the wait loop below must not hand out
+                    // the client the future carries.
+                    if (stopRaceWon)
+                        throw new IgniteSpiException("SPI is being stopped.");
 
                     if (ownClient != null)
                         client = ownClient;
@@ -670,11 +741,22 @@ public class ConnectionClientPool {
     }
 
     /**
+     * Adds a client to the node's client slot, unless a concurrent establishment for the same
+     * (node, connIdx) has already claimed it: an inbound connection and a parallel outgoing
+     * reservation can both reach publication for the same slot, and the first one to claim it
+     * wins. The losing client is a duplicate of the same logical connection and is disposed of:
+     * a client wrapping a different session than the winner is force-closed, so that only one
+     * live connection per (node, connIdx) remains, while a duplicate wrapper of the very same
+     * session is abandoned without closing, since closing it would close the session the
+     * winner still uses.
+     *
      * @param node Node.
      * @param connIdx Connection index.
      * @param addClient Client to add.
+     * @return The client occupying the slot after the call: {@code addClient} if it was added, or
+     *         the client that already occupied the slot.
      */
-    public void addNodeClient(ClusterNode node, int connIdx, GridCommunicationClient addClient) {
+    public GridCommunicationClient addNodeClient(ClusterNode node, int connIdx, GridCommunicationClient addClient) {
         assert cfg.connectionsPerNode() > 0 : cfg.connectionsPerNode();
         assert connIdx == addClient.connectionIndex() : addClient;
 
@@ -689,16 +771,25 @@ public class ConnectionClientPool {
             assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
                 || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
 
-            return;
+            return addClient;
         }
 
         for (; ; ) {
             GridCommunicationClient[] curClients = clients.get(node.id());
 
-            assert curClients == null || curClients[connIdx] == null : "Client already created [node=" + node.id() +
-                ", connIdx=" + connIdx +
-                ", client=" + addClient +
-                ", oldClient=" + curClients[connIdx] + ']';
+            GridCommunicationClient existing =
+                curClients != null && connIdx < curClients.length ? curClients[connIdx] : null;
+
+            if (existing != null) {
+                if (log.isInfoEnabled())
+                    log.info("Concurrent establishment claimed the client slot first, the duplicate is " +
+                        "disposed of [nodeId=" + node.id() + ", connIdx=" + connIdx +
+                        ", duplicate=" + addClient + ", kept=" + existing + ']');
+
+                closeDuplicateClient(addClient, existing);
+
+                return existing;
+            }
 
             GridCommunicationClient[] newClients = curClients == null
                 ? new GridCommunicationClient[cfg.connectionsPerNode()]
@@ -721,9 +812,27 @@ public class ConnectionClientPool {
                 if (log.isDebugEnabled())
                     log.debug("New node client were added [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
 
-                break;
+                return addClient;
             }
         }
+    }
+
+    /**
+     * Disposes of the client that lost the publication race for its (node, connIdx) slot: a
+     * client wrapping a different session than the slot's client is force-closed, a duplicate
+     * wrapper of the very same session is abandoned without closing, since closing it would
+     * close the session the winner still uses.
+     *
+     * @param duplicate Client that lost the race.
+     * @param kept Client that occupies the slot.
+     */
+    private void closeDuplicateClient(GridCommunicationClient duplicate, GridCommunicationClient kept) {
+        if (duplicate instanceof GridTcpNioCommunicationClient
+            && kept instanceof GridTcpNioCommunicationClient
+            && ((GridTcpNioCommunicationClient)duplicate).session() == ((GridTcpNioCommunicationClient)kept).session())
+            return;
+
+        duplicate.forceClose();
     }
 
     /**
