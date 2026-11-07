@@ -63,6 +63,33 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     private static final int SOCKET_TIMEOUT = 10_000;
 
+    /** */
+    private static final String OLD_KEYS = "node01";
+
+    /** */
+    private static final String NEW_SERVER_KEYS = "node02";
+
+    /** */
+    private static final String NEW_PEER_KEYS = "node03";
+
+    /** */
+    private static final String OLD_TRUST = "trustone";
+
+    /** */
+    private static final String NEW_TRUST = "trusttwo";
+
+    /** */
+    private static final String TRUST_BOTH_CAS = "trustboth";
+
+    /** */
+    private static final String OLD_SERVER_SUBJECT = "CN=node01";
+
+    /** */
+    private static final String NEW_SERVER_SUBJECT = "CN=node02";
+
+    /** */
+    private static final String LOOPBACK_ADDRESS = "127.0.0.1";
+
     /** Discovery addresses shared within one test. */
     private final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -79,24 +106,24 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         int[] ports = tlsPorts(node);
 
         for (int port : ports)
-            connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
+            connectAndAssertServerCertificate(port, OLD_KEYS, OLD_TRUST, OLD_SERVER_SUBJECT);
 
-        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory(OLD_KEYS, OLD_TRUST));
 
         try (IgniteClient clientWithOldTrust = Ignition.startClient(clientCfg)) {
             clientWithOldTrust.cacheNames();
 
-            factory.reload("node02", "trusttwo");
+            factory.reload(NEW_SERVER_KEYS, NEW_TRUST);
 
             for (int port : ports) {
-                connectAndAssertServerCertificate(port, "node03", "trusttwo", "CN=node02");
+                connectAndAssertServerCertificate(port, NEW_PEER_KEYS, NEW_TRUST, NEW_SERVER_SUBJECT);
                 connectAndAssertOldClientCertificateRejected(port);
             }
 
             clientWithOldTrust.cacheNames();
         }
 
-        IgniteEx peerWithNewTrust = startNode(1, sslTrustedFactory("node03", "trusttwo"));
+        IgniteEx peerWithNewTrust = startNode(1, sslTrustedFactory(NEW_PEER_KEYS, NEW_TRUST));
 
         assertTrue(((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).pingNode(peerWithNewTrust.localNode().id()));
 
@@ -108,7 +135,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testUsePreviousContextDuringAndAfterFailedReload() throws Exception {
-        String replacementKeyStore = keyStorePath("node02");
+        String replacementKeyStore = keyStorePath(NEW_SERVER_KEYS);
         CountDownLatch reloadStarted = new CountDownLatch(1);
         CountDownLatch allowReload = new CountDownLatch(1);
 
@@ -139,7 +166,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         IgniteEx node = startNode(0, factory);
         int[] ports = tlsPorts(node);
 
-        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory("node01", "trustone"));
+        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory(OLD_KEYS, OLD_TRUST));
 
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
             client.cacheNames();
@@ -147,14 +174,14 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             factory.setKeyStorePassword("wrong-password".toCharArray());
 
             IgniteInternalFuture<?> reload = GridTestUtils.runAsync(() -> {
-                assertThrows(IgniteException.class, () -> factory.reload("node02", "trusttwo"));
+                assertThrows(IgniteException.class, () -> factory.reload(NEW_SERVER_KEYS, NEW_TRUST));
             });
 
             try {
                 assertTrue("Reload did not reach the replacement key store", reloadStarted.await(30, TimeUnit.SECONDS));
 
                 for (int port : ports)
-                    connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
+                    connectAndAssertServerCertificate(port, OLD_KEYS, OLD_TRUST, OLD_SERVER_SUBJECT);
 
                 client.cacheNames();
             }
@@ -165,7 +192,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             reload.get(30, TimeUnit.SECONDS);
 
             for (int port : ports)
-                connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
+                connectAndAssertServerCertificate(port, OLD_KEYS, OLD_TRUST, OLD_SERVER_SUBJECT);
 
             client.cacheNames();
         }
@@ -174,11 +201,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRestInitializesContextOnceOnPortRetry() throws Exception {
-        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
+        SSLContext ctx = sslTrustedFactory(OLD_KEYS, OLD_TRUST).create();
         AtomicInteger factoryCalls = new AtomicInteger();
 
         try (ServerSocket occupied = new ServerSocket()) {
-            occupied.bind(new InetSocketAddress("127.0.0.1", GridTestUtils.getFreeCommPort()));
+            occupied.bind(new InetSocketAddress(LOOPBACK_ADDRESS, GridTestUtils.getFreeCommPort()));
 
             IgniteEx node = startGrid(0, cfg -> {
                 ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -198,7 +225,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
             assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
             assertEquals("SSL context must be initialized once before the first connection", 1, factoryCalls.get());
-            connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
+            connectAndAssertServerCertificate(port, OLD_KEYS, OLD_TRUST, OLD_SERVER_SUBJECT);
         }
     }
 
@@ -206,7 +233,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     @Test
     public void testThinClientReconnectUsesReloadedContext() throws Exception {
         ReloadableSslContextFactory clientFactory = new ReloadableSslContextFactory();
-        IgniteEx node = startNode(0, sslTrustedFactory("node01", "trustone"));
+        IgniteEx node = startNode(0, sslTrustedFactory(OLD_KEYS, OLD_TRUST));
 
         ClientConfiguration cfg = clientConfiguration(node).setSslContextFactory(clientFactory::create);
 
@@ -217,9 +244,9 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
             assertThrows(ClientConnectionException.class, client::cacheNames);
 
-            clientFactory.reload("node03", "trusttwo");
+            clientFactory.reload(NEW_PEER_KEYS, NEW_TRUST);
 
-            startNode(0, sslTrustedFactory("node02", "trusttwo"));
+            startNode(0, sslTrustedFactory(NEW_SERVER_KEYS, NEW_TRUST));
 
             client.cacheNames();
         }
@@ -228,19 +255,20 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testThinClientReconnectDoesNotReloadKeyStore() throws Exception {
-        Factory<SSLContext> serverFactory = sslTrustedFactory("node01", "trustone");
+        Factory<SSLContext> serverFactory = sslTrustedFactory(OLD_KEYS, OLD_TRUST);
         IgniteEx node = startNode(0, serverFactory);
         Path keyStore = Files.createTempFile("thin-client-keys", ".jks");
+        final String storeType = "JKS";
 
         try {
-            Files.copy(Path.of(keyStorePath("node01")), keyStore, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(Path.of(keyStorePath(OLD_KEYS)), keyStore, StandardCopyOption.REPLACE_EXISTING);
 
             ClientConfiguration cfg = clientConfiguration(node)
                 .setSslClientCertificateKeyStorePath(keyStore.toString())
-                .setSslClientCertificateKeyStoreType("JKS")
+                .setSslClientCertificateKeyStoreType(storeType)
                 .setSslClientCertificateKeyStorePassword(keyStorePassword())
-                .setSslTrustCertificateKeyStorePath(keyStorePath("trustone"))
-                .setSslTrustCertificateKeyStoreType("JKS")
+                .setSslTrustCertificateKeyStorePath(keyStorePath(OLD_TRUST))
+                .setSslTrustCertificateKeyStoreType(storeType)
                 .setSslTrustCertificateKeyStorePassword(keyStorePassword());
 
             try (IgniteClient client = Ignition.startClient(cfg)) {
@@ -264,11 +292,11 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testThinClientReportsContextFactoryFailure() throws Exception {
-        IgniteEx node = startNode(0, sslTrustedFactory("node01", "trustone"));
+        IgniteEx node = startNode(0, sslTrustedFactory(OLD_KEYS, OLD_TRUST));
         IllegalStateException failure = new IllegalStateException("Cannot load client TLS credentials");
 
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + node.context().clientListener().port())
+            .setAddresses(LOOPBACK_ADDRESS + ":" + node.context().clientListener().port())
             .setSslMode(SslMode.REQUIRED)
             .setSslContextFactory(() -> {
                 throw failure;
@@ -308,7 +336,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     private static ClientConfiguration clientConfiguration(IgniteEx node) {
         return new ClientConfiguration()
-            .setAddresses("127.0.0.1:" + node.context().clientListener().port())
+            .setAddresses(LOOPBACK_ADDRESS + ":" + node.context().clientListener().port())
             .setRequestTimeout(SOCKET_TIMEOUT)
             .setSslMode(SslMode.REQUIRED)
             .setRetryPolicy(new ClientRetryNonePolicy())
@@ -327,7 +355,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
     /** The probe trusts the replacement server certificate. */
     private static void connectAndAssertOldClientCertificateRejected(int port) throws IOException {
-        try (SSLSocket sock = connectTlsSocket(port, "node01", "trustboth")) {
+        try (SSLSocket sock = connectTlsSocket(port, OLD_KEYS, TRUST_BOTH_CAS)) {
             try {
                 sock.startHandshake();
 
@@ -347,7 +375,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         try {
             // TLS 1.2 completes the client handshake only after the server checks the client certificate.
             sock.setEnabledProtocols(new String[] {"TLSv1.2"});
-            sock.connect(new InetSocketAddress("127.0.0.1", port), SOCKET_TIMEOUT);
+            sock.connect(new InetSocketAddress(LOOPBACK_ADDRESS, port), SOCKET_TIMEOUT);
             sock.setSoTimeout(SOCKET_TIMEOUT);
 
             return sock;
@@ -366,9 +394,9 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         /** */
         private ReloadableSslContextFactory() {
-            setKeyStoreFilePath(keyStorePath("node01"));
+            setKeyStoreFilePath(keyStorePath(OLD_KEYS));
             setKeyStorePassword(keyStorePassword().toCharArray());
-            setTrustStoreFilePath(keyStorePath("trustone"));
+            setTrustStoreFilePath(keyStorePath(OLD_TRUST));
             setTrustStorePassword(keyStorePassword().toCharArray());
         }
 
