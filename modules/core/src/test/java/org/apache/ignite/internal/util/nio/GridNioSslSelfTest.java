@@ -74,7 +74,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
 
     /** */
     @Test
-    public void testContextLookupFailureKeepsWorkerRunning() throws Exception {
+    public void testServerAcceptsConnectionAfterSslFactoryFailure() throws Exception {
         AtomicBoolean failNextLookup = new AtomicBoolean();
         CountDownLatch serverConnected = new CountDownLatch(1);
 
