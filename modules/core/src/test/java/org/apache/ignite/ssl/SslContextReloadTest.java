@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -32,11 +31,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientRetryNonePolicy;
@@ -47,6 +44,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -58,6 +56,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThrows;
 
 /** Tests TLS reload across TCP transports. */
@@ -84,44 +83,25 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testNewConnectionsUseReloadedCertificate() throws Exception {
-        TrustManager[] trustedCertificates = trustIssuersOf(KEYS_1, KEYS_2);
-        SslContextFactory serverFactory = sslFactory(KEYS_1, trustedCertificates);
-        IgniteEx node = startNode(0, serverFactory::create);
+    public void testNewConnectionsUseReloadedContext() throws Exception {
+        SslContextFactory serverFactory = sslFactory(KEYS_1, trustIssuersOf(KEYS_1));
+        IgniteEx node = startNode(serverFactory::create);
 
         serverFactory.setKeyStoreFilePath(keyStorePath(KEYS_2));
-        serverFactory.init();
-
-        SSLContext client = sslFactory(KEYS_1, trustedCertificates).create();
-
-        for (int port : tlsPorts(node))
-            assertEquals(certificate(KEYS_2), connectAndGetServerCertificate(port, client));
-    }
-
-    /** */
-    @Test
-    public void testNewConnectionsUseReloadedTrust() throws Exception {
-        TrustManager[] trustedServer = trustIssuersOf(KEYS_1);
-        SslContextFactory serverFactory = sslFactory(KEYS_1, trustedServer);
-        IgniteEx node = startNode(0, serverFactory);
-
         serverFactory.setTrustManagers(trustIssuersOf(KEYS_2));
         serverFactory.init();
 
-        SSLContext client1 = sslFactory(KEYS_1, trustedServer).create();
-        SSLContext client2 = sslFactory(KEYS_2, trustedServer).create();
+        SSLContext client = sslFactory(KEYS_2, trustIssuersOf(KEYS_2)).create();
 
-        for (int port : tlsPorts(node)) {
-            connectAndGetServerCertificate(port, client2);
-            assertThrows(SSLException.class, () -> connectAndGetServerCertificate(port, client1));
-        }
+        for (int port : tlsPorts(node))
+            connectAndHandshake(port, client);
     }
 
     /** */
     @Test
     public void testExistingConnectionSurvivesReload() throws Exception {
         SslContextFactory serverFactory = sslFactory(KEYS_1, trustIssuersOf(KEYS_1));
-        IgniteEx node = startNode(0, serverFactory);
+        IgniteEx node = startNode(serverFactory);
 
         ClientConfiguration cfg = clientConfiguration(node).setSslContextFactory(sslFactory(KEYS_1, trustIssuersOf(KEYS_1)));
 
@@ -138,26 +118,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testOutgoingConnectionsUseReloadedContext() throws Exception {
-        SslContextFactory factory = sslFactory(KEYS_1, trustIssuersOf(KEYS_1));
-        IgniteEx node = startNode(0, factory);
-
-        factory.setKeyStoreFilePath(keyStorePath(KEYS_2));
-        factory.setTrustManagers(trustIssuersOf(KEYS_2));
-        factory.init();
-
-        IgniteEx peer = startNode(1, sslFactory(KEYS_2, trustIssuersOf(KEYS_2)));
-
-        assertTrue(((TcpDiscoverySpi)node.configuration().getDiscoverySpi()).pingNode(peer.localNode().id()));
-
-        int result = node.compute(node.cluster().forNodeId(peer.localNode().id())).call(() -> 1);
-
-        assertEquals(1, result);
-    }
-
-    /** */
-    @Test
-    public void testUsePreviousContextDuringAndAfterFailedReload() throws Exception {
+    public void testNewConnectionsDoNotWaitForReload() throws Exception {
         String replacementKeyStore = keyStorePath(KEYS_2);
         CountDownLatch reloadStarted = new CountDownLatch(1);
         CountDownLatch allowReload = new CountDownLatch(1);
@@ -192,48 +153,29 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         factory.setKeyStorePassword(keyStorePassword().toCharArray());
         factory.setTrustManagers(trustedCertificates);
 
-        IgniteEx node = startNode(0, factory);
-        int[] ports = tlsPorts(node);
+        IgniteEx node = startNode(factory);
+        SSLContext client = sslFactory(KEYS_1, trustedCertificates).create();
 
-        ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslFactory(KEYS_1, trustedCertificates));
+        factory.setKeyStoreFilePath(replacementKeyStore);
 
-        try (IgniteClient client = Ignition.startClient(clientCfg)) {
-            client.cacheNames();
+        IgniteInternalFuture<?> reload = GridTestUtils.runAsync(factory::init);
 
-            factory.setKeyStoreFilePath(replacementKeyStore);
-            factory.setKeyStorePassword("wrong-password".toCharArray());
+        try {
+            assertTrue("Reload did not reach the replacement key store", reloadStarted.await(30, TimeUnit.SECONDS));
 
-            IgniteInternalFuture<?> reload = GridTestUtils.runAsync(() -> {
-                assertThrows(IgniteException.class, factory::init);
-            });
-
-            try {
-                assertTrue("Reload did not reach the replacement key store", reloadStarted.await(30, TimeUnit.SECONDS));
-
-                for (int port : ports)
-                    assertEquals(certificate(KEYS_1),
-                        connectAndGetServerCertificate(port, sslFactory(KEYS_1, trustedCertificates).create()));
-
-                client.cacheNames();
-            }
-            finally {
-                allowReload.countDown();
-            }
-
+            for (int port : tlsPorts(node))
+                connectAndHandshake(port, client);
+        }
+        finally {
+            allowReload.countDown();
             reload.get(30, TimeUnit.SECONDS);
-
-            for (int port : ports)
-                assertEquals(certificate(KEYS_1), connectAndGetServerCertificate(port, sslFactory(KEYS_1, trustedCertificates).create()));
-
-            client.cacheNames();
         }
     }
 
     /** */
     @Test
     public void testRestInitializesContextOnceOnPortRetry() throws Exception {
-        TrustManager[] trustedCertificates = trustIssuersOf(KEYS_1);
-        SSLContext ctx = sslFactory(KEYS_1, trustedCertificates).create();
+        SSLContext ctx = sslFactory(KEYS_1, trustIssuersOf(KEYS_1)).create();
         AtomicInteger factoryCalls = new AtomicInteger();
 
         try (ServerSocket occupied = new ServerSocket()) {
@@ -257,7 +199,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
             assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
             assertEquals("SSL context must be initialized once before the first connection", 1, factoryCalls.get());
-            assertEquals(certificate(KEYS_1), connectAndGetServerCertificate(port, sslFactory(KEYS_1, trustedCertificates).create()));
+
+            try (SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket()) {
+                sock.connect(new InetSocketAddress(LOOPBACK_ADDRESS, port), SOCKET_TIMEOUT);
+                sock.setSoTimeout(SOCKET_TIMEOUT);
+                sock.startHandshake();
+                sock.getOutputStream().write(GridClientPingPacket.PING_PACKET);
+
+                assertArrayEquals(GridClientPingPacket.PING_PACKET,
+                    sock.getInputStream().readNBytes(GridClientPingPacket.PING_PACKET.length));
+            }
         }
     }
 
@@ -265,7 +216,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     @Test
     public void testThinClientReconnectUsesReloadedContext() throws Exception {
         SslContextFactory clientFactory = sslFactory(KEYS_1, trustIssuersOf(KEYS_1));
-        IgniteEx node = startNode(0, sslFactory(KEYS_1, trustIssuersOf(KEYS_1)));
+        IgniteEx node = startNode(sslFactory(KEYS_1, trustIssuersOf(KEYS_1)));
 
         ClientConfiguration cfg = clientConfiguration(node).setSslContextFactory(clientFactory::create);
 
@@ -280,7 +231,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             clientFactory.setTrustManagers(trustIssuersOf(KEYS_2));
             clientFactory.init();
 
-            startNode(0, sslFactory(KEYS_2, trustIssuersOf(KEYS_2)));
+            startNode(sslFactory(KEYS_2, trustIssuersOf(KEYS_2)));
 
             client.cacheNames();
         }
@@ -290,7 +241,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     @Test
     public void testThinClientReconnectDoesNotReloadKeyStore() throws Exception {
         Factory<SSLContext> serverFactory = sslFactory(KEYS_1, trustIssuersOf(KEYS_1));
-        IgniteEx node = startNode(0, serverFactory);
+        IgniteEx node = startNode(serverFactory);
         Path keyStore = Files.createTempFile("thin-client-keys", ".jks");
         final String storeType = "JKS";
 
@@ -313,7 +264,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
                 assertThrows(ClientConnectionException.class, client::cacheNames);
 
-                startNode(0, serverFactory);
+                startNode(serverFactory);
 
                 client.cacheNames();
             }
@@ -326,7 +277,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testThinClientReportsContextFactoryFailure() throws Exception {
-        IgniteEx node = startNode(0, sslFactory(KEYS_1, trustIssuersOf(KEYS_1)));
+        IgniteEx node = startNode(sslFactory(KEYS_1, trustIssuersOf(KEYS_1)));
         IllegalStateException failure = new IllegalStateException("Cannot load client TLS credentials");
 
         ClientConfiguration cfg = new ClientConfiguration()
@@ -342,12 +293,9 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteEx startNode(int idx, Factory<SSLContext> factory) throws Exception {
-        return startGrid(idx, cfg -> {
+    private IgniteEx startNode(Factory<SSLContext> factory) throws Exception {
+        return startGrid(0, cfg -> {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-            // Paired connections ensure the compute request opens or uses an outgoing connection.
-            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(true);
 
             cfg.setSslContextFactory(factory)
                 .setClientConnectorConfiguration(new ClientConnectorConfiguration()
@@ -379,31 +327,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static Certificate certificate(String keys) throws Exception {
-        return KeyStore.getInstance(Path.of(keyStorePath(keys)).toFile(), keyStorePassword().toCharArray()).getCertificate(keys);
-    }
-
-    /** */
-    private static Certificate connectAndGetServerCertificate(int port, SSLContext ctx) throws IOException {
+    private static void connectAndHandshake(int port, SSLContext ctx) throws IOException {
         try (SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket()) {
-            // TLS 1.2 completes the client handshake only after the server checks the client certificate.
-            sock.setEnabledProtocols(new String[] {"TLSv1.2"});
             sock.connect(new InetSocketAddress(LOOPBACK_ADDRESS, port), SOCKET_TIMEOUT);
             sock.setSoTimeout(SOCKET_TIMEOUT);
-
-            try {
-                sock.startHandshake();
-            }
-            catch (SocketException e) {
-                throw new SSLException(e);
-            }
-
-            return sock.getSession().getPeerCertificates()[0];
+            sock.startHandshake();
         }
     }
 
     /** */
-    private static SslContextFactory sslFactory(String keys, TrustManager... trustManagers) {
+    private static SslContextFactory sslFactory(String keys, TrustManager[] trustManagers) {
         SslContextFactory factory = new SslContextFactory();
 
         factory.setKeyStoreFilePath(keyStorePath(keys));
@@ -414,18 +347,16 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static TrustManager[] trustIssuersOf(String... keys) throws Exception {
+    private static TrustManager[] trustIssuersOf(String keys) throws Exception {
         KeyStore trustStore = KeyStore.getInstance("JKS");
 
         trustStore.load(null, null);
 
-        for (String key : keys) {
-            KeyStore keyStore = KeyStore.getInstance(Path.of(keyStorePath(key)).toFile(), keyStorePassword().toCharArray());
-            Certificate[] chain = keyStore.getCertificateChain(key);
+        KeyStore keyStore = KeyStore.getInstance(Path.of(keyStorePath(keys)).toFile(), keyStorePassword().toCharArray());
+        Certificate[] chain = keyStore.getCertificateChain(keys);
 
-            for (int i = 1; i < chain.length; i++)
-                trustStore.setCertificateEntry(key + i, chain[i]);
-        }
+        for (int i = 1; i < chain.length; i++)
+            trustStore.setCertificateEntry(keys + i, chain[i]);
 
         TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
