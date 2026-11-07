@@ -28,9 +28,11 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketOption;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -521,9 +523,17 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
                 // pending: the offset is measured from the send trigger (the attempt starts right
                 // after the trigger, and the deadline is armed right after the fast socket connect),
                 // at a stable value around the connect timeout, not from the registration, which was
-                // stalled.
+                // stalled. The stalled worker observes the close on its polling interval, so it may
+                // record it slightly after the send thread has already finished.
                 assertTrue("The connection establishment deadline did not close the stalled channel "
-                        + "while the registration was pending, or it fired at an unexpected offset from "
+                        + "while the registration was pending",
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return closeOffsetMs.get() >= 0;
+                        }
+                    }, AWAIT_TIMEOUT * 1000L));
+
+                assertTrue("The connection establishment deadline fired at an unexpected offset from "
                         + "the send trigger [closeOffsetMs=" + closeOffsetMs.get() + ", deadlineMs="
                         + deadlineMs + "]",
                     closeOffsetMs.get() >= deadlineMs - 1000 && closeOffsetMs.get() <= deadlineMs + 2000);
@@ -562,6 +572,145 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
                     assertFalse("A connect future of the stalled attempt is still pending: " + fut, !fut.isDone());
             }
             finally {
+                srv0.setChannelRegistrar(null);
+            }
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
+     * Stalls the NIO session registration of a new outgoing connection by blocking the responsible
+     * NIO worker on a latch that the connection establishment deadline does not touch (in contrast to
+     * the cooperative stall of {@link #testConnectionDeadlineCoversSessionRegistration()}, which is
+     * released when the deadline closes the channel). The registration therefore cannot complete when
+     * the deadline fires: the wait for the registration is bounded by the part of the deadline that is
+     * still left, so the stalled worker must release the connection attempt with the timeout, and the
+     * send must finish within a bounded time instead of waiting for the stalled worker indefinitely.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStalledNioWorkerCannotHoldConnectionBeyondDeadline() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+            TcpCommunicationSpi spi1 = spis.get(1);
+
+            ClusterNode node0 = nodes.get(0);
+            ClusterNode node1 = nodes.get(1);
+
+            // Establish the initial communication connection.
+            CountDownLatch ack = new CountDownLatch(1);
+
+            AtomicReference<Throwable> initErr = new AtomicReference<>();
+
+            spi0.sendMessage(node1, new GridTestMessage(node0.id(), 1, 0), err -> {
+                try {
+                    initErr.compareAndSet(null, err);
+                }
+                finally {
+                    ack.countDown();
+                }
+            });
+
+            assertTrue("Failed to establish initial connection", ack.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+            assertNull("Unexpected error during initial connection", initErr.get());
+
+            // Collapse the connection establishment budget to a single known deadline: the explicit
+            // connect timeout disables the failure detection timeout, so the total budget is the
+            // connect timeout, the first attempt's connect window is the same value, and the deadline
+            // of the handshake and the registration that follow it is the remainder of the same budget.
+            int deadlineMs = 3000;
+
+            spi0.setConnectTimeout(deadlineMs);
+
+            spi1.setConnectTimeout(deadlineMs);
+
+            GridNioServer<?> srv0 = ((GridNioServerWrapper)U.field(spi0, "nioSrvWrapper")).nio();
+            GridNioServer<?> srv1 = ((GridNioServerWrapper)U.field(spi1, "nioSrvWrapper")).nio();
+
+            // Close the established connection, so that the send below triggers a new outgoing
+            // connection whose registration is stalled.
+            closeAllSessions(srv0);
+
+            closeAllSessions(srv1);
+
+            assertTrue("Failed to wait for connection pools to become empty",
+                waitForPoolsEmpty(spi0, node1, spi1, node0));
+
+            AtomicLong attemptStartNs = new AtomicLong();
+            AtomicLong entryOffsetMs = new AtomicLong(-1);
+            AtomicInteger outgoingRegistrations = new AtomicInteger();
+
+            CountDownLatch registrationEntered = new CountDownLatch(1);
+
+            CountDownLatch releaseRegistration = new CountDownLatch(1);
+
+            // The registrar blocks the responsible NIO worker in the first outgoing (non-accepted)
+            // registration of node 0 on a latch that the deadline does not touch: the worker stays
+            // stalled even after the deadline closes the channel, so the queued registration cannot
+            // complete at the deadline the way it does in the cooperative variant.
+            srv0.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                GridNioSession ses = (GridNioSession)attachment;
+
+                if (!ses.accepted() && outgoingRegistrations.getAndIncrement() == 0) {
+                    entryOffsetMs.set(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - attemptStartNs.get()));
+
+                    registrationEntered.countDown();
+
+                    // Hold the worker well beyond the join bound below, so that without the bounded
+                    // registration wait the send cannot finish on the worker's own: the stall is only
+                    // ever ended by the explicit release in the finally block.
+                    try {
+                        releaseRegistration.await(AWAIT_TIMEOUT * 3, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            try {
+                AtomicReference<Throwable> sendErr = new AtomicReference<>();
+
+                // sendMessage blocks the calling thread until the connection (including the NIO session
+                // registration) is established or the connection establishment budget is exhausted, so
+                // it must run on a separate thread while the test thread observes the outcome.
+                Thread sendTh = startSendThread(new CyclicBarrier(1), spi0, node1, node0, 910, sendErr,
+                    attemptStartNs);
+
+                // The stalled registration must have been reached.
+                assertTrue("Failed to reach the stalled session registration",
+                    registrationEntered.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                // The registration must have started before the deadline could fire, so that the
+                // deadline actually covers the stalled registration.
+                assertTrue("The stalled registration did not start before the deadline could fire "
+                        + "[entryOffsetMs=" + entryOffsetMs.get() + ", deadlineMs=" + deadlineMs + ']',
+                    entryOffsetMs.get() >= 0 && entryOffsetMs.get() < deadlineMs - 500);
+
+                // The send must finish while the NIO worker is still stalled: the wait for the
+                // registration is bounded by the remaining part of the connection establishment
+                // deadline, so the attempt is released with the timeout long before the stalled worker
+                // is let go. (Whether the send ultimately succeeds or fails is not asserted: the
+                // attempt released by the deadline may be retried within the remainder of the budget
+                // and then succeed, so only the bounded completion is the regression property.)
+                sendTh.join(deadlineMs + 10_000L);
+
+                assertFalse("The send did not finish while the NIO worker was still stalled in the "
+                    + "session registration: the wait for the registration is not bounded by the "
+                    + "connection establishment deadline", sendTh.isAlive());
+            }
+            finally {
+                // Release the stalled worker even if an assertion above failed.
+                releaseRegistration.countDown();
+
                 srv0.setChannelRegistrar(null);
             }
         }
@@ -745,6 +894,122 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
     }
 
     /**
+     * Holds the NIO session registration of a new outgoing connection until after the connection
+     * establishment deadline has fired, but only after the responsible NIO worker has registered the
+     * channel: when the registration is then released, the worker completes the registration future
+     * with the session after the timeout — a late session the bounded wait has already given up on.
+     * The listener the timeout handler attaches to the registration future must close that late
+     * session, so the abandoned attempt leaves no open session behind.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLateSessionCreatedAfterRegistrationTimeoutIsClosed() throws Exception {
+        createSpis();
+
+        try {
+            TcpCommunicationSpi spi0 = spis.get(0);
+            TcpCommunicationSpi spi1 = spis.get(1);
+
+            ClusterNode node0 = nodes.get(0);
+            ClusterNode node1 = nodes.get(1);
+
+            // Collapse the connection establishment budget to a single known deadline.
+            int deadlineMs = 3000;
+
+            spi0.setConnectTimeout(deadlineMs);
+
+            spi1.setConnectTimeout(deadlineMs);
+
+            GridNioServer<?> srv0 = ((GridNioServerWrapper)U.field(spi0, "nioSrvWrapper")).nio();
+
+            AtomicInteger outgoingRegistrations = new AtomicInteger();
+
+            AtomicReference<GridNioSession> lateSes = new AtomicReference<>();
+
+            CountDownLatch registrationEntered = new CountDownLatch(1);
+
+            CountDownLatch releaseRegistration = new CountDownLatch(1);
+
+            // Register the channel immediately, so that the registration succeeds even though the
+            // deadline closes the channel while the worker is still held below, and only then hold the
+            // worker: the future completion — and therefore, from the caller's point of view, the
+            // session creation — happens only when the worker is released, i.e. after the timeout.
+            srv0.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                GridNioSession ses = (GridNioSession)attachment;
+
+                if (!ses.accepted() && outgoingRegistrations.getAndIncrement() == 0) {
+                    lateSes.set(ses);
+
+                    SelectionKey key = channel.register(selector, ops, attachment);
+
+                    registrationEntered.countDown();
+
+                    try {
+                        releaseRegistration.await(AWAIT_TIMEOUT * 3, TimeUnit.SECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+
+                    return key;
+                }
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            try {
+                AtomicReference<Throwable> sendErr = new AtomicReference<>();
+
+                Thread sendTh = startSendThread(new CyclicBarrier(1), spi0, node1, node0, 920, sendErr, null);
+
+                assertTrue("Failed to reach the stalled session registration",
+                    registrationEntered.await(AWAIT_TIMEOUT, TimeUnit.SECONDS));
+
+                // The send must finish while the registration is still held: the bounded wait gives up
+                // at the deadline, long before the worker is released, so the registration future
+                // completes after the send has already failed.
+                sendTh.join(deadlineMs + 10_000L);
+
+                assertFalse("The send did not finish while the registration was still held: the wait "
+                        + "for the session registration was not bounded by the connection establishment "
+                        + "deadline",
+                    sendTh.isAlive());
+
+                // Release the worker: it now finishes the registration and completes the future with
+                // the session after the timeout, and the listener must close that late session.
+                releaseRegistration.countDown();
+
+                GridNioSession late = lateSes.get();
+
+                assertNotNull("The worker did not reach the session registration", late);
+
+                assertTrue("The late session (created after the registration timeout) was not closed",
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return late.closeTime() > 0;
+                        }
+                    }, AWAIT_TIMEOUT * 1000L));
+
+                assertTrue("The late session was not removed from the NIO server",
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return !srv0.sessions().contains(late);
+                        }
+                    }, AWAIT_TIMEOUT * 1000L));
+            }
+            finally {
+                releaseRegistration.countDown();
+
+                srv0.setChannelRegistrar(null);
+            }
+        }
+        finally {
+            stopSpis();
+        }
+    }
+
+    /**
      * Verifies that the handshake deadline object reports the deadline outcome unambiguously: a
      * cancelled deadline must not be reported as fired and must not close the connection, and a fired
      * deadline must be reported as such, so a caller whose cancel lost the race to the timeout task
@@ -848,7 +1113,7 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
             assertTrue("Failed to wait for connection pools to become empty",
                 waitForPoolsEmpty(spi0, node1, spi1, node0));
 
-            List<Long> windowMs = new ArrayList<>();
+            List<Long> windowMs = Collections.synchronizedList(new ArrayList<>());
 
             AtomicInteger outgoingRegistrations = new AtomicInteger();
 
@@ -903,7 +1168,14 @@ public class TcpCommunicationSpiConnectClosureSelfTest<T extends CommunicationSp
                 srv0.setChannelRegistrar(null);
             }
 
-            assertEquals("Failed to observe three deadline-failed attempts", 3, windowMs.size());
+            // The stalled worker observes the channel close on its polling interval, so the last
+            // window may be recorded slightly after the send thread has already finished.
+            assertTrue("Failed to observe three deadline-failed attempts [windowMs=" + windowMs + ']',
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return windowMs.size() == 3;
+                    }
+                }, AWAIT_TIMEOUT * 1000L));
 
             // The establishment windows of the consecutive failed attempts must follow the
             // exponential connection backoff: at least half of the connect timeout, its doubled

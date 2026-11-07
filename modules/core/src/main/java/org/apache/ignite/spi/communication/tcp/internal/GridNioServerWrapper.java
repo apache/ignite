@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -492,14 +493,18 @@ public class GridNioServerWrapper {
                         long handshakeTimeout = timeout;
 
                         // The deadline covers the handshake and the NIO session registration: when it
-                        // elapses, the channel is closed, which aborts the in-progress handshake and makes
-                        // the registration fail with a ClosedChannelException - the latter only once the
-                        // responsible NIO worker processes the queued registration operation, so the
-                        // registration wait is bounded only under that precondition. It is armed after the
-                        // socket connect, which is bounded by its own connect timeout, so the connect does
-                        // not consume the deadline and the handshake keeps the full window the strategy
-                        // allocated to it.
+                        // elapses, the channel is closed, which aborts the in-progress handshake, and the
+                        // wait for the registration - which completes only once the responsible NIO worker
+                        // processes the queued operation - is bounded by the part of the deadline that is
+                        // still left when the wait starts, so a stalled worker cannot hold the attempt
+                        // beyond the deadline. It is armed after the socket connect, which is bounded by
+                        // its own connect timeout, so the connect does not consume the deadline and the
+                        // handshake keeps the full window the strategy allocated to it.
                         HandshakeTimeoutObject timeoutObj = new HandshakeTimeoutObject(ch);
+
+                        // The moment the deadline is armed: the registration wait below is bounded by
+                        // whatever part of the deadline is still left at the point the wait starts.
+                        long deadlineArmedAtNanos = System.nanoTime();
 
                         handshakeTimeoutExecutorService.schedule(timeoutObj, handshakeTimeout, TimeUnit.MILLISECONDS);
 
@@ -551,7 +556,39 @@ public class GridNioServerWrapper {
                             meta.put(GridNioServer.RECOVERY_DESC_META_KEY, recoveryDesc);
                             meta.put(MSG_SER_CTX.ordinal(), buildForPeers(stateProvider.ignite(), node));
 
-                            ses = nioSrv.createSession(ch, meta, false, null).get();
+                            IgniteInternalFuture<GridNioSession> sesFut = nioSrv.createSession(ch, meta, false, null);
+
+                            // The registration is processed by a NIO worker and completes only when that
+                            // worker picks up the queued operation, so an unbounded wait would outlive the
+                            // deadline if the worker is stuck. Bound the wait by the part of the deadline
+                            // that is still left, so a stalled worker releases the attempt with the timeout
+                            // like any other deadline breach.
+                            long deadlineRemainingMs = Math.max(0,
+                                handshakeTimeout - (System.nanoTime() - deadlineArmedAtNanos) / 1_000_000L);
+
+                            try {
+                                ses = sesFut.get(deadlineRemainingMs, TimeUnit.MILLISECONDS);
+                            }
+                            catch (IgniteFutureTimeoutCheckedException e) {
+                                // The deadline elapsed while the registration was still queued. Close the
+                                // channel so the queued registration fails, and make sure a session the
+                                // worker manages to create anyway is closed, then report the attempt as
+                                // timed out.
+                                U.closeQuiet(ch);
+
+                                // The listener cannot throw: result(), unlike get(), returns null when
+                                // the registration completed with an error in the meantime, and the
+                                // session close wraps its failures in the close future instead of
+                                // propagating them.
+                                sesFut.listen(fut -> {
+                                    GridNioSession late = fut.result();
+
+                                    if (late != null)
+                                        late.close();
+                                });
+
+                                throw handshakeTimeoutException();
+                            }
                         }
                         finally {
                             // A lost cancel can only mean the deadline actually fired and the timeout task
