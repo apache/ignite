@@ -79,7 +79,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         int[] ports = tlsPorts(node);
 
         for (int port : ports)
-            assertServerCertificate(port, "node01", "trustone", "CN=node01");
+            connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
 
         ClientConfiguration clientCfg = clientConfiguration(node).setSslContextFactory(sslTrustedFactory("node01", "trustone"));
 
@@ -89,8 +89,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             factory.reload("node02", "trusttwo");
 
             for (int port : ports) {
-                assertServerCertificate(port, "node03", "trusttwo", "CN=node02");
-                assertOldClientCertificateRejected(port);
+                connectAndAssertServerCertificate(port, "node03", "trusttwo", "CN=node02");
+                connectAndAssertOldClientCertificateRejected(port);
             }
 
             clientWithOldTrust.cacheNames();
@@ -154,7 +154,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
                 assertTrue("Reload did not reach the replacement key store", reloadStarted.await(30, TimeUnit.SECONDS));
 
                 for (int port : ports)
-                    assertServerCertificate(port, "node01", "trustone", "CN=node01");
+                    connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
 
                 client.cacheNames();
             }
@@ -165,7 +165,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
             reload.get(30, TimeUnit.SECONDS);
 
             for (int port : ports)
-                assertServerCertificate(port, "node01", "trustone", "CN=node01");
+                connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
 
             client.cacheNames();
         }
@@ -198,16 +198,15 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
             assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
             assertEquals("SSL context must be initialized once before the first connection", 1, factoryCalls.get());
-            assertServerCertificate(port, "node01", "trustone", "CN=node01");
+            connectAndAssertServerCertificate(port, "node01", "trustone", "CN=node01");
         }
     }
 
     /** */
     @Test
     public void testThinClientReconnectUsesReloadedContext() throws Exception {
-        ReloadableSslContextFactory serverFactory = new ReloadableSslContextFactory();
         ReloadableSslContextFactory clientFactory = new ReloadableSslContextFactory();
-        IgniteEx node = startNode(0, serverFactory);
+        IgniteEx node = startNode(0, sslTrustedFactory("node01", "trustone"));
 
         ClientConfiguration cfg = clientConfiguration(node).setSslContextFactory(clientFactory::create);
 
@@ -218,10 +217,9 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
             assertThrows(ClientConnectionException.class, client::cacheNames);
 
-            serverFactory.reload("node02", "trusttwo");
             clientFactory.reload("node03", "trusttwo");
 
-            startNode(0, serverFactory);
+            startNode(0, sslTrustedFactory("node02", "trusttwo"));
 
             client.cacheNames();
         }
@@ -319,7 +317,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static void assertServerCertificate(int port, String keys, String trust, String expectedSubject) throws IOException {
+    private static void connectAndAssertServerCertificate(int port, String keys, String trust, String expectedSubject) throws IOException {
         try (SSLSocket sock = connectTlsSocket(port, keys, trust)) {
             sock.startHandshake();
 
@@ -328,7 +326,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     }
 
     /** The probe trusts the replacement server certificate. */
-    private static void assertOldClientCertificateRejected(int port) throws IOException {
+    private static void connectAndAssertOldClientCertificateRejected(int port) throws IOException {
         try (SSLSocket sock = connectTlsSocket(port, "node01", "trustboth")) {
             try {
                 sock.startHandshake();

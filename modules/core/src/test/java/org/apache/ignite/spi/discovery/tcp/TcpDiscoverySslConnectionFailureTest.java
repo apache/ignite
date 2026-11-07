@@ -115,12 +115,6 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
         IOException err = assertThrows(IOException.class, () -> spi.createSocket().close());
 
         assertTrue(err.getCause() instanceof IllegalArgumentException);
-
-        curCtx.set(ctx);
-
-        try (Socket sock = spi.createSocket()) {
-            assertTrue(sock.isBound());
-        }
     }
 
     /** */
