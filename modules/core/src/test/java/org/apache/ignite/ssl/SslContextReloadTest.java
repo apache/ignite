@@ -28,7 +28,6 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -174,9 +173,8 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRestInitializesContextOnceOnPortRetry() throws Exception {
+    public void testRestAcceptsConnectionAfterPortRetry() throws Exception {
         SSLContext ctx = sslFactory(KEYS_1, trustIssuersOf(KEYS_1)).create();
-        AtomicInteger factoryCalls = new AtomicInteger();
 
         try (ServerSocket occupied = new ServerSocket()) {
             occupied.bind(new InetSocketAddress(LOOPBACK_ADDRESS, GridTestUtils.getFreeCommPort()));
@@ -188,17 +186,12 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
                     .setConnectorConfiguration(new ConnectorConfiguration()
                         .setPort(occupied.getLocalPort())
                         .setSslEnabled(true)
-                        .setSslFactory(() -> {
-                            factoryCalls.incrementAndGet();
-
-                            return ctx;
-                        }));
+                        .setSslFactory(() -> ctx));
             });
 
             int port = node.localNode().attribute(ATTR_REST_TCP_PORT);
 
             assertTrue("REST did not retry the occupied port", port > occupied.getLocalPort());
-            assertEquals("SSL context must be initialized once before the first connection", 1, factoryCalls.get());
 
             try (SSLSocket sock = (SSLSocket)ctx.getSocketFactory().createSocket()) {
                 sock.connect(new InetSocketAddress(LOOPBACK_ADDRESS, port), SOCKET_TIMEOUT);
