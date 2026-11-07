@@ -509,8 +509,19 @@ public class ConnectionClientPool {
                             long clientReserveWaitTimeout = perWaitTimeout > 0 ?
                                 Math.min(perWaitTimeout, remainingReserveBudget) : remainingReserveBudget;
 
-                            if (clientReserveWaitTimeout <= 0)
+                            if (clientReserveWaitTimeout <= 0) {
+                                // The budget is exhausted: if the future completed in the meantime,
+                                // propagate the outcome it carries — the error the connection
+                                // establishment produced — instead of the generic reserve timeout,
+                                // which would mask the real cause.
+                                if (fut.isDone()) {
+                                    client = fut.get();
+
+                                    break;
+                                }
+
                                 throw reserveTimeoutException(node, totalReserveTimeout);
+                            }
 
                             try {
                                 client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
