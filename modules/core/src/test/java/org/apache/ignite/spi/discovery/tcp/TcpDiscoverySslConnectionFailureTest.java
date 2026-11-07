@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -61,20 +62,24 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
 
     /** */
     @Test
-    public void testContextLookupFailureKeepsAccepting() throws Exception {
-        Factory<SSLContext> validFactory = sslTrustedFactory("node01", "trustone");
-        AtomicReference<Factory<SSLContext>> nextFactory = new AtomicReference<>(validFactory);
-        InetSocketAddress addr = discoveryAddress(startNode(() -> nextFactory.getAndSet(validFactory).create()));
+    public void testDiscoveryAcceptsConnectionAfterSslFactoryFailure() throws Exception {
+        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
+        AtomicBoolean failNextCreate = new AtomicBoolean();
+        Factory<SSLContext> sslCtxFactory = () -> {
+            if (failNextCreate.getAndSet(false))
+                throw new IgniteException("Test SSL context creation failure");
 
-        nextFactory.set(() -> {
-            throw new IgniteException("Test failure looking up the SSL context");
-        });
+            return ctx;
+        };
+        InetSocketAddress addr = discoveryAddress(startNode(sslCtxFactory));
+
+        failNextCreate.set(true);
 
         connectAndAssertClosed(addr);
 
-        assertSame(validFactory, nextFactory.get());
+        assertFalse(failNextCreate.get());
 
-        connectAndHandshake(addr, validFactory.create());
+        connectAndHandshake(addr, ctx);
     }
 
     /** */
