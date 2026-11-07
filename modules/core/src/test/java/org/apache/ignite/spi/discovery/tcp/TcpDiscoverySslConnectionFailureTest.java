@@ -20,21 +20,21 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.ssl.SSLContextWrapper;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.junit.Assert.assertThrows;
 
@@ -84,33 +84,30 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
 
     /** */
     @Test
-    public void testSocketSetupFailureKeepsAccepting() throws Exception {
-        SSLContext validCtx = sslTrustedFactory("node01", "trustone").create();
-        AtomicReference<SSLContext> nextCtx = new AtomicReference<>(validCtx);
-        InetSocketAddress addr = discoveryAddress(startNode(() -> nextCtx.getAndSet(validCtx)));
-        SSLParameters invalidParams = new SSLParameters();
-        invalidParams.setProtocols(new String[]{"TestUnsupportedProtocol"});
+    public void testDiscoveryAcceptsConnectionAfterInvalidProtocolReload() throws Exception {
+        ReloadableSslContextFactory factory = new ReloadableSslContextFactory();
+        InetSocketAddress addr = discoveryAddress(startNode(factory));
+        SSLContext clientCtx = sslTrustedFactory("node01", "trustone").create();
 
-        nextCtx.set(new SSLContextWrapper(validCtx, invalidParams));
+        factory.reloadProtocols("TestUnsupportedProtocol");
 
-        connectAndAssertClosed(addr);
+        IOException err = assertThrows(IOException.class, () -> connectAndHandshake(addr, clientCtx));
 
-        assertSame(validCtx, nextCtx.get());
+        assertFalse(err instanceof SocketTimeoutException);
 
-        connectAndHandshake(addr, validCtx);
+        factory.reloadProtocols("TLSv1.2");
+
+        connectAndHandshake(addr, clientCtx);
     }
 
     /** */
     @Test
     public void testOutgoingSocketSetupFailureIsReportedAsIoException() throws Exception {
-        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
-        AtomicReference<SSLContext> curCtx = new AtomicReference<>(ctx);
-        IgniteEx node = startNode(curCtx::get);
+        ReloadableSslContextFactory factory = new ReloadableSslContextFactory();
+        IgniteEx node = startNode(factory);
         TcpDiscoverySpi spi = (TcpDiscoverySpi)node.configuration().getDiscoverySpi();
 
-        SSLParameters badParams = new SSLParameters();
-        badParams.setProtocols(new String[]{"TestUnsupportedProtocol"});
-        curCtx.set(new SSLContextWrapper(ctx, badParams));
+        factory.reloadProtocols("TestUnsupportedProtocol");
 
         IOException err = assertThrows(IOException.class, () -> spi.createSocket().close());
 
@@ -148,6 +145,27 @@ public class TcpDiscoverySslConnectionFailureTest extends GridCommonAbstractTest
             sock.connect(addr, SOCK_TIMEOUT);
             sock.setSoTimeout(SOCK_TIMEOUT);
             sock.startHandshake();
+        }
+    }
+
+    /** */
+    private static class ReloadableSslContextFactory extends SslContextFactory {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private ReloadableSslContextFactory() {
+            setKeyStoreFilePath(keyStorePath("node01"));
+            setKeyStorePassword(keyStorePassword().toCharArray());
+            setTrustStoreFilePath(keyStorePath("trustone"));
+            setTrustStorePassword(keyStorePassword().toCharArray());
+        }
+
+        /** */
+        private void reloadProtocols(String... protocols) {
+            setProtocols(protocols);
+
+            init();
         }
     }
 }
