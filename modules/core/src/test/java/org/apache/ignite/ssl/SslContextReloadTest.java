@@ -274,7 +274,6 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses("127.0.0.1:" + node.context().clientListener().port())
-            .setHandshakeTimeout(SOCKET_TIMEOUT)
             .setSslMode(SslMode.REQUIRED)
             .setSslContextFactory(() -> {
                 throw failure;
@@ -316,7 +315,7 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
     private static ClientConfiguration clientConfiguration(IgniteEx node) {
         return new ClientConfiguration()
             .setAddresses("127.0.0.1:" + node.context().clientListener().port())
-            .setTimeout(SOCKET_TIMEOUT)
+            .setRequestTimeout(SOCKET_TIMEOUT)
             .setSslMode(SslMode.REQUIRED)
             .setRetryPolicy(new ClientRetryNonePolicy())
             .setPartitionAwarenessEnabled(false)
