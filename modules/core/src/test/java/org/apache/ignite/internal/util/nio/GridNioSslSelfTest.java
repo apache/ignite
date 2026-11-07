@@ -56,6 +56,18 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
 
     /** */
     @Test
+    public void testFilterCreationReportsSslFactoryFailure() {
+        IgniteException err = new IgniteException("Test SSL context creation failure");
+        Factory<SSLContext> sslCtxFactory = () -> {
+            throw err;
+        };
+
+        assertSame(err, assertThrows(IgniteException.class,
+            () -> U.sslFilter(sslCtxFactory, false, ByteOrder.nativeOrder(), log, null)));
+    }
+
+    /** */
+    @Test
     public void testContextLookupFailureCountsOneRejection() throws Exception {
         Runnable rejectedSessions = mock(Runnable.class);
         GridNioSslFilter filter = new GridNioSslFilter(() -> {
