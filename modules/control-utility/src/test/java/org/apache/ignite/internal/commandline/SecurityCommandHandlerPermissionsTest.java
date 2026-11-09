@@ -79,7 +79,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
-import static org.apache.ignite.testframework.GridTestUtils.sslFactory;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
