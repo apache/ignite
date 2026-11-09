@@ -7745,6 +7745,7 @@ public abstract class IgniteUtils extends CommonUtils {
         IgniteLogger log,
         @Nullable MetricRegistryImpl mreg
     ) {
+        // Initialize caching factories before NIO threads start, and fail fast if the context cannot be created.
         sslCtxFactory.create();
 
         LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
