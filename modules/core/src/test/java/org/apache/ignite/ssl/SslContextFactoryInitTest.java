@@ -17,14 +17,28 @@
 
 package org.apache.ignite.ssl;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Test;
 
+import static java.lang.Thread.State.BLOCKED;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
+import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class SslContextFactoryInitTest {
@@ -52,5 +66,58 @@ public class SslContextFactoryInitTest {
 
         assertThrows(IgniteException.class, factory::init);
         assertSame(original, factory.create());
+    }
+
+    /** */
+    @Test
+    public void testConcurrentInitLoadsOneKeyStoreAtATime() throws Exception {
+        CountDownLatch firstLoadStarted = new CountDownLatch(1);
+        CountDownLatch allowFirstLoad = new CountDownLatch(1);
+        AtomicInteger loads = new AtomicInteger();
+
+        SslContextFactory factory = new SslContextFactory() {
+            /** */
+            private static final long serialVersionUID = 0;
+
+            /** {@inheritDoc} */
+            @Override protected InputStream openFileInputStream(String path) throws IOException {
+                if (loads.incrementAndGet() == 1) {
+                    firstLoadStarted.countDown();
+
+                    U.awaitQuiet(allowFirstLoad);
+                }
+
+                return super.openFileInputStream(path);
+            }
+        };
+
+        factory.setKeyStoreFilePath(keyStorePath("node01"));
+        factory.setKeyStorePassword(keyStorePassword().toCharArray());
+        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+
+        GridTestThread first = new GridTestThread(factory::init);
+        GridTestThread second = new GridTestThread(factory::init);
+
+        first.start();
+
+        try {
+            assertTrue(firstLoadStarted.await(10, SECONDS));
+
+            second.start();
+
+            assertTrue(waitForCondition(() -> second.getState() == BLOCKED || loads.get() > 1, 10_000));
+            assertEquals(1, loads.get());
+        }
+        finally {
+            allowFirstLoad.countDown();
+            first.join(10_000);
+            second.join(10_000);
+        }
+
+        assertFalse(first.isAlive());
+        assertFalse(second.isAlive());
+        first.checkError();
+        second.checkError();
+        assertEquals(2, loads.get());
     }
 }

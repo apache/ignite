@@ -157,27 +157,32 @@ include::{javaFile}[tag=disable-validation,indent=0]
 --
 
 == Upgrading Certificates
-If your SSL certificates are about to expire or have been compromised, you can install new certificates without shutting down the whole cluster.
 
-The following is a procedure for updating certificate.
+You can replace certificate files and reload them without restarting nodes that use `SslContextFactory`.
+The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] updates TCP transports on all server and thick-client nodes.
+It does not reload HTTPS or external client applications.
 
-. First of all, make sure the new certificates are trusted by all cluster nodes.
-This step may not be necessary if your trusted stores contain the root certificate and the new certificates are signed by the same CA.
-+
---
-Repeat the following procedure for the nodes where the certificate is not trusted:
+. Back up the key and trust store files before replacing them.
+Keep their configured paths, store types, and passwords unchanged; changing node configuration requires a restart.
+. Make sure every peer trusts both the current and replacement certificates before changing any key store.
+This includes cluster nodes and client applications, including the control script.
+If the replacement certificates use an already trusted CA, no trust store change is needed.
+Otherwise, add the required certificates to the trust stores, replace the files, and run `control.sh --ssl reload`.
+Reload trust in external client applications using their own procedures.
+Continue only after every affected peer has loaded the updated trust store.
+. Replace each key store with the new certificate and its private key, then run `control.sh --ssl reload` again.
+Use the link:tools/control-script#connecting-to-cluster[connection parameters] required by your cluster.
+The command asks for confirmation; use `--yes` to skip it.
+. Check the result for every node and transport, then verify a new connection with the replacement certificates.
+Established connections continue using their existing TLS context.
 
-.. Import the new certificate to the trusted store of the node.
-.. Gracefully restart the node.
-.. Repeat these steps for all server nodes.
+A failed reload leaves that factory's previous context in use; successful reloads on other factories are not rolled back.
+Correct the failed store and run the command again.
+To restore the previous certificates, restore the backed-up files and reload again while peers still trust those certificates.
 
-Now all nodes trust the new certificates.
---
-
-. Import the new certificate (including the private key) to the key store of the corresponding node and remove the old certificate. Then gracefully restart the node. Repeat this procedure for all certificates you want to update.
-
-
-//Otherwise, first you have to push the trust store to all nodes one by one. It will contain trusts for both new and old certificates while you transition.
+Custom factories must extend `AbstractSslContextFactory` to support the command.
+Factories of other types are reported as unsupported.
+If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.
 
 == SslContextFactory Properties
 

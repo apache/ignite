@@ -96,6 +96,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.ssl.GridSslProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -262,6 +263,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridPortProcessor portProc;
+
+    /** */
+    private GridSslProcessor sslProc;
 
     /** */
     @GridToStringInclude
@@ -538,6 +542,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
             portProc = (GridPortProcessor)comp;
+        else if (comp instanceof GridSslProcessor)
+            sslProc = (GridSslProcessor)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
         else if (comp instanceof IgniteServiceProcessor)
@@ -741,6 +747,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridSslProcessor ssl() {
+        return sslProc;
     }
 
     /** {@inheritDoc} */

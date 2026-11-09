@@ -418,6 +418,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         startSpi();
 
+        if ((CommunicationSpi<?>)spi instanceof TcpCommunicationSpi && ctx.config().getSslContextFactory() != null)
+            ctx.ssl().register("communication", ctx.config().getSslContextFactory());
+
         MetricRegistry ioMetric = ctx.metric().registry(COMM_METRICS);
 
         ioMetric.register(OUTBOUND_MSG_QUEUE_CNT, spi::getOutboundMessagesQueueSize,

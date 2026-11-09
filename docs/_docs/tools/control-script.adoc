@@ -160,6 +160,38 @@ control.bat --state --ssl-factory client-connector-ssl-factory.xml
 
 Enable it in the configuration (`IgniteConfiguration#setClientConnectorConfiguration`).
 
+== Reloading TLS Certificates
+
+Use `--ssl reload` to load replaced key and trust stores on all server and thick-client nodes in the current topology.
+It reloads discovery, communication, client connector, and binary REST transports that started with TLS.
+New connections use the replacement context; established connections stay open.
+HTTPS is outside the command's scope.
+
+Follow link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] to prepare peer trust, replace the files, and verify the result.
+Add the <<connecting-to-cluster,connection parameters>> required by your cluster:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --ssl reload [--yes]
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --ssl reload [--yes]
+----
+--
+
+The command requires `ADMIN_OPS` permission when security is enabled and asks for confirmation unless `--yes` is given.
+Each node logs its reload results and, when security is enabled, the initiating user.
+
+The report lists results for each node and transport, including nodes without TLS.
+Factories that do not extend `AbstractSslContextFactory` are reported as unsupported.
+The command continues after individual failures and exits with code `4` if a reload fails, is unsupported, or a target node leaves.
+Successful replacements remain in effect; the command does not roll them back.
+
 == Activation, Deactivation and Topology Management
 
 You can use the control script to activate or deactivate your cluster, and manage the link:clustering/baseline-topology[Baseline Topology].
