@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-To run Ignite with Java 17 or later, follow these steps:
+Ignite supports Java 17 and Java 21. Earlier versions are not supported; later versions are not tested.
+
+To run Ignite with Java 17 or 21, follow these steps:
 
 1.  Set the `JAVA_HOME` environment variable to point to the Java installation
 directory.
@@ -26,7 +28,7 @@ application:
 +
 [tabs]
 --
-tab:Java 17[]
+tab:Java 17 and 21[]
 [source,shell]
 ----
 --add-opens=java.base/jdk.internal.access=ALL-UNNAMED
