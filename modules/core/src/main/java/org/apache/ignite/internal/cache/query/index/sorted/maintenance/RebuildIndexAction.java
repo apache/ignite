@@ -28,7 +28,6 @@ import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointManager;
@@ -42,13 +41,9 @@ import org.apache.ignite.internal.processors.query.schema.management.TableDescri
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.maintenance.MaintenanceAction;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.INDEX_REBUILD_MNTC_TASK_NAME;
-import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.ACTIVE;
-import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.COMPLETED;
-import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.FAILED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
@@ -63,9 +58,6 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
 
     /** Logger. */
     private final IgniteLogger log;
-
-    /** */
-    private volatile MaintenanceTaskState state;
 
     /**
      * Constructor.
@@ -88,8 +80,6 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
 
         IndexBuildStatusStorage storage = ctx.query().getIdxBuildStatusStorage();
 
-        state.currAction(name()).state(ACTIVE);
-
         try {
             prepareForRebuild(db, cpMgr, storage);
 
@@ -103,17 +93,12 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
                 catch (Exception e) {
                     log.error("Rebuilding index " + idxName + " for cache " + cacheId + " failed", e);
 
-                    state.state(FAILED);
-
                     return false;
                 }
             }
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to prepare for the rebuild of indexes", e);
-
-            state.state(FAILED);
-
             return false;
         }
         finally {
@@ -121,8 +106,6 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
         }
 
         unregisterMaintenanceTask();
-
-        state.state(COMPLETED);
 
         return true;
     }
@@ -279,10 +262,5 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
     /** {@inheritDoc} */
     @Nullable @Override public String description() {
         return "Rebuilding indexes";
-    }
-
-    /** {@inheritDoc} */
-    @Override public void state(@NotNull MaintenanceTaskState state) {
-        this.state = state;
     }
 }

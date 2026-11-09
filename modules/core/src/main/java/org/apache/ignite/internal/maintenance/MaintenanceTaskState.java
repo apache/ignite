@@ -20,6 +20,7 @@ package org.apache.ignite.internal.maintenance;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.maintenance.MaintenanceTask;
 
 /** Maintenance task state for logging. */
@@ -37,37 +38,20 @@ public class MaintenanceTaskState {
 
         /** Failed {@link MaintenanceTask Maintenance task}. */
         FAILED,
-
-        /**
-         * {@link MaintenanceTask Maintenance task}
-         * registered throw {@link MaintenanceProcessor#registerWorkflowCallback},
-         * not registered from storage.
-         */
-        NOT_REGISTERED,
-
-        /** {@link MaintenanceTask Maintenance task} registered from storage. */
-        REGISTERED,
-
-        /** {@link MaintenanceTask Maintenance task} unregistered. */
-        UNREGISTERED;
     }
 
     /** */
     private final MaintenanceTask task;
 
     /** */
-    private final List<State> state = new ArrayList<>();
+    private boolean isRegistered = true;
 
     /** */
-    private volatile String currAction;
+    private final List<ActionLifecycle> executedActions = new CopyOnWriteArrayList<>();
 
-    /**
-     * @param task {@link MaintenanceTask Maintenance task}.
-     * @param state State.
-     */
-    public MaintenanceTaskState(MaintenanceTask task, State state) {
+    /** @param task {@link MaintenanceTask Maintenance task}. */
+    public MaintenanceTaskState(MaintenanceTask task) {
         this.task = task;
-        this.state.add(state);
     }
 
     /** @return {@link MaintenanceTask Maintenance task}. */
@@ -75,27 +59,68 @@ public class MaintenanceTaskState {
         return task;
     }
 
-    /** @return State. */
-    public List<State> state() {
-        return Collections.unmodifiableList(state);
+    /** @return {@code true} if the task is registered in the active tasks. */
+    public boolean isRegistered() {
+        return isRegistered;
     }
 
-    /** @param state State. */
-    public void state(State state) {
-        this.state.add(state);
+    /** Task unregistered from the active tasks. */
+    public void unregistered() {
+        isRegistered = false;
     }
 
-    /** @return Current action. */
-    public String currAction() {
-        return currAction;
+    /** @return Executed actions lifecycles. */
+    public List<ActionLifecycle> executedActionsLifecycles() {
+        return new ArrayList<>(executedActions);
     }
 
     /**
-     * @param currAction Current action.
-     * @return Self.
+     * Add current action lifecycle.
+     * @param lifecycle Current executed action lifecycle.
      */
-    public MaintenanceTaskState currAction(String currAction) {
-        this.currAction = currAction;
-        return this;
+    public void addActionLifecycle(ActionLifecycle lifecycle) {
+        executedActions.add(lifecycle);
+    }
+
+    /**
+     * Add cuttent action lifecycle if exists.
+     * @param actionName Action name.
+     */
+    public ActionLifecycle getActionLifecycle(String actionName) {
+        for (ActionLifecycle lifecycle : executedActions) {
+            if (lifecycle.actionName().equals(actionName))
+                return lifecycle;
+        }
+
+        return new ActionLifecycle(actionName);
+    }
+
+    /** */
+    public static final class ActionLifecycle {
+        /** */
+        private final String actionName;
+
+        /** */
+        private final List<State> states = new CopyOnWriteArrayList<>();
+
+        /** */
+        public ActionLifecycle(String actionName) {
+            this.actionName = actionName;
+        }
+
+        /** */
+        public String actionName() {
+            return actionName;
+        }
+
+        /** */
+        public List<State> states() {
+            return Collections.unmodifiableList(states);
+        }
+
+        /** */
+        public void state(State state) {
+            states.add(state);
+        }
     }
 }

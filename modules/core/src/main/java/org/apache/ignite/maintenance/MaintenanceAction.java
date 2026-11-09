@@ -17,7 +17,6 @@
 
 package org.apache.ignite.maintenance;
 
-import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,18 +31,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * {@link MaintenanceRegistry} provides an access to maintenance actions for a {@link MaintenanceTask} with
  * call {@link MaintenanceRegistry#actionsForMaintenanceTask(String)}
- * <br>
- * To reflect the sequence of execute() status transitions in the ackNodeBasicMetrics() logs,
- * specify the following mappings:
- * <br>
- * {@link MaintenanceTaskState.State#ACTIVE}: Indicates the start of the Action execution.
- * <br>
- * {@link MaintenanceTaskState.State#CANCELLED}: Indicates that the current Action execution was interrupted.
- * <br>
- * {@link MaintenanceTaskState.State#COMPLETED}: Indicates the successful and expected completion of all processes
- * within the current Action.
- * <br>
- * {@link MaintenanceTaskState.State#FAILED}: Indicates the erroneous (abnormal) termination of the current Action.
  */
 public interface MaintenanceAction<T> {
     /**
@@ -63,9 +50,4 @@ public interface MaintenanceAction<T> {
      * @return Optional user-readable description of maintenance action.
      */
     @Nullable public String description();
-
-    /**
-     * @param state Maintenance task state.
-     */
-    public void state(@NotNull MaintenanceTaskState state);
 }

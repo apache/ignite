@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,18 +31,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationWorkflowCallback;
-import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.mockito.Mockito;
 
-import static org.mockito.Mockito.doThrow;
+import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.toStore;
 
 /**
  * Tests for maintenance logging of defragmentation task.
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.doThrow;
  */
 public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTest {
     /** */
-    private static MaintenanceRegistry mntcReg;
+    private static CountDownLatch markerReached;
 
     /** Listening test logger. */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -84,10 +84,14 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
             lsnr.reset();
             listeningLog.registerListener(lsnr);
         });
+
+        markerReached = null;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        markerReached = null;
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -99,11 +103,11 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
 
     /**
      * Tests the full lifecycle logging for defragmentation task:
-     * REGISTERED -> ACTIVE -> UNREGISTERED -> COMPLETED.
+     * ACTIVE -> COMPLETED.
      */
     @Test
     public void testLogNormalLifecycleDefragmentationTask() throws Exception {
-        assertTrue(executeTest());
+        assertTrue(executeTest(false));
         assertTrue(Lsnrs.MAINT_MODE_ENABLED.lsnr().check(10000));
         assertTrue(Lsnrs.MAINT_MODE_BASIC_METRICS.lsnr().check(10000));
         assertTrue(Lsnrs.TASK_DFRG_ACTIVE.lsnr().check(10000));
@@ -113,16 +117,16 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
 
     /**
      * Tests logging when defragmentation is cancelled via stop action:
-     * REGISTERED -> ACTIVE -> (stop action) -> UNREGISTERED -> CANCELLED.
+     * ACTIVE -> (stop action) -> CANCELLED.
      */
     @Test
-    public void testLogRegisteredActiveUnregisteredCancelledDefragmentationTask() throws Exception {
-        assertTrue(executeTest());
+    public void testLogRegisteredActiveCancelledUnregisteredDefragmentationTask() throws Exception {
+        assertTrue(executeTest(false));
         assertTrue(Lsnrs.MAINT_MODE_ENABLED.lsnr().check(10000));
         assertTrue(Lsnrs.MAINT_MODE_BASIC_METRICS.lsnr().check(10000));
         assertTrue(Lsnrs.TASK_DFRG_ACTIVE.lsnr().check(10000));
 
-        mntcReg.actionsForMaintenanceTask(
+        grid(0).context().maintenanceRegistry().actionsForMaintenanceTask(
                 CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME).get(0).execute();
 
         assertTrue(Lsnrs.TASK_DFRG_CANCELLED.lsnr().check(10000));
@@ -130,51 +134,16 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
 
     /**
      * Tests logging when defragmentation fails:
-     * REGISTERED -> ACTIVE -> FAILED.
+     * ACTIVE -> FAILED.
      */
     @Test
     public void testLogRegisterActiveFailedDefragmentationTask() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        MaintenanceTask defragTask = new MaintenanceTask("testDefragmentationFailedMaintenanceTask",
-                "Caches defragmentation", "default");
-
-        mntcReg = ignite.context().maintenanceRegistry();
-
-        mntcReg.registerMaintenanceTask(defragTask);
-
-        stopGrid(0);
-
-        ignite = startGrid(0);
-
+        assertTrue(executeTest(true));
         assertTrue(Lsnrs.MAINT_MODE_ENABLED.lsnr().check(10000));
         assertTrue(Lsnrs.MAINT_MODE_BASIC_METRICS.lsnr().check(10000));
+        assertTrue(Lsnrs.TASK_DFRG_ACTIVE.lsnr().check(10000));
 
-        mntcReg = ignite.context().maintenanceRegistry();
-
-        CachePartitionDefragmentationManager defrgMgr = Mockito.mock(CachePartitionDefragmentationManager.class);
-
-        FailureProcessor failureProc = ignite.context().failure();
-
-        doThrow(new IgniteCheckedException("Defragmentation failed")).when(defrgMgr).executeDefragmentation();
-
-        DefragmentationWorkflowCallback callback = new DefragmentationWorkflowCallback(
-            ignite.context().igniteInstanceName(),
-            cls -> log,
-            defrgMgr,
-            failureProc
-        );
-
-        mntcReg.registerWorkflowCallback("testDefragmentationFailedMaintenanceTask", callback);
-
-        assertTrue(Lsnrs.TASK_DFRG_REGISTERED.lsnr().check(10000));
-
-        try {
-            mntcReg.prepareAndExecuteMaintenance();
-        }
-        catch (RuntimeException ignored) {
-            // Ignore exception: maintenance action fails expected.
-        }
+        markerReached.countDown();
 
         assertTrue(Lsnrs.TASK_DFRG_FAILED.lsnr().check(10000));
     }
@@ -188,7 +157,7 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
     }
 
     /** */
-    private boolean executeTest() throws Exception {
+    private boolean executeTest(boolean isFailed) throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().state(ClusterState.ACTIVE);
@@ -202,19 +171,41 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
 
         forceCheckpoint(ignite);
 
-        MaintenanceTask defragTask = DefragmentationParameters.toStore(Collections.singletonList(DEFAULT_CACHE_NAME));
+        MaintenanceTask defragTask = toStore(Collections.singletonList(DEFAULT_CACHE_NAME));
 
-        mntcReg = ignite.context().maintenanceRegistry();
+        ignite.context().maintenanceRegistry().registerMaintenanceTask(defragTask);
 
-        mntcReg.registerMaintenanceTask(defragTask);
+        CacheFileTree cft = ignite.context().pdsFolderResolver().fileTree()
+                .cacheTree(ignite.cachex(DEFAULT_CACHE_NAME).configuration());
 
         stopGrid(0);
 
-        ignite = startGrid(0);
+        if (isFailed) {
+            markerReached = new CountDownLatch(1);
 
-        mntcReg = ignite.context().maintenanceRegistry();
+            UnaryOperator<IgniteConfiguration> cfgOp = cfg -> {
+                DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        return mntcReg.isMaintenanceMode();
+                FileIOFactory delegate = dsCfg.getFileIOFactory();
+                File marker = cft.defragmentationCompletionMarkerFile();
+
+                dsCfg.setFileIOFactory((file, modes) -> {
+                    if (file.equals(marker)) {
+                        throw new IOException("Failed to create defragmentation completion marker.");
+                    }
+
+                    return delegate.create(file, modes);
+                });
+
+                return cfg;
+            };
+
+            ignite = startGrid(0, cfgOp);
+        }
+        else
+            ignite = startGrid(0);
+
+        return ignite.context().maintenanceRegistry().isMaintenanceMode();
     }
 
     /** */
@@ -230,28 +221,23 @@ public class MaintenanceDefragmentationLoggingTest extends GridCommonAbstractTes
 
         /** */
         TASK_DFRG_ACTIVE(LogListener.matches(
-            "(REGISTERED->ACTIVE) name=defragmentationMaintenanceTask, " +
-                "description=Caches defragmentation, params=[default], currentAction=execute").build()),
+            "^-- REGISTERED name=defragmentationMaintenanceTask, description=Caches defragmentation, params=[default], " +
+                    "executedActions=[execute=ACTIVE]").build()),
 
         /** */
         TASK_DFRG_CANCELLED(LogListener.matches(
-            "(REGISTERED->ACTIVE->UNREGISTERED->CANCELLED) name=defragmentationMaintenanceTask, " +
-                "description=Caches defragmentation, params=[default]").build()),
+            "^-- UNREGISTERED name=defragmentationMaintenanceTask, description=Caches defragmentation, params=[default], " +
+                    "executedActions=[execute=ACTIVE->CANCELLED, stop=ACTIVE->COMPLETED]").build()),
 
         /** */
         TASK_DFRG_COMPLETED(LogListener.matches(
-            "(REGISTERED->ACTIVE->UNREGISTERED->COMPLETED) name=defragmentationMaintenanceTask, " +
-                "description=Caches defragmentation, params=[default]").build()),
+            "^-- UNREGISTERED name=defragmentationMaintenanceTask, description=Caches defragmentation, params=[default], " +
+                    "executedActions=[execute=ACTIVE->COMPLETED]").build()),
 
         /** */
         TASK_DFRG_FAILED(LogListener.matches(
-            "(REGISTERED->ACTIVE->FAILED) name=testDefragmentationFailedMaintenanceTask, " +
-                "description=Caches defragmentation, params=[default]").build()),
-
-        /** */
-        TASK_DFRG_REGISTERED(LogListener.matches(
-            "(REGISTERED) name=testDefragmentationFailedMaintenanceTask, " +
-                "description=Caches defragmentation, params=[default]").build());
+            "^-- REGISTERED name=defragmentationMaintenanceTask, description=Caches defragmentation, params=[default], " +
+                    "executedActions=[execute=ACTIVE->FAILED]").build());
 
         /** */
         private final LogListener lsnr;

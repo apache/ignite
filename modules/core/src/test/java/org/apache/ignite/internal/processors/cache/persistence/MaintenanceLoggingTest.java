@@ -24,24 +24,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
-import org.apache.ignite.internal.cache.query.index.sorted.maintenance.RebuildIndexWorkflowCallback;
-import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
+import org.apache.ignite.internal.maintenance.AsyncActionStateCallback;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
@@ -52,12 +45,9 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
-import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
@@ -80,14 +70,8 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicInteger ACTION_EXECUTED = new AtomicInteger();
 
-    /** */
-    private static MaintenanceRegistry mntcReg;
-
     /** Listening test logger. */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
-
-    /** */
-    @Rule public TemporaryFolder tmp = new TemporaryFolder();
 
     /** */
     private Semaphore semaphore;
@@ -145,24 +129,31 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLogRegisterActiveCompleteUnregisterOneTask() throws Exception {
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
             new SimpleMaintenanceCallback(List.of(
-                new SimpleAction(ACTION, null, false)))));
+                new SimpleAction(ACTION, TASK_NAME, null, false, registryRef::get)))));
+
+        registryRef.set(mntcReg);
 
         mntcReg.prepareAndExecuteMaintenance();
 
-        assertTrue(Listeners.TASK_ACTIVE.lsnr().check(2000));
-        assertTrue(Listeners.TASK_COMPLETED.lsnr().check(2000));
-        assertTrue(Listeners.TASK_UNREGISTERED.lsnr().check(2000));
+        assertTrue(Listeners.TASK_ACTIVE1.lsnr().check(2000));
+        assertTrue(Listeners.TASK_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertEquals(1, ACTION_EXECUTED.get());
     }
 
     /** */
     @Test
     public void testLogRegisterActiveFailedOneTask() throws Exception {
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
             new SimpleMaintenanceCallback(List.of(
-                new SimpleAction(ACTION, null, true)))));
+                new SimpleAction(ACTION, TASK_NAME, null, true, registryRef::get)))));
+
+        registryRef.set(mntcReg);
 
         try {
             mntcReg.prepareAndExecuteMaintenance();
@@ -171,7 +162,7 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
             // Ignore exception: maintenance action fails expected.
         }
 
-        assertTrue(Listeners.TASK_ACTIVE.lsnr().check(2000));
+        assertTrue(Listeners.TASK_ACTIVE1.lsnr().check(2000));
         assertTrue(Listeners.TASK_FAILED.lsnr().check(2000));
         assertEquals(1, ACTION_EXECUTED.get());
     }
@@ -179,45 +170,83 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLogRegisteredActiveCancelledUnregisterOneTask() throws Exception {
-        SimpleAction startAction = new SimpleAction(ACTION + 2, semaphore, false);
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        SimpleAction startAction = new AsyncAction(ACTION + 2, TASK_NAME, semaphore, false, registryRef::get);
         StopAction stopAction = new StopAction("stopAction", startAction);
 
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
             new SimpleMaintenanceCallback(List.of(
                 startAction,
                 stopAction
             ))));
 
+        registryRef.set(mntcReg);
+
         assertTrue(Listeners.TASK_REGISTERED.lsnr().check(2000));
 
         mntcReg.prepareAndExecuteMaintenance();
 
-        assertTrue(Listeners.TASK_ACTIVE.lsnr().check(2000));
+        assertTrue(Listeners.TASK_ACTIVE2.lsnr().check(2000));
         assertEquals(1, ACTION_EXECUTED.get());
 
-        mntcReg.actionsForMaintenanceTask(TASK_NAME).get(1).execute();
+        mntcReg.actionsForMaintenanceTask(TASK_NAME).stream()
+            .filter(action -> "stopAction".equals(action.name())).findFirst().ifPresent(MaintenanceAction::execute);
 
         assertTrue(Listeners.TASK_CANCELLED.lsnr().check(2000));
 
-        semaphore.release();
+        mntcReg.unregisterMaintenanceTask(TASK_NAME);
 
         assertTrue(Listeners.TASK_UNREGISTERED.lsnr().check(2000));
-        assertFalse(Listeners.TASK_COMPLETED.lsnr().check(2000));
+        assertFalse(Listeners.TASK_COMPLETED_UNREGISTERED.lsnr().check(2000));
+    }
+
+    /** */
+    @Test
+    public void testLogRegisteredActiveFailedStopOneTask() throws Exception {
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        SimpleAction startAction = new AsyncAction(ACTION + 2, TASK_NAME, semaphore, false, registryRef::get);
+        StopAction stopAction = new StopAction("failedStopAction", startAction);
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+            new SimpleMaintenanceCallback(List.of(
+                startAction,
+                stopAction
+            ))));
+
+        registryRef.set(mntcReg);
+
+        assertTrue(Listeners.TASK_REGISTERED.lsnr().check(2000));
+
+        mntcReg.prepareAndExecuteMaintenance();
+
+        assertTrue(Listeners.TASK_ACTIVE2.lsnr().check(2000));
+        assertEquals(1, ACTION_EXECUTED.get());
+
+        mntcReg.actionsForMaintenanceTask(TASK_NAME).stream().filter(action -> "failedStopAction".equals(action.name()))
+            .findFirst().ifPresent(MaintenanceAction::execute);
+
+        assertTrue(Listeners.TASK_STOP_FAILED.lsnr().check(2000));
     }
 
     /** */
     @Test
     public void testLogRegisteredUnregisterOneTaskShouldProceedWithMaintenanceFalse() throws Exception {
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION, null, false)), false)));
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION, TASK_NAME, null, false, registryRef::get)), false)));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK_REGISTERED.lsnr().check(2000));
 
         mntcReg.prepareAndExecuteMaintenance();
 
         assertTrue(Listeners.TASK_UNREGISTERED.lsnr().check(2000));
-        assertFalse(Listeners.TASK_ACTIVE.lsnr().check(2000));
-        assertFalse(Listeners.TASK_COMPLETED.lsnr().check(2000));
+        assertFalse(Listeners.TASK_ACTIVE1.lsnr().check(2000));
+        assertFalse(Listeners.TASK_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertFalse(Listeners.TASK_FAILED.lsnr().check(2000));
         assertEquals(0, ACTION_EXECUTED.get());
     }
@@ -225,69 +254,80 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLogRegisteredActiveCompleteUnregisterOneTaskTwoActions() throws Exception {
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME + 2, DESCRIPTION + 2, PARAMS + 2),
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME + 2, DESCRIPTION + 2, PARAMS + 2),
             new SimpleMaintenanceCallback(List.of(
-                new SimpleAction(ACTION + 4, null, false, false),
-                new SimpleAction(ACTION + 5, null, false)
+                new SimpleAction(ACTION + 4, TASK_NAME + 2, null, false, null),
+                new SimpleAction(ACTION + 5, TASK_NAME + 2, null, false, registryRef::get)
             ))));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK2_REGISTERED.lsnr().check(2000));
 
         mntcReg.prepareAndExecuteMaintenance();
 
         assertTrue(Listeners.TASK2_ACTIVE1.lsnr().check(2000));
-        assertTrue(Listeners.TASK2_COMPLETED.lsnr().check(2000));
+        assertTrue(Listeners.TASK2_COMPLETED_ONE_ACTION.lsnr().check(2000));
         assertFalse(Listeners.TASK2_UNREGISTERED.lsnr().check(2000));
         assertEquals(1, ACTION_EXECUTED.get());
 
         mntcReg.actionsForMaintenanceTask(TASK_NAME + 2).get(1).execute();
 
         assertTrue(Listeners.TASK2_ACTIVE2.lsnr().check(2000));
-        assertTrue(Listeners.TASK2_SECOND_COMPLETED.lsnr().check(2000));
-        assertTrue(Listeners.TASK2_UNREGISTERED.lsnr().check(2000));
+        assertTrue(Listeners.TASK2_COMPLETED_TWO_ACTIONS.lsnr().check(2000));
         assertEquals(2, ACTION_EXECUTED.get());
     }
 
     /** */
     @Test
     public void testLogRegisteredActiveCompleteUnregisterOneTaskDaemonThread() throws Exception {
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
             new SimpleMaintenanceCallback(List.of(
-                new SimpleAction(ACTION, semaphore, false, true)
+                new AsyncAction(ACTION, TASK_NAME, semaphore, false, registryRef::get)
             ))));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK_REGISTERED.lsnr().check(2000));
 
         mntcReg.prepareAndExecuteMaintenance();
 
-        assertTrue(Listeners.TASK_ACTIVE.lsnr().check(2000));
+        assertTrue(Listeners.TASK_ACTIVE1.lsnr().check(2000));
         assertFalse(Listeners.TASK_COMPLETED.lsnr().check(2000));
 
         semaphore.release();
 
         assertTrue(Listeners.TASK_COMPLETED.lsnr().check(2000));
-        assertFalse(Listeners.TASK_UNREGISTERED.lsnr().check(2000));
+        assertFalse(Listeners.TASK_COMPLETED_UNREGISTERED.lsnr().check(2000));
 
         semaphore.release();
 
-        assertTrue(Listeners.TASK_UNREGISTERED.lsnr().check(2000));
+        assertTrue(Listeners.TASK_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertEquals(1, ACTION_EXECUTED.get());
     }
 
     /** */
     @Test
     public void testLogRegisteredActiveFailedOneTaskDaemonThread() throws Exception {
-        prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
             new SimpleMaintenanceCallback(List.of(
-                new SimpleAction(ACTION, semaphore, true)
+                new AsyncAction(ACTION, TASK_NAME, semaphore, true, registryRef::get)
             ))));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK_REGISTERED.lsnr().check(2000));
 
         mntcReg.prepareAndExecuteMaintenance();
 
-        assertTrue(Listeners.TASK_ACTIVE.lsnr().check(2000));
-        assertFalse(Listeners.TASK_COMPLETED.lsnr().check(2000));
+        assertTrue(Listeners.TASK_ACTIVE1.lsnr().check(2000));
+        assertFalse(Listeners.TASK_COMPLETED_UNREGISTERED.lsnr().check(2000));
 
         semaphore.release();
 
@@ -299,12 +339,18 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLogRegisterActiveCompleteUnregisterTwoTasks() throws Exception {
-        prepareMaintenance(Map.of(
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(
             new MaintenanceTask(TASK_NAME + 0, DESCRIPTION + 0, PARAMS + 0),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION + 0, null, false))),
+            new SimpleMaintenanceCallback(List.of(
+                new SimpleAction(ACTION + 0, TASK_NAME + 0, null, false, registryRef::get))),
             new MaintenanceTask(TASK_NAME + 1, DESCRIPTION + 1, PARAMS + 1),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION + 2, null, false)))
+            new SimpleMaintenanceCallback(List.of(
+                new SimpleAction(ACTION + 2, TASK_NAME + 1, null, false, registryRef::get)))
         ));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK0_REGISTERED.lsnr().check(2000));
         assertTrue(Listeners.TASK1_REGISTERED.lsnr().check(2000));
@@ -312,23 +358,28 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         mntcReg.prepareAndExecuteMaintenance();
 
         assertTrue(Listeners.TASK0_ACTIVE.lsnr().check(2000));
-        assertTrue(Listeners.TASK0_COMPLETED.lsnr().check(2000));
-        assertTrue(Listeners.TASK0_UNREGISTERED.lsnr().check(2000));
+        assertTrue(Listeners.TASK0_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertTrue(Listeners.TASK1_ACTIVE.lsnr().check(2000));
-        assertTrue(Listeners.TASK1_COMPLETED.lsnr().check(2000));
-        assertTrue(Listeners.TASK1_UNREGISTERED.lsnr().check(2000));
+        assertTrue(Listeners.TASK1_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertEquals(2, ACTION_EXECUTED.get());
     }
 
     /** */
     @Test
     public void testLogRegisterActiveFailedOneOfTwoTasks() throws Exception {
-        prepareMaintenance(Map.of(
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(
             new MaintenanceTask(TASK_NAME + 0, DESCRIPTION + 0, PARAMS + 0),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION + 0, null, true))),
+            new SimpleMaintenanceCallback(List.of(
+                new SimpleAction(ACTION + 0, TASK_NAME + 0, null, true, registryRef::get))),
             new MaintenanceTask(TASK_NAME + 1, DESCRIPTION + 1, PARAMS + 1),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION + 2, null, false)))
+            new SimpleMaintenanceCallback(List.of(
+                new SimpleAction(ACTION + 2, TASK_NAME + 1, null, false, registryRef::get
+            )))
         ));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK0_REGISTERED.lsnr().check(2000));
         assertTrue(Listeners.TASK1_REGISTERED.lsnr().check(2000));
@@ -342,10 +393,10 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
 
         assertTrue(Listeners.TASK0_ACTIVE.lsnr().check(2000));
         assertTrue(Listeners.TASK0_FAILED.lsnr().check(2000));
-        assertFalse(Listeners.TASK0_UNREGISTERED.lsnr().check(2000));
+        assertFalse(Listeners.TASK0_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertFalse(Listeners.TASK1_ACTIVE.lsnr().check(2000));
         assertFalse(Listeners.TASK1_COMPLETED.lsnr().check(2000));
-        assertFalse(Listeners.TASK1_UNREGISTERED.lsnr().check(2000));
+        assertFalse(Listeners.TASK1_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertEquals(1, ACTION_EXECUTED.get());
     }
 
@@ -353,13 +404,18 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     @Test
     public void testLogRegisterActiveFailedOneOfTwoTasksDaemonThread() throws Exception {
         Semaphore semaphore1 = new Semaphore(0);
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
 
-        prepareMaintenance(Map.of(
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(
             new MaintenanceTask(TASK_NAME + 0, DESCRIPTION + 0, PARAMS + 0),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION + 0, semaphore, true))),
+            new SimpleMaintenanceCallback(List.of(
+                new AsyncAction(ACTION + 0, TASK_NAME + 0, semaphore, true, registryRef::get))),
             new MaintenanceTask(TASK_NAME + 1, DESCRIPTION + 1, PARAMS + 1),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION + 2, semaphore1, false)))
+            new SimpleMaintenanceCallback(List.of(
+                new AsyncAction(ACTION + 2, TASK_NAME + 1, semaphore1, false, registryRef::get)))
         ));
+
+        registryRef.set(mntcReg);
 
         assertTrue(Listeners.TASK0_REGISTERED.lsnr().check(2000));
         assertTrue(Listeners.TASK1_REGISTERED.lsnr().check(2000));
@@ -382,20 +438,26 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
 
         semaphore1.release();
 
-        assertTrue(Listeners.TASK1_UNREGISTERED.lsnr().check(2000));
-        assertFalse(Listeners.TASK0_UNREGISTERED.lsnr().check(2000));
+        assertTrue(Listeners.TASK1_COMPLETED_UNREGISTERED.lsnr().check(2000));
+        assertFalse(Listeners.TASK0_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertEquals(2, ACTION_EXECUTED.get());
     }
 
     /** */
     @Test
     public void testLogUnregisteredTask() throws Exception {
-        prepareMaintenance(Map.of(
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
+
+        MaintenanceRegistry mntcReg = prepareMaintenance(Map.of(
             new MaintenanceTask(TASK_NAME, DESCRIPTION, PARAMS),
-            new SimpleMaintenanceCallback(List.of(new SimpleAction(ACTION, null, true)))
+            new SimpleMaintenanceCallback(List.of(
+                new SimpleAction(ACTION, TASK_NAME, null, true, registryRef::get)))
         ));
 
+        registryRef.set(mntcReg);
+
         assertTrue(Listeners.TASK_REGISTERED.lsnr().check(2000));
+        assertFalse(Listeners.TASK_UNREGISTERED.lsnr().check(2000));
 
         mntcReg.unregisterMaintenanceTask(TASK_NAME);
 
@@ -410,17 +472,20 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedTaskLog() throws Exception {
+        AtomicReference<MaintenanceRegistry> registryRef = new AtomicReference<>();
         Map<MaintenanceTask, MaintenanceWorkflowCallback> tasks = new LinkedHashMap<>();
 
         for (int i = 0; i < 3; i++) {
             tasks.put(new MaintenanceTask(TASK_NAME + i, DESCRIPTION + i, PARAMS + i),
                 new SimpleMaintenanceCallback(Arrays.asList(
-                    new SimpleAction(ACTION + (i + i), null, (i + i) == 2),
-                    new SimpleAction(ACTION + (i + i + 1), semaphore, (i + i + 1) == 5)))
+                    new SimpleAction(ACTION + (i + i), TASK_NAME + i, null, (i + i) == 2, (i + i) == 4 ? null : registryRef::get),
+                    new AsyncAction(ACTION + (i + i + 1), TASK_NAME + i, semaphore, (i + i + 1) == 5, registryRef::get)))
             );
         }
 
-        prepareMaintenance(tasks);
+        MaintenanceRegistry mntcReg = prepareMaintenance(tasks);
+
+        registryRef.set(mntcReg);
 
         try {
             mntcReg.prepareAndExecuteMaintenance();
@@ -432,21 +497,28 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         assertTrue(Listeners.MAINT_MODE_ENABLED.lsnr().check());
         assertTrue(Listeners.MAINT_MODE_BASIC_METRICS.lsnr().check());
         assertTrue(Listeners.TASK0_ACTIVE.lsnr().check(2000));
-        assertTrue(Listeners.TASK0_COMPLETED.lsnr().check(2000));
+        assertTrue(Listeners.TASK0_COMPLETED_UNREGISTERED.lsnr().check(2000));
         assertTrue(Listeners.TASK1_REGISTERED.lsnr().check(2000));
         assertTrue(Listeners.TASK1_ACTIVE.lsnr().check(2000));
         assertTrue(Listeners.TASK1_FAILED.lsnr().check(2000));
         assertTrue(Listeners.TASK2_REGISTERED.lsnr().check(2000));
         assertFalse(Listeners.TASK2_ACTIVE1.lsnr().check(2000));
-        assertFalse(Listeners.TASK2_COMPLETED.lsnr().check(2000));
+        assertFalse(Listeners.TASK2_COMPLETED_ONE_ACTION.lsnr().check(2000));
         assertEquals(2, ACTION_EXECUTED.get());
+
+        mntcReg.actionsForMaintenanceTask(TASK_NAME + 2).get(0).execute();
+
+        assertTrue(Listeners.TASK2_ACTIVE1.lsnr().check(2000));
+        assertTrue(Listeners.TASK2_COMPLETED_ONE_ACTION.lsnr().check(2000));
 
         mntcReg.actionsForMaintenanceTask(TASK_NAME + 2).get(1).execute();
 
         assertTrue(Listeners.TASK2_ACTIVE2.lsnr().check(2000));
+
         semaphore.release();
-        assertTrue(Listeners.TASK2_FAILED.lsnr().check(2000));
-        assertEquals(3, ACTION_EXECUTED.get());
+
+        assertTrue(Listeners.TASK2_SECOND_ACTION_FAILED.lsnr().check(2000));
+        assertEquals(4, ACTION_EXECUTED.get());
 
         assertThrowsAnyCause(
             listeningLog,
@@ -455,28 +527,6 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
             "Maintenance workflow callback for given task name not found, " +
                 "cannot retrieve maintenance actions for it: taskName0"
         );
-
-        MaintenanceWorkflowCallback callback = new SimpleMaintenanceCallback(Arrays.asList(
-            new SimpleAction(ACTION + "_A", semaphore, false),
-            new SimpleAction(ACTION + "_B", semaphore, false)));
-
-        mntcReg.registerWorkflowCallback(TASK_NAME, callback);
-
-        assertTrue(Listeners.TASK_NOT_REGISTERED.lsnr().check(2000));
-
-        callback.allActions().get(0).execute();
-
-        assertTrue(Listeners.TASK_NOT_REGISTERED_ACTIVE.lsnr().check(2000));
-        assertTrue(Listeners.TASK_NOT_REGISTERED_COMPLETED.lsnr().check(2000));
-        assertEquals(4, ACTION_EXECUTED.get());
-
-        assertThrowsAnyCause(
-            listeningLog,
-            () -> mntcReg.actionsForMaintenanceTask(TASK_NAME).get(1).execute(),
-            IgniteException.class,
-            "Maintenance workflow callback for given task name not found, " +
-                "cannot retrieve maintenance actions for it: taskName"
-        );
     }
 
     /** */
@@ -484,7 +534,7 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     public void testCorruptedPdsMaintenanceCallbackActionsLog() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        mntcReg = ignite.context().maintenanceRegistry();
+        MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
 
         assertFalse(mntcReg.isMaintenanceMode());
 
@@ -511,47 +561,19 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
             .filter(a -> a.name().equals(CheckCorruptedCacheStoresCleanAction.ACTION_NAME))
             .findFirst().get().execute();
 
-        assertTrue(Listeners.CHECK_CORRUPTED.lsnr().check(5000));
+        assertTrue(Listeners.CHECK_CACHE_FILES_CLEANED.lsnr().check(2000));
 
         mntcReg.actionsForMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME + 1).stream()
             .filter(a -> a.name().equals(CleanCacheStoresMaintenanceAction.ACTION_NAME))
             .findFirst().get().execute();
 
-        assertTrue(Listeners.CLEAN_CACHE.lsnr().check(5000));
+        assertTrue(Listeners.CLEAN_CACHE.lsnr().check(2000));
     }
 
     /** */
     @Test
-    public void testRebuildIndexActionCompletedLog() throws Exception {
+    public void testRebuildIndexActionFailedLog() throws Exception {
         IgniteEx ignite = startGrid(0);
-
-        ignite.cluster().state(ClusterState.ACTIVE);
-
-        ignite.createCache(new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME).setBackups(1));
-
-        try (IgniteClient client = Ignition.startClient(
-            new ClientConfiguration()
-                .setAddresses(ignite.localNode().addresses().iterator().next())
-                .setPartitionAwarenessEnabled(true)
-                .setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true))
-        )) {
-
-            client.query(new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS TEST_TABLE (name VARCHAR PRIMARY KEY, text VARCHAR) " +
-                "WITH \"CACHE_NAME=" + DEFAULT_CACHE_NAME + "\"").setSchema("PUBLIC").setTimeout(30, TimeUnit.SECONDS));
-
-            client.query(new SqlFieldsQuery(String.format("CREATE INDEX IF NOT EXISTS %s ON %s", "idxName", "TEST_TABLE")));
-
-            for (int i = 0; i < 2048; i++) {
-                try {
-                    client.query(new SqlFieldsQuery("INSERT INTO PUBLIC.TEST_TABLE VALUES('Name_" + i + "', 'Text_" + i + "')"));
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        forceCheckpoint(ignite);
 
         MaintenanceTask mntcTask = toMaintenanceTask(CU.cacheId(DEFAULT_CACHE_NAME), "idxName");
 
@@ -562,39 +584,7 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         ignite = startGrid(0);
 
         assertTrue(ignite.context().maintenanceRegistry().isMaintenanceMode());
-
-        assertTrue(Listeners.INDEX_REBUILD_COMPLETED.lsnr().check(5000));
-    }
-
-    /** */
-    @Test
-    public void testRebuildIndexActionFailedLog() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        mntcReg = ignite.context().maintenanceRegistry();
-
-        assertFalse(mntcReg.isMaintenanceMode());
-
-        MaintenanceTask mntcTask = new MaintenanceTask("indexRebuildMaintenanceLogTask", "Corrupted index found", DEFAULT_CACHE_NAME);
-
-        mntcReg = ignite.context().maintenanceRegistry();
-
-        mntcReg.registerMaintenanceTask(mntcTask);
-
-        stopGrid(0);
-
-        ignite = startGrid(0);
-
-        mntcReg = ignite.context().maintenanceRegistry();
-
-        assertTrue(mntcReg.isMaintenanceMode());
-
-        mntcReg.registerWorkflowCallback("indexRebuildMaintenanceLogTask",
-            new RebuildIndexWorkflowCallback(List.of(new MaintenanceRebuildIndexTarget(0, "idxName")), ignite.context()));
-
-        mntcReg.actionsForMaintenanceTask("indexRebuildMaintenanceLogTask").get(0).execute();
-
-        assertTrue(Listeners.INDEX_REBUILD_FAILED.lsnr().check(5000));
+        assertTrue(Listeners.INDEX_REBUILD_FAILED.lsnr().check(2000));
     }
 
     /** */
@@ -639,7 +629,7 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         private final String name;
 
         /** */
-        private volatile MaintenanceTaskState state;
+        private final String taskName;
 
         /** */
         private final Semaphore semaphore;
@@ -648,28 +638,32 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         private final boolean isFailed;
 
         /** */
-        private final boolean unregister;
+        private final Supplier<MaintenanceRegistry> registrySupplier;
 
         /** */
         private volatile Thread worker;
 
         /** */
-        private SimpleAction(String name, Semaphore semaphore, Boolean isFailed, Boolean unregister) {
-            this.name = name;
-            this.semaphore = semaphore;
-            this.isFailed = isFailed;
-            this.unregister = unregister;
-        }
+        protected volatile Runnable onCompleted = () -> {};
 
         /** */
-        private SimpleAction(String name, Semaphore semaphore, Boolean isFailed) {
-            this(name, semaphore, isFailed, true);
+        protected volatile Runnable onCancelled = () -> {};
+
+        /** */
+        protected volatile Consumer<Throwable> onFailed = e -> {};
+
+        /** */
+        private SimpleAction(String name, String taskName, Semaphore semaphore, Boolean isFailed,
+                             Supplier<MaintenanceRegistry> registrySupplier) {
+            this.name = name;
+            this.taskName = taskName;
+            this.semaphore = semaphore;
+            this.isFailed = isFailed;
+            this.registrySupplier = registrySupplier;
         }
 
         /** {@inheritDoc} */
         @Override public Void execute() {
-            state.currAction(name).state(State.ACTIVE);
-
             ACTION_EXECUTED.incrementAndGet();
 
             if (semaphore == null) {
@@ -696,11 +690,6 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
             return null;
         }
 
-        /** {@inheritDoc} */
-        @Override public void state(@NotNull MaintenanceTaskState state) {
-            this.state = state;
-        }
-
         /** */
         private void execute0() {
             InterruptibleAction pause = semaphore == null
@@ -710,29 +699,33 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
             try {
                 pause.execute();
 
-                if (isFailed) throw new RuntimeException("Action " + name + " failed");
+                if (isFailed)
+                    throw new RuntimeException("Action " + name + " failed");
 
-                state.state(State.COMPLETED);
+                onCompleted.run();
 
                 pause.execute();
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
+                if (Thread.currentThread().isAlive())
+                    onCancelled.run();
+
                 return;
             }
             catch (Exception e) {
-                state.state(State.FAILED);
+                onFailed.accept(e);
 
                 throw new RuntimeException(e);
             }
 
-            if (unregister) mntcReg.unregisterMaintenanceTask(state.task().name());
+            if (registrySupplier != null && registrySupplier.get() != null) {
+                registrySupplier.get().unregisterMaintenanceTask(taskName);
+            }
         }
 
-        /**
-         * @return {@code true} if action was cancelled.
-         */
+        /** @return {@code true} if action was cancelled. */
         public synchronized Boolean cancel() {
             Thread thread = worker;
 
@@ -753,12 +746,27 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class StopAction implements MaintenanceAction<Void> {
+    private static final class AsyncAction extends SimpleAction implements AsyncActionStateCallback {
+        /** */
+        private AsyncAction(String name, String taskName, Semaphore semaphore, Boolean isFailed,
+                            Supplier<MaintenanceRegistry> registrySupplier) {
+            super(name, taskName, semaphore, isFailed, registrySupplier);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setStateCallbacks(@NotNull Runnable onCompleted,
+                                                @NotNull Runnable onCancelled,
+                                                @NotNull Consumer<Throwable> onFailed) {
+            this.onCompleted = onCompleted;
+            this.onCancelled = onCancelled;
+            this.onFailed = onFailed;
+        }
+    }
+
+    /** */
+    private static class StopAction implements MaintenanceAction<Boolean> {
         /** */
         private final String name;
-
-        /** */
-        private volatile MaintenanceTaskState state;
 
         /** */
         private final SimpleAction startAction;
@@ -770,21 +778,17 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Void execute() {
+        @Override public Boolean execute() {
             try {
-                if (startAction.cancel()) {
-                    state.currAction(name).state(State.CANCELLED);
-
-                    assertTrue(Listeners.TASK_CANCELLED.lsnr().check(2000));
-
-                    mntcReg.unregisterMaintenanceTask(state.task().name());
+                if ("stopAction".equals(name) && startAction.cancel()) {
+                    return true;
                 }
             }
             catch (Exception e) {
-                throw new RuntimeException(e);
+                return false;
             }
 
-            return null;
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -796,11 +800,6 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         @Override public @Nullable String description() {
             return null;
         }
-
-        /** {@inheritDoc} */
-        @Override public void state(@NotNull MaintenanceTaskState state) {
-            this.state = state;
-        }
     }
 
     /** */
@@ -811,10 +810,10 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void prepareMaintenance(Map<MaintenanceTask, MaintenanceWorkflowCallback> tasks) throws Exception {
+    private MaintenanceRegistry prepareMaintenance(Map<MaintenanceTask, MaintenanceWorkflowCallback> tasks) throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        mntcReg = ignite.context().maintenanceRegistry();
+        MaintenanceRegistry mntcReg = ignite.context().maintenanceRegistry();
 
         assertFalse(mntcReg.isMaintenanceMode());
 
@@ -833,25 +832,27 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         for (Map.Entry<MaintenanceTask, MaintenanceWorkflowCallback> task : tasks.entrySet()) {
             mntcReg.registerWorkflowCallback(task.getKey().name(), task.getValue());
         }
+
+        return mntcReg;
     }
 
     /** */
     enum Listeners {
         /** */
-        CHECK_CORRUPTED(LogListener.matches("(REGISTERED->ACTIVE->COMPLETED) name=corrupted-cache-data-files-task1, " +
-            "description=Corrupted cache groups found, params=").build()),
+        CHECK_CACHE_FILES_CLEANED(LogListener.matches("^-- REGISTERED name=corrupted-cache-data-files-task1, " +
+                "description=Corrupted cache groups found, params=[default], " +
+                "executedActions=[check_cache_files_cleaned=ACTIVE->COMPLETED]").build()),
 
         /** */
-        CLEAN_CACHE(LogListener.matches("(REGISTERED->ACTIVE->COMPLETED->ACTIVE->COMPLETED) " +
-            "name=corrupted-cache-data-files-task1, description=Corrupted cache groups found, params=").build()),
+        CLEAN_CACHE(LogListener.matches("^-- REGISTERED name=corrupted-cache-data-files-task1, " +
+                "description=Corrupted cache groups found, params=[default], " +
+                "executedActions=[check_cache_files_cleaned=ACTIVE->COMPLETED, " +
+                "clean_data_files=ACTIVE->COMPLETED]").build()),
 
         /** */
-        INDEX_REBUILD_COMPLETED(LogListener.matches("(REGISTERED->ACTIVE->UNREGISTERED->COMPLETED) " +
-            "name=indexRebuildMaintenanceTask, description=Corrupted index found, params=").build()),
-
-        /** */
-        INDEX_REBUILD_FAILED(LogListener.matches("(REGISTERED->ACTIVE->FAILED) name=indexRebuildMaintenanceLogTask, " +
-            "description=Corrupted index found, params=").build()),
+        INDEX_REBUILD_FAILED(LogListener.matches("^-- REGISTERED name=indexRebuildMaintenanceTask, " +
+                "description=Corrupted index found, params=[1544803905|aWR4TmFtZQ==], " +
+                "executedActions=[rebuild=ACTIVE->FAILED]").build()),
 
         /** */
         MAINT_MODE_BASIC_METRICS(LogListener.matches("!!! ATTENTION! NODE IS IN MAINTENANCE MODE !!!").build()),
@@ -860,105 +861,116 @@ public class MaintenanceLoggingTest extends GridCommonAbstractTest {
         MAINT_MODE_ENABLED(LogListener.matches("ATTENTION! MAINTENANCE MODE ENABLED!").build()),
 
         /** */
-        TASK_ACTIVE(LogListener.matches("ACTIVE) name=taskName, description=Custom maintenance task, " +
-            "params=[any_param, param], currentAction=action").build()),
+        TASK_ACTIVE1(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param], executedActions=[action=ACTIVE]").build()),
 
         /** */
-        TASK_CANCELLED(LogListener.matches("CANCELLED) name=taskName, description=Custom maintenance task, " +
-            "params=[any_param, param]").build()),
+        TASK_ACTIVE2(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param], executedActions=[action2=ACTIVE]").build()),
 
         /** */
-        TASK_COMPLETED(LogListener.matches("COMPLETED) name=taskName, description=Custom maintenance task, " +
-            "params=[any_param, param]").build()),
+        TASK_CANCELLED(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param], executedActions=[action2=ACTIVE->CANCELLED, " +
+                "stopAction=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK_FAILED(LogListener.matches("FAILED) name=taskName, description=Custom maintenance task, " +
-            "params=[any_param, param]").build()),
+        TASK_COMPLETED(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param], executedActions=[action=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK_NOT_REGISTERED(LogListener.matches("NOT_REGISTERED) name=taskName").build()),
+        TASK_COMPLETED_UNREGISTERED(LogListener.matches("^-- UNREGISTERED name=taskName, " +
+                "description=Custom maintenance task, params=[any_param, param], " +
+                "executedActions=[action=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK_NOT_REGISTERED_ACTIVE(LogListener.matches("ACTIVE) name=taskName, currentAction=action").build()),
+        TASK_FAILED(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param], executedActions=[action=ACTIVE->FAILED]").build()),
 
         /** */
-        TASK_NOT_REGISTERED_COMPLETED(LogListener.matches("ACTIVE->COMPLETED) name=taskName").build()),
+        TASK_NOT_REGISTERED_ACTIVE(LogListener.matches("(REGISTERED->ACTIVE) name=taskName, currentAction=action").build()),
 
         /** */
-        TASK_REGISTERED(LogListener.matches("^-- (REGISTERED) name=taskName, description=Custom maintenance task, " +
-            "params=[any_param, param]").build()),
+        TASK_NOT_REGISTERED_COMPLETED(LogListener.matches("(REGISTERED->ACTIVE->COMPLETED) name=taskName").build()),
 
         /** */
-        TASK_UNREGISTERED(LogListener.matches("UNREGISTERED) name=taskName, description=Custom maintenance task, " +
-            "params=[any_param, param]").build()),
+        TASK_REGISTERED(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param]").build()),
 
         /** */
-        TASK0_REGISTERED(LogListener.matches("(REGISTERED) name=taskName0, description=Custom maintenance task0, " +
-            "params=[any_param, param0]").build()),
+        TASK_STOP_FAILED(LogListener.matches("^-- REGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param], executedActions=[action2=ACTIVE, failedStopAction=ACTIVE->FAILED]").build()),
 
         /** */
-        TASK0_ACTIVE(LogListener.matches("ACTIVE) name=taskName0, description=Custom maintenance task0, " +
-            "params=[any_param, param0], currentAction=action0").build()),
+        TASK_UNREGISTERED(LogListener.matches("^-- UNREGISTERED name=taskName, description=Custom maintenance task, " +
+                "params=[any_param, param]").build()),
 
         /** */
-        TASK0_COMPLETED(LogListener.matches("ACTIVE->COMPLETED) name=taskName0, description=Custom maintenance task0, " +
-            "params=[any_param, param0]").build()),
+        TASK0_ACTIVE(LogListener.matches("^-- REGISTERED name=taskName0, description=Custom maintenance task0, " +
+                "params=[any_param, param0], executedActions=[action0=ACTIVE]").build()),
 
         /** */
-        TASK0_FAILED(LogListener.matches("FAILED) name=taskName0, description=Custom maintenance task0, " +
-            "params=[any_param, param0]").build()),
+        TASK0_COMPLETED_UNREGISTERED(LogListener.matches("^-- UNREGISTERED name=taskName0, " +
+                "description=Custom maintenance task0, params=[any_param, param0], " +
+                "executedActions=[action0=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK0_UNREGISTERED(LogListener.matches("UNREGISTERED) name=taskName0, description=Custom maintenance task0, " +
-            "params=[any_param, param0]").build()),
+        TASK0_FAILED(LogListener.matches("^-- REGISTERED name=taskName0, description=Custom maintenance task0, " +
+                "params=[any_param, param0], executedActions=[action0=ACTIVE->FAILED]").build()),
 
         /** */
-        TASK1_ACTIVE(LogListener.matches("ACTIVE) name=taskName1, description=Custom maintenance task1, " +
-            "params=[any_param, param1], currentAction=action2").build()),
+        TASK0_REGISTERED(LogListener.matches("^-- REGISTERED name=taskName0, description=Custom maintenance task0, " +
+                "params=[any_param, param0]").build()),
 
         /** */
-        TASK1_COMPLETED(LogListener.matches("ACTIVE->COMPLETED) name=taskName1, description=Custom maintenance task1, " +
-            "params=[any_param, param1]").build()),
+        TASK1_ACTIVE(LogListener.matches("^-- REGISTERED name=taskName1, description=Custom maintenance task1, " +
+                "params=[any_param, param1], executedActions=[action2=ACTIVE]").build()),
 
         /** */
-        TASK1_FAILED(LogListener.matches("FAILED) name=taskName1, description=Custom maintenance task1, " +
-            "params=[any_param, param1]").build()),
+        TASK1_COMPLETED(LogListener.matches("^-- REGISTERED name=taskName1, description=Custom maintenance task1, " +
+                "params=[any_param, param1], executedActions=[action2=ACTIVE]").build()),
 
         /** */
-        TASK1_REGISTERED(LogListener.matches("^-- (REGISTERED) name=taskName1, description=Custom maintenance task1, " +
-            "params=[any_param, param1]").build()),
+        TASK1_COMPLETED_UNREGISTERED(LogListener.matches("^-- UNREGISTERED name=taskName1, " +
+                "description=Custom maintenance task1, params=[any_param, param1], " +
+                "executedActions=[action2=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK1_UNREGISTERED(LogListener.matches("UNREGISTERED) name=taskName1, description=Custom maintenance task1, " +
-            "params=[any_param, param1]").build()),
+        TASK1_FAILED(LogListener.matches("^-- REGISTERED name=taskName1, description=Custom maintenance task1, " +
+            "params=[any_param, param1], executedActions=[action2=ACTIVE->FAILED]").build()),
 
         /** */
-        TASK2_ACTIVE1(LogListener.matches("ACTIVE) name=taskName2, description=Custom maintenance task2, " +
-            "params=[any_param, param2], currentAction=action4").build()),
+        TASK1_REGISTERED(LogListener.matches("^-- REGISTERED name=taskName1, description=Custom maintenance task1, " +
+                "params=[any_param, param1]").build()),
 
         /** */
-        TASK2_ACTIVE2(LogListener.matches("ACTIVE) name=taskName2, description=Custom maintenance task2, " +
-            "params=[any_param, param2], currentAction=action5").build()),
+        TASK2_ACTIVE1(LogListener.matches("^-- REGISTERED name=taskName2, description=Custom maintenance task2, " +
+                "params=[any_param, param2], executedActions=[action4=ACTIVE]").build()),
 
         /** */
-        TASK2_COMPLETED(LogListener.matches("ACTIVE->COMPLETED) name=taskName2, description=Custom maintenance task2, " +
-            "params=[any_param, param2]").build()),
+        TASK2_ACTIVE2(LogListener.matches("^-- REGISTERED name=taskName2, description=Custom maintenance task2, " +
+                "params=[any_param, param2], executedActions=[action4=ACTIVE->COMPLETED, action5=ACTIVE]").build()),
 
         /** */
-        TASK2_SECOND_COMPLETED(LogListener.matches("(REGISTERED->ACTIVE->COMPLETED->ACTIVE->COMPLETED->UNREGISTERED) " +
-            "name=taskName2, description=Custom maintenance task2, params=[any_param, param2]").build()),
+        TASK2_COMPLETED_ONE_ACTION(LogListener.matches("^-- REGISTERED name=taskName2, description=Custom maintenance task2, " +
+                "params=[any_param, param2], executedActions=[action4=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK2_FAILED(LogListener.matches("FAILED) name=taskName2, description=Custom maintenance task2, " +
-            "params=[any_param, param2]").build()),
+        TASK2_COMPLETED_TWO_ACTIONS(LogListener.matches("^-- UNREGISTERED name=taskName2, " +
+                "description=Custom maintenance task2, params=[any_param, param2], " +
+                "executedActions=[action4=ACTIVE->COMPLETED, action5=ACTIVE->COMPLETED]").build()),
 
         /** */
-        TASK2_REGISTERED(LogListener.matches("^-- (REGISTERED) name=taskName2, description=Custom maintenance task2, " +
-            "params=[any_param, param2]").build()),
+        TASK2_REGISTERED(LogListener.matches("^-- REGISTERED name=taskName2, description=Custom maintenance task2, " +
+                "params=[any_param, param2]").build()),
 
         /** */
-        TASK2_UNREGISTERED(LogListener.matches("UNREGISTERED) name=taskName2, description=Custom maintenance task2, " +
-            "params=[any_param, param2]").build());
+        TASK2_SECOND_ACTION_FAILED(LogListener.matches("^-- REGISTERED name=taskName2, " +
+                "description=Custom maintenance task2, params=[any_param, param2], " +
+                "executedActions=[action4=ACTIVE->COMPLETED, action5=ACTIVE->FAILED]").build()),
+
+        /** */
+        TASK2_UNREGISTERED(LogListener.matches("^-- UNREGISTERED name=taskName2, description=Custom maintenance task2, " +
+                "params=[any_param, param2], executedActions=[action5=ACTIVE->COMPLETED]").build());
 
         /** */
         private final LogListener lsnr;

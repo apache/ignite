@@ -53,6 +53,7 @@ import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -739,24 +740,25 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
         SB msg = new SB();
 
         if (mntcProc.isMaintenanceMode()) {
-            List<List<String>> statesList = mntcProc.tasksStates();
+            List<MaintenanceTaskState> statesList = mntcProc.tasksStates();
 
             msg.nl()
                 .a("!!! ATTENTION! NODE IS IN MAINTENANCE MODE !!!").nl()
                 .a(statesList.size() == 1 ? "    MaintenanceTask " : "    MaintenanceTasks");
 
-            for (List<String> states : statesList) {
+            for (MaintenanceTaskState state : statesList) {
                 SB sb = new SB();
 
-                sb.a("    ^-- (")
-                    .a(states.get(0)).a(") ")
-                    .a("name=").a(states.get(1));
-
-                if (!states.get(2).isBlank()) sb.a(", description=").a(states.get(2));
-
-                if (!states.get(3).isBlank()) sb.a(", params=[").a(states.get(3)).a("]");
-
-                if (!states.get(4).isBlank()) sb.a(", currentAction=").a(states.get(4));
+                sb.a("    ^-- ")
+                    .a(state.isRegistered() ? "REGISTERED" : "UNREGISTERED")
+                    .a(" name=").a(state.task().name())
+                    .a(", description=").a(state.task().description())
+                    .a(", params=[").a(state.task().parameters()).a("]")
+                    .a(state.executedActionsLifecycles().isEmpty() ? "" : ", executedActions=[")
+                    .a(String.join(", ", state.executedActionsLifecycles().stream()
+                        .map(lifecycle -> lifecycle.actionName() + "=" + String.join("->", lifecycle.states().stream()
+                            .map(Enum::name).toList())).toList()))
+                    .a(state.executedActionsLifecycles().isEmpty() ? "" : "]");
 
                 msg.nl().a(sb);
             }

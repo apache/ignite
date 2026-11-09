@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance;
 
-import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.CANCELLED;
 
 /**
  * Action which allows to stop the defragmentation at any time from maintenance mode processor.
@@ -31,9 +28,6 @@ import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State.
 class StopDefragmentationAction implements MaintenanceAction<Boolean> {
     /** Defragmentation manager. */
     private final CachePartitionDefragmentationManager defragmentationMgr;
-
-    /** */
-    private volatile MaintenanceTaskState state;
 
     /**
      * @param defragmentationMgr Defragmentation manager.
@@ -44,11 +38,7 @@ class StopDefragmentationAction implements MaintenanceAction<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
-        Boolean res = defragmentationMgr.cancel();
-
-        if (res) state.state(CANCELLED);
-
-        return res;
+        return defragmentationMgr.cancel();
     }
 
     /** {@inheritDoc} */
@@ -59,10 +49,5 @@ class StopDefragmentationAction implements MaintenanceAction<Boolean> {
     /** {@inheritDoc} */
     @Override public @Nullable String description() {
         return "Stopping the defragmentation process immediately";
-    }
-
-    /** {@inheritDoc} */
-    @Override public void state(@NotNull MaintenanceTaskState state) {
-        this.state = state;
     }
 }
