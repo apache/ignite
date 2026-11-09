@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -146,8 +147,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * Removes lock by key and optional version.
      *
      * @param key Key.
-     * @param ver Version of the lock or {@code null} to remove its latest candidate, the version of a nested lock
-     *     future to remove only its reentry.
+     * @param ver Version (or {@code null} if any candidate should be removed.)
      * @return Removed candidate if matches given parameters.
      */
     public GridCacheMvccCandidate removeCandidate(IgniteTxKey key, @Nullable GridCacheVersion ver) {
@@ -163,17 +163,37 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
                 assert !deque.isEmpty();
 
-                GridCacheMvccCandidate last = deque.peekLast();
+                GridCacheMvccCandidate first = deque.peekFirst();
 
-                if (ver == null || ver.equals(last.version()) || ver.equals(last.reentryVersion())) {
-                    GridCacheMvccCandidate reentry = deque.peekFirst().unenter();
+                if (ver == null || first.version().equals(ver)) {
+                    GridCacheMvccCandidate reentry = first.unenter();
 
-                    cand = deque.removeLast();
+                    if (reentry != null) {
+                        assert reentry.reentry() : reentry;
 
-                    assert reentry == null ? deque.isEmpty() : reentry == cand : cand;
+                        boolean rmvd = false;
+
+                        Iterator<GridCacheMvccCandidate> it = deque.iterator();
+
+                        while (it.hasNext()) {
+                            if (it.next() == reentry) {
+                                it.remove();
+
+                                rmvd = true;
+
+                                break;
+                            }
+                        }
+
+                        assert rmvd : reentry;
+
+                        cand = reentry;
+                    }
+                    else
+                        cand = deque.removeFirst();
 
                     if (deque.isEmpty())
-                        cands.remove(key);
+                        cands.remove(cand.key());
                 }
             }
 

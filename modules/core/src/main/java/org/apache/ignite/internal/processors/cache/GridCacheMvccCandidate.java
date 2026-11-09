@@ -51,7 +51,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     @GridToStringInclude
     private final UUID nodeId;
 
-    /** Version of the lock, shared by the base candidate and its reentries. */
+    /** Lock version. */
     @GridToStringInclude
     private final GridCacheVersion ver;
 
@@ -69,9 +69,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
 
     /** Linked reentry. */
     private GridCacheMvccCandidate reentry;
-
-    /** Version of the explicit lock future that created this reentry, {@code null} on the base candidate. */
-    private GridCacheVersion reentryVer;
 
     /** Previous lock for the thread. */
     @GridToStringExclude
@@ -198,10 +195,9 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
-     * @param reentryVer Version of the lock future that creates the reentry.
      * @return Reentry candidate.
      */
-    public GridCacheMvccCandidate reenter(GridCacheVersion reentryVer) {
+    public GridCacheMvccCandidate reenter() {
         GridCacheMvccCandidate old = reentry;
 
         GridCacheMvccCandidate reentry = new GridCacheMvccCandidate(
@@ -221,7 +217,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
             read());
 
         reentry.topVer = topVer;
-        reentry.reentryVer = reentryVer;
 
         if (old != null)
             reentry.reentry = old;
@@ -414,11 +409,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
      */
     public GridCacheVersion version() {
         return ver;
-    }
-
-    /** @return Version of the explicit lock future that created this reentry, {@code null} on the base candidate. */
-    public GridCacheVersion reentryVersion() {
-        return reentryVer;
     }
 
     /**
