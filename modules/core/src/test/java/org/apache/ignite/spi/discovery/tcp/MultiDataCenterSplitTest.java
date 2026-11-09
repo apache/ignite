@@ -23,18 +23,17 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -65,6 +64,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
     /** */
     private static final String DC_ID_2 = "DC2";
+
+    /** */
+    private final Map<Integer, String> portToDc = new ConcurrentHashMap<>();
 
     /** */
     private Supplier<TcpDiscoverySpi> discoSpiSupplier;
@@ -145,16 +147,6 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         startDCs(dcCnt);
 
-        // When blocking DCs, we rely on the ports. It is important for the test. Ensure the strict port order.
-        for (int g = 0; g < srvrsPerDc * dcCnt; ++g) {
-            int port = discoSpi(grid(g)).locNode.discoveryPort();
-
-            if (log.isInfoEnabled())
-                log.info("Node port [nodeIdx=" + g + ", port=" + port + ']');
-
-            assertEquals(port, DFLT_PORT + g);
-        }
-
         // Register the log listeners.
         // There is 2 close-ring-to-local-DC scenarios: 1 - remote DC is completely pinged and doesn't answer enough
         // in some time before the connection recovery timeout and before corner node gets segmented; 2 - corner node
@@ -222,77 +214,41 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
         if (cnt == 2) {
             // Start DC0. It misses connection to DC1.
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-            discoSpiSupplier = () -> testDiscovery(DFLT_PORT + srvrsPerDc, DFLT_PORT + srvrsPerDc * 2 - 1);
+            discoSpiSupplier = () -> new TestTcpDiscoverySpi(Collections.singleton(DC_ID_1), fullTimeoutFailure, pingPoolSize);
 
-            startGrids(srvrsPerDc);
+            startGridsMultiThreaded(srvrsPerDc);
 
             // Start DC1. It misses connection to DC0.
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-            discoSpiSupplier = () -> testDiscovery(DFLT_PORT, DFLT_PORT + srvrsPerDc - 1);
+            discoSpiSupplier = () -> new TestTcpDiscoverySpi(Collections.singleton(DC_ID_0), fullTimeoutFailure, pingPoolSize);
 
-            for (int g = srvrsPerDc; g < srvrsPerDc << 1; ++g)
-                startGrid(g);
+            startGridsMultiThreaded(srvrsPerDc, srvrsPerDc);
         }
         else {
             // Start DC0. It misses connection to DC1.
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-            discoSpiSupplier = () -> testDiscovery(DFLT_PORT + srvrsPerDc, DFLT_PORT + srvrsPerDc * 2 - 1);
+            discoSpiSupplier = () -> new TestTcpDiscoverySpi(Collections.singleton(DC_ID_1), fullTimeoutFailure, pingPoolSize);
 
-            startGrids(srvrsPerDc);
+            startGridsMultiThreaded(srvrsPerDc);
 
             // Start DC1. It misses connection to DC0 and DC2.
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-            discoSpiSupplier = () -> testDiscovery(DFLT_PORT, DFLT_PORT + srvrsPerDc * 3 - 1,
-                DFLT_PORT + srvrsPerDc, DFLT_PORT + srvrsPerDc * 2 - 1);
+            discoSpiSupplier = () -> new TestTcpDiscoverySpi(F.asSet(DC_ID_0, DC_ID_2), fullTimeoutFailure, pingPoolSize);
 
-            for (int g = srvrsPerDc; g < srvrsPerDc * 2; ++g)
-                startGrid(g);
+            startGridsMultiThreaded(srvrsPerDc, srvrsPerDc);
 
             // Start DC2. It misses connection to DC1.
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_2);
-            discoSpiSupplier = () -> testDiscovery(DFLT_PORT + srvrsPerDc, DFLT_PORT + srvrsPerDc * 2 - 1);
+            discoSpiSupplier = () -> new TestTcpDiscoverySpi(Collections.singleton(DC_ID_1), fullTimeoutFailure, pingPoolSize);
 
-            for (int g = srvrsPerDc * 2; g < srvrsPerDc * 3; ++g)
-                startGrid(g);
+            startGridsMultiThreaded(srvrsPerDc * 2, srvrsPerDc);
 
             for (int ig = srvrsPerDc; ig < srvrsPerDc * 2; ++ig)
                 discoSpi(grid(ig)).block = true;
         }
-    }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteEx startGrid(int idx) throws Exception {
-        LogListener portLsnr = LogListener.matches("Successfully bound to TCP port [port=").build();
-        listeningLog.registerListener(portLsnr);
-
-        IgniteEx ign = super.startGrid(idx);
-
-        // Waits until the node occupies the next port.
-        assertTrue(portLsnr.check(10_000L));
-
-        listeningLog.clearListeners();
-
-        return ign;
-    }
-
-    /** Creates the test Discovery SPI. */
-    private TcpDiscoverySpi testDiscovery(int portFrom, int portTo) {
-        assert portTo >= portFrom;
-
-        return new TestTcpDiscoverySpi(IntStream.range(portFrom, portTo + 1).boxed().collect(Collectors.toSet()),
-            fullTimeoutFailure, pingPoolSize);
-    }
-
-    /** Creates the test Discovery SPI. */
-    private TcpDiscoverySpi testDiscovery(int allPortsFrom, int allPortsTo, int workPortFrom, int workPortTo) {
-        assert allPortsTo >= allPortsFrom;
-        assert workPortFrom >= allPortsFrom;
-        assert workPortTo <= allPortsTo;
-
-        Set<Integer> failedPorts = IntStream.range(allPortsFrom, allPortsTo + 1).filter(p -> p < workPortFrom || p > workPortTo)
-            .boxed().collect(Collectors.toSet());
-
-        return new TestTcpDiscoverySpi(failedPorts, fullTimeoutFailure, pingPoolSize);
+        for (Ignite ig : G.allGrids())
+            portToDc.put(discoSpi(ig).getLocalPort(), ig.cluster().localNode().dataCenterId());
     }
 
     /** Check whether datacenter {@code dcId} is separated. If {@code otherAliveDc} is not {@code null}, these DCs are expected joined. */
@@ -335,9 +291,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+    private class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** */
-        private final Collection<Integer> failedPorts;
+        private final Collection<String> dcToFail;
 
         /** */
         private final int pingPoolSize;
@@ -350,11 +306,11 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
         /** */
         private TestTcpDiscoverySpi(
-            Collection<Integer> failedPorts,
+            Collection<String> dcToFail,
             boolean fullTimeoutFailure,
             int pingPoolSize
         ) {
-            this.failedPorts = failedPorts;
+            this.dcToFail = dcToFail;
             this.fullTimeoutFailure = fullTimeoutFailure;
             this.pingPoolSize = pingPoolSize;
         }
@@ -390,7 +346,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
             int rmpPort = ((InetSocketAddress)sock.getRemoteSocketAddress()).getPort();
 
-            if (!failedPorts.contains(rmpPort))
+            String rmtDc = portToDc.get(rmpPort);
+
+            if (rmtDc == null || !dcToFail.contains(rmtDc))
                 return;
 
             if (data != null && Arrays.equals(U.IGNITE_HEADER, data))
