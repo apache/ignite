@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -762,19 +763,30 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         return ctx.getSocketFactory();
     }
 
-    /** */
+    /**
+     * @return Cipher suites supported by the JDK, but not enabled by default for the SSL protocol that the JDBC
+     *      client uses when no explicit cipher suites are set.
+     * @throws Exception If failed.
+     */
     private Set<String> disabledByDefaultCipherSuites() throws Exception {
-        SSLSocketFactory factory = factory("TLSv1.2");
+        // The client uses the default protocol when no sslProtocol connection property is set (JdbcThinSSLUtil
+        // falls back to SslContextFactory.DFLT_SSL_PROTOCOL), so the defaults of the same protocol must be
+        // subtracted: a suite absent from the defaults of a TLSv1.2 context only (a TLS 1.3 suite) can still
+        // be enabled by default for the client, which made the selected suite negotiable with the client's
+        // default ciphers.
+        SSLSocketFactory factory = factory(SslContextFactory.DFLT_SSL_PROTOCOL);
 
         Set<String> supportedCiphersSuites = new HashSet<>(Arrays.stream(factory.getSupportedCipherSuites()).toList());
 
-        // Fulter supported, but NOT in the default active list.
+        // Filter supported, but NOT in the default active list.
         supportedCiphersSuites.removeAll(Set.of(factory.getDefaultCipherSuites()));
 
         // Current TC settings.
         supportedCiphersSuites.removeIf(s -> s.contains("_anon_"));
 
-        assertFalse("No one disabled by default suite found", supportedCiphersSuites.isEmpty());
+        // Some providers enable every supported suite by default (for example, OpenJDK 17 with the stock
+        // security properties), so there is no suite to construct the scenario with on such a runtime.
+        Assume.assumeTrue("No cipher suite disabled by default found", !supportedCiphersSuites.isEmpty());
 
         return supportedCiphersSuites;
     }
