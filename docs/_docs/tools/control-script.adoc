@@ -191,7 +191,8 @@ For JMX calls, they identify the node that accepts the call.
 
 The report lists results for each node and transport, including nodes without TLS.
 Factories that do not extend `AbstractSslContextFactory` are reported as unsupported.
-The command continues after individual failures and exits with code `4` if a reload fails, is unsupported, or a target node leaves.
+The command continues after individual failures and exits with code `4` if a reload fails, is unsupported, or a target node leaves before responding.
+A node leaving after its response does not change that result.
 Successful replacements remain in effect; the command does not roll them back.
 
 == Activation, Deactivation and Topology Management
