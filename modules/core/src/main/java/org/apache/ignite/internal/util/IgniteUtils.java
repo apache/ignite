@@ -125,6 +125,7 @@ import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
 import javax.management.MBeanRegistrationException;
@@ -7730,7 +7731,7 @@ public abstract class IgniteUtils extends CommonUtils {
     /**
      * Creates an SSL NIO filter, wiring its metrics from the given registry.
      *
-     * @param sslCtx SSL context.
+     * @param sslCtxFactory Configured SSL context factory.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
@@ -7738,12 +7739,15 @@ public abstract class IgniteUtils extends CommonUtils {
      * @return SSL NIO filter.
      */
     public static GridNioSslFilter sslFilter(
-        SSLContext sslCtx,
+        Factory<SSLContext> sslCtxFactory,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log,
         @Nullable MetricRegistryImpl mreg
     ) {
+        // Initialize caching factories before NIO threads start, and fail fast if the context cannot be created.
+        sslCtxFactory.create();
+
         LongConsumer handshakeDuration = mreg == null ? null : mreg.histogram(
             GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
             new long[] {250, 500, 1000},
@@ -7753,6 +7757,6 @@ public abstract class IgniteUtils extends CommonUtils {
             GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "TCP sessions count that were rejected due to SSL errors.")::increment;
 
-        return new GridNioSslFilter(sslCtx, directBuf, order, log, handshakeDuration, rejectedSesCnt);
+        return new GridNioSslFilter(sslCtxFactory, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
 }
