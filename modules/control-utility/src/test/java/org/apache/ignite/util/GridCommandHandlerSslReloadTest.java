@@ -26,11 +26,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -46,7 +50,9 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -179,6 +185,40 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
             assertEquals(EXIT_CODE_OK, execute("--ssl", "reload"));
             assertEquals(loads, factory.loads.get());
             assertContains(log, testOut.toString(), node.localNode().id() + ": no TCP transports started with TLS");
+        }
+    }
+
+    /** */
+    @Test
+    public void testReportsNodeLeavingBeforeReloadResponse() throws Exception {
+        IgniteEx first = startGrid(getConfiguration(getTestIgniteInstanceName(0))
+            .setSslContextFactory(sslTrustedFactory("node01", "trustone")));
+        IgniteEx second = startGrid(getConfiguration(getTestIgniteInstanceName(1))
+            .setSslContextFactory(sslTrustedFactory("node01", "trustone")));
+        TestRecordingCommunicationSpi firstSpi = TestRecordingCommunicationSpi.spi(first);
+        TestRecordingCommunicationSpi secondSpi = TestRecordingCommunicationSpi.spi(second);
+
+        firstSpi.blockMessages((dest, msg) -> msg instanceof GridJobExecuteResponse);
+        secondSpi.blockMessages((dest, msg) -> msg instanceof GridJobExecuteResponse);
+
+        IgniteInternalFuture<Integer> cmd = runAsync(() -> execute("--ssl", "reload"));
+
+        try {
+            assertTrue(waitForCondition(() -> firstSpi.hasBlockedMessages() || secondSpi.hasBlockedMessages(), 10_000));
+
+            IgniteEx departing = firstSpi.hasBlockedMessages() ? first : second;
+            IgniteEx remaining = departing == first ? second : first;
+            UUID departingId = departing.localNode().id();
+
+            departing.close();
+
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, cmd.get(30_000).intValue());
+            assertContains(log, testOut.toString(), departingId + ": left the topology");
+            assertContains(log, testOut.toString(), remaining.localNode().id() + ": communication, discovery: reloaded");
+        }
+        finally {
+            firstSpi.stopBlock(false);
+            secondSpi.stopBlock(false);
         }
     }
 
