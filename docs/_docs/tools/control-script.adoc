@@ -186,14 +186,16 @@ control.bat --ssl reload [--yes]
 
 The command requires `ADMIN_OPS` permission when security is enabled and asks for confirmation unless `--yes` is given.
 Each node logs its reload results.
-With security enabled, logs identify the authenticated control-script user.
-For JMX calls, they identify the node that accepts the call.
+When security is enabled, logs identify the initiator by login and subject ID.
+This is the control-script user, or the node receiving a JMX call.
 
-The report lists results for each node and transport, including nodes without TLS.
+The report lists every target node, even if none of its TCP transports use TLS.
+It shows reload results for TCP transports that started with TLS.
 Factories that do not extend `AbstractSslContextFactory` are reported as unsupported.
-The command continues after individual failures and exits with code `4` if a reload fails, is unsupported, or a target node leaves before responding.
-A node leaving after its response does not change that result.
-Successful replacements remain in effect; the command does not roll them back.
+The command continues after individual failures.
+It exits with code `4` if any reload fails, any factory is unsupported, or a target node leaves before responding.
+A result received from a node stays in the report even if the node leaves later.
+Successful reloads remain in effect even if others fail.
 
 == Activation, Deactivation and Topology Management
 

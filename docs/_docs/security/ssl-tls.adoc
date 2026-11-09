@@ -176,7 +176,8 @@ The command asks for confirmation; use `--yes` to skip it.
 . Check the result for every node and transport, then verify a new connection with the replacement certificates.
 Established connections continue using their existing TLS context.
 
-A failed reload leaves that factory's previous context in use; successful reloads on other factories are not rolled back.
+If a factory fails to reload, it keeps its previous context.
+Successful reloads on other factories remain in effect.
 Check the affected node's log for error details.
 Correct the failed store and run the command again.
 To restore the previous certificates, restore the backed-up files and reload again while peers still trust those certificates.
