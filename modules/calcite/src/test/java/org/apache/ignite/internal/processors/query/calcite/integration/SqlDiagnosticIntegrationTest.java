@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryFinishedInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.Query;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.AbstractQue
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -89,6 +92,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
@@ -657,6 +661,15 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         QueryUtils.INCLUDE_SENSITIVE = false;
 
+        AtomicInteger finishedCnt = new AtomicInteger();
+
+        RunningQueryManager qryMgr =
+            grid(0).context().query().runningQueryManager();
+
+        Consumer<GridQueryFinishedInfo> lsnr = q -> finishedCnt.incrementAndGet();
+
+        qryMgr.registerQueryFinishedListener(lsnr);
+
         try {
             // Check the same query twice, the first time - with parsing and planning,
             // the second time from the parsers cache.
@@ -705,6 +718,9 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             sql(grid(0),
                 "SELECT * FROM test_sens t1 JOIN test_sens t2 ON t1.id = t2.id WHERE t1.val like 'sensitive%'");
 
+            // Wait for all queries to be finished.
+            assertTrue(waitForCondition(() -> finishedCnt.get() == 13, 5_000));
+
             AtomicInteger qryCnt = new AtomicInteger();
             AtomicInteger planCnt = new AtomicInteger();
 
@@ -742,6 +758,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         }
         finally {
             QueryUtils.INCLUDE_SENSITIVE = true;
+
+            qryMgr.unregisterQueryFinishedListener(lsnr);
         }
     }
 
