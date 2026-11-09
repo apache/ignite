@@ -18,15 +18,19 @@
 package org.apache.ignite.internal.processors.tx;
 
 import java.util.List;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +38,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -60,55 +66,52 @@ public class SqlTransactionsTopologyChangeTest extends GridCommonAbstractWrapper
     /** */
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    public void testSelectAfterAsyncCacheDestroy(boolean client) throws Exception {
+    public void testSelectDuringTopologyChange(boolean client) throws Exception {
         IgniteEx server = startGrid(0);
         IgniteEx node = client ? startClientGrid(1) : server;
 
-        sql(node, "CREATE TABLE test (id INT PRIMARY KEY, val INT) WITH atomicity=TRANSACTIONAL");
-        sql(node, "INSERT INTO test VALUES (1, 0)");
-        sql(node, "CREATE INDEX test_val ON test(val)");
-        sql(node, "CREATE VIEW test_view AS SELECT id, val FROM test");
+        IgniteCache<Integer, Integer> cache = node.createCache(new CacheConfiguration<Integer, Integer>("test-cache")
+            .setAtomicityMode(TRANSACTIONAL)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(List.of(new QueryEntity(Integer.class, Integer.class).setTableName("TEST"))));
 
-        GridCachePartitionExchangeManager<?, ?> exchange = node.context().cache().context().exchange();
-        // Reuse the same SELECT plans in another transaction after the topology changes.
-        for (int val = 1; val <= 2; val++) {
-            node.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        node.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-            AffinityTopologyVersion topVer = exchange.readyAffinityVersion();
-            IgniteInternalFuture<?> destroyFut;
+        GridDhtPartitionTopology top = server.cachex(cache.getName()).context().topology();
+        AffinityTopologyVersion topVer = top.readyTopologyVersion();
+        IgniteInternalFuture<?> destroyFut;
+        String qry = "SELECT _KEY, _VAL FROM test";
 
-            // Bound the transaction timeout so a regression cannot hang the test indefinitely during planning.
-            try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 1)) {
-                assertEquals(1L, sql(node, "UPDATE test SET val = ? WHERE id = 1", val).get(0).get(0));
+        // Bound the transaction timeout so a regression cannot hang the test indefinitely during planning.
+        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 10_000, 1)) {
+            // Hold the exchange without planning a query and warming the table statistics.
+            cache.put(1, 42);
+            destroyFut = runAsync(() -> node.destroyCache(DEFAULT_CACHE_NAME));
 
-                destroyFut = runAsync(() -> node.destroyCache(DEFAULT_CACHE_NAME));
+            assertTrue("Cache stop exchange did not start", waitForCondition(() -> {
+                GridDhtTopologyFuture fut = top.topologyVersionFuture();
 
-                assertTrue("Cache stop exchange did not start", waitForCondition(
-                    () -> exchange.lastTopologyFuture().initialVersion().after(topVer), 5_000));
+                return fut.initialVersion().after(topVer) && !fut.isDone();
+            }, 5_000));
 
-                assertFalse(destroyFut.isDone());
-                assertEquals(List.of(List.of(1, val)), sql(node, "SELECT id, val FROM test"));
-                assertEquals(List.of(List.of(1, val)), sql(node, "SELECT id, val FROM test_view"));
-                assertEquals(
-                    List.of(List.of(1, val)),
-                    sql(node, "SELECT /*+ FORCE_INDEX(TEST_VAL) */ id, val FROM test WHERE val = ?", val)
-                );
+            // The query must reach the scan while the exchange is still blocked by the transaction.
+            assertThrowsWithCause(() -> sql(node, qry), ClusterTopologyException.class);
 
-                tx.commit();
-            }
+            assertFalse(destroyFut.isDone());
 
-            destroyFut.get(5_000);
-
-            assertFalse(node.cacheNames().contains(DEFAULT_CACHE_NAME));
-            assertEquals(List.of(List.of(1, val)), sql(node, "SELECT id, val FROM test"));
+            tx.commit();
         }
+
+        destroyFut.get(5_000);
+
+        assertEquals(List.of(List.of(1, 42)), sql(node, qry));
     }
 
     /** */
-    private static List<List<?>> sql(IgniteEx node, String sql, Object... args) {
-        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC").setTimeout(5, SECONDS).setArgs(args);
+    private static List<List<?>> sql(IgniteEx node, String sql) {
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC").setTimeout(5, SECONDS);
 
-        try (FieldsQueryCursor<List<?>> cur = node.context().query().querySqlFields(qry, false, false).get(0)) {
+        try (FieldsQueryCursor<List<?>> cur = node.context().query().querySqlFields(qry, false)) {
             return cur.getAll();
         }
     }

@@ -99,9 +99,12 @@ public class IgniteStatisticsImplTest extends GridCommonAbstractWrapperTest {
         spi.blockMessages(GridJobExecuteRequest.class, grid(1).name());
 
         try {
+            assertEquals(ROW_CNT, statistics().getRowCount(), 0.0);
+            assertFalse(spi.hasBlockedMessages());
+
             stat.cliReqCnt.set(0);
 
-            assertEquals(ROW_CNT, runAsync(stat::getRowCount).get(5_000), 0.0);
+            assertEquals(ROW_CNT, runAsync(() -> statistics().getRowCount()).get(5_000), 0.0);
             assertTrue(spi.hasBlockedMessages());
         }
         finally {
@@ -148,7 +151,7 @@ public class IgniteStatisticsImplTest extends GridCommonAbstractWrapperTest {
 
     /**  */
     private void createAndFillTable(CacheMode mode) {
-        sql(String.format("CREATE TABLE %s(id INT PRIMARY KEY, val INT) WITH template=replicated, backups=1", TBL_NAME, mode.name()));
+        sql(String.format("CREATE TABLE %s(id INT PRIMARY KEY, val INT) WITH template=%s, backups=1", TBL_NAME, mode.name()));
 
         String values = IntStream.range(0, ROW_CNT)
             .mapToObj(i -> "(" + i + "," + i + ")")

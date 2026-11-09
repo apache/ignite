@@ -126,7 +126,7 @@ public class IgniteStatisticsImpl implements Statistic {
      * @param colName Column name.
      * @return Column statistics or {@code null} if there are no statistics for specified column.
      */
-    public ColumnStatistics getColumnStatistics(String colName) {
+    public @Nullable ColumnStatistics getColumnStatistics(String colName) {
         return (statistics == null) ? null : statistics.columnStatistics(colName);
     }
 
