@@ -666,7 +666,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                 if (cand != null && cand.owner()) {
                     // If a reentry, then release reentry. Otherwise, remove lock.
-                    GridCacheMvccCandidate reentry = cand.unenter(null);
+                    GridCacheMvccCandidate reentry = cand.unenter();
 
                     if (reentry != null) {
                         assert reentry.reentry();

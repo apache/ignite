@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
@@ -164,38 +163,17 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
                 assert !deque.isEmpty();
 
-                GridCacheMvccCandidate first = deque.peekFirst();
+                GridCacheMvccCandidate last = deque.peekLast();
 
-                boolean heldLock = ver == null || first.version().equals(ver);
+                if (ver == null || ver.equals(last.version()) || ver.equals(last.reentryVersion())) {
+                    GridCacheMvccCandidate reentry = deque.peekFirst().unenter();
 
-                GridCacheMvccCandidate reentry = first.unenter(heldLock ? null : ver);
+                    cand = deque.removeLast();
 
-                if (reentry != null) {
-                    assert reentry.reentry() : reentry;
-
-                    boolean rmvd = false;
-
-                    Iterator<GridCacheMvccCandidate> it = deque.iterator();
-
-                    while (it.hasNext()) {
-                        if (it.next() == reentry) {
-                            it.remove();
-
-                            rmvd = true;
-
-                            break;
-                        }
-                    }
-
-                    assert rmvd : reentry;
-
-                    cand = reentry;
-                }
-                else if (heldLock) {
-                    cand = deque.removeFirst();
+                    assert reentry == null ? deque.isEmpty() : reentry == cand : cand;
 
                     if (deque.isEmpty())
-                        cands.remove(cand.key());
+                        cands.remove(key);
                 }
             }
 

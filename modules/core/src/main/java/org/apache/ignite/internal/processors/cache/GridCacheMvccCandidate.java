@@ -70,7 +70,7 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     /** Linked reentry. */
     private GridCacheMvccCandidate reentry;
 
-    /** Version of the explicit lock future that created this reentry, see {@link #unenter(GridCacheVersion)}. */
+    /** Version of the explicit lock future that created this reentry, {@code null} on the base candidate. */
     private GridCacheVersion reentryVer;
 
     /** Previous lock for the thread. */
@@ -232,11 +232,10 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
-     * @param reentryVer Version of the lock future that created the latest reentry, {@code null} to unlink it anyway.
      * @return Removed reentry candidate or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate unenter(@Nullable GridCacheVersion reentryVer) {
-        if (reentry != null && (reentryVer == null || reentryVer.equals(reentry.reentryVer))) {
+    @Nullable public GridCacheMvccCandidate unenter() {
+        if (reentry != null) {
             GridCacheMvccCandidate old = reentry;
 
             // Link to next.
@@ -415,6 +414,11 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
      */
     public GridCacheVersion version() {
         return ver;
+    }
+
+    /** @return Version of the explicit lock future that created this reentry, {@code null} on the base candidate. */
+    public GridCacheVersion reentryVersion() {
+        return reentryVer;
     }
 
     /**
