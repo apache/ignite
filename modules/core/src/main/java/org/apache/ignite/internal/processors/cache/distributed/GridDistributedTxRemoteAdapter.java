@@ -272,7 +272,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * Sets remote candidate of an entry to done.
      *
      * @param txEntry Entry.
-     * @param baseVer Base version for completed versions.
+     * @param baseVer Base version.
      *
      * @throws GridDhtInvalidPartitionException If entry partition was invalidated.
      */
