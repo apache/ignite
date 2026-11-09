@@ -232,7 +232,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                             entry.doneRemote(
                                 req.version(),
                                 req.version(),
-                                null,
                                 F.emptyIfNull(req.committedVersions()),
                                 F.emptyIfNull(req.rolledbackVersions()),
                                 /*system invalidate*/false);
