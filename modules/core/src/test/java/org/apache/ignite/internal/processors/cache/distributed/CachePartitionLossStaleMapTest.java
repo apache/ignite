@@ -189,7 +189,8 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
      * Checks that the partition maps of the coordinator, the observer and the client match the local states of the
      * nodes after node 1 sends a stale map. Node 2 joins, takes over partitions from the other servers, and leaves with
      * the only copies. Right before node 1 owns a lost partition or marks it LOST, it sends its map, which still shows
-     * the partition MOVING. The coordinator gets this map once its own exchange is finished.
+     * the partition MOVING. The coordinator gets this map once its own exchange is finished, and the check starts once
+     * the coordinator has taken it.
      *
      * @param plc Partition loss policy.
      * @throws Exception If failed.
@@ -222,7 +223,16 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
 
+        GridDhtPartitionTopology crdTop = crd.cachex(CACHE).context().topology();
+
+        UUID sndId = grid(STALE_MAP_SENDER).localNode().id();
+
+        long seq = crdTop.partitionMap(false).get(sndId).updateSequence();
+
         sndSpi.stopBlock();
+
+        assertTrue("The coordinator didn't take node 1's held map", waitForCondition(
+            () -> crdTop.partitionMap(false).get(sndId).updateSequence() > seq, WAIT));
 
         checkNodes(crd, grid(OBSERVER), grid(CLIENT));
     }
