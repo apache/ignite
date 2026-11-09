@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.client.thin.ClientSslUtilsTest;
+import org.apache.ignite.internal.management.ssl.SslReloadTaskTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeConnectionCertificateCapturingTest;
@@ -147,6 +148,7 @@ import org.junit.runners.Suite;
     MultipleSSLContextsTest.class,
     SSLContextWrapperTest.class,
     SslContextFactoryInitTest.class,
+    SslReloadTaskTest.class,
     SslContextReloadTest.class,
     ClientSslUtilsTest.class,
     MaintenanceModeNodeSecurityTest.class,

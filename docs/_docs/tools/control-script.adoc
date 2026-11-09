@@ -185,7 +185,9 @@ control.bat --ssl reload [--yes]
 --
 
 The command requires `ADMIN_OPS` permission when security is enabled and asks for confirmation unless `--yes` is given.
-Each node logs its reload results and, when security is enabled, the initiating user.
+Each node logs its reload results.
+With security enabled, logs identify the authenticated control-script user.
+For JMX calls, they identify the node that accepts the call.
 
 The report lists results for each node and transport, including nodes without TLS.
 Factories that do not extend `AbstractSslContextFactory` are reported as unsupported.

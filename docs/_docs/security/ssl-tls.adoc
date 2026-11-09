@@ -182,6 +182,7 @@ To restore the previous certificates, restore the backed-up files and reload aga
 
 Custom factories must extend `AbstractSslContextFactory` to support the command.
 Factories of other types are reported as unsupported.
+For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
 If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.
 
 == SslContextFactory Properties
