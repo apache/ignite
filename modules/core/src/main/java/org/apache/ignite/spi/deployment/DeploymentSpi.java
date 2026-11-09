@@ -49,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
  * Ignite provides following {@code GridDeploymentSpi} implementations out of the box:
  * <ul>
  * <li>{@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi}</li>
- * <li>{@ignitelink org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}</li>
  * </ul>
  * <b>NOTE:</b> SPI methods should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by Ignite. In rare use cases when

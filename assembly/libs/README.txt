@@ -80,7 +80,6 @@ The following modules are available:
 - ignite-schedule (for Cron-based task scheduling)
 - ignite-sl4j (for SL4J logging)
 - ignite-spring (for Spring-based configuration support)
-- ignite-urideploy (for URI-based deployment)
 - ignite-web (for Web Sessions Clustering)
 - ignite-zookeeper (for cluster discovery based on Apache Zookeeper)
 
