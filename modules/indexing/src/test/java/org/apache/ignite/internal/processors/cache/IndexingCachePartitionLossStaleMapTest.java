@@ -27,7 +27,7 @@ import org.junit.Test;
 
 /**
  * Runs {@link CachePartitionLossStaleMapTest} with a SQL query. A query fails if the node that runs it sees a partition
- * without an owner within the SQL retry timeout, 30 s by default.
+ * without an owner for the whole SQL retry timeout, 30 s by default.
  */
 public class IndexingCachePartitionLossStaleMapTest extends CachePartitionLossStaleMapTest {
     /** {@inheritDoc} */
