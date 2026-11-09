@@ -43,13 +43,13 @@ import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.C
 import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_LOCKS_VIEW;
 
 /**
- * Explicit lock timeout that expires while the lock is still being mapped, for example after a GC pause longer than
- * the timeout or while the mapping waits for an exchange: lock candidates registered by the mapping must not outlive
- * the failed lock attempt.
+ * Lock timeout expiring while the keys are still being mapped, for example after a GC pause longer than the timeout
+ * or while the mapping waits for an exchange: the failed attempt must leave no key locked and no hold on the keys the
+ * thread already held.
  */
 public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest {
     /** */
-    private final AtomicBoolean stallExplicitLockRegistration = new AtomicBoolean();
+    private final AtomicBoolean stallMapping = new AtomicBoolean();
 
     /** */
     private IgniteCache<Object, Object> cache;
@@ -78,12 +78,15 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
     /** The timeout expires while the key is being mapped: the key must not stay locked by nobody. */
     @Test
     public void testTimeoutDuringMapping() throws Exception {
-        tryLockWithStalledRegistration(cache, new StallingCacheKey(1));
+        tryLockWithStalledMapping(cache, new StallingCacheKey(1));
 
         checkReleased(cache, 1);
     }
 
-    /** The timeout of a reentrant lock expires while the key is being mapped: the reentry must not outlive it. */
+    /**
+     * The timeout of a reentrant attempt expires while the key is being mapped: the attempt must not leave a hold on
+     * the key.
+     */
     @Test
     public void testReentrantLockTimeoutDuringMapping() throws Exception {
         StallingCacheKey key = new StallingCacheKey(1);
@@ -92,14 +95,17 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
 
         outer.lock();
 
-        tryLockWithStalledRegistration(cache, key);
+        tryLockWithStalledMapping(cache, key);
 
         outer.unlock();
 
         checkReleased(cache, 1);
     }
 
-    /** A multi-key lock with a held key times out on the other key: the reentry of the held key must be reverted. */
+    /**
+     * A lockAll() with a key the thread already holds times out on the other key: the attempt must not leave a hold
+     * on the held key.
+     */
     @Test
     public void testMultiKeyLockTimeoutWithHeldKey() throws Exception {
         Lock outer = cache.lock(1);
@@ -146,15 +152,15 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
 
         exchFut.get(getTestTimeout());
 
-        // The next exchange would wait for a leaked candidate forever.
+        // The next exchange would wait for a leaked lock forever.
         GridTestUtils.runAsync(() -> grid(0).createCache("tmp2")).get(getTestTimeout());
 
         checkReleased(cache1, key);
     }
 
     /**
-     * The timeout expires while the candidate of a key of a remote primary node is registered on a client node: the
-     * candidate must not outlive the failed lock attempt.
+     * The timeout expires while a client node maps a key of a remote primary node: the failed attempt must leave the
+     * key unlocked on both nodes.
      */
     @Test
     public void testTimeoutDuringRemoteMappingOnClient() throws Exception {
@@ -164,14 +170,14 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
 
         IgniteCache<Object, Object> cache1 = client.cache(DEFAULT_CACHE_NAME);
 
-        tryLockWithStalledRegistration(cache1, new StallingCacheKey(1));
+        tryLockWithStalledMapping(cache1, new StallingCacheKey(1));
 
         checkReleased(cache1, 1);
     }
 
     /**
-     * The timeout expires while the candidate of a key of a remote primary node is registered on a server node: the
-     * candidate must not outlive the failed lock attempt.
+     * The timeout expires while a server node maps a key of a remote primary node: the failed attempt must leave the
+     * key unlocked on both nodes.
      */
     @Test
     public void testTimeoutDuringRemoteMappingOnServer() throws Exception {
@@ -181,32 +187,36 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
 
         Integer key = primaryKey(node.cache(DEFAULT_CACHE_NAME));
 
-        tryLockWithStalledRegistration(cache, new StallingCacheKey(key));
+        tryLockWithStalledMapping(cache, new StallingCacheKey(key));
 
         checkReleased(cache, key);
     }
 
-    /** Tries to lock the key with a timeout that expires while the lock candidate is being registered. */
-    private void tryLockWithStalledRegistration(IgniteCache<Object, Object> cache, StallingCacheKey key) throws Exception {
-        stallExplicitLockRegistration.set(true);
+    /** Tries to lock the key with a timeout that expires while the key is being mapped. */
+    private void tryLockWithStalledMapping(IgniteCache<Object, Object> cache, StallingCacheKey key) throws Exception {
+        stallMapping.set(true);
 
         Lock lock = cache.lock(key);
 
         boolean locked = lock.tryLock(100, TimeUnit.MILLISECONDS);
 
-        assertFalse("Registration was not stalled", stallExplicitLockRegistration.get());
+        assertFalse("Mapping was not stalled", stallMapping.get());
 
         if (locked)
             lock.unlock();
     }
 
-    /** Checks that the key can be locked by another thread and is not considered locked by the current one. */
+    /**
+     * Checks that another thread can acquire the key and the current thread holds nothing on it: a leaked hold would
+     * make its tryLock() succeed at once while the other thread holds the key. Then the lock views of all nodes must
+     * be empty.
+     */
     private void checkReleased(IgniteCache<Object, Object> cache, Object key) throws Exception {
         CountDownLatch release = new CountDownLatch(1);
 
         IgniteInternalFuture<?> holder = holdInOtherThread(cache, key, release);
 
-        assertFalse("Lock candidate leaked: " + key, cache.lock(key).tryLock());
+        assertFalse("Hold leaked: " + key, cache.lock(key).tryLock());
 
         release.countDown();
 
@@ -251,8 +261,8 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
     }
 
     /**
-     * Key pausing the thread inside the registration of its explicit lock candidate: the first access to the key by
-     * the explicit lock span of the thread adds the candidate, see {@link #stallExplicitLockRegistration}.
+     * Key that pauses the mapping thread inside the explicit lock span of the thread, so the timeout expires while the
+     * key is being mapped, see {@link #stallMapping}.
      */
     private class StallingCacheKey extends KeyCacheObjectImpl {
         /** */
@@ -265,7 +275,7 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            if (inExplicitLockSpan() && stallExplicitLockRegistration.compareAndSet(true, false))
+            if (inExplicitLockSpan() && stallMapping.compareAndSet(true, false))
                 doSleep(500);
 
             return super.hashCode();

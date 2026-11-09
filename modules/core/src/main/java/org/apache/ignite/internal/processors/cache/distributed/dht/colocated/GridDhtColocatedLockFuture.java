@@ -390,7 +390,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 cand.topologyVersion(topVer);
             }
             else if (cand.version().equals(lockVer))
-                // Key repeated in lockAll(): this attempt created the base, the reentry is released with it on failure.
+                // Key repeated in lockAll([k, k]): this attempt created the base, the reentry is released with it on failure.
                 cand = cand.reenter();
             else {
                 // The thread already holds the key.
