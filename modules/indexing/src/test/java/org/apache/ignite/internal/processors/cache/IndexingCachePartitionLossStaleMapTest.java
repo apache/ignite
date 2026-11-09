@@ -25,11 +25,9 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLos
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 /**
  * Runs {@link CachePartitionLossStaleMapTest} with a SQL query. A query fails if the node that runs it sees a partition
- * without an owner until the query's timeout.
+ * without an owner within the SQL retry timeout, 30 s by default.
  */
 public class IndexingCachePartitionLossStaleMapTest extends CachePartitionLossStaleMapTest {
     /** {@inheritDoc} */
@@ -44,7 +42,7 @@ public class IndexingCachePartitionLossStaleMapTest extends CachePartitionLossSt
 
     /** {@inheritDoc} */
     @Override protected void runQuery(Ignite node) {
-        node.cache(CACHE).query(new SqlFieldsQuery("select count(*) from Integer").setTimeout(10, SECONDS)).getAll();
+        node.cache(CACHE).query(new SqlFieldsQuery("select count(*) from Integer")).getAll();
     }
 
     /** {@inheritDoc} */
