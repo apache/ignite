@@ -31,8 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Base class for SSL context factories that cache their {@link SSLContext}.
- * Overrides of {@link #create()} must obtain the context from {@code super.create()} on each call to support reload.
- * Key and trust manager loading hooks must read fresh material on each call.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
