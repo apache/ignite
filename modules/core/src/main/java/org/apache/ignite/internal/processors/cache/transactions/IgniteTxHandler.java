@@ -1441,7 +1441,7 @@ public class IgniteTxHandler {
                     tx.systemInvalidate(true);
 
                 // Complete remote candidates.
-                tx.doneRemote(req.baseVersion(), null, null, null);
+                tx.doneRemote(req.baseVersion());
 
                 tx.commitRemoteTx();
             }
@@ -1449,7 +1449,7 @@ public class IgniteTxHandler {
                 if (tx.dht() && req.updateCounters() != null)
                     tx.txCounters(true).updateCounters(req.updateCounters());
 
-                tx.doneRemote(req.baseVersion(), null, null, null);
+                tx.doneRemote(req.baseVersion());
                 tx.rollbackRemoteTx();
             }
         }
@@ -1489,7 +1489,7 @@ public class IgniteTxHandler {
             tx.invalidate(req.isInvalidate());
 
             // Complete remote candidates.
-            tx.doneRemote(req.version(), null, null, null);
+            tx.doneRemote(req.version());
 
             tx.commitRemoteTx();
         }
