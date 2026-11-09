@@ -533,7 +533,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             && !features.isActive(PART_STATE_FROM_OWNER_FEATURE);
 
         // On activation every server resends its maps once: an owner that finished its last exchange before the
-        // activation didn't send its map, and the other nodes no longer write its state.
+        // activation didn't send its map, and the other nodes no longer write its state. A node that emulates an older
+        // version in tests lacks the feature, and listenActivation() requires it.
         if (activationAhead)
             features.listenActivation(PART_STATE_FROM_OWNER_FEATURE, this::scheduleResendPartitions);
 
