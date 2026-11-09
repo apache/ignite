@@ -57,7 +57,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
 
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<NoArg> arg) {
-        targetNodes = new ArrayList<>(arg.getNodes());
+        targetNodes = arg.getNodes();
 
         Map<? extends ComputeJob, ClusterNode> jobs = super.map0(subgrid, arg);
 
@@ -137,7 +137,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
             }
 
             if (factories.isEmpty()) {
-                String report = nodeId + ": TLS is not enabled";
+                String report = nodeId + ": no TCP transports started with TLS";
 
                 ignite.log().info("TLS reload: " + report + initiator);
 
@@ -159,6 +159,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
 
                 String outcome;
                 boolean factoryFailed = false;
+                Exception err = null;
 
                 if (!(factory instanceof AbstractSslContextFactory)) {
                     outcome = "unsupported: " + factory.getClass().getName();
@@ -173,6 +174,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
                     catch (Exception e) {
                         outcome = "failed: " + errorMessage(e);
                         factoryFailed = true;
+                        err = e;
                     }
                 }
 
@@ -182,7 +184,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
                 failed |= factoryFailed;
 
                 if (factoryFailed)
-                    ignite.log().warning("TLS reload: " + report + initiator);
+                    ignite.log().warning("TLS reload: " + report + initiator, err);
                 else
                     ignite.log().info("TLS reload: " + report + initiator);
             }

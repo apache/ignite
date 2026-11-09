@@ -177,10 +177,12 @@ The command asks for confirmation; use `--yes` to skip it.
 Established connections continue using their existing TLS context.
 
 A failed reload leaves that factory's previous context in use; successful reloads on other factories are not rolled back.
+Check the affected node's log for error details.
 Correct the failed store and run the command again.
 To restore the previous certificates, restore the backed-up files and reload again while peers still trust those certificates.
 
-Custom factories must extend `AbstractSslContextFactory` to support the command.
+Custom factories must extend javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[] and follow its reload contract.
+They must reread key and trust data from their sources on reload and supply the updated context for new connections.
 Factories of other types are reported as unsupported.
 For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
 If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.

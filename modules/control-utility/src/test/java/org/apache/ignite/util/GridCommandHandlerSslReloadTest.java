@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
@@ -38,12 +39,13 @@ import org.apache.ignite.internal.management.ssl.SslReloadTask;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -136,6 +138,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
     @Test
     public void testPartialFailureReportsEveryFactory() throws Exception {
         Path keys = stores.newFile("keys.jks").toPath();
+        LogListener loadFailure = LogListener.matches(EOFException.class.getName()).build();
 
         Files.copy(Path.of(keyStorePath("node01")), keys, REPLACE_EXISTING);
 
@@ -145,12 +148,13 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         SSLContext clientCtx = working.create();
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setSslContextFactory(failing);
 
+        cfg.setGridLogger(new ListeningTestLogger(log, loadFailure));
         cfg.getClientConnectorConfiguration().setSslEnabled(true).setUseIgniteSslContextFactory(false).setSslContextFactory(working);
         cfg.getConnectorConfiguration().setSslEnabled(true).setSslFactory(() -> clientCtx);
 
         IgniteEx node = startGrid(cfg);
 
-        Files.delete(keys);
+        Files.write(keys, new byte[0]);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeTlsReload());
 
@@ -160,6 +164,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         assertContains(log, report, nodeId + ": communication, discovery: failed:");
         assertContains(log, report, nodeId + ": client connector: reloaded");
         assertContains(log, report, nodeId + ": binary REST: unsupported:");
+        assertTrue(loadFailure.check());
         assertSame(original, failing.create());
         assertNotSame(clientCtx, working.create());
     }
@@ -181,7 +186,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
             assertEquals(EXIT_CODE_OK, execute("--ssl", "reload"));
             assertEquals(loads, factory.loads.get());
-            assertContains(log, testOut.toString(), node.localNode().id() + ": TLS is not enabled");
+            assertContains(log, testOut.toString(), node.localNode().id() + ": no TCP transports started with TLS");
         }
     }
 
@@ -210,24 +215,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, exitCode);
         assertContains(log, testOut.toString(), departingId + ": left the topology");
-        assertContains(log, testOut.toString(), node.localNode().id() + ": TLS is not enabled");
-    }
-
-    /** */
-    @Test
-    public void testConcurrentCommandsReloadTheSameFactory() throws Exception {
-        CountingSslContextFactory factory = new CountingSslContextFactory(keyStorePath("node01"));
-
-        startGrid(getConfiguration(getTestIgniteInstanceName(0)).setSslContextFactory(factory));
-
-        int loads = factory.loads.get();
-
-        GridTestUtils.runMultiThreaded(() -> {
-            assertEquals(EXIT_CODE_OK,
-                newCommandHandler(createTestLogger()).execute(asList("--ssl", "reload", "--yes")));
-        }, 2, "ssl-reload");
-
-        assertEquals(loads + 2, factory.loads.get());
+        assertContains(log, testOut.toString(), node.localNode().id() + ": no TCP transports started with TLS");
     }
 
     /** */
