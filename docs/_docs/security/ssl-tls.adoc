@@ -160,7 +160,7 @@ include::{javaFile}[tag=disable-validation,indent=0]
 
 You can replace certificate files and reload them without restarting nodes that use `SslContextFactory`.
 The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] updates TCP transports on all server and thick-client nodes.
-It does not reload HTTPS or external client applications.
+It does not reload TLS for the HTTP REST endpoint (Jetty) or external client applications.
 
 . Back up the key and trust store files before replacing them.
 Keep their configured paths, store types, and passwords unchanged; changing node configuration requires a restart.
