@@ -44,7 +44,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -265,24 +264,6 @@ public class SslContextReloadTest extends GridCommonAbstractTest {
         finally {
             Files.deleteIfExists(keyStore);
         }
-    }
-
-    /** */
-    @Test
-    public void testThinClientReportsContextFactoryFailure() throws Exception {
-        IgniteEx node = startNode(sslFactory(KEYS_1, trustIssuersOf(KEYS_1)));
-        IllegalStateException failure = new IllegalStateException("Cannot load client TLS credentials");
-
-        ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses(LOOPBACK_ADDRESS + ":" + node.context().clientListener().port())
-            .setSslMode(SslMode.REQUIRED)
-            .setSslContextFactory(() -> {
-                throw failure;
-            });
-
-        ClientConnectionException err = assertThrows(ClientConnectionException.class, () -> Ignition.startClient(cfg).close());
-
-        assertSame(failure, X.cause(err, IllegalStateException.class));
     }
 
     /** */

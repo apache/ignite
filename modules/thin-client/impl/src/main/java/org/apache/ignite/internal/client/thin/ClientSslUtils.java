@@ -82,8 +82,16 @@ public class ClientSslUtils {
 
         Factory<SSLContext> sslCtxFactory = cfg.getSslContextFactory();
 
-        if (sslCtxFactory != null)
+        if (sslCtxFactory != null) {
+            try {
+                sslCtxFactory.create();
+            }
+            catch (Exception e) {
+                throw new ClientError("SSL Context Factory failed", e);
+            }
+
             return sslCtxFactory;
+        }
 
         BiFunction<String, String, String> or = (val, dflt) -> val == null || val.isEmpty() ? dflt : val;
 
