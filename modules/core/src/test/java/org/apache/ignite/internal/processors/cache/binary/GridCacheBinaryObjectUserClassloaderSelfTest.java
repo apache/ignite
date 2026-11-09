@@ -115,8 +115,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
             cfg.setBinaryConfiguration(bcfg);
         }
-
-        if (affKeyTypeConf) {
+        else if (affKeyTypeConf) {
             cfg.setBinaryConfiguration(new BinaryConfiguration()
                 .setTypeConfigurations(Collections.singletonList(new BinaryTypeConfiguration(AFF_KEY_CLS))));
         }
@@ -240,7 +239,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
      * visible through the configured class loader only.
      */
     private void doTestAffinityKeyField() throws Exception {
-        assertNull("Key class must not be on the test classpath", ClassLoaderUtils.classForName(AFF_KEY_CLS));
+        assertNull(ClassLoaderUtils.classForName(AFF_KEY_CLS));
 
         Ignite ignite = startGrid(1);
 
