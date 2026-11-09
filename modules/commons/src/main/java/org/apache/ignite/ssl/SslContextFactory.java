@@ -241,7 +241,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /**
      * Sets pre-configured trust managers. This is an optional parameter,
      * however one of the {@link #setTrustStoreFilePath(String)}, {@code #setTrustManagers(TrustManager[])}
-     * must be set. Supplied managers are reused by {@link #init()}.
      *
      * @param trustMgrs Pre-configured trust managers.
      */
