@@ -25,7 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -317,11 +316,6 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         IgniteEx crd = startGrid(0, partitionHooksResolver());
 
-        IgniteCache<Integer, Integer> cache = crd.cache(CACHE);
-
-        for (int i = 0; i < PARTS * 4; i++)
-            cache.put(i, i);
-
         // Hold the eviction of one partition that node 1 takes over, as if the partition were large.
         holdEviction.set(true);
 
@@ -382,8 +376,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts the coordinator, node 1 with the partition hooks and the client, loads the cache, then starts the
-     * observer and node 2.
+     * Starts the coordinator, node 1 with the partition hooks, the client, the observer and node 2.
      *
      * @return Coordinator.
      * @throws Exception If failed.
@@ -394,11 +387,6 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         startGrid(STALE_MAP_SENDER, partitionHooksResolver());
 
         startClientGrid(CLIENT);
-
-        IgniteCache<Integer, Integer> cache = crd.cache(CACHE);
-
-        for (int i = 0; i < PARTS * 4; i++)
-            cache.put(i, i);
 
         startGrid(OBSERVER);
 
