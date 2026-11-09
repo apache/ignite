@@ -268,20 +268,6 @@ tab:C#/.NET[]
 tab:C++[]
 --
 
-== Re-deploying Services
-
-If you want to update the implementation of a service without stopping the cluster, you can do it if you use the Ignite's link:code-deployment/deploying-user-code[DeploymentSPI configuration].
-
-Use the following procedure to redeploy the service:
-
-. Update the JAR file(s) in the location where the service is stored (pointed to by your `UriDeploymentSpi.uriList` property). Ignite will reload the new classes after the configured update period.
-. Add the service implementation to the classpass of a client node and start the client.
-. Call the `Ignite.services().cancel()` method on the client node to stop the service.
-. Deploy the service from the client node.
-. Stop the client node.
-
-In this way, you don't have to stop the server nodes, so you don't interrupt the operation of your cluster.
-
 == Service Statistics
 
 You can measure durations of your service's methods. If you want this analytics, enable service statistics in the

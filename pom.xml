@@ -48,13 +48,11 @@
         <module>modules/dev-utils</module>
         <module>modules/direct-io</module>
         <module>modules/extdata/p2p</module>
-        <module>modules/extdata/uri</module>
         <module>modules/extdata/platform</module>
         <module>modules/extdata/pluggable</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/web</module>
-        <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/json</module>
         <module>modules/rest-http</module>
@@ -170,10 +168,6 @@
                                         :org.apache.ignite.spi.communication.tcp.internal.*
                                         :org.apache.ignite.spi.discovery.zk.internal
                                         :org.apache.ignite.spi.discovery.zk.internal.*
-                                        :org.apache.ignite.spi.deployment.uri.scanners
-                                        :org.apache.ignite.spi.deployment.uri.scanners.*
-                                        :org.apache.ignite.spi.deployment.uri.tasks
-                                        :org.apache.ignite.spi.deployment.uri.tasks.*
                                         :org.apache.ignite.webtest
                                         :org.apache.ignite.webtest.*
                                     </excludePackageNames>

@@ -276,8 +276,6 @@
       url: distributed-computing/collocated-computations
 - title: Code Deployment
   items:
-    - title: Deploying User Code
-      url: code-deployment/deploying-user-code
     - title: Peer Class Loading
       url: code-deployment/peer-class-loading
 - title: Machine Learning
