@@ -21,18 +21,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
 
 /** SSL factories used by running transports. */
-public class GridSslProcessor extends GridProcessorAdapter {
+public class SslFactoryRegistry {
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
-
-    /** @param ctx Kernal context. */
-    public GridSslProcessor(GridKernalContext ctx) {
-        super(ctx);
-    }
 
     /**
      * @param transport Transport name.

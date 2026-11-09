@@ -165,7 +165,6 @@ import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcesso
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
-import org.apache.ignite.internal.processors.ssl.GridSslProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -985,7 +984,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             // Start some other processors (order & place is important).
             startProcessor(new GridPortProcessor(ctx));
-            startProcessor(new GridSslProcessor(ctx));
             startProcessor(new GridJobMetricsProcessor(ctx));
 
             // Timeout processor needs to be started before managers,
