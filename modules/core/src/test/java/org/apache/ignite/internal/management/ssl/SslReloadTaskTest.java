@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.GridTestJobResult;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.NoArg;
@@ -73,6 +74,25 @@ public class SslReloadTaskTest {
             new VisorTaskArgument<>(List.of(first, second), new NoArg(), false)));
 
         assertEquals(first + ": left the topology\n" + second + ": left the topology", err.getMessage());
+    }
+
+    /** */
+    @Test
+    public void testReportsTargetThatLeftAfterMapping() {
+        GridTestNode node = new GridTestNode(UUID.randomUUID());
+        GridTestNode departed = new GridTestNode(UUID.randomUUID());
+        SslReloadTask task = new SslReloadTask();
+
+        task.map(List.of(node, departed), new VisorTaskArgument<>(List.of(node.id(), departed.id()), new NoArg(), false));
+
+        String nodeReport = node.id() + ": discovery: reloaded";
+        GridTestJobResult nodeRes = new GridTestJobResult(new SslReloadJobResult(nodeReport, false), null, null, node, null);
+        GridTestJobResult departedRes = new GridTestJobResult(null, new ClusterTopologyException("Node has left grid"),
+            null, departed, null);
+
+        IgniteException err = assertThrows(IgniteException.class, () -> task.reduce(List.of(nodeRes, departedRes)).result());
+
+        assertEquals(nodeReport + '\n' + departed.id() + ": left the topology", err.getMessage());
     }
 
     /** */

@@ -48,7 +48,7 @@ public class SslReloadCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(NoArg arg) {
         return "Warning: new connections will use the replaced key and trust stores. "
-            + "Make sure that all nodes trust the new certificates before reloading.";
+            + "Make sure that all nodes and client applications trust the new certificates before reloading.";
     }
 
     /** {@inheritDoc} */

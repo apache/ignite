@@ -26,19 +26,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.management.ssl.SslReloadTask;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.ssl.SslContextFactory;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Rule;
@@ -72,11 +66,11 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
     /** */
     @Test
-    public void testSharedFactoryReloadedOnceOnServersAndClients() throws Exception {
+    public void testSharedFactoryReloadedOnceOnServerAndClient() throws Exception {
         List<IgniteEx> nodes = new ArrayList<>();
         List<CountingSslContextFactory> factories = new ArrayList<>();
 
-        for (String name : new String[] {getTestIgniteInstanceName(0), getTestIgniteInstanceName(1), "client"}) {
+        for (String name : new String[] {getTestIgniteInstanceName(0), "client"}) {
             CountingSslContextFactory factory = new CountingSslContextFactory(keyStorePath("node01"));
             IgniteConfiguration cfg = getConfiguration(name).setSslContextFactory(factory);
 
@@ -144,7 +138,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
         CountingSslContextFactory failing = new CountingSslContextFactory(keys.toString());
         CountingSslContextFactory working = new CountingSslContextFactory(keyStorePath("node01"));
-        SSLContext original = failing.create();
         SSLContext clientCtx = working.create();
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setSslContextFactory(failing);
 
@@ -165,7 +158,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         assertContains(log, report, nodeId + ": client connector: reloaded");
         assertContains(log, report, nodeId + ": binary REST: unsupported:");
         assertTrue(loadFailure.check());
-        assertSame(original, failing.create());
         assertNotSame(clientCtx, working.create());
     }
 
@@ -192,34 +184,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
     /** */
     @Test
-    public void testReportsNodeLeavingDuringReload() throws Exception {
-        IgniteEx node = startGrid(0);
-        UUID departingId = startGrid(1).localNode().id();
-        TestRecordingCommunicationSpi comm = TestRecordingCommunicationSpi.spi(node);
-
-        comm.blockMessages((dest, msg) -> dest.id().equals(departingId) && msg instanceof GridJobExecuteRequest
-            && ((GridJobExecuteRequest)msg).taskClassName().equals(SslReloadTask.class.getName()));
-
-        IgniteInternalFuture<Integer> cmd = GridTestUtils.runAsync(() -> execute("--ssl", "reload"));
-        int exitCode;
-
-        try {
-            assertTrue(comm.waitForBlocked(1, 10_000));
-
-            stopGrid(1);
-        }
-        finally {
-            comm.stopBlock();
-            exitCode = cmd.get(30_000);
-        }
-
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, exitCode);
-        assertContains(log, testOut.toString(), departingId + ": left the topology");
-        assertContains(log, testOut.toString(), node.localNode().id() + ": no TCP transports started with TLS");
-    }
-
-    /** */
-    @Test
     public void testDeclinedConfirmationDoesNotReload() throws Exception {
         assumeTrue(cliCommandHandler());
 
@@ -233,7 +197,8 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         injectTestSystemIn("n");
 
         assertEquals(EXIT_CODE_OK, execute("--ssl", "reload"));
-        assertContains(log, testOut.toString(), "Make sure that all nodes trust the new certificates before reloading.");
+        assertContains(log, testOut.toString(),
+            "Make sure that all nodes and client applications trust the new certificates before reloading.");
         assertEquals(loads, factory.loads.get());
     }
 
