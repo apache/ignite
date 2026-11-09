@@ -299,7 +299,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      */
     public GridPortProcessor ports();
 
-    /** @return SSL factory registry. */
+    /** */
     public SslFactoryRegistry ssl();
 
     /**

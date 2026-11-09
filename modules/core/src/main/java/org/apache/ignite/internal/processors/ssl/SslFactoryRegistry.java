@@ -27,10 +27,7 @@ public class SslFactoryRegistry {
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
 
-    /**
-     * @param transport Transport name.
-     * @param factory SSL context factory.
-     */
+    /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
         factories.put(transport, factory);
     }

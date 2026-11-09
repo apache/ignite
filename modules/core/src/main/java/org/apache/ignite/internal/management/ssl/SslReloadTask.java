@@ -208,7 +208,6 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
 
         /** */
         public SslReloadJobResult() {
-            // No-op.
         }
 
         /** */
