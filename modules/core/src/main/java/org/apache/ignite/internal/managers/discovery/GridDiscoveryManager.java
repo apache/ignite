@@ -141,7 +141,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.systemview.view.ClusterNodeView;
 import org.apache.ignite.spi.systemview.view.NodeAttributeView;
@@ -1039,9 +1038,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         discoMsgNotifier.start();
 
         startSpi();
-
-        if (spi instanceof TcpDiscoverySpi && ctx.config().getSslContextFactory() != null)
-            ctx.ssl().register("discovery", ctx.config().getSslContextFactory());
 
         registeredDiscoSpi = true;
 

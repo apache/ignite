@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.processors.ssl.GridSslProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.tracing.configuration.NoopTracingConfigurationManager;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -157,6 +158,14 @@ public class IgniteMock implements IgniteEx {
 
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
+                /** */
+                private final GridSslProcessor ssl = new GridSslProcessor(this);
+
+                /** {@inheritDoc} */
+                @Override public GridSslProcessor ssl() {
+                    return ssl;
+                }
+
                 @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
                     return new GridInternalSubscriptionProcessor(this);
                 }
