@@ -357,7 +357,25 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 "&sslTrustCertificateKeyStorePassword=123456")) {
                 checkConnection(conn);
             }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 
+    /**
+     * @throws Exception If failed.
+     *
+     * Note: Disabled cipher suite can be enabled via Java Security property "jdk.tls.disabledAlgorithms" or in
+     * &lt;JAVA_HOME&gt;/conf/security/java.security file.
+     */
+    @Test
+    public void testCompletelyDisabledCustomCipher() throws Exception {
+        setSslCtxFactoryToCli = true;
+        sslCtxFactory = getTestSslContextFactory();
+
+        startGrids(1);
+        try {
             //completely disabled jdk 17+
 
             //DES (56-bit):
@@ -378,7 +396,6 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
             assertFalse(Set.of(factory("TLS").getSupportedCipherSuites()).contains(completelyDisabledSuite));
 
-            // Java 17+, the cipher suite TLS_RSA_WITH_NULL_SHA256 is completely disabled by default.
             GridTestUtils.assertThrows(log, () -> {
                 return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
                     "&sslCipherSuites=" + completelyDisabledSuite +
@@ -764,16 +781,11 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
-     * @return Cipher suites supported by the JDK, but not enabled by default for the SSL protocol that the JDBC
-     *      client uses when no explicit cipher suites are set.
+     * @return Cipher suites supported by the JDK, but not enabled by default for the default protocol of the JDBC
+     *      client.
      * @throws Exception If failed.
      */
     private Set<String> disabledByDefaultCipherSuites() throws Exception {
-        // The client uses the default protocol when no sslProtocol connection property is set (JdbcThinSSLUtil
-        // falls back to SslContextFactory.DFLT_SSL_PROTOCOL), so the defaults of the same protocol must be
-        // subtracted: a suite absent from the defaults of a TLSv1.2 context only (a TLS 1.3 suite) can still
-        // be enabled by default for the client, which made the selected suite negotiable with the client's
-        // default ciphers.
         SSLSocketFactory factory = factory(SslContextFactory.DFLT_SSL_PROTOCOL);
 
         Set<String> supportedCiphersSuites = new HashSet<>(Arrays.stream(factory.getSupportedCipherSuites()).toList());
@@ -781,11 +793,10 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         // Filter supported, but NOT in the default active list.
         supportedCiphersSuites.removeAll(Set.of(factory.getDefaultCipherSuites()));
 
-        // Current TC settings.
-        supportedCiphersSuites.removeIf(s -> s.contains("_anon_"));
+        // Keep only the suites the RSA server key can use: this drops the TLS 1.3, ECDSA and anonymous suites
+        // at once, and the ECDH_RSA suites, which need an EC public key in the server certificate.
+        supportedCiphersSuites.removeIf(s -> !s.contains("_RSA_WITH_") || s.contains("ECDH_RSA"));
 
-        // Some providers enable every supported suite by default (for example, OpenJDK 17 with the stock
-        // security properties), so there is no suite to construct the scenario with on such a runtime.
         Assume.assumeTrue("No cipher suite disabled by default found", !supportedCiphersSuites.isEmpty());
 
         return supportedCiphersSuites;
