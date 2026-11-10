@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class IgniteStatisticsImplRollingUpgradeTest extends AbstractRollingUpgradeTest {
