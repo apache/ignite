@@ -395,8 +395,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
     /**
      * Rollback tx when it's safe.
-     * If current future is not lock future (enlist future) wait until completion and tries again.
-     * Else cancel lock future (onTimeout=false) or wait for completion due to deadlock detection (onTimeout=true).
+     * Cancel lock acquisition or unlock acknowledgement waits on forced rollback.
+     * Wait for enlistment and for lock completion on timeout due to deadlock detection.
      *
      * @param onTimeout If {@code true} called from timeout handler.
      */
@@ -409,7 +409,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        if (curFut instanceof GridCacheVersionedFuture && !onTimeout) {
+        if (!onTimeout && (curFut instanceof GridCacheVersionedFuture || curFut instanceof GridNearTxUnlockFuture)) {
             try {
                 curFut.cancel(); // Force cancellation.
             }

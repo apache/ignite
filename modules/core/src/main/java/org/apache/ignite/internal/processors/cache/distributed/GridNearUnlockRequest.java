@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUnlockRequestOptions;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -38,6 +39,10 @@ public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Savepoint rollback flag. */
     @Order(1)
     public boolean forSavepoint;
+
+    /** Acknowledgement options, or {@code null} for a fire-and-forget unlock. */
+    @Order(value = 2, introducedBy = "VERSIONED_TX_LOCK_FEATURE")
+    public GridCacheUnlockRequestOptions unlockOptions;
 
     /**
      * Empty constructor.

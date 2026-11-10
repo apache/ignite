@@ -44,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheUnlockFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheUnlockResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -68,7 +70,9 @@ import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -579,13 +583,38 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     private void processDhtUnlockRequest(UUID nodeId, GridDhtUnlockRequest req) {
-        clearLocks(nodeId, req);
+        if (req.unlockOptions == null) {
+            clearLocks(nodeId, req);
 
-        if (req.forSavepoint())
-            clearTxEntries(req.version(), req.keys());
+            if (req.forSavepoint())
+                clearTxEntries(req.version(), req.keys());
 
-        if (isNearEnabled(cacheCfg))
-            near().clearLocks(nodeId, req);
+            if (isNearEnabled(cacheCfg))
+                near().clearLocks(nodeId, req);
+
+            return;
+        }
+
+        GridCompoundFuture<Void, Void> cleanup = new GridCompoundFuture<>();
+
+        try {
+            clearLocks(nodeId, req);
+
+            if (!F.isEmpty(req.keys())) {
+                for (KeyCacheObject key : req.keys())
+                    clearTxEntry(req.version(), key, cleanup);
+            }
+
+            if (isNearEnabled(cacheCfg))
+                near().clearLocks(nodeId, req);
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            cleanup.onDone(e);
+        }
+
+        cleanup.markInitialized();
+
+        sendUnlockResponse(nodeId, req, cleanup);
     }
 
     /**
@@ -728,7 +757,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean retval,
         TransactionIsolation isolation,
         long createTtl,
-        long accessTtl) {
+        long accessTtl,
+        boolean skipLocked) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         return lockAllAsyncInternal(
@@ -745,7 +775,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.keepBinaryInInterceptor(),
-            opCtx != null && opCtx.isKeepBinary());
+            opCtx != null && opCtx.isKeepBinary(),
+            skipLocked);
     }
 
     /**
@@ -764,6 +795,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Lock future.
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
@@ -779,7 +811,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean skipStore,
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean skipLocked) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
@@ -804,7 +837,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             skipReadThrough,
             keepBinaryInInterceptor,
-            keepBinary);
+            keepBinary,
+            skipLocked);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
@@ -989,7 +1023,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.skipStore(),
                         req.skipReadThrough(),
                         req.keepBinaryInInterceptor(),
-                        req.keepBinary());
+                        req.keepBinary(),
+                        req.skipLocked());
 
                     // Add before mapping.
                     if (!ctx.mvcc().addFuture(fut))
@@ -1065,7 +1100,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.keepBinaryInInterceptor(),
                     req.keepBinary(),
                     req.waitTimeout(),
-                    req.nearCache());
+                    req.nearCache(),
+                    req.expectedVersions(),
+                    req.skipLocked());
 
                 final GridDhtTxLocal t = tx;
 
@@ -1081,13 +1118,40 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             boolean lockAcquired = e == null && o != null && o.success() && !t.empty();
 
                             // Create response while holding locks.
-                            final GridNearLockResponse resp = createLockReply(nearNode,
+                            GridNearLockResponse resp = createLockReply(nearNode,
                                 entries,
                                 req,
                                 t,
                                 t.xidVersion(),
                                 e,
                                 lockAcquired);
+
+                            if (e == null && req.expectedVersions() != null) {
+                                // A transaction timeout can also return false without rejecting individual keys.
+                                // Keep those entries enlisted so that transaction rollback releases their locks.
+                                boolean rejectAll = !req.skipLocked() && !lockAcquired && entries.stream().anyMatch(entry -> {
+                                    IgniteTxEntry txEntry = t.entry(entry.txKey());
+
+                                    return txEntry != null && Boolean.FALSE.equals(txEntry.versionedLockResult());
+                                });
+
+                                for (GridCacheEntryEx entry : entries) {
+                                    IgniteTxEntry txEntry = t.entry(entry.txKey());
+
+                                    if (txEntry != null && (rejectAll
+                                        || Boolean.FALSE.equals(txEntry.versionedLockResult())))
+                                        t.clearEntry(entry.txKey());
+                                }
+
+                                try {
+                                    // The initiating side will keep mappings only for successful keys.
+                                    if (t.empty())
+                                        t.rollbackDhtLocal();
+                                }
+                                catch (IgniteCheckedException ex) {
+                                    resp = createLockReply(nearNode, entries, req, t, t.xidVersion(), ex, false);
+                                }
+                            }
 
                             assert !t.implicit() : t;
                             assert !t.onePhaseCommit() : t;
@@ -1243,6 +1307,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             res.lockAcquired(lockAcquired);
 
+            if (err == null && req.expectedVersions() != null && lockAcquired) {
+                boolean[] results = new boolean[entries.size()];
+
+                for (int i = 0; i < entries.size(); i++) {
+                    IgniteTxEntry txEntry = tx.entry(entries.get(i).txKey());
+
+                    results[i] = txEntry != null && Boolean.TRUE.equals(txEntry.versionedLockResult());
+                }
+
+                res.lockResults(results);
+            }
+
             if (err == null) {
                 res.pending(localDhtPendingVersions(entries, mappedVer));
 
@@ -1261,6 +1337,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     GridCacheEntryEx e = it.next();
 
                     assert e != null;
+
+                    if (!res.lockResult(i)) {
+                        res.addValueBytes(null, false, null, null);
+                        i++;
+
+                        continue;
+                    }
 
                     while (true) {
                         try {
@@ -1523,13 +1606,29 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert ctx.affinityNode();
         assert nodeId != null;
 
-        removeLocks(
-            nodeId,
-            req.version(),
-            req.keys(),
-            true,
-            req.forSavepoint()
-        );
+        if (req.unlockOptions == null)
+            removeLocks(nodeId, req.version(), req.keys(), true, req.forSavepoint());
+        else
+            sendUnlockResponse(nodeId, req,
+                removeLocksAsync(nodeId, req.version(), req.keys(), true, req.unlockOptions.timeout));
+    }
+
+    /**
+     * Sends the acknowledgement only after local and downstream cleanup completes.
+     *
+     * @param nodeId Request sender.
+     * @param req Unlock request.
+     * @param cleanup Distributed cleanup future.
+     */
+    private void sendUnlockResponse(UUID nodeId, GridNearUnlockRequest req, IgniteInternalFuture<Void> cleanup) {
+        cleanup.listen(fut -> {
+            try {
+                ctx.io().send(nodeId, new GridCacheUnlockResponse(req.unlockOptions.futId, fut.error()), ctx.ioPolicy());
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to acknowledge distributed unlock [nodeId=" + nodeId + ']', e);
+            }
+        });
     }
 
     /**
@@ -1623,6 +1722,66 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean unmap,
         boolean forSavepoint
     ) {
+        try {
+            removeLocks(nodeId, ver, keys, unmap, forSavepoint, null, 0);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to remove locks [version=" + ver + ']', e);
+        }
+    }
+
+    /**
+     * Releases a failed conditional lock attempt, including backup and reader state.
+     *
+     * @param nodeId Initiating node.
+     * @param ver Transaction version.
+     * @param keys Keys acquired by this attempt.
+     * @param unmap Whether the supplied version is the near transaction version.
+     * @param timeout Remaining transaction timeout.
+     * @return Distributed cleanup future.
+     */
+    public IgniteInternalFuture<Void> removeLocksAsync(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        long timeout
+    ) {
+        GridCompoundFuture<Void, Void> cleanup = new GridCompoundFuture<>();
+
+        try {
+            removeLocks(nodeId, ver, keys, unmap, true, cleanup, timeout);
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            cleanup.onDone(e);
+        }
+
+        cleanup.markInitialized();
+
+        return cleanup;
+    }
+
+    /**
+     * @param nodeId Initiating node.
+     * @param ver Lock version.
+     * @param keys Keys.
+     * @param unmap Whether to resolve the DHT version.
+     * @param forSavepoint Whether to preserve the transaction.
+     * @param cleanup Acknowledged cleanup, or {@code null} for the legacy unlock path.
+     * @param timeout Remaining transaction timeout.
+     * @throws IgniteCheckedException If local cleanup fails.
+     */
+    private void removeLocks(
+        UUID nodeId,
+        GridCacheVersion ver,
+        Iterable<KeyCacheObject> keys,
+        boolean unmap,
+        boolean forSavepoint,
+        @Nullable GridCompoundFuture<Void, Void> cleanup,
+        long timeout
+    ) throws IgniteCheckedException {
+        long start = U.currentTimeMillis();
+
         assert nodeId != null;
         assert ver != null;
 
@@ -1705,8 +1864,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     // as there is no point to reorder relative to the version
                     // we are about to remove.
                     if ((forSavepoint && cand == null) || entry.removeLock(dhtVer)) {
-                        if (forSavepoint)
-                            clearTxEntry(dhtVer, key);
+                        if (forSavepoint) {
+                            if (cleanup == null)
+                                clearTxEntry(dhtVer, key);
+                            else
+                                clearTxEntry(dhtVer, key, cleanup);
+                        }
 
                         // Map to backups and near readers.
                         map(nodeId, topVer, entry, readers, dhtMap, nearMap);
@@ -1760,7 +1923,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 req.completedVersions(committed, rolledback);
 
-                ctx.io().send(n, req, ctx.ioPolicy());
+                if (cleanup == null)
+                    ctx.io().send(n, req, ctx.ioPolicy());
+                else
+                    cleanup.add(GridCacheUnlockFuture.send(ctx, n.id(), req,
+                        timeout == 0 ? 0 : Math.max(1, timeout - (U.currentTimeMillis() - start))));
             }
             catch (ClusterTopologyCheckedException ignore) {
                 if (log.isDebugEnabled())
@@ -1789,7 +1956,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     req.completedVersions(committed, rolledback);
 
-                    ctx.io().send(n, req, ctx.ioPolicy());
+                    if (cleanup == null)
+                        ctx.io().send(n, req, ctx.ioPolicy());
+                    else
+                        cleanup.add(GridCacheUnlockFuture.send(ctx, n.id(), req,
+                            timeout == 0 ? 0 : Math.max(1, timeout - (U.currentTimeMillis() - start))));
                 }
                 catch (ClusterTopologyCheckedException ignore) {
                     if (log.isDebugEnabled())
@@ -1841,6 +2012,38 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 U.error(log, "Failed to invalidate near entry during rollback to savepoint: " + key, e);
             }
         }
+    }
+
+    /**
+     * Clears transaction state without hiding errors or waiting on a communication thread.
+     *
+     * @param ver Transaction version.
+     * @param key Key.
+     * @param cleanup Future collecting asynchronous transaction container cleanup.
+     * @throws IgniteCheckedException If near invalidation fails.
+     */
+    private void clearTxEntry(
+        GridCacheVersion ver,
+        KeyCacheObject key,
+        GridCompoundFuture<Void, Void> cleanup
+    ) throws IgniteCheckedException {
+        IgniteInternalTx tx = ctx.tm().tx(ver);
+
+        if (tx instanceof GridDhtTxLocal) {
+            GridDhtTxLocal dhtTx = (GridDhtTxLocal)tx;
+
+            dhtTx.clearEntry(ctx.txKey(key));
+
+            if (tx.empty()) {
+                GridFutureAdapter<Void> rollback = new GridFutureAdapter<>();
+
+                cleanup.add(rollback);
+
+                dhtTx.rollbackDhtLocalAsync().listen(fut -> rollback.onDone(null, fut.error()));
+            }
+        }
+        else if (configuration().getNearConfiguration() != null)
+            invalidateNearEntry(key, ver);
     }
 
     /**

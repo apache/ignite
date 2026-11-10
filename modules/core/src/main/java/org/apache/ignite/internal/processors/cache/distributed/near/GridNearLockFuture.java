@@ -137,6 +137,15 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Whether a rejected key leaves the remaining lock attempts active. */
+    private final boolean skipLocked;
+
+    /** Time when the first primary batch starts, or zero before mapping. */
+    private long lockWaitStartTime;
+
+    /** Whether this operation conditionally locks a data version. */
+    private final boolean versionedLock;
+
     /** Transaction. */
     @GridToStringExclude
     private final GridNearTxLocal tx;
@@ -197,6 +206,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param recovery Recovery flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      */
     public GridNearLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -212,7 +222,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
-        boolean recovery
+        boolean recovery,
+        boolean skipLocked
     ) {
         super(CU.boolReducer());
 
@@ -226,6 +237,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.retval = retval;
         this.timeout = timeout;
         this.waitTimeout = waitTimeout;
+        this.skipLocked = skipLocked;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
@@ -235,6 +247,10 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.recovery = recovery;
 
         ignoreInterrupts();
+
+        IgniteTxEntry firstEntry = tx == null || keys.isEmpty() ? null : tx.entry(cctx.txKey(F.first(keys)));
+
+        versionedLock = firstEntry != null && firstEntry.versionedLockPending();
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -356,7 +372,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             threadId,
             lockVer,
             topVer,
-            lockTimeout(),
+            timeout,
             !inTx(),
             inTx(),
             implicitSingleTx(),
@@ -371,16 +387,11 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         entries.add(entry);
 
-        if (c == null && lockTimeout() < 0) {
+        if (c == null && timeout < 0) {
             if (log.isDebugEnabled())
-                log.debug("Failed to acquire lock with negative timeout: " + entry);
+                log.debug("Failed to acquire lock immediately: " + entry);
 
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
-                onComplete(false, true, false);
-            }
-            else {
-                onFailed(false);
-            }
+            onFailed(false);
 
             return null;
         }
@@ -657,6 +668,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                     while (true) {
                         GridCacheEntryEx cached = entries.get(i);
 
+                        if (inTx() && Boolean.FALSE.equals(tx.entry(cached.txKey()).versionedLockResult()))
+                            break;
+
                         try {
                             if (!locked(cached)) {
                                 if (log.isDebugEnabled())
@@ -665,6 +679,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                                 return false;
                             }
+
+                            if (inTx())
+                                tx.entry(cached.txKey()).markLocked();
 
                             break;
                         }
@@ -723,7 +740,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (err != null)
             success = false;
 
-        if (!success && err == null && CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+        if (!success && err == null && (versionedLock || CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)))
             return onComplete(false, true, false);
 
         return onComplete(success, true);
@@ -827,7 +844,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (isDone()) // Possible due to async rollback.
             return;
 
-        if (lockTimeout() > 0) {
+        if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);
@@ -1126,6 +1143,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                             retval && dhtVer == null,
                                             dhtVer); // Include DHT version to match remote DHT entry.
 
+                                        if (versionedLock)
+                                            req.expectedVersion(tx.entry(txKey).expectedLockVersion());
+
                                     }
 
                                     if (cand.reentry())
@@ -1216,6 +1236,22 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
         final ClusterNode node = map.node();
 
+        long remainingWaitTimeout = waitTimeout;
+
+        if (waitTimeout > 0) {
+            long now = U.currentTimeMillis();
+
+            if (lockWaitStartTime == 0)
+                lockWaitStartTime = now;
+
+            long elapsed = now - lockWaitStartTime;
+
+            remainingWaitTimeout = elapsed < waitTimeout ? waitTimeout - elapsed : -1;
+        }
+
+        req.waitTimeout(remainingWaitTimeout);
+        req.skipLocked(skipLocked);
+
         if (node.isLocal()) {
             req.miniId(-1);
 
@@ -1261,6 +1297,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                             int i = 0;
 
                             for (KeyCacheObject k : mappedKeys) {
+                                if (res.hasLockResults()) {
+                                    if (!processLockResult(k, res.lockResult(i))) {
+                                        i++;
+
+                                        continue;
+                                    }
+                                }
+
                                 while (true) {
                                     GridNearCacheEntry entry = cctx.near().entryExx(k, req.topologyVersion());
 
@@ -1430,11 +1474,23 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         return topEx;
     }
 
-    /**
-     * @return Timeout value for this lock future.
-     */
-    private long lockTimeout() {
-        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
+    /** Applies one primary outcome, removing a rejected local candidate before proceeding to the next batch. */
+    private boolean processLockResult(KeyCacheObject key, boolean locked) {
+        tx.entry(cctx.txKey(key)).versionedLockResult(locked);
+
+        if (!locked) {
+            GridCacheEntryEx entry = cctx.near().peekEx(key);
+
+            try {
+                if (entry != null && entry.hasLockCandidate(lockVer))
+                    entry.removeLock(lockVer);
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // The obsolete entry no longer has a local candidate.
+            }
+        }
+
+        return locked;
     }
 
     /**
@@ -1445,7 +1501,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(lockTimeout());
+            super(timeout);
         }
 
         /** Requested keys. */
@@ -1457,20 +1513,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 log.debug("Timed out waiting for lock response: " + this);
 
             timedOut = true;
-
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
-                synchronized (GridNearLockFuture.this) {
-                    requestedKeys = requestedKeys0();
-
-                    clear(); // Stop response processing.
-                }
-
-                synchronized (this) {
-                    onComplete(false, true, false);
-                }
-
-                return;
-            }
 
             txLockTimedOut = true;
 
@@ -1692,6 +1734,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             AffinityTopologyVersion topVer = GridNearLockFuture.this.topVer;
 
             for (KeyCacheObject k : keys) {
+                if (res.hasLockResults()) {
+                    if (!processLockResult(k, res.lockResult(i))) {
+                        i++;
+
+                        continue;
+                    }
+                }
+
                 while (true) {
                     GridNearCacheEntry entry = cctx.near().entryExx(k, topVer);
 

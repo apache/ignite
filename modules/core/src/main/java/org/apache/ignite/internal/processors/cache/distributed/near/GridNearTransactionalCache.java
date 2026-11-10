@@ -295,7 +295,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean retval,
         TransactionIsolation isolation,
         long createTtl,
-        long accessTtl
+        long accessTtl,
+        boolean skipLocked
     ) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -312,7 +313,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            skipLocked);
 
         fut.map();
 

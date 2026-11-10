@@ -46,6 +46,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
     private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
+    /** Continue a conditional lock request after a per-key rejection. */
+    private static final int SKIP_LOCKED_FLAG_MASK = 0x10;
+
     /** Topology version. */
     @Order(0)
     AffinityTopologyVersion topVer;
@@ -82,6 +85,40 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     /** Lock wait timeout. */
     @Order(8)
     long waitTimeout;
+
+    /** Expected data versions for conditional locks, indexed in the same order as keys. */
+    @Order(value = 9, introducedBy = "VERSIONED_TX_LOCK_FEATURE")
+    GridCacheVersion[] expectedVers;
+
+    /** @param ver Expected data version for the last added key. */
+    public void expectedVersion(@Nullable GridCacheVersion ver) {
+        if (ver != null) {
+            if (expectedVers == null)
+                expectedVers = new GridCacheVersion[dhtVers.length];
+
+            expectedVers[idx - 1] = ver;
+        }
+    }
+
+    /** @param timeout Remaining wait budget when this primary batch is sent. */
+    public void waitTimeout(long timeout) {
+        waitTimeout = timeout;
+    }
+
+    /** @param skipLocked Whether per-key rejections allow the remaining locks to be attempted. */
+    public void skipLocked(boolean skipLocked) {
+        setFlag(skipLocked, SKIP_LOCKED_FLAG_MASK);
+    }
+
+    /** @return Whether the request permits partial lock acquisition. */
+    public boolean skipLocked() {
+        return isFlag(SKIP_LOCKED_FLAG_MASK);
+    }
+
+    /** @return Expected data versions, or {@code null} for unconditional locks. */
+    @Nullable public GridCacheVersion[] expectedVersions() {
+        return expectedVers;
+    }
 
     /**
      * Empty constructor.

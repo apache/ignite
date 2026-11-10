@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUnlockFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -647,14 +648,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
-                    timeout,
+                    /*waitTimeout*/0,
                     this,
                     /*read*/entryProc != null, // Needed to force load from store.
                     retval,
                     isolation,
                     isInvalidate(),
                     -1L,
-                    -1L);
+                    -1L,
+                    false);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(
@@ -824,14 +826,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
-                    timeout,
+                    /*waitTimeout*/0,
                     this,
                     /*read*/invokeVals != null, // Needed to force load from store.
                     retval,
                     isolation,
                     isInvalidate(),
                     -1L,
-                    -1L);
+                    -1L,
+                    false);
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(
@@ -1729,14 +1732,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                 timeout,
-                timeout,
+                /*waitTimeout*/0,
                 this,
                 false,
                 retval,
                 isolation,
                 isInvalidate(),
                 -1L,
-                -1L);
+                -1L,
+                false);
 
             PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                 /** {@inheritDoc} */
@@ -1924,14 +1928,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     timeout,
-                    timeout,
+                    /*waitTimeout*/0,
                     this,
                     true,
                     true,
                     isolation,
                     isInvalidate(),
                     createTtl,
-                    accessTtl);
+                    accessTtl,
+                    false);
 
                 final ExpiryPolicy expiryPlc0 = expiryPlc;
 
@@ -3225,20 +3230,108 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     * Removes transaction entries and releases their acquired transactional locks.
+     * Releases an unsuccessful all-or-nothing lock attempt and restores entries enlisted before it.
+     * Entries whose locks were already owned before the attempt must not be included.
      *
-     * @param entries Entries to remove and unlock.
+     * @param entries Entries enlisted by the attempt, including successful earlier primary batches.
+     * @param snapshots Previous entry states, indexed by key.
+     * @return Future completed after all participants have acknowledged cleanup and local state is restored.
      */
-    public void removeAndUnlockTxEntries(Collection<IgniteTxEntry> entries) {
-        if (F.isEmpty(entries))
-            return;
+    public IgniteInternalFuture<Void> removeAndUnlockTxEntriesAsync(
+        Collection<IgniteTxEntry> entries,
+        Map<KeyCacheObject, IgniteTxEntry> snapshots
+    ) {
+        GridNearTxUnlockFuture cleanup = new GridNearTxUnlockFuture(this, entries, snapshots);
 
-        for (IgniteTxEntry entry : entries) {
-            txState().removeEntry(entry.txKey());
-            removeEntryMappings(entry);
+        if (!updateLockFuture(null, cleanup))
+            return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
+
+        try {
+            Map<GridCacheContext<?, ?>, Map<UUID, Collection<KeyCacheObject>>> mappings = new HashMap<>();
+
+            for (IgniteTxEntry entry : entries) {
+                // The rejected primary batch has already removed its candidates before replying.
+                if (!Boolean.TRUE.equals(entry.versionedLockResult()))
+                    continue;
+
+                GridCacheContext<?, ?> cacheCtx = entry.context();
+                UUID nodeId = entry.nodeId();
+
+                if (nodeId == null) {
+                    ClusterNode primary = cacheCtx.affinity().primaryByKey(entry.key(), topologyVersion());
+
+                    if (primary == null)
+                        throw new ClusterTopologyCheckedException("Primary left before distributed unlock: " + entry.key());
+
+                    nodeId = primary.id();
+                }
+
+                mappings.computeIfAbsent(cacheCtx, k -> new HashMap<>())
+                    .computeIfAbsent(nodeId, k -> new ArrayList<>()).add(entry.key());
+            }
+
+            for (Map.Entry<GridCacheContext<?, ?>, Map<UUID, Collection<KeyCacheObject>>> byCache : mappings.entrySet()) {
+                GridCacheContext<?, ?> cacheCtx = byCache.getKey();
+
+                for (Map.Entry<UUID, Collection<KeyCacheObject>> byNode : byCache.getValue().entrySet()) {
+                    if (cleanup.isCancelled())
+                        break;
+
+                    if (cctx.localNodeId().equals(byNode.getKey())) {
+                        GridCacheContext<?, ?> dhtCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
+
+                        cleanup.add(dhtCtx.dhtTx().removeLocksAsync(cctx.localNodeId(), xidVersion(),
+                            byNode.getValue(), cacheCtx.isNear(), remainingTime()));
+                    }
+                    else {
+                        GridNearUnlockRequest req = new GridNearUnlockRequest(cacheCtx.cacheId(), byNode.getValue().size());
+
+                        req.version(xidVersion());
+                        req.forSavepoint(true);
+
+                        for (KeyCacheObject key : byNode.getValue())
+                            req.addKey(key);
+
+                        cleanup.add(GridCacheUnlockFuture.send(cacheCtx, byNode.getKey(), req, remainingTime()));
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            cleanup.onDone(e);
         }
 
-        unlockTxEntries(entries);
+        cleanup.markInitialized();
+
+        return cleanup;
+    }
+
+    /**
+     * Removes the initiating-side state of a conditional lock rejected and cleaned up by the primary.
+     * No distributed unlock is needed: the primary has not replicated or acknowledged this lock.
+     *
+     * @param entry Entry enlisted by the failed attempt.
+     * @param snapshot Previous read entry state, if the entry was already enlisted before this attempt.
+     */
+    public void removeFailedLockEntry(IgniteTxEntry entry, @Nullable IgniteTxEntry snapshot) {
+        removeEntryMappings(entry);
+
+        if (entry.context().isNear()) {
+            try {
+                GridCacheEntryEx cached = entry.cached();
+
+                if (cached.hasLockCandidate(xidVersion()))
+                    cached.removeLock(xidVersion());
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // An obsolete near entry has no live candidate.
+            }
+        }
+
+        if (snapshot == null)
+            txState().removeEntry(entry.txKey());
+        else
+            entry.restoreFrom(snapshot);
     }
 
     /**
@@ -4241,6 +4334,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
      * @param keepBinary Keep binary flag.
      * @param waitTimeout Lock wait timeout.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Future with respond.
      */
     public <K> IgniteInternalFuture<GridCacheReturn> lockAllAsync(GridCacheContext cacheCtx,
@@ -4253,7 +4347,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
         boolean keepBinary,
-        long waitTimeout) {
+        long waitTimeout,
+        boolean skipLocked) {
         assert pessimistic();
 
         try {
@@ -4278,6 +4373,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (timeout == -1)
             return new GridFinishedFuture<>(timeoutException());
 
+        boolean versionedLock = keys.stream().anyMatch(key ->
+            entry(cacheCtx.txKey((KeyCacheObject)key)).versionedLockPending());
+
         IgniteInternalFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
             timeout,
             waitTimeout,
@@ -4291,15 +4389,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             skipStore,
             skipReadThrough,
             keepBinaryInInterceptor,
-            keepBinary);
+            keepBinary,
+            skipLocked);
 
         return new GridEmbeddedFuture<>(
             fut,
-            new PLC1<GridCacheReturn>(ret, false, !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+            new PLC1<GridCacheReturn>(ret, false, !versionedLock && !CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
                 @Override protected GridCacheReturn postLock(GridCacheReturn ret) throws IgniteCheckedException {
                     assert fut.error() == null : "Lock future completed with an error: " + fut.error();
 
                     boolean success = Boolean.TRUE.equals(fut.get());
+
+                    if (!success)
+                        checkValid();
 
                     ret.success(success);
 
