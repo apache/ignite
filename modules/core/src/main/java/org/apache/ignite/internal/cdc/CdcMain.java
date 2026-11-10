@@ -343,6 +343,7 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
+                //TODO: Just send cacheIds from caches state
                 Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
                     .readCachesData(
                         ft,
@@ -812,7 +813,9 @@ public class CdcMain implements Runnable {
                 throw new IllegalStateException("Consumer should handle all cache change events");
 
             if (!destroyed.isEmpty()) {
-                long segment = kctx.cache().context().wal(true).currentSegment();
+                File[] segments = ft.walSegments();
+
+                long segment = ft.walSegmentIndex(segments[segments.length - 1].toPath());
 
                 destroyedCachesState.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
             }
