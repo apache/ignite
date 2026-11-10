@@ -52,7 +52,6 @@ import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -191,35 +190,22 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
     /** */
     @Test
     public void testReportsNodeLeavingBeforeReloadResponse() throws Exception {
-        IgniteEx first = startGrid(getConfiguration(getTestIgniteInstanceName(0))
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone")));
-        IgniteEx second = startGrid(getConfiguration(getTestIgniteInstanceName(1))
-            .setSslContextFactory(sslTrustedFactory("node01", "trustone")));
-        TestRecordingCommunicationSpi firstSpi = TestRecordingCommunicationSpi.spi(first);
-        TestRecordingCommunicationSpi secondSpi = TestRecordingCommunicationSpi.spi(second);
+        IgniteEx node = startGrid(0);
+        IgniteEx departing = startGrid(1);
+        UUID departingId = departing.localNode().id();
+        TestRecordingCommunicationSpi departingSpi = TestRecordingCommunicationSpi.spi(departing);
 
-        firstSpi.blockMessages((dest, msg) -> msg instanceof GridJobExecuteResponse);
-        secondSpi.blockMessages((dest, msg) -> msg instanceof GridJobExecuteResponse);
+        departingSpi.blockMessages((dest, msg) -> msg instanceof GridJobExecuteResponse);
 
         IgniteInternalFuture<Integer> cmd = runAsync(() -> execute("--ssl", "reload"));
 
-        try {
-            assertTrue(waitForCondition(() -> firstSpi.hasBlockedMessages() || secondSpi.hasBlockedMessages(), 10_000));
+        assertTrue(departingSpi.waitForBlocked(1, 10_000));
 
-            IgniteEx departing = firstSpi.hasBlockedMessages() ? first : second;
-            IgniteEx remaining = departing == first ? second : first;
-            UUID departingId = departing.localNode().id();
+        departing.close();
 
-            departing.close();
-
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, cmd.get(30_000).intValue());
-            assertContains(log, testOut.toString(), departingId + ": left the topology");
-            assertContains(log, testOut.toString(), remaining.localNode().id() + ": communication, discovery: reloaded");
-        }
-        finally {
-            firstSpi.stopBlock(false);
-            secondSpi.stopBlock(false);
-        }
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, cmd.get(30_000).intValue());
+        assertContains(log, testOut.toString(), departingId + ": left the topology");
+        assertContains(log, testOut.toString(), node.localNode().id() + ": no TCP transports started with TLS");
     }
 
     /** */

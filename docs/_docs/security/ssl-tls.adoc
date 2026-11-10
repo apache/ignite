@@ -182,7 +182,7 @@ Check the affected node's log for error details.
 Correct the failed store and run the command again.
 To restore the previous certificates, restore the backed-up files and reload again while peers still trust those certificates.
 
-Custom factories must extend javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[] and follow its reload contract.
+Custom factories must extend javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
 They must reread key and trust data from their sources on reload and supply the updated context for new connections.
 Factories of other types are reported as unsupported.
 For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
