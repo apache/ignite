@@ -273,6 +273,8 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     /**
      * This property changes output format of {@link GridRestCommand#CACHE_GET_ALL} from {k: v, ...}
      * to [{"key": k, "value": v}, ...] to allow non-string keys output.
+     *
+     * @deprecated Should be default in future releases.
      */
     @Deprecated
     @SystemProperty("If true output format of GridRestCommand.CACHE_GET_ALL will change from " +

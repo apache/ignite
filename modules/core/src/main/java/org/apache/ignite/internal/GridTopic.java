@@ -86,7 +86,9 @@ public enum GridTopic {
     /** */
     TOPIC_CONTINUOUS,
 
-    /** */
+    /**
+     * @deprecated Component was removed. Enum can't be removed because enum ordinal is important.
+     */
     @Deprecated
     TOPIC_MONGO,
 
