@@ -2647,7 +2647,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             || !baselineTop.consistentIds().contains(cctx.localNode().consistentId()))
             return null;
 
-        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes);
 
         TxRecord record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
 
