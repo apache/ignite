@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -418,6 +419,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Operations that are performed before a node is joined to the topology. */
     /** Stop warmup. */
     private static final short OP_STOP_WARMUP = 10000;
+
+    /** */
+    public static final String INTERNAL_REQ_ERR_MSG = "Only management client are allowed to execute this";
 
     /** Binary context. */
     private final BinaryContext bctx;

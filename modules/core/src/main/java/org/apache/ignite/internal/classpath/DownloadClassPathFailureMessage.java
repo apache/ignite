@@ -20,7 +20,7 @@ package org.apache.ignite.internal.classpath;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.TransmissionHandler;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Message sent by node in case it can't send classpath to receiver.
@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * @see ClassPathFilesTransmissionHandler
  * @see DownloadClassPathFailureMessage
  */
-public class DownloadClassPathFailureMessage implements Message {
+public class DownloadClassPathFailureMessage extends AbstractMessage {
     /**
      * Classpath ID.
      *
