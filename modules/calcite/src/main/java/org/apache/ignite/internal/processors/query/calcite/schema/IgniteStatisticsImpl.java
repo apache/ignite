@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.STATISTICS_CACHE_SIZE_TASK_FEATURE;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /** Calcite statistics wrapper. */
@@ -155,7 +156,10 @@ public class IgniteStatisticsImpl implements Statistic {
     }
 
     /** */
-    private static @Nullable Long localCacheSize(GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+    private static @Nullable Long localCacheSize(@Nullable GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
+        if (cctx == null || !cctx.kernalContext().rollingUpgrade().features().isActive(STATISTICS_CACHE_SIZE_TASK_FEATURE))
+            return null;
+
         Collection<ClusterNode> nodes = new ArrayList<>(cctx.grid().cluster().forDataNodes(cctx.name()).nodes());
 
         if (nodes.isEmpty())
