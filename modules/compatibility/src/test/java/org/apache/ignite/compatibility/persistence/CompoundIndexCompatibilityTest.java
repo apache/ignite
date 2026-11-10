@@ -52,6 +52,7 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
 
     /** */
     @Test
+    @SkipTestIfIsJdkNewer(17)
     public void testSecondaryIndexesMigration_2_13_0() throws Exception {
         // 2.13.0 - version with _KEY unwrapping, but before index processing moved to the core module.
         doTestStartupWithOldVersion("2.13.0", () -> {

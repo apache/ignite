@@ -173,7 +173,7 @@ public class SerializationUtil {
      *             If 'auto' is chosen, this value should be <code>63</code>.
      *           </li>
      *           <li>
-     *             If a cutoff of 2<sup>n</sup> is desired, for <code>0 <= n < 31</code>,
+     *             If a cutoff of 2<sup>n</sup> is desired, for {@code 0 <= n < 31},
      *             this value should be <code>n + 1</code>.
      *           </li>
      *         </ul>

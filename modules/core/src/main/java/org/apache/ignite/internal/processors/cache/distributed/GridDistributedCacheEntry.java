@@ -577,7 +577,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      *
      * @param lockVer Done version.
      * @param baseVer Base version.
-     * @param pendingVers Pending versions that are less than lock version.
      * @param committedVers Completed versions for reordering.
      * @param rolledbackVers Rolled back versions for reordering.
      * @param sysInvalidate Flag indicating if this entry is done from invalidated transaction (in case of tx
@@ -588,7 +587,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     public void doneRemote(
         GridCacheVersion lockVer,
         GridCacheVersion baseVer,
-        @Nullable Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         boolean sysInvalidate
@@ -621,10 +619,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 if (sysInvalidate && baseVer != null)
                     mvcc.salvageRemote(baseVer, isNear());
 
-                owner = mvcc.doneRemote(lockVer,
-                    maskNull(pendingVers),
-                    maskNull(committedVers),
-                    maskNull(rolledbackVers));
+                owner = mvcc.doneRemote(lockVer);
 
                 boolean emptyAfter = mvcc.isEmpty();
 
@@ -776,14 +771,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 }
             }
         }
-    }
-
-    /**
-     * @param col Collection to mask.
-     * @return Empty collection if argument is null.
-     */
-    private Collection<GridCacheVersion> maskNull(Collection<GridCacheVersion> col) {
-        return col == null ? Collections.<GridCacheVersion>emptyList() : col;
     }
 
     /** {@inheritDoc} */

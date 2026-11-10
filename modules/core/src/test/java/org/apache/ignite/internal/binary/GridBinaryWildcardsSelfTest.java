@@ -275,45 +275,6 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     * @param nameMapper Name mapper.
-     * @param mapper Mapper.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void checkOverrideIdMapper(BinaryNameMapper nameMapper, BinaryIdMapper mapper) throws IgniteCheckedException {
-        BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
-
-        typeCfg.setTypeName(CLASS2_FULL_NAME);
-        typeCfg.setIdMapper(new BinaryIdMapper() {
-            @Override public int typeId(String clsName) {
-                return 100;
-            }
-
-            @Override public int fieldId(int typeId, String fieldName) {
-                return 0;
-            }
-        });
-
-        BinaryMarshaller marsh = binaryMarshaller(nameMapper, mapper, Arrays.asList(
-            new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
-            typeCfg));
-
-        BinaryContext ctx = binaryContext(marsh);
-
-        Map<Integer, Class> typeIds = U.field(ctx, "userTypes");
-
-        assertEquals(3, typeIds.size());
-
-        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, mapper)));
-        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
-        assertTrue(typeIds.containsKey(100));
-
-        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
-
-        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test

@@ -149,18 +149,4 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
         processTest();
     }
-
-    /**
-     * Return true if and only if all elements of array are different.
-     *
-     * @param m1 array 1.
-     * @param m2 array 2.
-     * @return true if all elements of array are different.
-     */
-    private boolean isNotSame(int[] m1, int[] m2) {
-        assert m1.length == m2.length;
-        assert m1.length == 2;
-
-        return m1[0] != m2[0] && m1[1] != m2[1];
-    }
 }

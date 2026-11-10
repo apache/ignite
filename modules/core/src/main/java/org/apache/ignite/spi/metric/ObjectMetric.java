@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.metric;
 
+import java.util.Arrays;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,12 +30,22 @@ public interface ObjectMetric<T> extends Metric {
     /** @return Type of metric value. */
     public Class<T> type();
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Array values are rendered as a comma-separated list of elements in square brackets, for example {@code [1, 2, 3]}.
+     */
     @Override @Nullable default String getAsString() {
         T val = value();
 
         if (val == null)
             return null;
+
+        if (val.getClass().isArray()) {
+            String str = Arrays.deepToString(new Object[] {val});
+
+            return str.substring(1, str.length() - 1);
+        }
 
         return val.toString();
     }

@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Request to fetch next page.
  */
-public class GridQueryNextPageRequest implements Message {
+public class GridQueryNextPageRequest extends AbstractMessage {
     /** */
     @Order(0)
     long qryReqId;

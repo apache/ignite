@@ -24,12 +24,12 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public final class ClusterMetricsUpdateMessage implements Message {
+public final class ClusterMetricsUpdateMessage extends AbstractMessage {
     /** Single node metrics message. */
     @Order(0)
     @Nullable NodeFullMetricsMessage singleNodeMetricsMsg;

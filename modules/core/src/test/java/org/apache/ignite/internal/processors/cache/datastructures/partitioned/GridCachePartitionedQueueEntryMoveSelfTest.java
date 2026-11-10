@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
@@ -27,14 +25,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollectionAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -199,19 +194,5 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
         }
 
         throw new IgniteCheckedException("Unable to move the queue to a new primary node");
-    }
-
-    /**
-     * @param aff Affinity function.
-     * @param part Partition.
-     * @param nodes Topology nodes.
-     * @return Affinity nodes for partition.
-     */
-    private Collection<ClusterNode> nodes(AffinityFunction aff, int part, Collection<ClusterNode> nodes) {
-        List<List<ClusterNode>> assignment = aff.assignPartitions(
-            new GridAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, new AffinityTopologyVersion(1),
-                BACKUP_CNT));
-
-        return assignment.get(part);
     }
 }

@@ -1,0 +1,19 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationRequest",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 1, "type": "java.lang.String", "name": "snpName"},
+    {"order": 2, "type": "java.lang.String", "name": "snpPath"},
+    {"order": 3, "type": "java.util.Collection<java.lang.String>", "name": "grps"},
+    {"order": 4, "type": "long", "name": "startTime"},
+    {"order": 5, "type": "java.util.Set<java.util.UUID>", "name": "nodes"},
+    {"order": 6, "type": "java.util.UUID", "name": "opNodeId"},
+    {"order": 7, "type": "boolean", "name": "incremental"},
+    {"order": 8, "type": "int", "name": "incIdx"},
+    {"order": 9, "type": "boolean", "name": "onlyPrimary"},
+    {"order": 10, "type": "boolean", "name": "dump"},
+    {"order": 11, "type": "boolean", "name": "compress"},
+    {"order": 12, "type": "boolean", "name": "encrypt"},
+    {"order": 13, "type": "boolean", "name": "configOnly"}
+  ]
+}

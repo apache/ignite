@@ -18,9 +18,10 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
 import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -36,10 +37,10 @@ import org.jetbrains.annotations.Nullable;
  * {@link OperationContext} with all the messages. In {@link ZookeeperDiscoverySpi} with from-Ignite
  * {@link DiscoverySpiCustomMessage} only.</p>
  *
- * @see OperationContextDispatcher
+ * @see DistributedOperationContext
  * @see ZookeeperDiscoverySpi#sendCustomEvent(DiscoverySpiCustomMessage)
  */
-public class ZkOperationContextAwareCustomMessage implements DiscoverySpiCustomMessage {
+public class ZkOperationContextAwareCustomMessage extends AbstractMessage implements DiscoverySpiCustomMessage {
     /** */
     @Order(0)
     DiscoverySpiCustomMessage delegate;

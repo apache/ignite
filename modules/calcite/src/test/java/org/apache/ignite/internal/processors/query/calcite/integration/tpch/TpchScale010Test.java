@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 /** */
-@RunWith(Parameterized.class)
 public class TpchScale010Test extends AbstractTpchTest {
     /** */
     @Override protected double scale() {

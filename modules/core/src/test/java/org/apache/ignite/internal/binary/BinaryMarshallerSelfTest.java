@@ -3042,12 +3042,12 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMarshaller marsh = binaryMarshaller();
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh), false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID)) {
+        try (BinaryWriterEx writer = BinaryUtils.binariesFactory.writer(binaryContext(marsh), false)) {
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
             writer.writeString("Thread local test");
 
-            writer.array();
+            writer.out().arrayCopy();
 
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
         }
@@ -3260,13 +3260,13 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryOutputStream os = BinaryStreams.outputStream(1024);
 
-        BinaryWriterEx writer = marsh.binaryMarshaller().writer(os);
+        BinaryWriterEx writer = BinaryUtils.writer(marsh.binaryMarshaller().context(), os);
 
         writer.writeObject(obj);
 
         BinaryInputStream is = BinaryStreams.inputStream(os.array());
 
-        BinaryReaderEx reader = marsh.binaryMarshaller().reader(is);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.binaryMarshaller().context(), is, null, true);
 
         Object bObj = reader.readObjectDetached(deserialize);
 
@@ -3792,11 +3792,11 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         BinaryMarshaller marsh = binaryMarshaller();
         BinaryOutputStream out = BinaryStreams.outputStream(1024);
 
-        meta.writeTo(marsh.binaryMarshaller().writer(out));
+        meta.writeTo(BinaryUtils.writer(marsh.binaryMarshaller().context(), out));
 
         BinaryMetadata restoredMeta = new BinaryMetadata();
 
-        restoredMeta.readFrom(marsh.binaryMarshaller().reader(BinaryStreams.inputStream(out.array())));
+        restoredMeta.readFrom(BinaryUtils.reader(marsh.binaryMarshaller().context(), BinaryStreams.inputStream(out.array()), null, true));
 
         assertArrayEquals(fieldNames, restoredMeta.fields().toArray());
     }
@@ -4079,17 +4079,6 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
             ords[i] = ((BinaryObject)enumArr[i]).enumOrdinal();
 
         return ords;
-    }
-
-    /**
-     * @param po Binary object.
-     * @param off Offset.
-     * @return Value.
-     */
-    private int intFromBinary(BinaryObject po, int off) {
-        byte[] arr = U.field(po, "arr");
-
-        return Integer.reverseBytes(U.bytesToInt(arr, off));
     }
 
     /**

@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  * @see #prepareToSend()
  * @see #afterReceive()
  */
-public class ColocationGroup implements Message {
+public class ColocationGroup extends AbstractMessage {
     /** */
     @Order(0)
     long[] srcIds;

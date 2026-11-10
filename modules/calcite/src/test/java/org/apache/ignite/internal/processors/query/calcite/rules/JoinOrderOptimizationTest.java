@@ -20,16 +20,19 @@ package org.apache.ignite.internal.processors.query.calcite.rules;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.rules.JoinToMultiJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.RuleApplyListener;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.ENFORCE_JOIN_ORDER;
 
 /**
@@ -38,19 +41,22 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  * @see JoinToMultiJoinRule
  * @see IgniteMultiJoinOptimizeRule
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@MethodSource("runConfig")
 public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
     /** Test query. */
-    @Parameterized.Parameter
+    @Parameter
     public String qry;
 
     /** Test queries. */
-    @Parameterized.Parameters
-    public static Collection<String> runConfig() {
-        return testQueries();
+    private static Collection<Arguments> runConfig() {
+        return testQueries().stream()
+            .map(Arguments::of)
+            .collect(Collectors.toList());
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 

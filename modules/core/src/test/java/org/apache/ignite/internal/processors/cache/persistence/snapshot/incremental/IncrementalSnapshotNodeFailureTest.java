@@ -109,7 +109,7 @@ public class IncrementalSnapshotNodeFailureTest extends AbstractIncrementalSnaps
         awaitSnapshotResourcesCleaned();
 
         for (Ignite g: G.allGrids())
-            assertNull(snp((IgniteEx)g).incrementalSnapshotId());
+            assertNull(snp(g).incrementalSnapshotId());
 
         stopAllGrids();
 

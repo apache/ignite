@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Test message. */
-public class TestDelayMessage implements Message {
+public class TestDelayMessage extends AbstractMessage {
     /** */
     final int writeDelay;
 

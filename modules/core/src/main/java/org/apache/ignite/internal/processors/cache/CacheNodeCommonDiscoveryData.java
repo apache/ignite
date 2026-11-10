@@ -22,12 +22,12 @@ import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.jetbrains.annotations.Nullable;
 
 /** Cache information sent in discovery data to joining node. */
-public class CacheNodeCommonDiscoveryData implements Message {
+public class CacheNodeCommonDiscoveryData extends AbstractMessage {
     /** */
     @Order(0)
     @GridToStringInclude

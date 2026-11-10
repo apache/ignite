@@ -22,15 +22,19 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Random;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -122,6 +126,35 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
         assertNull(resMsg.isolationsList);
     }
 
+    /** Raw field larger than the writer's temporary buffer is serialized in several pieces. */
+    @Test
+    public void testLargeRawField() {
+        byte[] val = new byte[40_000];
+
+        new Random(42).nextBytes(val);
+
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+
+        ByteBuffer buf = ByteBuffer.allocate(1 << 16);
+
+        writer.setBuffer(buf);
+
+        writer.addPendingRawField(1, w -> w.writeByteArray(val));
+
+        assertTrue(writer.writeRawFields(null));
+
+        buf.flip();
+
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+
+        reader.setBuffer(buf);
+
+        RawField f = reader.readRawFields().get(0);
+
+        assertEquals(1, f.tag());
+        assertArrayEquals(val, reader.deserializeRawField(f, MessageReader::readByteArray));
+    }
+
     /**
      * @param srcMsg Message to marshal.
      * @param <T> Message type.
@@ -139,7 +172,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
             writer.setBuffer(chunk);
 
-            fullyWritten = writer.writeMessage(srcMsg, false);
+            fullyWritten = writer.writeMessage(srcMsg, false, LATEST_SCHEMA);
 
             chunk.flip();
 
@@ -168,7 +201,7 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
             reader.setBuffer(chunk);
 
-            resMsg = reader.readMessage(false);
+            resMsg = reader.readMessage(false, LATEST_SCHEMA);
 
             pos += chunk.position();
         }

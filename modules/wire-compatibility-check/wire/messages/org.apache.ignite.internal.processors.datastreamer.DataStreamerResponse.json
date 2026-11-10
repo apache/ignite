@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "reqId"},
+    {"order": 1, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}

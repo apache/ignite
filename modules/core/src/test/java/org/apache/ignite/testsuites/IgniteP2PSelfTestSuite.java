@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.deployment.P2PCacheOperationIntoCompu
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssuesTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
+import org.apache.ignite.p2p.GridP2PClientDeploymentSourceTest;
 import org.apache.ignite.p2p.GridP2PComputeExceptionTest;
 import org.apache.ignite.p2p.GridP2PComputeWithNestedEntryProcessorTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentClientDisconnectTest;
@@ -87,6 +88,7 @@ import org.junit.runners.Suite;
     P2PClassLoadingIssuesTest.class,
     GridP2PComputeExceptionTest.class,
     GridDeploymentLocalStoreReuseTest.class,
+    GridP2PClientDeploymentSourceTest.class,
 })
 public class IgniteP2PSelfTestSuite {
 }

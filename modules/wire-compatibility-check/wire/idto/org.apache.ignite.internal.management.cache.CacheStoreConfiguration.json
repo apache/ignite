@@ -1,0 +1,17 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheStoreConfiguration",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "jdbcStore"},
+    {"order": 1, "type": "java.lang.String", "name": "store"},
+    {"order": 2, "type": "java.lang.String", "name": "storeFactory"},
+    {"order": 3, "type": "boolean", "name": "readThrough"},
+    {"order": 4, "type": "boolean", "name": "writeThrough"},
+    {"order": 5, "type": "boolean", "name": "writeBehindEnabled"},
+    {"order": 6, "type": "int", "name": "batchSz"},
+    {"order": 7, "type": "long", "name": "flushFreq"},
+    {"order": 8, "type": "int", "name": "flushSz"},
+    {"order": 9, "type": "int", "name": "flushThreadCnt"},
+    {"order": 10, "type": "boolean", "name": "storeKeepBinary"},
+    {"order": 11, "type": "boolean", "name": "writeBehindCoalescing"}
+  ]
+}

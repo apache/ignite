@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.diagnostic.DiagnosticPagelocksCommandArg",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.diagnostic.Operation", "name": "operation"},
+    {"order": 1, "type": "java.lang.String", "name": "path"},
+    {"order": 2, "type": "boolean", "name": "all"},
+    {"order": 3, "type": "java.lang.String[]", "name": "nodes"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.spi.communication.tcp.internal.TcpConnectionRequestDiscoveryMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "receiverNodeId"},
+    {"order": 2, "type": "int", "name": "connIdx"}
+  ]
+}

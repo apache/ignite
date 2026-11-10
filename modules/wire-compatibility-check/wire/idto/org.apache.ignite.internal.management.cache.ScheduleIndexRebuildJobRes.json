@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ScheduleIndexRebuildJobRes",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,java.util.Set<java.lang.String>>", "name": "cacheToIndexes"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.util.Set<java.lang.String>>", "name": "notFoundIndexes"},
+    {"order": 2, "type": "java.util.Set<java.lang.String>", "name": "notFoundCacheNames"},
+    {"order": 3, "type": "java.util.Set<java.lang.String>", "name": "notFoundGroupNames"}
+  ]
+}

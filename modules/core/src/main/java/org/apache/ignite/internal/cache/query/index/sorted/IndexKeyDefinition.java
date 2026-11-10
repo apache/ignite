@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Defines a signle index key.
  */
-public class IndexKeyDefinition implements Message {
+public class IndexKeyDefinition extends AbstractMessage {
     /** Index key type. */
     @Order(0)
     IndexKeyType idxType;

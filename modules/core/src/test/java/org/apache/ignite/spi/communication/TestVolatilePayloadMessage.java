@@ -18,10 +18,10 @@
 package org.apache.ignite.spi.communication;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class TestVolatilePayloadMessage implements Message {
+public class TestVolatilePayloadMessage extends AbstractMessage {
     /** */
     public static final short DIRECT_TYPE = 210;
 

@@ -153,19 +153,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param proc Continuous processor.
-     * @return Local event routines.
-     */
-    private Collection<ContinousRoutineLocalInfo> localRoutines(GridContinuousProcessor proc) {
-        return F.view(U.<Map<UUID, ContinousRoutineLocalInfo>>field(proc, "locInfos").values(),
-            new IgnitePredicate<>() {
-                @Override public boolean apply(ContinousRoutineLocalInfo info) {
-                    return info.handler().isEvents();
-                }
-            });
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test

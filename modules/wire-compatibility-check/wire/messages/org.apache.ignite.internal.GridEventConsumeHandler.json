@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.GridEventConsumeHandler",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "filterBytes"},
+    {"order": 1, "type": "java.lang.String", "name": "clsName"},
+    {"order": 2, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 3, "type": "int[]", "name": "types"}
+  ]
+}

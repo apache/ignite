@@ -57,10 +57,13 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junit.SystemPropertiesExtension;
+import org.apache.ignite.testframework.junit.WithSystemProperty;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
@@ -69,13 +72,14 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
  */
+@ExtendWith(SystemPropertiesExtension.class)
 @WithSystemProperty(key = "calcite.debug", value = "false")
-public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
+public class CalciteQueryProcessorTest extends GridCommonAbstractWrapperTest {
     /** */
     private static IgniteEx client;
 
@@ -96,6 +100,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(5);
 
@@ -103,6 +108,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @AfterEach
     @Override protected void afterTest() throws InterruptedException {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
@@ -115,11 +121,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
 
         awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
     }
 
     /**

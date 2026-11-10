@@ -1,0 +1,31 @@
+{
+  "class": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "UNKNOWN"},
+    {"order": 1, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "NULL"},
+    {"order": 2, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "BOOLEAN"},
+    {"order": 3, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "BYTE"},
+    {"order": 4, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "SHORT"},
+    {"order": 5, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "INT"},
+    {"order": 6, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "LONG"},
+    {"order": 7, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "DECIMAL"},
+    {"order": 8, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "DOUBLE"},
+    {"order": 9, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "FLOAT"},
+    {"order": 10, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "TIME"},
+    {"order": 11, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "DATE"},
+    {"order": 12, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "TIMESTAMP"},
+    {"order": 13, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "BYTES"},
+    {"order": 14, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "STRING"},
+    {"order": 15, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "STRING_IGNORECASE"},
+    {"order": 16, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "BLOB"},
+    {"order": 17, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "CLOB"},
+    {"order": 18, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "ARRAY"},
+    {"order": 19, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "RESULT_SET"},
+    {"order": 20, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "JAVA_OBJECT"},
+    {"order": 21, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "UUID"},
+    {"order": 22, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "STRING_FIXED"},
+    {"order": 23, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "GEOMETRY"},
+    {"order": 24, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "TIMESTAMP_TZ"},
+    {"order": 25, "type": "org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType", "name": "ENUM"}
+  ]
+}

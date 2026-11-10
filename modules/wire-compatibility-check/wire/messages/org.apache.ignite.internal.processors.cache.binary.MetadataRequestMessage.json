@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage",
+  "fields": [
+    {"order": 0, "type": "int", "name": "typeId"}
+  ]
+}

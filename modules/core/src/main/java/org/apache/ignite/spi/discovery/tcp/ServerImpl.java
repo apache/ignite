@@ -63,7 +63,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,7 +98,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -117,13 +115,14 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
-import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.spi.discovery.tcp.internal.ClientMessageHolder;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.FutureTask;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryMessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState;
@@ -1509,7 +1508,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                spi.validateRemoteFeatures(res.nodeFeatures());
+                ses.applyMessageSerializationContext(res.nodeFeatures());
 
                 if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                     boolean ignore = false;
@@ -2851,15 +2850,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Force pending messages send. */
         private boolean forceSndPending;
 
-        // This serializer is used exclusively for serializing messages sent to clients,
-        // as it represents a special case within the RingMessageWorker workflow.
-        // Generally, both serialization and deserialization of messages should be handled by TcpDiscoveryIoSession.
-        // However, there are scenarios where the session is not available, yet messages still need to be sent to clients.
-        // A typical example is a single server with one or more connected clients.
-        // To address this, we use TcpDiscoveryMessageSerializer, which includes some code copied from TcpDiscoveryIoSession
-        // and can be instantiated independently of any active session.
-        /** */
-        private final TcpDiscoveryMessageSerializer clientMsgSer = new TcpDiscoveryMessageSerializer(ctx);
+        /**
+         * This serializer is used exclusively for pre-serializing messages sent to clients. Pre-serialization is performed
+         * once for each message, after which the serialized message is reused for sending to all connected clients.
+         */
+        private final TcpDiscoveryMessageSerializer cliMsgSer = new TcpDiscoveryMessageSerializer(ctx);
 
         /** IO session. */
         private TcpDiscoveryIoSession ses;
@@ -2960,7 +2955,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (!fromSocket)
-                msg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
+                msg.attachOperationContextSnapshot(distrOpCtx.createSnapshot());
 
             boolean addFirst = msg.highPriority() && !ignoreHighPriority;
 
@@ -3187,7 +3182,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg == WAKEUP)
                 return;
 
-            try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+            try (Scope ignored = distrOpCtx.restoreSnapshot(msg.opCtxSnp)) {
                 processMessage0(msg);
             }
         }
@@ -3229,50 +3224,52 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessageToClients(TcpDiscoveryAbstractMessage msg) {
-            if (redirectToClients(msg)) {
-                if (spi.ensured(msg))
-                    msgHist.add(msg);
+            if (!redirectToClients(msg))
+                return;
 
-                if (clientMsgWorkers.isEmpty())
-                    return;
+            if (spi.ensured(msg))
+                msgHist.add(msg);
 
-                byte[] msgBytes;
+            if (clientMsgWorkers.isEmpty())
+                return;
+
+            ClientMessageHolder sharedMsgHolder = new ClientMessageHolder(msg);
+
+            for (ClientMessageWorker worker : clientMsgWorkers.values()) {
+                TcpDiscoveryAbstractMessage rebuiltMsg = rebuildForClient(msg, worker.clientNodeId);
+
+                ClientMessageHolder msgToSend = rebuiltMsg == msg
+                    ? sharedMsgHolder
+                    : new ClientMessageHolder(rebuiltMsg);
 
                 try {
-                    msgBytes = clientMsgSer.serializeMessage(msg);
+                    msgToSend.serialize(cliMsgSer, worker.session().serializationContext());
                 }
-                catch (IgniteCheckedException | IOException e) {
-                    U.error(log, "Failed to serialize message: " + msg, e);
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to serialize message: " + msgToSend, e);
 
                     return;
                 }
 
-                for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
-                    TcpDiscoveryAbstractMessage msg0 = msg;
-                    byte[] msgBytes0 = msgBytes;
-
-                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                        TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
-
-                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
-                            msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
-
-                            prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
-
-                            try {
-                                msgBytes0 = clientMsgSer.serializeMessage(msg0);
-                            }
-                            catch (IgniteCheckedException | IOException e) {
-                                U.error(log, "Failed to serialize message: " + msg0, e);
-
-                                return;
-                            }
-                        }
-                    }
-
-                    clientMsgWorker.addMessage(msg0, msgBytes0);
-                }
+                worker.addMessage(msgToSend);
             }
+        }
+
+        /** */
+        private TcpDiscoveryAbstractMessage rebuildForClient(TcpDiscoveryAbstractMessage msg, UUID clientNodeId) {
+            if (!(msg instanceof TcpDiscoveryNodeAddedMessage))
+                return msg;
+
+            TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
+
+            if (!clientNodeId.equals(nodeAddedMsg.node().id()))
+                return msg;
+
+            TcpDiscoveryNodeAddedMessage res = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
+
+            prepareNodeAddedMessage(res, clientNodeId, null);
+
+            return res;
         }
 
         /**
@@ -3428,7 +3425,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                spi.validateRemoteFeatures(res.nodeFeatures());
+                                ses.applyMessageSerializationContext(res.nodeFeatures());
 
                                 // We should take previousNodeAlive flag into account
                                 // only if we received the response from the correct node.
@@ -4579,16 +4576,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private IgniteNodeValidationResult validateByIgniteComponentsWithJoiningNodeData(TcpDiscoveryJoinRequestMessage req) {
-            DiscoveryDataPacket packet = req.gridDiscoveryData();
-
-            try {
-                DiscoveryDataBag dataBag = packet.bagWithJoiningNodeData(log, ctx.config().isClientMode());
-
-                return spi.getSpiContext().validateNode(req.node(), dataBag);
-            }
-            catch (IgniteCheckedException e) {
-                return new IgniteNodeValidationResult(req.node().id(), e.getMessage());
-            }
+            return spi.getSpiContext().validateNode(req.node(), req.gridDiscoveryData().bagWithJoiningNodeData());
         }
 
         /** */
@@ -5085,6 +5073,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (msg.verified() && !locNodeId.equals(nodeId) && state != CONNECTING && fireEvt) {
                 spi.stats.onNodeJoined();
+
+                if (node.isClient())
+                    spi.stats.onClientNodeJoined();
 
                 // Make sure that node with greater order will never get EVT_NODE_JOINED
                 // on node with less order.
@@ -6081,7 +6072,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryCustomEventMessage msg;
 
                 while ((msg = pollPendingCustomMessage()) != null) {
-                    try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+                    try (Scope ignored = distrOpCtx.restoreSnapshot(msg.opCtxSnp)) {
                         processCustomMessage(msg, true);
                     }
                 }
@@ -6306,16 +6297,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled()) {
-                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
-                            .createServerSocket(port, 0, spi.locHost);
-
-                        sslSock.setNeedClientAuth(true);
-
-                        srvrSock = sslSock;
-                    }
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -6359,6 +6341,28 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         blockingSectionEnd();
+                    }
+
+                    if (spi.isSslEnabled()) {
+                        try {
+                            SSLSocket sslSock = (SSLSocket)spi.sslSocketFactory()
+                                .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
+
+                            sock = sslSock;
+
+                            sslSock.setUseClientMode(false);
+                            sslSock.setNeedClientAuth(true);
+                        }
+                        catch (IOException | RuntimeException e) {
+                            LT.warn(log, "Failed to set up TLS on an accepted discovery socket [rmtAddr=" +
+                                sock.getRemoteSocketAddress() + ']', e);
+
+                            U.closeQuiet(sock);
+
+                            onIdle();
+
+                            continue;
+                        }
                     }
 
                     if (log.isInfoEnabled()) {
@@ -6652,7 +6656,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
 
-                    spi.validateRemoteFeatures(req.nodeFeatures());
+                    ses.applyMessageSerializationContext(req.nodeFeatures());
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.
@@ -7469,20 +7473,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class ClientMessageWorker extends MessageWorker<T2<TcpDiscoveryAbstractMessage, byte[]>> {
+    private class ClientMessageWorker extends MessageWorker<ClientMessageHolder> {
         /** Node ID. */
         private final UUID clientNodeId;
-
-        // The code responsible for sending and receiving messages to and from client nodes represents a special case in ServerImpl,
-        // as it is split into two separate components.
-        // One part, ClientMessageWorker, handles only message sending to clients and does not process responses.
-        // The other part, which reads messages from clients, is implemented in SocketReader.
-        // Due to this separation, we don't require a full TcpDiscoveryIoSession here
-        // and can instead extract just the message-writing functionality.
-        // At the same time, we aim to keep both reading and writing logic encapsulated within TcpDiscoveryIoSession.
-        // As a result, we need to copy some code from TcpDiscoveryIoSession into the new class, TcpDiscoveryMessageSerializer.
-        /** */
-        private final TcpDiscoveryMessageSerializer clientMsgSer;
 
         /** Session shared with the socket reader serving the same client connection. */
         private final TcpDiscoveryIoSession ses;
@@ -7518,9 +7511,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.ses = ses;
             this.clientNodeId = clientNodeId;
 
-            clientMsgSer = new TcpDiscoveryMessageSerializer(ctx);
-
             lastMetricsUpdateMsgTimeNanos = System.nanoTime();
+        }
+
+        /** */
+        TcpDiscoveryIoSession session() {
+            return ses;
         }
 
         /**
@@ -7546,24 +7542,19 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.metrics = metrics;
         }
 
-        /**
-         * @param msg Message.
-         */
+        /** @param msg Discovery Message. */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
-            addMessage(msg, null);
+            addMessage(new ClientMessageHolder(msg));
         }
 
-        /**
-         * @param msg Message.
-         * @param msgBytes Optional message bytes.
-         */
-        void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
-            T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
+        /** @param msgHolder Holder of a Discovery Message to send to the client. */
+        void addMessage(ClientMessageHolder msgHolder) {
+            TcpDiscoveryAbstractMessage msg = msgHolder.message();
 
             if (msg.highPriority())
-                queue.addFirst(t);
+                queue.addFirst(msgHolder);
             else
-                queue.add(t);
+                queue.add(msgHolder);
 
             DebugLogger log = messageLogger(msg);
 
@@ -7572,10 +7563,10 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void processMessage(T2<TcpDiscoveryAbstractMessage, byte[]> msgT) {
+        @Override protected void processMessage(ClientMessageHolder msgHolder) {
             boolean success = false;
 
-            TcpDiscoveryAbstractMessage msg = msgT.get1();
+            TcpDiscoveryAbstractMessage msg = msgHolder.message();
 
             try {
                 assert msg.verified() : msg;
@@ -7601,8 +7592,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                         }
 
-                        writeToSocket(msgT, spi.failureDetectionTimeoutEnabled() ? spi.clientFailureDetectionTimeout() :
-                            spi.getSocketTimeout());
+                        long timeout = spi.failureDetectionTimeoutEnabled() ? spi.clientFailureDetectionTimeout() : spi.getSocketTimeout();
+
+                        writeMessage(msgHolder, timeout);
                     }
                 }
                 else {
@@ -7613,7 +7605,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    writeToSocket(msgT, spi.getEffectiveSocketTimeout(false));
+                    writeMessage(msgHolder, spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
@@ -7643,14 +7635,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @param msgT Message tuple.
+         * @param msgHolder Message holder.
          * @param timeout Timeout.
          */
-        private void writeToSocket(T2<TcpDiscoveryAbstractMessage, byte[]> msgT, long timeout)
-            throws IgniteCheckedException, IOException {
-            byte[] msgBytes = msgT.get2() == null ? clientMsgSer.serializeMessage(msgT.get1()) : msgT.get2();
+        private void writeMessage(ClientMessageHolder msgHolder, long timeout) throws IgniteCheckedException, IOException {
+            byte[] msgBytes = msgHolder.messageBytes(ses.serializationContext());
 
-            spi.write(ses, msgBytes, timeout);
+            if (msgBytes != null)
+                spi.write(ses, msgBytes, timeout);
+            else
+                spi.writeMessage(ses, msgHolder.message(), timeout);
         }
 
         /**

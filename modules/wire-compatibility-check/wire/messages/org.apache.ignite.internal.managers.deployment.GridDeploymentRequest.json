@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.managers.deployment.GridDeploymentRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "resTopicId"},
+    {"order": 1, "type": "java.lang.String", "name": "rsrcName"},
+    {"order": 2, "type": "org.apache.ignite.lang.IgniteUuid", "name": "ldrId"},
+    {"order": 3, "type": "java.util.Collection<java.util.UUID>", "name": "nodeIds"}
+  ]
+}

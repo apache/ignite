@@ -21,12 +21,12 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * This class defines checkpoint request.
  */
-public class GridCheckpointRequest implements Message {
+public class GridCheckpointRequest extends AbstractMessage {
     /** */
     @Order(0)
     IgniteUuid sesId;

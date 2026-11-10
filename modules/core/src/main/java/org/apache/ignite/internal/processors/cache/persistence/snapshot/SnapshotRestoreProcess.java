@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,6 +75,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheStripedExecutor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
@@ -99,6 +102,9 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partId;
@@ -659,6 +665,11 @@ public class SnapshotRestoreProcess {
             if (snpMgr.isSnapshotCreating())
                 throw new IgniteCheckedException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
+            if (snpMgr.isSnapshotDeleting(req.snapshotName(), req.snapshotPath())) {
+                throw new IgniteCheckedException(OP_REJECT_MSG + "Delete operation of '" + req.snapshotName() +
+                    "' is in progress.");
+            }
+
             if (ctx.encryption().isMasterKeyChangeInProgress()) {
                 return new GridFinishedFuture<>(new IgniteCheckedException(OP_REJECT_MSG + "Master key changing " +
                     "process is not finished yet."));
@@ -860,8 +871,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.cfgs = globalCfgs;
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            preloadProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        preloadProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1249,14 +1259,12 @@ public class SnapshotRestoreProcess {
         opCtx0.errHnd.accept(failure);
 
         if (failure != null) {
-            if (U.isLocalNodeCoordinator(ctx.discovery()))
-                rollbackRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+            rollbackRestoreProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
 
             return;
         }
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStartProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        cacheStartProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1312,8 +1320,7 @@ public class SnapshotRestoreProcess {
 
         if (failure == null) {
             if (opCtx0.incIdx > 0) {
-                if (U.isLocalNodeCoordinator(ctx.discovery()))
-                    incSnpRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+                incSnpRestoreProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
 
                 return;
             }
@@ -1325,8 +1332,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, failure);
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStopProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        cacheStopProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1337,7 +1343,7 @@ public class SnapshotRestoreProcess {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             return new GridFinishedFuture<>();
 
-        assert opCtx.reqId == req.requestId();
+        assert opCtx.reqId.equals(req.requestId());
 
         SnapshotRestoreContext opCtx0 = opCtx;
 
@@ -1374,8 +1380,7 @@ public class SnapshotRestoreProcess {
             log.error("Failed to stop caches during a snapshot rollback routine [reqId=" + opCtx0.reqId + ", err=" + errs + ']');
         }
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            rollbackRestoreProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        rollbackRestoreProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1576,8 +1581,7 @@ public class SnapshotRestoreProcess {
 
         opCtx0.err.compareAndSet(null, failure);
 
-        if (U.isLocalNodeCoordinator(ctx.discovery()))
-            cacheStopProc.start(reqId, new SnapshotRestoreStartRequest(reqId));
+        cacheStopProc.startByCoordinator(reqId, new SnapshotRestoreStartRequest(reqId));
     }
 
     /**
@@ -1766,29 +1770,13 @@ public class SnapshotRestoreProcess {
                     ", snpDir=" + snpFile.getAbsolutePath() + ", name=" + snpFile.getName() + ']');
             }
 
-            IgniteSnapshotManager.copy(snapMgr.ioFactory(), snpFile, tmpPartFile, snpFile.length());
+            if (opCtx.isGroupCompressed(grpId))
+                copyCompressed(opCtx, grpId, snpFile, tmpPartFile);
+            else
+                IgniteSnapshotManager.copy(snapMgr.ioFactory(), snpFile, tmpPartFile, snpFile.length());
 
             return tmpPartFile.toPath();
         }, snapMgr.snapshotExecutorService());
-
-        if (opCtx.isGroupCompressed(grpId)) {
-            copyPartFut = copyPartFut.thenComposeAsync(
-                p -> {
-                    IgniteCompletableFuture<Path> result = new IgniteCompletableFuture<>();
-
-                    try {
-                        punchHole(grpId, partFut.partId, tmpPartFile);
-
-                        result.complete(tmpPartFile.toPath());
-                    }
-                    catch (Throwable t) {
-                        result.completeExceptionally(t);
-                    }
-                    return result;
-                },
-                snapMgr.snapshotExecutorService()
-            );
-        }
 
         copyPartFut.whenComplete((r, t) -> opCtx.errHnd.accept(t))
             .whenComplete((r, t) -> {
@@ -1797,6 +1785,60 @@ public class SnapshotRestoreProcess {
                 else
                     partFut.completeExceptionally(t);
             });
+    }
+
+    /**
+     * Copies a partition of a compressed cache group page by page writing only the compressed bytes of each page, so the
+     * rest of the page is left unallocated by the file system and the copy is sparse without punching holes in it.
+     */
+    private void copyCompressed(SnapshotRestoreContext opCtx, int grpId, File from, File to) {
+        FileIOFactory ioFactory = ctx.cache().context().snapshotMgr().ioFactory();
+        FilePageStoreManager storeMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
+        int pageSize = ctx.cache().context().database().pageSize();
+
+        try (FileIO src = ioFactory.create(from, READ); FileIO dest = ioFactory.create(to, CREATE, WRITE)) {
+            long len = src.size();
+
+            // The file gets its final size first: XFS preallocates blocks on extending writes, and those between the pages
+            // would stay allocated, see "speculative preallocation" in https://xfs.org/index.php/XFS_FAQ.
+            try (RandomAccessFile file = new RandomAccessFile(to, "rw")) {
+                file.setLength(len);
+            }
+
+            ByteBuffer buf = locBuff.get();
+
+            buf.clear();
+            src.readFully(buf, 0);
+            buf.flip();
+
+            buf.getLong(); // Signature.
+
+            int hdrSize = storeMgr.getPageStoreFactory(grpId, null).headerSize(buf.getInt());
+
+            buf.rewind();
+            buf.limit(hdrSize);
+            dest.writeFully(buf, 0);
+
+            for (long off = hdrSize; off < len; off += pageSize) {
+                if (opCtx.stopChecker.getAsBoolean())
+                    throw new IgniteInterruptedException("The operation has been stopped on copy file: " + from.getAbsolutePath());
+
+                if (Thread.interrupted())
+                    throw new IgniteInterruptedException("Thread has been interrupted: " + Thread.currentThread().getName());
+
+                buf.clear();
+                src.readFully(buf, off);
+                buf.flip();
+
+                if (PageIO.getCompressionType(buf) != CompressionProcessor.UNCOMPRESSED_PAGE)
+                    buf.limit(PageIO.getCompressedSize(buf));
+
+                dest.writeFully(buf, off);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */

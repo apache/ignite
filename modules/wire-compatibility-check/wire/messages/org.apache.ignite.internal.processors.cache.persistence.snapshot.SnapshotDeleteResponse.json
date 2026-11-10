@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteResponse$DeleteStatus", "name": "status"},
+    {"order": 1, "type": "java.util.Collection<java.lang.String>", "name": "nodeIds"}
+  ]
+}

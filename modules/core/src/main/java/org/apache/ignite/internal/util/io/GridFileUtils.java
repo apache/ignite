@@ -20,9 +20,13 @@ package org.apache.ignite.internal.util.io;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileStore;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -111,5 +115,36 @@ public class GridFileUtils {
         catch (IOException e) {
             throw new IgniteCheckedException("Unable to check file stores.", e);
         }
+    }
+
+    /**
+     * Calculates the total size of all regular files in the given directory (recursively).
+     * Tolerates and skips concurrent modification errors (e.g. file deleted during walk).
+     *
+     * @param path Root directory.
+     * @return Total size in bytes.
+     * @throws IOException If the root directory cannot be entered.
+     */
+    public static long sizeOfDirectory(File path) throws IOException {
+        AtomicLong size = new AtomicLong(0);
+
+        Files.walkFileTree(path.toPath(), new SimpleFileVisitor<>() {
+            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                if (attrs.isRegularFile())
+                    size.addAndGet(attrs.size());
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override public FileVisitResult visitFileFailed(Path file, IOException err) throws IOException {
+                // Cannot enter directory at all.
+                if (file.toFile().equals(path))
+                    throw err;
+
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        return size.get();
     }
 }

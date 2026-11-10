@@ -73,7 +73,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
@@ -175,7 +174,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.systemview.ConfigurationViewWalker;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -444,8 +443,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Core message factory. */
     private MessageFactory msgFactory;
 
-    /** Distributed operation context dispatcher. */
-    private OperationContextDispatcher operationCtxDispatcher;
+    /** Distributed operation context. */
+    private DistributedOperationContext distrOpCtx;
 
     /**
      * No-arg constructor is required by externalization.
@@ -928,7 +927,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 longJVMPauseDetector
             );
 
-            operationCtxDispatcher = new OperationContextDispatcher();
+            distrOpCtx = new DistributedOperationContext();
 
             startProcessor(new DiagnosticProcessor(ctx));
 
@@ -1147,7 +1146,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // All components exept Discovery are started, time to check if maintenance is still needed.
             mntcProc.prepareAndExecuteMaintenance();
 
-            operationCtxDispatcher.finishRegistration();
+            distrOpCtx.finishRegistration();
 
             gw.writeLock();
 
@@ -1842,7 +1841,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             ClassLoaderUtils.clearClassCache();
             MarshallerExclusions.clearCache();
-            BinaryUtils.clearCache();
+            BinaryUtils.binariesFactory.clearCache();
 
             gw.writeLock();
 
@@ -2689,18 +2688,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
-    /** */
-    private Collection<BaselineNode> baselineNodes() {
-        Collection<ClusterNode> srvNodes = cluster().forServers().nodes();
-
-        ArrayList baselineNodes = new ArrayList(srvNodes.size());
-
-        for (ClusterNode clN : srvNodes)
-            baselineNodes.add(clN);
-
-        return baselineNodes;
-    }
-
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
         CU.validateCacheNames(cacheNames);
@@ -3031,9 +3018,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         return msgFactory;
     }
 
-    /** @return Distributed operation context dispatcher. */
-    OperationContextDispatcher operationContextDispatcher() {
-        return operationCtxDispatcher;
+    /** @return Distributed operation context. */
+    DistributedOperationContext distributedOperationContext() {
+        return distrOpCtx;
     }
 
     /**

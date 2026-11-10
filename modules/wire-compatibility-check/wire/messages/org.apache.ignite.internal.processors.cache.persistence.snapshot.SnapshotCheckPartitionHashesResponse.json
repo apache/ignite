@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCheckPartitionHashesResponse",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,java.util.Map<org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord>>", "name": "perMetaResults"}
+  ]
+}

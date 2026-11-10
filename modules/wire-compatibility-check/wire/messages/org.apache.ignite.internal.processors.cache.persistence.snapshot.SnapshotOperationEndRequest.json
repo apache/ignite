@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationEndRequest",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 1, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "err"},
+    {"order": 2, "type": "java.util.List<java.lang.String>", "name": "warnings"}
+  ]
+}

@@ -175,6 +175,11 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
     }
 
+    /** */
+    @Override protected boolean cleanWorkDirectoryFully() {
+        return false;
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testRestoreWithPairedConnections() throws Exception {

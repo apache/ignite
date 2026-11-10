@@ -683,9 +683,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys) {
+    @Override public boolean unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
-            return;
+            return true;
+
+        boolean locked = true;
 
         try {
             GridCacheVersion ver = null;
@@ -759,10 +761,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         log.debug("Current thread still owns lock (or there are no other nodes)" +
                             " [lock=" + lock + ", curThreadId=" + Thread.currentThread().getId() + ']');
                 }
+                else
+                    locked = false;
             }
 
             if (ver == null)
-                return;
+                return locked;
 
             if (!locKeys.isEmpty())
                 removeLocks(ctx.localNodeId(), ver, locKeys, true);
@@ -793,6 +797,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to unlock the lock for keys: " + keys, ex);
         }
+
+        return locked;
     }
 
     /**

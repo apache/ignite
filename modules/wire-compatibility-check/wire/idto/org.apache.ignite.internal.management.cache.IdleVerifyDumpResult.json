@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.IdleVerifyDumpResult",
+  "fields": [
+    {"order": 0, "type": "java.util.LinkedHashMap<org.apache.ignite.internal.management.cache.PartitionKey,java.util.List<org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord>>", "name": "clusterHashes"}
+  ]
+}

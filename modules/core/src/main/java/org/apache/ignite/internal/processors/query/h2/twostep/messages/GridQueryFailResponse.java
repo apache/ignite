@@ -21,12 +21,12 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Error message.
  */
-public class GridQueryFailResponse implements Message {
+public class GridQueryFailResponse extends AbstractMessage {
     /** General error failure type. */
     public static final byte GENERAL_ERROR = 0;
 

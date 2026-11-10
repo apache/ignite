@@ -28,7 +28,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
@@ -36,6 +37,7 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     private static final String CACHE_NAME = "my_cache";
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         sql("create table my_table(id int, val_int int, val_str varchar) with cache_name=\"" + CACHE_NAME + "\"");
     }

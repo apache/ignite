@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /**
@@ -47,7 +47,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
  * Travels both transports: Discovery when a cache starts, Communication when a snapshot is restored.
  */
 @JdkMarshalled
-public class StoredCacheData implements Serializable, CdcCacheEvent, Message {
+public class StoredCacheData extends AbstractMessage implements Serializable, CdcCacheEvent {
     /** */
     private static final long serialVersionUID = 0L;
 

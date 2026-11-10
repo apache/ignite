@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cluster.ClusterState", "name": "state"},
+    {"order": 1, "type": "long", "name": "lastStateChangeTime"},
+    {"order": 2, "type": "byte[]", "name": "baselineTopBytes"},
+    {"order": 3, "type": "java.util.UUID", "name": "transitionReqId"},
+    {"order": 4, "type": "org.apache.ignite.cluster.ClusterState", "name": "prevClusterState"},
+    {"order": 5, "type": "java.util.Set<java.util.UUID>", "name": "transitionNodes"},
+    {"type": "org.apache.ignite.internal.processors.cluster.BaselineTopology", "name": "baselineTop", "annotations": ["@org.apache.ignite.internal.Marshalled(\"baselineTopBytes\")"]}
+  ]
+}

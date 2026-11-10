@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class NioFieldOnNonMessageMessage implements Message {
+public class NioFieldOnNonMessageMessage extends AbstractMessage {
     @NioField
     @Order(0)
     int id;

@@ -23,12 +23,12 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
-public class CachePartitionPartialCountersMap implements Serializable, Message {
+public class CachePartitionPartialCountersMap extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

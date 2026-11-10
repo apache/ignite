@@ -36,24 +36,25 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceH
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Algorithm = {0}")
+@MethodSource("parameters")
 public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
     /** Algorithm. */
-    @Parameterized.Parameter
+    @Parameter
     public AggregateAlgorithm algo;
 
     /** */
-    @Parameterized.Parameters(name = "Algorithm = {0}")
-    public static List<Object[]> parameters() {
-        return Stream.of(AggregateAlgorithm.values()).map(a -> new Object[]{a}).collect(Collectors.toList());
+    private static List<Arguments> parameters() {
+        return Stream.of(AggregateAlgorithm.values()).map(Arguments::of).collect(Collectors.toList());
     }
 
     /**
@@ -84,11 +85,11 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
-        Assert.assertTrue(
+        assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.isEmpty(rdcAgg.getAggregateCalls()));
 
-        Assert.assertTrue(
+        assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.isEmpty(mapAgg.getAggCallList()));
 

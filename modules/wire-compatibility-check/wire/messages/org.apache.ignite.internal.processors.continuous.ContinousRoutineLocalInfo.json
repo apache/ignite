@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.ContinousRoutineLocalInfo",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 1, "type": "byte[]", "name": "prjPredBytes"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.continuous.GridContinuousHandler", "name": "hnd"},
+    {"order": 3, "type": "int", "name": "bufSize"},
+    {"order": 4, "type": "long", "name": "interval"},
+    {"order": 5, "type": "boolean", "name": "autoUnsubscribe"},
+    {"type": "org.apache.ignite.lang.IgnitePredicate<org.apache.ignite.cluster.ClusterNode>", "name": "prjPred", "annotations": ["@org.apache.ignite.internal.Marshalled(\"prjPredBytes\")"]}
+  ]
+}

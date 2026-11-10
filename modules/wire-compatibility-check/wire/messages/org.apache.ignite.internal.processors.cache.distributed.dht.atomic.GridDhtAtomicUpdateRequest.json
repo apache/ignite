@@ -1,0 +1,28 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "long", "name": "futId"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "writeVer"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 7, "type": "int", "name": "taskNameHash"},
+    {"order": 8, "type": "java.util.UUID", "name": "nearNodeId"},
+    {"order": 9, "type": "long", "name": "nearFutId"},
+    {"order": 10, "type": "byte", "name": "flags"},
+    {"order": 11, "type": "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "keys"},
+    {"order": 12, "type": "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject>", "name": "vals"},
+    {"order": 13, "type": "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject>", "name": "prevVals"},
+    {"order": 14, "type": "java.util.List<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "conflictVers"},
+    {"order": 15, "type": "org.apache.ignite.internal.util.GridLongList", "name": "ttls"},
+    {"order": 16, "type": "org.apache.ignite.internal.util.GridLongList", "name": "conflictExpireTimes"},
+    {"order": 17, "type": "org.apache.ignite.internal.util.GridLongList", "name": "nearTtls"},
+    {"order": 18, "type": "org.apache.ignite.internal.util.GridLongList", "name": "nearExpireTimes"},
+    {"order": 19, "type": "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "nearKeys"},
+    {"order": 20, "type": "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject>", "name": "nearVals"},
+    {"order": 21, "type": "java.util.List<java.lang.Integer>", "name": "obsoleteIndexes"},
+    {"order": 22, "type": "org.apache.ignite.internal.util.GridLongList", "name": "updateCntrs"}
+  ]
+}

@@ -46,6 +46,9 @@ public class TcpDiscoveryStatistics {
     /** Failed nodes count. */
     private final IntMetricImpl failedNodesCnt;
 
+    /** Joined client nodes count. */
+    private final IntMetricImpl joinedClientNodesCnt;
+
     /** Left nodes count. */
     private final IntMetricImpl leftNodesCnt;
 
@@ -76,11 +79,19 @@ public class TcpDiscoveryStatistics {
     /** Metric that indicates connections count that were rejected due to SSL errors. */
     private final IntMetricImpl rejectedSslConnectionsCnt;
 
+    /** Metric that indicates socket read timeouts count. */
+    private final IntMetricImpl sockReadTimeoutsCnt;
+
+    /** Metric that indicates socket write timeouts count. */
+    private final IntMetricImpl sockWriteTimeoutsCnt;
+
     /** */
     public TcpDiscoveryStatistics() {
         joinedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedNodes"), "Joined nodes count");
 
         failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
+
+        joinedClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedClientNodes"), "Joined client nodes count.");
 
         leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
 
@@ -90,6 +101,16 @@ public class TcpDiscoveryStatistics {
         rejectedSslConnectionsCnt = new IntMetricImpl(
             metricName(DISCO_METRICS, "RejectedSslConnectionsCount"),
             "TCP discovery connections count that were rejected due to SSL errors."
+        );
+
+        sockReadTimeoutsCnt = new IntMetricImpl(
+            metricName(DISCO_METRICS, "SocketReadTimeoutsCount"),
+            "TCP discovery socket read operations count that timed out."
+        );
+
+        sockWriteTimeoutsCnt = new IntMetricImpl(
+            metricName(DISCO_METRICS, "SocketWriteTimeoutsCount"),
+            "TCP discovery socket write operations count that timed out."
         );
     }
 
@@ -103,9 +124,12 @@ public class TcpDiscoveryStatistics {
 
         discoReg.register(joinedNodesCnt);
         discoReg.register(failedNodesCnt);
+        discoReg.register(joinedClientNodesCnt);
         discoReg.register(leftNodesCnt);
         discoReg.register(pendingMsgsRegistered);
         discoReg.register(rejectedSslConnectionsCnt);
+        discoReg.register(sockReadTimeoutsCnt);
+        discoReg.register(sockWriteTimeoutsCnt);
     }
 
     /**
@@ -113,6 +137,11 @@ public class TcpDiscoveryStatistics {
      */
     public void onNodeJoined() {
         joinedNodesCnt.increment();
+    }
+
+    /** Increments joined client nodes count. */
+    public void onClientNodeJoined() {
+        joinedClientNodesCnt.increment();
     }
 
     /**
@@ -139,6 +168,16 @@ public class TcpDiscoveryStatistics {
     /** Increments connections count that were rejected due to SSL errors. */
     public void onSslConnectionRejected() {
         rejectedSslConnectionsCnt.increment();
+    }
+
+    /** Increments socket read timeouts count. */
+    public void onSocketReadTimeout() {
+        sockReadTimeoutsCnt.increment();
+    }
+
+    /** Increments socket write timeouts count. */
+    public void onSocketWriteTimeout() {
+        sockWriteTimeoutsCnt.increment();
     }
 
     /**
@@ -327,6 +366,7 @@ public class TcpDiscoveryStatistics {
         crdSinceTs.set(0);
         failedNodesCnt.reset();
         joinedNodesCnt.reset();
+        joinedClientNodesCnt.reset();
         leftNodesCnt.reset();
         maxMsgProcTime = 0;
         pendingMsgsRegistered.reset();
@@ -334,6 +374,8 @@ public class TcpDiscoveryStatistics {
         rcvdMsgs.clear();
         sentMsgs.clear();
         rejectedSslConnectionsCnt.reset();
+        sockReadTimeoutsCnt.reset();
+        sockWriteTimeoutsCnt.reset();
     }
 
     /** {@inheritDoc} */

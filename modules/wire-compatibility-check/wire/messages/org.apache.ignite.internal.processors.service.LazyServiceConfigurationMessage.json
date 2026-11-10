@@ -1,0 +1,18 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.LazyServiceConfigurationMessage",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "name"},
+    {"order": 1, "type": "int", "name": "totalCnt"},
+    {"order": 2, "type": "int", "name": "maxPerNodeCnt"},
+    {"order": 3, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 4, "type": "byte[]", "name": "affKeyBytes"},
+    {"order": 5, "type": "boolean", "name": "isStatisticsEnabled"},
+    {"order": 6, "type": "int", "name": "locStartOrder"},
+    {"order": 7, "type": "java.lang.String", "name": "srvcClsName"},
+    {"order": 8, "type": "byte[]", "name": "srvcBytes"},
+    {"order": 9, "type": "byte[]", "name": "nodeFilterBytes"},
+    {"order": 10, "type": "byte[]", "name": "interceptorsBytes"},
+    {"order": 11, "type": "java.lang.String[]", "name": "platformMtdNames"},
+    {"type": "java.lang.Object", "name": "affKey", "annotations": ["@org.apache.ignite.internal.Marshalled(\"affKeyBytes\")"]}
+  ]
+}

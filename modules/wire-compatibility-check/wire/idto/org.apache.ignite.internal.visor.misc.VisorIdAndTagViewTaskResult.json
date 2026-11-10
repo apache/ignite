@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "id"},
+    {"order": 1, "type": "java.lang.String", "name": "tag"},
+    {"order": 2, "type": "java.lang.String", "name": "clusterName"}
+  ]
+}

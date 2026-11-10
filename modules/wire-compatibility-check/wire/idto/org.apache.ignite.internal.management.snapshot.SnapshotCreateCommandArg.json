@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.snapshot.SnapshotCreateCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "snapshotName"},
+    {"order": 1, "type": "java.lang.String", "name": "dest"},
+    {"order": 2, "type": "boolean", "name": "sync"},
+    {"order": 3, "type": "boolean", "name": "incremental"}
+  ]
+}

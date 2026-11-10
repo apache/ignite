@@ -2,7 +2,6 @@
 
 <a href="https://ignite.apache.org/"><img src="https://github.com/apache/ignite-website/blob/master/assets/images/apache_ignite_logo.svg" hspace="20"/></a>
 
-[![Build Status](https://travis-ci.org/apache/ignite.svg?branch=master)](https://travis-ci.org/apache/ignite)
 [![GitHub](https://img.shields.io/github/license/apache/ignite?color=blue)](https://www.apache.org/licenses/LICENSE-2.0.html)
 [![Maven Central](https://img.shields.io/maven-central/v/org.apache.ignite/ignite-core?label=Maven%20Central&versionPrefix=2)](https://search.maven.org/search?q=org.apache.ignite)
 [![GitHub release](https://img.shields.io/badge/release-download-brightgreen.svg)](https://ignite.apache.org/download.cgi)
@@ -13,7 +12,6 @@
 
 * This repository is Ignite 2
 * See [apache/ignite-3](https://github.com/apache/ignite-3) for Ignite 3
-* Both versions are actively developed
 
 ## What is Apache Ignite?
 

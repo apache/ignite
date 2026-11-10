@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
     using System;
     using System.Collections;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
@@ -131,7 +132,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 {
                     NameMapper = GetNameMapper()
                 },
-                IgniteInstanceName = gridName
+                IgniteInstanceName = gridName,
+                SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
             };
         }
 

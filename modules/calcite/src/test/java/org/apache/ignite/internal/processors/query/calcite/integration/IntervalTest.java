@@ -23,7 +23,7 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Period;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test SQL INTERVAL data types.

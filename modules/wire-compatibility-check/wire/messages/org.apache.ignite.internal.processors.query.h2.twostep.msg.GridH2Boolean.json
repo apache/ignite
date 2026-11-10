@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Boolean",
+  "fields": [
+    {"order": 0, "type": "boolean", "name": "x"}
+  ]
+}

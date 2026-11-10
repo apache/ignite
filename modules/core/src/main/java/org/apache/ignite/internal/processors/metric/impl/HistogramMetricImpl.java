@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.processors.metric.ConfigurableHistogramMetric;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -83,7 +84,15 @@ public class HistogramMetricImpl extends AbstractMetric implements ConfigurableH
 
     /** {@inheritDoc} */
     @Override public void bounds(long[] bounds) {
+        checkBounds(bounds);
+
         reset(bounds);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void checkBounds(long[] bounds) {
+        A.notEmpty(bounds, "bounds");
+        A.ensure(F.isSorted(bounds), "bounds should be sorted");
     }
 
     /** {@inheritDoc} */

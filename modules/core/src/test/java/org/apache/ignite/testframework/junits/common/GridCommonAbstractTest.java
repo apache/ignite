@@ -403,14 +403,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    private static <K, V> boolean nearEnabled(GridCacheAdapter<K, V> cache) {
-        return isNearEnabled(cache.configuration());
-    }
-
-    /**
-     * @param cache Cache.
-     * @return {@code True} if near cache is enabled.
-     */
     protected static <K, V> boolean nearEnabled(final IgniteCache<K, V> cache) {
         CacheConfiguration cfg = GridAbstractTest.executeOnLocalOrRemoteJvm(cache,
             new TestCacheCallable<K, V, CacheConfiguration>() {
@@ -422,14 +414,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             });
 
         return isNearEnabled(cfg);
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Near cache.
-     */
-    private static <K, V> GridNearCacheAdapter<K, V> near(GridCacheAdapter<K, V> cache) {
-        return cache.context().near();
     }
 
     /**
@@ -684,17 +668,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             else
                 startTime = g0.context().discovery().gridStartTime();
 
-            IgniteInternalFuture<?> exchFut =
-                g0.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
+            GridCachePartitionExchangeManager<?, ?> nodeExchMgr = g0.context().cache().context().exchange();
 
-            if (exchFut != null && !exchFut.isDone()) {
-                try {
-                    exchFut.get(timeout);
+            try {
+                AffinityTopologyVersion completedVer = nodeExchMgr.affinityReadyFuture(waitTopVer).get(timeout);
+
+                // The exchange future completes before its listener publishes the ready affinity version.
+                if (!waitForCondition(() -> nodeExchMgr.readyAffinityVersion().compareTo(completedVer) >= 0, timeout)) {
+                    throw new IgniteException("Timeout waiting for ready affinity publication [node=" + g0.name() +
+                        ", completedVer=" + completedVer + ", readyVer=" + nodeExchMgr.readyAffinityVersion() + ']');
                 }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to wait for exchange [topVer=" + waitTopVer +
-                        ", node=" + g0.name() + ']', e);
-                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to wait for exchange [topVer=" + waitTopVer +
+                    ", node=" + g0.name() + ']', e);
             }
 
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
@@ -1414,7 +1401,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         if (nodeInitializer != null)
             nodeInitializer.apply(fakeNode);
 
-        fakeNode.consistentId(joiningNodeConsistentId == null ? getTestIgniteInstanceName(nodes.size()) :
+        fakeNode.setConsistentId(joiningNodeConsistentId == null ? getTestIgniteInstanceName(nodes.size()) :
             joiningNodeConsistentId);
 
         nodes.add(fakeNode);
@@ -1465,7 +1452,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         GridTestNode fakeNode = new GridTestNode(UUID.randomUUID(), null);
 
-        fakeNode.consistentId(getTestIgniteInstanceName(nodes.size()));
+        fakeNode.setConsistentId(getTestIgniteInstanceName(nodes.size()));
 
         nodes.add(fakeNode);
 
@@ -2225,11 +2212,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * concurrently updated.
      *
      * @param ig Ignite instance.
+     * @param checkCrc Whether to check the CRC sums of partition pages.
      * @param caches Cache names (if null, all user caches will be verified).
      * @return Conflicts result.
      * @throws IgniteException If none caches or node found.
      */
-    protected IdleVerifyResult idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
+    protected IdleVerifyResult idleVerify(Ignite ig, boolean checkCrc, @Nullable String... caches) throws Exception {
         log.info("Starting idleVerify ...");
 
         IgniteEx ig0 = (IgniteEx)ig;
@@ -2252,11 +2240,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         CacheIdleVerifyCommandArg taskArg = new CacheIdleVerifyCommandArg();
 
         taskArg.caches(cacheNames.toArray(U.EMPTY_STRS));
+        taskArg.checkCrc(checkCrc);
 
         return ((VisorTaskResult<IdleVerifyResult>)ig.compute().execute(
             IdleVerifyTask.class.getName(),
             new VisorTaskArgument<>(node.id(), taskArg, false)
         )).result();
+    }
+
+    /** @see #idleVerify(Ignite, boolean, String...) */
+    protected IdleVerifyResult idleVerify(Ignite ig, @Nullable String... caches) throws Exception {
+        return idleVerify(ig, false, caches);
     }
 
     /**

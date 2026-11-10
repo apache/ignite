@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "name"},
+    {"order": 1, "type": "java.lang.String", "name": "passwd"},
+    {"order": 2, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"}
+  ]
+}

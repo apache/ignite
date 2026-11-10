@@ -19,10 +19,10 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Test message with already registered direct type. */
-public class DuplicateDirectTypeIdMessage implements Message {
+public class DuplicateDirectTypeIdMessage extends AbstractMessage {
     /** Message direct type. Message with this direct type will be registered by {@link CoreMessagesProvider} first. */
     static final short DIRECT_TYPE = CoreMessagesProvider.HANDSHAKE_MSG_TYPE;
 

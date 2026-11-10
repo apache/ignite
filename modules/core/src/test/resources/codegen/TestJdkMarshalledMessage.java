@@ -18,9 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 @JdkMarshalled
-public class TestJdkMarshalledMessage implements Message {
+public class TestJdkMarshalledMessage extends AbstractMessage {
     @Marshalled("dataBytes")
     Object data;
 

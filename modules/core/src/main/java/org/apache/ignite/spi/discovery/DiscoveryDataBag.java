@@ -16,14 +16,12 @@
  */
 package org.apache.ignite.spi.discovery;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.GridComponent;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -47,10 +45,10 @@ public class DiscoveryDataBag {
         boolean hasJoiningNodeData();
 
         /**
-         * @param <T> Data type.
+         * @param <T> Message type.
          * @return Joining node data.
          */
-        <T> T joiningNodeData();
+        <T extends Message> T joiningNodeData();
     }
 
     /**
@@ -61,16 +59,16 @@ public class DiscoveryDataBag {
         UUID joiningNodeId();
 
         /**
-         * @param <T> Data type.
+         * @param <T> Message type.
          * @return Common for all cluster nodes discovery data that is sent to the joining node.
          */
-        <T> T commonData();
+        <T extends Message> T commonData();
 
         /**
-         * @param <T> Data type.
+         * @param <T> Message type.
          * @return Discovery data that is mapped to the particular cluster node and sent to the joining node.
          */
-        <T> Map<UUID, T> nodeSpecificData();
+        <T extends Message> Map<UUID, T> nodeSpecificData();
     }
 
     /**
@@ -91,10 +89,8 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public <T> T joiningNodeData() {
-            Message dataMsg = joiningNodeData.get(cmpId);
-
-            return SerializableDataBagItemWrapper.unwrapIfNecessary(dataMsg);
+        @Override @Nullable public <T extends Message> T joiningNodeData() {
+            return (T)joiningNodeData.get(cmpId);
         }
 
         /**
@@ -122,16 +118,16 @@ public class DiscoveryDataBag {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public <T> T commonData() {
+        @Override @Nullable public <T extends Message> T commonData() {
             if (commonData != null)
-                return SerializableDataBagItemWrapper.unwrapIfNecessary(commonData.get(cmpId));
+                return (T)commonData.get(cmpId);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <T> Map<UUID, T> nodeSpecificData() {
-            return F.viewReadOnly(nodeSpecificData, SerializableDataBagItemWrapper::unwrapIfNecessary);
+        @Override public <T extends Message> Map<UUID, T> nodeSpecificData() {
+            return (Map<UUID, T>)nodeSpecificData;
         }
 
         /**
@@ -250,26 +246,10 @@ public class DiscoveryDataBag {
 
     /**
      * @param cmpId Component ID.
-     * @param data Serializable data.
-     */
-    public void addJoiningNodeData(Integer cmpId, Serializable data) {
-        joiningNodeData.put(cmpId, new SerializableDataBagItemWrapper(data));
-    }
-
-    /**
-     * @param cmpId Component ID.
      * @param data Message data.
      */
     public void addJoiningNodeData(Integer cmpId, Message data) {
         joiningNodeData.put(cmpId, data);
-    }
-
-    /**
-     * @param cmpId Component ID.
-     * @param data Serializable data.
-     */
-    public void addGridCommonData(Integer cmpId, Serializable data) {
-        commonData.put(cmpId, new SerializableDataBagItemWrapper(data));
     }
 
     /**
@@ -309,7 +289,7 @@ public class DiscoveryDataBag {
     }
 
     /**
-     * @param cmnData Cmn data.
+     * @param cmnData Common data.
      */
     public void commonData(Map<Integer, Message> cmnData) {
         commonData.putAll(cmnData);

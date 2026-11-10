@@ -43,6 +43,7 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.BinaryImplUtils.FLAG_COMPACT_FOOTER;
 
 /**
  *  Binary object implementation over offheap memory
@@ -95,7 +96,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(BinaryStreams.inputStream(ptr + off, size));
+            String clsName = BinaryImplUtils.doReadClassName(BinaryStreams.inputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -117,7 +118,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     @Override public boolean hasSchema() {
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        return BinaryUtils.hasSchema(flags);
+        return BinaryImplUtils.hasSchema(flags);
     }
 
     /** {@inheritDoc} */
@@ -127,7 +128,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+        return reader().getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -175,7 +176,12 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     @Override public boolean isFlagSet(short flag) {
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        return BinaryUtils.isFlagSet(flags, flag);
+        return BinaryImplUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCompactFooter() {
+        return isFlagSet(FLAG_COMPACT_FOOTER);
     }
 
     /** {@inheritDoc} */
@@ -190,12 +196,12 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F)reader(null, false).unmarshalField(fieldName);
+        return (F)reader().unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F)reader(null, false).unmarshalField(fieldId);
+        return (F)reader().unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -215,7 +221,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     @Override public int footerStartOffset() {
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        if (!BinaryUtils.hasSchema(flags))
+        if (!BinaryImplUtils.hasSchema(flags))
             return start + length();
 
         return start + BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
@@ -233,16 +239,16 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldIdLen = BinaryImplUtils.isCompactFooter(flags) ? 0 : BinaryImplUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryImplUtils.fieldOffsetLength(flags);
 
         int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffLen == BinaryUtils.OFFSET_1)
+        if (fieldOffLen == BinaryImplUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffLen == BinaryImplUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
@@ -369,7 +375,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
                 stream.position(fieldPos);
 
-                val = BinaryUtils.unmarshal(stream, ctx, null);
+                val = BinaryReaderExImpl.unmarshal(stream, ctx, null);
 
                 break;
         }
@@ -383,13 +389,13 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx, false).unmarshalField(fieldName);
+    @Nullable @Override protected <F> F field(BinaryReaderHandles hnds, String fieldName) {
+        return (F)reader(hnds, ctx.classLoader(), false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null, false).findFieldByName(fieldName);
+        return reader().findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -409,7 +415,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize() throws BinaryObjectException {
-        return (T)deserializeValue();
+        return (T)reader(null, ctx.classLoader(), true).deserialize();
     }
 
     /** {@inheritDoc} */
@@ -478,41 +484,31 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /**
-     * @return Deserialized value.
-     */
-    private Object deserializeValue() {
-        return reader(null, true).deserialize();
-    }
-
-    /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
-     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
-        return reader(rCtx, ctx.classLoader(), forUnmarshal);
+    private BinaryReaderExImpl reader() {
+        return reader(null, ctx.classLoader(), false);
     }
 
     /**
      * Create new reader for this object.
      *
-     * @param rCtx Reader context.
+     * @param hnds Reader context.
      * @param ldr Class loader.
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderEx reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr,
-        boolean forUnmarshal) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles hnds, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         BinaryInputStream stream = BinaryStreams.inputStream(ptr, size);
 
         stream.position(start);
 
-        return BinaryUtils.reader(ctx,
+        return new BinaryReaderExImpl(ctx,
             stream,
             ldr,
-            rCtx,
+            hnds,
             false,
             forUnmarshal);
     }

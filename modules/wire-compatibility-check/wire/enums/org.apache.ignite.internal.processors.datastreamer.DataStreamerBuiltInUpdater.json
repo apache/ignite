@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater", "name": "ISOLATED"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater", "name": "INDIVIDUAL"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater", "name": "BATCHED"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater", "name": "BATCHED_SORTED"}
+  ]
+}

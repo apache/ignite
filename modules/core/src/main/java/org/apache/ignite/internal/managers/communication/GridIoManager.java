@@ -437,7 +437,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 try {
                     GridIoMessage msg0 = (GridIoMessage)msg;
 
-                    try (Scope ignored = ctx.operationContextDispatcher().restoreSnapshot(msg0.opCtxSnp)) {
+                    try (Scope ignored = ctx.distributedOperationContext().restoreSnapshot(msg0.opCtxSnp)) {
                         onMessage0(nodeId, msg0, msgC);
                     }
                 }
@@ -1757,11 +1757,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             throw err;
     }
 
-    /** */
-    private long getInverseConnectionWaitTimeout() {
-        return ctx.config().getFailureDetectionTimeout();
-    }
-
     /** @return A {@link GridIoMessage} wrapper for {@code msg}. */
     public GridIoMessage createGridIoMessage(
         Object topic,
@@ -1771,7 +1766,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         long timeout,
         boolean skipOnTimeout
     ) {
-        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout, ctx.operationContextDispatcher().createSnapshot());
+        return new GridIoMessage(plc, topic, msg, ordered, timeout, skipOnTimeout, ctx.distributedOperationContext().createSnapshot());
     }
 
     /**
@@ -3486,7 +3481,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
             assert reserved.get();
 
             for (OrderedMessageContainer mc = msgs.poll(); mc != null; mc = msgs.poll()) {
-                try (Scope ignored0 = ctx.operationContextDispatcher().restoreSnapshot(mc.message.opCtxSnp)) {
+                try (Scope ignored0 = ctx.distributedOperationContext().restoreSnapshot(mc.message.opCtxSnp)) {
                     try {
                         try {
                             unmarshalPayload(mc.message);

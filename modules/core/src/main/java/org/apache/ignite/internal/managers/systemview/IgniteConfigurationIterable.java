@@ -33,11 +33,13 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.ConfigurationView;
+import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIGURATION_VIEW_PACKAGES;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
@@ -45,17 +47,24 @@ import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_PKG;
 /**
  * Responsibility of this class it to recursively iterate {@link IgniteConfiguration} object
  * and expose all properties in form of String pairs.
+ * {@link SensitiveProperty} and {@code char[]} properties are never exposed.
+ * Cyclic references and {@code null} array elements are not iterated.
  */
 public class IgniteConfigurationIterable implements Iterable<ConfigurationView> {
+    /** Properties of classes: names and getters. */
+    private static final ClassValue<Map<String, Method>> PROPS = new ClassValue<>() {
+        @Override protected Map<String, Method> computeValue(Class<?> cls) {
+            return props(cls);
+        }
+    };
+
     /** Packages to expose objects from. */
     private final List<String> pkgs;
 
-    /** Iterators queue. */
-    private final Queue<GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String>> iters = new LinkedList<>();
+    /** Configuration to iterate. */
+    private final IgniteConfiguration cfg;
 
-    /**
-     * @param cfg Configuration to iterate.
-     */
+    /** @param cfg Configuration to iterate. */
     public IgniteConfigurationIterable(IgniteConfiguration cfg) {
         String pkgsProp = IgniteSystemProperties.getString(IGNITE_CONFIGURATION_VIEW_PACKAGES);
 
@@ -66,13 +75,30 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
         pkgs.add(IGNITE_PKG);
 
-        addToQueue(cfg, "");
+        this.cfg = cfg;
     }
 
     /** {@inheritDoc} */
     @Override public Iterator<ConfigurationView> iterator() {
-        return new Iterator<ConfigurationView>() {
-            private ConfigurationView next;
+        return F.iterator(rawIterator(), t -> {
+            Object val = t.get2();
+
+            return new ConfigurationView(
+                t.get1(),
+                val != null && val.getClass().isArray()
+                    ? S.arrayToString(val)
+                    : U.toStringSafe(val));
+        }, true);
+    }
+
+    /** @return Iterator of configuration properties. */
+    public Iterator<T3<String, Object, Class<?>>> rawIterator() {
+        Queue<Node> iters = new LinkedList<>();
+
+        iters.add(new Node(cfg, "", null));
+
+        return new Iterator<>() {
+            private T3<String, Object, Class<?>> next;
 
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
@@ -85,31 +111,28 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
                 if (next != null)
                     return;
 
-                while (!iters.isEmpty() && !iters.peek().get2().hasNext())
+                while (!iters.isEmpty() && !iters.peek().props.hasNext())
                     iters.remove();
 
                 if (!iters.isEmpty()) {
-                    GridTuple3<Object, Iterator<Map.Entry<String, Method>>, String> curr = iters.peek();
+                    Node curr = iters.peek();
 
                     try {
-                        Map.Entry<String, Method> prop = curr.get2().next();
+                        Map.Entry<String, Method> prop = curr.props.next();
 
-                        String name = curr.get3().isEmpty() ? prop.getKey() : metricName(curr.get3(), prop.getKey());
+                        String name = curr.prefix.isEmpty() ? prop.getKey() : metricName(curr.prefix, prop.getKey());
 
-                        Object val = prop.getValue().invoke(curr.get1());
+                        Method getter = prop.getValue();
 
-                        if (addToQueue(val, name)) {
+                        Object val = getter.invoke(curr.obj);
+
+                        if (addToQueue(iters, val, name, curr)) {
                             advance();
 
                             return;
                         }
 
-                        next = new ConfigurationView(
-                            name,
-                            val != null && val.getClass().isArray()
-                                ? S.arrayToString(val)
-                                : U.toStringSafe(val)
-                        );
+                        next = new T3<>(name, val, getter.getReturnType());
                     }
                     catch (IllegalAccessException | InvocationTargetException e) {
                         throw new IgniteException(e);
@@ -118,11 +141,11 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             }
 
             /** {@inheritDoc} */
-            @Override public ConfigurationView next() {
+            @Override public T3<String, Object, Class<?>> next() {
                 if (next == null)
                     advance();
 
-                ConfigurationView next0 = next;
+                T3<String, Object, Class<?>> next0 = next;
 
                 if (next0 == null)
                     throw new NoSuchElementException();
@@ -136,11 +159,11 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
 
     /**
      * If {@code val} is configuration bean that must be recursively exposed by the view then
-     * it will be added to the {@link #iters} queue.
+     * it will be added to the {@code iters} queue.
      *
-     * @return {@code True} if {@code val} was added to {@link #iters} queue, {@code false} otherwise.
+     * @return {@code True} if {@code val} was added to {@code iters} queue, {@code false} otherwise.
      */
-    private boolean addToQueue(Object val, String prefix) {
+    private boolean addToQueue(Queue<Node> iters, Object val, String prefix, Node parent) {
         if (val == null || val.getClass().isEnum())
             return false;
 
@@ -157,25 +180,34 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         if (isArr) {
             int length = Array.getLength(val);
 
-            if (length == 0)
-                return false;
+            boolean added = false;
 
             for (int i = 0; i < length; i++) {
                 Object el = Array.get(val, i);
-                iters.add(F.t(el, props(el.getClass()), prefix + '[' + i + ']'));
+
+                if (el != null && !Node.contains(parent, el)) {
+                    iters.add(new Node(el, prefix + '[' + i + ']', parent));
+
+                    added = true;
+                }
             }
+
+            return added;
         }
 
-        iters.add(F.t(val, props(val.getClass()), prefix));
+        if (Node.contains(parent, val))
+            return false;
+
+        iters.add(new Node(val, prefix, parent));
 
         return true;
     }
 
     /**
      * @param cls Class to find properties.
-     * @return Iterator of object properties.
+     * @return Non-sensitive sorted properties.
      */
-    private Iterator<Map.Entry<String, Method>> props(Class<?> cls) {
+    private static Map<String, Method> props(Class<?> cls) {
         Map<String, Method> props = new TreeMap<>(); // TreeMap to keep properties sorted.
 
         for (; cls != Object.class; cls = cls.getSuperclass()) {
@@ -194,7 +226,28 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
             }
         }
 
-        return props.entrySet().iterator();
+        props.values().removeIf(IgniteConfigurationIterable::isSensitive);
+
+        return props;
+    }
+
+    /**
+     * Annotation is also looked up in superclasses, as the getter can be overridden. Interfaces are not checked.
+     *
+     * @return {@code True} if property is marked as {@link SensitiveProperty} or has {@code char[]} type.
+     */
+    private static boolean isSensitive(Method getter) {
+        if (getter.getReturnType() == char[].class)
+            return true;
+
+        for (Class<?> cls = getter.getDeclaringClass(); cls != null; cls = cls.getSuperclass()) {
+            Method mtd = methodOrNull(cls, getter.getName());
+
+            if (mtd != null && mtd.isAnnotationPresent(SensitiveProperty.class))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -219,5 +272,39 @@ public class IgniteConfigurationIterable implements Iterable<ConfigurationView> 
         }
 
         return false;
+    }
+
+    /** Queue entry: object to iterate. */
+    private static class Node {
+        /** */
+        private final Object obj;
+
+        /** */
+        private final Iterator<Map.Entry<String, Method>> props;
+
+        /** Name prefix of object properties. */
+        private final String prefix;
+
+        /** Parent entry, {@code null} for the root. */
+        @Nullable private final Node parent;
+
+        /** */
+        private Node(Object obj, String prefix, @Nullable Node parent) {
+            this.obj = obj;
+            this.prefix = prefix;
+            this.parent = parent;
+
+            props = PROPS.get(obj.getClass()).entrySet().iterator();
+        }
+
+        /** @return {@code True} if {@code obj} is the object of {@code node} or of any of its parents. */
+        private static boolean contains(@Nullable Node node, Object obj) {
+            for (; node != null; node = node.parent) {
+                if (node.obj == obj)
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

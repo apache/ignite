@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTaskArg",
+  "fields": [
+    {"order": 0, "type": "java.util.Set<org.apache.ignite.lang.IgniteUuid>", "name": "sesIds"}
+  ]
+}

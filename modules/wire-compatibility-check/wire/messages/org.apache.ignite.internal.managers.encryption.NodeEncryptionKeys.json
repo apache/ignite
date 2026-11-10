@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.managers.encryption.NodeEncryptionKeys",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.Integer,byte[]>", "name": "knownKeys"},
+    {"order": 1, "type": "java.util.Map<java.lang.Integer,byte[]>", "name": "newKeys"},
+    {"order": 2, "type": "byte[]", "name": "masterKeyDigest"},
+    {"order": 3, "type": "java.util.Map<java.lang.Integer,java.util.List<org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted>>", "name": "knownKeysWithIds"}
+  ]
+}

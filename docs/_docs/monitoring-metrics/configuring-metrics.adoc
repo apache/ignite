@@ -28,6 +28,8 @@ For this reason, some metrics are disabled by default.
 Cache metrics show statistics on the amount of data stored in caches, the total number and frequency of cache operations, etc. as well as some cache configuration properties for information purposes.
 
 To enable cache metrics, use one of the methods described below for each cache you want to monitor.
+Cache metrics can also be enabled or disabled at runtime, without restarting the nodes, via
+`IgniteCluster.enableStatistics(...)` or the link:tools/control-script#manage-cache-metrics-collection[control script].
 
 [tabs]
 --
@@ -51,12 +53,10 @@ tab:C++[unsupported]
 
 == Enabling Data Region Metrics
 Data region metrics expose information about data regions, including memory and storage size of the region.
-Enable data region metrics for every region you want to collect the metrics for.
-
-Data region metrics can be enabled in two ways:
-
-* in the link:memory-configuration/data-regions[configuration of the region]
-* via JMX Beans
+Enable data region metrics in the link:memory-configuration/data-regions[configuration of the region] for every region
+you want to collect the metrics for.
+The setting is read at node startup and cannot be changed at runtime.
+Some metrics, such as `TotalAllocatedSize`, are collected regardless of it.
 
 The following example illustrates how to enable metrics for the default data region and one custom data region.
 
@@ -81,7 +81,10 @@ tab:C++[unsupported]
 --
 
 == Enabling Persistence-related Metrics
-Persistence-related metrics can be enabled/disabled in the data storage configuration:
+The `io.datastorage` register (WAL, checkpoint and storage size metrics) is collected only when persistence metrics are
+enabled in the data storage configuration; otherwise its metrics report zero, except `LastArchivedSegment`, which
+reports `-1`.
+The property is deprecated but still required; it is read at node startup and cannot be changed at runtime.
 
 [tabs]
 --

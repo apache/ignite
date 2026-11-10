@@ -36,8 +36,9 @@ deliveries/docker/apache-ignite/arm64/apache-ignite-*
 deliveries/docker/apache-ignite/x86_64/run.sh
 deliveries/docker/apache-ignite/x86_64/apache-ignite-*
 
-#Ignore all Intellij IDEA files (except default inspections config)
-.idea/
+#Ignore all Intellij IDEA files (except project icon and default inspections config)
+.idea/*
+!.idea/icon.png
 !.idea/inspectionProfiles/Project_Default.xml
 
 #Visual Studio files

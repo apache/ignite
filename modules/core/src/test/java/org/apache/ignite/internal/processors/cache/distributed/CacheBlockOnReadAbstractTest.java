@@ -1439,13 +1439,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
     }
 
     /**
-     * Assert that two numbers are close to each other.
-     */
-    private static void assertAlmostEqual(long exp, long actual) {
-        assertTrue(String.format("Numbers differ too much [exp=%d, actual=%d]", exp, actual), almostEqual(exp, actual));
-    }
-
-    /**
      * Assert that two numbers are not close to each other.
      */
     private static void assertNotAlmostEqual(long exp, long actual) {

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillAllTaskResult",
+  "fields": [
+    {"order": 0, "type": "int", "name": "killed"},
+    {"order": 1, "type": "int", "name": "failed"}
+  ]
+}

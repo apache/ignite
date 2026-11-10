@@ -43,7 +43,8 @@ public class MessagesPluginProvider extends AbstractTestPluginProvider {
             short directType = CoreMessagesProvider.MAX_MESSAGE_ID + 1;
 
             for (Class<? extends Message> msg : msgs) {
-                f.register(directType, loadSerializer(msg), marshaller(msg));
+                if (msg != null)
+                    f.register(directType, loadSerializer(msg), marshaller(msg));
 
                 directType++;
             }

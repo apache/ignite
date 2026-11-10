@@ -19,6 +19,7 @@ namespace Apache.Ignite.Examples.Shared
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Client;
@@ -54,6 +55,7 @@ namespace Apache.Ignite.Examples.Shared
             // * Logging options reduce console output
             return new IgniteConfiguration
             {
+                SpringConfigUrl = Path.Combine(Path.GetDirectoryName(typeof(Utils).Assembly.Location), "ignite-config.xml"),
                 Localhost = "127.0.0.1",
                 DiscoverySpi = new TcpDiscoverySpi
                 {

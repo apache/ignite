@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "USER"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "INTERNAL"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "DATA_STRUCTURES"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "UTILITY"}
+  ]
+}

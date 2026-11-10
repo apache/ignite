@@ -29,6 +29,7 @@ import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 
@@ -82,7 +83,8 @@ public class SystemViewSnapshotsTest extends SystemViewAbstractTest {
 
                 if (incIdx == null) {
                     assertEquals(ignite.localNode().consistentId().toString(), v.baselineNodes());
-                    assertEquals(String.join(",", dfltCacheGrp, METASTORAGE_CACHE_NAME), v.cacheGroups());
+                    assertEqualsCollectionsIgnoringOrder(asList(dfltCacheGrp, METASTORAGE_CACHE_NAME),
+                        asList(v.cacheGroups().split(",")));
                     assertEquals("FULL", v.type());
                 }
                 else

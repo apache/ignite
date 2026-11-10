@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Test message. */
-public class TestMessage42 implements Message {
+public class TestMessage42 extends AbstractMessage {
     /** Test message 42 type. */
     static final short TEST_MSG_42_TYPE = 42;
 

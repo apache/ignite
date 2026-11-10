@@ -31,9 +31,6 @@ class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     /** Capacity. */
     private final int cap;
 
-    /** */
-    private final boolean forceHeap;
-
     /**
      * Constructor.
      *
@@ -41,21 +38,8 @@ class BinaryOffheapInputStream extends BinaryAbstractInputStream {
      * @param cap Capacity.
      */
     public BinaryOffheapInputStream(long ptr, int cap) {
-        this(ptr, cap, false);
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param ptr Pointer.
-     * @param cap Capacity.
-     * @param forceHeap If {@code true} method {@link #offheapPointer} returns 0 and unmarshalling will
-     *        create heap-based objects.
-     */
-    public BinaryOffheapInputStream(long ptr, int cap, boolean forceHeap) {
         this.ptr = ptr;
         this.cap = cap;
-        this.forceHeap = forceHeap;
 
         len = cap;
     }
@@ -150,7 +134,7 @@ class BinaryOffheapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override public long offheapPointer() {
-        return forceHeap ? 0 : ptr;
+        return ptr;
     }
 
     /** {@inheritDoc} */

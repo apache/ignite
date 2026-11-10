@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -45,6 +46,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -209,7 +211,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
      * carries no {@code JdkMarshalled} of its own: the test checks that pinning {@link SingleNodeMessage} covers every
      * result, including the ones written later.
      */
-    public static class PayloadMessage implements Message {
+    public static class PayloadMessage extends AbstractMessage {
         /** Payload. */
         private Object val;
 
@@ -239,7 +241,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
     /** */
     private static class PayloadSerializer implements MessageSerializer<PayloadMessage> {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(PayloadMessage msg, MessageWriter writer) {
+        @Override public boolean writeTo(PayloadMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(msg.directType()))
                     return false;
@@ -255,7 +257,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
                     writer.incrementState();
 
                 case 1:
-                    if (!writer.writeMessage(msg.err))
+                    if (!writer.writeMessage(msg.err, ctx))
                         return false;
 
                     writer.incrementState();
@@ -265,7 +267,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(PayloadMessage msg, MessageReader reader) {
+        @Override public boolean readFrom(PayloadMessage msg, MessageReader reader, MessageSerializationContext ctx) {
             switch (reader.state()) {
                 case 0:
                     msg.valBytes = reader.readByteArray();
@@ -276,7 +278,7 @@ public class DistributedProcessResultMarshallingTest extends GridCommonAbstractT
                     reader.incrementState();
 
                 case 1:
-                    msg.err = reader.readMessage();
+                    msg.err = reader.readMessage(ctx);
 
                     if (!reader.isLastRead())
                         return false;

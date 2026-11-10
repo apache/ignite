@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.datastreamer.DataStreamerReceiverMessage",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "rcvrBytes"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.datastreamer.DataStreamerBuiltInUpdater", "name": "builtIn"},
+    {"type": "org.apache.ignite.stream.StreamReceiver<?,?>", "name": "rcvr", "annotations": ["@org.apache.ignite.internal.Marshalled(\"rcvrBytes\")"]}
+  ]
+}

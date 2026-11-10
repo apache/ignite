@@ -207,8 +207,6 @@ def last_ignite_cdc_event_time(ignite_cdc):
     :return: Timestamp of the last CDC event (unix time in seconds).
     """
     def last_event_time_on(node):
-        jmx_client = JmxClient(node)
-
         if isinstance(ignite_cdc, IgniteCdcUtility):
             main_java_class = ignite_cdc.APP_SERVICE_CLASS
         else:
@@ -219,12 +217,12 @@ def last_ignite_cdc_event_time(ignite_cdc):
         if len(pids) == 0:
             raise AssertionError("ignite_cdc java process is not found on node: " + node.account.hostname)
 
-        jmx_client.pid = pids[0]
+        jmx_client = JmxClient(node, pids[0])
 
         try:
-            mbean = jmx_client.find_mbean('.*name=cdc.*')
+            mbean = jmx_client.find_metric_registry('cdc')
 
-            return int(next(mbean.LastEventTime).strip())
+            return int(mbean.value("LastEventTime"))
         except (StopIteration, RemoteCommandError):
             ignite_cdc.logger.warn("Filed to read LastEventTime metric from ignite_cdc, node: " + node.account.hostname)
 

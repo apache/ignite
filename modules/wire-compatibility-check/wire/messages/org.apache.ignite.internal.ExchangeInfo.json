@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.ExchangeInfo",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"}
+  ]
+}

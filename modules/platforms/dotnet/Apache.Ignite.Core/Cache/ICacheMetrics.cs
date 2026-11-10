@@ -249,23 +249,23 @@ namespace Apache.Ignite.Core.Cache
         long OffHeapAllocatedSize { get; }
 
         /// <summary>
-        /// Gets number of non-null values in the cache.
+        /// Gets number of entries in the cache, the same as <see cref="CacheSize"/>.
         /// </summary>
         /// <returns>
-        /// Number of non-null values in the cache.
+        /// Number of entries in the cache.
         /// </returns>
         int Size { get; }
 
         /// <summary>
-        /// Gets number of non-null values in the cache.
+        /// Gets cache size. Only primary copies of the cache entries are counted, backup copies are not.
         /// </summary>
         /// <returns>
-        /// Number of non-null values in the cache.
+        /// Cache size.
         /// </returns>
         long CacheSize { get; }
 
         /// <summary>
-        /// Gets number of keys in the cache, possibly with null values.
+        /// Gets number of keys in the cache, the same as <see cref="CacheSize"/>.
         /// </summary>
         /// <returns>
         /// Number of keys in the cache.

@@ -52,8 +52,27 @@ In Ignite, locks are supported only for the `TRANSACTIONAL` atomicity mode, whic
 `CacheConfiguration.atomicityMode` parameter.
 ====
 
+== Lock Ownership
+
+Explicit locks are bound to the thread that acquired them: the lock must be released by the same thread. Locks acquired by a compute job,
+by the `Service.execute()` method, or by a service method invoked remotely or from a thin client, and not released by the time the method
+returns are released forcibly and a warning is logged, since otherwise they would be inherited by the next task executed by the same pool
+thread or never released at all. Locks acquired by a service method invoked locally through a service proxy belong to the calling thread
+and are not released.
+Thus, a lock can't be held across job continuations (`ComputeJobContinuation.holdcc()`) or failovers.
+
+If a lock is released externally (for example, it is killed with the link:sql-reference/operational-commands#kill-lock[KILL LOCK] command),
+`Lock.unlock()` throws `IllegalStateException` to signal that the code protected by the lock may have been executed without the lock held.
+
 == Locks and Transactions
 
 Explicit locks are not transactional and cannot not be used from within transactions (exception will be thrown).
 If you do need explicit locking within transactions, then you should use the `TransactionConcurrency.PESSIMISTIC` concurrency
 control for transactions which will acquire explicit locks for relevant cluster data requests.
+
+== Monitoring
+
+The node that acquired a lock reports how long explicit locks are held: the `MaxExplicitLockHoldTime` metric shows the
+maximum hold time of the locks currently held, and the `ExplicitLockHoldTimeHistogram` metric shows the distribution of
+hold times of released locks, see link:monitoring-metrics/new-metrics#transactions[Transactions] metrics. The locks held at
+the moment are listed in the link:monitoring-metrics/system-views#cache_explicit_locks[CACHE_EXPLICIT_LOCKS] system view.

@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.direct;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -33,7 +37,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -43,6 +49,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_COMPRESSION;
@@ -53,6 +60,9 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_C
 public class DirectMessageWriter implements MessageWriter {
     /** Temporary buffer capacity.  */
     private static final int TMP_BUF_CAPACITY = 10 * 1024;
+
+    /** Empty array of byte arrays. */
+    private static final byte[][] EMPTY_BYTE_ARRAYS = new byte[0][];
 
     /** State. */
     @GridToStringInclude
@@ -76,7 +86,7 @@ public class DirectMessageWriter implements MessageWriter {
     /** Reusable writer for compressed payload serialization. Lazily created; thread-confined like the writer itself. */
     private DirectMessageWriter tmpWriter;
 
-    /** Reusable scratch buffer for compressed payload serialization. Retained at the largest size seen so far. */
+    /** Reusable fixed-size scratch buffer for compressed payload serialization. */
     private ByteBuffer tmpBuf;
 
     /** @param msgFactory Message factory. */
@@ -334,17 +344,18 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(@Nullable Message msg, boolean compress) {
+    @Override public boolean writeMessage(@Nullable Message msg, boolean compress, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
         if (compress)
             writeCompressedMessage(
-                w -> w.state.item().stream.writeMessage(msg, w),
+                w -> w.state.item().stream.writeMessage(msg, w, ctx),
                 msg == null,
-                stream
+                stream,
+                ctx
             );
         else
-            stream.writeMessage(msg, this);
+            stream.writeMessage(msg, this, ctx);
 
         return stream.lastFinished();
     }
@@ -377,35 +388,36 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type) {
+    @Override public <T> boolean writeObjectArray(T[] arr, MessageArrayType type, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
-        stream.writeObjectArray(arr, type, this);
+        stream.writeObjectArray(arr, type, this, ctx);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type) {
+    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionType type, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
-        stream.writeCollection(col, type, this);
+        stream.writeCollection(col, type, this, ctx);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress) {
+    @Override public <K, V> boolean writeMap(Map<K, V> map, MessageMapType type, boolean compress, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
         if (compress)
             writeCompressedMessage(
-                w -> w.state.item().stream.writeMap(map, type, w),
+                w -> w.state.item().stream.writeMap(map, type, w, ctx),
                 map == null,
-                stream
+                stream,
+                ctx
             );
         else
-            stream.writeMap(map, type, this);
+            stream.writeMap(map, type, this, ctx);
 
         return stream.lastFinished();
     }
@@ -485,8 +497,14 @@ public class DirectMessageWriter implements MessageWriter {
      * @param consumer Consumer.
      * @param isNull {@code True} if message is null.
      * @param stream Byte buffer stream.
+     * @param ctx Serialization context.
      */
-    private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean isNull, DirectByteBufferStream stream) {
+    private void writeCompressedMessage(
+        Consumer<DirectMessageWriter> consumer,
+        boolean isNull,
+        DirectByteBufferStream stream,
+        MessageSerializationContext ctx
+    ) {
         if (isNull) {
             stream.writeShort(Short.MIN_VALUE);
 
@@ -494,53 +512,87 @@ public class DirectMessageWriter implements MessageWriter {
         }
 
         if (!stream.serializeFinished()) {
-            // CompressedMessage consumes the scratch buffer in its constructor (deflates into its own byte array),
-            // so the buffer never escapes this method and can be reused across fields; heap is cheaper than direct
-            // here (no native alloc / Cleaner churn).
-            if (tmpBuf == null)
-                tmpBuf = ByteBuffer.allocate(TMP_BUF_CAPACITY);
-            else
-                tmpBuf.clear();
+            try (CompressedMessage.Compressor compressor = new CompressedMessage.Compressor(compressionLvl)) {
+                serializeToTemporaryBuffer(consumer, compressor::compress);
 
-            // Reuse the temp writer across fields/messages instead of allocating a fresh state stack each time.
-            if (tmpWriter == null)
-                tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
-            else
-                tmpWriter.reset();
-
-            tmpWriter.setBuffer(tmpBuf);
-
-            boolean finished;
-
-            do {
-                if (tmpBuf.remaining() <= tmpBuf.capacity() / 10) {
-                    ByteBuffer newBuf = ByteBuffer.allocate(tmpBuf.capacity() * 2);
-
-                    tmpBuf.flip();
-                    newBuf.put(tmpBuf);
-
-                    tmpBuf = newBuf;
-
-                    tmpWriter.setBuffer(tmpBuf);
-                }
-
-                consumer.accept(tmpWriter);
-
-                finished = tmpWriter.state.item().stream.lastFinished();
+                stream.compressedMessage(compressor.message());
             }
-            while (!finished);
 
-            tmpBuf.flip();
-
-            stream.compressedMessage(new CompressedMessage(tmpBuf, compressionLvl));
             stream.serializeFinished(true);
         }
 
-        stream.writeMessage(stream.compressedMessage(), this);
+        stream.writeMessage(stream.compressedMessage(), this, ctx);
 
         if (stream.lastFinished()) {
             stream.compressedMessage(null);
             stream.serializeFinished(false);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addPendingRawField(int tag, Consumer<MessageWriter> valueWriter) {
+        List<byte[]> pieces = new ArrayList<>(1);
+
+        serializeToTemporaryBuffer(valueWriter::accept, piece ->
+            pieces.add(Arrays.copyOfRange(piece.array(), piece.position(), piece.limit())));
+
+        byte[] bytes = pieces.size() == 1 ? pieces.get(0) : U.join(pieces.toArray(EMPTY_BYTE_ARRAYS));
+
+        state.item().pendingRawFields().add(new RawField(tag, bytes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeRawFields(@Nullable List<RawField> rawFields) {
+        DirectByteBufferStream stream = curStream;
+
+        stream.writeRawFields(F.concat(false, state.item().pendingRawFields, rawFields));
+
+        return stream.lastFinished();
+    }
+
+    /**
+     * Serializes through the temporary buffer as through a socket buffer: each time the buffer fills up or the
+     * serialization finishes, its content is passed to the piece consumer and the buffer is reused.
+     */
+    private void serializeToTemporaryBuffer(Consumer<DirectMessageWriter> consumer, Consumer<ByteBuffer> pieceConsumer) {
+        // Heap is cheaper than direct here (no native alloc / Cleaner churn).
+        if (tmpBuf == null)
+            tmpBuf = ByteBuffer.allocate(TMP_BUF_CAPACITY);
+
+        // Reuse the temp writer across fields/messages instead of allocating a fresh state stack each time.
+        if (tmpWriter == null)
+            tmpWriter = new DirectMessageWriter(msgFactory, compressionLvl);
+        else
+            tmpWriter.reset();
+
+        tmpWriter.setBuffer(tmpBuf);
+
+        boolean ok = false;
+
+        try {
+            boolean finished;
+
+            do {
+                tmpBuf.clear();
+
+                consumer.accept(tmpWriter);
+
+                finished = tmpWriter.state.item().stream.lastFinished();
+
+                assert finished || tmpBuf.position() > 0 : "No progress in the temporary buffer";
+
+                tmpBuf.flip();
+
+                pieceConsumer.accept(tmpBuf);
+            }
+            while (!finished);
+
+            ok = true;
+        }
+        finally {
+            // Don't reuse a writer with half-written state.
+            if (!ok)
+                tmpWriter = null;
         }
     }
 
@@ -557,14 +609,26 @@ public class DirectMessageWriter implements MessageWriter {
         private boolean hdrWritten;
 
         /** */
+        @Nullable private List<RawField> pendingRawFields;
+
+        /** */
         public StateItem(MessageFactory msgFactory) {
             stream = new DirectByteBufferStream(msgFactory);
+        }
+
+        /** */
+        List<RawField> pendingRawFields() {
+            if (pendingRawFields == null)
+                pendingRawFields = new ArrayList<>();
+
+            return pendingRawFields;
         }
 
         /** {@inheritDoc} */
         @Override public void reset() {
             state = 0;
             hdrWritten = false;
+            pendingRawFields = null;
         }
 
         /** {@inheritDoc} */

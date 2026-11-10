@@ -666,8 +666,10 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param addr Address.
      * @return Socket, connect response and client acknowledge support flag.
      */
-    @Nullable private T2<TcpDiscoveryIoSession, Integer> sendJoinRequest(boolean recon,
-        InetSocketAddress addr) throws InterruptedException {
+    @Nullable private T2<TcpDiscoveryIoSession, Integer> sendJoinRequest(
+        boolean recon,
+        InetSocketAddress addr
+    ) throws InterruptedException {
         assert addr != null;
 
         if (log.isDebugEnabled())
@@ -711,7 +713,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readHandshakeResponse(ses, ackTimeout0);
 
-                spi.validateRemoteFeatures(res.nodeFeatures());
+                ses.applyMessageSerializationContext(res.nodeFeatures());
 
                 // Convert the addresses once.
                 Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();
@@ -1273,7 +1275,7 @@ class ClientImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
-            msg.attachOperationContextSnapshot(operationCtxDispatcher.createSnapshot());
+            msg.attachOperationContextSnapshot(distrOpCtx.createSnapshot());
 
             synchronized (mux) {
                 queue.add(msg);
@@ -2081,7 +2083,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** */
         protected void processDiscoveryMessage(TcpDiscoveryAbstractMessage msg) {
-            try (Scope ignored = operationCtxDispatcher.restoreSnapshot(msg.opCtxSnp)) {
+            try (Scope ignored = distrOpCtx.restoreSnapshot(msg.opCtxSnp)) {
                 processDiscoveryMessage0(msg);
             }
         }
@@ -2332,6 +2334,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                         notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
 
                         spi.stats.onNodeJoined();
+
+                        if (node.isClient())
+                            spi.stats.onClientNodeJoined();
                     }
                 }
                 else {

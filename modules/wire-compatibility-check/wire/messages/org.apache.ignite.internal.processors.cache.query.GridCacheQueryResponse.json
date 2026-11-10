@@ -1,0 +1,16 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "boolean", "name": "finished"},
+    {"order": 5, "type": "long", "name": "reqId"},
+    {"order": 6, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"order": 7, "type": "boolean", "name": "fields"},
+    {"order": 8, "type": "org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta", "name": "idxQryMetadata"},
+    {"order": 9, "type": "java.util.Collection<byte[]>", "name": "dataBytes"},
+    {"type": "java.util.Collection<java.lang.Object>", "name": "data", "annotations": ["@org.apache.ignite.internal.Marshalled(\"dataBytes\")"]}
+  ]
+}

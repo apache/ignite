@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.managers.eventstorage.GridEventStorageRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "resTopicId"},
+    {"order": 1, "type": "byte[]", "name": "filterBytes"},
+    {"order": 2, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 3, "type": "java.lang.String", "name": "filterClsName"},
+    {"type": "org.apache.ignite.lang.IgnitePredicate<?>", "name": "filter", "annotations": ["@org.apache.ignite.internal.Marshalled(\"filterBytes\")"]}
+  ]
+}

@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetric;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
-import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.CopyOnWriteIntMap;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -95,16 +95,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** */
     private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
-    /**
-     * Cache group ID -> Cache group memory page metrics.
-     * <p>
-     * This is effectively a copy-on-write hash map, all write operations should create a new copy under the
-     * {@link #cacheGrpMetricsLock} lock.
-     */
-    private volatile IntMap<PageMetrics> cacheGrpMetrics = new IntHashMap<>();
-
-    /** Lock for the {@link #cacheGrpMetrics} field. */
-    private final Object cacheGrpMetricsLock = new Object();
+    /** Cache group ID -> Cache group memory page metrics. */
+    private final IntMap<PageMetrics> cacheGrpMetrics = new CopyOnWriteIntMap<>();
 
     /** Memory page metrics for the whole region. */
     private final PageMetrics dataRegionPageMetrics;
@@ -244,7 +236,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             5);
 
         largeEntriesPages = mreg.longAdderMetric("LargeEntriesPagesCount",
-            "Count of pages that fully ocupied by large entries that go beyond page size");
+            "Number of pages fully occupied by large entries that go beyond the page size.");
 
         dirtyPages = mreg.longAdderMetric("DirtyPages",
             "Number of pages in memory not yet synchronized with persistent storage.");
@@ -606,31 +598,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (pageMetrics != null)
             return pageMetrics;
 
-        synchronized (cacheGrpMetricsLock) {
-            IntMap<PageMetrics> locCacheGrpMetrics = cacheGrpMetrics;
-
-            // double check
-            PageMetrics doubleCheckPageMetrics = locCacheGrpMetrics.get(cacheGrpId);
-            if (doubleCheckPageMetrics != null)
-                return doubleCheckPageMetrics;
-
-            IntMap<PageMetrics> copy = new IntHashMap<>(locCacheGrpMetrics);
-
-            PageMetrics newMetrics = Optional.of(kernalCtx)
-                // both cache and group descriptor can be null
-                .map(GridKernalContext::cache)
-                .map(cache -> cache.cacheGroupDescriptors().get(cacheGrpId))
-                .map(decs -> createCacheGrpPageMetrics(decs.cacheOrGroupName()))
-                // return region-wide metrics for a non-existent cache group ID. This is needed in some scenarios
-                // when per-group data structures are used on a per-region basis and in tests.
-                .orElse(dataRegionPageMetrics);
-
-            copy.put(cacheGrpId, newMetrics);
-
-            cacheGrpMetrics = copy;
-
-            return newMetrics;
-        }
+        return cacheGrpMetrics.computeIfAbsent(cacheGrpId, id -> Optional.of(kernalCtx)
+            // both cache and group descriptor can be null
+            .map(GridKernalContext::cache)
+            .map(cache -> cache.cacheGroupDescriptors().get(id))
+            .map(decs -> createCacheGrpPageMetrics(decs.cacheOrGroupName()))
+            // return region-wide metrics for a non-existent cache group ID. This is needed in some scenarios
+            // when per-group data structures are used on a per-region basis and in tests.
+            .orElse(dataRegionPageMetrics));
     }
 
     /**
@@ -649,16 +624,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * Removes all memory page metrics associated with the given cache group.
      */
-    public void removeCacheGrpPageMetrics(Integer grpId) {
-        PageMetrics rmvMetrics;
-
-        synchronized (cacheGrpMetricsLock) {
-            IntMap<PageMetrics> copy = new IntHashMap<>(cacheGrpMetrics);
-
-            rmvMetrics = copy.remove(grpId);
-
-            cacheGrpMetrics = copy;
-        }
+    public void removeCacheGrpPageMetrics(int grpId) {
+        PageMetrics rmvMetrics = cacheGrpMetrics.remove(grpId);
 
         // we don't decrease the total pages counter for historical reasons
         // (it hasn't been done in previous implementations)
@@ -727,13 +694,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("PagesFillFactor",
             this::getPagesFillFactor,
-            "Returns the ratio of space occupied by user and system data to the size of all pages that contain " +
-                "this data");
+            "The ratio of space occupied by user and system data to the size of all pages that contain this data.");
 
         mreg.register("SizeUsedByData",
             this::getSizeUsedByData,
-            "Returns the number of bytes, occupied by data. Similar to TotalUsedSize, but it also takes into " +
-                "account the empty space in non-empty pages");
+            "Estimated number of bytes occupied by data. Similar to TotalUsedSize, but also takes into account " +
+                "the empty space in non-empty pages.");
 
         mreg.register("PhysicalMemoryPages",
             this::getPhysicalMemoryPages,
@@ -747,23 +713,23 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
-            "Gets a total size of memory allocated in the data region, in bytes");
+            "Total size of memory allocated in the data region, in bytes.");
 
         mreg.register("TotalUsedPages",
             this::getTotalUsedPages,
-            "Gets an amount of non-empty pages allocated in the data region");
+            "The number of non-empty pages allocated in the data region.");
 
         mreg.register("TotalUsedSize",
             this::getTotalUsedSize,
-            "Gets an amount of bytes, occupied by non-empty pages allocated in the data region");
+            "The number of bytes occupied by non-empty pages allocated in the data region.");
 
         mreg.register("PhysicalMemorySize",
             this::getPhysicalMemorySize,
-            "Gets total size of pages loaded to the RAM, in bytes");
+            "Total size of pages loaded to the RAM, in bytes.");
 
         mreg.register("UsedCheckpointBufferSize",
             this::getUsedCheckpointBufferSize,
-            "Gets used checkpoint buffer size in bytes");
+            "Used checkpoint buffer size in bytes.");
     }
 
     /**

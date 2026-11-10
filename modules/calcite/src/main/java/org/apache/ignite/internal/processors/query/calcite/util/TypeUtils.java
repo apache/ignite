@@ -30,8 +30,13 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -65,7 +70,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -83,6 +87,14 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.t
 
 /** */
 public class TypeUtils {
+    /**
+     * Cutover (1582-10-15) for the calendar used by {@link java.sql.Date} and {@link Timestamp}.
+     * These classes interpret earlier dates using the Julian calendar; {@link LocalDate}, {@link LocalDateTime}
+     * and Calcite use the proleptic Gregorian calendar. Conversions must preserve the calendar date.
+     */
+    private static final long GREGORIAN_CUTOVER =
+        LocalDate.of(1582, 10, 15).toEpochDay() * DateTimeUtils.MILLIS_PER_DAY;
+
     /** */
     private static final Set<Type> CONVERTABLE_TYPES = ImmutableSet.of(
         java.util.Date.class,
@@ -232,11 +244,43 @@ public class TypeUtils {
 
         for (int i = 0; i < sqlType.getFieldCount(); i++) {
             List<String> origin = origins == null ? null : origins.get(i);
-            b.add(fields.get(i).getName(), typeFactory.createType(
-                getResultClass(typeFactory, schema, fields.get(i).getType(), origin)));
+
+            b.add(fields.get(i).getName(), resultFieldType(typeFactory, schema, fields.get(i).getType(), origin));
         }
 
         return b.build();
+    }
+
+    /** Preserves ROW, ARRAY and MAP types and resolves the external Java type of each leaf. */
+    private static RelDataType resultFieldType(
+        IgniteTypeFactory typeFactory,
+        RelOptSchema schema,
+        RelDataType type,
+        @Nullable List<String> origin
+    ) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Preserve MULTISET types and resolve their element types.
+        // Java types, including byte[], are values rather than SQL containers.
+        if (type instanceof RelDataTypeFactoryImpl.JavaType)
+            return typeFactory.createType(getResultClass(typeFactory, schema, type, origin));
+
+        RelDataType resultType;
+
+        if (type.isStruct())
+            resultType = getResultType(typeFactory, schema, type, null);
+        else if (type.getSqlTypeName() == SqlTypeName.ARRAY) {
+            RelDataType componentType = resultFieldType(typeFactory, schema, type.getComponentType(), null);
+
+            resultType = typeFactory.createArrayType(componentType, -1);
+        }
+        else if (type.getSqlTypeName() == SqlTypeName.MAP) {
+            resultType = typeFactory.createMapType(
+                resultFieldType(typeFactory, schema, type.getKeyType(), null),
+                resultFieldType(typeFactory, schema, type.getValueType(), null));
+        }
+        else
+            return typeFactory.createType(getResultClass(typeFactory, schema, type, origin));
+
+        return typeFactory.createTypeWithNullability(resultType, type.isNullable());
     }
 
     /**
@@ -289,7 +333,7 @@ public class TypeUtils {
     public static <Row> Function<Row, Row> resultTypeConverter(ExecutionContext<Row> ectx, RelDataType resultType) {
         assert resultType.isStruct();
 
-        if (hasConvertableFields(resultType)) {
+        if (needsResultConversion(resultType)) {
             RowHandler<Row> hnd = ectx.rowHandler();
             List<RelDataType> types = RelOptUtil.getFieldTypeList(resultType);
             RowHandler.RowFactory<Row> factory = hnd.factory(ectx.getTypeFactory(), types);
@@ -309,10 +353,53 @@ public class TypeUtils {
 
     /** */
     private static Function<Object, Object> fieldConverter(ExecutionContext<?> ectx, RelDataType fieldType) {
-        Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Add recursive conversion of MULTISET elements.
+        if (!needsResultConversion(fieldType))
+            return Function.identity();
 
-        if (isConvertableType(storageType))
+        if (fieldType instanceof RelDataTypeFactoryImpl.JavaType) {
+            Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
+
             return v -> fromInternal(ectx, v, storageType);
+        }
+
+        if (fieldType.isStruct()) {
+            List<Function<Object, Object>> converters = transform(fieldType.getFieldList(),
+                f -> fieldConverter(ectx, f.getType()));
+            return v -> {
+                if (v == null)
+                    return null;
+
+                Object[] row = ((Object[])v).clone();
+
+                for (int i = 0; i < converters.size(); i++)
+                    row[i] = converters.get(i).apply(row[i]);
+
+                return row;
+            };
+        }
+
+        if (fieldType.getSqlTypeName() == SqlTypeName.ARRAY) {
+            Function<Object, Object> elementConverter = fieldConverter(ectx, fieldType.getComponentType());
+
+            return v -> v == null ? null : transform((List<?>)v, elementConverter::apply);
+        }
+
+        if (fieldType.getSqlTypeName() == SqlTypeName.MAP) {
+            Function<Object, Object> keyConverter = fieldConverter(ectx, fieldType.getKeyType());
+            Function<Object, Object> valConverter = fieldConverter(ectx, fieldType.getValueType());
+
+            return v -> {
+                if (v == null)
+                    return null;
+
+                Map<Object, Object> map = new LinkedHashMap<>();
+
+                ((Map<?, ?>)v).forEach((key, val) -> map.put(keyConverter.apply(key), valConverter.apply(val)));
+
+                return map;
+            };
+        }
 
         return Function.identity();
     }
@@ -328,10 +415,20 @@ public class TypeUtils {
                     && isConvertableType(((RelDataTypeFactoryImpl.JavaType)type).getJavaClass());
     }
 
-    /** */
-    private static boolean hasConvertableFields(RelDataType resultType) {
-        return RelOptUtil.getFieldTypeList(resultType).stream()
-            .anyMatch(TypeUtils::isConvertableType);
+    /** Checks declared types during converter construction, without inspecting result values. */
+    private static boolean needsResultConversion(RelDataType type) {
+        // TODO https://issues.apache.org/jira/browse/IGNITE-15551 Check MULTISET element types for required conversion.
+        if (type instanceof RelDataTypeFactoryImpl.JavaType)
+            return isConvertableType(type);
+
+        if (type.isStruct())
+            return type.getFieldList().stream().anyMatch(f -> needsResultConversion(f.getType()));
+
+        if (type.getSqlTypeName() == SqlTypeName.ARRAY)
+            return needsResultConversion(type.getComponentType());
+
+        return type.getSqlTypeName() == SqlTypeName.MAP
+            && (needsResultConversion(type.getKeyType()) || needsResultConversion(type.getValueType()));
     }
 
     /** */
@@ -355,12 +452,12 @@ public class TypeUtils {
     }
 
     /** */
-    public static Object toInternal(DataContext ctx, Object val) {
+    public static @Nullable Object toInternal(DataContext ctx, @Nullable Object val) {
         return val == null ? null : toInternal(ctx, val, val.getClass());
     }
 
     /** */
-    public static Object toInternal(DataContext ctx, Object val, Type storageType) {
+    public static @Nullable Object toInternal(DataContext ctx, @Nullable Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class)
@@ -409,33 +506,52 @@ public class TypeUtils {
      * @return Millis value.
      */
     private static long toLong(DataContext ctx, Object val) {
+        // Java time values have no time zone and use the proleptic Gregorian calendar, as does Calcite.
         if (val instanceof LocalDateTime)
-            return toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return ((LocalDateTime)val).toInstant(ZoneOffset.UTC).toEpochMilli();
 
         if (val instanceof LocalDate)
-            return toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return ((LocalDate)val).toEpochDay() * DateTimeUtils.MILLIS_PER_DAY;
 
         if (val instanceof LocalTime)
-            return toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return TimeUnit.NANOSECONDS.toMillis(((LocalTime)val).toNanoOfDay());
 
-        return toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+        return toLong((java.util.Date)val, timeZone(ctx));
     }
 
     /** */
     private static long toLong(java.util.Date val, TimeZone tz) {
         long time = val.getTime();
+        long locTs = time + tz.getOffset(time);
 
-        return time + tz.getOffset(time);
+        // Optimization: skip calendar conversion when both calendars agree.
+        if (locTs >= GREGORIAN_CUTOVER)
+            return locTs;
+
+        // java.sql.Date and Timestamp use the Julian calendar before the cutover, while Calcite uses the
+        // proleptic Gregorian calendar. Using only the time-zone-adjusted millis would turn a java.sql.Date
+        // representing 1500-01-02 into SQL DATE '1500-01-11'. Preserve its calendar fields instead.
+        Calendar cal = new GregorianCalendar(DateTimeUtils.UTC_ZONE, Locale.ROOT);
+
+        cal.setTimeInMillis(locTs);
+
+        int year = cal.get(Calendar.YEAR);
+
+        if (cal.get(Calendar.ERA) == GregorianCalendar.BC)
+            year = 1 - year;
+
+        return LocalDate.of(year, cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH)).toEpochDay()
+            * DateTimeUtils.MILLIS_PER_DAY + Math.floorMod(locTs, DateTimeUtils.MILLIS_PER_DAY);
     }
 
     /** */
-    public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
+    public static @Nullable Object fromInternal(DataContext ctx, @Nullable Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class && val instanceof Integer)
             return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == LocalDate.class && val instanceof Integer)
-            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY)).toLocalDate();
+            return LocalDate.ofEpochDay((Integer)val);
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
         else if (storageType == LocalTime.class && val instanceof Integer)
@@ -443,7 +559,7 @@ public class TypeUtils {
         else if (storageType == Timestamp.class && val instanceof Long)
             return new Timestamp(fromLocalTs(ctx, (Long)val));
         else if (storageType == LocalDateTime.class && val instanceof Long)
-            return new Timestamp(fromLocalTs(ctx, (Long)val)).toLocalDateTime();
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli((Long)val), ZoneOffset.UTC);
         else if (storageType == java.util.Date.class && val instanceof Long)
             return new java.util.Date(fromLocalTs(ctx, (Long)val));
         else if (storageType == Duration.class && val instanceof Long)
@@ -514,7 +630,20 @@ public class TypeUtils {
 
     /** */
     private static long fromLocalTs(DataContext ctx, long ts) {
-        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ctx);
+        if (ts < GREGORIAN_CUTOVER) {
+            LocalDate date = LocalDate.ofEpochDay(Math.floorDiv(ts, DateTimeUtils.MILLIS_PER_DAY));
+            Calendar cal = new GregorianCalendar(DateTimeUtils.UTC_ZONE, Locale.ROOT);
+
+            cal.clear();
+            cal.set(Calendar.ERA, date.getYear() > 0 ? GregorianCalendar.AD : GregorianCalendar.BC);
+            cal.set(date.getYear() > 0 ? date.getYear() : 1 - date.getYear(), date.getMonthValue() - 1,
+                date.getDayOfMonth());
+
+            // Reconstruct the date in the legacy Java calendar before applying the query's time zone.
+            ts = cal.getTimeInMillis() + Math.floorMod(ts, DateTimeUtils.MILLIS_PER_DAY);
+        }
+
+        TimeZone tz = timeZone(ctx);
 
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return ts - tz.getOffset(ts - tz.getOffset(ts));
@@ -527,5 +656,12 @@ public class TypeUtils {
         dfltVal = toInternal(ctx, dfltVal);
 
         return rexBuilder.makeLiteral(dfltVal, type, true);
+    }
+
+    /** */
+    private static TimeZone timeZone(DataContext ctx) {
+        TimeZone tz = DataContext.Variable.TIME_ZONE.get(ctx);
+
+        return tz != null ? tz : TimeZone.getDefault();
     }
 }

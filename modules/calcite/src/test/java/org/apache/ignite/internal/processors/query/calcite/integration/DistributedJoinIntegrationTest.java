@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class DistributedJoinIntegrationTest extends AbstractBasicIntegrationTransactionalTest {

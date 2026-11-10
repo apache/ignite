@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMarshalledMapMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CollectionImplementationType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
@@ -25,6 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -38,7 +42,7 @@ public final class TestMarshalledMapMessageSerializer implements MessageSerializ
     private static final MessageCollectionType mapValsCollDesc = new MessageCollectionType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), CollectionImplementationType.ARRAY_LIST);
 
     /** */
-    @Override public final boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMarshalledMapMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -48,14 +52,22 @@ public final class TestMarshalledMapMessageSerializer implements MessageSerializ
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection(msg.mapKeys, mapKeysCollDesc))
+                if (!writer.writeCollection(msg.mapKeys, mapKeysCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeCollection(msg.mapVals, mapValsCollDesc))
+                if (!writer.writeCollection(msg.mapVals, mapValsCollDesc, ctx))
                     return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
 
                 writer.incrementState();
         }
@@ -64,10 +76,10 @@ public final class TestMarshalledMapMessageSerializer implements MessageSerializ
     }
 
     /** */
-    @Override public final boolean readFrom(TestMarshalledMapMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMarshalledMapMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
-                msg.mapKeys = reader.readCollection(mapKeysCollDesc);
+                msg.mapKeys = reader.readCollection(mapKeysCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -75,10 +87,23 @@ public final class TestMarshalledMapMessageSerializer implements MessageSerializ
                 reader.incrementState();
 
             case 1:
-                msg.mapVals = reader.readCollection(mapValsCollDesc);
+                msg.mapVals = reader.readCollection(mapValsCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 2:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

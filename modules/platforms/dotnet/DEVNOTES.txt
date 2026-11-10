@@ -20,7 +20,7 @@ Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 Build Apache Ignite .NET with Maven
 ===================================
 
-Note that .NET Core SDK 3.1 and PowerShell must be installed first.
+Note that .NET 6 SDK and PowerShell must be installed first.
 
 The command below will build the binaries and NuGet packages with Maven:
 

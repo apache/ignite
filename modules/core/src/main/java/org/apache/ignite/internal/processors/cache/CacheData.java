@@ -28,11 +28,11 @@ import org.apache.ignite.internal.processors.query.schema.message.QueryEntityMes
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Cache information sent in discovery data to joining node. */
-public class CacheData implements Message {
+public class CacheData extends AbstractMessage {
     /** */
     @Marshalled("cacheCfgBytes")
     CacheConfiguration cacheCfg;

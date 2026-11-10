@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.ShutdownPolicyTaskResult",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.ShutdownPolicy", "name": "shutdown"}
+  ]
+}

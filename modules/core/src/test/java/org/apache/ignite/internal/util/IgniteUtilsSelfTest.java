@@ -65,7 +65,6 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.thread.IgniteThreadFactory;
@@ -116,17 +115,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
     /** Maximum string length to be written at once. */
     private static final int MAX_STR_LEN = 0xFFFF / 4;
-
-    /**
-     * @return 120 character length string.
-     */
-    private String text120() {
-        char[] chs = new char[120];
-
-        Arrays.fill(chs, 'x');
-
-        return new String(chs);
-    }
 
     /**
      *
@@ -358,20 +346,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         finally {
             stopGrid(1);
         }
-    }
-
-    /**
-     * @param r Runnable.
-     * @return Job created for given runnable.
-     */
-    private static ComputeJob job(final Runnable r) {
-        return new ComputeJobAdapter() {
-            @Nullable @Override public Object execute() {
-                r.run();
-
-                return null;
-            }
-        };
     }
 
     /**

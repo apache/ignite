@@ -1,0 +1,32 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 5, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "committedVers"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "rolledbackVers"},
+    {"order": 7, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "nearXidVer"},
+    {"order": 9, "type": "long", "name": "threadId"},
+    {"order": 10, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"},
+    {"order": 11, "type": "long", "name": "timeout"},
+    {"order": 12, "type": "boolean", "name": "isInTx"},
+    {"order": 13, "type": "boolean", "name": "isInvalidate"},
+    {"order": 14, "type": "boolean", "name": "isRead"},
+    {"order": 15, "type": "org.apache.ignite.transactions.TransactionIsolation", "name": "isolation"},
+    {"order": 16, "type": "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "keys"},
+    {"order": 17, "type": "boolean[]", "name": "retVals"},
+    {"order": 18, "type": "int", "name": "txSize"},
+    {"order": 19, "type": "byte", "name": "flags"},
+    {"order": 20, "type": "java.util.BitSet", "name": "invalidateEntries"},
+    {"order": 21, "type": "org.apache.ignite.lang.IgniteUuid", "name": "miniId"},
+    {"order": 22, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 23, "type": "int", "name": "taskNameHash"},
+    {"order": 24, "type": "java.util.BitSet", "name": "preloadKeys"},
+    {"order": 25, "type": "long", "name": "accessTtl"},
+    {"order": 26, "type": "java.lang.String", "name": "txLbl"}
+  ]
+}

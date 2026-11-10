@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "long", "name": "futId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey[]", "name": "nearTxKeysArr"},
+    {"order": 5, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey>", "name": "txKeys"},
+    {"order": 6, "type": "java.util.List<org.apache.ignite.internal.processors.cache.transactions.TxLock>[]", "name": "locksArr"},
+    {"type": "java.util.Map<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey,java.util.List<org.apache.ignite.internal.processors.cache.transactions.TxLock>>", "name": "nearTxKeyLocks", "annotations": ["@org.apache.ignite.internal.Marshalled(keys=\"nearTxKeysArr\", values=\"locksArr\")"]}
+  ]
+}

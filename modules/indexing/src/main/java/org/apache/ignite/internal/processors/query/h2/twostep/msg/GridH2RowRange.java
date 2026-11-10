@@ -21,12 +21,12 @@ import java.util.List;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Range of rows.
  */
-public class GridH2RowRange implements Message {
+public class GridH2RowRange extends AbstractMessage {
     /** */
     private static final int FLAG_PARTIAL = 1;
 

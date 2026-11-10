@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
-import java.util.Objects;
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -27,6 +26,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.util.SqlValueUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -97,7 +97,7 @@ public class GroupKey<Row> implements Binarylizable {
             return false;
 
         for (int i = 0; i < colCnt; i++) {
-            if (!Objects.equals(hnd.get(i, row), other.hnd.get(i, other.row)))
+            if (!SqlValueUtils.deepEquals(hnd.get(i, row), other.hnd.get(i, other.row)))
                 return false;
         }
 
@@ -109,7 +109,7 @@ public class GroupKey<Row> implements Binarylizable {
         int hashCode = 0;
 
         for (int i = 0; i < hnd.columnCount(row); i++)
-            hashCode = hashCode * 31 + Objects.hashCode(hnd.get(i, row));
+            hashCode = hashCode * 31 + SqlValueUtils.deepHashCode(hnd.get(i, row));
 
         return hashCode;
     }

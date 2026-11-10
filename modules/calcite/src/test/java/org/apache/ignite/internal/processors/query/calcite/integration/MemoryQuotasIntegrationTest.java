@@ -29,7 +29,8 @@ import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -57,9 +58,10 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .setTransactionConfiguration(new TransactionConfiguration().setTxAwareQueriesEnabled(true));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** */
+    @BeforeEach
+    void setup() throws Exception {
+        beforeTest();
 
         sql("CREATE TABLE tbl (id INT, b VARBINARY) WITH TEMPLATE=REPLICATED, ATOMICITY=TRANSACTIONAL");
 
@@ -460,7 +462,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .resultSize(800)
             .check();
 
-        // getAll + collect for 1000 rows.
+        // getAll for 1000 rows.
         assertThrows("SELECT id, b FROM tbl",
             IgniteSQLException.class, "Query quota exceeded");
 
@@ -469,14 +471,14 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .resultSize(1)
             .check();
 
-        // getAll + collect for 400 rows.
-        assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 400)")
+        // getAll + collect for 800 rows.
+        assertQuery("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)")
             .withRowsIterator(false)
             .resultSize(1)
             .check();
 
-        // getAll + collect for 800 rows.
-        assertThrows("SELECT ARRAY(SELECT b FROM tbl WHERE id < 800)",
+        // getAll accounts for both converted arrays, exceeding the quota.
+        assertThrows("SELECT arr, arr FROM (SELECT ARRAY(SELECT b FROM tbl WHERE id < 800) AS arr)",
             IgniteSQLException.class, "Query quota exceeded");
 
         // getAll + sort for 800 rows (sort node release memory after passing rows to iterator).

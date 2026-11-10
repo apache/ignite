@@ -450,7 +450,7 @@ public class JdbcThinConnection implements Connection {
             if (txCtx != null)
                 throw new SQLException("Can't change stream mode inside transaction");
 
-            SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
+            SqlSetStreamingCommand streamingCmd = (SqlSetStreamingCommand)cmd;
 
             // If streaming is already on, we have to close it first.
             if (streamState != null) {
@@ -459,7 +459,7 @@ public class JdbcThinConnection implements Connection {
                 streamState = null;
             }
 
-            boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
+            boolean newVal = streamingCmd.isTurnOn();
 
             ensureConnected();
 
@@ -467,17 +467,19 @@ public class JdbcThinConnection implements Connection {
 
             // Actual ON, if needed.
             if (newVal) {
-                if (!cmd0.isOrdered() && !cliIo.isUnorderedStreamSupported()) {
+                if (!streamingCmd.isOrdered() && !cliIo.isUnorderedStreamSupported()) {
                     throw new SQLException("Streaming without order doesn't supported by server [remoteNodeVer="
                         + cliIo.igniteVersion() + ']', INTERNAL_ERROR);
                 }
 
-                streamState = new StreamState((SqlSetStreamingCommand)cmd, cliIo);
+                StreamState streamState0 = new StreamState(streamingCmd, cliIo);
 
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, autoCommit, stmt.explicitTimeout, sql, null, NONE_TX), stmt, cliIo);
 
-                streamState.start();
+                streamState = streamState0;
+
+                streamState0.start();
             }
         }
         else

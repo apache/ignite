@@ -34,7 +34,10 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTransactionalTest.SqlTransactionMode.ALL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -61,6 +64,7 @@ public class SelectForUpdateIntegrationTest extends AbstractBasicIntegrationTest
     }
 
     /** {@inheritDoc} */
+    @BeforeAll
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -69,6 +73,7 @@ public class SelectForUpdateIntegrationTest extends AbstractBasicIntegrationTest
     }
 
     /** {@inheritDoc} */
+    @AfterAll
     @Override protected void afterTestsStopped() throws Exception {
         ignite0 = null;
         ignite1 = null;
@@ -106,6 +111,7 @@ public class SelectForUpdateIntegrationTest extends AbstractBasicIntegrationTest
     }
 
     /** {@inheritDoc} */
+    @BeforeEach
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

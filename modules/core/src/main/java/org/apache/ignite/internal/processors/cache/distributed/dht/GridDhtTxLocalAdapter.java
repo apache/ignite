@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -93,9 +92,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** */
     protected boolean explicitLock;
-
-    /** Versions of pending locks for entries of this tx. */
-    private Collection<GridCacheVersion> pendingVers;
 
     /** Flag indicating that originating node has near cache. */
     private boolean nearOnOriginatingNode;
@@ -248,20 +244,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     * @return Versions for all pending locks that were in queue before tx locks were released.
-     */
-    Collection<GridCacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.emptyList() : pendingVers;
-    }
-
-    /**
-     * @param pendingVers Versions for all pending locks that were in queue before tx locsk were released.
-     */
-    public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
-        this.pendingVers = pendingVers;
-    }
-
-    /**
      * Map explicit locks.
      */
     protected void mapExplicitLocks() {
@@ -378,15 +360,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     boolean removeDhtMapping(UUID nodeId, GridCacheEntryEx entry) {
         return removeMapping(nodeId, entry, dhtMap);
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param entry Entry to remove.
-     * @return {@code True} if was removed.
-     */
-    boolean removeNearMapping(UUID nodeId, GridCacheEntryEx entry) {
-        return removeMapping(nodeId, entry, nearMap);
     }
 
     /**

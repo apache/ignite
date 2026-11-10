@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.IgniteDiagnosticRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "futId"},
+    {"order": 1, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 2, "type": "java.util.Set<org.apache.ignite.internal.IgniteDiagnosticRequest$DiagnosticBaseInfo>", "name": "infos"}
+  ]
+}

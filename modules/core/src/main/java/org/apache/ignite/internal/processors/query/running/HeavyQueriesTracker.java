@@ -204,7 +204,7 @@ public final class HeavyQueriesTracker {
      * - timeout * multiplier;
      * - timeout * multiplier * multiplier;
      * - etc...
-     * If the multiplier <= 1, the warning message is printed once.
+     * If the multiplier {@code <= 1}, the warning message is printed once.
      *
      * @param timeoutMult Long query timeout multiplier.
      */
@@ -237,7 +237,7 @@ public final class HeavyQueriesTracker {
      *  - size of result set > threshold * multiplier;
      *  - size of result set > threshold * multiplier * multiplier;
      *  - etc.
-     * If the multiplier <= 1, the warning message is printed once.
+     * If the multiplier {@code <= 1}, the warning message is printed once.
      * @return Result set size threshold multiplier.
      */
     public int getResultSetSizeThresholdMultiplier() {

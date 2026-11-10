@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "val"},
+    {"order": 2, "type": "long", "name": "ttl"},
+    {"order": 3, "type": "long", "name": "expireTime"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"}
+  ]
+}

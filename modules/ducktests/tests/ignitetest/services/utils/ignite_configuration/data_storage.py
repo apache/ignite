@@ -50,6 +50,7 @@ class DataStorageConfiguration(NamedTuple):
     metrics_rate_time_interval: int = None
     page_size: int = None
     regions: list = []
+    storage_path: str = None
     wal_archive_path: str = None
     wal_buffer_size: int = None
     wal_compaction_enabled: bool = None

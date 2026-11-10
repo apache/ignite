@@ -22,11 +22,11 @@ import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Master key change request. */
-public class MasterKeyChangeRequest implements Message {
+public class MasterKeyChangeRequest extends AbstractMessage {
     /** Request id. */
     @Order(0)
     UUID reqId;

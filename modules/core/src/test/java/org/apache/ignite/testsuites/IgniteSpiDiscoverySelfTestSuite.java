@@ -46,6 +46,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiReconnectDelayTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiStartStopSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiWildcardSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslConnectionFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslParametersTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
@@ -107,6 +108,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoverySslTrustedSelfTest.class,
     TcpDiscoverySslSecuredUnsecuredTest.class,
     TcpDiscoverySslParametersTest.class,
+    TcpDiscoverySslConnectionFailureTest.class,
 
     // Disco cache reuse.
 

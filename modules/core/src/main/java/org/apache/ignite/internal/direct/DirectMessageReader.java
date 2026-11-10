@@ -20,10 +20,12 @@ package org.apache.ignite.internal.direct;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -45,6 +47,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -344,7 +347,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage(boolean compress) {
+    @Nullable @Override public <T extends Message> T readMessage(boolean compress, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
         T msg;
@@ -352,10 +355,11 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             msg = readCompressedMessageAndDeserialize(
                 stream,
-                r -> r.state.item().stream.readMessage(r)
+                r -> r.state.item().stream.readMessage(r, ctx),
+                ctx
             );
         else {
-            msg = stream.readMessage(this);
+            msg = stream.readMessage(this, ctx);
 
             lastRead = stream.lastFinished();
         }
@@ -397,10 +401,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T[] readObjectArray(MessageArrayType type) {
+    @Override public <T> T[] readObjectArray(MessageArrayType type, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
-        T[] msg = stream.readObjectArray(type, this);
+        T[] msg = stream.readObjectArray(type, this, ctx);
 
         lastRead = stream.lastFinished();
 
@@ -408,10 +412,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type) {
+    @Override public <C extends Collection<?>> C readCollection(MessageCollectionType type, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
-        C col = stream.readCollection(type, this);
+        C col = stream.readCollection(type, this, ctx);
 
         lastRead = stream.lastFinished();
 
@@ -419,7 +423,7 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress) {
+    @Override public <M extends Map<?, ?>> M readMap(MessageMapType type, boolean compress, MessageSerializationContext ctx) {
         DirectByteBufferStream stream = curStream;
 
         M map;
@@ -427,10 +431,11 @@ public class DirectMessageReader implements MessageReader {
         if (compress)
             map = readCompressedMessageAndDeserialize(
                 stream,
-                r -> r.state.item().stream.readMap(type, r)
+                r -> r.state.item().stream.readMap(type, r, ctx),
+                ctx
             );
         else {
-            map = stream.readMap(type, this);
+            map = stream.readMap(type, this, ctx);
 
             lastRead = stream.lastFinished();
         }
@@ -509,8 +514,12 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** @return Deserialized object. */
-    private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Function<DirectMessageReader, T> fun) {
-        Message msg = stream.readMessage(this);
+    private <T> T readCompressedMessageAndDeserialize(
+        DirectByteBufferStream stream,
+        Function<DirectMessageReader, T> fun,
+        MessageSerializationContext ctx
+    ) {
+        Message msg = stream.readMessage(this, ctx);
 
         lastRead = stream.lastFinished();
 
@@ -566,6 +575,33 @@ public class DirectMessageReader implements MessageReader {
         buf = EMPTY_BUF;
 
         state.forEachItem(item -> item.stream.setBuffer(EMPTY_BUF));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RawField> readRawFields() {
+        DirectByteBufferStream stream = curStream;
+
+        List<RawField> res = stream.readRawFields();
+
+        lastRead = stream.lastFinished();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T deserializeRawField(RawField f, Function<MessageReader, T> valueReader) {
+        if (tmpReader == null)
+            tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+        else
+            tmpReader.reset();
+
+        tmpReader.setBuffer(ByteBuffer.wrap(f.bytes()));
+
+        T val = valueReader.apply(tmpReader);
+
+        assert tmpReader.isLastRead() : f;
+
+        return val;
     }
 
     /**

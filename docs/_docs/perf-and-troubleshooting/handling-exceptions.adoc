@@ -188,6 +188,10 @@ Ignite support following failure handlers:
 
 |=======================================================================
 
+Failures of the types listed in the `ignoredFailureTypes` property of the handler (`SYSTEM_WORKER_BLOCKED` and
+`SYSTEM_CRITICAL_OPERATION_TIMEOUT` by default) are not handled: Ignite only prints a message to the log file and
+increments the `failure.ignored.{failure_type}` metric, see link:monitoring-metrics/new-metrics#failure-handling[Failure Handling].
+
 === Critical Workers Health Check
 
 Ignite has a number of internal workers that are essential for the cluster to function correctly. If one of them is

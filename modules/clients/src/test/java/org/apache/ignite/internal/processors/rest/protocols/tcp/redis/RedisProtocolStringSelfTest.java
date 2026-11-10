@@ -26,16 +26,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisDataException;
+import redis.clients.jedis.params.SetParams;
 
 /**
  * Tests for String commands of Redis protocol.
  */
 public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testGet() throws Exception {
+    public void testGet() {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getKey1", "getVal1");
 
@@ -55,11 +54,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testGetSet() throws Exception {
+    public void testGetSet() {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getSetKey1", "1");
 
@@ -79,11 +76,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testMGet() throws Exception {
+    public void testMGet() {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getKey1", "getVal1");
             jcache().put("getKey2", 0);
@@ -99,19 +94,15 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testMGetDirectOrder() throws Exception {
+    public void testMGetDirectOrder() {
         testMGetOrder(true);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testMGetReverseOrder() throws Exception {
+    public void testMGetReverseOrder() {
         testMGetOrder(false);
     }
 
@@ -153,11 +144,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     }
 
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testMGetDuplicates() throws Exception {
+    public void testMGetDuplicates() {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("key-A", "value-A");
             jcache().put("key-B", "value-B");
@@ -188,14 +177,14 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals("b0", jcache().get("setKey2"));
 
             // test options.
-            jedis.set("setKey1", "2", "nx");
-            jedis.set("setKey3", "3", "nx", "px", EXPIRE_MS);
+            jedis.set("setKey1", "2", SetParams.setParams().nx());
+            jedis.set("setKey3", "3", SetParams.setParams().nx().px(EXPIRE_MS));
 
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("3", jcache().get("setKey3"));
 
-            jedis.set("setKey1", "2", "xx", "ex", EXPIRE_SEC);
-            jedis.set("setKey4", "4", "xx");
+            jedis.set("setKey1", "2", SetParams.setParams().xx().ex(EXPIRE_SEC));
+            jedis.set("setKey4", "4", SetParams.setParams().xx());
 
             Assert.assertEquals("2", jcache().get("setKey1"));
             Assert.assertNull(jcache().get("setKey4"));
@@ -208,11 +197,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testMSet() throws Exception {
+    public void testMSet() {
         try (Jedis jedis = pool.getResource()) {
             jedis.mset("setKey1", "1", "setKey2", "2");
 
@@ -221,11 +208,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testIncrDecr() throws Exception {
+    public void testIncrDecr() {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(1, (long)jedis.incr("newKeyIncr"));
             Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
@@ -305,11 +290,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testIncrDecrBy() throws Exception {
+    public void testIncrDecrBy() {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncrBy", 2));
             Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecrBy", 2));
@@ -362,11 +345,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testAppend() throws Exception {
+    public void testAppend() {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
             Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
@@ -384,11 +365,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testStrlen() throws Exception {
+    public void testStrlen() {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(0, (long)jedis.strlen("strlenKeyNonExisting"));
 
@@ -409,11 +388,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testSetRange() throws Exception {
+    public void testSetRange() {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(0, (long)jedis.setrange("setRangeKey1", 0, ""));
 
@@ -458,11 +435,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testGetRange() throws Exception {
+    public void testGetRange() {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals("", jedis.getrange("getRangeKeyNonExisting", 0, 0));
 
@@ -486,11 +461,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testDel() throws Exception {
+    public void testDel() {
         jcache().put("delKey1", "abc");
         jcache().put("delKey2", "abcd");
         try (Jedis jedis = pool.getResource()) {
@@ -500,11 +473,9 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testExists() throws Exception {
+    public void testExists() {
         jcache().put("existsKey1", "abc");
         jcache().put("existsKey2", "abcd");
         try (Jedis jedis = pool.getResource()) {

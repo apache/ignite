@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.util.List;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageArrayType;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 
 /**
  * This class is generated automatically.
@@ -40,7 +44,7 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
     private static final MessageArrayType verArrCollDesc = new MessageArrayType(new MessageItemType(MessageCollectionItemType.GRID_CACHE_VERSION), GridCacheVersion.class);
 
     /** */
-    @Override public final boolean writeTo(TestMessage msg, MessageWriter writer) {
+    @Override public final boolean writeTo(TestMessage msg, MessageWriter writer, MessageSerializationContext ctx) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
                 return false;
@@ -68,13 +72,13 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeObjectArray(msg.strArr, strArrCollDesc))
+                if (!writer.writeObjectArray(msg.strArr, strArrCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeObjectArray(msg.intMatrix, intMatrixCollDesc))
+                if (!writer.writeObjectArray(msg.intMatrix, intMatrixCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
@@ -86,7 +90,7 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeObjectArray(msg.verArr, verArrCollDesc))
+                if (!writer.writeObjectArray(msg.verArr, verArrCollDesc, ctx))
                     return false;
 
                 writer.incrementState();
@@ -140,8 +144,16 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage(msg.nioMsg))
+                if (!writer.writeMessage(msg.nioMsg, ctx))
                     return false;
+
+                writer.incrementState();
+
+            case 16:
+                if (ctx.includeRawFields()) {
+                    if (!writer.writeRawFields(msg.rawFields()))
+                        return false;
+                }
 
                 writer.incrementState();
         }
@@ -150,7 +162,7 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
     }
 
     /** */
-    @Override public final boolean readFrom(TestMessage msg, MessageReader reader) {
+    @Override public final boolean readFrom(TestMessage msg, MessageReader reader, MessageSerializationContext ctx) {
         switch (reader.state()) {
             case 0:
                 msg.id = reader.readInt();
@@ -177,7 +189,7 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 reader.incrementState();
 
             case 3:
-                msg.strArr = reader.readObjectArray(strArrCollDesc);
+                msg.strArr = reader.readObjectArray(strArrCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -185,7 +197,7 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 reader.incrementState();
 
             case 4:
-                msg.intMatrix = reader.readObjectArray(intMatrixCollDesc);
+                msg.intMatrix = reader.readObjectArray(intMatrixCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -201,7 +213,7 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 reader.incrementState();
 
             case 6:
-                msg.verArr = reader.readObjectArray(verArrCollDesc);
+                msg.verArr = reader.readObjectArray(verArrCollDesc, ctx);
 
                 if (!reader.isLastRead())
                     return false;
@@ -273,10 +285,23 @@ public final class TestMessageSerializer implements MessageSerializer<TestMessag
                 reader.incrementState();
 
             case 15:
-                msg.nioMsg = reader.readMessage();
+                msg.nioMsg = reader.readMessage(ctx);
 
                 if (!reader.isLastRead())
                     return false;
+
+                reader.incrementState();
+
+            case 16:
+                if (ctx.includeRawFields()) {
+                    List<RawField> rawFields = reader.readRawFields();
+
+                    if (!reader.isLastRead())
+                        return false;
+
+                    if (!rawFields.isEmpty())
+                        msg.rawFields(rawFields);
+                }
 
                 reader.incrementState();
         }

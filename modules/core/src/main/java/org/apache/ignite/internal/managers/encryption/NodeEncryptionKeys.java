@@ -23,10 +23,10 @@ import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class NodeEncryptionKeys implements Message {
+public class NodeEncryptionKeys extends AbstractMessage {
     /** Known i.e. stored in {@code ReadWriteMetastorage} keys from node (in compatible format). */
     @Order(0)
     Map<Integer, byte[]> knownKeys;

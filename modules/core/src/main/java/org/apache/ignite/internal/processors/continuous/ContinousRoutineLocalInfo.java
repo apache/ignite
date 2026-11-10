@@ -23,11 +23,11 @@ import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Continous routine local info Discovery data.  */
-public final class ContinousRoutineLocalInfo implements Message, GridContinuousProcessor.RoutineInfo {
+public final class ContinousRoutineLocalInfo extends AbstractMessage implements GridContinuousProcessor.RoutineInfo {
     /** Source node id. */
     @Order(0)
     UUID nodeId;

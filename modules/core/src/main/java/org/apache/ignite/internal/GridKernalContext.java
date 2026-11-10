@@ -79,7 +79,7 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -223,11 +223,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public MessageFactory messageFactory();
 
     /**
-     * Gets the distributed operation context dispatcher.
+     * Gets the distributed operation context.
      *
-     * @return The distributed operation context dispatcher.
+     * @return The distributed operation context.
      */
-    public OperationContextDispatcher operationContextDispatcher();
+    public DistributedOperationContext distributedOperationContext();
 
     /**
      * Gets transformation processor.

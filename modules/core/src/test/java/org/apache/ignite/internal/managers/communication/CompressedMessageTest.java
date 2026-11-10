@@ -42,6 +42,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.MessageSerializationContext.LATEST_SCHEMA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,7 +61,7 @@ public class CompressedMessageTest {
 
         writer.setBuffer(tmpBuf);
 
-        GridDhtPartitionsFullMessage fullMsg = fullMessage();
+        GridDhtPartitionsFullMessage fullMsg = fullMessage(500);
 
         boolean finished = false;
         boolean checkChunkCnt = true;
@@ -70,7 +71,7 @@ public class CompressedMessageTest {
         ByteBuffer msgBuf = ByteBuffer.allocate(40_960);
 
         while (!finished) {
-            finished = writer.writeMessage(fullMsg, true);
+            finished = writer.writeMessage(fullMsg, true, LATEST_SCHEMA);
 
             if (checkChunkCnt) {
                 DirectMessageState<?> state = U.field(writer, "state");
@@ -104,7 +105,7 @@ public class CompressedMessageTest {
 
         reader.setBuffer(msgBuf);
 
-        Message readMsg = reader.readMessage(true);
+        Message readMsg = reader.readMessage(true, LATEST_SCHEMA);
 
         assertTrue(readMsg instanceof GridDhtPartitionsFullMessage);
 
@@ -133,7 +134,7 @@ public class CompressedMessageTest {
         reader.setBuffer(buf);
 
         GridTestUtils.assertThrows(null,
-            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
+            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader, LATEST_SCHEMA),
             IgniteException.class,
             "unexpected null chunk");
     }
@@ -156,7 +157,7 @@ public class CompressedMessageTest {
         reader.setBuffer(buf);
 
         GridTestUtils.assertThrows(null,
-            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader),
+            () -> MessageSerialization.readFrom(MSG_FACTORY, new CompressedMessage(), reader, LATEST_SCHEMA),
             IgniteException.class,
             "Invalid compressed message data size");
     }
@@ -177,7 +178,7 @@ public class CompressedMessageTest {
     public void testUncompressFailsOnUnderstatedDataSize() {
         byte[] data = new byte[1000];
 
-        CompressedMessage sent = new CompressedMessage(ByteBuffer.wrap(data), Deflater.BEST_SPEED);
+        CompressedMessage sent = compress(ByteBuffer.wrap(data));
 
         CompressedMessage rcvd = new CompressedMessage();
 
@@ -195,7 +196,7 @@ public class CompressedMessageTest {
 
         new Random(42).nextBytes(data);
 
-        CompressedMessage sent = new CompressedMessage(ByteBuffer.wrap(data), Deflater.BEST_SPEED);
+        CompressedMessage sent = compress(ByteBuffer.wrap(data));
 
         assertTrue(sent.chunks.size() > 1);
 
@@ -217,13 +218,13 @@ public class CompressedMessageTest {
 
         writer.setBuffer(tmpBuf);
 
-        assertTrue(writer.writeMessage(fullMessage(), false));
+        assertTrue(writer.writeMessage(fullMessage(500), false, LATEST_SCHEMA));
 
         tmpBuf.flip();
 
         tmpBuf.limit(tmpBuf.limit() - 5); // Truncate the serialized message.
 
-        CompressedMessage compressedMsg = new CompressedMessage(tmpBuf, Deflater.BEST_SPEED);
+        CompressedMessage compressedMsg = compress(tmpBuf);
 
         DirectMessageWriter wireWriter = new DirectMessageWriter(MSG_FACTORY);
 
@@ -231,7 +232,7 @@ public class CompressedMessageTest {
 
         wireWriter.setBuffer(wire);
 
-        assertTrue(wireWriter.writeMessage(compressedMsg, false));
+        assertTrue(wireWriter.writeMessage(compressedMsg, false, LATEST_SCHEMA));
 
         wire.flip();
 
@@ -239,15 +240,102 @@ public class CompressedMessageTest {
 
         reader.setBuffer(wire);
 
-        GridTestUtils.assertThrows(null, () -> reader.readMessage(true), IgniteException.class, "ended unexpectedly");
+        GridTestUtils.assertThrows(null, () -> reader.readMessage(true, LATEST_SCHEMA), IgniteException.class, "ended unexpectedly");
     }
 
-    /** */
-    private GridDhtPartitionsFullMessage fullMessage() {
+    /** Temporary buffer of the writer must not grow for a large compressed field. */
+    @Test
+    public void testTemporaryBufferDoesNotGrow() {
+        DirectMessageWriter writer = new DirectMessageWriter(MSG_FACTORY);
+
+        writeAndRead(writer, fullMessage(10));
+
+        int tmpBufCap = U.<ByteBuffer>field(writer, "tmpBuf").capacity();
+
+        // Compressed size above the buffer capacity means the raw data was serialized in several pieces.
+        assertTrue(writeAndRead(writer, fullMessage(10_000)) > tmpBufCap);
+
+        assertEquals(tmpBufCap, U.<ByteBuffer>field(writer, "tmpBuf").capacity());
+    }
+
+    /** Writer must stay usable if serialization of a compressed field fails. */
+    @Test
+    public void testWriterReusableAfterFailedCompressedSerialization() {
+        Map<GroupPartitionIdPair, Long> brokenSuppliers = new HashMap<>();
+
+        // Null value fails with NPE in the middle of the nested map serialization.
+        brokenSuppliers.put(new GroupPartitionIdPair(1, 2), null);
+
+        GridDhtPartitionsFullMessage brokenMsg = new GridDhtPartitionsFullMessage(null, null, new AffinityTopologyVersion(0),
+            Map.of(UUID.randomUUID(), brokenSuppliers), Map.of());
+
+        DirectMessageWriter writer = new DirectMessageWriter(MSG_FACTORY);
+
+        writer.setBuffer(ByteBuffer.allocate(4096));
+
+        GridTestUtils.assertThrows(null, () -> writer.writeMessage(brokenMsg, true, LATEST_SCHEMA), NullPointerException.class, null);
+
+        writeAndRead(writer, fullMessage(500));
+    }
+
+    /**
+     * Writes the message with compression through the given writer and checks it is read back unchanged.
+     *
+     * @return Size of the written message.
+     */
+    private int writeAndRead(DirectMessageWriter writer, GridDhtPartitionsFullMessage msg) {
+        writer.reset();
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+        ByteBuffer msgBuf = ByteBuffer.allocate(1 << 20);
+
+        writer.setBuffer(buf);
+
+        boolean finished = false;
+
+        while (!finished) {
+            finished = writer.writeMessage(msg, true, LATEST_SCHEMA);
+
+            buf.flip();
+
+            msgBuf.put(buf);
+
+            buf.clear();
+        }
+
+        msgBuf.flip();
+
+        DirectMessageReader reader = new DirectMessageReader(MSG_FACTORY, null);
+
+        reader.setBuffer(msgBuf);
+
+        Message readMsg = reader.readMessage(true, LATEST_SCHEMA);
+
+        assertTrue(readMsg instanceof GridDhtPartitionsFullMessage);
+
+        assertEqualsFullMsg(msg, (GridDhtPartitionsFullMessage)readMsg);
+
+        return msgBuf.limit();
+    }
+
+    /** @return Message with the compressed buffer content. */
+    private static CompressedMessage compress(ByteBuffer buf) {
+        try (CompressedMessage.Compressor compressor = new CompressedMessage.Compressor(Deflater.BEST_SPEED)) {
+            compressor.compress(buf);
+
+            return compressor.message();
+        }
+    }
+
+    /**
+     * @param cnt Number of entries in the compressed maps.
+     * @return Full message.
+     */
+    private GridDhtPartitionsFullMessage fullMessage(int cnt) {
         Map<UUID, Map<GroupPartitionIdPair, Long>> partHistSuppliers = new HashMap<>();
         Map<UUID, Map<Integer, Set<Integer>>> partsToReload = new HashMap<>();
 
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < cnt; i++) {
             UUID uuid = UUID.randomUUID();
 
             partHistSuppliers.put(uuid, Map.of(new GroupPartitionIdPair(i, i + 1), i + 2L));

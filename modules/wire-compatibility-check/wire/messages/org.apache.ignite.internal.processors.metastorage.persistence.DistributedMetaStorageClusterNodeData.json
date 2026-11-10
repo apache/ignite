@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageClusterNodeData",
+  "fields": [
+    {"order": 0, "type": "long", "name": "dVerId"},
+    {"order": 1, "type": "long", "name": "dVerHash"},
+    {"order": 2, "type": "java.lang.String[]", "name": "fullDataKeys"},
+    {"order": 3, "type": "byte[][]", "name": "fullDataValsBytes"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[]", "name": "hist"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItemMessage[]", "name": "updates"}
+  ]
+}

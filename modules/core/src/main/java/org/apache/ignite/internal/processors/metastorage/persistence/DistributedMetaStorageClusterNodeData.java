@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * @see DmsDataWriter#write(String, byte[])
  * @see MetaStorage#write(String, Serializable)
  */
-public class DistributedMetaStorageClusterNodeData implements Message {
+public class DistributedMetaStorageClusterNodeData extends AbstractMessage {
     /** @see DistributedMetaStorageVersion#id */
     @Order(0)
     @GridToStringInclude

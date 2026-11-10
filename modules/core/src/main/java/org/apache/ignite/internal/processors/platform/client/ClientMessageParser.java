@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.client.ClientException;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -421,11 +419,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** Stop warmup. */
     private static final short OP_STOP_WARMUP = 10000;
 
-    /** */
-    public static final String INTERNAL_REQ_ERR_MSG = "Only management client are allowed to execute this";
-
-    /** Marshaller. */
-    private final GridBinaryMarshaller marsh;
+    /** Binary context. */
+    private final BinaryContext bctx;
 
     /** Client connection context */
     private final ClientConnectionContext ctx;
@@ -442,9 +437,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         this.ctx = ctx;
         this.protocolCtx = protocolCtx;
-
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
-        marsh = cacheObjProc.marshaller();
+        this.bctx = ctx.kernalContext().cacheObjects().binaryContext();
     }
 
     /** {@inheritDoc} */
@@ -454,7 +447,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         BinaryInputStream inStream = BinaryStreams.inputStream(msg.payload());
 
         // skipHdrCheck must be true (we have 103 op code).
-        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), inStream, null, true, true);
+        BinaryReaderEx reader = BinaryUtils.reader(bctx, inStream, null, true, true);
 
         ClientListenerRequest req = decode(reader);
 
@@ -765,7 +758,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         BinaryOutputStream outStream = BinaryStreams.createPooledOutputStream(32, false);
 
-        BinaryWriterEx writer = marsh.writer(outStream);
+        BinaryWriterEx writer = BinaryUtils.writer(bctx, outStream);
 
         assert resp instanceof ClientOutgoingMessage : "Unexpected response type: " + resp.getClass();
 

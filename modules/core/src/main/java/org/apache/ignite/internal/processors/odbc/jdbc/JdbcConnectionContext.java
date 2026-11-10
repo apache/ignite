@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryEngineConfigurationEx;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
@@ -217,23 +215,8 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_13_0) >= 0) {
             qryEngine = reader.readString();
 
-            if (qryEngine != null) {
-                QueryEngineConfiguration[] cfgs = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
-
-                boolean found = false;
-
-                if (cfgs != null) {
-                    for (int i = 0; i < cfgs.length; i++) {
-                        if (qryEngine.equalsIgnoreCase(((QueryEngineConfigurationEx)cfgs[i]).engineName())) {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                    throw new IgniteCheckedException("Not found configuration for query engine: " + qryEngine);
-            }
+            if (qryEngine != null && !ctx.query().queryEngineConfigured(qryEngine))
+                throw new IgniteCheckedException("Not found configuration for query engine: " + qryEngine);
         }
 
         TransactionConcurrency concurrency = null;

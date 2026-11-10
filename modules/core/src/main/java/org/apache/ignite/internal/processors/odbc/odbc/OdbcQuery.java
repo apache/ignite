@@ -67,7 +67,7 @@ public class OdbcQuery {
             writer.writeInt(args.length);
 
             for (Object arg : args)
-                SqlListenerUtils.writeObject(writer, arg, false);
+                writer.writeJdbcObject(arg, false);
         }
     }
 

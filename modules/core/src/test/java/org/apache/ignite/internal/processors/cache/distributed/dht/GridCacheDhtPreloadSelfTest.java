@@ -444,14 +444,6 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param grids Grids to stop.
-     */
-    private void stopGrids(Iterable<Ignite> grids) {
-        for (Ignite g : grids)
-            stopGrid(g.name());
-    }
-
-    /**
      * @param keyCnt Key count.
      * @param nodeCnt Node count.
      * @param sameCoord Same coordinator flag.

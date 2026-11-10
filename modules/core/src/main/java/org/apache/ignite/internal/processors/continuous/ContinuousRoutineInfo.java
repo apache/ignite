@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public final class ContinuousRoutineInfo implements Message {
+public final class ContinuousRoutineInfo extends AbstractMessage {
     /** */
     @Order(0)
     UUID srcNodeId;

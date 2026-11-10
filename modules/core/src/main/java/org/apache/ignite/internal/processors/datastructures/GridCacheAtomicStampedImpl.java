@@ -258,13 +258,6 @@ public final class GridCacheAtomicStampedImpl<T, S> extends AtomicDataStructureP
     }
 
     /**
-     * @return Error.
-     */
-    private IllegalStateException removedError() {
-        return new IllegalStateException("Atomic stamped was removed from cache: " + name);
-    }
-
-    /**
      *
      */
     static class StampedSetEntryProcessor<T, S> implements

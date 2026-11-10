@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Key, describing the object of statistics. For example: table with some columns.
  */
-public class StatisticsKeyMessage implements Message, Serializable {
+public class StatisticsKeyMessage extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

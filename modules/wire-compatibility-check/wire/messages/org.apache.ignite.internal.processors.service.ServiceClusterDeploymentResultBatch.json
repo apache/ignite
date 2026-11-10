@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResultBatch",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId", "name": "depId"},
+    {"order": 2, "type": "java.util.Collection<org.apache.ignite.internal.processors.service.ServiceClusterDeploymentResult>", "name": "results"}
+  ]
+}

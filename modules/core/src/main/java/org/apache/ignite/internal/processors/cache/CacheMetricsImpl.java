@@ -250,6 +250,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Conflict resolver merged entries count. */
     private LongAdderMetric rslvrMergedCnt;
 
+    /** Conflict resolver failed resolutions count. */
+    private LongAdderMetric rslvrFailedCnt;
+
     /** Affinity configuration MDC safe metric. */
     private volatile Boolean affCfgMdcSafe;
 
@@ -442,7 +445,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         mreg.register("HeapEntriesCount", this::getHeapEntriesCount, "Onheap entries count.");
 
-        mreg.register("CacheSize", this::getCacheSize, "Local cache size.");
+        mreg.register("CacheSize", this::getCacheSize,
+            "Local cache size, the number of primary copies of entries on the node.");
 
         idxRebuildKeyProcessed = mreg.longAdderMetric("IndexRebuildKeyProcessed",
             "Number of keys processed during the index rebuilding.");
@@ -780,6 +784,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (rslvrMergedCnt != null)
             rslvrMergedCnt.reset();
+
+        if (rslvrFailedCnt != null)
+            rslvrFailedCnt.reset();
     }
 
     /** {@inheritDoc} */
@@ -1390,9 +1397,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapPrimaryEntriesCnt = 0L;
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
-        int size = 0;
-        long sizeLong = 0L;
-        boolean isEmpty;
 
         try {
             AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
@@ -1401,13 +1405,6 @@ public class CacheMetricsImpl implements CacheMetrics {
                 return unknownEntriesStat();
 
             final GridCacheAdapter<?, ?> cache = cctx.cache();
-
-            if (cache != null) {
-                offHeapEntriesCnt = cache.offHeapEntriesCount();
-
-                size = cache.localSize(null);
-                sizeLong = cache.localSizeLong(null);
-            }
 
             IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
             IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
@@ -1429,13 +1426,18 @@ public class CacheMetricsImpl implements CacheMetrics {
                 if (cache == null)
                     continue;
 
-                long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+                long offHeapCnt = part.dataStore().cacheSize(cctx.cacheId());
+
+                // All local partitions, not only primary and backup ones (e.g. renting too),
+                // the same as IgniteInternalCache#offHeapEntriesCount().
+                offHeapEntriesCnt += offHeapCnt;
 
                 if (primaries.contains(part.id()))
-                    offHeapPrimaryEntriesCnt += cacheSize;
+                    offHeapPrimaryEntriesCnt += offHeapCnt;
                 else if (backups.contains(part.id()))
-                    offHeapBackupEntriesCnt += cacheSize;
+                    offHeapBackupEntriesCnt += offHeapCnt;
 
+                // Onheap entries count.
                 heapEntriesCnt += part.publicSize(cctx.cacheId());
             }
         }
@@ -1443,18 +1445,17 @@ public class CacheMetricsImpl implements CacheMetrics {
             return unknownEntriesStat();
         }
 
-        isEmpty = (offHeapEntriesCnt == 0);
-
         EntriesStatMetrics stat = new EntriesStatMetrics();
 
         stat.offHeapEntriesCount(offHeapEntriesCnt);
         stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
-        stat.size(size);
-        stat.cacheSize(sizeLong);
-        stat.keySize(size);
-        stat.isEmpty(isEmpty);
+        // Local cache size counts primary copies of entries, see GridDistributedCacheAdapter#localSizeLong.
+        stat.size((int)offHeapPrimaryEntriesCnt);
+        stat.cacheSize(offHeapPrimaryEntriesCnt);
+        stat.keySize((int)offHeapPrimaryEntriesCnt);
+        stat.isEmpty(offHeapEntriesCnt == 0);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
 
@@ -1622,20 +1623,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         totalRebalancedBytes.add(batchSize);
 
         rebalancingBytesRate.add(batchSize);
-    }
-
-    /**
-     * @return Total number of allocated pages.
-     */
-    public long getTotalAllocatedPages() {
-        return 0;
-    }
-
-    /**
-     * @return Total number of evicted pages.
-     */
-    public long getTotalEvictedPages() {
-        return 0;
     }
 
     /**
@@ -1811,6 +1798,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         rslvrMergedCnt.increment();
     }
 
+    /** */
+    public void incrementResolverFailedCount() {
+        rslvrFailedCnt.increment();
+    }
+
     /** Registers metrics for conflict resolver. */
     public void registerResolverMetrics() {
         rslvrAcceptedCnt = mreg.longAdderMetric("ConflictResolverAcceptedCount",
@@ -1821,6 +1813,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         rslvrMergedCnt = mreg.longAdderMetric("ConflictResolverMergedCount",
             "Conflict resolver merged entries count");
+
+        rslvrFailedCnt = mreg.longAdderMetric("ConflictResolverFailedCount",
+            "Conflict resolver failed resolutions count");
     }
 
     /** Registers metric for partition distribution.  */

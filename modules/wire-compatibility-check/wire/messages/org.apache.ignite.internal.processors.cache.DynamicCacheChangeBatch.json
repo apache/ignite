@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest>", "name": "reqs"}
+  ]
+}

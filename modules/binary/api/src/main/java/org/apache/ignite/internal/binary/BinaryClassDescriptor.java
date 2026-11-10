@@ -22,31 +22,21 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.UnregisteredBinaryTypeException;
-import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +52,7 @@ class BinaryClassDescriptor {
     private final BinaryContext ctx;
 
     /** */
-    private final Class<?> cls;
+    final Class<?> cls;
 
     /** Configured serializer. */
     final BinarySerializer serializer;
@@ -77,7 +67,7 @@ class BinaryClassDescriptor {
     final BinaryWriteMode mode;
 
     /** */
-    private final boolean userType;
+    final boolean userType;
 
     /** */
     private final int typeId;
@@ -86,7 +76,7 @@ class BinaryClassDescriptor {
     final String typeName;
 
     /** Affinity key field name. */
-    private final String affKeyFieldName;
+    final String affKeyFieldName;
 
     /** */
     private final Constructor<?> ctor;
@@ -101,16 +91,16 @@ class BinaryClassDescriptor {
     final Method readResolveMtd;
 
     /** */
-    private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
+    final Map<String, BinaryFieldMetadata> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
-    private final BinarySchema stableSchema;
+    final BinarySchema stableSchema;
 
     /** Schema registry. */
-    private final BinarySchemaRegistry schemaReg;
+    final BinarySchemaRegistry schemaReg;
 
     /** */
-    private final boolean registered;
+    final boolean registered;
 
     /** */
     private final boolean useOptMarshaller;
@@ -119,10 +109,10 @@ class BinaryClassDescriptor {
     private final boolean excluded;
 
     /** */
-    private final Class<?>[] intfs;
+    final Class<?>[] intfs;
 
     /** Whether stable schema was published. */
-    private volatile boolean stableSchemaPublished;
+    volatile boolean stableSchemaPublished;
 
     /**
      * @param ctx Context.
@@ -596,327 +586,6 @@ class BinaryClassDescriptor {
     }
 
     /**
-     * @param obj Object.
-     * @param writer Writer.
-     * @throws BinaryObjectException In case of error.
-     */
-    void write(Object obj, BinaryWriterEx writer) throws BinaryObjectException {
-        try {
-            assert obj != null;
-            assert writer != null;
-            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
-
-            switch (mode) {
-                case P_BYTE:
-                case BYTE:
-                    writer.writeByteFieldPrimitive((byte)obj);
-
-                    break;
-
-                case P_SHORT:
-                case SHORT:
-                    writer.writeShortFieldPrimitive((short)obj);
-
-                    break;
-
-                case P_INT:
-                case INT:
-                    writer.writeIntFieldPrimitive((int)obj);
-
-                    break;
-
-                case P_LONG:
-                case LONG:
-                    writer.writeLongFieldPrimitive((long)obj);
-
-                    break;
-
-                case P_FLOAT:
-                case FLOAT:
-                    writer.writeFloatFieldPrimitive((float)obj);
-
-                    break;
-
-                case P_DOUBLE:
-                case DOUBLE:
-                    writer.writeDoubleFieldPrimitive((double)obj);
-
-                    break;
-
-                case P_CHAR:
-                case CHAR:
-                    writer.writeCharFieldPrimitive((char)obj);
-
-                    break;
-
-                case P_BOOLEAN:
-                case BOOLEAN:
-                    writer.writeBooleanFieldPrimitive((boolean)obj);
-
-                    break;
-
-                case DECIMAL:
-                    writer.writeDecimal((BigDecimal)obj);
-
-                    break;
-
-                case STRING:
-                    writer.writeString((String)obj);
-
-                    break;
-
-                case UUID:
-                    writer.writeUuid((UUID)obj);
-
-                    break;
-
-                case DATE:
-                    writer.writeDate((Date)obj);
-
-                    break;
-
-                case TIMESTAMP:
-                    writer.writeTimestamp((Timestamp)obj);
-
-                    break;
-
-                case TIME:
-                    writer.writeTime((Time)obj);
-
-                    break;
-
-                case BYTE_ARR:
-                    writer.writeByteArray((byte[])obj);
-
-                    break;
-
-                case SHORT_ARR:
-                    writer.writeShortArray((short[])obj);
-
-                    break;
-
-                case INT_ARR:
-                    writer.writeIntArray((int[])obj);
-
-                    break;
-
-                case LONG_ARR:
-                    writer.writeLongArray((long[])obj);
-
-                    break;
-
-                case FLOAT_ARR:
-                    writer.writeFloatArray((float[])obj);
-
-                    break;
-
-                case DOUBLE_ARR:
-                    writer.writeDoubleArray((double[])obj);
-
-                    break;
-
-                case CHAR_ARR:
-                    writer.writeCharArray((char[])obj);
-
-                    break;
-
-                case BOOLEAN_ARR:
-                    writer.writeBooleanArray((boolean[])obj);
-
-                    break;
-
-                case DECIMAL_ARR:
-                    writer.writeDecimalArray((BigDecimal[])obj);
-
-                    break;
-
-                case STRING_ARR:
-                    writer.writeStringArray((String[])obj);
-
-                    break;
-
-                case UUID_ARR:
-                    writer.writeUuidArray((UUID[])obj);
-
-                    break;
-
-                case DATE_ARR:
-                    writer.writeDateArray((Date[])obj);
-
-                    break;
-
-                case TIMESTAMP_ARR:
-                    writer.writeTimestampArray((Timestamp[])obj);
-
-                    break;
-
-                case TIME_ARR:
-                    writer.writeTimeArray((Time[])obj);
-
-                    break;
-
-                case OBJECT_ARR:
-                    if (BinaryUtils.isBinaryArray(obj))
-                        writer.writeBinaryArray(((BinaryArray)obj));
-                    else
-                        writer.writeObjectArray((Object[])obj);
-
-                    break;
-
-                case COL:
-                    writer.writeCollection((Collection<?>)obj);
-
-                    break;
-
-                case MAP:
-                    writer.writeMap((Map<?, ?>)obj);
-
-                    break;
-
-                case ENUM:
-                    writer.writeEnum((Enum<?>)obj);
-
-                    break;
-
-                case BINARY_ENUM:
-                    writer.writeBinaryEnum((BinaryObjectEx)obj);
-
-                    break;
-
-                case ENUM_ARR:
-                    if (BinaryUtils.isBinaryArray(obj))
-                        writer.writeBinaryArray(((BinaryArray)obj));
-                    else
-                        writer.doWriteEnumArray((Object[])obj);
-
-                    break;
-
-                case CLASS:
-                    writer.writeClass((Class)obj);
-
-                    break;
-
-                case PROXY:
-                    writer.writeProxy((Proxy)obj, intfs);
-
-                    break;
-
-                case BINARY_OBJ:
-                    writer.writeBinaryObject((BinaryObjectEx)obj);
-
-                    break;
-
-                case BINARY:
-                    if (preWrite(writer, obj)) {
-                        try {
-                            if (serializer != null)
-                                serializer.writeBinary(obj, writer);
-                            else
-                                ((Binarylizable)obj).writeBinary(writer);
-
-                            postWrite(writer);
-
-                            // Check whether we need to update metadata.
-                            // The reason for this check is described in https://issues.apache.org/jira/browse/IGNITE-7138.
-                            if (obj.getClass() != BinaryMetadata.class && obj.getClass() != BinaryTreeMap.class) {
-                                int schemaId = writer.schemaId();
-
-                                if (schemaReg.schema(schemaId) == null) {
-                                    // This is new schema, let's update metadata.
-                                    BinaryMetadataCollector collector =
-                                        new BinaryMetadataCollector(typeId, typeName, mapper);
-
-                                    if (serializer != null)
-                                        serializer.writeBinary(obj, collector);
-                                    else
-                                        ((Binarylizable)obj).writeBinary(collector);
-
-                                    BinarySchema newSchema = collector.schema();
-
-                                    schemaReg.addSchema(newSchema.schemaId(), newSchema);
-
-                                    if (userType) {
-                                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                            affKeyFieldName, Collections.singleton(newSchema), false, null);
-
-                                        ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
-                                    }
-                                }
-                            }
-
-                            postWriteHashCode(writer, obj);
-                        }
-                        finally {
-                            writer.popSchema();
-                        }
-                    }
-
-                    break;
-
-                case OBJECT:
-                    if (userType && !stableSchemaPublished) {
-                        // Update meta before write object with new schema
-                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
-                            affKeyFieldName, Collections.singleton(stableSchema), false, null);
-
-                        ctx.updateMetadata(typeId, meta, writer.failIfUnregistered());
-
-                        schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
-
-                        stableSchemaPublished = true;
-                    }
-
-                    if (preWrite(writer, obj)) {
-                        try {
-                            for (BinaryFieldDescriptor info : fields) {
-                                try {
-                                    writer.writeField(obj, info);
-                                }
-                                catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
-                                    throw ex;
-                                }
-                                catch (Exception ex) {
-                                    if (S.includeSensitive() && !F.isEmpty(info.name))
-                                        throw new BinaryObjectException("Failed to write field [name=" + info.name + ']', ex);
-                                    else
-                                        throw new BinaryObjectException("Failed to write field [id=" + info.id + ']', ex);
-                                }
-                            }
-
-                            writer.schemaId(stableSchema.schemaId());
-
-                            postWrite(writer);
-                            postWriteHashCode(writer, obj);
-                        }
-                        finally {
-                            writer.popSchema();
-                        }
-                    }
-
-                    break;
-
-                default:
-                    assert false : "Invalid mode: " + mode;
-            }
-        }
-        catch (UnregisteredBinaryTypeException | UnregisteredClassException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            String msg;
-
-            if (S.includeSensitive() && !F.isEmpty(typeName))
-                msg = "Failed to serialize object [typeName=" + typeName + ']';
-            else
-                msg = "Failed to serialize object [typeId=" + typeId + ']';
-
-            CommonUtils.error(ctx.log(), msg, e);
-
-            throw new BinaryObjectException(msg, e);
-        }
-    }
-
-    /**
      * @return A copy of this {@code BinaryClassDescriptor} marked as registered.
      */
     BinaryClassDescriptor makeRegistered() {
@@ -964,44 +633,6 @@ class BinaryClassDescriptor {
             enumMap.put(((Enum)enumVal).name(), ((Enum)enumVal).ordinal());
 
         return enumMap;
-    }
-
-    /**
-     * Pre-write phase.
-     *
-     * @param writer Writer.
-     * @param obj Object.
-     * @return Whether further write is needed.
-     */
-    private boolean preWrite(BinaryWriterEx writer, Object obj) {
-        if (writer.tryWriteAsHandle(obj))
-            return false;
-
-        writer.preWrite(registered ? null : cls.getName());
-
-        return true;
-    }
-
-    /**
-     * Post-write phase.
-     *
-     * @param writer Writer.
-     */
-    private void postWrite(BinaryWriterEx writer) {
-        writer.postWrite(userType, registered);
-    }
-
-    /**
-     * Post-write routine for hash code.
-     *
-     * @param writer Writer.
-     * @param obj Object.
-     */
-    private void postWriteHashCode(BinaryWriterEx writer, Object obj) {
-        boolean postWriteRequired = !(obj instanceof CacheObject) || ((CacheObject)obj).postWriteRequired();
-        // No need to call "postWriteHashCode" here because we do not care about hash code.
-        if (postWriteRequired)
-            writer.postWriteHashCode(registered ? null : cls.getName());
     }
 
     /** */

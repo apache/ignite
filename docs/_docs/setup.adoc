@@ -70,7 +70,7 @@ The following are the two most commonly used modules:
 
 
 * `ignite-spring` (support for link:understanding-configuration#spring-xml-configuration[XML-based configuration])
-* `ignite-indexing` (support for SQL indexing)
+* `ignite-calcite` (the link:SQL/sql-calcite[SQL engine])
 
 
 [source, xml]
@@ -82,11 +82,14 @@ The following are the two most commonly used modules:
 </dependency>
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-indexing</artifactId>
+    <artifactId>ignite-calcite</artifactId>
     <version>${ignite.version}</version>
 </dependency>
 
 ----
+
+The legacy H2-based SQL engine is provided by the `ignite-indexing` module. Add it only if you need the
+link:SQL/sql-calcite#legacy-h2-engine[features that are implemented by the legacy engine].
 
 
 
@@ -143,6 +146,10 @@ include::code-snippets/cpp/src/setting_work_directory.cpp[tag=setting-work-direc
 ----
 --
 
+The work directory contains binary metadata and marshaller mappings, so treat it as durable storage even when data and WAL are configured elsewhere.
+Keep the work directory on persistent storage with enough free space.
+See link:server-node-file-system-layout[Server Node File System Layout] for the recommended disk placement of the work directory, data, WAL, logs, and diagnostic files.
+
 
 
 == Enabling Modules
@@ -151,8 +158,8 @@ Ignite ships with a number of modules and have a lot of extensions that provide 
 You can enable modules or extensions one by one, as required.
 
 All modules are included in the binary distribution, but by default they
-are disabled (except for the `ignite-core`, `ignite-spring`, `ignite-control-utility` and
-`ignite-indexing` modules). Modules can be found in the `libs/optional`
+are disabled (except for the `ignite-core`, `ignite-spring`, `ignite-control-utility`,
+`ignite-calcite` and `ignite-indexing` modules). Modules can be found in the `libs/optional`
 directory of the distribution package (each module is located in a
 separate sub-directory).
 
@@ -204,7 +211,7 @@ The following modules are available:
 
 |ignite-direct-io | Ignite Direct IO is a plugin that provides a page store with the ability to write and read cache partitions in O_DIRECT mode.
 
-|ignite-indexing | link:SQL/indexes[SQL querying and indexing]
+|ignite-indexing | link:SQL/sql-calcite#legacy-h2-engine[Legacy H2-based SQL engine].
 
 |ignite-jcl |Support for the Jakarta Common Logging (JCL) framework.
 
@@ -342,6 +349,8 @@ If you are going to use either binary distribution or Maven, you are
 encouraged to set up the work directory for Ignite.
 The work directory is used to store metadata information, index files, your application data (if you use the link:persistence/native-persistence[Native Persistence] feature), logs, and other files.
 We recommend you always set up the work directory.
+When data, WAL, and logs are configured to separate locations, keep the work directory on persistent storage with enough free space.
+See link:server-node-file-system-layout[Server Node File System Layout].
 
 
 === Recommended Logging Configuration
@@ -351,6 +360,7 @@ Logs play an important role when it comes to troubleshooting and finding what we
 * Start Ignite in verbose mode:
    - If you use `ignite.sh`, specify the `-v` option.
    - If you start Ignite from Java code, set the following system variable: `IGNITE_QUIET=false`.
-* Do not store log files in the `/tmp` folder. This folder is cleared up every time the server is restarted.
-* Make sure that there is enough space available on the storage where the log files are stored.
+* Use durable storage for logs that you need after a host reboot. Temporary storage is suitable only for logs that can be discarded.
+* Make sure that there is enough space available on the storage where the log files are stored, and bound the total retained volume, not only the size of individual files.
 * Archive old log files periodically to save on storage space.
+* Keep log growth away from the space that data, WAL, and node metadata need. See link:server-node-file-system-layout[Server Node File System Layout].

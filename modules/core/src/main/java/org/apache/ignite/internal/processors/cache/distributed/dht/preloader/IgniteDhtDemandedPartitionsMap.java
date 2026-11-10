@@ -27,13 +27,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Map of partitions demanded during rebalancing.
  */
-public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
+public class IgniteDhtDemandedPartitionsMap extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

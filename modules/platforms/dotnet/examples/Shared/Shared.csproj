@@ -6,6 +6,10 @@
     <NoWarn>CS0649</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Update="ignite-config.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!-- Standalone examples mode: use NuGet -->
   <ItemGroup Condition="$(IgniteBinaryDistro) == '' And $(IgniteDevMode) == ''">
     <PackageReference Include="Apache.Ignite" Version="2.*" />

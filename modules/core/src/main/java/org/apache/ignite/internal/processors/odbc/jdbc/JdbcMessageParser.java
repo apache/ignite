@@ -95,7 +95,7 @@ public class JdbcMessageParser implements ClientListenerMessageParser {
 
         res.writeBinary(writer, protoCtx);
 
-        return new ClientMessage(writer.array());
+        return new ClientMessage(writer.out().arrayCopy());
     }
 
     /** {@inheritDoc} */

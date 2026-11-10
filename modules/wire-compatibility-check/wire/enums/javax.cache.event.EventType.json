@@ -1,0 +1,9 @@
+{
+  "class": "javax.cache.event.EventType",
+  "fields": [
+    {"order": 0, "type": "javax.cache.event.EventType", "name": "CREATED"},
+    {"order": 1, "type": "javax.cache.event.EventType", "name": "UPDATED"},
+    {"order": 2, "type": "javax.cache.event.EventType", "name": "REMOVED"},
+    {"order": 3, "type": "javax.cache.event.EventType", "name": "EXPIRED"}
+  ]
+}

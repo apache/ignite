@@ -47,7 +47,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_16_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_7_0;
+import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_8_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
@@ -112,7 +115,11 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     public void testQueryOldIndex() throws Exception {
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
-        if (majorJavaVer > 11) {
+        if (majorJavaVer >= 21) {
+            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
+                    VER_2_16_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) <= 0);
+        }
+        else if (majorJavaVer > 11) {
             Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
                     VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
         }
@@ -153,13 +160,15 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
      * @param cache Cache to check.
      */
     private void validateResultingCacheData(IgniteCache<Object, Object> cache) {
+        IgniteReleasedVersion ver = IgniteReleasedVersion.fromString(igniteVer);
+
         for (String type: typeProducer.keySet()) {
             // Byte array is supported as key since 2.8.0.
-            if ("Binary".equals(type) && igniteVer.compareTo("2.8.0") < 0)
+            if ("Binary".equals(type) && ver.compareTo(VER_2_8_0) < 0)
                 continue;
 
             // In versions prior to 2.7.0, UUID must be converted to byte array to work with.
-            if ("UUID".equals(type) && igniteVer.compareTo("2.7.0") < 0)
+            if ("UUID".equals(type) && ver.compareTo(VER_2_7_0) < 0)
                 continue;
 
             int cnt = getRowsCnt(type);

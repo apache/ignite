@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.TestEnumSetMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.EnumSet<org.apache.ignite.transactions.TransactionIsolation>", "name": "isolations"},
+    {"order": 1, "type": "java.util.Map<java.lang.String,java.util.EnumSet<org.apache.ignite.transactions.TransactionIsolation>>", "name": "isolationsMap"},
+    {"order": 2, "type": "java.util.List<java.util.EnumSet<org.apache.ignite.transactions.TransactionIsolation>>", "name": "isolationsList"}
+  ]
+}

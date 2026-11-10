@@ -19,7 +19,10 @@ package org.apache.ignite.internal.util.collection;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
@@ -30,6 +33,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -98,6 +102,61 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
         assertEquals(16, realCapacityForInitialSize(9));
         assertEquals(128, realCapacityForInitialSize(99));
         assertEquals(256, realCapacityForInitialSize(155));
+    }
+
+    /** */
+    @Test
+    public void shouldNotResizeOnFirstPut() {
+        IntHashMap<String> map = new IntHashMap<>();
+
+        map.put(1, "1");
+
+        assertEquals(INITIAL_CAPACITY, ((Object[])U.field(map, "entries")).length);
+
+        map.clear();
+        map.put(1, "1");
+
+        assertEquals(INITIAL_CAPACITY, ((Object[])U.field(map, "entries")).length);
+    }
+
+    /** */
+    @Test
+    public void shouldIterateValues() {
+        IntHashMap<String> map = new IntHashMap<>();
+
+        assertFalse(map.valuesIterator().hasNext());
+
+        for (int i = 0; i < 20; i++)
+            map.put(i, String.valueOf(i));
+
+        Set<String> vals = new HashSet<>();
+
+        for (Iterator<String> it = map.valuesIterator(); it.hasNext(); )
+            vals.add(it.next());
+
+        assertEquals(new HashSet<>(map.values()), vals);
+        assertEquals(20, vals.size());
+    }
+
+    /** */
+    @Test
+    public void shouldCopyIndependently() {
+        IntHashMap<String> map = new IntHashMap<>();
+
+        for (int i = 0; i < 20; i++)
+            map.put(i, String.valueOf(i));
+
+        IntHashMap<String> copy = map.copy();
+
+        assertEquals(20, copy.size());
+        assertEquals("7", copy.get(7));
+
+        copy.remove(7);
+        copy.put(100, "100");
+
+        assertEquals("7", map.get(7));
+        assertFalse(map.containsKey(100));
+        assertEquals(20, map.size());
     }
 
     /**

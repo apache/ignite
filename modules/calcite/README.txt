@@ -3,8 +3,8 @@ Apache Ignite Calcite Module
 
 Apache Ignite Calcite module provides Apache Calcite based query engine.
 
-To enable Calcite based engine explicit `CalciteQueryEngineConfiguration` instance should be added to
-`SqlConfiguration.QueryEnginesConfiguration` property (see `SqlConfiguration.setQueryEnginesConfiguration()`) or ./examples/config/example-sql.xml.
+Calcite based engine is default.
+If legacy mode required then `IndexingQueryEngineConfiguration` must be set as default.
 Config example:
 
 <bean id="queries.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">

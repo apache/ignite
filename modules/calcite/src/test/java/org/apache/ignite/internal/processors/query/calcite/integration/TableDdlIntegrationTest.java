@@ -40,6 +40,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -55,14 +56,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /** */
 public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
@@ -1213,7 +1213,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table logging/nologing.
      */
     @Test
-    public void alterTableLogging() {
+    public void alterTableLogging() throws IgniteInterruptedCheckedException {
         String cacheName = "cache";
 
         client.getOrCreateCache(new CacheConfiguration<>(cacheName)
@@ -1223,11 +1223,11 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         sql("alter table \"" + cacheName + "\".Integer nologging");
 
-        assertFalse(client.cluster().isWalEnabled(cacheName));
+        assertTrue(GridTestUtils.waitForCondition(() -> !client.cluster().isWalEnabled(cacheName), 1_000));
 
         sql("alter table \"" + cacheName + "\".Integer logging");
 
-        assertTrue(client.cluster().isWalEnabled(cacheName));
+        assertTrue(GridTestUtils.waitForCondition(() -> client.cluster().isWalEnabled(cacheName), 1_000));
     }
 
     /**

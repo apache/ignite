@@ -71,6 +71,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -88,6 +89,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.systemview.ClusterNodeViewWalker;
 import org.apache.ignite.internal.systemview.NodeAttributeViewWalker;
@@ -1812,6 +1814,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /** */
+    public @Nullable IgniteNodeFeatureSet resolveNodeFeatures(ClusterNode node) throws ClusterTopologyCheckedException {
+        assert node instanceof IgniteClusterNode : node;
+
+        IgniteNodeFeatureSet features = ((IgniteClusterNode)node).features();
+
+        if (features != null)
+            return features;
+
+        ClusterNode resolvedNode = node(node.id());
+
+        if (resolvedNode == null)
+            resolvedNode = historicalNode(node.id());
+
+        if (resolvedNode == null)
+            throw new ClusterTopologyCheckedException("Failed to resolve the remote node by ID [nodeId=" + node.id() + ']');
+
+        assert resolvedNode instanceof IgniteClusterNode : resolvedNode;
+
+        return ((IgniteClusterNode)resolvedNode).features();
     }
 
     /**

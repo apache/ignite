@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query.schema.message;
 
 import java.util.Map;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** */
-public class QueryInlineSizesDataBagItem implements Message {
+public class QueryInlineSizesDataBagItem extends AbstractMessage {
     /** */
     @Order(0)
     Map<String, Integer> sizes;

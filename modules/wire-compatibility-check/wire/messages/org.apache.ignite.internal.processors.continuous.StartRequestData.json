@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.StartRequestData",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "nodeFilterBytes"},
+    {"order": 1, "type": "java.lang.String", "name": "clsName"},
+    {"order": 2, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.continuous.GridContinuousHandler", "name": "hnd"},
+    {"order": 4, "type": "int", "name": "bufSize"},
+    {"order": 5, "type": "long", "name": "interval"},
+    {"order": 6, "type": "boolean", "name": "autoUnsubscribe"},
+    {"order": 7, "type": "boolean", "name": "keepBinary"}
+  ]
+}

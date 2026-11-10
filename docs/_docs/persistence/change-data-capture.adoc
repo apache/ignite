@@ -49,8 +49,12 @@ On startup event processing will be continued from the last saved state.
 |Name |Description | Default value
 | `DataRegionConfiguration#cdcEnabled` | Flag to enable CDC on the server node. | `false`
 | `DataStorageConfiguration#cdcWalPath` | Path to the CDC directory | `"db/wal/cdc"`
+| `DataStorageConfiguration#cdcWalDirectoryMaxSize` | Maximum size of the CDC directory in bytes. If adding a segment would exceed the limit, the CDC link is skipped and the changes in that segment are lost. | `0` (no limit)
 | `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive the WAL segment even it is not complete. | `-1` (disabled)
 |===
+
+NOTE: CDC links are hard links to WAL archive segments, so `cdcWalPath` must be on the same file system as `walArchivePath`, and the space retained by CDC is not bounded by `maxWalArchiveSize`.
+See link:server-node-file-system-layout#account-for-hard-links[Server Node File System Layout] for the capacity planning rules.
 
 === CDC Application
 
@@ -112,18 +116,29 @@ The consumer of change events.  It should be implemented by the user.
 
 == Metrics
 
-`ignite-cdc.sh` uses the same SPI to export metrics as Ignite does.
-The following metrics are provided by the application (additional metrics can be provided by the consumer):
+`ignite-cdc.sh` uses the same link:monitoring-metrics/new-metrics-system#metric-exporters[metric exporters] as an Ignite node.
+They are configured by the `metricExporterSpi` property of `CdcConfiguration`, the JMX exporter is used by default.
+The application registers its metrics in the `cdc` register.
+The `cdc.consumer` register is passed to `CdcConsumer.start(MetricRegistry)` and is reserved for the consumer-specific metrics.
+
+Register name: `cdc`
+
+[cols="2,1,3",opts="header"]
 |===
-|Name |Description
-| CurrentSegmentIndex | Index of the currently processing WAL segment.
-| CommittedSegmentIndex | Index of the WAL segment that contains the last committed state.
-| CommittedSegmentOffset | Committed offset in bytes inside the WAL segment.
-| LastSegmentConsumptionTime | Timestamp (in milliseconds) indicating the last segment processing start.
-| BinaryMetaDir | Binary meta-directory the application reads data from.
-| MarshallerDir | Marshaller directory the application reads data from.
-| CdcDir | The CDC directory the application reads data from.
-| SegmentConsumingTime | Time of WAL segment consumption by consumer, in milliseconds.
+|Name | Type | Description
+|BinaryMetaDir | string | Binary metadata directory the application reads data from.
+|CdcDir | string | CDC directory the application reads data from.
+|CdcMode | string | CDC mode: `CDC_UTILITY_ACTIVE` when the events are captured by the application, `IGNITE_NODE_ACTIVE` when they are captured within the Ignite node.
+|CommittedSegmentIndex | long | Index of the WAL segment that contains the last committed state.
+|CommittedSegmentOffset | long | Committed offset in bytes inside the WAL segment.
+|CurrentSegmentIndex | long | Index of the WAL segment being processed.
+|EventCaptureTime | histogram | Time between the event creation on the Ignite node and its capture by the consumer, in milliseconds.
+|EventsCount | long | Number of events passed to the consumer.
+|LastEventTime | long | Timestamp (in milliseconds) of the last event passed to the consumer.
+|LastSegmentConsumptionTime | long | Timestamp (in milliseconds) indicating the last segment processing start.
+|MarshallerDir | string | Marshaller directory the application reads data from.
+|MetadataUpdateTime | histogram | Time of the metadata update (marshaller mappings, binary types and cache configurations), in milliseconds.
+|SegmentConsumingTime | histogram | Time of WAL segment consumption by consumer, in milliseconds.
 |===
 
 == Logging

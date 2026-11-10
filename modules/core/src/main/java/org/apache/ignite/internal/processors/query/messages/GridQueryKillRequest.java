@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.query.messages;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Query kill request.
  */
-public class GridQueryKillRequest implements Message {
+public class GridQueryKillRequest extends AbstractMessage {
     /** Request id. */
     @Order(0)
     long reqId;
