@@ -802,6 +802,7 @@ public class GridJettyRestHandler extends HttpServlet {
         if (certs instanceof X509Certificate[])
             restReq.certificates((X509Certificate[])certs);
 
+        // TODO: We should check credentials only for AUTHENTICATE command.
         if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))
             credentials(params, USER_PARAM, PWD_PARAM, restReq);
 

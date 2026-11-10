@@ -98,6 +98,8 @@ public interface DiscoverySpi extends IgniteSpi {
      * Sets a listener for discovery events. Refer to
      * {@link org.apache.ignite.events.DiscoveryEvent} for a set of all possible
      * discovery events.
+     * <p>
+     * TODO: Should be removed in future releases.
      *
      * @param lsnr Listener to discovery events or {@code null} to unset the listener.
      */
