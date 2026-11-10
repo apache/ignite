@@ -367,7 +367,8 @@ public class BinaryContext {
 
     /**
      * @param clsName Class name.
-     * @return Class loaded by {@link #classLoader()} or {@code null} if it is not available to it.
+     * @return Class loaded by the configured class loader or {@code null} if it is not available to it.
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getClassLoader()
      */
     @Nullable private Class<?> loadClassOrNull(String clsName) {
         try {
