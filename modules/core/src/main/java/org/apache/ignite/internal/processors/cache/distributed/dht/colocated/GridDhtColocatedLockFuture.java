@@ -328,7 +328,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @param entry Entry to add.
      * @return Non-reentry candidate if lock should be acquired on remote node,
      *      reentry candidate if the key is repeated in the collection and {@code null} if the thread already holds
-     *      the key, within an implicit transaction or by another lock attempt, see {@link #reenterHeldKeys()}.
+     *      the key, within an implicit transaction or the thread locks it again.
      * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
     @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
