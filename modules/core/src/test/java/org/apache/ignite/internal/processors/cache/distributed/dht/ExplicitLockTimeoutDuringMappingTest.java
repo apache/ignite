@@ -127,6 +127,17 @@ public class ExplicitLockTimeoutDuringMappingTest extends GridCommonAbstractTest
         checkReleased(cache, 1);
     }
 
+    /** A lockAll() with a repeated key holds the key twice: a single unlock() must release both holds. */
+    @Test
+    public void testMultiKeyLockWithRepeatedKey() throws Exception {
+        Lock lock = cache.lockAll(Arrays.asList(1, 1));
+
+        lock.lock();
+        lock.unlock();
+
+        checkReleased(cache, 1);
+    }
+
     /** The timeout expires while the mapping waits for an exchange: the postponed mapping must not lock the key. */
     @Test
     public void testTimeoutBeforePostponedMapping() throws Exception {
