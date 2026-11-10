@@ -70,46 +70,23 @@ public class SslContextFactoryInitTest {
 
     /** */
     @Test
-    public void testConcurrentInitLoadsOneKeyStoreAtATime() throws Exception {
-        CountDownLatch firstLoadStarted = new CountDownLatch(1);
-        CountDownLatch allowFirstLoad = new CountDownLatch(1);
-        AtomicInteger loads = new AtomicInteger();
-
-        SslContextFactory factory = new SslContextFactory() {
-            /** */
-            private static final long serialVersionUID = 0;
-
-            /** {@inheritDoc} */
-            @Override protected InputStream openFileInputStream(String path) throws IOException {
-                if (loads.incrementAndGet() == 1) {
-                    firstLoadStarted.countDown();
-
-                    U.awaitQuiet(allowFirstLoad);
-                }
-
-                return super.openFileInputStream(path);
-            }
-        };
-
-        factory.setKeyStoreFilePath(keyStorePath("node01"));
-        factory.setKeyStorePassword(keyStorePassword().toCharArray());
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-
-        GridTestThread first = new GridTestThread(factory::init);
-        GridTestThread second = new GridTestThread(factory::init);
+    public void testConcurrentCreateLoadsKeyStoreOnce() throws Exception {
+        BlockingSslContextFactory factory = new BlockingSslContextFactory();
+        GridTestThread first = new GridTestThread(factory::create);
+        GridTestThread second = new GridTestThread(factory::create);
 
         first.start();
 
         try {
-            assertTrue(firstLoadStarted.await(10, SECONDS));
+            assertTrue(factory.firstLoadStarted.await(10, SECONDS));
 
             second.start();
 
-            assertTrue(waitForCondition(() -> second.getState() == BLOCKED || loads.get() > 1, 10_000));
-            assertEquals(1, loads.get());
+            assertTrue(waitForCondition(() -> second.getState() == BLOCKED || factory.loads.get() > 1, 10_000));
+            assertEquals(1, factory.loads.get());
         }
         finally {
-            allowFirstLoad.countDown();
+            factory.allowFirstLoad.countDown();
             first.join(10_000);
             second.join(10_000);
         }
@@ -118,6 +95,99 @@ public class SslContextFactoryInitTest {
         assertFalse(second.isAlive());
         first.checkError();
         second.checkError();
-        assertEquals(2, loads.get());
+        assertEquals(1, factory.loads.get());
+    }
+
+    /** */
+    @Test
+    public void testInitWaitsForInitialContextLoad() throws Exception {
+        BlockingSslContextFactory factory = new BlockingSslContextFactory();
+        GridTestThread first = new GridTestThread(factory::create);
+        GridTestThread second = new GridTestThread(factory::init);
+
+        first.start();
+
+        try {
+            assertTrue(factory.firstLoadStarted.await(10, SECONDS));
+
+            second.start();
+
+            assertTrue(waitForCondition(() -> second.getState() == BLOCKED || factory.loads.get() > 1, 10_000));
+            assertEquals(1, factory.loads.get());
+        }
+        finally {
+            factory.allowFirstLoad.countDown();
+            first.join(10_000);
+            second.join(10_000);
+        }
+
+        assertFalse(first.isAlive());
+        assertFalse(second.isAlive());
+        first.checkError();
+        second.checkError();
+        assertEquals(2, factory.loads.get());
+    }
+
+    /** */
+    @Test
+    public void testConcurrentInitLoadsOneKeyStoreAtATime() throws Exception {
+        BlockingSslContextFactory factory = new BlockingSslContextFactory();
+        GridTestThread first = new GridTestThread(factory::init);
+        GridTestThread second = new GridTestThread(factory::init);
+
+        first.start();
+
+        try {
+            assertTrue(factory.firstLoadStarted.await(10, SECONDS));
+
+            second.start();
+
+            assertTrue(waitForCondition(() -> second.getState() == BLOCKED || factory.loads.get() > 1, 10_000));
+            assertEquals(1, factory.loads.get());
+        }
+        finally {
+            factory.allowFirstLoad.countDown();
+            first.join(10_000);
+            second.join(10_000);
+        }
+
+        assertFalse(first.isAlive());
+        assertFalse(second.isAlive());
+        first.checkError();
+        second.checkError();
+        assertEquals(2, factory.loads.get());
+    }
+
+    /** */
+    private static class BlockingSslContextFactory extends SslContextFactory {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        private final CountDownLatch firstLoadStarted = new CountDownLatch(1);
+
+        /** */
+        private final CountDownLatch allowFirstLoad = new CountDownLatch(1);
+
+        /** */
+        private final AtomicInteger loads = new AtomicInteger();
+
+        /** */
+        private BlockingSslContextFactory() {
+            setKeyStoreFilePath(keyStorePath("node01"));
+            setKeyStorePassword(keyStorePassword().toCharArray());
+            setTrustManagers(getDisabledTrustManager());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected InputStream openFileInputStream(String path) throws IOException {
+            if (loads.incrementAndGet() == 1) {
+                firstLoadStarted.countDown();
+
+                U.awaitQuiet(allowFirstLoad);
+            }
+
+            return super.openFileInputStream(path);
+        }
     }
 }
