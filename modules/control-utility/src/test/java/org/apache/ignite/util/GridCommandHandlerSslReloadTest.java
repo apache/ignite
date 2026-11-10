@@ -135,7 +135,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
     /** */
     @Test
-    public void testPartialFailureReportsEveryFactory() throws Exception {
+    public void testReloadsOtherFactoriesAfterFailure() throws Exception {
         Path keys = stores.newFile("keys.jks").toPath();
         LogListener loadFailure = LogListener.matches(EOFException.class.getName()).build();
 
@@ -148,7 +148,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
         cfg.setGridLogger(new ListeningTestLogger(log, loadFailure));
         cfg.getClientConnectorConfiguration().setSslEnabled(true).setUseIgniteSslContextFactory(false).setSslContextFactory(working);
-        cfg.getConnectorConfiguration().setSslEnabled(true).setSslFactory(() -> clientCtx);
 
         IgniteEx node = startGrid(cfg);
 
@@ -161,9 +160,22 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
         assertContains(log, report, nodeId + ": communication, discovery: failed:");
         assertContains(log, report, nodeId + ": client connector: reloaded");
-        assertContains(log, report, nodeId + ": binary REST: unsupported:");
         assertTrue(loadFailure.check());
         assertNotSame(clientCtx, working.create());
+    }
+
+    /** */
+    @Test
+    public void testReportsUnsupportedFactory() throws Exception {
+        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        cfg.getConnectorConfiguration().setSslEnabled(true).setSslFactory(() -> ctx);
+
+        IgniteEx node = startGrid(cfg);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--ssl", "reload"));
+        assertContains(log, testOut.toString(), node.localNode().id() + ": binary REST: unsupported:");
     }
 
     /** */
