@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.client.thin.ClientSslUtilsTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeConnectionCertificateCapturingTest;
@@ -81,6 +82,7 @@ import org.apache.ignite.plugin.security.SecurityBasicPermissionSetSerialization
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.ssl.SSLContextWrapperTest;
 import org.apache.ignite.ssl.SslContextFactoryInitTest;
+import org.apache.ignite.ssl.SslContextReloadTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -145,6 +147,8 @@ import org.junit.runners.Suite;
     MultipleSSLContextsTest.class,
     SSLContextWrapperTest.class,
     SslContextFactoryInitTest.class,
+    SslContextReloadTest.class,
+    ClientSslUtilsTest.class,
     MaintenanceModeNodeSecurityTest.class,
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,

@@ -537,8 +537,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Failed to create client listener " +
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
-            GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
+            GridNioSslFilter sslFilter = U.sslFilter(sslCtxFactory, true, ByteOrder.nativeOrder(), log,
+                ctx.metric().registry(CLIENT_CONNECTOR_METRICS));
 
             sslFilter.directMode(true);
 
