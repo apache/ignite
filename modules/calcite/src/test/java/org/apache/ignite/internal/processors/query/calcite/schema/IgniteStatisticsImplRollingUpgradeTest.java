@@ -29,10 +29,31 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** */
 public class IgniteStatisticsImplRollingUpgradeTest extends AbstractRollingUpgradeTest {
+    /** */
+    @BeforeAll
+    static void init() {
+        beforeFirstTest0();
+    }
+
+    /** {@inheritDoc} */
+    @BeforeEach
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+    }
+
+    /** {@inheritDoc} */
+    @AfterEach
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name, String ver) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name, ver);
