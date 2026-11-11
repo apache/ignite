@@ -222,6 +222,13 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param timeout Remaining lock wait budget for this primary batch.
+     */
+    public void waitTimeout(long timeout) {
+        waitTimeout = timeout;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {

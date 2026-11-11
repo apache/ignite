@@ -140,6 +140,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Time when the first primary batch starts, or zero before mapping. */
+    private long lockWaitStartTime;
+
     /** Transaction. */
     @GridToStringExclude
     private final GridNearTxLocal tx;
@@ -805,7 +808,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (isDone()) // Possible due to async rollback.
             return;
 
-        if (lockTimeout() > 0) {
+        if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);
@@ -1250,9 +1253,24 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
         final ClusterNode node = map.node();
 
+        long remainingWaitTimeout = waitTimeout;
+
+        if (waitTimeout > 0) {
+            long now = U.currentTimeMillis();
+
+            if (lockWaitStartTime == 0)
+                lockWaitStartTime = now;
+
+            long elapsed = now - lockWaitStartTime;
+
+            remainingWaitTimeout = elapsed < waitTimeout ? waitTimeout - elapsed : -1;
+        }
+
         if (node.isLocal())
-            lockLocally(mappedKeys, req.topologyVersion());
+            lockLocally(mappedKeys, req.topologyVersion(), remainingWaitTimeout);
         else {
+            req.waitTimeout(remainingWaitTimeout);
+
             final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
             req.miniId(fut.futureId());
@@ -1280,10 +1298,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * Locks given keys directly through dht cache.
      * @param keys Collection of keys.
      * @param topVer Topology version to lock on.
+     * @param remainingWaitTimeout Remaining lock wait budget for this batch.
      */
     private void lockLocally(
         final Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        long remainingWaitTimeout
     ) {
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
@@ -1297,7 +1317,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             read,
             retval,
             timeout,
-            waitTimeout,
+            remainingWaitTimeout,
             createTtl,
             accessTtl,
             skipStore,
@@ -1418,7 +1438,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
             }
 
-            lockLocally(distributedKeys, topVer);
+            lockLocally(distributedKeys, topVer, waitTimeout);
         }
 
         GridDhtPartitionsExchangeFuture lastFinishedFut = cctx.shared().exchange().lastFinishedFuture();
@@ -1526,13 +1546,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @return Timeout value for this lock future.
-     */
-    private long lockTimeout() {
-        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
-    }
-
-    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1540,7 +1553,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(lockTimeout());
+            super(timeout);
         }
 
         /** Requested keys. */
@@ -1550,20 +1563,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
-
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
-                synchronized (GridDhtColocatedLockFuture.this) {
-                    requestedKeys = requestedKeys0();
-
-                    clear(); // Stop response processing.
-                }
-
-                synchronized (this) {
-                    onComplete(false, true, false);
-                }
-
-                return;
-            }
 
             if (inTx()) {
                 if (cctx.tm().deadlockDetectionEnabled()) {
