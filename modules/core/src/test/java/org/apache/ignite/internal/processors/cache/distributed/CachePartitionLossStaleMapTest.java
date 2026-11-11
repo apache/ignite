@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -104,6 +105,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** Index of the node that joins while partitions are lost. */
     private static final int JOINING = 5;
 
+    /** Node attribute with the node's index. */
+    private static final String IDX_ATTR = "test.idx";
+
     /** Time to wait for a step of a test, in milliseconds. */
     private static final long WAIT = 30_000;
 
@@ -140,6 +144,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
      */
     private boolean crdNewPrimary;
 
+    /** Whether node 2, node 3, node 1 or node 0, the first one alive, gets all partitions. */
+    private boolean preferredNodes;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -147,9 +154,11 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
             .setBackups(0)
             .setPartitionLossPolicy(plc)
-            .setAffinity(crdNewPrimary
-                ? new JoinOrderAffinityFunction()
+            .setAffinity(crdNewPrimary ? new JoinOrderAffinityFunction()
+                : preferredNodes ? new PreferredNodesAffinityFunction()
                 : new RendezvousAffinityFunction(false, PARTS)));
+
+        cfg.setUserAttributes(Collections.singletonMap(IDX_ATTR, getTestIgniteInstanceIndex(igniteInstanceName)));
 
         cfg.setCommunicationSpi(crdNewPrimary ? new StallingCommunicationSpi() : new TestRecordingCommunicationSpi());
 
@@ -414,6 +423,52 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that the other nodes don't see a node as an owner of a lost partition while the node evicts its copy. Node 2
+     * takes over all partitions from node 1, and node 1 holds the eviction of one of them. Node 2 leaves with the only
+     * copies, and node 3 becomes the new primary. Node 1 doesn't own its RENTING copy, so the coordinator, node 3 and the
+     * client must keep seeing it RENTING.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEvictingCopyNotSeenAsOwner() throws Exception {
+        preferredNodes = true;
+
+        IgniteEx crd = startGrid(0);
+
+        IgniteEx evicting = startGrid(1, partitionHooksResolver());
+
+        awaitPartitionMapExchange();
+
+        // Hold the eviction of one partition that node 2 takes over, as if the partition were large.
+        holdEviction.set(true);
+
+        startGrid(LEAVING);
+
+        IgniteEx newPrimary = startGrid(OBSERVER);
+
+        IgniteEx client = startClientGrid(CLIENT);
+
+        awaitPartitionMapExchange();
+
+        assertTrue("Node 1 didn't start an eviction", evictionHeld.await(WAIT, MILLISECONDS));
+
+        GridDhtPartitionTopology top = evicting.cachex(CACHE).context().topology();
+
+        assertTrue(waitForCondition(() -> top.localPartitions().stream()
+            .filter(p -> p.state() == RENTING).count() == 1, WAIT));
+
+        long leaveVer = crd.cluster().topologyVersion() + 1;
+
+        stopGrid(LEAVING);
+
+        for (Ignite g : G.allGrids())
+            assertTrue(waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer), WAIT));
+
+        checkNodes(crd, newPrimary, client);
+    }
+
+    /**
      * Does nothing: scans and key operations don't fail while a node sees no owner. The SQL subclass runs a query.
      *
      * @param node Node.
@@ -627,6 +682,43 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
                 res.add(Collections.singletonList(nodes.get(p % 3 < nodes.size() ? p % 3 : 0)));
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNode(UUID nodeId) {
+            // No-op.
+        }
+    }
+
+    /** Assigns all partitions to node 2, node 3, node 1 or node 0, the first one alive. */
+    private static class PreferredNodesAffinityFunction implements AffinityFunction {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Node indexes in the order of preference. */
+        private static final List<Integer> PREFERRED = F.asList(2, 3, 1, 0);
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            return PARTS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            return U.safeAbs(key.hashCode()) % PARTS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
+            ClusterNode node = Collections.min(ctx.currentTopologySnapshot(),
+                Comparator.comparingInt(n -> PREFERRED.indexOf(n.<Integer>attribute(IDX_ATTR))));
+
+            return Collections.nCopies(PARTS, Collections.singletonList(node));
         }
 
         /** {@inheritDoc} */
