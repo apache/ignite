@@ -85,7 +85,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     /** */
-    protected static final String CACHE = "cache";
+    private static final String CACHE = "cache";
 
     /** */
     private static final int PARTS = 64;
@@ -469,15 +469,6 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Does nothing: scans and key operations don't fail while a node sees no owner. The SQL subclass runs a query.
-     *
-     * @param node Node.
-     */
-    protected void runQuery(Ignite node) {
-        // No-op.
-    }
-
-    /**
      * Starts the coordinator, node 1 with the partition hooks, the client, the observer and node 2.
      *
      * @return Coordinator.
@@ -498,16 +489,12 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Runs a query on each viewer. Then checks that the partition map of each viewer matches the local states of the
-     * nodes.
+     * Checks that the partition map of each viewer matches the local states of the nodes.
      *
      * @param viewers Nodes whose partition maps are checked.
      * @throws Exception If failed.
      */
     private void checkNodes(IgniteEx... viewers) throws Exception {
-        for (IgniteEx viewer : viewers)
-            runQuery(viewer);
-
         for (IgniteEx viewer : viewers) {
             if (!waitForCondition(() -> mismatches(viewer, CACHE).isEmpty(), WAIT)) {
                 fail("The partition map of " + viewer.name() + " differs from the nodes: " +
