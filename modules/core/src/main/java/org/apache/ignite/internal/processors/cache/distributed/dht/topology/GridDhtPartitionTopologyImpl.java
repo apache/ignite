@@ -1619,9 +1619,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         this.lostParts = new HashSet<>(lostParts);
 
                         if (exchFut != null && !exchFut.activateCluster()) {
-                            boolean ownerReports =
-                                ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
-
                             for (Integer part : lostParts) {
                                 GridDhtLocalPartition locPart = localPartition(part);
 
@@ -1629,7 +1626,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 // part.clearFuture lifecycle will be broken after resetting.
                                 // New partition should be created instead.
                                 if (locPart != null && locPart.state() != EVICTED) {
-                                    if (locPart.markLost() && ownerReports)
+                                    if (locPart.markLost())
                                         changed = true;
 
                                     GridDhtPartitionMap locMap = partMap.get(ctx.localNodeId());
@@ -2128,8 +2125,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (locPart.own()) {
                         changed = true;
 
-                        if (ownerReports)
-                            updateLocal(p, OWNING, updateSeq.incrementAndGet(), readyTopVer);
+                        updateLocal(p, OWNING, updateSeq.incrementAndGet(), readyTopVer);
                     }
 
                     if (!ownerReports) {
