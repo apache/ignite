@@ -110,6 +110,25 @@ public class SelectByKeyFieldTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testCompositePkSearchByPartOfKeyWithCorrelatedPredicate() {
+        sql("create table PUBLIC.PERSON(id int, name varchar, surname varchar, age int, primary key(id, name))");
+        sql("create table PUBLIC.ORG(id int primary key, name varchar)");
+
+        for (int i = 0; i < 10; i++) {
+            sql("insert into PUBLIC.PERSON(id, name, surname, age) values (?, ?, ?, ?)", i, "foo" + i, "bar" + i, 18 + i);
+            sql("insert into PUBLIC.ORG(id, name) values (?, ?)", i, "org" + i);
+        }
+
+        // Correlated join pushes the second equality on the key column into the scan of PERSON.
+        assertQuery("select /*+ CNL_JOIN */ p.surname, o.name from PUBLIC.PERSON p join PUBLIC.ORG o on p.id = o.id " +
+            "where p.id = ?")
+            .withParams(6)
+            .returns("bar6", "org6")
+            .check();
+    }
+
+    /** */
+    @Test
     public void testCompositePkAfterAddColumn() {
         checkCompositePk(false, true, this::executeAlterTableAddColumn);
     }

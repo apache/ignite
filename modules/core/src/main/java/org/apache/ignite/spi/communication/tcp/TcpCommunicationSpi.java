@@ -777,6 +777,9 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         conStateHnd.start();
 
+        if (stateProvider.isSslEnabled())
+            ignite.context().ssl().register("communication", ignite.configuration().getSslContextFactory());
+
         // Ack start.
         if (log.isDebugEnabled())
             log.debug(startInfo());

@@ -1486,7 +1486,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.version(),
                             null,
                             null,
-                            null,
                             /*system invalidate*/false);
 
                         // Note that we don't reorder completed versions here,
