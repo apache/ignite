@@ -226,12 +226,13 @@ Register name: `tx`
 |===
 |Name | Type | Description
 |AllOwnerTransactions | Map<String, String> | Map of local node owning transactions.
-|ExplicitLockHoldTimeHistogram | histogram | Explicit locks hold times on node represented as histogram, in milliseconds.
+|CurrentExplicitLockHoldTime | histogram | Hold times of explicit locks currently held on the node represented as histogram, in milliseconds.
 |LockedKeysNumber | long | The number of keys locked on the node.
 |LongRunningCacheFuturesCount | long | The count of cache futures currently in progress on the node whose duration exceeds the long operations dump timeout.
 |MaxCacheFutureDuration | long | Maximum duration of cache futures currently in progress on the node, in milliseconds.
 |MaxExplicitLockHoldTime | long | Maximum hold time of explicit locks currently held on the node, in milliseconds.
 |OwnerTransactionsNumber | long | The number of active transactions for which this node is the initiator.
+|ReleasedExplicitLockHoldTime | histogram | Released explicit locks hold times on node represented as histogram, in milliseconds.
 |TransactionsHoldingLockNumber | long | The number of active transactions holding at least one key lock.
 |commitTime | long | Last commit time.
 |nodeSystemTimeHistogram | histogram | Transactions system times on node represented as histogram, in milliseconds.
