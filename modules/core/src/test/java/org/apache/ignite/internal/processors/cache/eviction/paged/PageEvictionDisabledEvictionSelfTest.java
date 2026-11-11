@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.eviction.paged;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -65,7 +66,7 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
 
         awaitPartitionMapExchange();
 
-        int filled = fillUntilOom(cache, pageSize(ignite));
+        int filled = fillUntilOom(ignite, cache);
 
         OOM_FAILURES.set(0);
 
@@ -122,7 +123,7 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
 
         IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(readThroughCacheConfig());
 
-        int filled = fillUntilOom(cache, pageSize(ignite));
+        int filled = fillUntilOom(ignite, cache);
 
         GridTestUtils.assertThrowsWithCause(() -> cache.get(filled + 1), IgniteOutOfMemoryException.class);
     }
@@ -133,7 +134,7 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
         byte[] val = startGrid(0).getOrCreateCache(readThroughCacheConfig()).get(1);
 
         assertNotNull("Read-through load must succeed below threshold", val);
-        assertEquals(PAGE_SIZE - 200, val.length);
+        assertEquals(ENTRY_SIZE, val.length);
     }
 
     /** @return Atomic read-through cache configuration. */
@@ -148,14 +149,17 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
     /**
      * Puts page-sized entries until the insert is rejected with an out-of-memory.
      *
+     * @param ignite Node.
      * @param cache Cache.
-     * @param pageSize Page size.
      * @return Number of entries written before the out-of-memory.
      */
-    private static int fillUntilOom(IgniteCache<Integer, byte[]> cache, int pageSize) {
-        byte[] val = new byte[pageSize - 200];
+    private static int fillUntilOom(IgniteEx ignite, IgniteCache<Integer, byte[]> cache) throws IgniteCheckedException {
+        byte[] val = new byte[ENTRY_SIZE];
 
-        for (int i = 0; i < 100_000; i++) {
+        // One page per entry: the region can not hold as many entries as it has pages.
+        long maxEntries = totalPages(ignite);
+
+        for (int i = 0; i < maxEntries; i++) {
             try {
                 cache.put(i, val);
             }

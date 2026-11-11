@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -1270,7 +1271,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     if (reservedPages.compareAndSet(reserved, reserved + claimPages - accumulated)) {
                         clearStalled(prevEvicted);
 
-                        // The whole claim now belongs to the caller.
+                        // The whole claim now belongs to the caller: reset the accumulated part, so that finally does not release it.
                         accumulated = 0;
 
                         return claimPages;
@@ -1357,6 +1358,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         if (reserveEnabled && pages != 0)
             reservedPages.addAndGet(-pages);
+    }
+
+    /** @return Number of pages reserved by in-flight inserts. */
+    @TestOnly
+    public long reservedPages() {
+        return reservedPages.get();
+    }
+
+    /** @return {@code True} if the eviction is stalled: a best-effort reservation gave up because the eviction made no progress. */
+    @TestOnly
+    public boolean stalled() {
+        return stalled;
     }
 
     /** {@inheritDoc} */

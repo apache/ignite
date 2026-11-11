@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -92,7 +91,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1));
 
-        byte[] val = new byte[pageSize(supplier) - 200];
+        byte[] val = new byte[ENTRY_SIZE];
 
         // One page per entry: 1.5 times the demander region.
         int keys = (int)(totalPages(supplier) * 0.75);
@@ -112,7 +111,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         assertHonorsThreshold(demander);
 
-        assertEquals(0, ((AtomicLong)GridTestUtils.getFieldValue(defaultFreeList(demander), "reservedPages")).get());
+        assertEquals(0, reservedPages(defaultFreeList(demander)));
     }
 
     /** */
@@ -153,7 +152,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         int smallEntries = (int)(totalPages(ignite) * 0.85);
 
-        byte[] small = new byte[pageSize(ignite) - 200];
+        byte[] small = new byte[ENTRY_SIZE];
 
         for (int i = 0; i < smallEntries; i++)
             cache.put(smallEntries + i, small);
@@ -185,7 +184,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME);
 
         int smallEntries = (int)(totalPages(ignite) * 0.85);
-        byte[] small = new byte[pageSize(ignite) - 200];
+        byte[] small = new byte[ENTRY_SIZE];
 
         for (int i = 0; i < smallEntries; i++)
             cache.put(smallEntries + i, small);
@@ -277,7 +276,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         awaitPartitionMapExchange();
 
-        byte[] val = new byte[pageSize(ignite) - 200];
+        byte[] val = new byte[ENTRY_SIZE];
 
         int keys = (int)(totalPages(ignite) * 3);
 
@@ -301,7 +300,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         IgniteCache<Integer, Object> cache = createCache(ignite, DEFAULT_CACHE_NAME, 0, true);
 
-        byte[] val = new byte[pageSize(ignite) - 200];
+        byte[] val = new byte[ENTRY_SIZE];
 
         int keys = (int)(totalPages(ignite) * 3);
 
@@ -320,7 +319,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         fillRegion(ignite, cache, 0.5);
 
-        int largeValSize = (int)(regionMaxSize(ignite) * EVICTION_THRESHOLD);
+        // The row alone takes all the pages below the threshold.
+        int largeValSize = (int)(totalPages(ignite) * EVICTION_THRESHOLD) * PAGE_PAYLOAD;
 
         cache.put(-1, new byte[largeValSize]);
 
@@ -357,7 +357,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         createCache(ignite, DEFAULT_CACHE_NAME);
 
-        byte[] val = new byte[pageSize(ignite) - 200];
+        byte[] val = new byte[ENTRY_SIZE];
 
         int keys = (int)(totalPages(ignite) * 3);
 
@@ -411,9 +411,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         long claimPages = totalPages(ignite) - defaultRegion(ignite).config().getEmptyPagesPoolSize();
 
-        int pagePayload = GridTestUtils.getFieldValue(freeList, "MIN_SIZE_FOR_DATA_PAGE");
-
-        GridTestUtils.assertThrows(log, () -> freeList.reserve(claimPages * pagePayload, false),
+        GridTestUtils.assertThrows(log, () -> freeList.reserve(claimPages * PAGE_PAYLOAD, false),
             IgniteOutOfMemoryException.class, null);
 
         assertFalse("A refused claim must not start the eviction", isEvictionsStarted(ignite));
@@ -450,13 +448,13 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
             DataRegion region = defaultRegion(ignite);
 
-            FreeList<?> freeList = db.freeList(region.config().getName());
+            AbstractFreeList<?> freeList = (AbstractFreeList<?>)db.freeList(region.config().getName());
 
             // A reservation that waits for the timeout takes at least the timeout (with the 10 ms clock error), a
             // reservation that gives up does not: the bound separates them far from the expected time of both.
             long bound = GUARD_TIMEOUT * 9 / 10;
 
-            assertFalse(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+            assertFalse(freeList.stalled());
 
             IgniteInternalFuture<Long> firstFut = GridTestUtils.runAsync(() -> db.reserveInRegion(region, largeValSize, true),
                 "size-aware-guard-first");
@@ -471,9 +469,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             assertTrue("Waiting best-effort reservation must give up once the stall is detected",
                 System.currentTimeMillis() - start < bound);
 
-            assertEquals(0, (long)firstFut.get(60, TimeUnit.SECONDS));
+            assertEquals(0, (long)firstFut.get(TIMEOUT));
 
-            assertTrue(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+            assertTrue(freeList.stalled());
 
             // A reservation that needs no eviction says nothing about it, so the stall stays.
             long smallReserved = db.reserveInRegion(region, 1, false);
@@ -481,14 +479,14 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             try {
                 assertEquals(1, smallReserved);
 
-                assertTrue(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+                assertTrue(freeList.stalled());
             }
             finally {
                 db.releaseInRegion(region, smallReserved);
             }
 
             // Reservations that gave up return the pages they accumulated.
-            assertEquals(0, GridTestUtils.<AtomicLong>getFieldValue(freeList, "reservedPages").get());
+            assertEquals(0, freeList.reservedPages());
 
             // The stall is not a time window: once the timeout passes, best-effort reservations still do not wait.
             U.sleep(GUARD_TIMEOUT + 500);
@@ -516,7 +514,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             try {
                 assertTrue("Reservation must succeed once the entries are unlocked", reserved > 0);
 
-                assertFalse(GridTestUtils.<Boolean>getFieldValue(freeList, "stalled"));
+                assertFalse(freeList.stalled());
             }
             finally {
                 db.releaseInRegion(region, reserved);
@@ -552,7 +550,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             assertTrue("The default timeout must not be waited for",
                 System.currentTimeMillis() - start < AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
 
-            assertEquals(0, GridTestUtils.<AtomicLong>getFieldValue(defaultFreeList(ignite), "reservedPages").get());
+            assertEquals(0, reservedPages(defaultFreeList(ignite)));
         }
         finally {
             release.countDown();
@@ -596,7 +594,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             }
         }, "size-aware-guard-locker");
 
-        assertTrue("Timed out waiting for entries to be locked", ready.await(60, TimeUnit.SECONDS));
+        assertTrue("Timed out waiting for entries to be locked", ready.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
         return lockerFut;
     }
@@ -610,8 +608,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     }
 
     /**
-     * Asserts that the node evicted at the threshold: loaded pages reached it but do not exceed it by more than the
-     * empty pages pool and 1% of non-data pages (B+tree, free list metadata).
+     * Asserts that the node evicted at the threshold: loaded pages reached it, less 5% of the region (the eviction keeps
+     * the empty pages pool and the claims of in-flight inserts free), but do not exceed it by more than the empty pages
+     * pool and 1% of non-data pages (B+tree, free list metadata).
      *
      * @param ignite Node.
      */
@@ -623,7 +622,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
         long limit = (long)(EVICTION_THRESHOLD * total) + defaultRegion(ignite).config().getEmptyPagesPoolSize() + total / 100;
 
         assertTrue("Loaded pages must reach the threshold [loaded=" + loaded + ", total=" + total + ']',
-            loaded >= total * 0.85);
+            loaded >= total * (EVICTION_THRESHOLD - 0.05));
         assertTrue("Loaded pages exceed the threshold [node=" + ignite.name() + ", loaded=" + loaded +
             ", limit=" + limit + ']', loaded <= limit);
     }

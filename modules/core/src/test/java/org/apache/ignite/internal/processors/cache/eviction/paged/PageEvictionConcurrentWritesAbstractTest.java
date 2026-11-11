@@ -84,12 +84,12 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         startLatch.countDown();
 
-        fut.get(TimeUnit.MINUTES.toMillis(3));
+        fut.get(TIMEOUT);
 
         assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
 
         int probeKey = smallEntries + threads * largeRowsPerThread + 1;
-        byte[] probeVal = valueFor(probeKey, pageSize(ignite) - 200);
+        byte[] probeVal = valueFor(probeKey, ENTRY_SIZE);
 
         cache.put(probeKey, probeVal);
 
@@ -119,7 +119,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
         for (int k = 0; k < largeRows; k++)
             cache.put(k, valueFor(k, largeValSize));
 
-        byte[] smallVal = new byte[pageSize(ignite1) - 200];
+        byte[] smallVal = new byte[ENTRY_SIZE];
 
         int smallKeyBase = largeRows + 1;
 
@@ -158,9 +158,9 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         awaitPartitionMapExchange();
 
-        cache.rebalance().get(TimeUnit.MINUTES.toMillis(2));
+        cache.rebalance().get(TIMEOUT);
 
-        fut.get(TimeUnit.MINUTES.toMillis(2));
+        fut.get(TIMEOUT);
 
         assertTrue("Eviction must have started on the rebalanced node", isEvictionsStarted(ignite2));
 
@@ -218,7 +218,7 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         startLatch.countDown();
 
-        fut.get(TimeUnit.MINUTES.toMillis(3));
+        fut.get(TIMEOUT);
 
         assertTrue("Eviction must have started", isEvictionsStarted(ignite));
 
@@ -289,8 +289,8 @@ public abstract class PageEvictionConcurrentWritesAbstractTest extends PageEvict
 
         long elapsed = System.currentTimeMillis() - start;
 
-        writers.get(TimeUnit.MINUTES.toMillis(1));
-        batchFut.get(TimeUnit.MINUTES.toMillis(1));
+        writers.get(TIMEOUT);
+        batchFut.get(TIMEOUT);
 
         assertTrue("Large batch starved by small writers [elapsedMs=" + elapsed + ']', completed);
 

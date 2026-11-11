@@ -18,22 +18,23 @@
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_EXPIRED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests the synergy between ExpiryPolicy (TTL cleanup) and size-aware page eviction on an in-memory data region. */
 public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvictionAbstractTest {
-    /** Short TTL applied to some entries. */
-    private static final long TTL = 2000;
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName).setIncludeEventTypes(EVT_CACHE_OBJECT_EXPIRED);
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -44,57 +45,39 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         assertNoOomFailures();
     }
 
-    /** */
+    /** Entries expire while concurrent large puts evict other entries: neither must deadlock or fail. */
     @Test
     public void testLargePutWithExpiryNoDeadlock() throws Exception {
         IgniteEx ignite = startGrid(1);
 
-        IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache");
-        IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL, false);
+        IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", 100, false);
 
-        int smallEntries = 1_000;
+        AtomicInteger expired = new AtomicInteger();
 
-        for (int i = 0; i < smallEntries; i++)
-            plainCache.put(i, new byte[16 * 1024]);
+        ignite.events().localListen(evt -> {
+            expired.incrementAndGet();
 
-        assertFalse("Eviction must not have started during pre-fill", isEvictionsStarted(ignite));
+            return true;
+        }, EVT_CACHE_OBJECT_EXPIRED);
 
-        int ttlEntries = 100;
-        byte[] ttlVal = new byte[pageSize(ignite) - 200];
-
-        for (int i = 0; i < ttlEntries; i++)
-            ttlCache.put(i, ttlVal);
-
-        int largeRowsPerThread = 40;
         byte[] largeVal = new byte[1024 * 1024];
 
-        CountDownLatch startLatch = new CountDownLatch(1);
-        AtomicInteger threadIdx = new AtomicInteger();
+        AtomicInteger keyGen = new AtomicInteger();
 
-        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {
-            U.awaitQuiet(startLatch);
+        long stopTime = U.currentTimeMillis() + 2_000;
 
-            int idx = threadIdx.getAndIncrement();
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            while (U.currentTimeMillis() < stopTime) {
+                ttlCache.put(keyGen.incrementAndGet(), largeVal);
 
-            for (int k = 0; k < largeRowsPerThread; k++)
-                plainCache.put(smallEntries + idx * largeRowsPerThread + k, largeVal);
-        }, 10, "paged-writer");
-
-        startLatch.countDown();
-
-        assertTrue("TTL entries must expire after TTL duration",
-            waitForCondition(() -> {
-                for (int i = 0; i < ttlEntries; i++) {
-                    if (ttlCache.get(i) != null)
-                        return false;
-                }
-
-                return true;
-            }, TTL + 10_000));
-
-        fut.get(TimeUnit.MINUTES.toMillis(3));
+                // The region refills slower than the TTL, so some entries live long enough to expire.
+                doSleep(100);
+            }
+        }, 10, "ttl-writer").get(TIMEOUT);
 
         assertTrue("Eviction must have started during concurrent large writes", isEvictionsStarted(ignite));
+        assertTrue("Entries must expire during concurrent large writes", expired.get() > 0);
+        assertTrue("Remaining entries must expire", waitForCondition(() -> ttlCache.size() == 0, 10_000));
     }
 
     /** */
@@ -103,16 +86,17 @@ public abstract class PageEvictionWithExpiryPolicyAbstractTest extends PageEvict
         IgniteEx ignite = startGrid(1);
 
         IgniteCache<Integer, Object> plainCache = createCache(ignite, "plain-cache");
-        IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", TTL, false);
+        IgniteCache<Integer, Object> ttlCache = createCache(ignite, "ttl-cache", 2000, false);
 
-        // Pre-fill + two 5% TTL rows + the empty pages pool must stay below the 0.9 eviction threshold, which applies
-        // to every insert including the size of the row being inserted.
-        int smallEntries = fillRegion(ignite, plainCache, 0.75);
+        // Pre-fill + two 10% TTL rows + the empty pages pool must stay below the eviction threshold, which applies
+        // to every insert including the size of the row being inserted. Without reusing the space freed by TTL, the two
+        // fresh rows of the same size would not fit into the region at all.
+        int smallEntries = fillRegion(ignite, plainCache, 0.6);
 
         assertFalse("Eviction must not start during pre-fill", isEvictionsStarted(ignite));
 
         int ttlEntries = 2;
-        byte[] val = new byte[(int)(regionMaxSize(ignite) * 0.05)];
+        byte[] val = new byte[(int)(regionMaxSize(ignite) * 0.1)];
 
         for (int i = 0; i < ttlEntries; i++)
             ttlCache.put(i, val);

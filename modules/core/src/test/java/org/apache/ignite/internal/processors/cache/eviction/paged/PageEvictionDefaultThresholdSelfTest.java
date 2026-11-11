@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
@@ -120,7 +119,7 @@ public class PageEvictionDefaultThresholdSelfTest extends PageEvictionAbstractTe
             catch (Throwable e) {
                 err.compareAndSet(null, e);
             }
-        }, WRITERS, "above-pool-writer").get(TimeUnit.MINUTES.toMillis(2));
+        }, WRITERS, "above-pool-writer").get(TIMEOUT);
 
         assertTrue("Unexpected failure: " + err.get(), X.hasCause(err.get(), IgniteOutOfMemoryException.class));
 
@@ -149,7 +148,7 @@ public class PageEvictionDefaultThresholdSelfTest extends PageEvictionAbstractTe
         GridTestUtils.runMultiThreadedAsync(() -> {
             for (int op = 0; op < OPS_PER_WRITER; op++)
                 cache.invoke(keyGen.incrementAndGet(), new LargeValueProcessor(), largeValSize);
-        }, WRITERS, "unreserved-writer").get(TimeUnit.MINUTES.toMillis(5));
+        }, WRITERS, "unreserved-writer").get(TIMEOUT);
 
         assertTrue("Eviction must have started", isEvictionsStarted(ignite));
     }

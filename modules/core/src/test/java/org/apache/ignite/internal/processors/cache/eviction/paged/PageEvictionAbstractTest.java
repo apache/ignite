@@ -40,11 +40,15 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.cache.expiry.CreatedExpiryPolicy.factoryOf;
 
 /**
@@ -57,6 +61,12 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /** Page size. */
     static final int PAGE_SIZE = 2048;
 
+    /** Size of an entry value that takes a data page of its own. */
+    static final int ENTRY_SIZE = PAGE_SIZE - 200;
+
+    /** Payload of an empty data page: the size of a whole-page fragment of a row. */
+    static final int PAGE_PAYLOAD = PAGE_SIZE - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+
     /** Number of entries. */
     static final int ENTRIES = 12_000;
 
@@ -64,7 +74,10 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     private static final int EMPTY_PAGES_POOL_SIZE = 100;
 
     /** Eviction threshold. */
-    static final double EVICTION_THRESHOLD = 0.9;
+    static final double EVICTION_THRESHOLD = 0.95;
+
+    /** Timeout of the concurrent operations: a deadlock fails the test instead of hanging it. */
+    static final long TIMEOUT = MINUTES.toMillis(1);
 
     /** Default policy name. */
     private static final String DEFAULT_POLICY_NAME = "dfltPlc";
@@ -231,9 +244,14 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         return defaultRegion(ignite).metrics().isEvictionsStarted();
     }
 
+    /** @return Number of pages reserved by in-flight inserts into the free list. */
+    protected static long reservedPages(FreeList<?> freeList) {
+        return ((AbstractFreeList<?>)freeList).reservedPages();
+    }
+
     /**
      * Pre-fills the cache with {@code totalPages * fraction} page-sized entries (one data page each), i.e. loads about
-     * {@code fraction} of the default data region. Entries are written with zero-filled {@code pageSize - 200} byte
+     * {@code fraction} of the default data region. Entries are written with zero-filled {@link #ENTRY_SIZE} byte
      * values at consecutive keys starting from {@code 0}.
      *
      * @param ignite Node.
@@ -245,7 +263,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     protected static int fillRegion(IgniteEx ignite, IgniteCache<Integer, Object> cache, double fraction) throws Exception {
         int entries = (int)(totalPages(ignite) * fraction);
 
-        byte[] small = new byte[pageSize(ignite) - 200];
+        byte[] small = new byte[ENTRY_SIZE];
 
         for (int i = 0; i < entries; i++)
             cache.put(i, small);
@@ -276,7 +294,7 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     protected static class TestCacheStore extends CacheStoreAdapter<Integer, byte[]> {
         /** {@inheritDoc} */
         @Override public byte[] load(Integer key) throws CacheLoaderException {
-            return new byte[PAGE_SIZE - 200];
+            return new byte[ENTRY_SIZE];
         }
 
         /** {@inheritDoc} */

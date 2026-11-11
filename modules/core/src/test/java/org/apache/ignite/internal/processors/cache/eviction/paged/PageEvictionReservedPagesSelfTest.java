@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
@@ -46,8 +45,6 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Tests the page reservation accounting of an in-memory free list with enabled page eviction: the reservation is fully
@@ -93,11 +90,9 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
         insertBatchesAndCheckReservedPages(ignite, freeList, 10_000);
 
         // Phase 3: rows sized to an exact multiple of the whole-page fragment size (whole-page fragments only).
-        int minPageSize = getFieldValue(freeList, "MIN_SIZE_FOR_DATA_PAGE");
-
         int fixedSize = row(cacheContext(ignite), 0, 0).size();
 
-        insertBatchesAndCheckReservedPages(ignite, freeList, 2 * minPageSize - fixedSize);
+        insertBatchesAndCheckReservedPages(ignite, freeList, 2 * PAGE_PAYLOAD - fixedSize);
     }
 
     /** */
@@ -111,25 +106,31 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
         GridCacheContext<?, ?> cctx = cacheContext(ignite);
 
-        int rowsPerThread = 200;
+        // A batch claims a page per row: small batches keep the claims of all threads below the threshold, so nothing
+        // is evicted (the rows are inserted directly and are not cache entries).
+        int rowsPerBatch = 200;
 
         AtomicInteger keyGen = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
             try {
-                Collection<CacheDataRow> rows = new ArrayList<>(rowsPerThread);
+                for (int b = 0; b < 10; b++) {
+                    Collection<CacheDataRow> rows = new ArrayList<>(rowsPerBatch);
 
-                for (int i = 0; i < rowsPerThread; i++)
-                    rows.add(row(cctx, keyGen.incrementAndGet(), 100));
+                    for (int i = 0; i < rowsPerBatch; i++)
+                        rows.add(row(cctx, keyGen.incrementAndGet(), 100));
 
-                freeList.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
+                    freeList.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new RuntimeException(e);
             }
         }, 8, "concurrent-batch-insert");
 
-        assertAllReleased(10_000);
+        assertFalse("Rows inserted directly into the free list must not be evicted", isEvictionsStarted(ignite));
+
+        assertAllReleased();
     }
 
     /** */
@@ -137,14 +138,22 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
     public void testReservedPagesReleasedAfterConcurrentPuts() throws Exception {
         IgniteCache<Integer, byte[]> cache = startGridsWithBackupCache();
 
+        int threads = 8;
+
+        // One page per entry, every node keeps all entries: 1.5 times the pages of a node.
+        int putsPerThread = (int)(totalPages(grid(0)) * 1.5) / threads;
+
         AtomicInteger keyGen = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
-            for (int i = 0; i < 300; i++)
-                cache.put(keyGen.incrementAndGet(), new byte[500]);
-        }, 8, "concurrent-put");
+            for (int i = 0; i < putsPerThread; i++)
+                cache.put(keyGen.incrementAndGet(), new byte[ENTRY_SIZE]);
+        }, threads, "concurrent-put");
 
-        assertAllReleased(10_000);
+        assertTrue("Eviction must have started on the first node", isEvictionsStarted(grid(0)));
+        assertTrue("Eviction must have started on the second node", isEvictionsStarted(grid(1)));
+
+        assertAllReleased();
     }
 
     /** */
@@ -152,20 +161,29 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
     public void testReservedPagesReleasedAfterConcurrentPutAll() throws Exception {
         IgniteCache<Integer, byte[]> cache = startGridsWithBackupCache();
 
+        int threads = 4;
+        int batchSize = 100;
+
+        // One page per entry, every node keeps all entries: 1.5 times the pages of a node.
+        int batchesPerThread = (int)(totalPages(grid(0)) * 1.5) / (threads * batchSize);
+
         AtomicInteger keyGen = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
-            for (int b = 0; b < 10; b++) {
+            for (int b = 0; b < batchesPerThread; b++) {
                 Map<Integer, byte[]> batch = new HashMap<>();
 
-                for (int i = 0; i < 100; i++)
-                    batch.put(keyGen.incrementAndGet(), new byte[300]);
+                for (int i = 0; i < batchSize; i++)
+                    batch.put(keyGen.incrementAndGet(), new byte[ENTRY_SIZE]);
 
                 cache.putAll(batch);
             }
-        }, 4, "concurrent-putAll");
+        }, threads, "concurrent-putAll");
 
-        assertAllReleased(10_000);
+        assertTrue("Eviction must have started on the first node", isEvictionsStarted(grid(0)));
+        assertTrue("Eviction must have started on the second node", isEvictionsStarted(grid(1)));
+
+        assertAllReleased();
     }
 
     /** Read-through loads reserve pages before the entry lock and must release them, also on the backup. */
@@ -187,7 +205,7 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
         assertTrue("Eviction must have started during read-through loads", isEvictionsStarted(grid(0)));
 
-        assertAllReleased(10_000);
+        assertAllReleased();
     }
 
     /** The reservation is held while the row is written: the entry processor runs inside this window. */
@@ -201,7 +219,7 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
         assertTrue("Reservation must be held while the row is written: " + inFlight, inFlight > 0);
 
-        assertAllReleased(10_000);
+        assertAllReleased();
     }
 
     /**
@@ -252,25 +270,19 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
     }
 
     /**
-     * Asserts that {@code reservedPages} is {@code 0} on every data store of every started node, waiting up to
-     * {@code timeoutMs} for the reservation to drain.
+     * Asserts that {@code reservedPages} is {@code 0} on every data store of every started node, waiting up to 10 seconds
+     * for the reservation to drain.
      *
-     * @param timeoutMs Wait timeout in milliseconds.
      * @throws Exception If the reservation does not drain in time.
      */
-    private static void assertAllReleased(long timeoutMs) throws Exception {
+    private static void assertAllReleased() throws Exception {
         for (Ignite ignite : Ignition.allGrids()) {
             for (CacheDataStore store : cacheContext((IgniteEx)ignite).offheap().cacheDataStores()) {
                 FreeList<CacheDataRow> freeList = (FreeList<CacheDataRow>)store.rowStore().freeList();
 
-                assertTrue(GridTestUtils.waitForCondition(() -> reservedPages(freeList) == 0, timeoutMs));
+                assertTrue(GridTestUtils.waitForCondition(() -> reservedPages(freeList) == 0, 10_000));
             }
         }
-    }
-
-    /** */
-    private static long reservedPages(FreeList<CacheDataRow> freeList) {
-        return ((AtomicLong)getFieldValue(freeList, "reservedPages")).get();
     }
 
     /** */

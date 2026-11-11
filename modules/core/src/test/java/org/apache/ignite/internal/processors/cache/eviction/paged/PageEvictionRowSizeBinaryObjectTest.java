@@ -58,7 +58,7 @@ public class PageEvictionRowSizeBinaryObjectTest extends PageEvictionAbstractTes
                 .setCacheMode(CacheMode.REPLICATED)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC));
 
-        int entries = 15_000;
+        int entries = (int)(totalPages(ignite) * 1.5);
 
         for (int i = 1; i <= entries; i++)
             cache.put(i, new TestObject(PAGE_SIZE / 6));
@@ -80,7 +80,7 @@ public class PageEvictionRowSizeBinaryObjectTest extends PageEvictionAbstractTes
         IgniteCache<Integer, TestObject> cache = ignite.createCache(new CacheConfiguration<Integer, TestObject>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
-        int entries = 15_000;
+        int entries = (int)(totalPages(ignite) * 1.5);
 
         try (IgniteDataStreamer<Integer, TestObject> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
