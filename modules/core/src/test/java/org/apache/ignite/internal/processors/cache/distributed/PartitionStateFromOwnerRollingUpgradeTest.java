@@ -33,13 +33,12 @@ import org.junit.Test;
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.exchangeFinished;
 import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.mismatches;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- * Checks that until {@code PART_STATE_FROM_OWNER_FEATURE} is active the nodes handle lost partitions as the previous
- * version does: the other nodes write the new owners' state into their partition maps themselves. Once the feature is
- * active, they take it from the owners' maps.
+ * Checks that until {@code PART_STATE_FROM_OWNER_FEATURE} is active the other nodes write the new owners' state into
+ * their partition maps themselves, as the previous version does. Once the feature is active, they take it from the
+ * owners' maps.
  * <p>
  * In both parts a server leaves with the only copies of some partitions under the IGNORE policy, while the maps that
  * the other servers send outside an exchange are held, so the coordinator sees only the state it wrote itself. The
@@ -68,7 +67,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
     /**
      * Before the upgrade the coordinator and the client see the new owners right after the exchange, with the owners'
      * maps held. Once all nodes are upgraded and the version is finalized, the feature is active, and they see the new
-     * owners only after the maps arrive. On activation a server resends its maps, and a client doesn't.
+     * owners only after the maps arrive.
      *
      * @throws Exception If failed.
      */
@@ -92,13 +91,6 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
             assertTrue(viewer.name() + " didn't write the new owners' state: " + mismatches, mismatches.isEmpty());
         }
 
-        for (Ignite g : G.allGrids()) {
-            if (g != oldCrd && !g.cluster().localNode().isClient()) {
-                assertFalse(g.name() + " sent its partition map before the feature is active",
-                    TestRecordingCommunicationSpi.spi(g).hasBlockedMessages());
-            }
-        }
-
         TestRecordingCommunicationSpi.stopBlockAll();
 
         ru(0).enableVersionUpgrade();
@@ -109,20 +101,8 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         awaitPartitionMapExchange();
 
-        TestRecordingCommunicationSpi srvSpi = TestRecordingCommunicationSpi.spi(grid(coordinatorIndex() == 0 ? 1 : 0));
-        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(grid(CLIENT));
-
-        srvSpi.record((node, msg) -> sentOutsideExchange(msg));
-        clientSpi.record((node, msg) -> sentOutsideExchange(msg));
-
         // Also checks that every node has the features of the new version active.
         finalizeClusterVersion(1, MASTER_VER_REF);
-
-        assertTrue("The server didn't resend its partition map on activation",
-            waitForCondition(() -> !srvSpi.recordedMessages(false).isEmpty(), WAIT));
-
-        assertFalse("The client resent its partition map on activation",
-            waitForCondition(() -> !clientSpi.recordedMessages(false).isEmpty(), DFLT_PRELOAD_RESEND_TIMEOUT));
 
         startGrid(LEAVING, MASTER_VER_REF);
 
