@@ -183,13 +183,17 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
                            (str(node.account), self.shutdown_timeout_sec))
 
     def stop_node(self, node, force_stop=False, **kwargs):
-        pids = self.pids(node, self.main_java_class)
-
-        for pid in pids:
-            node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
+        self.signal_node(node, signal.SIGKILL if force_stop else signal.SIGTERM)
 
         if not force_stop:
             self.await_stopped_node(node)
+
+    def signal_node(self, node, sig):
+        """
+        Sends the signal to the node's Ignite process.
+        """
+        for pid in self.pids(node, self.main_java_class):
+            node.account.signal(pid, sig, allow_fail=False)
 
     def clean(self, **kwargs):
         self.__restore_iptables()

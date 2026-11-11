@@ -20,6 +20,10 @@ package org.apache.ignite.internal.ducktest.tests.mdc;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -31,6 +35,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.ducktest.utils.Utils.fmtMs;
 import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
 import static org.apache.ignite.internal.ducktest.utils.Utils.timed;
@@ -68,7 +73,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     <li>{@code opPauseMs} - pause between operations, default 0;</li>
  *     <li>{@code resultPrefix} - prefix for recorded results, so that several runs reusing one
  *         service produce uniquely named results;</li>
- *     <li>{@code txConcurrency} / {@code txIsolation} - transaction parameters for {@code TX_PUT}.</li>
+ *     <li>{@code txConcurrency} / {@code txIsolation} - transaction parameters for {@code TX_PUT};</li>
+ *     <li>{@code lockCache} - an existing transactional cache. If set, every operation runs under an
+ *         explicit lock on its key in this cache, the way applications serialize access to a record.
+ *         A lock not taken within 10 seconds counts as a failed operation;</li>
+ *     <li>{@code progressIntervalMs} - if positive, records {@code Progress-><ts> <ok> <err> <sinceOkMs><-}
+ *         at this interval: the time, the successful and the failed operations so far, and the time
+ *         since the last successful one.</li>
  * </ul>
  */
 public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
@@ -80,6 +91,21 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
     /** */
     public static final int DFLT_TX_TIMEOUT = 1_000;
+
+    /** Explicit lock wait in the {@code lockCache} mode. */
+    private static final long LOCK_TIMEOUT_MS = 10_000;
+
+    /** Successful operations. */
+    private final AtomicLong opsCnt = new AtomicLong();
+
+    /** Failed operations. */
+    private final AtomicLong errCnt = new AtomicLong();
+
+    /** Time of the last successful operation. */
+    private volatile long lastOkTs;
+
+    /** Cache of the explicit locks ({@code null} unless {@code lockCache} is set). */
+    private IgniteCache<Integer, Object> lockCache;
 
     /** Cache for the cache API modes ({@code null} in SQL modes). */
     private IgniteCache<Integer, IndexedDataRecord> cache;
@@ -128,6 +154,9 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         txIsolation = getEnum(jNode, "txIsolation", DFLT_TX_ISOLATION);
         txTimeout = jNode.path("txTimeout").asInt(DFLT_TX_TIMEOUT);
 
+        String lockCacheName = jNode.path("lockCache").asText("");
+        long progressIntervalMs = jNode.path("progressIntervalMs").asLong(0);
+
         markInitialized();
         waitForActivation();
 
@@ -136,30 +165,49 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         else
             cache = createCache ? mdcCache(jNode) : ignite.cache(cacheName);
 
+        if (!lockCacheName.isEmpty())
+            lockCache = ignite.cache(lockCacheName);
+
         mergeSql = String.format("MERGE INTO \"%s\".%s(_KEY, _VAL) VALUES(?, ?)", cacheName, SQL_TABLE);
         selectSql = String.format("SELECT _VAL FROM \"%s\".%s WHERE _KEY = ?", cacheName, SQL_TABLE);
 
         log.info("MDC load started [dc=" + dcId() + ", mode=" + mode + ", cache=" + cacheName +
             ", keyFrom=" + keyFrom + ", keyTo=" + keyTo + ", iterations=" + iterations +
-            ", inadmissible=" + inadmissible + ", continueOnError=" + continueOnError + "]");
-
-        long opsCnt = 0;
-        long errCnt = 0;
+            ", inadmissible=" + inadmissible + ", continueOnError=" + continueOnError +
+            ", lockCache=" + lockCacheName + "]");
 
         boolean stoppedOnError = false;
 
         long maxStallMs = 0;
 
         long startTs = System.currentTimeMillis();
-        long lastOkTs = startTs;
+        lastOkTs = startTs;
+
+        ScheduledExecutorService progress = null;
+
+        if (progressIntervalMs > 0) {
+            progress = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "load-progress");
+
+                t.setDaemon(true);
+
+                return t;
+            });
+
+            progress.scheduleAtFixedRate(() -> recordProgress(pfx), progressIntervalMs, progressIntervalMs,
+                MILLISECONDS);
+        }
 
         int key = keyFrom;
 
-        while (!terminated() && (iterations == 0 || opsCnt + errCnt < iterations)) {
+        while (!terminated() && (iterations == 0 || opsCnt.get() + errCnt.get() < iterations)) {
             boolean ok = true;
 
             try {
-                doOperation(mode, key);
+                if (lockCache == null)
+                    doOperation(mode, key);
+                else
+                    doLockedOperation(mode, key);
             }
             catch (CacheException | IgniteException e) {
                 ok = false;
@@ -173,7 +221,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                     log.warn("Operation failed, cutting the load on first error [dc=" + dcId() + ", mode=" + mode +
                         ", key=" + key + ", succeeded=" + opsCnt + ", msg=" + e.getMessage() + "]", e);
 
-                    errCnt++;
+                    errCnt.incrementAndGet();
                     stoppedOnError = true;
 
                     break;
@@ -187,7 +235,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             }
 
             if (ok) {
-                opsCnt++;
+                opsCnt.incrementAndGet();
 
                 long now = System.currentTimeMillis();
 
@@ -195,7 +243,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                 lastOkTs = now;
             }
             else
-                errCnt++;
+                errCnt.incrementAndGet();
 
             // Writes advance on success only, so [keyFrom, keyFrom + opsCnt) is guaranteed written.
             // The inadmissible-probe mode advances always to probe distinct keys. Reads cycle the range.
@@ -210,15 +258,20 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                 Thread.sleep(opPauseMs);
         }
 
+        if (progress != null) {
+            progress.shutdownNow();
+            progress.awaitTermination(progressIntervalMs, MILLISECONDS);
+        }
+
         long durationMs = System.currentTimeMillis() - startTs;
 
-        if (mode.isWrite() && inadmissible && opsCnt > 0) {
+        if (mode.isWrite() && inadmissible && opsCnt.get() > 0) {
             throw new IllegalStateException("Write load is admissible while expected to be inadmissible [dc=" +
                 dcId() + ", mode=" + mode + ", succeeded=" + opsCnt + ", rejected=" + errCnt + "]");
         }
 
-        recordResult(pfx + "OpsCnt", String.valueOf(opsCnt));
-        recordResult(pfx + "ErrCnt", String.valueOf(errCnt));
+        recordResult(pfx + "OpsCnt", opsCnt.get());
+        recordResult(pfx + "ErrCnt", errCnt.get());
         recordResult(pfx + "StoppedOnError", String.valueOf(stoppedOnError));
         recordResult(pfx + "DurationMs", String.valueOf(durationMs));
 
@@ -236,6 +289,28 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             ", maxStallMs=" + maxStallMs + "]");
 
         markFinished();
+    }
+
+    /** Records the progress of the load. */
+    private void recordProgress(String pfx) {
+        long now = System.currentTimeMillis();
+
+        recordResult(pfx + "Progress", now + " " + opsCnt.get() + " " + errCnt.get() + " " + (now - lastOkTs));
+    }
+
+    /** Executes an operation under an explicit lock on its key in the lock cache. */
+    private void doLockedOperation(LoadMode mode, int key) throws InterruptedException {
+        Lock lock = lockCache.lock(key);
+
+        if (!lock.tryLock(LOCK_TIMEOUT_MS, MILLISECONDS))
+            throw new IgniteException("Failed to take the explicit lock [dc=" + dcId() + ", key=" + key + "]");
+
+        try {
+            doOperation(mode, key);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
