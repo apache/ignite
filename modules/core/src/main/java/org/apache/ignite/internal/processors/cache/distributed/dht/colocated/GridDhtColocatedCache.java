@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -641,10 +640,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         long timeout,
         long waitTimeout,
         @Nullable IgniteTxLocalEx tx,
-        boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable TransactionIsolation isolation,
         long createTtl,
         long accessTtl
     ) {
