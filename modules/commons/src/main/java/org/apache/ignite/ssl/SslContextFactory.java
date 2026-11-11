@@ -24,11 +24,16 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Enumeration;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -61,6 +66,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
+    /** Fraction of a certificate lifetime reserved for renewal. */
+    private static final double RENEWAL_WINDOW_FRACTION = 0.15;
+
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
 
@@ -84,6 +92,88 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** Trust managers. */
     protected TrustManager[] trustMgrs;
+
+    /** */
+    private boolean renewalEnabled;
+
+    /** */
+    private transient long renewalTime;
+
+    /** */
+    private transient long expirationTime;
+
+    /** */
+    private transient boolean renewing;
+
+    /**
+     * @return Whether automatic certificate renewal is enabled. Defaults to {@code false}.
+     */
+    public boolean isRenewalEnabled() {
+        return renewalEnabled;
+    }
+
+    /**
+     * @param enabled Whether automatic certificate renewal is enabled. Changes require a node restart.
+     */
+    public void setRenewalEnabled(boolean enabled) {
+        renewalEnabled = enabled;
+    }
+
+    /**
+     * The window covers the last 15% of the earliest-expiring key chain's lifetime.
+     * Its lifetime runs from the leaf's {@code notBefore} to the earliest {@code notAfter} in the chain.
+     * Chains with the same expiry use the longest lifetime.
+     *
+     * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} when disabled or not initialized.
+     */
+    public synchronized long getRenewalTime() {
+        return renewalEnabled ? renewalTime : 0;
+    }
+
+    /**
+     * Reloads certificates when their renewal window has started. Disabled renewal and a future window are skipped.
+     * Replacement certificates must be within their validity dates and have a later earliest expiry;
+     * otherwise the current context is kept.
+     *
+     * @throws org.apache.ignite.IgniteException If replacement certificates cannot be loaded or accepted.
+     */
+    public synchronized void renew() {
+        if (!renewalEnabled || renewalTime == 0 || renewalTime > System.currentTimeMillis())
+            return;
+
+        renewing = true;
+
+        try {
+            init();
+        }
+        finally {
+            renewing = false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override SSLContext createSslContext() throws SSLException {
+        long prevRenewalTime = renewalTime;
+        long prevExpirationTime = expirationTime;
+        boolean initialized = false;
+
+        try {
+            SSLContext ctx = super.createSslContext();
+
+            if (renewing && expirationTime < System.currentTimeMillis())
+                throw new SSLException("Replacement certificates expired while loading the SSL context [expiry=" + expirationTime + ']');
+
+            initialized = true;
+
+            return ctx;
+        }
+        finally {
+            if (!initialized) {
+                renewalTime = prevRenewalTime;
+                expirationTime = prevExpirationTime;
+            }
+        }
+    }
 
     /**
      * Gets key store type used for context creation.
@@ -264,6 +354,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
 
+            if (renewalEnabled)
+                readCertificateDates(keyStore);
+
             keyMgrFactory.init(keyStore, keyStorePwd);
 
             return keyMgrFactory.getKeyManagers();
@@ -275,6 +368,67 @@ public class SslContextFactory extends AbstractSslContextFactory {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
                 keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
         }
+    }
+
+    /**
+     * @param store Loaded key store.
+     * @throws GeneralSecurityException If a key or certificate cannot be read.
+     * @throws SSLException If the certificate chains cannot be used for renewal.
+     */
+    private void readCertificateDates(KeyStore store) throws GeneralSecurityException, SSLException {
+        long earliestExpiry = Long.MAX_VALUE;
+        long selectedStart = Long.MAX_VALUE;
+        Date now = new Date();
+
+        for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
+            String alias = aliases.nextElement();
+
+            if (!store.isKeyEntry(alias) || !(store.getKey(alias, keyStorePwd) instanceof PrivateKey))
+                continue;
+
+            Certificate[] chain = store.getCertificateChain(alias);
+
+            if (chain == null || chain.length == 0)
+                throw new SSLException("Certificate chain is unavailable [alias=" + alias + "]. Remove the key or add its X.509 chain.");
+
+            long chainExpiry = Long.MAX_VALUE;
+
+            for (Certificate cert : chain) {
+                if (!(cert instanceof X509Certificate))
+                    throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
+
+                X509Certificate x509 = (X509Certificate)cert;
+
+                if (renewing) {
+                    try {
+                        x509.checkValidity(now);
+                    }
+                    catch (CertificateException e) {
+                        throw new SSLException("Certificate is not currently valid [alias=" + alias + ", subject=" +
+                            x509.getSubjectX500Principal() + ']', e);
+                    }
+                }
+
+                chainExpiry = Math.min(chainExpiry, x509.getNotAfter().getTime());
+            }
+
+            long chainStart = ((X509Certificate)chain[0]).getNotBefore().getTime();
+
+            if (chainExpiry < earliestExpiry || chainExpiry == earliestExpiry && chainStart < selectedStart) {
+                earliestExpiry = chainExpiry;
+                selectedStart = chainStart;
+            }
+        }
+
+        if (earliestExpiry == Long.MAX_VALUE)
+            throw new SSLException("Certificate renewal requires a private key with an X.509 certificate chain.");
+
+        if (renewing && earliestExpiry <= expirationTime)
+            throw new SSLException("Replacement certificates must have a later earliest expiry [current=" + expirationTime +
+                ", replacement=" + earliestExpiry + ']');
+
+        expirationTime = earliestExpiry;
+        renewalTime = earliestExpiry - (long)(Math.max(0, earliestExpiry - (double)selectedStart) * RENEWAL_WINDOW_FRACTION);
     }
 
     /** {@inheritDoc} */

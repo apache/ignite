@@ -83,7 +83,9 @@ import org.apache.ignite.internal.thread.context.OperationContextAttributesTest;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSetSerializationTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.ssl.SSLContextWrapperTest;
+import org.apache.ignite.ssl.SslCertificateRenewalTest;
 import org.apache.ignite.ssl.SslContextFactoryInitTest;
+import org.apache.ignite.ssl.SslContextFactoryRenewalTest;
 import org.apache.ignite.ssl.SslContextReloadTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
@@ -149,6 +151,8 @@ import org.junit.runners.Suite;
     MultipleSSLContextsTest.class,
     SSLContextWrapperTest.class,
     SslContextFactoryInitTest.class,
+    SslContextFactoryRenewalTest.class,
+    SslCertificateRenewalTest.class,
     SslFactoryRegistryTest.class,
     SslReloadTaskTest.class,
     SslContextReloadTest.class,

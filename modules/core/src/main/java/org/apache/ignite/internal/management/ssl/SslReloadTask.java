@@ -161,7 +161,10 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                     .collect(joining(", "));
 
                 try {
-                    ((AbstractSslContextFactory)factory).init();
+                    synchronized (factory) {
+                        ((AbstractSslContextFactory)factory).init();
+                        ignite.context().ssl().onReload(factory);
+                    }
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);

@@ -17,15 +17,46 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.util.Date;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.ssl.SslContextFactory;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.joining;
+import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry {
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
+
+    /** */
+    private final Map<Factory<SSLContext>, Renewal> renewals = new IdentityHashMap<>();
+
+    /** */
+    private volatile ScheduledExecutorService executor;
+
+    /** */
+    private GridKernalContext ctx;
+
+    /** */
+    private IgniteLogger log;
+
+    /** */
+    private final AtomicLong consecutiveFailures = new AtomicLong();
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
@@ -36,5 +67,219 @@ public class SslFactoryRegistry {
     /** @return Snapshot of active transport factories. */
     public synchronized Map<String, Factory<SSLContext>> factories() {
         return new LinkedHashMap<>(factories);
+    }
+
+    /** */
+    public synchronized void start(GridKernalContext ctx) {
+        this.ctx = ctx;
+        log = ctx.log(getClass());
+        ctx.metric().registry("ssl").register("ConsecutiveRenewalFailures", consecutiveFailures::get,
+            "Sum of consecutive automatic certificate renewal failures across SSL factories.");
+
+        Map<String, Factory<SSLContext>> factories = factories();
+
+        for (Factory<SSLContext> factory : factories.values()) {
+            if (factory instanceof SslContextFactory && ((SslContextFactory)factory).isRenewalEnabled() && !renewals.containsKey(factory)) {
+                synchronized (factory) {
+                    if (ctx.isStopping())
+                        return;
+
+                    if (((SslContextFactory)factory).getRenewalTime() == 0)
+                        ((SslContextFactory)factory).init();
+                }
+
+                String transports = factories.entrySet().stream()
+                    .filter(entry -> entry.getValue() == factory)
+                    .map(Map.Entry::getKey)
+                    .collect(joining(", "));
+
+                renewals.put(factory, new Renewal((SslContextFactory)factory, transports));
+            }
+        }
+
+        if (renewals.isEmpty() || ctx.isStopping())
+            return;
+
+        executor = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
+        executor.execute(() -> renewals.values().forEach(renewal -> renewal.schedule(renewal.factory.getRenewalTime())));
+    }
+
+    /** */
+    public synchronized void stop() {
+        ScheduledExecutorService executor = this.executor;
+
+        if (executor == null)
+            return;
+
+        for (Runnable task : executor.shutdownNow()) {
+            if (task instanceof Future<?>)
+                ((Future<?>)task).cancel(false);
+        }
+
+        boolean interrupted = false;
+
+        while (!executor.isTerminated()) {
+            try {
+                executor.awaitTermination(Long.MAX_VALUE, MILLISECONDS);
+            }
+            catch (InterruptedException ignored) {
+                interrupted = true;
+            }
+        }
+
+        if (interrupted)
+            Thread.currentThread().interrupt();
+    }
+
+    /** */
+    public void onReload(Factory<SSLContext> factory) {
+        ScheduledExecutorService executor = this.executor;
+
+        if (executor == null || stopping())
+            return;
+
+        Renewal renewal = renewals.get(factory);
+
+        if (renewal == null)
+            return;
+
+        assert Thread.holdsLock(factory);
+
+        renewal.manualReloadPending = true;
+
+        try {
+            executor.execute(renewal::onReload);
+        }
+        catch (RejectedExecutionException e) {
+            if (!stopping())
+                throw e;
+        }
+    }
+
+    /** */
+    private boolean stopping() {
+        return ctx.isStopping() || executor.isShutdown();
+    }
+
+    /** */
+    private class Renewal implements Runnable {
+        /** */
+        private final SslContextFactory factory;
+
+        /** */
+        private final String transports;
+
+        /** */
+        private ScheduledFuture<?> pending;
+
+        /** */
+        private int failures;
+
+        /** Guarded by the factory monitor. */
+        private boolean manualReloadPending;
+
+        /** */
+        private Renewal(SslContextFactory factory, String transports) {
+            this.factory = factory;
+            this.transports = transports;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            if (stopping())
+                return;
+
+            boolean manuallyReloaded;
+            Exception failure = null;
+            long nextAttempt = 0;
+
+            synchronized (factory) {
+                if (stopping())
+                    return;
+
+                manuallyReloaded = manualReloadPending;
+                manualReloadPending = false;
+
+                try {
+                    factory.renew();
+                    nextAttempt = factory.getRenewalTime();
+                }
+                catch (Exception e) {
+                    failure = e;
+                }
+            }
+
+            if (stopping())
+                return;
+
+            if (manuallyReloaded || failure == null)
+                resetFailures();
+
+            if (failure != null) {
+                failures++;
+                consecutiveFailures.incrementAndGet();
+
+                long delay = Math.min(MINUTES.toMillis(1) << Math.min(failures - 1, 6), MINUTES.toMillis(60));
+
+                nextAttempt = System.currentTimeMillis() + delay + ThreadLocalRandom.current().nextLong(delay / 2 + 1);
+
+                log.warning("TLS renewal failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', failure);
+            }
+
+            schedule(nextAttempt);
+        }
+
+        /** */
+        private void onReload() {
+            if (stopping())
+                return;
+
+            long nextAttempt;
+
+            synchronized (factory) {
+                if (stopping() || !manualReloadPending)
+                    return;
+
+                manualReloadPending = false;
+                nextAttempt = factory.getRenewalTime();
+            }
+
+            if (stopping())
+                return;
+
+            resetFailures();
+            schedule(nextAttempt);
+        }
+
+        /** */
+        private void resetFailures() {
+            consecutiveFailures.addAndGet(-failures);
+            failures = 0;
+        }
+
+        /** */
+        private void schedule(long time) {
+            if (stopping())
+                return;
+
+            if (pending != null)
+                pending.cancel(false);
+
+            if (time == 0)
+                return;
+
+            try {
+                pending = executor.schedule(this, Math.max(0, time - System.currentTimeMillis()), MILLISECONDS);
+            }
+            catch (RejectedExecutionException e) {
+                if (!stopping())
+                    throw e;
+
+                return;
+            }
+
+            if (log.isInfoEnabled())
+                log.info("TLS renewal scheduled [transports=" + transports + ", nextAttempt=" + new Date(time) + ']');
+        }
     }
 }

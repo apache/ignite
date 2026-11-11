@@ -188,6 +188,44 @@ If any factory on a node has another type, the command reports it as unsupported
 For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
 If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.
 
+== Automatic Certificate Renewal
+
+To load replacement certificates automatically, enable renewal on each `SslContextFactory` before starting the node:
+
+[source,java]
+----
+factory.setRenewalEnabled(true);
+----
+
+Changing this setting requires a node restart.
+Renewal covers the same TCP transports as the reload command; it does not cover the HTTP REST endpoint or external client applications.
+Ignite loads certificates from the configured source; it does not issue them.
+Arrange for replacement stores to become available there, and follow the trust-first sequence above when changing certificate authorities.
+
+The factory reads renewal dates from the key store it actually loads.
+It selects the key chain that expires first and starts renewal with 15% of its lifetime remaining.
+This lifetime runs from the key certificate's validity start to the earliest expiry in its chain, including issuing certificates.
+For chains with the same expiry, it uses the longest lifetime.
+Startup fails if renewal is enabled and the store has no private key with an X.509 certificate chain.
+
+Every certificate in an automatic replacement's key chains must be within its validity dates, and the earliest expiry must move later.
+Otherwise, Ignite keeps the current context and retries, even after its certificates expire.
+The retry delay starts at one minute, doubles to one hour, and includes a random addition of up to half that delay.
+Established connections remain open; new connections use an accepted replacement.
+
+Check the node log for the next attempt, affected transports and any load or validation errors.
+The `ssl.ConsecutiveRenewalFailures` metric adds up consecutive automatic failures across the node's factories.
+A successful renewal or manual reload clears that factory's count.
+A skipped attempt also clears it, for example when another node sharing the factory has already renewed it.
+
+If renewal fails, correct the replacement store and run `control.sh --ssl reload` to apply it immediately.
+Manual reload requires a key chain but allows unchanged expiry dates, so it can apply a trust-store change alone.
+After a successful manual reload, Ignite recalculates the next attempt from the loaded certificates.
+
+Custom sources can extend javadoc:org.apache.ignite.ssl.SslContextFactory[] and override `loadKeyStore()` or `openFileInputStream()`.
+Limit the duration of source requests: a blocked load delays manual reload and can delay node shutdown.
+Factories extending only `AbstractSslContextFactory` support manual reload but do not participate in automatic renewal.
+
 == SslContextFactory Properties
 
 `SslContextFactory` supports the following properties:
@@ -215,6 +253,10 @@ If you configured `trustManagers` directly, the command reuses them instead of r
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`renewalEnabled`
+|Enables automatic certificate renewal. See <<Automatic Certificate Renewal>>.
+|`false`
 
 |`trustStoreFilePath`
 |The path to the trust store file.
