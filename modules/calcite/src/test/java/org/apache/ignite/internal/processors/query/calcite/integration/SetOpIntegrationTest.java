@@ -570,8 +570,6 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalT
 
                     clearTransaction();
 
-                    sql("DROP TABLE t1");
-
                     assertEquals(expected.length, res.size());
 
                     for (int i = 0; i < expected.length; ++i) {
@@ -583,6 +581,10 @@ public class SetOpIntegrationTest extends AbstractBasicIntegrationTransactionalT
                     sql("DELETE FROM t0");
 
                     clearTransaction();
+
+                    sql("DROP TABLE t1");
+
+                    awaitPartitionMapExchange();
                 }
             }
         }
