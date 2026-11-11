@@ -609,8 +609,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
     /**
      * Asserts that the node evicted at the threshold: loaded pages reached it, less 5% of the region (the eviction keeps
-     * the empty pages pool and the claims of in-flight inserts free), but do not exceed it by more than the empty pages
-     * pool and 1% of non-data pages (B+tree, free list metadata).
+     * the empty pages pool and the claims of in-flight inserts free), but do not exceed the threshold less the empty pages
+     * pool by more than 1% for the unreserved allocations of in-flight operations (B+tree, free list metadata).
      *
      * @param ignite Node.
      */
@@ -619,7 +619,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         long total = totalPages(ignite);
         long loaded = loadedPages(ignite);
-        long limit = (long)(EVICTION_THRESHOLD * total) + defaultRegion(ignite).config().getEmptyPagesPoolSize() + total / 100;
+        long limit = (long)(EVICTION_THRESHOLD * total) - defaultRegion(ignite).config().getEmptyPagesPoolSize() + total / 100;
 
         assertTrue("Loaded pages must reach the threshold [loaded=" + loaded + ", total=" + total + ']',
             loaded >= total * (EVICTION_THRESHOLD - 0.05));
