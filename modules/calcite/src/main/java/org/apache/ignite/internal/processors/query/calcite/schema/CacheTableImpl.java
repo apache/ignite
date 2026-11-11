@@ -51,6 +51,9 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     private final GridKernalContext ctx;
 
     /** */
+    private final IgniteStatisticsImpl fallbackStats;
+
+    /** */
     private final Map<String, IgniteIndex> indexes = new ConcurrentHashMap<>();
 
     /** */
@@ -63,6 +66,7 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
     public CacheTableImpl(GridKernalContext ctx, CacheTableDescriptor desc) {
         this.ctx = ctx;
         this.desc = desc;
+        fallbackStats = new IgniteStatisticsImpl(desc);
     }
 
     /** {@inheritDoc} */
@@ -81,7 +85,7 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
         if (statistics != null)
             return new IgniteStatisticsImpl(statistics);
 
-        return new IgniteStatisticsImpl(desc);
+        return fallbackStats;
     }
 
     /** {@inheritDoc} */
