@@ -33,7 +33,7 @@ public abstract class PageEvictionDataStreamerAbstractTest extends PageEvictionM
         try (IgniteDataStreamer<Object, Object> ldr = clientGrid().dataStreamer(cfg.getName())) {
             ldr.allowOverwrite(true);
 
-            for (int i = 1; i <= ENTRIES; i++) {
+            for (int i = 1; i <= MULTINODE_ENTRIES; i++) {
                 ThreadLocalRandom r = ThreadLocalRandom.current();
 
                 if (r.nextInt() % 5 == 0)
@@ -41,7 +41,7 @@ public abstract class PageEvictionDataStreamerAbstractTest extends PageEvictionM
                 else
                     ldr.addData(i, new TestObject(r.nextInt(PAGE_SIZE / 4 - 50))); // Fits in one page.
 
-                if (i % (ENTRIES / 10) == 0)
+                if (i % (MULTINODE_ENTRIES / 10) == 0)
                     System.out.println(">>> Entries put: " + i);
             }
         }
@@ -51,7 +51,8 @@ public abstract class PageEvictionDataStreamerAbstractTest extends PageEvictionM
         System.out.println(">>> Resulting size: " + resultingSize);
 
         // Eviction started, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < ENTRIES);
+        assertTrue("Eviction must have evicted entries [size=" + resultingSize + ", entries=" + MULTINODE_ENTRIES + ']',
+            resultingSize < MULTINODE_ENTRIES);
 
         clientGrid().destroyCache(cfg.getName());
     }
