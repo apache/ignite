@@ -34,7 +34,7 @@ class FakeApp:
         return self.results.get(name, [])
 
 
-# Ops every second, then 4 seconds without a success while 6 operations fail, then ops again.
+# Successes every second, then none for about 4 seconds while 8 operations fail, then successes again.
 PROGRESS = [
     LoadProgress(1000, 10, 0, 50),
     LoadProgress(2000, 20, 0, 40),
@@ -53,9 +53,9 @@ class CheckLoadProgress:
     @staticmethod
     def check_parses_records():
         """The records the application wrote become progress points, in order."""
-        app = FakeApp({"pfx_Progress": ["1000 10 0 50", "2000 20 1 40"]})
+        app = FakeApp({"Progress": ["1000 10 0 50", "2000 20 1 40"]})
 
-        assert load_progress(app, "pfx_") == [LoadProgress(1000, 10, 0, 50), LoadProgress(2000, 20, 1, 40)]
+        assert load_progress(app) == [LoadProgress(1000, 10, 0, 50), LoadProgress(2000, 20, 1, 40)]
 
     @staticmethod
     def check_counts_within_window():

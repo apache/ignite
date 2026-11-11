@@ -36,7 +36,7 @@ class FakeAccount:
 
 
 def check_signals_every_ignite_process():
-    """Each process of the service's main class gets the signal, and a failed send fails the call."""
+    """Each process of the service's main class gets the signal, sent with allow_fail=False."""
     node = SimpleNamespace(account=FakeAccount())
 
     service = SimpleNamespace(main_java_class="Main",

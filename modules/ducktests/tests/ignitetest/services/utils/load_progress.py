@@ -39,11 +39,11 @@ class LoadWindow(NamedTuple):
     max_stall_ms: int
 
 
-def load_progress(app, result_prefix="") -> List[LoadProgress]:
+def load_progress(app) -> List[LoadProgress]:
     """
     :return: Progress records of the load application service.
     """
-    return [LoadProgress(*map(int, rec.split())) for rec in app.extract_results(result_prefix + "Progress")]
+    return [LoadProgress(*map(int, rec.split())) for rec in app.extract_results("Progress")]
 
 
 def load_window(progress: List[LoadProgress], from_ms, to_ms) -> LoadWindow:

@@ -32,7 +32,7 @@ from ignitetest.services.utils.ignite_configuration.cache import CacheConfigurat
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.load_progress import load_progress, load_window
-from ignitetest.tests.rebalance.util import await_rebalance_start, check_type_of_rebalancing
+from ignitetest.tests.rebalance.util import check_type_of_rebalancing
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -46,7 +46,7 @@ BEFORE_SEC = 10
 AWAY_SEC = 30
 AFTER_SEC = 20
 
-# The join's exchange may wait for a load transaction until its 1 s timeout; on master it took at most 463 ms.
+# The join's exchange may wait for a load transaction until its 1 s timeout, plus its own work.
 JOIN_EXCHANGE_MS = 2_000
 
 
@@ -62,7 +62,7 @@ class NodeReturnTest(IgniteTest):
     def test_node_return(self, ignite_version, stop, explicit_locks):
         """
         Stops the server by the signal and starts it again. With explicit locks every load transaction runs under an
-        explicit lock, so the exchanges meet a held lock.
+        explicit lock.
         """
         caches = [CacheConfiguration(name=name, atomicity_mode="TRANSACTIONAL", backups=1)
                   for name in (CACHE, LOCK_CACHE)]
@@ -121,7 +121,7 @@ class NodeReturnTest(IgniteTest):
         assert join_exchange_ms <= JOIN_EXCHANGE_MS, \
             f"The join's exchange took {join_exchange_ms} ms, bound {JOIN_EXCHANGE_MS} ms"
 
-        await_rebalance_start(ignite)
+        ignite.await_event_on_node("Starting rebalance routine", node, timeout_sec=30, from_the_beginning=True)
         ignite.await_rebalance()
 
         check_type_of_rebalancing([node], is_full=False)

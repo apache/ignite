@@ -75,8 +75,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *         service produce uniquely named results;</li>
  *     <li>{@code txConcurrency} / {@code txIsolation} - transaction parameters for {@code TX_PUT};</li>
  *     <li>{@code lockCache} - an existing transactional cache. If set, every operation runs under an
- *         explicit lock on its key in this cache, the way applications serialize access to a record.
- *         A lock not taken within 10 seconds counts as a failed operation;</li>
+ *         explicit lock on its key in this cache. A lock not taken within 10 seconds counts as a failed
+ *         operation;</li>
  *     <li>{@code progressIntervalMs} - if positive, records {@code Progress-><ts> <ok> <err> <sinceOkMs><-}
  *         at this interval: the time, the successful and the failed operations so far, and the time
  *         since the last successful one.</li>
@@ -166,7 +166,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             cache = createCache ? mdcCache(jNode) : ignite.cache(cacheName);
 
         if (!lockCacheName.isEmpty())
-            lockCache = ignite.cache(lockCacheName);
+            lockCache = Objects.requireNonNull(ignite.cache(lockCacheName), "No lock cache: " + lockCacheName);
 
         mergeSql = String.format("MERGE INTO \"%s\".%s(_KEY, _VAL) VALUES(?, ?)", cacheName, SQL_TABLE);
         selectSql = String.format("SELECT _VAL FROM \"%s\".%s WHERE _KEY = ?", cacheName, SQL_TABLE);
