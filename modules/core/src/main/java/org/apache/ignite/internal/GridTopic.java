@@ -87,7 +87,7 @@ public enum GridTopic {
     TOPIC_CONTINUOUS,
 
     /**
-     * @deprecated Should be removed in Apache Ignite 3.0.
+     * @deprecated Component was removed. Enum can't be removed because enum ordinal is important.
      */
     @Deprecated
     TOPIC_MONGO,
