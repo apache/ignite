@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongConsumer;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -319,6 +320,23 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
                 max = Math.max(max, keyCands.holdTime(now));
 
             return max;
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /** @param c Consumer of the time each acquired key of the span has been locked for, in milliseconds. */
+    public void holdTimes(LongConsumer c) {
+        lock();
+
+        try {
+            long now = U.currentTimeMillis();
+
+            for (KeyCandidates keyCands : cands.values()) {
+                if (keyCands.acquireTime != 0)
+                    c.accept(keyCands.holdTime(now));
+            }
         }
         finally {
             unlock();

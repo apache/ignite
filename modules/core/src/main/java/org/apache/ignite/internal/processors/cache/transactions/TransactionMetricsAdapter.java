@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.LongConsumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramGauge;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -43,11 +45,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Tx metrics adapter.
@@ -76,6 +79,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
     /** Metric name for explicit lock hold time histogram on node. */
     public static final String METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM = "ExplicitLockHoldTimeHistogram";
+
+    /** Metric name for histogram of hold times of explicit locks currently held on node. */
+    public static final String METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM = "HeldExplicitLocksHistogram";
 
     /** Histogram buckets for metrics of system and user time. */
     public static final long[] METRIC_TIME_BUCKETS =
@@ -151,7 +157,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
     /** Callback invoked when {@link IgniteTxManager} started. */
     public void onTxManagerStarted() {
-        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistryImpl mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,
@@ -169,6 +175,12 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         mreg.register(METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME,
             this::maxExplicitLockHoldTime,
             "Maximum hold time of explicit locks currently held on the node, in milliseconds.");
+
+        mreg.register(new HistogramGauge(
+            metricName(TX_METRICS, METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM),
+            "Hold times of explicit locks currently held on the node represented as histogram, in milliseconds.",
+            new long[] {DFLT_LONG_OPERATIONS_DUMP_TIMEOUT},
+            this::explicitLockHoldTimes));
 
         mreg.register(METRIC_MAX_CACHE_FUTURE_DURATION,
             this::maxCacheFutureDuration,
@@ -462,6 +474,17 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             max = Math.max(max, span.maxHoldTime());
 
         return max;
+    }
+
+    /** @param c Consumer of hold times of explicit locks currently held on the node, in milliseconds. */
+    private void explicitLockHoldTimes(LongConsumer c) {
+        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccMgr == null)
+            return;
+
+        for (GridCacheExplicitLockSpan span : mvccMgr.activeExplicitLocks())
+            span.holdTimes(c);
     }
 
     /** @return Maximum duration of cache futures currently in progress on the node, in milliseconds. */

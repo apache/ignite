@@ -42,12 +42,16 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.metric.MetricsConfigurationTest.metricsBean;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  *
@@ -246,6 +250,31 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         IgniteEx client = startClientGrid(getConfiguration(getTestIgniteInstanceName(1)).setCacheConfiguration());
 
         checkExplicitLockMetrics(client, srv, client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>()));
+    }
+
+    /** */
+    @Test
+    public void testHeldExplicitLocksHistogram() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        HistogramMetric hist = ignite.context().metric().registry(TX_METRICS).findMetric(METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM);
+
+        Lock lock = ignite.cache(DEFAULT_CACHE_NAME).lock(1);
+
+        lock.lock();
+
+        try {
+            assertArrayEquals(new long[] {1, 0}, hist.value());
+
+            metricsBean(ignite).configureHistogramMetric(metricName(TX_METRICS, METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM), new long[] {100});
+
+            assertTrue(waitForCondition(() -> Arrays.equals(new long[] {0, 1}, hist.value()), getTestTimeout()));
+        }
+        finally {
+            lock.unlock();
+        }
+
+        assertArrayEquals(new long[] {0, 0}, hist.value());
     }
 
     /**
