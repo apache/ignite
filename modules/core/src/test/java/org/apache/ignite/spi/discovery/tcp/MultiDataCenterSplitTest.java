@@ -223,6 +223,9 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
             discoSpiSupplier = () -> new TestTcpDiscoverySpi(Collections.singleton(DC_ID_0), fullTimeoutFailure, pingPoolSize);
 
             startGridsMultiThreaded(srvrsPerDc, srvrsPerDc);
+
+            for (Ignite ig : G.allGrids())
+                portToDc.put(discoSpi(ig).getLocalPort(), ig.cluster().localNode().dataCenterId());
         }
         else {
             // Start DC0. It misses connection to DC1.
@@ -243,12 +246,12 @@ public class MultiDataCenterSplitTest extends GridCommonAbstractTest {
 
             startGridsMultiThreaded(srvrsPerDc * 2, srvrsPerDc);
 
+            for (Ignite ig : G.allGrids())
+                portToDc.put(discoSpi(ig).getLocalPort(), ig.cluster().localNode().dataCenterId());
+
             for (int ig = srvrsPerDc; ig < srvrsPerDc * 2; ++ig)
                 discoSpi(grid(ig)).block = true;
         }
-
-        for (Ignite ig : G.allGrids())
-            portToDc.put(discoSpi(ig).getLocalPort(), ig.cluster().localNode().dataCenterId());
     }
 
     /** Check whether datacenter {@code dcId} is separated. If {@code otherAliveDc} is not {@code null}, these DCs are expected joined. */
