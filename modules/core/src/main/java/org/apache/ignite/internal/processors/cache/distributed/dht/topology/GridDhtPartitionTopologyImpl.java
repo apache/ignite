@@ -2103,7 +2103,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @return {@code True} if a local partition was owned.
      */
     private boolean ownOrphans() {
-        boolean ownerReports = ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
+        boolean skipRmtWrites = ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
         boolean changed = false;
 
@@ -2128,7 +2128,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         updateLocal(p, OWNING, updateSeq.incrementAndGet(), readyTopVer);
                     }
 
-                    if (!ownerReports) {
+                    if (!skipRmtWrites) {
                         for (GridDhtPartitionMap map : node2part.values()) {
                             if (map.get(p) != null)
                                 map.put(p, OWNING);
@@ -2245,7 +2245,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 boolean changed = false;
 
-                boolean ownerReports =
+                boolean skipRmtWrites =
                     ctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
                 for (int part = 0; part < grp.affinity().partitions(); part++) {
@@ -2299,7 +2299,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         }
 
                         // Update remote maps according to policy.
-                        if (!ownerReports) {
+                        if (!skipRmtWrites) {
                             for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
                                 if (entry.getKey().equals(ctx.localNodeId()))
                                     continue;

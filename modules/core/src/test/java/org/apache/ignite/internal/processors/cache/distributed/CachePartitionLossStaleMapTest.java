@@ -445,7 +445,7 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
         startGrid(LEAVING);
 
-        IgniteEx newPrimary = startGrid(OBSERVER);
+        IgniteEx newPrimary = startGrid(3);
 
         IgniteEx client = startClientGrid(CLIENT);
 

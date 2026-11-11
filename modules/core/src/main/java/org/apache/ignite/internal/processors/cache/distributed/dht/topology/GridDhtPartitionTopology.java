@@ -343,8 +343,9 @@ public interface GridDhtPartitionTopology {
     /**
      * Checks if there is at least one owner for each partition in the cache topology for a local node.
      * If not marks such a partition as LOST or OWNING depending on a policy.
-     * Changes only local partitions: the other nodes learn the new states from this node's partition map. Until
-     * {@code PART_STATE_FROM_OWNER_FEATURE} is active, it also writes them into its copies of the other nodes' maps.
+     * The other nodes learn the new states of the local partitions from this node's partition map. Until
+     * {@code PART_STATE_FROM_OWNER_FEATURE} is active, the node also writes the states into its copies of the other
+     * nodes' maps.
      *
      * @param resTopVer Exchange result version.
      * @param fut Exchange futute for topology events to detect.

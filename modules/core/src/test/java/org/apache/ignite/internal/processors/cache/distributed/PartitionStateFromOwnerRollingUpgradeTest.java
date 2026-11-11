@@ -27,7 +27,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
@@ -72,7 +71,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
      * @throws Exception If failed.
      */
     @Test
-    public void testOwnersReportStateAfterUpgrade() throws Exception {
+    public void testOtherNodesStopWritingAfterUpgrade() throws Exception {
         startCluster(OLD_VER);
         startGrid(LEAVING, OLD_VER);
 
@@ -141,8 +140,9 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         for (Ignite g : G.allGrids()) {
             if (g != crd && !g.cluster().localNode().isClient()) {
-                TestRecordingCommunicationSpi.spi(g).blockMessages(
-                    (node, msg) -> node.id().equals(crdId) && sentOutsideExchange(msg));
+                TestRecordingCommunicationSpi.spi(g).blockMessages((node, msg) -> node.id().equals(crdId)
+                    && msg instanceof GridDhtPartitionsSingleMessage
+                    && ((GridDhtPartitionsSingleMessage)msg).exchangeId() == null);
             }
         }
 
@@ -156,14 +156,5 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         }
 
         return crd;
-    }
-
-    /**
-     * @param msg Message.
-     * @return Whether the message is a partition map sent outside an exchange.
-     */
-    private static boolean sentOutsideExchange(Message msg) {
-        return msg instanceof GridDhtPartitionsSingleMessage
-            && ((GridDhtPartitionsSingleMessage)msg).exchangeId() == null;
     }
 }

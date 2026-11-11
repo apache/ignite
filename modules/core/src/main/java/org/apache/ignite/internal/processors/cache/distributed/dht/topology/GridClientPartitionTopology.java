@@ -1042,7 +1042,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             // Calculate how loss data is handled.
             boolean safe = partLossPlc != PartitionLossPolicy.IGNORE || !compatibleWithIgnorePlc;
 
-            boolean ownerReports =
+            boolean skipRmtWrites =
                 cctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
             for (int part = 0; part < parts; part++) {
@@ -1073,7 +1073,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     }
                 }
 
-                if (lost && !ownerReports) {
+                if (lost && !skipRmtWrites) {
                     // Update remote maps according to policy.
                     for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
                         if (entry.getValue().get(part) != null)
