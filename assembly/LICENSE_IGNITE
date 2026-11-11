@@ -249,12 +249,6 @@ This product bundles H2 Database Engine which is available under the following:
 MPL 2.0, and EPL 1.0. For details, see http://h2database.com/html/license.html.
 
 ==============================================================================
-For JTidy (http://jtidy.sourceforge.net) net.sf.jtidy:jtidy:jar:r938
-==============================================================================
-This product bundles JTidy which is available under the following:
-Java HTML Tidy License. For details, see http://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95.
-
-==============================================================================
 For tomcat-servlet-api (http://tomcat.apache.org/) org.apache.tomcat:tomcat-servlet-api:jar:9.0.10
 ==============================================================================
 This product bundles tomcat-servlet-api which is available under the following:

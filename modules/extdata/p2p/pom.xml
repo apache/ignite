@@ -67,6 +67,27 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- Second version of the compute classes used by SharedDeploymentTest to check redeployment. -->
+                        <id>compile-v2</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <compileSourceRoots>
+                                <compileSourceRoot>${basedir}/src/main/java-v2</compileSourceRoot>
+                            </compileSourceRoots>
+                            <outputDirectory>${basedir}/target/classes-v2</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>

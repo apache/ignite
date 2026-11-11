@@ -369,5 +369,7 @@
   "13601": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeatureSet",
   "13602": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgnitePluginFeatureSet",
   "13603": "org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeClusterData",
-  "13604": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet"
+  "13604": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet",
+  "13605": "org.apache.ignite.internal.classpath.DownloadClassPathMessage",
+  "13606": "org.apache.ignite.internal.classpath.DownloadClassPathFailureMessage"
 }

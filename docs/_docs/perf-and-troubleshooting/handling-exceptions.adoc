@@ -59,7 +59,7 @@ See link:configuring-caches/partition-loss-policy[Partition Loss Policy] for det
 |Retry after clearing the interrupted flag.
 |Yes
 |`IgniteSpiException`
-|Thrown by various SPI (`CollisionSpi`, `LoadBalancingSpi`, `TcpDiscoveryIpFinder`, `FailoverSpi`, `UriDeploymentSpi`, etc.)
+|Thrown by various SPI (`CollisionSpi`, `LoadBalancingSpi`, `TcpDiscoveryIpFinder`, `FailoverSpi`, etc.)
 |Operation failed. Exit from the method.
 |Yes
 |`IgniteSQLException`
