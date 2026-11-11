@@ -77,11 +77,11 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Metric name for count of long running cache futures currently in progress on node. */
     public static final String METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT = "LongRunningCacheFuturesCount";
 
-    /** Metric name for explicit lock hold time histogram on node. */
-    public static final String METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM = "ExplicitLockHoldTimeHistogram";
+    /** Metric name for released explicit lock hold time histogram on node. */
+    public static final String METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME = "ReleasedExplicitLockHoldTime";
 
     /** Metric name for histogram of hold times of explicit locks currently held on node. */
-    public static final String METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM = "HeldExplicitLocksHistogram";
+    public static final String METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME = "CurrentExplicitLockHoldTime";
 
     /** Histogram buckets for metrics of system and user time. */
     public static final long[] METRIC_TIME_BUCKETS =
@@ -149,9 +149,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         );
 
         explicitLockHoldTimeHistogram = mreg.histogram(
-            METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM,
+            METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME,
             METRIC_TIME_BUCKETS,
-            "Explicit locks hold times on node represented as histogram, in milliseconds."
+            "Released explicit locks hold times on node represented as histogram, in milliseconds."
         );
     }
 
@@ -177,7 +177,7 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             "Maximum hold time of explicit locks currently held on the node, in milliseconds.");
 
         mreg.register(new HistogramGauge(
-            metricName(TX_METRICS, METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM),
+            metricName(TX_METRICS, METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME),
             "Hold times of explicit locks currently held on the node represented as histogram, in milliseconds.",
             new long[] {DFLT_LONG_OPERATIONS_DUMP_TIMEOUT},
             this::explicitLockHoldTimes));

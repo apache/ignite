@@ -43,9 +43,9 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.metric.MetricsConfigurationTest.metricsBean;
-import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM;
-import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -254,10 +254,10 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testHeldExplicitLocksHistogram() throws Exception {
+    public void testCurrentExplicitLockHoldTime() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        HistogramMetric hist = ignite.context().metric().registry(TX_METRICS).findMetric(METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM);
+        HistogramMetric hist = ignite.context().metric().registry(TX_METRICS).findMetric(METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME);
 
         Lock lock = ignite.cache(DEFAULT_CACHE_NAME).lock(1);
 
@@ -266,7 +266,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         try {
             assertArrayEquals(new long[] {1, 0}, hist.value());
 
-            metricsBean(ignite).configureHistogramMetric(metricName(TX_METRICS, METRIC_HELD_EXPLICIT_LOCKS_HISTOGRAM), new long[] {100});
+            metricsBean(ignite).configureHistogramMetric(metricName(TX_METRICS, METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME), new long[] {100});
 
             assertTrue(waitForCondition(() -> Arrays.equals(new long[] {0, 1}, hist.value()), getTestTimeout()));
         }
@@ -287,7 +287,7 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         MetricRegistry mreg = owner.context().metric().registry(TX_METRICS);
 
         LongMetric maxHoldTime = mreg.findMetric(METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME);
-        HistogramMetric holdTimeHistogram = mreg.findMetric(METRIC_EXPLICIT_LOCK_HOLD_TIME_HISTOGRAM);
+        HistogramMetric holdTimeHistogram = mreg.findMetric(METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME);
 
         Lock lock = cache.lock(1);
 
