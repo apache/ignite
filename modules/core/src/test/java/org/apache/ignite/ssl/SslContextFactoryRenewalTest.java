@@ -19,15 +19,18 @@ package org.apache.ignite.ssl;
 
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.lang.Thread.State.BLOCKED;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
@@ -61,7 +64,7 @@ public class SslContextFactoryRenewalTest {
         assertFalse(factory.isRenewalEnabled());
         assertEquals(0, factory.getRenewalTime());
 
-        factory.renew();
+        factory.renew(() -> false);
     }
 
     /** */
@@ -177,9 +180,42 @@ public class SslContextFactoryRenewalTest {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(
             authority.keyStore("node", now - HOURS.toMillis(1), now + HOURS.toMillis(99)));
         factory.create();
-        factory.renew();
+        factory.renew(() -> false);
 
         assertEquals(1, factory.keyStoreLoads);
+    }
+
+    /** */
+    @Test
+    public void testCancellationWhileWaitingForFactorySkipsRenewal() throws Exception {
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(
+            authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
+        SSLContext ctx = factory.create();
+
+        factory.keyStore = authority.keyStore("replacement", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
+
+        AtomicBoolean cancelled = new AtomicBoolean();
+        GridTestThread attempt = new GridTestThread(() -> factory.renew(cancelled::get));
+
+        try {
+            synchronized (factory) {
+                attempt.start();
+
+                long deadline = System.currentTimeMillis() + 5_000;
+
+                assertTrue(waitForCondition(() -> attempt.getState() == BLOCKED, () -> System.currentTimeMillis() < deadline));
+
+                cancelled.set(true);
+            }
+        }
+        finally {
+            attempt.join(5_000);
+        }
+
+        assertFalse(attempt.isAlive());
+        attempt.checkError();
+        assertEquals(1, factory.keyStoreLoads);
+        assertSame(ctx, factory.create());
     }
 
     /** */
@@ -190,7 +226,7 @@ public class SslContextFactoryRenewalTest {
         SSLContext ctx = factory.create();
 
         factory.keyStore = authority.keyStore("node", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
-        factory.renew();
+        factory.renew(() -> false);
 
         assertNotSame(ctx, factory.create());
         assertEquals(now + HOURS.toMillis(84), factory.getRenewalTime());
@@ -206,7 +242,7 @@ public class SslContextFactoryRenewalTest {
 
         factory.keyStore = authority.keyStore("replacement", now - HOURS.toMillis(80), now + HOURS.toMillis(10));
 
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
+        IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
         assertTrue(err.getCause().getMessage().contains("later earliest expiry"));
         assertSame(ctx, factory.create());
@@ -223,7 +259,7 @@ public class SslContextFactoryRenewalTest {
 
         factory.keyStore = expiredIssuer.keyStore("replacement", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
 
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
+        IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
         assertTrue(err.getCause().getMessage().contains("subject=CN=expired-issuer"));
         assertSame(ctx, factory.create());
@@ -244,7 +280,7 @@ public class SslContextFactoryRenewalTest {
                 notYetValidKeys.getCertificateChain(notYetValidAlias));
             factory.keyStore = replacement;
 
-            IgniteException err = assertThrows(IgniteException.class, factory::renew);
+            IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
             assertTrue(err.getCause().getMessage().contains("alias=" + notYetValidAlias));
             assertSame(ctx, factory.create());
@@ -258,7 +294,7 @@ public class SslContextFactoryRenewalTest {
             authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
         SSLContext ctx = factory.create();
 
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
+        IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
         assertTrue(err.getCause().getMessage().contains("later earliest expiry"));
 
@@ -282,14 +318,14 @@ public class SslContextFactoryRenewalTest {
         factory.setTrustStoreFilePath("missing-trust-store");
         factory.setTrustStorePassword(PASSWORD);
 
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
+        IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
         assertTrue(err.getCause().getMessage().contains("missing-trust-store"));
         assertSame(ctx, factory.create());
         assertEquals(renewalTime, factory.getRenewalTime());
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-        factory.renew();
+        factory.renew(() -> false);
 
         assertNotSame(ctx, factory.create());
         assertEquals(now + HOURS.toMillis(84), factory.getRenewalTime());
@@ -348,7 +384,7 @@ public class SslContextFactoryRenewalTest {
         factory.setTrustStoreFilePath("slow-trust-store");
         factory.setTrustStorePassword(PASSWORD);
 
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
+        IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
         assertTrue(err.getCause().getMessage().contains("expired while loading"));
         ((X509Certificate)curKeys.getCertificate("valid")).checkValidity();

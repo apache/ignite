@@ -31,6 +31,7 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.function.BooleanSupplier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -135,10 +136,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * Replacement certificates must be within their validity dates and have a later earliest expiry;
      * otherwise the current context is kept.
      *
+     * @param cancelled Cancellation condition checked after waiting for any active load.
      * @throws org.apache.ignite.IgniteException If replacement certificates cannot be loaded or accepted.
      */
-    public synchronized void renew() {
-        if (!renewalEnabled || renewalTime == 0 || renewalTime > System.currentTimeMillis())
+    public synchronized void renew(BooleanSupplier cancelled) {
+        if (cancelled.getAsBoolean() || !renewalEnabled || renewalTime == 0 || renewalTime > System.currentTimeMillis())
             return;
 
         renewing = true;

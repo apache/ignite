@@ -82,13 +82,11 @@ public class SslFactoryRegistry {
 
         for (Factory<SSLContext> factory : factories.values()) {
             if (factory instanceof SslContextFactory && ((SslContextFactory)factory).isRenewalEnabled() && !renewals.containsKey(factory)) {
-                synchronized (factory) {
-                    if (ctx.isStopping())
-                        return;
+                if (ctx.isStopping())
+                    return;
 
-                    if (((SslContextFactory)factory).getRenewalTime() == 0)
-                        ((SslContextFactory)factory).init();
-                }
+                if (((SslContextFactory)factory).getRenewalTime() == 0)
+                    ((SslContextFactory)factory).init();
 
                 String transports = factories.entrySet().stream()
                     .filter(entry -> entry.getValue() == factory)
@@ -173,17 +171,12 @@ public class SslFactoryRegistry {
             Exception failure = null;
             long nextAttempt = 0;
 
-            synchronized (factory) {
-                if (stopping())
-                    return;
-
-                try {
-                    factory.renew();
-                    nextAttempt = factory.getRenewalTime();
-                }
-                catch (Exception e) {
-                    failure = e;
-                }
+            try {
+                factory.renew(SslFactoryRegistry.this::stopping);
+                nextAttempt = factory.getRenewalTime();
+            }
+            catch (Exception e) {
+                failure = e;
             }
 
             if (stopping())

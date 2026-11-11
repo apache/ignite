@@ -25,7 +25,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -49,8 +49,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -188,7 +188,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testFailuresIncreaseRetryDelayUntilLimit() {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -209,7 +209,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testNormalReturnResetsFailuresAndReadsNextWindow() {
-        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew();
+        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew(any());
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -228,7 +228,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testManualReloadReplacesRetryAndResetsFailures() {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -250,7 +250,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testFailedManualReloadKeepsRetryAndFailures() {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -274,8 +274,8 @@ public class SslFactoryRegistryTest {
 
         when(otherFactory.isRenewalEnabled()).thenReturn(true);
         when(otherFactory.getRenewalTime()).thenReturn(1L);
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
-        doThrow(new IgniteException("Source unavailable")).when(otherFactory).renew();
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).when(otherFactory).renew(any());
 
         registry.register("communication", factory);
         registry.register("client connector", otherFactory);
@@ -296,7 +296,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testMetricResetDoesNotCorruptFailureCount() {
-        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew();
+        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew(any());
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -325,7 +325,7 @@ public class SslFactoryRegistryTest {
             attemptCallers.add(Optional.ofNullable(OperationContext.get(caller)));
 
             return null;
-        }).when(factory).renew();
+        }).when(factory).renew(any());
         doAnswer(call -> {
             renewalTime.set(System.currentTimeMillis());
 
@@ -362,35 +362,24 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testStoppingWhileWaitingForFactorySkipsRenewal() throws Exception {
+    public void testRenewalObservesNodeStop() {
+        doAnswer(call -> {
+            BooleanSupplier cancelled = call.getArgument(0);
+
+            assertFalse(cancelled.getAsBoolean());
+
+            when(ctx.isStopping()).thenReturn(true);
+
+            assertTrue(cancelled.getAsBoolean());
+
+            return null;
+        }).when(factory).renew(any());
+
         registry.register("communication", factory);
         registry.start(ctx);
+        scheduled.run();
 
-        AtomicReference<Thread> renewalThread = new AtomicReference<>();
-        IgniteInternalFuture<?> attempt = null;
-
-        try {
-            synchronized (factory) {
-                attempt = runAsync(() -> {
-                    renewalThread.set(Thread.currentThread());
-                    scheduled.run();
-                });
-
-                long deadline = System.currentTimeMillis() + 5_000;
-
-                assertTrue(waitForCondition(() -> renewalThread.get() != null && renewalThread.get().getState() == Thread.State.BLOCKED,
-                    () -> System.currentTimeMillis() < deadline, 10));
-
-                when(ctx.isStopping()).thenReturn(true);
-            }
-        }
-        finally {
-            if (attempt != null)
-                attempt.get(5_000);
-        }
-
-        verify(factory, never()).renew();
-        assertEquals(0, failures());
+        verify(factory).renew(any());
     }
 
     /** */
@@ -425,7 +414,7 @@ public class SslFactoryRegistryTest {
                 interrupted.set(true);
 
             return null;
-        }).when(factory).renew();
+        }).when(factory).renew(any());
 
         registry.register("communication", factory);
 
@@ -463,7 +452,7 @@ public class SslFactoryRegistryTest {
             when(ctx.isStopping()).thenReturn(true);
 
             throw new IgniteException("Load interrupted by node stop");
-        }).when(factory).renew();
+        }).when(factory).renew(any());
 
         registry.register("communication", factory);
         registry.start(ctx);
