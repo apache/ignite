@@ -69,6 +69,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
     public void testResourcesReleasedAfterCacheDestroyed() throws Exception {
         int cacheId = CU.cacheId(PART_CUSTOM_AFFINITY_CACHE_NAME);
         startGrids(2);
+        awaitPartitionMapExchange();
 
         initClient(getClientConfiguration(0, 1)
             .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
