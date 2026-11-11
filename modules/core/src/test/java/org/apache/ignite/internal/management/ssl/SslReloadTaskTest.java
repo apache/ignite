@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.NoArg;
-import org.apache.ignite.internal.management.ssl.SslReloadTask.SslReloadJobResult;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.logger.NullLogger;
@@ -49,7 +48,7 @@ public class SslReloadTaskTest {
         task.map(List.of(node), new VisorTaskArgument<>(List.of(node.id(), departedId), new NoArg(), false));
 
         String nodeReport = node.id() + ": no TCP transports started with TLS";
-        GridTestJobResult res = new GridTestJobResult(new SslReloadJobResult(nodeReport, false), null, null, node, null);
+        GridTestJobResult res = new GridTestJobResult(nodeReport, null, null, node, null);
 
         IgniteException err = assertThrows(IgniteException.class, () -> task.reduce(List.of(res)).result());
 

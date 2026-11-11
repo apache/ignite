@@ -27,7 +27,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 public class SslReloadCommand implements ComputeCommand<NoArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Reload TLS key and trust stores on all server and thick-client nodes";
+        return "Reload TLS key and trust stores on all nodes";
     }
 
     /** {@inheritDoc} */

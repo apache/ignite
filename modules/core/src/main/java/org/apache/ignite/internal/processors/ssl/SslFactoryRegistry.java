@@ -29,7 +29,8 @@ public class SslFactoryRegistry {
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
-        factories.put(transport, factory);
+        if (factories.putIfAbsent(transport, factory) != null)
+            throw new IllegalStateException("SSL factory is already registered [transport=" + transport + ']');
     }
 
     /** @return Snapshot of active transport factories. */

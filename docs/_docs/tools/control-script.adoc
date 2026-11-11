@@ -190,12 +190,13 @@ When security is enabled, logs identify the initiator by login and subject ID.
 This is the control-script user, or the node receiving a JMX call.
 
 The report lists every target node, even if none of its TCP transports use TLS.
-It shows reload results for TCP transports that started with TLS.
-Factories that do not extend `AbstractSslContextFactory` are reported as unsupported.
-The command continues after individual failures.
+Each node first checks that all registered factories extend `AbstractSslContextFactory`.
+If any factory is unsupported, that node reloads none of its factories.
+Otherwise, it reloads them until the first failure and reports the error.
+Other nodes continue independently.
 It exits with code `4` if any reload fails, any factory is unsupported, or a target node leaves before responding.
 A result received from a node stays in the report even if the node leaves later.
-Successful reloads remain in effect even if others fail.
+Successful reloads remain in effect even if a later reload fails; their results are recorded in the node logs.
 
 == Activation, Deactivation and Topology Management
 

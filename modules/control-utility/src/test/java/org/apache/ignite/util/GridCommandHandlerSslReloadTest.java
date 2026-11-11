@@ -135,7 +135,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
     /** */
     @Test
-    public void testReloadsOtherFactoriesAfterFailure() throws Exception {
+    public void testStopsReloadingNodeAfterFailure() throws Exception {
         Path keys = stores.newFile("keys.jks").toPath();
         LogListener loadFailure = LogListener.matches(EOFException.class.getName()).build();
 
@@ -158,24 +158,25 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         String report = testOut.toString();
         String nodeId = node.localNode().id().toString();
 
-        assertContains(log, report, nodeId + ": communication, discovery: failed:");
-        assertContains(log, report, nodeId + ": client connector: reloaded");
+        assertSame(clientCtx, working.create());
+        assertContains(log, report, nodeId + ": failed: communication, discovery:");
         assertTrue(loadFailure.check());
-        assertNotSame(clientCtx, working.create());
     }
 
     /** */
     @Test
-    public void testReportsUnsupportedFactory() throws Exception {
-        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+    public void testUnsupportedFactoryPreventsNodeReload() throws Exception {
+        CountingSslContextFactory factory = new CountingSslContextFactory(keyStorePath("node01"));
+        SSLContext ctx = factory.create();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setSslContextFactory(factory);
 
         cfg.getConnectorConfiguration().setSslEnabled(true).setSslFactory(() -> ctx);
 
         IgniteEx node = startGrid(cfg);
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--ssl", "reload"));
-        assertContains(log, testOut.toString(), node.localNode().id() + ": binary REST: unsupported:");
+        assertSame(ctx, factory.create());
+        assertContains(log, testOut.toString(), node.localNode().id() + ": failed: binary REST: unsupported:");
     }
 
     /** */

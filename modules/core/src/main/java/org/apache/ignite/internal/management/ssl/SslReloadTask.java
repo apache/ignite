@@ -33,8 +33,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.X;
@@ -48,7 +46,7 @@ import static java.util.stream.Collectors.joining;
 
 /** */
 @GridInternal
-public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTask.SslReloadJobResult> {
+public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
     /** */
     private static final long serialVersionUID = 0;
 
@@ -68,7 +66,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<NoArg, SslReloadJobResult> job(NoArg arg) {
+    @Override protected VisorJob<NoArg, String> job(NoArg arg) {
         return new SslReloadJob(arg, debug);
     }
 
@@ -93,12 +91,8 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
                 reports.add(id + ": failed: " + errorMessage(res.getException()));
                 failed = true;
             }
-            else {
-                SslReloadJobResult nodeRes = res.getData();
-
-                reports.add(nodeRes.report);
-                failed |= nodeRes.failed;
-            }
+            else
+                reports.add(res.getData());
         }
 
         String report = String.join("\n", reports);
@@ -115,7 +109,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
     }
 
     /** */
-    private static class SslReloadJob extends VisorJob<NoArg, SslReloadJobResult> {
+    private static class SslReloadJob extends VisorJob<NoArg, String> {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -125,7 +119,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
         }
 
         /** {@inheritDoc} */
-        @Override protected SslReloadJobResult run(NoArg arg) {
+        @Override protected String run(NoArg arg) {
             Map<String, Factory<SSLContext>> factories = ignite.context().ssl().factories();
             UUID nodeId = ignite.localNode().id();
             String initiator = "";
@@ -141,12 +135,21 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
 
                 ignite.log().info("TLS reload: " + report + initiator);
 
-                return new SslReloadJobResult(report, false);
+                return report;
+            }
+
+            for (Map.Entry<String, Factory<SSLContext>> entry : factories.entrySet()) {
+                if (!(entry.getValue() instanceof AbstractSslContextFactory)) {
+                    String report = entry.getKey() + ": unsupported: " + entry.getValue().getClass().getName();
+
+                    ignite.log().warning("TLS reload: " + nodeId + ": " + report + initiator);
+
+                    throw new IgniteException(report);
+                }
             }
 
             Set<Factory<SSLContext>> processed = Collections.newSetFromMap(new IdentityHashMap<>());
             List<String> reports = new ArrayList<>();
-            boolean failed = false;
 
             for (Factory<SSLContext> factory : factories.values()) {
                 if (!processed.add(factory))
@@ -157,63 +160,22 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, SslReloadTa
                     .map(Map.Entry::getKey)
                     .collect(joining(", "));
 
-                String outcome;
-                boolean factoryFailed = false;
-                Exception err = null;
-
-                if (!(factory instanceof AbstractSslContextFactory)) {
-                    outcome = "unsupported: " + factory.getClass().getName();
-                    factoryFailed = true;
+                try {
+                    ((AbstractSslContextFactory)factory).init();
                 }
-                else {
-                    try {
-                        ((AbstractSslContextFactory)factory).init();
+                catch (Exception e) {
+                    ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);
 
-                        outcome = "reloaded";
-                    }
-                    catch (Exception e) {
-                        outcome = "failed: " + errorMessage(e);
-                        factoryFailed = true;
-                        err = e;
-                    }
+                    throw new IgniteException(transports + ": " + errorMessage(e), e);
                 }
 
-                String report = nodeId + ": " + transports + ": " + outcome;
+                String report = nodeId + ": " + transports + ": reloaded";
 
                 reports.add(report);
-                failed |= factoryFailed;
-
-                if (factoryFailed)
-                    ignite.log().warning("TLS reload: " + report + initiator, err);
-                else
-                    ignite.log().info("TLS reload: " + report + initiator);
+                ignite.log().info("TLS reload: " + report + initiator);
             }
 
-            return new SslReloadJobResult(String.join("\n", reports), failed);
-        }
-    }
-
-    /** */
-    public static class SslReloadJobResult extends IgniteDataTransferObject {
-        /** */
-        private static final long serialVersionUID = 0;
-
-        /** */
-        @Order(0)
-        String report;
-
-        /** */
-        @Order(1)
-        boolean failed;
-
-        /** */
-        public SslReloadJobResult() {
-        }
-
-        /** */
-        public SslReloadJobResult(String report, boolean failed) {
-            this.report = report;
-            this.failed = failed;
+            return String.join("\n", reports);
         }
     }
 }
