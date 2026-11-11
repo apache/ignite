@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -31,6 +30,8 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -111,10 +112,7 @@ public class SslFactoryRegistry {
         if (executor == null)
             return;
 
-        for (Runnable task : executor.shutdownNow()) {
-            if (task instanceof Future<?>)
-                ((Future<?>)task).cancel(false);
-        }
+        executor.shutdownNow();
 
         boolean interrupted = false;
 
@@ -147,7 +145,7 @@ public class SslFactoryRegistry {
 
         renewal.manualReloadPending = true;
 
-        try {
+        try (Scope ignored = OperationContext.restoreSnapshot(null)) {
             executor.execute(renewal::onReload);
         }
         catch (RejectedExecutionException e) {

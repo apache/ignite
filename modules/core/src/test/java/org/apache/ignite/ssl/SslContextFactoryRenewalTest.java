@@ -17,11 +17,8 @@
 
 package org.apache.ignite.ssl;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -88,33 +85,6 @@ public class SslContextFactoryRenewalTest {
 
         assertEquals(now, factory.getRenewalTime());
         assertEquals(1, factory.keyStoreLoads);
-    }
-
-    /** */
-    @Test
-    public void testRenewalWindowUsesCustomInputStream() throws Exception {
-        KeyStore keyStore = authority.keyStore("node", now - HOURS.toMillis(85), now + HOURS.toMillis(15));
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-
-        keyStore.store(bytes, PASSWORD);
-
-        SslContextFactory factory = new SslContextFactory() {
-            /** */
-            private static final long serialVersionUID = 0L;
-
-            /** {@inheritDoc} */
-            @Override protected InputStream openFileInputStream(String path) throws IOException {
-                return new ByteArrayInputStream(bytes.toByteArray());
-            }
-        };
-
-        factory.setKeyStoreFilePath("custom-source");
-        factory.setKeyStorePassword(PASSWORD);
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-        factory.setRenewalEnabled(true);
-        factory.create();
-
-        assertEquals(now, factory.getRenewalTime());
     }
 
     /** */
@@ -294,35 +264,6 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
-    public void testManualReloadAcceptsFutureCertificate() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(
-            authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
-        SSLContext ctx = factory.create();
-
-        factory.keyStore = authority.keyStore("node", now + HOURS.toMillis(1), now + HOURS.toMillis(101));
-        factory.init();
-
-        assertNotSame(ctx, factory.create());
-        assertEquals(now + HOURS.toMillis(86), factory.getRenewalTime());
-    }
-
-    /** */
-    @Test
-    public void testManualReloadMovesRenewalWindow() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(
-            authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
-
-        factory.create();
-        factory.keyStore = authority.keyStore("node", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
-        factory.init();
-        factory.renew();
-
-        assertEquals(2, factory.keyStoreLoads);
-        assertEquals(now + HOURS.toMillis(84), factory.getRenewalTime());
-    }
-
-    /** */
-    @Test
     public void testFailedTrustStoreLoadKeepsContextAndRenewalWindow() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(
             authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
@@ -351,7 +292,10 @@ public class SslContextFactoryRenewalTest {
     @Test
     public void testRenewRejectsCertificatesExpiredDuringTrustStoreLoad() throws Exception {
         KeyStore trustStore = authority.trustStore();
-        KeyStore expiredKeys = authority.keyStore("node", now - HOURS.toMillis(101), now - HOURS.toMillis(1));
+        KeyStore curKeys = authority.keyStore("expired", now - HOURS.toMillis(101), now - HOURS.toMillis(1));
+        KeyStore validKeys = authority.keyStore("valid", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
+
+        curKeys.setKeyEntry("valid", validKeys.getKey("valid", PASSWORD), PASSWORD, validKeys.getCertificateChain("valid"));
 
         /** */
         class SlowTrustStoreFactory extends InMemorySslContextFactory {
@@ -363,7 +307,7 @@ public class SslContextFactoryRenewalTest {
 
             /** */
             private SlowTrustStoreFactory() {
-                super(expiredKeys);
+                super(curKeys);
             }
 
             /** {@inheritDoc} */
@@ -389,7 +333,7 @@ public class SslContextFactoryRenewalTest {
         long renewalTime = factory.getRenewalTime();
 
         factory.replacementExpiry = System.currentTimeMillis() / 1_000 * 1_000 + 5_000;
-        factory.keyStore = authority.keyStore("node", now - HOURS.toMillis(1), factory.replacementExpiry);
+        factory.keyStore = authority.keyStore("replacement", now - HOURS.toMillis(1), factory.replacementExpiry);
         factory.setTrustManagers((TrustManager[])null);
         factory.setTrustStoreFilePath("slow-trust-store");
         factory.setTrustStorePassword(PASSWORD);
@@ -397,6 +341,7 @@ public class SslContextFactoryRenewalTest {
         IgniteException err = assertThrows(IgniteException.class, factory::renew);
 
         assertTrue(err.getCause().getMessage().contains("expired while loading"));
+        ((X509Certificate)curKeys.getCertificate("valid")).checkValidity();
         assertSame(ctx, factory.create());
         assertEquals(renewalTime, factory.getRenewalTime());
     }

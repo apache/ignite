@@ -32,8 +32,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -94,8 +92,6 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
             blockRenewal.set(true);
 
             IgniteEx node = startGrid(0, cfg -> {
-                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(new TcpDiscoveryVmIpFinder(true));
-
                 cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
                     .setSslEnabled(true)
                     .setSslClientAuth(true)

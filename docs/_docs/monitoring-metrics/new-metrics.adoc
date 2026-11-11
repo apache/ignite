@@ -442,7 +442,6 @@ Register name: `ssl`
 |ConsecutiveRenewalFailures | long | Sum of consecutive automatic renewal failures across the node's SSL factories. Zero when renewal is disabled.
 |===
 
-A successful renewal, manual reload or skipped attempt clears the corresponding factory's count.
 See link:security/ssl-tls#automatic-certificate-renewal[Automatic Certificate Renewal] for configuration and recovery.
 
 == Communication Connection Pool

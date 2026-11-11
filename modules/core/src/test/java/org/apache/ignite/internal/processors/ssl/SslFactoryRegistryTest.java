@@ -18,15 +18,21 @@
 package org.apache.ignite.internal.processors.ssl;
 
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -37,13 +43,13 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
-import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -98,7 +104,6 @@ public class SslFactoryRegistryTest {
         when(ctx.log(SslFactoryRegistry.class)).thenReturn(new NullLogger());
         when(factory.isRenewalEnabled()).thenReturn(true);
         when(factory.getRenewalTime()).thenReturn(System.currentTimeMillis());
-        when(executor.shutdownNow()).thenReturn(emptyList());
         when(executor.isTerminated()).thenReturn(true);
 
         doAnswer(call -> {
@@ -315,6 +320,39 @@ public class SslFactoryRegistryTest {
 
         assertEquals(1, failures());
         verify(executor, times(3)).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
+    }
+
+    /** */
+    @Test
+    public void testAttemptAfterManualReloadDoesNotInheritCallerContext() throws Exception {
+        OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
+        AtomicLong renewalTime = new AtomicLong(System.currentTimeMillis());
+        List<String> attemptCallers = new CopyOnWriteArrayList<>();
+
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor("ssl-renewal", null))
+            .thenCallRealMethod();
+        when(factory.getRenewalTime()).thenAnswer(call -> renewalTime.get());
+        doAnswer(call -> {
+            attemptCallers.add(OperationContext.get(caller));
+            renewalTime.set(System.currentTimeMillis() + HOURS.toMillis(2));
+
+            return null;
+        }).when(factory).renew();
+
+        registry.register("communication", factory);
+        registry.start(ctx);
+
+        assertTrue(waitForCondition(() -> attemptCallers.size() == 1, 10_000));
+
+        try (Scope ignored = OperationContext.set(caller, "operator")) {
+            synchronized (factory) {
+                renewalTime.set(System.currentTimeMillis());
+                registry.onReload(factory);
+            }
+        }
+
+        assertTrue(waitForCondition(() -> attemptCallers.size() == 2, 10_000));
+        assertNull(attemptCallers.get(1));
     }
 
     /** */
