@@ -103,7 +103,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param isolation Transaction isolation.
      * @param isInvalidate Invalidation flag.
      * @param timeout Transaction timeout.
-     * @param waitTimeout Lock wait timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
      * @param syncCommit Synchronous commit flag.
@@ -128,7 +127,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
-        long waitTimeout,
         int keyCnt,
         int txSize,
         boolean syncCommit,
@@ -168,7 +166,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.taskNameHash = taskNameHash;
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
-        this.waitTimeout = waitTimeout;
 
         this.txLbl = txLbl;
 

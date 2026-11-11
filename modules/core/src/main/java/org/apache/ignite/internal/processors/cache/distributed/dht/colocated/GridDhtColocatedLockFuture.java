@@ -1127,7 +1127,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         isolation(),
                                         isInvalidate(),
                                         timeout,
-                                        waitTimeout,
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncMode() == FULL_SYNC,

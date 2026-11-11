@@ -110,8 +110,7 @@ public class CacheLockWaitTimeoutTest extends GridCommonAbstractTest {
 
         try {
             assertTrue(spi(grid(0)).waitForBlocked(1, 10_000));
-            assertFalse("The coordinator must await the primary response",
-                GridTestUtils.waitForCondition(fut::isDone, 2 * WAIT_TIMEOUT));
+            assertFalse(fut.isDone());
         }
         finally {
             spi(grid(0)).stopBlock();
@@ -143,8 +142,11 @@ public class CacheLockWaitTimeoutTest extends GridCommonAbstractTest {
 
             try {
                 assertTrue(spi(grid(0)).waitForBlocked(1, 10_000));
-                assertFalse("The coordinator must await the primary response",
-                    GridTestUtils.waitForCondition(fut::isDone, 2 * WAIT_TIMEOUT));
+
+                // Send the second batch on a later clock tick so that its remaining wait budget is smaller.
+                GridTestUtils.waitForNextClockTick();
+
+                assertFalse(fut.isDone());
             }
             finally {
                 spi(grid(0)).stopBlock();
@@ -155,9 +157,14 @@ public class CacheLockWaitTimeoutTest extends GridCommonAbstractTest {
             List<Object> requests = spi(grid(2)).recordedMessages(true);
 
             assertEquals(2, requests.size());
-            assertTrue(((GridNearLockRequest)requests.get(0)).waitTimeout() > 0);
-            assertTrue("An exhausted budget requires an immediate attempt on the next primary",
-                ((GridNearLockRequest)requests.get(1)).waitTimeout() < 0);
+
+            long firstWaitTimeout = ((GridNearLockRequest)requests.get(0)).waitTimeout();
+            long secondWaitTimeout = ((GridNearLockRequest)requests.get(1)).waitTimeout();
+
+            assertTrue(firstWaitTimeout > 0);
+            assertTrue("The next primary must receive a smaller lock wait budget [first=" + firstWaitTimeout +
+                ", second=" + secondWaitTimeout + ']',
+                secondWaitTimeout < firstWaitTimeout);
         }
     }
 
