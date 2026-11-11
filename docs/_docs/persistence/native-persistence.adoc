@@ -156,6 +156,10 @@ tab:C++[unsupported]
 
 You can also change the WAL and WAL archive paths to point to directories outside of the storage directory. Refer to the next section for details.
 
+NOTE: If the Ignite paths are left unset, data, the active WAL, the WAL archive, and CDC all live in the work directory and therefore on one file system.
+The CDC directory and the snapshot root of an incremental snapshot chain have to be on the same file system as the WAL archive, because both use hard links to archived segments.
+See link:server-node-file-system-layout[Server Node File System Layout] for the recommended placement of the node directories, the capacity they need, and how the write load affects the layout.
+
 == Write-Ahead Log
 
 The write-ahead log is a log of all data modifying operations (including deletes) that happen on a node. When a page is updated in RAM, the update is not directly written to the partition file but is appended to the tail of the WAL.
@@ -207,11 +211,21 @@ If a node is terminated abruptly during update operations, it is very likely tha
 
 
 === WAL Archive
-The WAL archive is used to store WAL segments that may be needed to recover the node after a crash. The number of segments kept in the archive is such that the total size of all segments does not exceed the specified size of the WAL archive.
+The WAL archive is used to store WAL segments that may be needed to recover the node after a crash. The number of segments kept in the archive is defined by the cleanup rules described below.
 
-By default, the maximum size of the WAL archive (total space it occupies on disk) is defined as 4 times the size of the link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer]. You can change that value in the <<Configuration Properties,configuration>>.
+By default, the maximum size of the WAL archive is `maxWalArchiveSize`, whose default value is 1 GiB. You can change that value in the <<Configuration Properties,configuration>>.
 
-CAUTION: Setting the WAL archive size to a value lower than the default may impact performance and should be tested before being used in production.
+Cleanup starts when the archive exceeds `minWalArchiveSize`, not `maxWalArchiveSize`. By default, `minWalArchiveSize` is half of `maxWalArchiveSize`, that is 512 MiB.
+The cleanup runs asynchronously in the background. It removes the oldest segments, stopping at the last completed checkpoint and at the segments that are reserved by a running checkpoint or by a reader. It removes whole segments while the archive stays above the threshold, so the remaining size can end up below it.
+
+`maxWalArchiveSize` is the upper threshold, and it is not a strict disk-space quota. Cleanup runs asynchronously and preserves the WAL needed for recovery, so the archive can exceed this value. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers. This allows cleanup of older segments.
+
+Removing an archived segment does not release its disk blocks while a CDC or snapshot hard link still points to it, so the space taken on the file system can be larger than the archive size.
+
+CAUTION: Setting these thresholds to values lower than the defaults should be tested before being used in production. The typical amount of retained history follows `minWalArchiveSize`, so lowering it shortens the WAL history available for recovery, incremental snapshots, and historical rebalancing.
+CDC is not affected: it keeps its own hard link to each captured segment, so its history is retained independently of the archive cleanup and is bounded by `cdcWalDirectoryMaxSize` instead.
+
+NOTE: `walHistorySize` is deprecated and ignored. The archive is controlled by `maxWalArchiveSize` and `minWalArchiveSize` only.
 
 :walXmlFile: code-snippets/xml/wal.xml
 
@@ -245,6 +259,8 @@ tab:C++[unsupported]
 WARNING: Disabling or enabling WAL should only be done on stable topology: all baseline nodes should be present, no nodes should join or leave the cluster for the duration of this operation. Otherwise, cache may be stuck in inconsistent state. If that happens, it is advised to destroy the affected cache(s).
 
 There are situations when it is reasonable to have the WAL disabled to get better performance. For instance, it is useful to disable WAL during initial data loading and enable it after the pre-loading is complete.
+Disabling the WAL is a planned administrative operation with recovery implications, not a way to reclaim disk space: follow the procedure in this section and keep the files that the recovery needs.
+Do not remove WAL segments, checkpoint files, or other files of the persistent store manually outside a documented maintenance or recovery procedure. Manual changes to the internal persistent structure are not supported, and correct cluster operation is not guaranteed after such an intervention.
 
 ////
 todo: add c++ examples
@@ -275,13 +291,18 @@ ALTER TABLE Person LOGGING
 tab:C++[unsupported]
 --
 
-WARNING: If WAL is disabled and you restart a node, all data is removed from the persistent storage on that node. This is implemented because without WAL data consistency cannot be guaranteed in case of node crash or restart.
+WARNING: Disabling WAL through the runtime API removes local crash-recovery guarantees for the affected cache groups.
+If a node stops while WAL is disabled, recovery may require maintenance and cleanup of affected persistent files.
+`WALMode.NONE` has different shutdown and recovery behavior; see <<WAL Modes>>.
 
 === WAL Archive Compaction
+WAL archiving and WAL archive compaction are different mechanisms: archiving copies completed segments to the archive directory without compressing them, while compaction is a separate step that compresses segments that are already archived.
+
 You can enable WAL Archive compaction to reduce the space occupied by the WAL Archive.
-By default, WAL Archive contains segments for the last 20 checkpoints (this number is configurable).
+Compaction applies to the segments that are already archived; how much history is kept is defined by `minWalArchiveSize` and `maxWalArchiveSize`, not by a checkpoint count.
 If compaction is enabled, all archived segments that are 1 checkpoint old are compressed in ZIP format.
 If the segments are needed (for example, to re-balance data between nodes), they are uncompressed to RAW format.
+Compaction reduces the space the archive occupies, but it uses CPU and adds I/O, so the actual cost depends on the load and on the compression level.
 
 See the <<Configuration Properties>> section below to learn how to enable WAL archive compaction.
 
@@ -329,6 +350,7 @@ It is safe to disable WAL archiving because a cluster without the WAL archive pr
 
 To disable archiving, set the WAL path and the WAL archive path to the same value.
 In this case, Ignite does not copy segments to the archive; instead, it creates new segments in the WAL folder.
+WAL recording itself stays enabled: only the separate archive directory and the copying of segments to it are disabled.
 Old segments are deleted as the WAL grows, based on the WAL Archive size setting.
 
 
@@ -342,7 +364,17 @@ Checkpointing and write-ahead logging are designed to ensure durability of data 
 
 image:images/checkpointing-persistence.png[]
 
-This process helps to utilize disk space frugally by keeping pages in the most up-to-date state on disk. After a checkpoint is passed, you can delete the WAL segments that were created before that point in time.
+This process helps to utilize disk space frugally by keeping pages in the most up-to-date state on disk. After a checkpoint completes, Ignite can clean up older WAL segments when they are no longer needed.
+
+[[checkpoint-marker-retention]]
+=== Checkpoint Marker Retention
+
+Checkpoint progress is recorded in START and END marker files in the `cp` directory of the node storage directory.
+With a finite `maxWalArchiveSize`, obsolete checkpoint marker files are removed as the WAL cleanup boundary advances.
+If the WAL is written slowly, a large `walSegmentSize` can hold the records of many checkpoints before the boundary moves to the next segment.
+Frequent checkpoints with changes can therefore leave many marker files in `cp`.
+Consider `checkpointFrequency`, `walSegmentSize`, the WAL write rate, and the archive retention together.
+When automatic WAL archive cleanup is disabled, Ignite attempts to trim checkpoint history after each checkpoint according to the `IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE` system property. WAL reservations can delay this cleanup.
 
 See the following related documentation:
 
@@ -368,5 +400,8 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 |`walMode` | <<WAL Modes,Write-ahead logging mode>>. | `LOG_ONLY`
 
 | `walCompactionLevel` | WAL archive compression level. `1` indicates the fastest speed, and `9` indicates the best compression. | `1`
-|`maxWalArchiveSize`  | The maximum size (in bytes) the WAL archive can occupy on the file system. | Four times the size of the link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[checkpointing buffer].
+|`maxWalArchiveSize`  | The upper threshold (in bytes) of the WAL archive. When the archive reaches it, Ignite forcibly releases the reservations of the segments that the last completed checkpoint already covers, so that the cleanup can delete them. It is not a strict disk-space quota: the cleanup runs asynchronously and preserves the WAL needed for recovery, so the archive can exceed this value. | 1 GiB
+|`minWalArchiveSize` | The threshold (in bytes) that makes segments eligible for cleanup. The cleanup runs in the background and removes the oldest segments while the archive stays above this value. Segments are removed as whole files, so the remaining size can be below it. | Half of `maxWalArchiveSize`
+|`walSegments` | The number of fixed-size segments used for active WAL rotation when archiving is enabled. Plan space for `walSegments` × `walSegmentSize` bytes plus a rotation reserve. Size the WAL archive separately. | `10`
+|`checkpointFrequency` | The interval between scheduled checkpoints, in milliseconds. | `180000` (3 minutes)
 |=======================================================================

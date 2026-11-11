@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.cache.PartitionLossPolicy",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cache.PartitionLossPolicy", "name": "READ_ONLY_SAFE"},
+    {"order": 1, "type": "org.apache.ignite.cache.PartitionLossPolicy", "name": "READ_ONLY_ALL"},
+    {"order": 2, "type": "org.apache.ignite.cache.PartitionLossPolicy", "name": "READ_WRITE_SAFE"},
+    {"order": 3, "type": "org.apache.ignite.cache.PartitionLossPolicy", "name": "READ_WRITE_ALL"},
+    {"order": 4, "type": "org.apache.ignite.cache.PartitionLossPolicy", "name": "IGNORE"}
+  ]
+}

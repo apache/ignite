@@ -1528,8 +1528,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys) {
+    @Override public boolean unlockAll(Collection<? extends K> keys) {
         assert false;
+
+        return false;
     }
 
     /** {@inheritDoc} */

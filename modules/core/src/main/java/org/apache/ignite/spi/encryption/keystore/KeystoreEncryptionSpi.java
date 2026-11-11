@@ -44,6 +44,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
@@ -448,6 +449,7 @@ public class KeystoreEncryptionSpi extends IgniteSpiAdapter implements Encryptio
      *
      * @return Key store password.
      */
+    @SensitiveProperty
     public char[] getKeyStorePwd() {
         return keyStorePwd;
     }

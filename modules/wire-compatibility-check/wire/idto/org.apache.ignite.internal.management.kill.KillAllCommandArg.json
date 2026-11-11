@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillAllCommandArg",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.kill.KillAllCommandArg$TargetType", "name": "target"},
+    {"order": 1, "type": "java.util.UUID", "name": "nodeId"},
+    {"order": 2, "type": "java.lang.Long", "name": "minDuration"}
+  ]
+}

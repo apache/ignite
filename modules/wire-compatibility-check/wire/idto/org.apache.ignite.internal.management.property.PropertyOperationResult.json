@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.property.PropertyOperationResult",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "val"}
+  ]
+}

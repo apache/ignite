@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxVerboseKey",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "txKey"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.tx.TxKeyLockType", "name": "lockType"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ownerVer"},
+    {"order": 3, "type": "boolean", "name": "read"}
+  ]
+}

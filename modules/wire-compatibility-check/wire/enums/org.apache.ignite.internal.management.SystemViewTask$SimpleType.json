@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.SystemViewTask$SimpleType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.SystemViewTask$SimpleType", "name": "DATE"},
+    {"order": 1, "type": "org.apache.ignite.internal.management.SystemViewTask$SimpleType", "name": "NUMBER"},
+    {"order": 2, "type": "org.apache.ignite.internal.management.SystemViewTask$SimpleType", "name": "STRING"}
+  ]
+}

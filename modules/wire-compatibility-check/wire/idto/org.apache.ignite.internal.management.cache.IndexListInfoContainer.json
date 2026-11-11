@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.IndexListInfoContainer",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "grpName"},
+    {"order": 1, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 2, "type": "java.lang.String", "name": "idxName"},
+    {"order": 3, "type": "java.util.Collection<java.lang.String>", "name": "colsNames"},
+    {"order": 4, "type": "java.lang.String", "name": "tblName"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeResult",
+  "fields": [
+    {"order": 0, "type": "long", "name": "cacheSize"},
+    {"order": 1, "type": "java.util.Collection<org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeIssue>", "name": "issues"}
+  ]
+}

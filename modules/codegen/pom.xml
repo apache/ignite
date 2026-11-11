@@ -61,7 +61,7 @@
                     <execution>
                         <id>default-compile</id>
                         <configuration>
-                            <compilerArgument>-proc:none</compilerArgument>
+                            <proc>none</proc>
                         </configuration>
                     </execution>
                 </executions>

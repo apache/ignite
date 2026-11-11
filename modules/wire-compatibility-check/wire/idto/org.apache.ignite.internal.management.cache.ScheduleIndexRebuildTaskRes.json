@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ScheduleIndexRebuildTaskRes",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.management.cache.ScheduleIndexRebuildJobRes>", "name": "results"}
+  ]
+}

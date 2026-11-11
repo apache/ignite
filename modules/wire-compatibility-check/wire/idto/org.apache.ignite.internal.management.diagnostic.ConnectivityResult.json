@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.diagnostic.ConnectivityResult",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<org.apache.ignite.cluster.ClusterNode,java.lang.Boolean>", "name": "nodeStatuses"}
+  ]
+}

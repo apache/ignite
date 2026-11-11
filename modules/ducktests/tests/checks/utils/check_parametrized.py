@@ -24,7 +24,7 @@ import pytest
 from ducktape.mark import parametrized, parametrize, matrix, ignore
 from ducktape.mark.mark_expander import MarkedFunctionExpander
 
-from ignitetest.utils import ignite_versions, ignore_if
+from ignitetest.utils import ignite_versions, ignore_if, reproducer
 from ignitetest.utils._mark import IgniteVersionParametrize
 from ignitetest.utils.version import IgniteVersion, V_2_8_0, V_2_8_1, V_2_7_6, DEV_BRANCH
 
@@ -267,3 +267,31 @@ class CheckVersionIf:
 
         assert next(filter(lambda x: x.injected_args['ver'] == str(V_2_8_0), context_list)).ignore
         assert not next(filter(lambda x: x.injected_args['ver'] == str(DEV_BRANCH), context_list)).ignore
+
+
+class CheckReproducer:
+    """
+    Checks @reproducer.
+    """
+    @pytest.mark.parametrize(['global_args', 'ignored'], [({}, True), ({'my_tests': False}, True),
+                                                          ({'my_tests': True}, False)])
+    def check_ignored_unless_global_is_set(self, global_args, ignored):
+        """
+        Check that a test is ignored unless its global is set, with and without @ignite_versions.
+        """
+        @reproducer('my_tests')
+        @ignite_versions(str(DEV_BRANCH), str(V_2_8_0))
+        def versioned(ignite_version):
+            return IgniteVersion(ignite_version)
+
+        @reproducer('my_tests')
+        def plain():
+            pass
+
+        sess_ctx = mock_session_ctx(global_args=global_args)
+
+        context_list = expand_function(func=versioned, sess_ctx=sess_ctx)
+        context_list += MarkedFunctionExpander(session_context=sess_ctx, function=plain).expand()
+
+        assert len(context_list) == 3
+        assert all(ctx.ignore == ignored for ctx in context_list)

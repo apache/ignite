@@ -114,6 +114,7 @@ Register name: `cache.{cache_name}.{near}`
 |CommitTime | histogram | Commit time in nanoseconds.
 |CommitTimeTotal | long | The total time of commit, in nanoseconds.
 |ConflictResolverAcceptedCount | long | Conflict resolver accepted entries count.
+|ConflictResolverFailedCount | long | Conflict resolver failed resolutions count.
 |ConflictResolverMergedCount | long | Conflict resolver merged entries count.
 |ConflictResolverRejectedCount | long | Conflict resolver rejected entries count.
 |EntryProcessorHits | long | The total number of invocations on keys, which exist in cache.
@@ -169,7 +170,7 @@ Register name: `cache.{cache_name}.{near}`
 |TxKeyCollisions | string | Tx key collisions. Show keys and collisions queue size. Due transactional payload some keys become hot. Metric shows corresponding keys.
 |===
 
-NOTE: `ConflictResolver*` metrics are registered only when a conflict resolver is configured for the cache. `IsCacheAffinityConfigurationMdcSafe` and `IsCachePartitionDistributionSafe` are registered on server nodes only, and only when the node has a data center ID.
+NOTE: `ConflictResolver*` metrics are registered only when a conflict resolver is configured for the cache. Entries counted by `ConflictResolverFailedCount` are also counted by `ConflictResolverRejectedCount`. `IsCacheAffinityConfigurationMdcSafe` and `IsCachePartitionDistributionSafe` are registered on server nodes only, and only when the node has a data center ID.
 
 == Cache Groups
 
@@ -225,12 +226,13 @@ Register name: `tx`
 |===
 |Name | Type | Description
 |AllOwnerTransactions | Map<String, String> | Map of local node owning transactions.
-|ExplicitLockHoldTimeHistogram | histogram | Explicit locks hold times on node represented as histogram, in milliseconds.
+|CurrentExplicitLockHoldTime | histogram | Hold times of explicit locks currently held on the node represented as histogram, in milliseconds.
 |LockedKeysNumber | long | The number of keys locked on the node.
 |LongRunningCacheFuturesCount | long | The count of cache futures currently in progress on the node whose duration exceeds the long operations dump timeout.
 |MaxCacheFutureDuration | long | Maximum duration of cache futures currently in progress on the node, in milliseconds.
 |MaxExplicitLockHoldTime | long | Maximum hold time of explicit locks currently held on the node, in milliseconds.
 |OwnerTransactionsNumber | long | The number of active transactions for which this node is the initiator.
+|ReleasedExplicitLockHoldTime | histogram | Released explicit locks hold times on node represented as histogram, in milliseconds.
 |TransactionsHoldingLockNumber | long | The number of active transactions holding at least one key lock.
 |commitTime | long | Last commit time.
 |nodeSystemTimeHistogram | histogram | Transactions system times on node represented as histogram, in milliseconds.
@@ -471,6 +473,7 @@ Register name: `client.connector`
 |AffinityKeyRequestsMisses | long | The number of affinity-aware cache key requests that were sent not to the primary node.
 |AffinityQueryRequestsHits | long | The number of affinity-aware query requests that were sent to the primary node.
 |AffinityQueryRequestsMisses | long | The number of affinity-aware query requests that were sent not to the primary node.
+|MaxRunningComputeTasksPerConnection | long | Maximum number of running user compute tasks per thin client connection over the configured time interval (60 seconds by default).
 |RejectedSessionsAuthenticationFailed | integer | TCP sessions count that were rejected due to failed authentication.
 |RejectedSessionsTimeout | integer | TCP sessions count that were rejected due to handshake timeout.
 |RejectedSessionsTotal | integer | Total number of rejected TCP connections.
@@ -522,6 +525,7 @@ Register name: `io.discovery`
 |CoordinatorSince | long | Coordinator since timestamp.
 |CurrentTopologyVersion | long | Current topology version.
 |FailedNodes | integer | Failed nodes count.
+|JoinedClientNodes | integer | Joined client nodes count.
 |JoinedNodes | integer | Joined nodes count.
 |LeftNodes | integer | Left nodes count.
 |LocalPort | integer | Local TCP port the discovery SPI listens to.

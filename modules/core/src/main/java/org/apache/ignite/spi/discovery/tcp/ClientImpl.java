@@ -2334,6 +2334,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                         notifyDiscovery(EVT_NODE_JOINED, topVer, node, top);
 
                         spi.stats.onNodeJoined();
+
+                        if (node.isClient())
+                            spi.stats.onClientNodeJoined();
                     }
                 }
                 else {

@@ -58,7 +58,9 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -1344,7 +1346,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        Ignite cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
+        IgniteEx cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
             .setCacheConfiguration(dfltCacheCfg))
             .setFailureHandler(new StopNodeFailureHandler()));
 
@@ -1358,12 +1360,23 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         failNodeSpi.waitForBlocked(1, 10_000L);
 
+        AffinityTopologyVersion prevTop = ignite.context().discovery().topologyVersionEx();
+
         grid(1).close();
 
         assertThrowsAnyCause(log,
             fut::get,
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
+
+        // The client refreshes its cache affinity asynchronously. A scan query is mapped
+        // on the affinity topology version, so wait for it to advance, otherwise the query
+        // can be mapped on the outdated topology still containing the left node.
+        // Well wait for the client's topology version updates.
+        GridCacheContext<?, ?> clnCacheCtx = cln.context().cache().internalCache(dfltCacheCfg.getName()).context();
+
+        assertTrue(waitForCondition(() ->
+            clnCacheCtx.affinity().affinityTopologyVersion().compareTo(cln.context().discovery().topologyVersionEx()) >= 0, 10_000L));
 
         // Check that client node is alive.
         assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
