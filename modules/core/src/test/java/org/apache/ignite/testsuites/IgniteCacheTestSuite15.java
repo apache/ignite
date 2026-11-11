@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroups
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.CacheManualRebalancingTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceKeysEstimateRollingUpgradeTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceKeysEstimateTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceMetricsTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheSyncRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
@@ -102,6 +104,8 @@ public class IgniteCacheTestSuite15 {
         GridTestUtils.addTestIfNeeded(suite, CacheRebalancingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheManualRebalancingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RebalanceMetricsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RebalanceKeysEstimateTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RebalanceKeysEstimateRollingUpgradeTest.class, ignoredTests);
 
         return suite;
     }

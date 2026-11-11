@@ -142,6 +142,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PARTITION_SIZES_IN_SUPPLY_FEATURE;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
@@ -4025,6 +4026,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Map<String, List<SupplyPartitionInfo>> supplyInfoMap = log.isInfoEnabled() ?
             new ConcurrentHashMap<>() : null;
 
+        boolean sizesFromSupplier = cctx.kernalContext().rollingUpgrade().features().isActive(PARTITION_SIZES_IN_SUPPLY_FEATURE);
+
         try {
             U.doInParallel(
                 cctx.kernalContext().pools().getSystemExecutorService(),
@@ -4043,7 +4046,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (supplyInfoMap != null && !F.isEmpty(list))
                             supplyInfoMap.put(grpDesc.cacheOrGroupName(), list);
                     }
-                    else if (cacheGroupsToResetOwners == null)
+                    else if (cacheGroupsToResetOwners == null && !sizesFromSupplier)
                         assignPartitionSizes(top);
 
                     return null;

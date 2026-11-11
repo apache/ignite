@@ -70,6 +70,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     @Order(6)
     @Nullable ErrorMessage errMsg;
 
+    /** Sizes of the demanded full partitions, sent in the first message of a demand only. */
+    @Order(value = 7, introducedBy = "PARTITION_SIZES_IN_SUPPLY_FEATURE")
+    @Nullable Map<Integer, Long> partSizes;
+
     /**
      * @param rebalanceId Rebalance id.
      * @param grpId Cache group ID.
@@ -197,6 +201,16 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      */
     public int messageSize() {
         return msgSize;
+    }
+
+    /** */
+    @Nullable public Map<Integer, Long> partSizes() {
+        return partSizes;
+    }
+
+    /** */
+    void partSizes(Map<Integer, Long> partSizes) {
+        this.partSizes = partSizes;
     }
 
     /**

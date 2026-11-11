@@ -103,6 +103,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.Checkpoint
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PARTITION_SIZES_IN_SUPPLY_FEATURE;
 
 /**
  * Thread pool for requesting partitions from other nodes and populating local cache.
@@ -400,8 +401,10 @@ public class GridDhtPartitionDemander {
                     metrics.clearRebalanceCounters();
 
                     for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-                        for (Integer partId : msg.partitions().fullSet())
-                            metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
+                        if (!fut.sizesFromSupplier) {
+                            for (Integer partId : msg.partitions().fullSet())
+                                metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
+                        }
 
                         CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
 
@@ -559,6 +562,11 @@ public class GridDhtPartitionDemander {
                 if (cctx.statisticsEnabled()) {
                     // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
+
+                    if (fut.sizesFromSupplier && supplyMsg.partSizes() != null) {
+                        for (Long size : supplyMsg.partSizes().values())
+                            cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(size);
+                    }
                 }
             }
 
@@ -954,6 +962,12 @@ public class GridDhtPartitionDemander {
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;
 
+        /**
+         * Keys estimate comes from the supply messages instead of the exchange partition sizes. Decided once per future:
+         * an activation between the assignment and the first supply message must not count the estimate twice.
+         */
+        private final boolean sizesFromSupplier;
+
         /** The number of rebalance routines. */
         private final long routines;
 
@@ -1036,6 +1050,8 @@ public class GridDhtPartitionDemander {
         ) {
             assert assignments != null : "Asiignments must not be null.";
 
+            sizesFromSupplier = grp.shared().kernalContext().rollingUpgrade().features().isActive(PARTITION_SIZES_IN_SUPPLY_FEATURE);
+
             rebalancingParts = U.newHashMap(assignments.size());
             this.assignments = assignments;
             exchId = assignments.exchangeId();
@@ -1103,6 +1119,7 @@ public class GridDhtPartitionDemander {
             this.cancelLock = new ReentrantReadWriteLock();
             this.next = null;
             this.lastCancelledTime = new AtomicLong();
+            this.sizesFromSupplier = false;
         }
 
         /**
