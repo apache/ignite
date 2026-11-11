@@ -31,6 +31,7 @@ import static java.lang.Thread.State.BLOCKED;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
@@ -130,32 +131,27 @@ public class SslContextFactoryInitTest {
 
     /** */
     @Test
-    public void testConcurrentInitLoadsOneKeyStoreAtATime() throws Exception {
+    public void testCreateDoesNotWaitForReload() throws Exception {
         BlockingSslContextFactory factory = new BlockingSslContextFactory();
-        GridTestThread first = new GridTestThread(factory::init);
-        GridTestThread second = new GridTestThread(factory::init);
+        SSLContext ctx = sslTrustedFactory("node01", "trustone").create();
 
-        first.start();
+        factory.sslCtx.set(ctx);
+
+        GridTestThread reload = new GridTestThread(factory::init);
+
+        reload.start();
 
         try {
             assertTrue(factory.firstLoadStarted.await(10, SECONDS));
-
-            second.start();
-
-            assertTrue(waitForCondition(() -> second.getState() == BLOCKED || factory.loads.get() > 1, 10_000));
-            assertEquals(1, factory.loads.get());
+            assertSame(ctx, runAsync(factory::create).get(10_000));
         }
         finally {
             factory.allowFirstLoad.countDown();
-            first.join(10_000);
-            second.join(10_000);
+            reload.join(10_000);
         }
 
-        assertFalse(first.isAlive());
-        assertFalse(second.isAlive());
-        first.checkError();
-        second.checkError();
-        assertEquals(2, factory.loads.get());
+        assertFalse(reload.isAlive());
+        reload.checkError();
     }
 
     /** */
