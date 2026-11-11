@@ -206,7 +206,7 @@ The factory reads renewal dates from the key store it actually loads.
 It selects the key chain that expires first and starts renewal with 15% of its lifetime remaining.
 This lifetime runs from the key certificate's validity start to the earliest expiry in its chain, including issuing certificates.
 For chains with the same expiry, it uses the longest lifetime.
-Startup fails if renewal is enabled and the store has no private key with an X.509 certificate chain.
+With renewal enabled, startup fails unless the store contains at least one private key and every private key has an X.509 chain.
 
 Every certificate in an automatic replacement's key chains must be within its validity dates, and the earliest expiry must move later.
 Otherwise, Ignite keeps the current context and retries, even after its certificates expire.

@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.ssl;
 
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteException;
@@ -60,6 +62,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -388,6 +391,69 @@ public class SslFactoryRegistryTest {
 
         verify(factory, never()).renew();
         assertEquals(0, failures());
+    }
+
+    /** */
+    @Test
+    public void testStopInterruptsAndWaitsForRunningAttempt() throws Exception {
+        CountDownLatch attemptStarted = new CountDownLatch(1);
+        CountDownLatch allowCompletion = new CountDownLatch(1);
+        CountDownLatch terminationWaitEntered = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        ScheduledExecutorService renewalExecutor = spy(new IgniteScheduledThreadPoolExecutor("ssl-renewal", null, 1));
+
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor("ssl-renewal", null))
+            .thenReturn(renewalExecutor);
+        doAnswer(call -> {
+            terminationWaitEntered.countDown();
+
+            return call.callRealMethod();
+        }).when(renewalExecutor).awaitTermination(anyLong(), eq(MILLISECONDS));
+        doAnswer(call -> {
+            attemptStarted.countDown();
+
+            try {
+                assertTrue(allowCompletion.await(30, SECONDS));
+            }
+            catch (InterruptedException e) {
+                interrupted.set(true);
+
+                assertTrue(allowCompletion.await(30, SECONDS));
+            }
+
+            if (Thread.currentThread().isInterrupted())
+                interrupted.set(true);
+
+            return null;
+        }).when(factory).renew();
+
+        registry.register("communication", factory);
+
+        IgniteInternalFuture<?> stop = null;
+
+        try {
+            registry.start(ctx);
+
+            assertTrue(attemptStarted.await(5, SECONDS));
+
+            when(ctx.isStopping()).thenReturn(true);
+
+            stop = runAsync(() -> {
+                registry.stop();
+
+                assertTrue(renewalExecutor.isTerminated());
+            });
+
+            assertTrue(terminationWaitEntered.await(5, SECONDS));
+        }
+        finally {
+            allowCompletion.countDown();
+
+            if (stop != null)
+                stop.get(5_000);
+        }
+
+        assertTrue(interrupted.get());
     }
 
     /** */
