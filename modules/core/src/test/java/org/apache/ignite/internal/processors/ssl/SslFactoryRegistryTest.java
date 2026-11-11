@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
-import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,10 +45,10 @@ import org.mockito.MockedStatic;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -105,12 +104,6 @@ public class SslFactoryRegistryTest {
         when(factory.isRenewalEnabled()).thenReturn(true);
         when(factory.getRenewalTime()).thenReturn(System.currentTimeMillis());
         when(executor.isTerminated()).thenReturn(true);
-
-        doAnswer(call -> {
-            call.getArgument(0, Runnable.class).run();
-
-            return null;
-        }).when(executor).execute(any(Runnable.class));
 
         when(executor.schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS))).thenAnswer(call -> {
             scheduled = call.getArgument(0);
@@ -244,13 +237,31 @@ public class SslFactoryRegistryTest {
 
         when(factory.getRenewalTime()).thenReturn(System.currentTimeMillis() + HOURS.toMillis(2));
 
-        synchronized (factory) {
-            registry.onReload(factory);
-        }
+        registry.reload(factory);
 
         verify(retry).cancel(false);
         assertEquals(0, failures());
         assertTrue(delay > HOURS.toMillis(1));
+    }
+
+    /** */
+    @Test
+    public void testFailedManualReloadKeepsRetryAndFailures() {
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
+
+        registry.register("communication", factory);
+        registry.start(ctx);
+        scheduled.run();
+
+        ScheduledFuture<?> retry = pending;
+        IgniteException err = new IgniteException("Invalid replacement");
+
+        doThrow(err).when(factory).init();
+
+        assertSame(err, assertThrows(IgniteException.class, () -> registry.reload(factory)));
+        assertEquals(1, failures());
+        verify(retry, never()).cancel(false);
+        verify(executor, times(2)).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
     }
 
     /** */
@@ -274,9 +285,7 @@ public class SslFactoryRegistryTest {
 
         assertEquals(2, failures());
 
-        synchronized (factory) {
-            registry.onReload(factory);
-        }
+        registry.reload(factory);
 
         assertEquals(1, failures());
     }
@@ -300,69 +309,51 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testQueuedManualResetKeepsFailureAfterManualReload() {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-        scheduled.run();
-
-        Queue<Runnable> notifications = new ArrayDeque<>();
-
-        doAnswer(call -> notifications.add(call.getArgument(0))).when(executor).execute(any(Runnable.class));
-
-        synchronized (factory) {
-            registry.onReload(factory);
-        }
-
-        scheduled.run();
-        notifications.remove().run();
-
-        assertEquals(1, failures());
-        verify(executor, times(3)).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
-    }
-
-    /** */
-    @Test
-    public void testAttemptAfterManualReloadDoesNotInheritCallerContext() throws Exception {
+    public void testRenewalDoesNotInheritCallerContext() throws Exception {
         OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
         AtomicLong renewalTime = new AtomicLong(System.currentTimeMillis());
-        List<String> attemptCallers = new CopyOnWriteArrayList<>();
+        BlockingQueue<Optional<String>> attemptCallers = new LinkedBlockingQueue<>();
 
         executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor("ssl-renewal", null))
             .thenCallRealMethod();
         when(factory.getRenewalTime()).thenAnswer(call -> renewalTime.get());
         doAnswer(call -> {
-            attemptCallers.add(OperationContext.get(caller));
             renewalTime.set(System.currentTimeMillis() + HOURS.toMillis(2));
+            attemptCallers.add(Optional.ofNullable(OperationContext.get(caller)));
 
             return null;
         }).when(factory).renew();
+        doAnswer(call -> {
+            renewalTime.set(System.currentTimeMillis());
+
+            return null;
+        }).when(factory).init();
 
         registry.register("communication", factory);
-        registry.start(ctx);
-
-        assertTrue(waitForCondition(() -> attemptCallers.size() == 1, 10_000));
 
         try (Scope ignored = OperationContext.set(caller, "operator")) {
-            synchronized (factory) {
-                renewalTime.set(System.currentTimeMillis());
-                registry.onReload(factory);
-            }
+            registry.start(ctx);
+
+            assertEquals(Optional.empty(), attemptCallers.poll(10, SECONDS));
+
+            registry.reload(factory);
+
+            assertEquals("operator", OperationContext.get(caller));
         }
 
-        assertTrue(waitForCondition(() -> attemptCallers.size() == 2, 10_000));
-        assertNull(attemptCallers.get(1));
+        assertEquals(Optional.empty(), attemptCallers.poll(10, SECONDS));
     }
 
     /** */
     @Test
     public void testStoppingNodeDoesNotStartRenewal() {
         when(ctx.isStopping()).thenReturn(true);
+        when(factory.getRenewalTime()).thenReturn(0L);
 
         registry.register("communication", factory);
         registry.start(ctx);
 
+        verify(factory, never()).init();
         executorFactory.verifyNoInteractions();
     }
 
@@ -373,21 +364,27 @@ public class SslFactoryRegistryTest {
         registry.start(ctx);
 
         AtomicReference<Thread> renewalThread = new AtomicReference<>();
-        IgniteInternalFuture<?> attempt;
+        IgniteInternalFuture<?> attempt = null;
 
-        synchronized (factory) {
-            attempt = runAsync(() -> {
-                renewalThread.set(Thread.currentThread());
-                scheduled.run();
-            });
+        try {
+            synchronized (factory) {
+                attempt = runAsync(() -> {
+                    renewalThread.set(Thread.currentThread());
+                    scheduled.run();
+                });
 
-            assertTrue(waitForCondition(
-                () -> renewalThread.get() != null && renewalThread.get().getState() == Thread.State.BLOCKED, 5_000));
+                long deadline = System.currentTimeMillis() + 5_000;
 
-            when(ctx.isStopping()).thenReturn(true);
+                assertTrue(waitForCondition(() -> renewalThread.get() != null && renewalThread.get().getState() == Thread.State.BLOCKED,
+                    () -> System.currentTimeMillis() < deadline, 10));
+
+                when(ctx.isStopping()).thenReturn(true);
+            }
         }
-
-        attempt.get(5_000);
+        finally {
+            if (attempt != null)
+                attempt.get(5_000);
+        }
 
         verify(factory, never()).renew();
         assertEquals(0, failures());

@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -102,7 +103,7 @@ public class SslFactoryRegistry {
             return;
 
         executor = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
-        executor.execute(() -> renewals.values().forEach(renewal -> renewal.schedule(renewal.factory.getRenewalTime())));
+        renewals.values().forEach(Renewal::schedule);
     }
 
     /** */
@@ -129,29 +130,14 @@ public class SslFactoryRegistry {
             Thread.currentThread().interrupt();
     }
 
-    /** */
-    public void onReload(Factory<SSLContext> factory) {
-        ScheduledExecutorService executor = this.executor;
-
-        if (executor == null || stopping())
-            return;
-
-        Renewal renewal = renewals.get(factory);
+    /** Reloads the factory and resets its automatic renewal schedule and failure count. */
+    public void reload(AbstractSslContextFactory factory) {
+        Renewal renewal = executor == null ? null : renewals.get(factory);
 
         if (renewal == null)
-            return;
-
-        assert Thread.holdsLock(factory);
-
-        renewal.manualReloadPending = true;
-
-        try (Scope ignored = OperationContext.restoreSnapshot(null)) {
-            executor.execute(renewal::onReload);
-        }
-        catch (RejectedExecutionException e) {
-            if (!stopping())
-                throw e;
-        }
+            factory.init();
+        else
+            renewal.reload();
     }
 
     /** */
@@ -173,9 +159,6 @@ public class SslFactoryRegistry {
         /** */
         private int failures;
 
-        /** Guarded by the factory monitor. */
-        private boolean manualReloadPending;
-
         /** */
         private Renewal(SslContextFactory factory, String transports) {
             this.factory = factory;
@@ -183,20 +166,16 @@ public class SslFactoryRegistry {
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
+        @Override public synchronized void run() {
             if (stopping())
                 return;
 
-            boolean manuallyReloaded;
             Exception failure = null;
             long nextAttempt = 0;
 
             synchronized (factory) {
                 if (stopping())
                     return;
-
-                manuallyReloaded = manualReloadPending;
-                manualReloadPending = false;
 
                 try {
                     factory.renew();
@@ -210,10 +189,9 @@ public class SslFactoryRegistry {
             if (stopping())
                 return;
 
-            if (manuallyReloaded || failure == null)
+            if (failure == null)
                 resetFailures();
-
-            if (failure != null) {
+            else {
                 failures++;
                 consecutiveFailures.incrementAndGet();
 
@@ -228,31 +206,22 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private void onReload() {
-            if (stopping())
-                return;
-
-            long nextAttempt;
-
-            synchronized (factory) {
-                if (stopping() || !manualReloadPending)
-                    return;
-
-                manualReloadPending = false;
-                nextAttempt = factory.getRenewalTime();
-            }
-
-            if (stopping())
-                return;
+        private synchronized void reload() {
+            factory.init();
 
             resetFailures();
-            schedule(nextAttempt);
+            schedule();
         }
 
         /** */
         private void resetFailures() {
             consecutiveFailures.addAndGet(-failures);
             failures = 0;
+        }
+
+        /** */
+        private synchronized void schedule() {
+            schedule(factory.getRenewalTime());
         }
 
         /** */
@@ -266,7 +235,7 @@ public class SslFactoryRegistry {
             if (time == 0)
                 return;
 
-            try {
+            try (Scope ignored = OperationContext.restoreSnapshot(null)) {
                 pending = executor.schedule(this, Math.max(0, time - System.currentTimeMillis()), MILLISECONDS);
             }
             catch (RejectedExecutionException e) {
