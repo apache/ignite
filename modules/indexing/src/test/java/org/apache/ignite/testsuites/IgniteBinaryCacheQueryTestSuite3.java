@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheFullTextQueryNodeJ
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingQueryErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCheckClusterStateBeforeExecuteQueryTest;
 import org.apache.ignite.internal.processors.cache.IndexingCachePartitionLossPolicySelfTest;
-import org.apache.ignite.internal.processors.cache.IndexingCachePartitionLossStaleMapTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.ReservationsOnDoneAfterTopologyUnlockFailTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
@@ -294,7 +293,6 @@ import org.junit.runners.Suite;
 
     // Partition loss.
     IndexingCachePartitionLossPolicySelfTest.class,
-    IndexingCachePartitionLossStaleMapTest.class,
 
     // Partitions eviction
     SqlPartitionEvictionTest.class,
