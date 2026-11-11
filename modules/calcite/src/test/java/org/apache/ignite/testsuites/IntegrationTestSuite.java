@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.Operators
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionPruneTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionsReservationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryBlockingTaskExecutorIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryCleanupRaceIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RecursiveCteIntegrationTest;
@@ -189,6 +190,7 @@ import org.junit.platform.suite.api.Suite;
     BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
     LitmusCheckIntegrationTest.class,
+    QueryCleanupRaceIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

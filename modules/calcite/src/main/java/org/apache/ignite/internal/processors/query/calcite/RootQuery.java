@@ -297,9 +297,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                 return;
 
             if (state == QueryState.INITED || state == QueryState.PLANNING || state == QueryState.MAPPING) {
-                state = QueryState.CLOSED;
-
-                return;
+                // Even a query that failed before execution must run the unregister callback.
+                state0 = state = QueryState.CLOSED;
             }
 
             if (state == QueryState.EXECUTING) {
@@ -437,7 +436,10 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
     /** */
     @Override public void onError(Throwable error) {
-        root.onError(error);
+        // The iterator can rethrow a wrapper whose cause is the failure already stored in the root.
+        // Feeding it back would make that failure suppress its own wrapper and create an exception cycle.
+        if (root != null && root.failure() == null)
+            root.onError(error);
 
         tryClose(error);
     }
