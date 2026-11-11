@@ -63,6 +63,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -99,6 +100,9 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
 
     /** Index of the client node. */
     private static final int CLIENT = 4;
+
+    /** Index of the node that joins while partitions are lost. */
+    private static final int JOINING = 5;
 
     /** Time to wait for a step of a test, in milliseconds. */
     private static final long WAIT = 30_000;
@@ -374,6 +378,39 @@ public class CachePartitionLossStaleMapTest extends GridCommonAbstractTest {
         assertTrue(waitForCondition(() -> exchangeFinished(crd, leaveVer), WAIT));
 
         checkNodes(other, client);
+    }
+
+    /**
+     * Checks that the partition maps of the coordinator, the observer and the client match the local states of the
+     * nodes after node 5 joins while partitions are lost under the READ_WRITE_SAFE policy. Node 5 marks its copies of
+     * the lost partitions LOST when it applies the coordinator's full message.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testJoinWhileLost() throws Exception {
+        plc = READ_WRITE_SAFE;
+
+        IgniteEx crd = startNodes();
+
+        awaitPartitionMapExchange(true, true, null);
+
+        long leaveVer = crd.cluster().topologyVersion() + 1;
+
+        stopGrid(LEAVING);
+
+        for (Ignite g : G.allGrids())
+            assertTrue(waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer), WAIT));
+
+        IgniteEx joining = startGrid(JOINING);
+
+        for (Ignite g : G.allGrids())
+            assertTrue(waitForCondition(() -> exchangeFinished((IgniteEx)g, leaveVer + 1), WAIT));
+
+        assertTrue("Node 5 didn't mark a partition LOST", joining.cachex(CACHE).context().topology()
+            .localPartitions().stream().anyMatch(part -> part.state() == LOST));
+
+        checkNodes(crd, grid(OBSERVER), grid(CLIENT));
     }
 
     /**
