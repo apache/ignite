@@ -46,10 +46,8 @@ BEFORE_SEC = 10
 AWAY_SEC = 30
 AFTER_SEC = 20
 
-# Bounds, calibrated on master (the ticket's notes): the longest load stall while the node is away, per stop
-# signal, and the duration of the join's exchange.
-AWAY_STALL_MS = {"SIGTERM": 60_000, "SIGKILL": 60_000, "SIGSEGV": 60_000}
-JOIN_EXCHANGE_MS = 60_000
+# The join's exchange may wait for a load transaction until its 1 s timeout; on master it took at most 463 ms.
+JOIN_EXCHANGE_MS = 2_000
 
 
 class NodeReturnTest(IgniteTest):
@@ -105,8 +103,12 @@ class NodeReturnTest(IgniteTest):
 
         time.sleep(AWAY_SEC)
 
+        away = load_window(load_progress(load), stopped_ms, now_ms())
+
+        assert away.max_stall_ms <= ignite.config.failure_detection_timeout, \
+            f"The load stood longer than the failure detection timeout while the node was away: {away}"
+
         exchanges = len(exchange_times_ms(survivor))
-        returned_ms = now_ms()
 
         ignite.start_node(node)
 
@@ -116,31 +118,23 @@ class NodeReturnTest(IgniteTest):
         joined_ms = now_ms()
         join_exchange_ms = exchange_times_ms(survivor)[exchanges]
 
+        assert join_exchange_ms <= JOIN_EXCHANGE_MS, \
+            f"The join's exchange took {join_exchange_ms} ms, bound {JOIN_EXCHANGE_MS} ms"
+
         await_rebalance_start(ignite)
         ignite.await_rebalance()
 
-        rebalance = check_type_of_rebalancing([node], is_full=False)
+        check_type_of_rebalancing([node], is_full=False)
 
         time.sleep(AFTER_SEC)
 
         load.stop()
 
+        after = load_window(load_progress(load), joined_ms, now_ms())
+
+        assert after.ok > 0 and after.err == 0, f"The load had errors after the join: {after}"
+
         control.idle_verify()
-
-        progress = load_progress(load)
-        away = load_window(progress, stopped_ms, returned_ms)
-        after = load_window(progress, joined_ms, now_ms())
-
-        self.logger.info(f"Load while the node is away: {away}, after the join: {after}, "
-                         f"join exchange: {join_exchange_ms} ms, rebalance: {rebalance}")
-
-        assert away.max_stall_ms <= AWAY_STALL_MS[stop], \
-            f"The load stood {away.max_stall_ms} ms while the node was away, bound {AWAY_STALL_MS[stop]} ms"
-
-        assert join_exchange_ms <= JOIN_EXCHANGE_MS, \
-            f"The join's exchange took {join_exchange_ms} ms, bound {JOIN_EXCHANGE_MS} ms"
-
-        assert after.ok > 0 and after.err == 0, f"The load after the join: {after}"
 
         return {"away": away._asdict(), "after": after._asdict(), "join_exchange_ms": join_exchange_ms}
 
