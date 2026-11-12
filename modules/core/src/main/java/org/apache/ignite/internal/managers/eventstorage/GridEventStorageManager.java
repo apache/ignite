@@ -587,31 +587,6 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     }
 
     /**
-     * Checks whether all provided events are user-recordable.
-     * <p>
-     * Note that this method supports only predefined Ignite events.
-     *
-     * @param types Event types.
-     * @return Whether all events are recordable.
-     * @throws IllegalArgumentException If {@code types} contains user event type.
-     */
-    public boolean isAllUserRecordable(int[] types) {
-        assert types != null;
-
-        boolean[] userRecordableEvts0 = userRecordableEvts;
-
-        for (int type : types) {
-            if (type < 0 || type >= len)
-                throw new IllegalArgumentException("Invalid event type: " + type);
-
-            if (!userRecordableEvts0[type])
-                return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Checks if the event type is user-recordable against grid configuration.
      *
      * @param type Event type to check.
