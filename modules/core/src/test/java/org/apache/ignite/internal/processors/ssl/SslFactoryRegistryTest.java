@@ -144,9 +144,13 @@ public class SslFactoryRegistryTest {
 
     /** */
     @After
-    public void tearDown() {
-        registry.stop();
-        executorFactory.close();
+    public void tearDown() throws Exception {
+        try {
+            runAsync(registry::stop).get(10_000);
+        }
+        finally {
+            executorFactory.close();
+        }
     }
 
     /** */

@@ -386,7 +386,7 @@ public class SslContextFactoryRenewalTest {
 
         IgniteException err = assertThrows(IgniteException.class, () -> factory.renew(() -> false));
 
-        assertTrue(err.getCause().getMessage().contains("expired while loading"));
+        assertTrue(err.getCause().getMessage().contains("alias=replacement"));
         ((X509Certificate)curKeys.getCertificate("valid")).checkValidity();
         assertSame(ctx, factory.create());
         assertEquals(renewalTime, factory.getRenewalTime());

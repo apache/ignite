@@ -39,6 +39,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -98,13 +99,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean renewalEnabled;
 
     /** */
-    private transient long renewalTime;
+    private transient volatile long renewalTime;
 
     /** */
     private transient long expirationTime;
 
-    /** */
-    private transient boolean renewing;
+    /** Key store read by the load in progress. */
+    private transient KeyStore loadedKeyStore;
 
     /**
      * @return Whether automatic certificate renewal is enabled. Defaults to {@code false}.
@@ -127,7 +128,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      *
      * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} when disabled or not initialized.
      */
-    public synchronized long getRenewalTime() {
+    public long getRenewalTime() {
         return renewalEnabled ? renewalTime : 0;
     }
 
@@ -139,41 +140,49 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @param cancelled Cancellation condition checked after waiting for any active load.
      * @throws org.apache.ignite.IgniteException If replacement certificates cannot be loaded or accepted.
      */
-    public synchronized void renew(BooleanSupplier cancelled) {
-        if (cancelled.getAsBoolean() || !renewalEnabled || renewalTime == 0 || renewalTime > System.currentTimeMillis())
+    public void renew(BooleanSupplier cancelled) {
+        if (!renewalEnabled)
             return;
 
-        renewing = true;
+        synchronized (this) {
+            if (cancelled.getAsBoolean() || renewalTime == 0 || renewalTime > System.currentTimeMillis())
+                return;
 
-        try {
-            init();
-        }
-        finally {
-            renewing = false;
+            try {
+                sslCtx.set(load(true));
+            }
+            catch (SSLException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override SSLContext createSslContext() throws SSLException {
-        long prevRenewalTime = renewalTime;
-        long prevExpirationTime = expirationTime;
-        boolean initialized = false;
+        return load(false);
+    }
 
+    /**
+     * Builds an SSL context and, with renewal enabled, accepts the dates of the key store it loaded.
+     *
+     * @param replacement Whether the loaded certificates replace the current ones automatically.
+     * @return Initialized SSL context.
+     * @throws SSLException If the context cannot be built or the certificates cannot be accepted.
+     */
+    private SSLContext load(boolean replacement) throws SSLException {
         try {
             SSLContext ctx = super.createSslContext();
 
-            if (renewing && expirationTime < System.currentTimeMillis())
-                throw new SSLException("Replacement certificates expired while loading the SSL context [expiry=" + expirationTime + ']');
-
-            initialized = true;
+            if (renewalEnabled)
+                acceptCertificateDates(loadedKeyStore, replacement);
 
             return ctx;
         }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to read certificates [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
         finally {
-            if (!initialized) {
-                renewalTime = prevRenewalTime;
-                expirationTime = prevExpirationTime;
-            }
+            loadedKeyStore = null;
         }
     }
 
@@ -357,7 +366,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
 
             if (renewalEnabled)
-                readCertificateDates(keyStore);
+                loadedKeyStore = keyStore;
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
@@ -373,11 +382,15 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
+     * Reads renewal dates from the loaded key store. A replacement also requires every certificate in its key chains
+     * to be valid now and the earliest expiry to be later than the current one.
+     *
      * @param store Loaded key store.
+     * @param replacement Whether the certificates replace the current ones automatically.
      * @throws GeneralSecurityException If a key or certificate cannot be read.
-     * @throws SSLException If the certificate chains cannot be used for renewal.
+     * @throws SSLException If the certificates cannot be accepted.
      */
-    private void readCertificateDates(KeyStore store) throws GeneralSecurityException, SSLException {
+    private void acceptCertificateDates(KeyStore store, boolean replacement) throws GeneralSecurityException, SSLException {
         long earliestExpiry = Long.MAX_VALUE;
         long selectedStart = Long.MAX_VALUE;
         Date now = new Date();
@@ -401,7 +414,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
                 X509Certificate x509 = (X509Certificate)cert;
 
-                if (renewing) {
+                if (replacement) {
                     try {
                         x509.checkValidity(now);
                     }
@@ -425,7 +438,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         if (earliestExpiry == Long.MAX_VALUE)
             throw new SSLException("Certificate renewal requires a private key with an X.509 certificate chain.");
 
-        if (renewing && earliestExpiry <= expirationTime)
+        if (replacement && earliestExpiry <= expirationTime)
             throw new SSLException("Replacement certificates must have a later earliest expiry [current=" + expirationTime +
                 ", replacement=" + earliestExpiry + ']');
 
