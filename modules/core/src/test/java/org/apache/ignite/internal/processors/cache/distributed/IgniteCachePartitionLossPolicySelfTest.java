@@ -249,8 +249,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
         }, stopNodes);
 
-        for (String name : CACHES)
-            awaitPartitionMapsMatchLocalStates(name);
+        awaitPartitionMapsMatchLocalStates(CACHES);
 
         int[] stopNodesSorted = Arrays.copyOf(stopNodes, stopNodes.length);
         Arrays.sort(stopNodesSorted);
@@ -271,8 +270,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             info("Newly started node: " + grd.cluster().localNode().id());
         }
 
-        for (String name : CACHES)
-            awaitPartitionMapsMatchLocalStates(name);
+        awaitPartitionMapsMatchLocalStates(CACHES);
 
         for (int i = 0; i < nodes + 1; i++)
             verifyCacheOps(cacheName, expLostParts, grid(i), safe);
@@ -283,8 +281,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         // Do not wait for evictions because it's not guaranteed in the current implementation.
         awaitPartitionMapExchange();
 
-        for (String name : CACHES)
-            awaitPartitionMapsMatchLocalStates(name);
+        awaitPartitionMapsMatchLocalStates(CACHES);
 
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
