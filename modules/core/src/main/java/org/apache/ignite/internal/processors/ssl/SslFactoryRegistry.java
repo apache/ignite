@@ -26,6 +26,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -58,9 +59,6 @@ public class SslFactoryRegistry {
     private volatile ScheduledExecutorService executor;
 
     /** */
-    private final AtomicLong consecutiveFailures = new AtomicLong();
-
-    /** */
     private final AtomicLong manualReloadAttempts = new AtomicLong();
 
     /** */
@@ -81,8 +79,6 @@ public class SslFactoryRegistry {
     public synchronized void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveRenewalFailures", consecutiveFailures::get,
-            "Sum of consecutive automatic certificate renewal failures across SSL factories.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
         metrics.register("AutomaticRenewalAttempts", automaticRenewalAttempts::get, "Number of automatic SSL factory renewal attempts.");
 
@@ -104,6 +100,9 @@ public class SslFactoryRegistry {
                 renewals.put(factory, new Renewal(sslFactory, transports, ctx));
             }
         }
+
+        metrics.register("ConsecutiveRenewalFailures", () -> renewals.values().stream().mapToLong(r -> r.failures.get()).sum(),
+            "Sum of consecutive automatic certificate renewal failures across SSL factories.");
 
         if (renewals.isEmpty() || ctx.isStopping())
             return;
@@ -196,7 +195,7 @@ public class SslFactoryRegistry {
         private ScheduledFuture<?> pending;
 
         /** */
-        private int failures;
+        private final AtomicInteger failures = new AtomicInteger();
 
         /** */
         private Renewal(SslContextFactory factory, String transports, GridKernalContext ctx) {
@@ -212,37 +211,38 @@ public class SslFactoryRegistry {
             if (stopping())
                 return;
 
-            Exception failure = null;
-            long nextAttempt = 0;
+            automaticRenewalAttempts.incrementAndGet();
 
             try {
-                automaticRenewalAttempts.incrementAndGet();
-
                 factory.renew();
-                nextAttempt = factory.getRenewalTime();
-
-                if (nextAttempt != 0 && nextAttempt <= System.currentTimeMillis())
-                    throw new IgniteException("Loaded certificates are still due for renewal [renewalTime=" + new Date(nextAttempt) + ']');
             }
             catch (Exception e) {
-                failure = e;
+                retry(e);
+
+                return;
             }
 
+            long renewalTime = factory.getRenewalTime();
+
+            if (renewalTime != 0 && renewalTime <= System.currentTimeMillis()) {
+                retry(new IgniteException("Loaded certificates are still due for renewal [renewalTime=" + new Date(renewalTime) + ']'));
+
+                return;
+            }
+
+            failures.set(0);
+            schedule(renewalTime);
+        }
+
+        /** */
+        private void retry(Exception cause) {
             if (stopping())
                 return;
 
-            if (failure == null)
-                resetFailures();
-            else {
-                failures++;
-                consecutiveFailures.incrementAndGet();
+            long delay = Math.min(MINUTES.toMillis(1) << Math.min(failures.incrementAndGet() - 1, 6), MINUTES.toMillis(60));
+            long nextAttempt = System.currentTimeMillis() + delay + ThreadLocalRandom.current().nextLong(delay / 2 + 1);
 
-                long delay = Math.min(MINUTES.toMillis(1) << Math.min(failures - 1, 6), MINUTES.toMillis(60));
-
-                nextAttempt = System.currentTimeMillis() + delay + ThreadLocalRandom.current().nextLong(delay / 2 + 1);
-
-                log.warning("TLS renewal failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', failure);
-            }
+            log.warning("TLS renewal failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', cause);
 
             schedule(nextAttempt);
         }
@@ -250,19 +250,13 @@ public class SslFactoryRegistry {
         /** */
         private void reload() {
             reloadFactory(factory);
-            resetFailures();
+            failures.set(0);
             schedule();
         }
 
         /** */
         private boolean stopping() {
             return ctx.isStopping() || executor.isShutdown();
-        }
-
-        /** */
-        private void resetFailures() {
-            consecutiveFailures.addAndGet(-failures);
-            failures = 0;
         }
 
         /** */
