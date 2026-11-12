@@ -445,6 +445,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
             throw new SSLException("Replacement certificates must have a later earliest expiry [current=" + expirationTime +
                 ", replacement=" + earliestExpiry + ']');
 
+        if (replacement && earliestExpiry < System.currentTimeMillis())
+            throw new SSLException("Replacement certificates expired while loading the SSL context [expiry=" + earliestExpiry + ']');
+
         expirationTime = earliestExpiry;
         renewalTime = earliestExpiry - (long)(Math.max(0, earliestExpiry - (double)selectedStart) * RENEWAL_WINDOW_FRACTION);
     }

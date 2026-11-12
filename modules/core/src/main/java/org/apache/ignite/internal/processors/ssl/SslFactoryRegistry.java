@@ -140,9 +140,13 @@ public class SslFactoryRegistry {
 
     /** Reloads the factory and resets its automatic renewal schedule and failure count. */
     public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
-        ScheduledExecutorService executor = this.executor;
-        Renewal renewal = executor == null ? null : renewals.get(factory);
-        Future<?> reload = renewal == null ? null : executor.submit(renewal::reload);
+        Future<?> reload;
+
+        synchronized (this) {
+            Renewal renewal = executor == null ? null : renewals.get(factory);
+
+            reload = renewal == null ? null : executor.submit(renewal::reload);
+        }
 
         if (reload == null)
             factory.init();
