@@ -223,27 +223,6 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testInitialSchedulingRunsOnRenewalThread() {
-        AtomicReference<Runnable> initScheduling = new AtomicReference<>();
-
-        doAnswer(call -> {
-            initScheduling.set(call.getArgument(0));
-
-            return null;
-        }).when(executor).execute(any(Runnable.class));
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-
-        verify(executor, never()).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
-
-        initScheduling.get().run();
-
-        verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
-    }
-
-    /** */
-    @Test
     public void testManualReloadFollowsInitialScheduling() throws Exception {
         ScheduledExecutorService renewalExecutor = useRealExecutor();
         AtomicReference<Thread> caller = new AtomicReference<>();

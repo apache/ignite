@@ -396,10 +396,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
             long chainExpiry = Long.MAX_VALUE;
 
             for (Certificate cert : chain) {
-                if (!(cert instanceof X509Certificate))
+                if (!(cert instanceof X509Certificate x509))
                     throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
-
-                X509Certificate x509 = (X509Certificate)cert;
 
                 if (replacement) {
                     try {

@@ -58,10 +58,10 @@ public class SslFactoryRegistry {
     private volatile ScheduledExecutorService executor;
 
     /** */
-    private GridKernalContext ctx;
+    private volatile GridKernalContext ctx;
 
     /** */
-    private IgniteLogger log;
+    private volatile IgniteLogger log;
 
     /** */
     private final AtomicLong consecutiveFailures = new AtomicLong();
@@ -98,19 +98,19 @@ public class SslFactoryRegistry {
         Map<String, Factory<SSLContext>> factories = factories();
 
         for (Factory<SSLContext> factory : factories.values()) {
-            if (factory instanceof SslContextFactory && ((SslContextFactory)factory).isRenewalEnabled() && !renewals.containsKey(factory)) {
+            if (factory instanceof SslContextFactory sslFactory && sslFactory.isRenewalEnabled() && !renewals.containsKey(factory)) {
                 if (ctx.isStopping())
                     return;
 
-                if (((SslContextFactory)factory).getRenewalTime() == 0)
-                    ((SslContextFactory)factory).init();
+                if (sslFactory.getRenewalTime() == 0)
+                    sslFactory.init();
 
                 String transports = factories.entrySet().stream()
                     .filter(entry -> entry.getValue() == factory)
                     .map(Map.Entry::getKey)
                     .collect(joining(", "));
 
-                renewals.put(factory, new Renewal((SslContextFactory)factory, transports));
+                renewals.put(factory, new Renewal(sslFactory, transports));
             }
         }
 
@@ -132,8 +132,8 @@ public class SslFactoryRegistry {
             return;
 
         for (Runnable task : executor.shutdownNow()) {
-            if (task instanceof Future)
-                ((Future<?>)task).cancel(false);
+            if (task instanceof Future<?> fut)
+                fut.cancel(false);
         }
 
         boolean interrupted = false;
