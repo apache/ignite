@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -28,10 +29,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -101,7 +105,10 @@ public class SslFactoryRegistry {
             return;
 
         executor = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
-        renewals.values().forEach(Renewal::schedule);
+
+        try (Scope ignored = OperationContext.restoreSnapshot(null)) {
+            executor.execute(() -> renewals.values().forEach(Renewal::schedule));
+        }
     }
 
     /** */
@@ -111,7 +118,10 @@ public class SslFactoryRegistry {
         if (executor == null)
             return;
 
-        executor.shutdownNow();
+        for (Runnable task : executor.shutdownNow()) {
+            if (task instanceof Future)
+                ((Future<?>)task).cancel(false);
+        }
 
         boolean interrupted = false;
 
@@ -129,13 +139,27 @@ public class SslFactoryRegistry {
     }
 
     /** Reloads the factory and resets its automatic renewal schedule and failure count. */
-    public void reload(AbstractSslContextFactory factory) {
-        Renewal renewal = executor == null ? null : renewals.get(factory);
+    public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
+        Future<?> reload;
 
-        if (renewal == null)
+        synchronized (this) {
+            Renewal renewal = executor == null ? null : renewals.get(factory);
+
+            reload = renewal == null ? null : executor.submit(renewal::reload);
+        }
+
+        if (reload == null)
             factory.init();
-        else
-            renewal.reload();
+        else {
+            try {
+                U.get(reload);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                reload.cancel(true);
+
+                throw e;
+            }
+        }
     }
 
     /** */
@@ -164,7 +188,7 @@ public class SslFactoryRegistry {
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized void run() {
+        @Override public void run() {
             if (stopping())
                 return;
 
@@ -199,7 +223,7 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private synchronized void reload() {
+        private void reload() {
             factory.init();
 
             resetFailures();
@@ -213,7 +237,7 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private synchronized void schedule() {
+        private void schedule() {
             schedule(factory.getRenewalTime());
         }
 
