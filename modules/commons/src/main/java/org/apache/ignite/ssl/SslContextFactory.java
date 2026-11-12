@@ -103,6 +103,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** */
     private transient volatile long renewalTime;
 
+    /** Key store read by the load in progress. */
+    private transient KeyStore loadedKeyStore;
+
     /**
      * @return Whether automatic certificate renewal is enabled. Defaults to {@code false}.
      */
@@ -144,13 +147,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override SSLContext createSslContext() throws SSLException {
-        checkParameters();
-
         try {
-            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-            KeyManager[] keyMgrs = createKeyManagers(keyStore);
-            SSLContext ctx = createSslContext(keyMgrs, createTrustManagers());
-            Map<String, X509Certificate[]> chains = keyChains(keyStore);
+            SSLContext ctx = super.createSslContext();
+            Map<String, X509Certificate[]> chains = keyChains(loadedKeyStore);
 
             checkValidity(chains);
 
@@ -160,6 +159,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to read TLS material [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
+        finally {
+            loadedKeyStore = null;
         }
     }
 
@@ -337,13 +339,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        return createKeyManagers(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd));
-    }
-
-    /** */
-    private KeyManager[] createKeyManagers(KeyStore keyStore) throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
+
+            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+            loadedKeyStore = keyStore;
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
