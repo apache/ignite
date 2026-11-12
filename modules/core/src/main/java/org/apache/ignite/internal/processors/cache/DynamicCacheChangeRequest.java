@@ -87,7 +87,7 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
     boolean stop;
 
     /** Restart flag. */
-    @Order(value = 9, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
+    @Order(value = 9, deprecatedBy = "CACHE_RESTART_FLAG_DEPRECATED_FEATURE")
     boolean restart;
 
     /** Finalize update counters flag. */
