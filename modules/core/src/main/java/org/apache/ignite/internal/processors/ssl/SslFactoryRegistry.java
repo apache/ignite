@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.joining;
@@ -46,6 +47,9 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry {
+    /** Delay after a successful load whose renewal window has already started. */
+    private static final long RENEWAL_RETRY_DELAY = HOURS.toMillis(1);
+
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
 
@@ -206,8 +210,10 @@ public class SslFactoryRegistry {
             if (stopping())
                 return;
 
-            if (failure == null)
+            if (failure == null) {
                 resetFailures();
+                nextAttempt = nextAttemptTime(nextAttempt);
+            }
             else {
                 failures++;
                 consecutiveFailures.incrementAndGet();
@@ -227,7 +233,22 @@ public class SslFactoryRegistry {
             factory.init();
 
             resetFailures();
-            schedule();
+            schedule(nextAttemptTime(factory.getRenewalTime()));
+        }
+
+        /** */
+        private long nextAttemptTime(long renewalTime) {
+            long now = System.currentTimeMillis();
+
+            if (renewalTime == 0 || renewalTime > now)
+                return renewalTime;
+
+            long nextAttempt = now + RENEWAL_RETRY_DELAY;
+
+            log.warning("TLS certificates are already in their renewal window [transports=" + transports +
+                ", nextAttempt=" + new Date(nextAttempt) + ']');
+
+            return nextAttempt;
         }
 
         /** */

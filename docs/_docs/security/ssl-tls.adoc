@@ -221,6 +221,10 @@ Ignite selects the chain that expires first and starts renewal attempts with 15%
 If this point has already passed when the node starts, Ignite schedules an attempt immediately.
 See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getRenewalTime()[getRenewalTime(), window=_blank] for the calculation.
 
+After a successful manual or automatic reload, Ignite calculates the next attempt from the loaded certificates.
+If their renewal window has already started, Ignite logs a warning and waits one hour before trying again automatically.
+You can still run the manual reload command during this wait.
+
 Ignite accepts an automatic replacement only when:
 
 * Every certificate in its key chains is currently valid.
@@ -253,8 +257,7 @@ Success means that the stores were loaded.
 Other nodes and clients may still reject the certificates on a new connection.
 
 *What happens to automatic renewal.*
-If enabled, automatic renewal continues after manual reload, using the dates of the certificates just loaded.
-If it is already time to renew them, Ignite schedules an automatic attempt immediately.
+If enabled, automatic renewal continues after manual reload.
 If the source still returns the same certificates, the attempt fails and retries continue.
 That failure does not undo the manual reload.
 
