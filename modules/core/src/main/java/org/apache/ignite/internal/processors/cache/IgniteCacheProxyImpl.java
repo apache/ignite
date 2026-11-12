@@ -127,9 +127,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** Context. */
     private volatile GridCacheContext<K, V> ctx;
 
-    /** Old context. */
-    private transient volatile GridCacheContext<K, V> oldContext;
-
     /** Delegate. */
     @GridToStringInclude
     private volatile IgniteInternalCache<K, V> delegate;
@@ -216,61 +213,23 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * @return Context or throw restart exception.
+     * @return Context.
      */
     private GridCacheContext<K, V> getContextSafe() {
-        while (true) {
-            GridCacheContext<K, V> ctx = this.ctx;
-
-            if (ctx == null) {
-                checkRestart();
-
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteException(new InterruptedException());
-            }
-            else
-                return ctx;
-        }
+        return ctx;
     }
 
     /**
-     * @return Delegate or throw restart exception.
+     * @return Delegate.
      */
     private IgniteInternalCache<K, V> getDelegateSafe() {
-        while (true) {
-            IgniteInternalCache<K, V> delegate = this.delegate;
-
-            if (delegate == null) {
-                checkRestart();
-
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteException(new InterruptedException());
-            }
-            else
-                return delegate;
-        }
+        return delegate;
     }
 
     /**
      * @return Context.
      */
     public GridCacheContext<K, V> context0() {
-        GridCacheContext<K, V> ctx = this.ctx;
-
-        if (ctx == null) {
-            synchronized (this) {
-                ctx = this.ctx;
-
-                if (ctx == null) {
-                    ctx = oldContext;
-
-                    assert ctx != null;
-
-                    return ctx;
-                }
-            }
-        }
-
         return ctx;
     }
 
@@ -1890,7 +1849,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public IgniteFuture<?> destroyAsync() {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicDestroyCache(cacheName, false, true, false, null), exec());
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicDestroyCache(cacheName, false, true), exec());
     }
 
     /** {@inheritDoc} */
@@ -2039,20 +1998,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private RuntimeException cacheException(Exception e) {
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
-        if (X.hasCause(e, IgniteCacheRestartingException.class)) {
-            IgniteCacheRestartingException restartingEx = X.cause(e, IgniteCacheRestartingException.class);
-
-            if (restartingEx.restartFuture() == null) {
-                if (restartFut == null)
-                    restartFut = suspend();
-
-                assert restartFut != null;
-
-                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), cacheName);
-            }
-            else
-                throw restartingEx;
-        }
+        if (X.hasCause(e, IgniteCacheRestartingException.class))
+            throw X.cause(e, IgniteCacheRestartingException.class);
 
         if (restartFut != null) {
             if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class))
@@ -2252,36 +2199,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Suspend this cache proxy.
-     * To make cache proxy active again, it's needed to restart it.
-     */
-    public GridFutureAdapter<Void> suspend() {
-        while (true) {
-            GridFutureAdapter<Void> curFut = this.restartFut.get();
-
-            if (curFut == null) {
-                GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
-
-                if (this.restartFut.compareAndSet(null, restartFut)) {
-                    synchronized (this) {
-                        if (!restartFut.isDone()) {
-                            if (oldContext == null) {
-                                oldContext = ctx;
-                                delegate = null;
-                                ctx = null;
-                            }
-                        }
-                    }
-
-                    return restartFut;
-                }
-            }
-            else
-                return curFut;
-        }
-    }
-
-    /**
      * If proxy is already being restarted, returns future to wait on, else restarts this cache proxy.
      *
      * @param cache To use for restart proxy.
@@ -2326,7 +2243,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             this.restartFut.compareAndSet(restartFut, null);
 
             this.ctx = ctx;
-            oldContext = null;
             this.delegate = delegate;
 
             restartFut.onDone();

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -277,10 +276,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             GridCacheContext activeCacheCtx = e.getValue();
 
             if (activeCacheCtx.topology().stopping()) {
-                fut.onDone(
-                    cctx.cache().isCacheRestarting(activeCacheCtx.name()) ?
-                        new IgniteCacheRestartingException(activeCacheCtx.name()) :
-                        new CacheStoppedException(activeCacheCtx.name()));
+                fut.onDone(new CacheStoppedException(activeCacheCtx.name()));
 
                 return null;
             }
