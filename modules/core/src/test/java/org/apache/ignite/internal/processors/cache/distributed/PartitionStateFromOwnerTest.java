@@ -41,7 +41,9 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE).setPartitionLossPolicy(plc));
+            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
+                .setBackups(0)
+                .setPartitionLossPolicy(plc));
     }
 
     /** {@inheritDoc} */
