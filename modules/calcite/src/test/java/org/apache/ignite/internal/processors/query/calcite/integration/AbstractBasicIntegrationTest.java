@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
@@ -40,7 +42,9 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
+import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.RootQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
@@ -59,6 +63,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 
+import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl.INBOX_INITIALIZATION_TIMEOUT;
@@ -117,8 +122,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest 
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.
-        assertTrue("Not finished queries found on client", waitForCondition(
-            () -> queryProcessor(client).queryRegistry().runningQueries().isEmpty(), 1_000L));
+        assertNoRunningQueries(client);
 
         for (Ignite ign : G.allGrids()) {
             if (destroyCachesAfterTest()) {
@@ -128,8 +132,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest 
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
-            assertTrue("Not finished queries found [ignite=" + ign.name() + ']',
-                waitForCondition(() -> qryProc.queryRegistry().runningQueries().isEmpty(), 1_000));
+            assertNoRunningQueries(ign);
 
             ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
@@ -273,7 +276,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest 
     }
 
     /** */
-    protected CalciteQueryProcessor queryProcessor(Ignite ignite) {
+    protected static CalciteQueryProcessor queryProcessor(Ignite ignite) {
         return Commons.lookupComponent(((IgniteEx)ignite).context(), CalciteQueryProcessor.class);
     }
 
@@ -442,5 +445,34 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest 
 
             return name.equals(employer.name) && salary.equals(employer.salary);
         }
+    }
+
+    /** */
+    private static void assertNoRunningQueries(Ignite n) throws Exception {
+        AtomicReference<Collection<Query<?>>> runningQrysRef = new AtomicReference<>(List.of());
+
+        if (waitForCondition(() -> isAbsentRunningQueries(n, runningQrysRef), 1_000L))
+            return;
+
+        String runningQrysInfo = runningQrysRef.get().stream()
+            .map(AbstractBasicIntegrationTest::toQueryInfoString)
+            .collect(joining(", ", "[", "]"));
+
+        fail(String.format("Not finished queries found: [ignite=%s, queries=%s]", n.name(), runningQrysInfo));
+    }
+
+    /** */
+    private static boolean isAbsentRunningQueries(Ignite n, AtomicReference<Collection<Query<?>>> runningQrysRef) {
+        List<Query<?>> qrys = List.copyOf(queryProcessor(n).queryRegistry().runningQueries());
+        runningQrysRef.set(qrys);
+
+        return qrys.isEmpty();
+    }
+
+    /** */
+    private static String toQueryInfoString(Query<?> qry) {
+        String qryStr = qry instanceof RootQuery ? ((RootQuery<?>)qry).queryInfo(null) : qry.toString();
+
+        return String.format("queryId=%s, state=%s, query=%s", qry.id(), qry.state(), qryStr);
     }
 }

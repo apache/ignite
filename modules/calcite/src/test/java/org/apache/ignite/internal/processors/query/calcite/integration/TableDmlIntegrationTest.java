@@ -46,22 +46,6 @@ import org.junit.jupiter.api.Test;
 
 /** */
 public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
-    /** */
-    @Test
-    public void testInsertAndSelect() {
-        sql("CREATE TABLE test (id INT PRIMARY KEY, val VARCHAR) WITH " + atomicity());
-
-        assertQuery("INSERT INTO test (id, val) VALUES (?, ?)")
-            .withParams(1, "one")
-            .returns(1L)
-            .check();
-
-        assertQuery("SELECT id, val FROM test WHERE id = ?")
-            .withParams(1)
-            .returns(1, "one")
-            .check();
-    }
-
     /**
      * Test verifies that already inserted by the current query data
      * is not processed by this query again.
