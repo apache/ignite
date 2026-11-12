@@ -1263,12 +1263,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         boolean accumulator = false;
 
         try {
+            // A single-page claim is reserved before the eviction: concurrent inserts then wait less for the data page
+            // locks. Larger claims are not: those that do not fit the region together would wait for each other.
+            if (claimPages == 1) {
+                reservedPages.incrementAndGet();
+
+                accumulated = 1;
+            }
+
             while (true) {
                 long reserved = reservedPages.get();
                 long deficit = deficit(claimPages - accumulated, limitPages, reserved);
 
                 if (deficit <= 0) {
-                    if (reservedPages.compareAndSet(reserved, reserved + claimPages - accumulated)) {
+                    if (accumulated == claimPages || reservedPages.compareAndSet(reserved, reserved + claimPages - accumulated)) {
                         clearStalled(prevEvicted);
 
                         // The whole claim now belongs to the caller: reset the accumulated part, so that finally does not release it.
