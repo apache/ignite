@@ -29,7 +29,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -268,7 +267,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testFailuresIncreaseRetryDelayUntilLimit() {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -289,7 +288,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testNormalReturnResetsFailuresAndReadsNextWindow() {
-        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew();
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -308,7 +307,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testManualReloadReplacesRetryAndResetsFailures() throws Exception {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -330,7 +329,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testFailedManualReloadKeepsRetryAndFailures() {
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -367,7 +366,7 @@ public class SslFactoryRegistryTest {
             attempts.add(true);
 
             throw new IgniteException("Source unavailable");
-        }).when(factory).renew(any());
+        }).when(factory).renew();
         doAnswer(call -> {
             Future<?> reload = (Future<?>)call.callRealMethod();
 
@@ -397,8 +396,8 @@ public class SslFactoryRegistryTest {
 
         when(otherFactory.isRenewalEnabled()).thenReturn(true);
         when(otherFactory.getRenewalTime()).thenReturn(1L);
-        doThrow(new IgniteException("Source unavailable")).when(factory).renew(any());
-        doThrow(new IgniteException("Source unavailable")).when(otherFactory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).when(factory).renew();
+        doThrow(new IgniteException("Source unavailable")).when(otherFactory).renew();
 
         registry.register("communication", factory);
         registry.register("client connector", otherFactory);
@@ -419,7 +418,7 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testMetricResetDoesNotCorruptFailureCount() {
-        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew(any());
+        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew();
 
         registry.register("communication", factory);
         registry.start(ctx);
@@ -448,7 +447,7 @@ public class SslFactoryRegistryTest {
             attemptCallers.add(Optional.ofNullable(OperationContext.get(caller)));
 
             return null;
-        }).when(factory).renew(any());
+        }).when(factory).renew();
         doAnswer(call -> {
             assertEquals("operator", OperationContext.get(caller));
             renewalTime.set(System.currentTimeMillis());
@@ -486,28 +485,6 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testRenewalObservesNodeStop() {
-        doAnswer(call -> {
-            BooleanSupplier cancelled = call.getArgument(0);
-
-            assertFalse(cancelled.getAsBoolean());
-
-            when(ctx.isStopping()).thenReturn(true);
-
-            assertTrue(cancelled.getAsBoolean());
-
-            return null;
-        }).when(factory).renew(any());
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-        scheduled.run();
-
-        verify(factory).renew(any());
-    }
-
-    /** */
-    @Test
     public void testStopInterruptsAndWaitsForRunningAttempt() throws Exception {
         CountDownLatch attemptStarted = new CountDownLatch(1);
         CountDownLatch allowCompletion = new CountDownLatch(1);
@@ -538,7 +515,7 @@ public class SslFactoryRegistryTest {
                 interrupted.set(true);
 
             return null;
-        }).when(factory).renew(any());
+        }).when(factory).renew();
 
         registry.register("communication", factory);
 
@@ -582,7 +559,7 @@ public class SslFactoryRegistryTest {
             assertTrue(allowCompletion.await(10, SECONDS));
 
             return null;
-        }).when(factory).renew(any());
+        }).when(factory).renew();
         doAnswer(call -> {
             Future<?> fut = (Future<?>)call.callRealMethod();
 
@@ -639,7 +616,7 @@ public class SslFactoryRegistryTest {
             renewalTime.set(System.currentTimeMillis() + HOURS.toMillis(2));
 
             return null;
-        }).when(factory).renew(any());
+        }).when(factory).renew();
         doAnswer(call -> {
             Object fut = call.callRealMethod();
 
@@ -694,7 +671,7 @@ public class SslFactoryRegistryTest {
             when(ctx.isStopping()).thenReturn(true);
 
             throw new IgniteException("Load interrupted by node stop");
-        }).when(factory).renew(any());
+        }).when(factory).renew();
 
         registry.register("communication", factory);
         registry.start(ctx);

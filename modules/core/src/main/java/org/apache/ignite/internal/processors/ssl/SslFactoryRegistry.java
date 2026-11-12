@@ -192,7 +192,7 @@ public class SslFactoryRegistry {
             long nextAttempt = 0;
 
             try {
-                factory.renew(SslFactoryRegistry.this::stopping);
+                factory.renew();
                 nextAttempt = factory.getRenewalTime();
             }
             catch (Exception e) {

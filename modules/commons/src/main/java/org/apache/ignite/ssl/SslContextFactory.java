@@ -31,7 +31,6 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.function.BooleanSupplier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -40,6 +39,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -135,18 +135,21 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /**
      * Reloads certificates when their renewal window has started. Disabled renewal and a future window are skipped.
      * Replacement certificates must be within their validity dates and have a later earliest expiry;
-     * otherwise the current context is kept.
+     * otherwise the current context is kept. An interrupted thread does not load certificates.
      *
-     * @param cancelled Cancellation condition checked after waiting for any active load.
-     * @throws org.apache.ignite.IgniteException If replacement certificates cannot be loaded or accepted.
+     * @throws IgniteInterruptedException If the calling thread is interrupted.
+     * @throws IgniteException If replacement certificates cannot be loaded or accepted.
      */
-    public void renew(BooleanSupplier cancelled) {
+    public void renew() {
         if (!renewalEnabled)
             return;
 
         synchronized (this) {
-            if (cancelled.getAsBoolean() || renewalTime == 0 || renewalTime > System.currentTimeMillis())
+            if (renewalTime == 0 || renewalTime > System.currentTimeMillis())
                 return;
+
+            if (Thread.currentThread().isInterrupted())
+                throw new IgniteInterruptedException("Certificate renewal was interrupted before loading.");
 
             try {
                 sslCtx.set(load(true));
