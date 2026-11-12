@@ -160,10 +160,8 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                     .map(Map.Entry::getKey)
                     .collect(joining(", "));
 
-                boolean reloaded;
-
                 try {
-                    reloaded = ignite.context().ssl().reload((AbstractSslContextFactory)factory);
+                    ignite.context().ssl().reload((AbstractSslContextFactory)factory);
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);
@@ -171,7 +169,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                     throw new IgniteException(transports + ": " + errorMessage(e), e);
                 }
 
-                String report = nodeId + ": " + transports + (reloaded ? ": reloaded" : ": unchanged");
+                String report = nodeId + ": " + transports + ": reloaded";
 
                 reports.add(report);
                 ignite.log().info("TLS reload: " + report + initiator);

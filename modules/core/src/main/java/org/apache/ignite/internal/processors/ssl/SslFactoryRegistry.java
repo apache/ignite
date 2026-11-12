@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -40,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.joining;
@@ -48,9 +48,6 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry {
-    /** Delay after a successful load whose renewal window has already started. */
-    private static final long RENEWAL_RETRY_DELAY = HOURS.toMillis(1);
-
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
 
@@ -155,26 +152,21 @@ public class SslFactoryRegistry {
     }
 
     /**
-     * Reloads the factory and resets its automatic renewal schedule and failure count if a context is replaced.
+     * Reloads the factory and resets its automatic renewal schedule and failure count.
      *
      * @param factory Factory to reload.
-     * @return Whether the context was replaced.
      * @throws IgniteCheckedException If an asynchronous reload fails or is interrupted.
      */
-    public boolean reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
-        Future<Boolean> reload;
-
-        synchronized (this) {
-            Renewal renewal = executor == null ? null : renewals.get(factory);
-
-            reload = renewal == null ? null : executor.submit(renewal::reload);
-        }
+    public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
+        ScheduledExecutorService executor = this.executor;
+        Renewal renewal = executor == null ? null : renewals.get(factory);
+        Future<?> reload = renewal == null ? null : executor.submit(renewal::reload);
 
         if (reload == null)
-            return reloadFactory(factory);
+            reloadFactory(factory);
         else {
             try {
-                return U.get(reload);
+                U.get(reload);
             }
             catch (IgniteInterruptedCheckedException e) {
                 reload.cancel(true);
@@ -185,15 +177,10 @@ public class SslFactoryRegistry {
     }
 
     /** */
-    private boolean reloadFactory(AbstractSslContextFactory factory) {
+    private void reloadFactory(AbstractSslContextFactory factory) {
         manualReloadAttempts.incrementAndGet();
 
-        if (factory instanceof SslContextFactory)
-            return ((SslContextFactory)factory).reload();
-
         factory.init();
-
-        return true;
     }
 
     /** */
@@ -234,6 +221,9 @@ public class SslFactoryRegistry {
 
                 factory.renew();
                 nextAttempt = factory.getRenewalTime();
+
+                if (nextAttempt != 0 && nextAttempt <= System.currentTimeMillis())
+                    throw new IgniteException("Loaded certificates are still due for renewal [renewalTime=" + new Date(nextAttempt) + ']');
             }
             catch (Exception e) {
                 failure = e;
@@ -242,10 +232,8 @@ public class SslFactoryRegistry {
             if (stopping())
                 return;
 
-            if (failure == null) {
+            if (failure == null)
                 resetFailures();
-                nextAttempt = nextAttemptTime(nextAttempt);
-            }
             else {
                 failures++;
                 consecutiveFailures.incrementAndGet();
@@ -261,29 +249,10 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private boolean reload() {
-            if (!reloadFactory(factory))
-                return false;
-
+        private void reload() {
+            reloadFactory(factory);
             resetFailures();
-            schedule(nextAttemptTime(factory.getRenewalTime()));
-
-            return true;
-        }
-
-        /** */
-        private long nextAttemptTime(long renewalTime) {
-            long now = System.currentTimeMillis();
-
-            if (renewalTime == 0 || renewalTime > now)
-                return renewalTime;
-
-            long nextAttempt = now + RENEWAL_RETRY_DELAY;
-
-            log.warning("TLS certificates are already in their renewal window [transports=" + transports +
-                ", nextAttempt=" + new Date(nextAttempt) + ']');
-
-            return nextAttempt;
+            schedule();
         }
 
         /** */

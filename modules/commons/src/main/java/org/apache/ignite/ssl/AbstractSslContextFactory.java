@@ -177,7 +177,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
     /**
-     * Loads an SSL context and caches it for the base implementation of {@link #create()}.
+     * Loads a new SSL context and caches it for the base implementation of {@link #create()}.
      * If loading fails, the previously cached context is kept.
      *
      * @throws IgniteException If the context cannot be initialized.

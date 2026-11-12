@@ -25,7 +25,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.testframework.GridTestThread;
@@ -45,7 +44,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 /** */
@@ -80,9 +78,9 @@ public class SslContextFactoryRenewalTest {
 
         factory.setRenewalEnabled(false);
         factory.create();
+        factory.init();
 
         assertEquals(0, factory.getRenewalTime());
-        assertFalse(factory.reload());
     }
 
     /** */
@@ -240,21 +238,6 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
-    public void testRenewRejectsUnchangedMaterial() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(
-            authority.keyStore("first", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
-        SSLContext ctx = factory.create();
-        long renewalTime = factory.getRenewalTime();
-
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
-
-        assertTrue(err.getMessage().contains("unchanged"));
-        assertSame(ctx, factory.create());
-        assertEquals(renewalTime, factory.getRenewalTime());
-    }
-
-    /** */
-    @Test
     public void testManualReloadAcceptsDifferentCertificatesWithSameOrEarlierExpiry() throws Exception {
         for (long remainingHours : new long[] {10, 5}) {
             InMemorySslContextFactory factory = new InMemorySslContextFactory(
@@ -263,7 +246,8 @@ public class SslContextFactoryRenewalTest {
 
             factory.keyStore = authority.keyStore("node", now - HOURS.toMillis(1), now + HOURS.toMillis(remainingHours));
 
-            assertTrue(factory.reload());
+            factory.init();
+
             assertNotSame(ctx, factory.create());
         }
     }
@@ -285,24 +269,6 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
-    public void testManualReloadKeepsUnchangedContext() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(
-            authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
-        SSLContext ctx = factory.create();
-        long renewalTime = factory.getRenewalTime();
-
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-
-        assertFalse(factory.reload());
-
-        factory.init();
-
-        assertSame(ctx, factory.create());
-        assertEquals(renewalTime, factory.getRenewalTime());
-    }
-
-    /** */
-    @Test
     public void testManualReloadAppliesTrustStoreChanges() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(
             authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
@@ -317,36 +283,8 @@ public class SslContextFactoryRenewalTest {
 
         factory.trustStore.setCertificateEntry("other-issuer", otherIssuer.trustStore().getCertificate("CN=other-issuer"));
 
-        assertTrue(factory.reload());
-        assertNotSame(ctx, factory.create());
-        assertFalse(factory.reload());
-    }
+        factory.init();
 
-    /** */
-    @Test
-    public void testManualReloadDetectsPrivateKeyChange() throws Exception {
-        KeyStore keys = authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10));
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(keys);
-        SSLContext ctx = factory.create();
-        KeyStore other = authority.keyStore("other", now - HOURS.toMillis(90), now + HOURS.toMillis(10));
-
-        keys.setKeyEntry("node", other.getKey("other", PASSWORD), PASSWORD, keys.getCertificateChain("node"));
-
-        assertTrue(factory.reload());
-        assertNotSame(ctx, factory.create());
-    }
-
-    /** */
-    @Test
-    public void testManualReloadWithCustomTrustManagerReplacesContext() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(
-            authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
-
-        factory.setTrustManagers(mock(X509TrustManager.class));
-
-        SSLContext ctx = factory.create();
-
-        assertTrue(factory.reload());
         assertNotSame(ctx, factory.create());
     }
 
@@ -419,15 +357,11 @@ public class SslContextFactoryRenewalTest {
 
         factory.keyStore = expiredIssuer.keyStore("replacement", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
 
-        IgniteException err = assertThrows(IgniteException.class, factory::reload);
+        IgniteException err = assertThrows(IgniteException.class, factory::init);
 
         assertTrue(err.getCause().getMessage().contains("subject=CN=expired-issuer"));
         assertSame(ctx, factory.create());
         assertEquals(renewalTime, factory.getRenewalTime());
-
-        factory.keyStore = keys;
-
-        assertFalse(factory.reload());
     }
 
     /** */

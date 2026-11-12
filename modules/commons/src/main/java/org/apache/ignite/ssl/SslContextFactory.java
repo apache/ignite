@@ -17,27 +17,20 @@
 
 package org.apache.ignite.ssl;
 
-import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.DigestOutputStream;
 import java.security.GeneralSecurityException;
-import java.security.Key;
 import java.security.KeyStore;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.List;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -49,8 +42,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
@@ -110,14 +101,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** */
     private transient volatile long renewalTime;
 
-    /** */
-    private transient byte[] materialFingerprint;
-
     /** Key store read by the load in progress. */
     private transient KeyStore loadedKeyStore;
-
-    /** Trust store read by the load in progress. */
-    private transient KeyStore loadedTrustStore;
 
     /**
      * @return Whether automatic certificate renewal is enabled. Defaults to {@code false}.
@@ -151,7 +136,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * Does nothing when renewal is disabled, no renewal date has been loaded, or the window has not started.
      * <p>
      * Every certificate in the replacement's private-key chains must be valid now.
-     * Unchanged material and TLS settings are a failed renewal attempt.
      * A failed replacement leaves the current context and renewal time unchanged.
      *
      * @throws IgniteInterruptedException If the thread is interrupted before a due replacement starts loading.
@@ -168,36 +152,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (Thread.currentThread().isInterrupted())
                 throw new IgniteInterruptedException("Certificate renewal was interrupted before loading.");
 
-            if (!reloadContext())
-                throw new IgniteException("TLS key and trust material is unchanged.");
-        }
-    }
-
-    /**
-     * Reloads key and trust material and TLS settings. Replacement key chains must be valid now.
-     * Custom trust managers and keys without an encoding are reloaded without equality checks.
-     *
-     * @return {@code true} if the context was replaced, {@code false} if the material and settings are unchanged.
-     * @throws IgniteException If the replacement cannot be loaded or accepted.
-     */
-    public synchronized boolean reload() {
-        return reloadContext();
-    }
-
-    /** */
-    private boolean reloadContext() {
-        try {
-            SSLContext ctx = createSslContext();
-
-            if (ctx == sslCtx.get())
-                return false;
-
-            sslCtx.set(ctx);
-
-            return true;
-        }
-        catch (SSLException e) {
-            throw new IgniteException(e);
+            init();
         }
     }
 
@@ -205,28 +160,17 @@ public class SslContextFactory extends AbstractSslContextFactory {
     @Override SSLContext createSslContext() throws SSLException {
         try {
             SSLContext ctx = super.createSslContext();
-            SSLContext cur = sslCtx.get();
-            byte[] fingerprint = materialFingerprint();
-            long nextRenewal = renewalEnabled || cur != null ? certificateRenewalTime(loadedKeyStore, cur != null) : 0;
+            boolean replacement = sslCtx.get() != null;
 
-            if (cur != null && fingerprint != null && Arrays.equals(materialFingerprint, fingerprint) &&
-                (!renewalEnabled || renewalTime != 0))
-                return cur;
-
-            materialFingerprint = fingerprint;
-            renewalTime = nextRenewal;
+            renewalTime = renewalEnabled || replacement ? certificateRenewalTime(loadedKeyStore, replacement) : 0;
 
             return ctx;
         }
-        catch (SSLException e) {
-            throw e;
-        }
-        catch (GeneralSecurityException | IOException e) {
+        catch (GeneralSecurityException e) {
             throw new SSLException("Failed to read TLS material [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
         }
         finally {
             loadedKeyStore = null;
-            loadedTrustStore = null;
         }
     }
 
@@ -488,98 +432,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
             earliestExpiry - (long)(Math.max(0, earliestExpiry - (double)selectedStart) * RENEWAL_WINDOW_FRACTION) : 0;
     }
 
-    /** */
-    private byte[] materialFingerprint() throws GeneralSecurityException, IOException {
-        if (trustMgrs != null && (trustMgrs.length != 1 || !(trustMgrs[0] instanceof DisabledX509TrustManager)))
-            return null;
-
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-        try (DataOutputStream out = new DataOutputStream(new DigestOutputStream(OutputStream.nullOutputStream(), digest))) {
-            writeStrings(out, proto, keyAlgorithm, keyStoreType, trustStoreType);
-            writeStrings(out, protocols);
-            writeStrings(out, cipherSuites);
-
-            if (!writeStore(out, loadedKeyStore, true))
-                return null;
-
-            out.writeBoolean(loadedTrustStore != null);
-
-            if (loadedTrustStore != null)
-                writeStore(out, loadedTrustStore, false);
-        }
-
-        return digest.digest();
-    }
-
-    /** */
-    private boolean writeStore(DataOutputStream out, KeyStore store, boolean keys) throws GeneralSecurityException, IOException {
-        List<String> aliases = Collections.list(store.aliases());
-
-        Collections.sort(aliases);
-
-        for (String alias : aliases) {
-            Key key = keys && store.isKeyEntry(alias) ? store.getKey(alias, keyStorePwd) : null;
-            Certificate cert = keys ? null : store.getCertificate(alias);
-
-            if (keys ? !(key instanceof PrivateKey) : cert == null)
-                continue;
-
-            out.writeBoolean(true);
-            writeBytes(out, alias.getBytes(UTF_8));
-
-            if (keys) {
-                byte[] encoded = key.getEncoded();
-
-                if (encoded == null)
-                    return false;
-
-                writeBytes(out, encoded);
-
-                Certificate[] chain = store.getCertificateChain(alias);
-
-                out.writeInt(chain == null ? -1 : chain.length);
-
-                if (chain != null) {
-                    for (Certificate certificate : chain)
-                        writeBytes(out, certificate.getEncoded());
-                }
-            }
-            else
-                writeBytes(out, cert.getEncoded());
-        }
-
-        out.writeBoolean(false);
-
-        return true;
-    }
-
-    /** */
-    private static void writeBytes(DataOutputStream out, byte[] bytes) throws IOException {
-        out.writeInt(bytes == null ? -1 : bytes.length);
-
-        if (bytes != null)
-            out.write(bytes);
-    }
-
-    /** */
-    private static void writeStrings(DataOutputStream out, String... values) throws IOException {
-        out.writeInt(values == null ? -1 : values.length);
-
-        if (values != null) {
-            for (String val : values)
-                writeBytes(out, val == null ? null : val.getBytes(UTF_8));
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected final TrustManager[] createTrustManagers() throws SSLException {
         if (trustMgrs != null)
             return trustMgrs;
 
         KeyStore trustStore = loadKeyStore(trustStoreType, trustStoreFilePath, trustStorePwd);
-
-        loadedTrustStore = trustStore;
 
         try {
             TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance(keyAlgorithm);
