@@ -26,12 +26,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
-import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.lang.Thread.State.BLOCKED;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
@@ -190,38 +187,6 @@ public class SslContextFactoryRenewalTest {
         factory.renew();
 
         assertEquals(1, factory.keyStoreLoads);
-    }
-
-    /** */
-    @Test
-    public void testInterruptWhileWaitingForFactorySkipsRenewal() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(
-            authority.keyStore("node", now - HOURS.toMillis(90), now + HOURS.toMillis(10)));
-        SSLContext ctx = factory.create();
-
-        factory.keyStore = authority.keyStore("replacement", now - HOURS.toMillis(1), now + HOURS.toMillis(99));
-
-        GridTestThread attempt = new GridTestThread(() -> assertThrows(IgniteInterruptedException.class, factory::renew));
-
-        try {
-            synchronized (factory) {
-                attempt.start();
-
-                long deadline = System.currentTimeMillis() + 5_000;
-
-                assertTrue(waitForCondition(() -> attempt.getState() == BLOCKED, () -> System.currentTimeMillis() < deadline));
-
-                attempt.interrupt();
-            }
-        }
-        finally {
-            attempt.join(5_000);
-        }
-
-        assertFalse(attempt.isAlive());
-        attempt.checkError();
-        assertEquals(1, factory.keyStoreLoads);
-        assertSame(ctx, factory.create());
     }
 
     /** */

@@ -41,7 +41,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -137,26 +136,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /**
      * Replaces the current SSL context when the renewal window has started.
      * Does nothing when renewal is disabled, no renewal date has been loaded, or the window has not started.
-     * <p>
-     * Every certificate in the replacement's private-key chains must be valid now.
      * A failed replacement leaves the current context and renewal time unchanged.
      *
-     * @throws IgniteInterruptedException If the thread is interrupted before a due replacement starts loading.
      * @throws IgniteException If the replacement cannot be loaded or accepted.
      */
     public void renew() {
-        if (!renewalEnabled)
-            return;
-
-        synchronized (this) {
-            if (renewalTime == 0 || renewalTime > System.currentTimeMillis())
-                return;
-
-            if (Thread.currentThread().isInterrupted())
-                throw new IgniteInterruptedException("Certificate renewal was interrupted before loading.");
-
+        if (renewalEnabled && renewalTime != 0 && renewalTime <= System.currentTimeMillis())
             init();
-        }
     }
 
     /** {@inheritDoc} */
