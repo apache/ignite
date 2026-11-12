@@ -58,10 +58,10 @@ public class SslFactoryRegistry {
     private volatile ScheduledExecutorService executor;
 
     /** */
-    private volatile GridKernalContext ctx;
+    private GridKernalContext ctx;
 
     /** */
-    private volatile IgniteLogger log;
+    private IgniteLogger log;
 
     /** */
     private final AtomicLong consecutiveFailures = new AtomicLong();
