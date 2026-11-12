@@ -40,6 +40,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.CLIENT;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMPUTE;
 import static org.apache.ignite.internal.sql.SqlKeyword.CONTINUOUS;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
+import static org.apache.ignite.internal.sql.SqlKeyword.LOCK;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
 import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
@@ -50,6 +51,7 @@ import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelClientConnection;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelLock;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelService;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
@@ -80,6 +82,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     public static final String KILL_CLI_QRY = KILL + " " + CLIENT;
+
+    /** */
+    public static final String KILL_LOCK_QRY = KILL + " " + LOCK;
 
     /** */
     private static List<IgniteEx> srvs;
@@ -171,6 +176,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCancelLock() {
+        doTestCancelLock(startCli, xid -> execute(killCli, KILL_LOCK_QRY + " '" + xid + "'"));
+    }
+
+    /** */
+    @Test
     public void testCancelUnknownScanQuery() {
         execute(startCli, KILL_SCAN_QRY + " '" + killCli.localNode().id() + "' 'unknown' 1");
     }
@@ -206,6 +217,12 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     public void testCancelUnknownContinuousQuery() {
         execute(startCli,
             KILL_CQ_QRY + " '" + srvs.get(0).localNode().id().toString() + "' '" + UUID.randomUUID() + "'");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownLock() {
+        execute(killCli, KILL_LOCK_QRY + " '" + IgniteUuid.randomUuid() + "'");
     }
 
     /**

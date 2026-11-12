@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -62,15 +63,18 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -581,6 +585,39 @@ class KillCommandsTests {
         cliCanceler.accept(null, null);
 
         assertTrue(checker.test(cli3));
+    }
+
+    /**
+     * Test cancel of the lock.
+     *
+     * @param cli Client node.
+     * @param qryCanceler Lock cancel closure.
+     */
+    public static void doTestCancelLock(IgniteEx cli, Consumer<String> qryCanceler) {
+        IgniteCache<Object, Object> cache = cli.cache(DEFAULT_CACHE_NAME);
+
+        Lock lock = cache.lock(0);
+        lock.lock();
+
+        try {
+            SystemView<CacheExplicitLockView> locks = cli.context().systemView().view(CACHE_EXPLICIT_LOCKS_VIEW);
+            assertEquals(1, locks.size());
+            CacheExplicitLockView view = locks.iterator().next();
+
+            IgniteUuid xid = view.xid();
+
+            qryCanceler.accept(xid.toString());
+
+            assertEquals(0, locks.size());
+
+            assertThrowsWithCause(lock::unlock, Exception.class);
+
+            lock = null;
+        }
+        finally {
+            if (lock != null)
+                lock.unlock();
+        }
     }
 
     /** */

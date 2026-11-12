@@ -69,6 +69,7 @@ data: {
       "COMPUTE"
       "ASYNC"
       "QUERY",
+      "LOCK"
       "STATISTICS",
       "REFRESH",
       "ANALYZE",
@@ -107,6 +108,7 @@ data: {
       "COMPUTE"
       "ASYNC"
       "QUERY"
+      "LOCK"
       "STATISTICS"
       "REFRESH"
       "ANALYZE"
@@ -450,6 +452,7 @@ data: {
       "SqlKillTransaction()",
       "SqlKillComputeTask()",
       "SqlKillQuery()",
+      "SqlKillLock()",
       "SqlSavepoint()",
       "SqlRollbackToSavepoint()",
       "SqlCommitTransaction()",

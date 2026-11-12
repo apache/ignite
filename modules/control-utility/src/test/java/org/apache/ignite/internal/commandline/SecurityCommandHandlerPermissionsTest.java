@@ -28,15 +28,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ServicesTest;
@@ -45,13 +49,16 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -64,9 +71,11 @@ import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -244,6 +253,53 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         assertTrue(waitForCondition(() -> viewMgr.view(JOBS_VIEW).size() == 0, getTestTimeout()));
 
         assertEquals(1, TestJob.CANCELLED_JOB_CNT.get());
+    }
+
+    /** */
+    @Test
+    public void testLockCancel() throws Exception {
+        IgniteEx ignite = startGrid(
+            0,
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN + 0, cachePermission(CACHE_READ)),
+            userData(TEST_LOGIN + 1, systemPermissions(ADMIN_OPS))
+        );
+
+        IgniteCache<Integer, Integer> cache = ignite.createCache(
+            new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
+                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        Lock lock0 = cache.lock(0);
+        Lock lock1 = cache.lock(1);
+
+        lock0.lock();
+        lock1.lock();
+
+        try {
+            SystemView<CacheExplicitLockView> locks = ignite.context().systemView().view(CACHE_EXPLICIT_LOCKS_VIEW);
+
+            List<CacheExplicitLockView> locksList = U.arrayList(locks.iterator(), 2);
+            assertEquals(2, locksList.size());
+
+            Collection<String> cmd0 = asList("--kill", "lock", locksList.get(0).xid().toString());
+            Collection<String> cmd1 = asList("--kill", "lock", locksList.get(1).xid().toString());
+
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmd0, TEST_NO_PERMISSIONS_LOGIN));
+            assertEquals(EXIT_CODE_OK, executeOnBehalf(cmd0, TEST_LOGIN + 0));
+            assertEquals(EXIT_CODE_OK, executeOnBehalf(cmd1, TEST_LOGIN + 1));
+
+            assertEquals(0, locks.size());
+
+            lock0 = null;
+            lock1 = null;
+        }
+        finally {
+            if (lock0 != null)
+                lock0.unlock();
+
+            if (lock1 != null)
+                lock1.unlock();
+        }
     }
 
     /** */

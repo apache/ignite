@@ -33,6 +33,7 @@ import org.apache.ignite.internal.sql.command.SqlDropViewCommand;
 import org.apache.ignite.internal.sql.command.SqlKillClientCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillLockCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
@@ -56,6 +57,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.HELP;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.KILL;
+import static org.apache.ignite.internal.sql.SqlKeyword.LOCK;
 import static org.apache.ignite.internal.sql.SqlKeyword.OR;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
 import static org.apache.ignite.internal.sql.SqlKeyword.QUERY;
@@ -340,6 +342,9 @@ public class SqlParser {
 
                 case CLIENT:
                     return new SqlKillClientCommand().parse(lex);
+
+                case LOCK:
+                    return new SqlKillLockCommand().parse(lex);
             }
         }
 
