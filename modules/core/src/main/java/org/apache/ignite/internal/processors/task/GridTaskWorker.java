@@ -76,6 +76,9 @@ import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -158,6 +161,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
     /** */
     private final GridTaskSessionImpl ses;
+
+    /** */
+    private final OperationContextSnapshot opCtxSnp;
 
     /** */
     private final ComputeTaskInternalFuture<R> fut;
@@ -319,6 +325,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         this.evtLsnr = evtLsnr;
         this.opts = opts;
         this.subjId = subjId;
+
+        opCtxSnp = OperationContext.createSnapshot();
 
         log = U.logger(ctx, logRef, this);
 
@@ -714,6 +722,13 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param msg Job execution response.
      */
     void onResponse(GridJobExecuteResponse msg) {
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            onResponse0(msg);
+        }
+    }
+
+    /** */
+    private void onResponse0(GridJobExecuteResponse msg) {
         assert msg != null;
 
         if (fut.isDone()) {

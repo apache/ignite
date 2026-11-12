@@ -1,0 +1,23 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 5, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "committedVers"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "rolledbackVers"},
+    {"order": 7, "type": "org.apache.ignite.lang.IgniteUuid", "name": "futId"},
+    {"order": 8, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"order": 9, "type": "java.util.List<org.apache.ignite.internal.processors.cache.CacheObject>", "name": "vals"},
+    {"order": 10, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "pending"},
+    {"order": 11, "type": "int", "name": "miniId"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]", "name": "dhtVers"},
+    {"order": 13, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]", "name": "mappedVers"},
+    {"order": 14, "type": "boolean[]", "name": "filterRes"},
+    {"order": 15, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "clientRemapVer"},
+    {"order": 16, "type": "boolean", "name": "compatibleRemapVer"},
+    {"order": 17, "type": "boolean", "name": "lockAcquired"}
+  ]
+}

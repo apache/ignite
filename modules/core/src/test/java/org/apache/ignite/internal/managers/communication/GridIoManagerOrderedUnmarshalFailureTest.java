@@ -35,7 +35,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.extensions.communication.MessageMarshaller;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -165,7 +165,7 @@ public class GridIoManagerOrderedUnmarshalFailureTest extends GridCommonAbstract
     }
 
     /** Message with a sequence number and a flag making its payload unmarshal fail on the receiver. */
-    private static class FailingUnmarshalMessage implements Message {
+    private static class FailingUnmarshalMessage extends AbstractMessage {
         /** */
         int seq;
 

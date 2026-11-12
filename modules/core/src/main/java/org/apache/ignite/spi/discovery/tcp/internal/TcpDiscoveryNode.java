@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
@@ -65,6 +66,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     Comparable<TcpDiscoveryNode>, Externalizable, Message {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    @Nullable private transient List<RawField> rawFields;
 
     /** Node ID. */
     @Order(0)
@@ -573,6 +577,16 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         node.clientRouterNodeId = clientRouterNodeId;
 
         return node;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public List<RawField> rawFields() {
+        return rawFields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void rawFields(@Nullable List<RawField> rawFields) {
+        this.rawFields = rawFields;
     }
 
     /** {@inheritDoc} */

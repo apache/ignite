@@ -54,7 +54,6 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -82,9 +81,6 @@ import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
  * Binary context.
  */
 public class BinaryContext {
-    /** System loader. */
-    private static final ClassLoader sysLdr = CommonUtils.gridClassLoader();
-
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(false), new BinaryBasicIdMapper(true), false);
@@ -130,10 +126,10 @@ public class BinaryContext {
     private final @Nullable ClassLoader clsLdr;
 
     /** Actual marshaller. */
-    private BinaryMarshaller marsh;
+    private final BinaryMarshaller marsh;
 
     /** */
-    private MarshallerContext marshCtx;
+    private final MarshallerContext marshCtx;
 
     /** */
     private final @Nullable BinarySerializer dfltSerializer;
@@ -260,8 +256,6 @@ public class BinaryContext {
 
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
-        registerPredefinedType(BinaryArray.class, 0);
-        registerPredefinedType(BinaryEnumArray.class, 0);
 
         BinaryUtils.binariesFactory.predefinedTypes().forEach(this::registerPredefinedType);
 
@@ -279,14 +273,17 @@ public class BinaryContext {
 
         if (marsh != null) {
             this.marsh = marsh;
-
-            marshCtx = marsh.getContext();
+            this.marshCtx = marsh.getContext();
 
             assert marshCtx != null;
 
             optmMarsh.setContext(marshCtx);
 
             configure(nameMapper, idMapper, dfltSerializer, typeCfgs, affFlds);
+        }
+        else {
+            this.marsh = null;
+            this.marshCtx = null;
         }
     }
 
@@ -335,6 +332,20 @@ public class BinaryContext {
     }
 
     /**
+     * @param clsName Class name.
+     * @return Class loaded by the configured class loader or {@code null} if it is not available to it.
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getClassLoader()
+     */
+    @Nullable private Class<?> loadClassOrNull(String clsName) {
+        try {
+            return CommonUtils.resolveClassLoader(null, clsLdr).loadClass(clsName);
+        }
+        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+            return null;
+        }
+    }
+
+    /**
      * @param globalNameMapper Name mapper.
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
@@ -373,7 +384,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         if (affField == null) {
-                            Class<?> cls = ClassLoaderUtils.classForName(clsName0);
+                            Class<?> cls = loadClassOrNull(clsName0);
 
                             if (cls != null)
                                 affField = affFldNameProvider.apply(cls);
@@ -387,7 +398,7 @@ public class BinaryContext {
                     String affField = affFields.remove(clsName);
 
                     if (affField == null) {
-                        Class<?> cls = ClassLoaderUtils.classForName(clsName);
+                        Class<?> cls = loadClassOrNull(clsName);
 
                         if (cls != null)
                             affField = affFldNameProvider.apply(cls);
@@ -615,7 +626,7 @@ public class BinaryContext {
     public void registerBinarilizableSystemClass(Class<?> cls) {
         String clsName = cls.getName();
 
-        descByCls.put(cls, systemClassDescriptor(cls, clsName, new BinaryReflectiveSerializer()));
+        descByCls.put(cls, systemClassDescriptor(cls, clsName, new BinaryReflectiveSerializer()).makeRegistered());
     }
 
     /**
@@ -706,7 +717,7 @@ public class BinaryContext {
     /**
      * @param userType User type or not.
      * @param typeId Type ID.
-     * @param ldr Class loader.
+     * @param ldr Class loader or {@code null} to use {@link CommonUtils#gridClassLoader()}.
      * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
      * @return Class descriptor.
      */
@@ -723,9 +734,6 @@ public class BinaryContext {
 
         if (desc != null)
             return desc;
-
-        if (ldr == null)
-            ldr = sysLdr;
 
         Class cls;
 
@@ -752,14 +760,20 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
+            if (userType
+                && ldr != null
+                && !ldr.equals(CommonUtils.gridClassLoader())
+                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, registerMeta)) != null)
+            if (userType
+                && ldr != null
+                && !ldr.equals(CommonUtils.gridClassLoader())
+                && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
@@ -1115,14 +1129,7 @@ public class BinaryContext {
         @Nullable Map<String, Integer> enumMap) throws BinaryObjectException {
         assert mapper != null;
 
-        Class<?> cls = null;
-
-        try {
-            cls = CommonUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
-        }
-        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-            // No-op.
-        }
+        Class<?> cls = loadClassOrNull(clsName);
 
         String typeName = mapper.typeName(clsName);
 
@@ -1510,34 +1517,6 @@ public class BinaryContext {
     /** */
     Collection<BinaryClassDescriptor> predefinedTypes() {
         return Collections.unmodifiableCollection(predefinedTypes.values());
-    }
-
-    /** Creates instance of {@link BinaryArray}. */
-    public BinaryObject createBinaryArray(Class<?> compCls, Object[] pArr) {
-        boolean isBinaryArr = BinaryObject.class.isAssignableFrom(compCls);
-
-        String compClsName = isBinaryArr ? Object.class.getName() : compCls.getName();
-
-        // In case of interface or multidimensional array rely on class name.
-        // Interfaces and array not registered as binary types.
-        BinaryClassDescriptor desc = descriptorForClass(compCls);
-
-        if (compCls.isEnum() || compCls == BinaryUtils.binariesFactory.binaryEnumClass()) {
-            return new BinaryEnumArray(
-                this,
-                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
-                compClsName,
-                pArr
-            );
-        }
-        else {
-            return new BinaryArray(
-                this,
-                desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,
-                compClsName,
-                pArr
-            );
-        }
     }
 
     /**

@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "routineId"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.continuous.StartRequestData", "name": "startReqData"},
+    {"order": 3, "type": "java.util.Map<java.util.UUID,org.apache.ignite.internal.util.ErrorMessage>", "name": "errs"},
+    {"order": 4, "type": "java.util.Map<java.lang.Integer,java.lang.Long>", "name": "updateCntrs"},
+    {"order": 5, "type": "java.util.Map<java.util.UUID,java.util.Map<java.lang.Integer,java.lang.Long>>", "name": "updateCntrsPerNode"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage$Mode", "name": "mode"}
+  ]
+}

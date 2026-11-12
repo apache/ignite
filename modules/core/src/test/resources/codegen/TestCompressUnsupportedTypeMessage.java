@@ -18,9 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.util.List;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class TestCompressUnsupportedTypeMessage implements Message {
+public class TestCompressUnsupportedTypeMessage extends AbstractMessage {
     @Order(0)
     @Compress
     List<String> message;

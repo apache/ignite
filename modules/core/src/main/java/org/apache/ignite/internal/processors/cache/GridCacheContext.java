@@ -123,7 +123,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCIN
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -145,9 +144,6 @@ public class GridCacheContext<K, V> implements Externalizable {
             return new IgniteBiTuple<>();
         }
     };
-
-    /** Empty cache version array. */
-    private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
 
     /** @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING */
     public static final boolean DFLT_READ_LOAD_BALANCING = true;
@@ -223,9 +219,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Cache ID. */
     private int cacheId;
-
-    /** Cache ID. */
-    private Integer cacheIdBoxed;
 
     /** Cache type. */
     private CacheType cacheType;
@@ -405,8 +398,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         cacheId = CU.cacheId(cacheName);
 
-        cacheIdBoxed = cacheId;
-
         plc = cacheType.ioPolicy();
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
@@ -509,13 +500,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code true} If this is a replicated cache and we are on a data node.
-     */
-    public boolean isReplicatedAffinityNode() {
-        return isReplicated() && affinityNode();
-    }
-
-    /**
      * @throws IgniteCheckedException If failed to wait.
      */
     public void awaitStarted() throws IgniteCheckedException {
@@ -602,13 +586,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @return Cache ID.
-     */
-    public Integer cacheIdBoxed() {
-        return cacheIdBoxed;
     }
 
     /**
@@ -1057,15 +1034,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} If store writes should be performed from dht transactions. This happens if both
-     *      {@code writeBehindEnabled} and {@code writeBehindPreferPrimary} cache configuration properties
-     *      are set to {@code true} or the store is local.
-     */
-    public boolean writeToStoreFromDht() {
-        return store().isLocal() || config().isWriteBehindEnabled();
-    }
-
-    /**
      * @return Cache transaction manager.
      */
     public IgniteTxManager tm() {
@@ -1228,13 +1196,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheEntryPredicate equalsVal(V val) {
         return new CacheEntryPredicateAdapter(toCacheObject(val));
-    }
-
-    /**
-     * @return Empty cache version array.
-     */
-    public GridCacheVersion[] emptyVersion() {
-        return EMPTY_VERSION;
     }
 
     /**
@@ -1452,31 +1413,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if invalidation is enabled.
-     */
-    public boolean isInvalidate() {
-        return config().isInvalidate();
-    }
-
-    /**
      * @return {@code True} if synchronous commit is enabled.
      */
     public boolean syncCommit() {
         return config().getWriteSynchronizationMode() == FULL_SYNC;
-    }
-
-    /**
-     * @return {@code True} if synchronous rollback is enabled.
-     */
-    public boolean syncRollback() {
-        return config().getWriteSynchronizationMode() == FULL_SYNC;
-    }
-
-    /**
-     * @return {@code True} if only primary node should be updated synchronously.
-     */
-    public boolean syncPrimary() {
-        return config().getWriteSynchronizationMode() == PRIMARY_SYNC;
     }
 
     /**
@@ -1628,6 +1568,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         else
             cache().metrics0().incrementResolverMergedCount();
 
+        if (ctx.isResolveFailed())
+            cache().metrics0().incrementResolverFailedCount();
+
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
 
@@ -1690,14 +1633,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheOperationContext opCtx = operationContextPerCall();
 
         return opCtx != null && opCtx.isKeepBinary();
-    }
-
-    /**
-     * @return {@code True} if the value for the cache object has to be copied because
-     * of {@link CacheConfiguration#isCopyOnRead()}.
-     */
-    public boolean needValueCopy() {
-        return affNode && config().isCopyOnRead();
     }
 
     /**

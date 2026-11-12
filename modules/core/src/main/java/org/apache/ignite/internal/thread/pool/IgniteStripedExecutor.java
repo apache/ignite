@@ -33,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -67,6 +68,13 @@ import static org.apache.ignite.internal.thread.context.function.OperationContex
 public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecutorService {
     /** @see IgniteSystemProperties#IGNITE_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD */
     public static final int DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD = 4;
+
+    /** Starvation events count metric name. */
+    static final String STARVATION_EVENTS_CNT = "StarvationEventsCount";
+
+    /** Starvation events count. */
+    @GridToStringExclude
+    private final AtomicLong starvationCnt = new AtomicLong();
 
     /** Stripes. */
     private final Stripe[] stripes;
@@ -161,12 +169,26 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
     }
 
     /**
-     * Checks starvation in striped pool. Maybe too verbose
-     * but this is needed to faster debug possible issues.
+     * Checks for possible starvation in the striped pool.
      *
      * @return Flag representing presence of possible starvation in striped pool.
      */
-    public boolean detectStarvation() {
+    boolean starvationDetected() {
+        return checkStarvation(false);
+    }
+
+    /** Checks for possible starvation in the striped pool and logs diagnostic details for every starved stripe. */
+    public void detectStarvation() {
+        checkStarvation(true);
+    }
+
+    /**
+     * Single pass over stripes: counts starvation episodes and optionally logs diagnostic details.
+     *
+     * @param print {@code true} to log a warning for every starved stripe.
+     * @return {@code true} if any stripe is starved.
+     */
+    private boolean checkStarvation(boolean print) {
         boolean starvationDetected = false;
 
         for (Stripe stripe : stripes) {
@@ -176,25 +198,30 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
 
             if (active && lastStartedTs + threshold < U.currentTimeMillis()) {
                 starvationDetected = true;
-                boolean deadlockPresent = U.deadlockPresent();
 
-                GridStringBuilder sb = new GridStringBuilder();
+                long prev = stripe.countedStartTs.get();
 
-                sb.a(">>> Possible starvation in striped pool.").a(U.nl())
-                    .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
-                    .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
-                    .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
-                    .a("    Completed: ").a(stripe.completedCnt).a(U.nl());
+                if (lastStartedTs > prev && stripe.countedStartTs.compareAndSet(prev, lastStartedTs))
+                    starvationCnt.incrementAndGet();
 
-                U.printStackTrace(
-                    stripe.thread.getId(),
-                    sb);
+                if (print) {
+                    boolean deadlockPresent = U.deadlockPresent();
 
-                String msg = sb.toString();
+                    GridStringBuilder sb = new GridStringBuilder();
 
-                U.warn(log, msg);
+                    sb.a(">>> Possible starvation in striped pool.").a(U.nl())
+                        .a("    Thread name: ").a(stripe.thread.getName()).a(U.nl())
+                        .a("    Queue: ").a(stripe.queueToString()).a(U.nl())
+                        .a("    Deadlock: ").a(deadlockPresent).a(U.nl())
+                        .a("    Completed: ").a(stripe.completedCnt).a(U.nl());
+
+                    U.printStackTrace(stripe.thread.getId(), sb);
+
+                    U.warn(log, sb.toString());
+                }
             }
         }
+
         return starvationDetected;
     }
 
@@ -495,7 +522,7 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
         mreg.register("Terminated", this::isTerminated, IS_TERMINATED_DESC);
 
         mreg.register("DetectStarvation",
-            this::detectStarvation,
+            this::starvationDetected,
             "True if possible starvation in striped pool is detected.");
 
         mreg.register("TotalQueueSize",
@@ -510,6 +537,10 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
             this::stripesCompletedTasks,
             long[].class,
             "Number of completed tasks per stripe.");
+
+        mreg.register(STARVATION_EVENTS_CNT,
+            starvationCnt::get,
+            "Number of possible starvation events detected in striped pool since node start.");
 
         mreg.register("ActiveCount",
             this::activeStripesCount,
@@ -561,6 +592,9 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
 
         /** */
         private volatile long lastStartedTs;
+
+        /** Start time of the last task counted as possible starvation. */
+        private final AtomicLong countedStartTs = new AtomicLong();
 
         /** Thread executing the loop. */
         protected Thread thread;
@@ -629,9 +663,9 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
                     }
 
                     if (cmd != null) {
-                        active = true;
-
                         lastStartedTs = U.currentTimeMillis();
+
+                        active = true;
 
                         updateHeartbeat();
 

@@ -20,8 +20,10 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -30,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Communication message reader.
@@ -284,6 +287,23 @@ public interface MessageReader {
 
     /** @return Grid cache version. */
     GridCacheVersion readGridCacheVersion();
+
+    /**
+     * Reads the raw-field suffix.
+     *
+     * @return Raw fields, {@code null} if the suffix is not fully read yet.
+     */
+    @Nullable public List<RawField> readRawFields();
+
+    /**
+     * Deserializes a raw field.
+     *
+     * @param f Raw field.
+     * @param valueReader Single typed read of the field value.
+     * @param <T> Field type.
+     * @return The field value.
+     */
+    public <T> T deserializeRawField(RawField f, Function<MessageReader, T> valueReader);
 
     /**
      * Tells whether last invocation of any of {@code readXXX(...)}

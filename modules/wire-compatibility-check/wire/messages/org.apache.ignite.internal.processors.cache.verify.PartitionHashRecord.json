@@ -1,0 +1,21 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord",
+  "annotations": ["@org.apache.ignite.internal.JdkMarshalled"],
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.management.cache.PartitionKey", "name": "partKey"},
+    {"order": 1, "type": "boolean", "name": "isPrimary"},
+    {"order": 2, "type": "byte[]", "name": "consistentIdBytes"},
+    {"order": 3, "type": "int", "name": "partHash"},
+    {"order": 4, "type": "int", "name": "partVerHash"},
+    {"order": 5, "type": "byte[]", "name": "updateCntrBytes"},
+    {"order": 6, "type": "long", "name": "size"},
+    {"order": 7, "type": "org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord$PartitionState", "name": "partitionState"},
+    {"order": 8, "type": "int", "name": "cfKeys"},
+    {"order": 9, "type": "int", "name": "noCfKeys"},
+    {"order": 10, "type": "int", "name": "binKeys"},
+    {"order": 11, "type": "int", "name": "regKeys"},
+    {"order": 12, "type": "boolean", "name": "hasExpiringEntries"},
+    {"type": "java.lang.Object", "name": "consistentId", "annotations": ["@org.apache.ignite.internal.Marshalled(\"consistentIdBytes\")"]},
+    {"type": "java.lang.Object", "name": "updateCntr", "annotations": ["@org.apache.ignite.internal.Marshalled(\"updateCntrBytes\")"]}
+  ]
+}

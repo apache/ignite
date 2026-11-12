@@ -30,9 +30,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Represents abstract implementation of SSL Context Factory that caches the result of the first successful
- * attempt to create an {@link SSLContext} and always returns it as a result of further invocations of the
- * {@link AbstractSslContextFactory#create()}} method.
+ * Base class for SSL context factories that cache their {@link SSLContext}.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** */
@@ -178,22 +176,33 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
+    /**
+     * Loads a new SSL context and caches it for the base implementation of {@link #create()}.
+     * If loading fails, the previously cached context is kept.
+     *
+     * @throws IgniteException If the context cannot be initialized.
+     */
+    public final synchronized void init() {
+        try {
+            sslCtx.set(createSslContext());
+        }
+        catch (SSLException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
+        if (ctx != null)
+            return ctx;
 
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
-            }
+        synchronized (this) {
+            if (sslCtx.get() == null)
+                init();
+
+            return sslCtx.get();
         }
-
-        return ctx;
     }
 }

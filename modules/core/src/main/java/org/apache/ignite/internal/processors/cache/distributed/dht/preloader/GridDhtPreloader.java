@@ -25,11 +25,9 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -136,13 +134,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         finally {
             resume();
         }
-    }
-
-    /**
-     * @return Node stop exception.
-     */
-    private IgniteCheckedException stopError() {
-        return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
     }
 
     /**

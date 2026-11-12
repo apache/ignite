@@ -1,0 +1,19 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheInfo",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "seqName"},
+    {"order": 1, "type": "long", "name": "seqVal"},
+    {"order": 2, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "java.lang.String", "name": "grpName"},
+    {"order": 5, "type": "int", "name": "grpId"},
+    {"order": 6, "type": "int", "name": "cachesCnt"},
+    {"order": 7, "type": "int", "name": "partitions"},
+    {"order": 8, "type": "int", "name": "mapped"},
+    {"order": 9, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 10, "type": "org.apache.ignite.cache.CacheMode", "name": "mode"},
+    {"order": 11, "type": "org.apache.ignite.cache.CacheAtomicityMode", "name": "atomicityMode"},
+    {"order": 12, "type": "int", "name": "backupsCnt"},
+    {"order": 13, "type": "java.lang.String", "name": "affinityClsName"}
+  ]
+}

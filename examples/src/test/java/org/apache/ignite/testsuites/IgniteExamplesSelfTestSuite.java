@@ -47,8 +47,12 @@ import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite.
@@ -97,4 +101,10 @@ import org.junit.runners.Suite;
     OpenCensusMetricsExporterExampleSelfTest.class
 })
 public class IgniteExamplesSelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
+            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
+    }
 }

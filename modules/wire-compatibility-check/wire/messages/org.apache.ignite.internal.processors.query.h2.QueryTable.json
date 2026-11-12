@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.QueryTable",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "schema"},
+    {"order": 1, "type": "java.lang.String", "name": "tbl"}
+  ]
+}

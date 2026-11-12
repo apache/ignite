@@ -608,6 +608,11 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean storeCacheId() {
+            return cacheId() != 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public long link() {
             return link;
         }

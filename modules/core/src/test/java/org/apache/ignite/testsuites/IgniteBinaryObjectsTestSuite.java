@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBi
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
+import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryTxPutAfterInvokeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicOnheapSelfTest;
@@ -186,7 +187,9 @@ import org.junit.runners.Suite;
     RawBinaryObjectExtractorTest.class,
     CrossObjectReferenceSerializationTest.class,
 
-    ThreadLocalAllocatorChunkShrinkTest.class
+    ThreadLocalAllocatorChunkShrinkTest.class,
+
+    IgniteBinaryTxPutAfterInvokeSelfTest.class,
 })
 public class IgniteBinaryObjectsTestSuite {
 }

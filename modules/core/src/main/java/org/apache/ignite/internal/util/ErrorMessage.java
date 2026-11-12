@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 // TODO IGNITE-28912: move to a common package.
 @SuppressWarnings({"NullableProblems", "unused"})
 @JdkMarshalled
-public class ErrorMessage implements MarshallableMessage {
+public class ErrorMessage extends AbstractMessage implements MarshallableMessage {
     /** Error bytes. */
     @Order(0)
     @GridToStringExclude

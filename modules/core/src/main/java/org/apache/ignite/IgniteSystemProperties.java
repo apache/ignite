@@ -274,7 +274,7 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * This property changes output format of {@link GridRestCommand#CACHE_GET_ALL} from {k: v, ...}
      * to [{"key": k, "value": v}, ...] to allow non-string keys output.
      *
-     * @deprecated Should be made default in Apache Ignite 3.0.
+     * @deprecated Should be default in future releases.
      */
     @Deprecated
     @SystemProperty("If true output format of GridRestCommand.CACHE_GET_ALL will change from " +
@@ -1212,6 +1212,7 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      *
      * @deprecated Use {@link DataStorageConfiguration#setMinWalArchiveSize}.
      */
+    @Deprecated
     @SystemProperty(value = "Property for setup percentage of WAL archive size to calculate threshold since which " +
         "removing of old archive should be started", type = Double.class)
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =

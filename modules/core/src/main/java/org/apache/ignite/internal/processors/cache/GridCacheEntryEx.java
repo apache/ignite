@@ -115,13 +115,6 @@ public interface GridCacheEntryEx {
     public boolean hasValue();
 
     /**
-     * @param val New value.
-     * @param ttl Time to live.
-     * @return Old value.
-     */
-    public CacheObject rawPut(CacheObject val, long ttl);
-
-    /**
      * Wraps this map entry into cache entry.
      *
      * @return Wrapped entry.
@@ -497,7 +490,6 @@ public interface GridCacheEntryEx {
      * @param tx Cache transaction.
      * @param timeout Timeout for lock acquisition.
      * @param serOrder Version for serializable transactions ordering.
-     * @param serReadVer Optional read entry version for optimistic serializable transaction.
      * @param read Read lock flag.
      * @return {@code True} if lock was acquired, {@code false} otherwise.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
@@ -506,7 +498,6 @@ public interface GridCacheEntryEx {
     public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        @Nullable GridCacheVersion serReadVer,
         boolean read
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
 
@@ -691,15 +682,6 @@ public interface GridCacheEntryEx {
     public boolean hasLockCandidate(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
-     * Checks if the candidate is either owner or pending.
-     *
-     * @param threadId ThreadId.
-     * @return {@code True} if the candidate is either owner or pending.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    public boolean hasLockCandidate(long threadId) throws GridCacheEntryRemovedException;
-
-    /**
      * @param exclude Exclude versions.
      * @return {@code True} if lock is owned by any thread or node.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -752,25 +734,10 @@ public interface GridCacheEntryEx {
     public boolean lockedBy(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
-     * Will not fail for removed entries.
-     *
-     * @param threadId Thread ID to check.
-     * @return {@code True} if lock is owned by given thread.
-     */
-    public boolean lockedByThreadUnsafe(long threadId);
-
-    /**
      * @param ver Version to check for ownership.
      * @return {@code True} if owner has the specified version.
      */
     public boolean lockedByUnsafe(GridCacheVersion ver);
-
-    /**
-     *
-     * @param lockVer Lock ID to check.
-     * @return {@code True} if lock is owned by candidate.
-     */
-    public boolean lockedLocallyUnsafe(GridCacheVersion lockVer);
 
     /**
      * @param ver Lock version to check.
@@ -779,29 +746,19 @@ public interface GridCacheEntryEx {
     public boolean hasLockCandidateUnsafe(GridCacheVersion ver);
 
     /**
-     * @param threadId Thread ID.
-     * @return Local candidate.
-     * @throws GridCacheEntryRemovedException If entry was removed.
-     */
-    @Nullable public GridCacheMvccCandidate localCandidate(long threadId) throws GridCacheEntryRemovedException;
-
-    /**
      * Gets all local candidates.
      *
-     * @param exclude Versions to exclude from check.
      * @return All local candidates.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public Collection<GridCacheMvccCandidate> localCandidates(@Nullable GridCacheVersion... exclude)
-        throws GridCacheEntryRemovedException;
+    public Collection<GridCacheMvccCandidate> localCandidates() throws GridCacheEntryRemovedException;
 
     /**
      * Gets all remote versions.
      *
-     * @param exclude Exclude version.
-     * @return All remote versions minus the excluded ones, if any.
+     * @return All remote versions.
      */
-    public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude);
+    public Collection<GridCacheMvccCandidate> remoteMvccSnapshot();
 
     /**
      * Gets lock candidate for given lock ID.

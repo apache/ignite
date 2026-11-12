@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,6 +61,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageType;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -304,6 +306,12 @@ public class DirectByteBufferStream {
 
     /** */
     private Map<Object, Object> map;
+
+    /** */
+    private int rawFieldTag;
+
+    /** */
+    private List<RawField> rawFieldsIn;
 
     /** */
     private long prim;
@@ -928,6 +936,90 @@ public class DirectByteBufferStream {
             writeLongArray(val.array(), val.size());
         else
             writeInt(-1);
+    }
+
+    /**
+     * @param rawFields Raw fields.
+     */
+    public void writeRawFields(Collection<RawField> rawFields) {
+        if (it == null) {
+            writeInt(rawFields.size());
+
+            if (!lastFinished)
+                return;
+
+            it = rawFields.iterator();
+        }
+
+        while (it.hasNext() || cur != NULL) {
+            if (cur == NULL)
+                cur = it.next();
+
+            RawField f = (RawField)cur;
+
+            if (!keyDone) {
+                writeInt(f.tag());
+
+                if (!lastFinished)
+                    return;
+
+                keyDone = true;
+            }
+
+            writeByteArray(f.bytes());
+
+            if (!lastFinished)
+                return;
+
+            keyDone = false;
+            cur = NULL;
+        }
+
+        it = null;
+    }
+
+    /**
+     * @return Raw fields, or {@code null} if the suffix is not fully read yet.
+     */
+    @Nullable public List<RawField> readRawFields() {
+        if (readSize == -1) {
+            int size = readInt();
+
+            if (!lastFinished)
+                return null;
+
+            readSize = size;
+            rawFieldsIn = size == 0 ? Collections.emptyList() : new ArrayList<>(size);
+        }
+
+        for (int i = readItems; i < readSize; i++) {
+            if (!keyDone) {
+                rawFieldTag = readInt();
+
+                if (!lastFinished)
+                    return null;
+
+                keyDone = true;
+            }
+
+            byte[] bytes = readByteArray();
+
+            if (!lastFinished)
+                return null;
+
+            rawFieldsIn.add(new RawField(rawFieldTag, bytes));
+
+            keyDone = false;
+            readItems++;
+        }
+
+        List<RawField> res = rawFieldsIn;
+
+        rawFieldsIn = null;
+        readSize = -1;
+        readItems = 0;
+
+        return res;
     }
 
     /**

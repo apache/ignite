@@ -554,7 +554,7 @@ public class FilePerformanceStatisticsWriter {
 
                     try {
                         synchronized (this) {
-                            if (writtenToFile / flushSize == writtenToBuf.get() / flushSize)
+                            if (!isCancelled() && writtenToFile / flushSize == writtenToBuf.get() / flushSize)
                                 wait();
                         }
                     }
@@ -580,6 +580,13 @@ public class FilePerformanceStatisticsWriter {
             }
             catch (IOException e) {
                 log.error("Unable to write to the performance statistics file.", e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onCancel(boolean firstCancelRequest) {
+            synchronized (this) {
+                notifyAll();
             }
         }
 

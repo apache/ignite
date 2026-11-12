@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageCasAckMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 2, "type": "boolean", "name": "updated"}
+  ]
+}

@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -171,7 +171,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     private CheckpointListener lsnr;
 
     /** Marshaller. */
-    private Marshaller marsh;
+    private JdkMarshaller marsh;
 
     /**
      * Initializes default directory paths.

@@ -21,12 +21,13 @@ import java.util.UUID;
 import org.apache.ignite.internal.DeferredUnmarshalMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.ErrorMessage;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class QueryStartResponse implements DeferredUnmarshalMessage {
+public class QueryStartResponse extends AbstractMessage implements DeferredUnmarshalMessage {
     /** */
     @Order(0)
     UUID qryId;

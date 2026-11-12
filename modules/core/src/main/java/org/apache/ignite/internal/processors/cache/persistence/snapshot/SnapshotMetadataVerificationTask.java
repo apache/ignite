@@ -35,7 +35,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name. */
+/**
+ * Snapshot task to verify snapshot metadata on the baseline nodes for given snapshot name.
+ * TODO : Revise in https://issues.apache.org/jira/browse/IGNITE-29062
+ */
 public class SnapshotMetadataVerificationTask implements Supplier<List<SnapshotMetadata>> {
     /** */
     private final IgniteEx ignite;

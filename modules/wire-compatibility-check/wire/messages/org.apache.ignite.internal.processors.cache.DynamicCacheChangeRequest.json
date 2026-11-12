@@ -1,0 +1,31 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "deploymentId"},
+    {"order": 2, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 3, "type": "byte[]", "name": "cfgBytes"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.CacheType", "name": "cacheType"},
+    {"order": 5, "type": "java.util.UUID", "name": "initiatingNodeId"},
+    {"order": 6, "type": "byte[]", "name": "nearCfgBytes"},
+    {"order": 7, "type": "boolean", "name": "clientStartOnly"},
+    {"order": 8, "type": "boolean", "name": "stop"},
+    {"order": 9, "type": "boolean", "name": "restart"},
+    {"order": 10, "type": "boolean", "name": "finalizePartitionCounters"},
+    {"order": 11, "type": "org.apache.ignite.lang.IgniteUuid", "name": "restartId"},
+    {"order": 12, "type": "boolean", "name": "disabledAfterStart"},
+    {"order": 13, "type": "boolean", "name": "destroy"},
+    {"order": 14, "type": "boolean", "name": "sql"},
+    {"order": 15, "type": "boolean", "name": "failIfExists"},
+    {"order": 16, "type": "boolean", "name": "template"},
+    {"order": 17, "type": "boolean", "name": "resetLostPartitions"},
+    {"order": 18, "type": "byte[]", "name": "schemaBytes"},
+    {"order": 19, "type": "byte[]", "name": "encKey"},
+    {"order": 20, "type": "int", "name": "encKeyId"},
+    {"order": 21, "type": "byte[]", "name": "masterKeyDigest"},
+    {"order": 22, "type": "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment", "name": "cacheCfgEnrichment"},
+    {"type": "org.apache.ignite.configuration.CacheConfiguration<?,?>", "name": "startCfg", "annotations": ["@org.apache.ignite.internal.Marshalled(\"cfgBytes\")"]},
+    {"type": "org.apache.ignite.configuration.NearCacheConfiguration<?,?>", "name": "nearCacheCfg", "annotations": ["@org.apache.ignite.internal.Marshalled(\"nearCfgBytes\")"]},
+    {"type": "org.apache.ignite.internal.processors.query.QuerySchema", "name": "schema", "annotations": ["@org.apache.ignite.internal.Marshalled(\"schemaBytes\")"]}
+  ]
+}

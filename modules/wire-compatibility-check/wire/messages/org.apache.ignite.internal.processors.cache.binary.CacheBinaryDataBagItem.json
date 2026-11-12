@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.binary.CacheBinaryDataBagItem",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.Integer,org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo>", "name": "meta"}
+  ]
+}

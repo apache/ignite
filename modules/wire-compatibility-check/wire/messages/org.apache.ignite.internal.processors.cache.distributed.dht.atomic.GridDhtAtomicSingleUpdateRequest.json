@@ -1,0 +1,20 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "long", "name": "futId"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "writeVer"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 7, "type": "int", "name": "taskNameHash"},
+    {"order": 8, "type": "java.util.UUID", "name": "nearNodeId"},
+    {"order": 9, "type": "long", "name": "nearFutId"},
+    {"order": 10, "type": "byte", "name": "flags"},
+    {"order": 11, "type": "org.apache.ignite.internal.processors.cache.KeyCacheObject", "name": "key"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "val"},
+    {"order": 13, "type": "org.apache.ignite.internal.processors.cache.CacheObject", "name": "prevVal"},
+    {"order": 14, "type": "long", "name": "updateCntr"}
+  ]
+}

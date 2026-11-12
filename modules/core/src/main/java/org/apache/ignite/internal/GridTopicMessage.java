@@ -21,10 +21,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /** Message wrapper for grid topic. */
-public class GridTopicMessage implements MarshallableMessage {
+public class GridTopicMessage extends AbstractMessage implements MarshallableMessage {
     /** Topic. */
     private Object topic;
 

@@ -264,6 +264,11 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean storeCacheId() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         SB sb = new SB("Row@");
 

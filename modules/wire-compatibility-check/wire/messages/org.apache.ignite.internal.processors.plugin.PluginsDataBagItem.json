@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.plugin.PluginsDataBagItem",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "dataBytes"},
+    {"type": "java.util.Map<java.lang.String,java.io.Serializable>", "name": "data", "annotations": ["@org.apache.ignite.internal.Marshalled(\"dataBytes\")"]}
+  ]
+}

@@ -107,7 +107,7 @@ public class BinaryWriterExImpl implements BinaryWriterEx {
      * @param failIfUnregistered Flag to fail while writing object of unregistered type.
      * @param typeId Type id.
      */
-    public BinaryWriterExImpl(
+    BinaryWriterExImpl(
         BinaryContext ctx,
         BinaryOutputStream out,
         @Nullable BinaryWriterSchemaHolder schema,

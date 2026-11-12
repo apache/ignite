@@ -65,4 +65,20 @@ public class OtherTypeTest {
                 calciteFactory.createSqlType(SqlTypeName.OTHER), nullable));
         }
     }
+
+    /** */
+    @Test
+    public void testJavaTypeConversion() {
+        IgniteTypeFactory factory = new IgniteTypeFactory();
+
+        for (boolean nullable : new boolean[] {false, true}) {
+            RelDataType javaType = factory.createTypeWithNullability(factory.createJavaType(Class.class), nullable);
+            RelDataType sqlType = factory.toSql(javaType);
+
+            assertEquals(OtherType.class, sqlType.getClass());
+            assertEquals(SqlTypeName.ANY, sqlType.getSqlTypeName());
+            assertEquals(nullable, sqlType.isNullable());
+            assertSame(factory.createCustomType(Object.class, nullable), sqlType);
+        }
+    }
 }

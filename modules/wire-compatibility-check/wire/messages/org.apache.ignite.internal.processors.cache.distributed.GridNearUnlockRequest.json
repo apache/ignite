@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 5, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "committedVers"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "rolledbackVers"},
+    {"order": 7, "type": "java.util.List<org.apache.ignite.internal.processors.cache.KeyCacheObject>", "name": "keys"},
+    {"order": 8, "type": "boolean", "name": "forSavepoint"}
+  ]
+}

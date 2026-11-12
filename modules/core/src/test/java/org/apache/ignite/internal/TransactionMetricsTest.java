@@ -17,18 +17,23 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.Lock;
+import java.util.stream.LongStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -37,9 +42,16 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.metric.MetricsConfigurationTest.metricsBean;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME;
+import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  *
@@ -216,6 +228,95 @@ public class TransactionMetricsTest extends GridCommonAbstractTest {
         assertEquals(TRANSACTIONS, match);
 
         commitAllower.countDown();
+    }
+
+    /** */
+    @Test
+    public void testExplicitLockMetrics() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        IgniteEx client = startClientGrid(1);
+
+        checkExplicitLockMetrics(client, srv, client.cache(DEFAULT_CACHE_NAME));
+        checkExplicitLockMetrics(srv, client, srv.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /** */
+    @Test
+    public void testExplicitLockMetricsNearCache() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        // A near cache can not be created on a node that has already started the cache from its static configuration.
+        IgniteEx client = startClientGrid(getConfiguration(getTestIgniteInstanceName(1)).setCacheConfiguration());
+
+        checkExplicitLockMetrics(client, srv, client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>()));
+    }
+
+    /** */
+    @Test
+    public void testCurrentExplicitLockHoldTime() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        HistogramMetric hist = ignite.context().metric().registry(TX_METRICS).findMetric(METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME);
+
+        Lock lock = ignite.cache(DEFAULT_CACHE_NAME).lock(1);
+
+        lock.lock();
+
+        try {
+            assertArrayEquals(new long[] {1, 0}, hist.value());
+
+            metricsBean(ignite).configureHistogramMetric(metricName(TX_METRICS, METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME), new long[] {100});
+
+            assertTrue(waitForCondition(() -> Arrays.equals(new long[] {0, 1}, hist.value()), getTestTimeout()));
+        }
+        finally {
+            lock.unlock();
+        }
+
+        assertArrayEquals(new long[] {0, 0}, hist.value());
+    }
+
+    /**
+     * @param owner Node acquiring the locks.
+     * @param other Node that does not acquire them.
+     * @param cache Cache to lock keys of.
+     */
+    private void checkExplicitLockMetrics(IgniteEx owner, IgniteEx other, IgniteCache<Integer, String> cache)
+        throws Exception {
+        MetricRegistry mreg = owner.context().metric().registry(TX_METRICS);
+
+        LongMetric maxHoldTime = mreg.findMetric(METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME);
+        HistogramMetric holdTimeHistogram = mreg.findMetric(METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME);
+
+        Lock lock = cache.lock(1);
+
+        lock.lock();
+
+        try {
+            assertTrue(waitForCondition(() -> maxHoldTime.value() > 200, getTestTimeout()));
+
+            // Locks are accounted on the owner node only.
+            assertEquals(0, other.context().metric().registry(TX_METRICS)
+                .<LongMetric>findMetric(METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME).value());
+
+            assertEquals(0, LongStream.of(holdTimeHistogram.value()).sum());
+        }
+        finally {
+            lock.unlock();
+        }
+
+        assertEquals(0, maxHoldTime.value());
+        assertEquals(1, LongStream.of(holdTimeHistogram.value()).sum());
+
+        Lock multiKeyLock = cache.lockAll(Arrays.asList(2, 3));
+
+        multiKeyLock.lock();
+        multiKeyLock.lock();
+        multiKeyLock.unlock();
+        multiKeyLock.unlock();
+
+        assertEquals(2, LongStream.of(holdTimeHistogram.value()).sum());
     }
 
     /**

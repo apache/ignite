@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.marshaller.Marshallers;
@@ -83,7 +84,7 @@ import sun.misc.Unsafe;
  */
 public class OptimizedMarshallerImpl extends AbstractNodeNameAwareMarshaller implements OptimizedMarshaller {
     /** Default class loader. */
-    private final ClassLoader dfltClsLdr = getClass().getClassLoader();
+    private final ClassLoader dfltClsLdr = CommonUtils.gridClassLoader();
 
     /** Whether or not to require an object to be serializable in order to be marshalled. */
     private final boolean requireSer;

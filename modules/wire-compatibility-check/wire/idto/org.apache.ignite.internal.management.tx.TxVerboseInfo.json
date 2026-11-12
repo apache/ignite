@@ -1,0 +1,17 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxVerboseInfo",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "nearXidVer"},
+    {"order": 1, "type": "java.util.UUID", "name": "locNodeId"},
+    {"order": 2, "type": "java.lang.Object", "name": "locNodeConsistentId"},
+    {"order": 3, "type": "java.util.UUID", "name": "nearNodeId"},
+    {"order": 4, "type": "java.lang.Object", "name": "nearNodeConsistentId"},
+    {"order": 5, "type": "org.apache.ignite.internal.management.tx.TxMappingType", "name": "txMappingType"},
+    {"order": 6, "type": "java.util.UUID", "name": "dhtNodeId"},
+    {"order": 7, "type": "java.lang.Object", "name": "dhtNodeConsistentId"},
+    {"order": 8, "type": "java.util.Map<java.lang.Integer,java.lang.String>", "name": "usedCaches"},
+    {"order": 9, "type": "java.util.Map<java.lang.Integer,java.lang.String>", "name": "usedCacheGroups"},
+    {"order": 10, "type": "java.util.List<org.apache.ignite.internal.management.tx.TxVerboseKey>", "name": "locTxKeys"},
+    {"order": 11, "type": "java.util.List<org.apache.ignite.internal.management.tx.TxVerboseKey>", "name": "nearOnlyTxKeys"}
+  ]
+}

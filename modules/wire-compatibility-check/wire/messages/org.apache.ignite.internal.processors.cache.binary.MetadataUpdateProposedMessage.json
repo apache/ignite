@@ -1,0 +1,13 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "origNodeId"},
+    {"order": 2, "type": "byte[]", "name": "metadataBytes"},
+    {"order": 3, "type": "int", "name": "typeId"},
+    {"order": 4, "type": "int", "name": "pendingVer"},
+    {"order": 5, "type": "int", "name": "acceptedVer"},
+    {"order": 6, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
+    {"type": "org.apache.ignite.internal.binary.BinaryMetadata", "name": "metadata", "annotations": ["@org.apache.ignite.internal.Marshalled(\"metadataBytes\")"]}
+  ]
+}

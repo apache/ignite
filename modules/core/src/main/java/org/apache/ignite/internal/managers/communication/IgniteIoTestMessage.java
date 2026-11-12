@@ -21,9 +21,10 @@ import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Communication SPI test message. */
-public class IgniteIoTestMessage implements MarshallableMessage {
+public class IgniteIoTestMessage extends AbstractMessage implements MarshallableMessage {
     /** Test ID. */
     @Order(0)
     long id;

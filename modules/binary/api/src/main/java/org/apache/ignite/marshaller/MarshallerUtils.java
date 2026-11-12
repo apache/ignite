@@ -81,10 +81,10 @@ public class MarshallerUtils {
         if (fileName != null && !fileName.isBlank()) {
             clsSet = new ClassSet();
 
-            addClassNames(JDK_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
-            addClassNames(CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
-            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
-            addClassNames(fileName, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(JDK_CLS_NAMES_FILE, clsSet);
+            addClassNames(CLS_NAMES_FILE, clsSet);
+            addClassNames(DEFAULT_WHITELIST_CLS_NAMES_FILE, clsSet);
+            addClassNames(fileName, clsSet);
         }
 
         return clsSet;
@@ -96,12 +96,12 @@ public class MarshallerUtils {
     private static ClassSet classBlackList() {
         ClassSet clsSet = new ClassSet();
 
-        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet, CommonUtils.gridClassLoader());
+        addClassNames(DEFAULT_BLACKLIST_CLS_NAMES_FILE, clsSet);
 
         String blackListFileName = IgniteCommonsSystemProperties.getString(IGNITE_MARSHALLER_BLACKLIST);
 
         if (blackListFileName != null && !blackListFileName.isBlank())
-            addClassNames(blackListFileName, clsSet, CommonUtils.gridClassLoader());
+            addClassNames(blackListFileName, clsSet);
 
         return clsSet;
     }
@@ -111,14 +111,12 @@ public class MarshallerUtils {
      *
      * @param fileName File name containing list of classes.
      * @param clsSet Class set for update.
-     * @param clsLdr Class loader.
      */
     private static void addClassNames(
         String fileName,
-        ClassSet clsSet,
-        ClassLoader clsLdr
+        ClassSet clsSet
     ) {
-        InputStream is = clsLdr.getResourceAsStream(fileName);
+        InputStream is = CommonUtils.gridClassLoader().getResourceAsStream(fileName);
 
         if (is == null) {
             try {

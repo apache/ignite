@@ -1,0 +1,22 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "cacheName"},
+    {"order": 1, "type": "byte[]", "name": "topicBytes"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject", "name": "rmtFilterDep"},
+    {"order": 3, "type": "byte[]", "name": "rmtFilterBytes"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject", "name": "rmtFilterFactoryDep"},
+    {"order": 5, "type": "byte[]", "name": "rmtFilterFactoryBytes"},
+    {"order": 6, "type": "byte", "name": "types"},
+    {"order": 7, "type": "org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryDeployableObject", "name": "rmtTransFactoryDep"},
+    {"order": 8, "type": "byte[]", "name": "rmtTransFactoryBytes"},
+    {"order": 9, "type": "boolean", "name": "internal"},
+    {"order": 10, "type": "boolean", "name": "notifyExisting"},
+    {"order": 11, "type": "boolean", "name": "oldValRequired"},
+    {"order": 12, "type": "boolean", "name": "sync"},
+    {"order": 13, "type": "boolean", "name": "ignoreExpired"},
+    {"order": 14, "type": "int", "name": "taskHash"},
+    {"order": 15, "type": "boolean", "name": "keepBinary"},
+    {"type": "java.lang.Object", "name": "topic", "annotations": ["@org.apache.ignite.internal.Marshalled(\"topicBytes\")"]}
+  ]
+}

@@ -92,9 +92,10 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
                 assertNotNull(bean);
 
-                assertEquals(grid.cluster().topologyVersion(), bean.getCurrentTopologyVersion());
-                assertEquals(grid.cluster().topologyVersion(),
-                    discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
+                // Discovery manager applies topology changes asynchronously to the SPI, wait for it to catch up.
+                assertTrue(waitForCondition(() -> grid.cluster().topologyVersion() == cnt, getTestTimeout()));
+                assertEquals(cnt, bean.getCurrentTopologyVersion());
+                assertEquals(cnt, discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
 
                 if (i != cliIdx) {
                     assertEquals(crd.id(), bean.getCoordinator());
@@ -128,6 +129,8 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 // `getNodesJoined` returns count of joined nodes since local node startup.
                 assertEquals((cnt - 1) - i, bean.getNodesJoined());
                 assertEquals((cnt - 1) - i, discoReg.<IntMetric>findMetric("JoinedNodes").value());
+
+                assertEquals((i < cliIdx) ? 1 : 0, discoReg.<IntMetric>findMetric("JoinedClientNodes").value());
 
                 assertEquals(0L, bean.getNodesFailed());
                 assertEquals(0, discoReg.<IntMetric>findMetric("FailedNodes").value());
@@ -175,9 +178,9 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
                 assertNotNull(bean);
 
-                assertEquals(grid.cluster().topologyVersion(), bean.getCurrentTopologyVersion());
-                assertEquals(grid.cluster().topologyVersion(),
-                    discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
+                assertTrue(waitForCondition(() -> grid.cluster().topologyVersion() == cnt + 1, getTestTimeout()));
+                assertEquals(cnt + 1, bean.getCurrentTopologyVersion());
+                assertEquals(cnt + 1, discoReg.<LongMetric>findMetric("CurrentTopologyVersion").value());
 
                 if (i != cliIdx) {
                     assertEquals(crd.id(), bean.getCoordinator());

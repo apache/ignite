@@ -117,13 +117,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void createCaches() {
-        cacheOrg = jcache(
-            ignite,
-            cacheConfiguration(ORG, CacheMode.PARTITIONED, Integer.class, Organization.class),
-            ORG,
-            Integer.class,
-            Organization.class
-        );
+        cacheOrg = ignite.cache(ORG);
         cachePers = ignite.cache(PERS);
         cachePurch = ignite.cache(PURCH);
         cacheProd = ignite.cache(PROD);
@@ -453,7 +447,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      */
     @Test
     public void testNullParamSubstitution() throws Exception {
-        List<List<?>> rs1 = compareQueryRes0(cachePers, "select ? from \"pers\".Person", null);
+        List<List<?>> rs1 = compareQueryRes0(cachePers, "select ? from \"pers\".Person", (Object)null);
 
         // Ensure we find something.
         assertFalse(rs1.isEmpty());

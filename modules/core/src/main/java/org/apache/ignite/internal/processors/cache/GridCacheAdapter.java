@@ -545,8 +545,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param tx Transaction.
      * @param isRead {@code True} for read operations.
      * @param retval Flag to return value.
-     * @param isolation Transaction isolation.
-     * @param invalidate Invalidate flag.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Locks future.
@@ -558,8 +556,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
-        TransactionIsolation isolation,
-        boolean invalidate,
         long createTtl,
         long accessTtl);
 
@@ -2991,7 +2987,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 e = ex;
             }
 
-            throw new NodeStoppingException(e);
+            throw e == null
+                ? new NodeStoppingException("Failed to acquire lock (node is stopping) [keys=" + keys + ']')
+                : new NodeStoppingException(e);
         }
         finally {
             if (isInterrupted)
@@ -3161,8 +3159,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             tx,
             /*isRead*/true,
             /*retval*/false,
-            tx.isolation(),
-            /*invalidate*/false,
             /*createTtl*/0L,
             /*accessTtl*/0L);
 

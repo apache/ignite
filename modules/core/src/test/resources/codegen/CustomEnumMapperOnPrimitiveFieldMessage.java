@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
-public class CustomEnumMapperOnPrimitiveFieldMessage implements Message {
+public class CustomEnumMapperOnPrimitiveFieldMessage extends AbstractMessage {
     @Order(0)
     @CustomMapper("org.apache.ignite.internal.CustomEnumMapper")
     private int intField;

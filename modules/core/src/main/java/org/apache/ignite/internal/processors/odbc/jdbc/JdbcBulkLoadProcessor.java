@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
  * Unlike other "single shot" request-reply commands, the
  * COPY command the client-server interaction looks like this:
  *
- * <pre>
+ * <pre>{@code
  * Thin JDBC client                            Server
  *        |                                       |
  *        |------- JdbcQueryExecuteRequest ------>|
@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
  *        |                                       |
  * (close the file)                               |
  *        |                                       |
- * </pre>
+ * }</pre>
  *
  * In case of input file reading error, a flag is carried to the server:
  * {@link JdbcBulkLoadBatchRequest#CMD_FINISHED_ERROR} and the processing

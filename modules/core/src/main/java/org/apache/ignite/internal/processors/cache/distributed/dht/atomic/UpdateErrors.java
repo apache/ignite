@@ -26,13 +26,13 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  *
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-public class UpdateErrors implements Message {
+public class UpdateErrors extends AbstractMessage {
     /** Failed keys. */
     @GridToStringInclude
     @Order(0)

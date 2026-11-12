@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.reducer.CacheQueryReducer;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -318,34 +316,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         cctx.time().removeTimeoutObject(this);
 
         return done;
-    }
-
-    /**
-     * @param col Collection.
-     * @return Collection with masked {@code null} values.
-     */
-    private Collection<Object> maskNulls(Collection<Object> col) {
-        assert col != null;
-
-        return F.viewReadOnly(col, new C1<Object, Object>() {
-            @Override public Object apply(Object e) {
-                return e != null ? e : NULL;
-            }
-        });
-    }
-
-    /**
-     * @param col Collection.
-     * @return Collection with unmasked {@code null} values.
-     */
-    private Collection<Object> unmaskNulls(Collection<Object> col) {
-        assert col != null;
-
-        return F.viewReadOnly(col, new C1<Object, Object>() {
-            @Override public Object apply(Object e) {
-                return e != NULL ? e : null;
-            }
-        });
     }
 
     /**

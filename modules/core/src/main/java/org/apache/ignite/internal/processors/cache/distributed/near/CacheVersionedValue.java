@@ -22,13 +22,13 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.CacheIdAware;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Cache object and version.
  */
-public class CacheVersionedValue implements Message, CacheIdAware {
+public class CacheVersionedValue extends AbstractMessage implements CacheIdAware {
     /** Value. */
     @Order(0)
     @GridToStringInclude

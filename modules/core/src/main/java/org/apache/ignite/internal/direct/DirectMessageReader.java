@@ -20,6 +20,7 @@ package org.apache.ignite.internal.direct;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -46,6 +47,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionType;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageMapType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.RawField;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -573,6 +575,33 @@ public class DirectMessageReader implements MessageReader {
         buf = EMPTY_BUF;
 
         state.forEachItem(item -> item.stream.setBuffer(EMPTY_BUF));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RawField> readRawFields() {
+        DirectByteBufferStream stream = curStream;
+
+        List<RawField> res = stream.readRawFields();
+
+        lastRead = stream.lastFinished();
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T deserializeRawField(RawField f, Function<MessageReader, T> valueReader) {
+        if (tmpReader == null)
+            tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+        else
+            tmpReader.reset();
+
+        tmpReader.setBuffer(ByteBuffer.wrap(f.bytes()));
+
+        T val = valueReader.apply(tmpReader);
+
+        assert tmpReader.isLastRead() : f;
+
+        return val;
     }
 
     /**

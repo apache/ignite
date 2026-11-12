@@ -22,6 +22,8 @@
 `IgniteCache` has several query methods, all of which receive a subclass of the `Query` class and return a `QueryCursor`.
 Available types of queries: `ScanQuery`, `IndexQuery`, `TextQuery`.
 
+NOTE: `TextQuery` is implemented by the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] and requires the `ignite-indexing` module on the classpath of the node that runs the query and of all server nodes.
+
 A `Query` represents an abstract paginated query to be executed on a cache.
 The page size is configurable via the `Query.setPageSize(...)` method (default is 1024).
 
@@ -125,6 +127,10 @@ Index queries work over distributed indexes and retrieve cache entries that matc
 delivers sorted cache entries by the order defined for queried index. `IndexQuery` can be used if a low amount of data
 matches filtering criteria. For such cases, `ScanQuery` usage is not optimal: it firstly extracts all cache entries and
 then applies a filter to them. `IndexQuery` relies on index tree structure and filters most of the entries without extracting.
+
+`IndexQuery` returns deserialized cache keys and values by default. To receive `BinaryObject` instances when possible,
+execute the query through a cache obtained with `withKeepBinary()`. See link:key-value-api/binary-objects[Binary Objects]
+for details.
 
 [source,java]
 ----

@@ -188,10 +188,10 @@ After connecting to the cluster, you can execute SQL statements and SQLLine comm
 Create tables:
 [source,sql]
 ----
-0: jdbc:ignite:thin://127.0.0.1/> CREATE TABLE City (id LONG PRIMARY KEY, name VARCHAR) WITH "template=replicated";
+0: jdbc:ignite:thin://127.0.0.1/> CREATE TABLE City (id BIGINT PRIMARY KEY, name VARCHAR) WITH "template=replicated";
 No rows affected (0.301 seconds)
 
-0: jdbc:ignite:thin://127.0.0.1/> CREATE TABLE Person (id LONG, name VARCHAR, city_id LONG, PRIMARY KEY (id, city_id))WITH "backups=1, affinityKey=city_id";
+0: jdbc:ignite:thin://127.0.0.1/> CREATE TABLE Person (id BIGINT, name VARCHAR, city_id BIGINT, PRIMARY KEY (id, city_id))WITH "backups=1, affinity_key=city_id";
 No rows affected (0.078 seconds)
 
 0: jdbc:ignite:thin://127.0.0.1/> !tables

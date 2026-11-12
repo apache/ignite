@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,13 +51,17 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshot;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -170,8 +176,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Request topology version. */
     private final String execName;
 
-    /** Security context. */
-    private final SecurityContext secCtx;
+    /** */
+    private final OperationContextSnapshot opCtxSnp;
 
     /** Job status. */
     private volatile ComputeJobStatusEnum status = QUEUED;
@@ -247,7 +253,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
         taskTopic = TOPIC_TASK.topic(ses.getJobId(), locNodeId);
 
-        secCtx = ctx.security().securityContext();
+        opCtxSnp = OperationContext.createSnapshot();
     }
 
     /**
@@ -491,28 +497,32 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** {@inheritDoc} */
     @Override protected void body() {
-        assert job != null;
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            assert job != null;
 
-        startTime = U.currentTimeMillis();
+            startTime = U.currentTimeMillis();
 
-        isStarted = true;
+            isStarted = true;
 
-        status = RUNNING;
+            status = RUNNING;
 
-        // Event notification.
-        evtLsnr.onJobStarted(this);
+            // Event notification.
+            evtLsnr.onJobStarted(this);
 
-        if (!internal && ctx.event().isRecordable(EVT_JOB_STARTED))
-            recordEvent(EVT_JOB_STARTED, /*no message for success*/null);
+            if (!internal && ctx.event().isRecordable(EVT_JOB_STARTED))
+                recordEvent(EVT_JOB_STARTED, /*no message for success*/null);
 
-        execute0(true);
+            execute0(true);
+        }
     }
 
     /**
      * Executes the job.
      */
     public void execute() {
-        execute0(false);
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            execute0(false);
+        }
     }
 
     /**
@@ -525,7 +535,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         SqlFieldsQuery.setThreadedQueryInitiatorId("task:" + ses.getTaskName() + ":" + getJobId());
 
-        try (Scope ignored = ctx.security().withContext(secCtx)) {
+        try {
             if (partsReservation != null) {
                 try {
                     if (!partsReservation.reserve()) {
@@ -578,6 +588,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 else {
                     res = U.wrapThreadLoader(dep.classLoader(), new Callable<Object>() {
                         @Nullable @Override public Object call() {
+                            // The job can be executed by a thread that already holds explicit locks.
+                            GridCacheMvccManager locksMgr = locksManager();
+
+                            Set<GridCacheVersion> locksBefore = locksMgr == null ? Collections.emptySet() :
+                                locksMgr.explicitLockVersions(Thread.currentThread().getId());
+
                             try {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(true);
@@ -587,6 +603,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             finally {
                                 if (internal && ctx.config().isPeerClassLoadingEnabled())
                                     ctx.job().internal(false);
+
+                                releaseLeftExplicitLocks(locksBefore);
                             }
                         }
                     });
@@ -667,6 +685,37 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         }
     }
 
+    /** @return Locks manager. */
+    private GridCacheMvccManager locksManager() {
+        return ctx.cache().context().mvcc();
+    }
+
+    /**
+     * Releases explicit locks acquired but not released by the job. Locks are bound to the thread, so locks left
+     * unreleased would be inherited by the next job executed by the thread or never released if the thread is
+     * terminated. A held job (see {@link org.apache.ignite.compute.ComputeJobContinuation#holdcc()}) may be continued
+     * by another thread, so locks can't be held across continuation calls either.
+     *
+     * @param locksBefore Versions of explicit locks held by the thread before the job execution.
+     */
+    private void releaseLeftExplicitLocks(Set<GridCacheVersion> locksBefore) {
+        try {
+            GridCacheMvccManager locksMgr = locksManager();
+
+            Collection<GridCacheVersion> released = locksMgr == null ? Collections.emptySet() :
+                locksMgr.releaseExplicitLocks(Thread.currentThread().getId(), locksBefore);
+
+            if (!released.isEmpty()) {
+                U.warn(log, "Job finished without releasing explicit locks, the locks have been released forcibly " +
+                    "[taskName=" + ses.getTaskName() + ", jobId=" + ses.getJobId() + ", lockVers=" + released + ']');
+            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to release explicit locks left by job [taskName=" + ses.getTaskName() +
+                ", jobId=" + ses.getJobId() + ']', e);
+        }
+    }
+
     /**
      * Handles {@link Throwable} generic exception for task
      * deployment and execution.
@@ -728,32 +777,34 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param sys System flag.
      */
     public void cancel(boolean sys) {
-        if (log.isDebugEnabled())
-            log.debug("Cancelling job: " + ses);
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            if (log.isDebugEnabled())
+                log.debug("Cancelling job: " + ses);
 
-        boolean firstCancel = isCancelled.compareAndSet(false, true);
+            boolean firstCancel = isCancelled.compareAndSet(false, true);
 
-        isCancelledBySystem = sys;
+            isCancelledBySystem = sys;
 
-        status = CANCELLED;
+            status = CANCELLED;
 
-        final ComputeJob job0 = job;
+            final ComputeJob job0 = job;
 
-        try (Scope ignored = ctx.security().withContext(secCtx)) {
-            U.wrapThreadLoader(dep.classLoader(), job0::cancel);
-        }
-        catch (Throwable e) { // Catch throwable to protect against bad user code.
-            U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
-                ", ses=" + ses + ']', e);
+            try {
+                U.wrapThreadLoader(dep.classLoader(), job0::cancel);
+            }
+            catch (Throwable e) { // Catch throwable to protect against bad user code.
+                U.error(log, "Failed to cancel job due to undeclared user exception [jobId=" + ses.getJobId() +
+                    ", ses=" + ses + ']', e);
 
-            if (e instanceof Error)
-                throw e;
-        }
-        finally {
-            onCancel(firstCancel);
+                if (e instanceof Error)
+                    throw e;
+            }
+            finally {
+                onCancel(firstCancel);
 
-            if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
-                recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
+                if (!internal && ctx.event().isRecordable(EVT_JOB_CANCELLED))
+                    recordEvent(EVT_JOB_CANCELLED, "Job was cancelled: " + job0);
+            }
         }
     }
 
@@ -782,6 +833,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         evt.taskSessionId(ses.getId());
         evt.type(evtType);
         evt.taskNode(taskNode);
+
+        SecurityContext secCtx = ses.session().initiatorSecurityContext();
+
         evt.taskSubjectId(secCtx != null ? secCtx.subject().id() : null);
 
         ctx.event().record(evt);
@@ -801,12 +855,24 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     }
 
     /**
-     * @param res Resuilt.
+     * @param res Result.
      * @param ex Exception
      * @param sndReply If {@code true}, reply will be sent.
      * @param retry If {@code true}, retry response will be sent.
      */
     void finishJob(
+        @Nullable Object res,
+        @Nullable IgniteException ex,
+        boolean sndReply,
+        boolean retry
+    ) {
+        try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
+            finishJob0(res, ex, sndReply, retry);
+        }
+    }
+
+    /** */
+    private void finishJob0(
         @Nullable Object res,
         @Nullable IgniteException ex,
         boolean sndReply,
@@ -1029,7 +1095,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     boolean onMasterNodeLeft() {
         if (job instanceof ComputeJobMasterLeaveAware) {
             if (masterLeaveGuard.compareAndSet(false, true)) {
-                try {
+                try (Scope ignored = OperationContext.restoreSnapshot(opCtxSnp)) {
                     ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses.session());
 
                     if (log.isDebugEnabled())

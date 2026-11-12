@@ -1,0 +1,19 @@
+{
+  "class": "org.apache.ignite.internal.management.tx.TxInfo",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "xid"},
+    {"order": 1, "type": "long", "name": "startTime"},
+    {"order": 2, "type": "long", "name": "duration"},
+    {"order": 3, "type": "org.apache.ignite.transactions.TransactionIsolation", "name": "isolation"},
+    {"order": 4, "type": "org.apache.ignite.transactions.TransactionConcurrency", "name": "concurrency"},
+    {"order": 5, "type": "long", "name": "timeout"},
+    {"order": 6, "type": "java.lang.String", "name": "lb"},
+    {"order": 7, "type": "java.util.Collection<java.util.UUID>", "name": "primaryNodes"},
+    {"order": 8, "type": "org.apache.ignite.transactions.TransactionState", "name": "state"},
+    {"order": 9, "type": "int", "name": "size"},
+    {"order": 10, "type": "org.apache.ignite.lang.IgniteUuid", "name": "nearXid"},
+    {"order": 11, "type": "java.util.Collection<java.util.UUID>", "name": "masterNodeIds"},
+    {"order": 12, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 13, "type": "org.apache.ignite.internal.management.tx.TxVerboseInfo", "name": "txVerboseInfo"}
+  ]
+}

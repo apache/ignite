@@ -36,19 +36,6 @@ public class IgniteFeatureManager {
     /** */
     private final IgniteNodeFeatureSet locVerFeatures;
 
-    /**
-     * During the RU process, updated nodes operate in accordance with both the old logical version (prior to RU completion)
-     * and the new one (after RU completion). This variable stores the features of the previous version under which this
-     * node operated.
-     *
-     * <p>
-     *     If a node joins the cluster after the Rolling Upgrade has been finalized, this value is inherited from the
-     *     existing cluster nodes (after Rolling Upgrade finalization, all cluster nodes are guaranteed to hold the same
-     *     value for this field).
-     *</p>
-     */
-    @Nullable private volatile IgniteNodeFeatureSet prevActiveFeatures;
-
     /** */
     private volatile IgniteNodeFeatureSet activeFeatures;
 
@@ -79,11 +66,6 @@ public class IgniteFeatureManager {
         checkActiveFeaturesInitialized(finalActiveFeatures);
 
         return finalActiveFeatures;
-    }
-
-    /** @return The feature set corresponding to the previous version under which this node operated. */
-    @Nullable public IgniteNodeFeatureSet previousActiveFeatures() {
-        return prevActiveFeatures;
     }
 
     /** @return {@code true} if the specified {@link IgniteFeature} is active in the cluster; {@code false} otherwise. */
@@ -117,15 +99,10 @@ public class IgniteFeatureManager {
             ? activeClusterFeatures.containsAll(locVerFeatures)
             : locVerFeatures.equals(activeClusterFeatures);
 
-        if (hasSameFeaturesAsCluster) {
-            prevActiveFeatures = clusterData.previousActiveFeatures();
-
+        if (hasSameFeaturesAsCluster)
             activateLocalVersionFeatures();
-        }
-        else {
+        else
             activeFeatures = activeClusterFeatures;
-            prevActiveFeatures = activeClusterFeatures;
-        }
     }
 
     /** */

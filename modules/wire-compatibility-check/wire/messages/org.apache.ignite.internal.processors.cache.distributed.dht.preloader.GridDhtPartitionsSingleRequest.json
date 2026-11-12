@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId", "name": "exchId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "lastVer"},
+    {"order": 5, "type": "byte", "name": "flags"},
+    {"order": 6, "type": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId", "name": "restoreExchId"}
+  ]
+}

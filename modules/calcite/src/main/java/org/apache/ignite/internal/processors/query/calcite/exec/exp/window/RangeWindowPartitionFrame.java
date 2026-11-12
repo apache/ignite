@@ -103,7 +103,7 @@ final class RangeWindowPartitionFrame<Row> extends WindowPartitionFrame<Row> {
         if (lowerBoundRow == null)
             cachedStartIdx = 0;
         else
-            cachedStartIdx = bsearchBound(lowerBoundRow, buf, true);
+            cachedStartIdx = bsearchBound(lowerBoundRow, true);
 
         return cachedStartIdx;
     }
@@ -121,29 +121,20 @@ final class RangeWindowPartitionFrame<Row> extends WindowPartitionFrame<Row> {
         if (upperBoundRow == null)
             cachedEndIdx = size() - 1;
         else
-            cachedEndIdx = bsearchBound(upperBoundRow, buf, false);
+            cachedEndIdx = bsearchBound(upperBoundRow, false);
 
         return cachedEndIdx;
     }
 
-    /** {@inheritDoc} */
-    @Override public void reset() {
-        // Reseting index cache.
-        cachedStartPeerIdx = -1;
-        cachedEndPeerIdx = -1;
-        cachedStartRowIdx = -1;
-        cachedEndRowIdx = -1;
-    }
-
     /** Binary search bound. */
-    private int bsearchBound(Row row, List<Row> buf, boolean lower) {
+    private int bsearchBound(Row row, boolean lower) {
         int start = 0;
-        int end = buf.size() - 1;
+        int end = size() - 1;
 
         while (start <= end) {
             int mid = (start + end) / 2;
 
-            Row midRow = buf.get(mid);
+            Row midRow = get(mid);
             int cmp = compareRowPeer(midRow, row);
 
             if (cmp > 0 || (lower && cmp == 0))

@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongConsumer;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -33,8 +34,8 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,7 +51,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
     /** Pending candidates. */
     @GridToStringInclude
-    private final Map<IgniteTxKey, Deque<GridCacheMvccCandidate>> cands = new HashMap<>();
+    private final Map<IgniteTxKey, KeyCandidates> cands = new HashMap<>();
 
     /** Span lock release future. */
     @GridToStringExclude
@@ -115,9 +116,11 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate> deque = cands.get(cand.key());
+            KeyCandidates keyCands = cands.get(cand.key());
 
-            if (deque != null) {
+            if (keyCands != null) {
+                Deque<GridCacheMvccCandidate> deque = keyCands.deque;
+
                 assert !deque.isEmpty();
 
                 if (deque.peekFirst().equals(cand)) {
@@ -151,11 +154,13 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate> deque = cands.get(key);
+            KeyCandidates keyCands = cands.get(key);
 
             GridCacheMvccCandidate cand = null;
 
-            if (deque != null) {
+            if (keyCands != null) {
+                Deque<GridCacheMvccCandidate> deque = keyCands.deque;
+
                 assert !deque.isEmpty();
 
                 GridCacheMvccCandidate first = deque.peekFirst();
@@ -225,7 +230,12 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         lock();
 
         try {
-            return new ArrayList<>(F.flatCollections(cands.values()));
+            Collection<GridCacheMvccCandidate> res = new ArrayList<>();
+
+            for (KeyCandidates keyCands : cands.values())
+                res.addAll(keyCands.deque);
+
+            return res;
         }
         finally {
             unlock();
@@ -236,17 +246,96 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * Marks all candidates added for given key as owned.
      *
      * @param key Key.
+     * @return {@code True} if candidate owned, {@code false} otherwise.
      */
-    public void markOwned(IgniteTxKey key) {
+    public boolean markOwned(IgniteTxKey key) {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate> deque = cands.get(key);
+            KeyCandidates keyCands = cands.get(key);
 
-            assert deque != null;
+            if (keyCands == null)
+                return false;
 
-            for (GridCacheMvccCandidate cand : deque)
+            for (GridCacheMvccCandidate cand : keyCands.deque)
                 cand.setOwner();
+
+            keyCands.acquired();
+
+            return true;
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /**
+     * Records the time the lock on the key was acquired without touching candidate flags: for near candidates
+     * they are managed by the entry MVCC under the entry lock, so {@link #markOwned(IgniteTxKey)} is not applicable.
+     *
+     * @param key Key.
+     */
+    public void markAcquired(IgniteTxKey key) {
+        lock();
+
+        try {
+            KeyCandidates keyCands = cands.get(key);
+
+            // The key may be already released by a timed out lock future.
+            if (keyCands != null)
+                keyCands.acquired();
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /** @return How long the key has been locked for, in milliseconds, or 0 if the lock is not acquired yet. */
+    public long holdTime(IgniteTxKey key) {
+        lock();
+
+        try {
+            KeyCandidates keyCands = cands.get(key);
+
+            return keyCands == null ? 0 : keyCands.holdTime(U.currentTimeMillis());
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /**
+     * @return Longest time a key of the span has been locked for, in milliseconds, or 0 if no lock is acquired yet.
+     */
+    public long maxHoldTime() {
+        lock();
+
+        try {
+            long now = U.currentTimeMillis();
+
+            long max = 0;
+
+            for (KeyCandidates keyCands : cands.values())
+                max = Math.max(max, keyCands.holdTime(now));
+
+            return max;
+        }
+        finally {
+            unlock();
+        }
+    }
+
+    /** @param c Consumer of the time each acquired key of the span has been locked for, in milliseconds. */
+    public void holdTimes(LongConsumer c) {
+        lock();
+
+        try {
+            long now = U.currentTimeMillis();
+
+            for (KeyCandidates keyCands : cands.values()) {
+                if (keyCands.acquireTime != 0)
+                    c.accept(keyCands.holdTime(now));
+            }
         }
         finally {
             unlock();
@@ -257,23 +346,20 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * Gets explicit lock candidate for given key.
      *
      * @param key Key to lookup.
-     * @param ver Version to lookup (if {@code null} - return any).
      * @return Last added explicit lock candidate, if any, or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key, @Nullable final GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key) {
         lock();
 
         try {
-            Deque<GridCacheMvccCandidate> deque = cands.get(key);
+            KeyCandidates keyCands = cands.get(key);
 
-            if (deque != null) {
+            if (keyCands != null) {
+                Deque<GridCacheMvccCandidate> deque = keyCands.deque;
+
                 assert !deque.isEmpty();
 
-                return ver == null ? deque.peekFirst() : F.find(deque, null, new P1<GridCacheMvccCandidate>() {
-                    @Override public boolean apply(GridCacheMvccCandidate cand) {
-                        return cand.version().equals(ver);
-                    }
-                });
+                return deque.peekFirst();
             }
 
             return null;
@@ -308,15 +394,15 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @return Deque.
      */
     private Deque<GridCacheMvccCandidate> ensureDeque(IgniteTxKey key) {
-        Deque<GridCacheMvccCandidate> deque = cands.get(key);
+        KeyCandidates keyCands = cands.get(key);
 
-        if (deque == null) {
-            deque = new LinkedList<>();
+        if (keyCands == null) {
+            keyCands = new KeyCandidates();
 
-            cands.put(key, deque);
+            cands.put(key, keyCands);
         }
 
-        return deque;
+        return keyCands.deque;
     }
 
     /** {@inheritDoc} */
@@ -328,6 +414,33 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         }
         finally {
             unlock();
+        }
+    }
+
+    /** Candidates of one key. */
+    private static class KeyCandidates {
+        /** */
+        @GridToStringInclude
+        private final Deque<GridCacheMvccCandidate> deque = new LinkedList<>();
+
+        /** Time the lock on the key was acquired, 0 until then. */
+        @GridToStringExclude
+        private long acquireTime;
+
+        /** Records the first acquisition only, reentries keep the original time. */
+        void acquired() {
+            if (acquireTime == 0)
+                acquireTime = U.currentTimeMillis();
+        }
+
+        /** */
+        long holdTime(long now) {
+            return acquireTime == 0 ? 0 : now - acquireTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(KeyCandidates.class, this, "holdTime", holdTime(U.currentTimeMillis()), false);
         }
     }
 }

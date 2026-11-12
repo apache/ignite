@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.spi.discovery.zk.internal.ZkCommunicationErrorResolveStartMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "id"}
+  ]
+}

@@ -231,7 +231,8 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  *     new org.locationtech.jts.geom.Coordinate(0, 0)
  * });
  *
- * Map.Entry<String, UserData> records = cache.queries().createSqlQuery(MapPoint.class, "select * from MapPoint where location && ?")
+ * Map.Entry&lt;String, UserData&gt; records = cache.queries()
+ *     .createSqlQuery(MapPoint.class, "select * from MapPoint where location &amp;&amp; ?")
  *     .queryArguments(square)
  *     .execute()
  *     .get();

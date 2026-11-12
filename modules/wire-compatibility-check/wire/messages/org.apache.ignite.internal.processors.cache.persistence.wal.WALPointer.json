@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer",
+  "fields": [
+    {"order": 0, "type": "long", "name": "idx"},
+    {"order": 1, "type": "int", "name": "fileOff"},
+    {"order": 2, "type": "int", "name": "len"}
+  ]
+}

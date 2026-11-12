@@ -1998,16 +1998,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * Gets consistentId from history for given topology version.
-     *
-     * @param topVer Topology version.
-     * @return Compacted consistent id map.
-     */
-    public Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
-        return resolveDiscoCache(CU.cacheId(null), topVer).nodeIdMap();
-    }
-
-    /**
      * Gets cache nodes for cache with given name.
      *
      * @param cacheName Cache name.
@@ -2475,7 +2465,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ArrayList<ClusterNode> allNodes = new ArrayList<>(topSnapshot.size());
 
         Map<UUID, Short> nodeIdToConsIdx;
-        Map<Short, UUID> consIdxToNodeId;
         List<? extends BaselineNode> baselineNodes;
 
         IgniteProductVersion minVer = null;
@@ -2514,7 +2503,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (blt != null) {
             nodeIdToConsIdx = U.newHashMap(srvNodes.size());
-            consIdxToNodeId = U.newHashMap(srvNodes.size());
 
             Map<Object, Short> m = blt.consistentIdMapping();
 
@@ -2523,11 +2511,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             for (ClusterNode node : srvNodes) {
                 Short compactedId = m.get(node.consistentId());
 
-                if (compactedId != null) {
+                if (compactedId != null)
                     nodeIdToConsIdx.put(node.id(), compactedId);
-
-                    consIdxToNodeId.put(compactedId, node.id());
-                }
 
                 aliveNodesByConsId.put(node.consistentId(), node);
             }
@@ -2547,7 +2532,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
         else {
             nodeIdToConsIdx = null;
-            consIdxToNodeId = null;
 
             baselineNodes = null;
         }
@@ -2573,7 +2557,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collections.unmodifiableMap(nodeMap),
             alives,
             nodeIdToConsIdx == null ? null : Collections.unmodifiableMap(nodeIdToConsIdx),
-            consIdxToNodeId == null ? null : Collections.unmodifiableMap(consIdxToNodeId),
             minVer,
             minSrvVer);
     }
@@ -3547,7 +3530,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             discoCache.nodeMap,
             discoCache.alives,
             nodeIdToConsIdx,
-            discoCache.consIdxToNodeId,
             discoCache.minimumNodeVersion(),
             discoCache.minimumServerNodeVersion());
     }

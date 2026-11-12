@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.schema.message.QueryProposalsDataBagItem",
+  "fields": [
+    {"order": 0, "type": "java.util.LinkedHashMap<java.util.UUID,org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage>", "name": "activeProposals"}
+  ]
+}

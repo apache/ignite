@@ -1,0 +1,15 @@
+{
+  "class": "org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest",
+  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "id"},
+    {"order": 1, "type": "java.util.UUID", "name": "verifierNodeId"},
+    {"order": 2, "type": "long", "name": "topVer"},
+    {"order": 3, "type": "int", "name": "flags"},
+    {"order": 4, "type": "java.util.Set<java.util.UUID>", "name": "failedNodes"},
+    {"order": 5, "type": "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage", "name": "opCtxSnp"},
+    {"order": 6, "type": "java.util.UUID", "name": "prevNodeId"},
+    {"order": 7, "type": "java.lang.String", "name": "dcId"},
+    {"order": 8, "type": "org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet", "name": "nodeFeatures"}
+  ]
+}

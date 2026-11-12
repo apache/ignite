@@ -96,11 +96,12 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
@@ -262,6 +263,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridPortProcessor portProc;
+
+    /** */
+    @GridToStringExclude
+    private final SslFactoryRegistry sslFactories = new SslFactoryRegistry();
 
     /** */
     @GridToStringInclude
@@ -694,8 +699,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public OperationContextDispatcher operationContextDispatcher() {
-        return grid.operationContextDispatcher();
+    @Override public DistributedOperationContext distributedOperationContext() {
+        return grid.distributedOperationContext();
     }
 
     /** {@inheritDoc} */
@@ -741,6 +746,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SslFactoryRegistry ssl() {
+        return sslFactories;
     }
 
     /** {@inheritDoc} */

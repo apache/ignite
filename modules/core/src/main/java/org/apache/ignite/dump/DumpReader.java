@@ -321,7 +321,7 @@ public class DumpReader implements Runnable {
     public static List<SnapshotMetadata> metadata(File dumpDir) {
         JdkMarshaller marsh = Marshallers.jdk();
 
-        ClassLoader clsLdr = U.resolveClassLoader(new IgniteConfiguration());
+        ClassLoader clsLdr = U.gridClassLoader();
 
         // First filter only specific file to exclude overlapping with other nodes making dump on the local host.
         File[] files = dumpDir.listFiles(SnapshotFileTree::snapshotMetaFile);

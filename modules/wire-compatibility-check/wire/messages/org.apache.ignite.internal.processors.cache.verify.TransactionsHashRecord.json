@@ -1,0 +1,11 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord",
+  "annotations": ["@org.apache.ignite.internal.JdkMarshalled"],
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "locConsistentIdBytes"},
+    {"order": 1, "type": "byte[]", "name": "rmtConsistentIdBytes"},
+    {"order": 2, "type": "int", "name": "txHash"},
+    {"type": "java.lang.Object", "name": "locConsistentId", "annotations": ["@org.apache.ignite.internal.Marshalled(\"locConsistentIdBytes\")"]},
+    {"type": "java.lang.Object", "name": "rmtConsistentId", "annotations": ["@org.apache.ignite.internal.Marshalled(\"rmtConsistentIdBytes\")"]}
+  ]
+}

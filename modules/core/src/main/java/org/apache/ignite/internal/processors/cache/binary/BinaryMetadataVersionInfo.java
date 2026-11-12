@@ -21,7 +21,7 @@ import org.apache.ignite.internal.JdkMarshalled;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Travels both transports: Discovery in the data bag, Communication in the {@link MetadataResponseMessage}.
  */
 @JdkMarshalled
-public final class BinaryMetadataVersionInfo implements Serializable, Message {
+public final class BinaryMetadataVersionInfo extends AbstractMessage implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

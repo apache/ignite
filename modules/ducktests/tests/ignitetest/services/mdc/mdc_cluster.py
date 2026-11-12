@@ -42,6 +42,7 @@ from ignitetest.services.network_group.configuration import NetworkGroupStore, C
 from ignitetest.services.network_group.manager import NetworkGroupManager
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, TcpDiscoveryVmIpFinder
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils.version import IgniteVersion
@@ -91,6 +92,8 @@ class MdcCluster:
     :param client_connector: Whether to expose the thin client connector on servers.
     :param network_timeout: Network timeout of the nodes, in ms.
     :param discovery_network_timeout: Network timeout of the discovery SPI, in ms.
+    :param data_storage: Data storage of the servers.
+    :param jvm_opts: JVM options of every node, added to the DC's own.
     """
     def __init__(self, test, ignite_version: str, dcs: Sequence[str] = DCS_2,
                  srv_per_dc: Union[int, Dict[str, int]] = 3,
@@ -98,20 +101,24 @@ class MdcCluster:
                  loaders_per_dc: Union[int, Dict[str, int]] = 0,
                  client_connector: bool = False,
                  network_timeout: Optional[int] = None,
-                 discovery_network_timeout: Optional[int] = None):
+                 discovery_network_timeout: Optional[int] = None,
+                 data_storage: DataStorageConfiguration = None,
+                 jvm_opts: List[str] = None):
         self.test_context = test.test_context
         self.logger = test.logger
+        self._jvm_opts = jvm_opts or []
 
         self.dcs = tuple(dcs)
 
         self.discovery_network_timeout = discovery_network_timeout
 
-        self.ignite_config = self._ignite_config(ignite_version, client_connector, network_timeout)
+        self.ignite_config = self._ignite_config(ignite_version, client_connector, network_timeout, data_storage)
 
         self.srv_per_dc = per_dc(srv_per_dc, self.dcs)
 
         self.servers: Dict[str, IgniteService] = {
-            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num, jvm_opts=dc_jvm_opts(dc),
+            dc: IgniteService(self.test_context, self.ignite_config, num_nodes=num,
+                              jvm_opts=dc_jvm_opts(dc) + self._jvm_opts,
                               startup_timeout_sec=IGNITE_STARTUP_TIMEOUT_SEC)
             for dc, num in self.srv_per_dc.items() if num > 0}
 
@@ -140,12 +147,12 @@ class MdcCluster:
         self._adm_checks = 0
 
     @staticmethod
-    def _ignite_config(ignite_version: str, client_connector: bool,
-                       network_timeout: Optional[int]) -> IgniteConfiguration:
+    def _ignite_config(ignite_version: str, client_connector: bool, network_timeout: Optional[int],
+                       data_storage: Optional[DataStorageConfiguration]) -> IgniteConfiguration:
         """
         :return: Configuration shared by the servers and clients of every DC.
         """
-        cfg_kwargs = {"version": IgniteVersion(ignite_version)}
+        cfg_kwargs = {"version": IgniteVersion(ignite_version), "data_storage": data_storage}
 
         if network_timeout is not None:
             cfg_kwargs["network_timeout"] = network_timeout
@@ -163,10 +170,10 @@ class MdcCluster:
                                network_timeout=self.discovery_network_timeout)
 
     def _app_service(self, dc: str) -> IgniteApplicationService:
-        client_cfg = self.ignite_config._replace(client_mode=True,
+        client_cfg = self.ignite_config._replace(client_mode=True, data_storage=None,
                                                  discovery_spi=self._discovery_spi(self.servers[dc].nodes))
 
-        return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc))
+        return IgniteApplicationService(self.test_context, client_cfg, jvm_opts=dc_jvm_opts(dc) + self._jvm_opts)
 
     def _cache_params(self) -> dict:
         """

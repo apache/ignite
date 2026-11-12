@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2Timestamp",
+  "fields": [
+    {"order": 0, "type": "long", "name": "date"},
+    {"order": 1, "type": "long", "name": "nanos"}
+  ]
+}

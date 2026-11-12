@@ -44,7 +44,8 @@ public class IgniteVersionUtils {
 
         VER = IgniteProductVersion.fromString(VER_STR + '-' + revTs + '-' + revHash);
 
-        int year = revTs == 0 ? LocalDate.now(UTC).getYear() : VER.buildTime().atZone(UTC).getYear();
+        // The comparison below adjusts the year for development versions, which use a dummy build timestamp.
+        int year = Math.min(VER.buildTime().atZone(UTC).getYear(), LocalDate.now(UTC).getYear());
 
         COPYRIGHT = year + " Copyright(C) Apache Software Foundation";
     }

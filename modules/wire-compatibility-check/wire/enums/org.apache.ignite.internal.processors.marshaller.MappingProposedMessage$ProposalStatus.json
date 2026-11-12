@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage$ProposalStatus",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage$ProposalStatus", "name": "SUCCESSFUL"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage$ProposalStatus", "name": "IN_CONFLICT"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.marshaller.MappingProposedMessage$ProposalStatus", "name": "DUPLICATED"}
+  ]
+}

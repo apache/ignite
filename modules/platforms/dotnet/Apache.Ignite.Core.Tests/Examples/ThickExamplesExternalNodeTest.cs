@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Examples
 {
+    using System.IO;
     using System.Linq;
     using NUnit.Framework;
 
@@ -37,7 +38,10 @@ namespace Apache.Ignite.Core.Tests.Examples
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Ignition.Start(TestUtils.GetTestConfiguration(name: "server"));
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "server"))
+            {
+                SpringConfigUrl = Path.Combine("Config", "query-engine-h2-default.xml")
+            });
         }
 
         /// <summary>

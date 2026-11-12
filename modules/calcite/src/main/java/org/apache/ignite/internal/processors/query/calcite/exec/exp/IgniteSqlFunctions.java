@@ -311,7 +311,7 @@ public class IgniteSqlFunctions {
         return SqlFunctions.gtAny(a, b);
     }
 
-    /** SQL <=. */
+    /** SQL {@code <=}. */
     public static boolean leAny(Object a, Object b) {
         if (Commons.isBinaryComparable(a, b))
             return Commons.compareBinary(a, b) <= 0;
@@ -319,7 +319,7 @@ public class IgniteSqlFunctions {
         return SqlFunctions.leAny(a, b);
     }
 
-    /** SQL <. */
+    /** SQL {@code <}. */
     public static boolean ltAny(Object a, Object b) {
         if (Commons.isBinaryComparable(a, b))
             return Commons.compareBinary(a, b) < 0;
@@ -335,7 +335,7 @@ public class IgniteSqlFunctions {
         return SqlFunctions.eqAny(a, b);
     }
 
-    /** SQL <>. */
+    /** SQL {@code <>}. */
     public static boolean neAny(Object a, Object b) {
         if (Commons.isBinaryComparable(a, b))
             return Commons.compareBinary(a, b) != 0;

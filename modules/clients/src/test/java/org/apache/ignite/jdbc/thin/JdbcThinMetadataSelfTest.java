@@ -68,7 +68,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_N
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
-import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
 
 /**
  * Metadata tests.
@@ -236,47 +235,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertTrue(rs.next());
             assertEquals(cacheName, rs.getString(MetadataColumn.TABLE_SCHEMA.columnName()));
             assertEquals(VAL_FIELD_NAME, rs.getString(MetadataColumn.COLUMN_NAME.columnName()));
-
-            assertFalse(rs.next());
-        }
-        finally {
-            cache.destroy();
-        }
-    }
-
-    /**
-     * Ensure metadata returned for cache with explicit query entities has no duplicate columns: <ul>
-     *     <li>create a cache with indexed types and explicit query entity</li>
-     *     <li>request metadata for columns from the cache</li>
-     *     <li>verify returned result</li>
-     * </ul>
-     *
-     * @throws SQLException
-     */
-    @Test
-    public void testMetadataNotDublicatedIfFieldsSetExplicitly() throws SQLException {
-        final String cacheName = "testCache";
-
-        IgniteCache<?, ?> cache = grid(0).createCache(
-            new CacheConfiguration<>(cacheName)
-                .setQueryEntities(Collections.singleton(
-                    new QueryEntity()
-                        .setKeyType(Integer.class.getName())
-                        .setKeyFieldName("my_key")
-                        .setValueType(String.class.getName())
-                        .setFields(new LinkedHashMap<>(asMap("my_key", Integer.class.getName())))
-                ))
-                .setIndexedTypes(Integer.class, String.class)
-        );
-
-        try (Connection conn = DriverManager.getConnection(URL)) {
-            DatabaseMetaData meta = conn.getMetaData();
-
-            ResultSet rs = meta.getColumns(null, cacheName, null, null);
-
-            assertTrue(rs.next());
-            assertEquals(cacheName, rs.getString(MetadataColumn.TABLE_SCHEMA.columnName()));
-            assertEquals("MY_KEY", rs.getString(MetadataColumn.COLUMN_NAME.columnName()));
 
             assertFalse(rs.next());
         }
@@ -951,6 +909,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CLIENT_CONNECTIONS.USER.null",
                 "SYS.CLIENT_CONNECTIONS.VERSION.null",
                 "SYS.CLIENT_CONNECTIONS.DATA_CENTER_ID.null",
+                "SYS.CLIENT_CONNECTIONS.ACTIVE_COMPUTE_TASKS.null",
                 "SYS.CLIENT_CONNECTION_ATTRIBUTES.CONNECTION_ID.null",
                 "SYS.CLIENT_CONNECTION_ATTRIBUTES.NAME.null",
                 "SYS.CLIENT_CONNECTION_ATTRIBUTES.VALUE.null",
@@ -1187,6 +1146,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.CACHE_EXPLICIT_LOCKS.KEY.null",
                 "SYS.CACHE_EXPLICIT_LOCKS.THREAD_ID.null",
                 "SYS.CACHE_EXPLICIT_LOCKS.XID.null",
+                "SYS.CACHE_EXPLICIT_LOCKS.DURATION.null",
                 "SYS.CACHE_LOCKS.CACHE_ID.null",
                 "SYS.CACHE_LOCKS.KEY.null",
                 "SYS.CACHE_LOCKS.NODE_ID.null",

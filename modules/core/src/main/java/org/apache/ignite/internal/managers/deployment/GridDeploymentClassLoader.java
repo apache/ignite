@@ -319,6 +319,19 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * @param ldrId Participating class loader id.
      */
     void register(UUID nodeId, IgniteUuid ldrId) {
+        register(nodeId, ldrId, true);
+    }
+
+    /**
+     * Adds new node and remote class loader id to this class loader.
+     * Class loader will ask all associated nodes for the class/resource
+     * until find it.
+     *
+     * @param nodeId Participating node ID.
+     * @param ldrId Participating class loader id.
+     * @param first {@code True} to ask the node first, {@code false} to ask it after the already registered nodes.
+     */
+    void register(UUID nodeId, IgniteUuid ldrId, boolean first) {
         assert nodeId != null;
         assert ldrId != null;
         assert nodeId.equals(ldrId.globalId());
@@ -328,16 +341,14 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             if (missedRsrcs != null)
                 missedRsrcs.clear();
 
-            /*
-             * We need to put passed in node into the
-             * first position in the list.
-             */
-
             // 1. Remove passed in node if any.
             nodeList.remove(nodeId);
 
-            // 2. Add passed in node to the first position.
-            nodeList.addFirst(nodeId);
+            // 2. Add passed in node to the requested position.
+            if (first)
+                nodeList.addFirst(nodeId);
+            else
+                nodeList.addLast(nodeId);
 
             // 3. Put to map.
             nodeLdrMap.put(nodeId, ldrId);
@@ -610,6 +621,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         List<IgniteException> clsReqExceptions = new ArrayList<>();
 
+        boolean notFound = false;
+
         for (UUID nodeId : nodeListCp) {
             if (nodeId.equals(ctx.discovery().localNode().id()))
                 // Skip local node as it is already used as parent class loader.
@@ -632,21 +645,18 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (res.success())
                     return res.byteSource();
                 else {
-                    // In case of shared resources/classes all nodes should have it.
-                    String msg = "Failed to find class on remote node [class=" + name + ", nodeId=" + node.id() +
-                        ", clsLdrId=" + ldrId + ", classLoadersHierarchy=" + clsLdrHierarchy +
+                    // Participants of a shared deployment are not guaranteed to have the same class path (a node joins
+                    // the deployment as soon as it is able to load one of its classes), so keep asking the other nodes.
+                    String msg = "Failed to find class on remote node (will try other nodes, if any) [class=" + name +
+                        ", nodeId=" + node.id() + ", clsLdrId=" + ldrId + ", classLoadersHierarchy=" + clsLdrHierarchy +
                         ", reason=" + res.errorMessage() + ']';
 
-                    LT.warn(log, msg);
+                    if (log.isDebugEnabled())
+                        log.debug(msg);
 
                     clsReqExceptions.add(new IgniteException(msg));
 
-                    synchronized (mux) {
-                        if (missedRsrcs != null)
-                            missedRsrcs.add(path);
-                    }
-
-                    break;
+                    notFound = true;
                 }
             }
             catch (IgniteCheckedException e) {
@@ -685,6 +695,14 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 clsReqExceptions.add(new IgniteException("Failed to send class-loading request to node (is node alive?) " +
                     "[node=" + node.id() + ", clsName=" + name + ", clsPath=" + path + ", clsLdrId=" + ldrId +
                     ", clsLoadersHierarchy=" + clsLdrHierarchy + ']', e));
+            }
+        }
+
+        // Cache the miss only after none of the nodes was able to provide the class.
+        if (notFound) {
+            synchronized (mux) {
+                if (missedRsrcs != null)
+                    missedRsrcs.add(path);
             }
         }
 
@@ -782,6 +800,8 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
             nodeLdrMapCp = singleNode ? nodeLdrMap : new HashMap<>(nodeLdrMap);
         }
 
+        boolean notFound = false;
+
         for (UUID nodeId : nodeListCp) {
             if (nodeId.equals(ctx.discovery().localNode().id()))
                 // Skip local node as it is already used as parent class loader.
@@ -807,16 +827,10 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                         res.byteSource().size());
                 }
                 else {
-                    synchronized (mux) {
-                        // Cache unsuccessfully loaded resource.
-                        if (missedRsrcs != null)
-                            missedRsrcs.add(name);
-                    }
-
                     // Some frameworks like Spring often ask for the resources
                     // just in case - none will happen if there are no such
                     // resources. So we print out INFO level message.
-                    String msg = "Failed to get resource from node [" +
+                    String msg = "Failed to get resource from node (will try other nodes, if any) [" +
                         "nodeId=" + node.id() +
                         ", clsLdrId=" + ldrId +
                         ", resName=" + name +
@@ -825,8 +839,9 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                     LT.info(log, msg);
 
-                    // Do not ask other nodes in case of shared mode all of them should have the resource.
-                    return null;
+                    // Participants of a shared deployment are not guaranteed to have the same class path,
+                    // so keep asking the other nodes.
+                    notFound = true;
                 }
             }
             catch (IgniteCheckedException | TimeoutException e) {
@@ -854,6 +869,14 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
                 if (e instanceof TimeoutException)
                     throw (TimeoutException)e;
+            }
+        }
+
+        // Cache the miss only after none of the nodes was able to provide the resource.
+        if (notFound) {
+            synchronized (mux) {
+                if (missedRsrcs != null)
+                    missedRsrcs.add(name);
             }
         }
 

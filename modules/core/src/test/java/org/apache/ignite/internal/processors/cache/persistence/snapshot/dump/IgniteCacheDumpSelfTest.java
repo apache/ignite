@@ -136,7 +136,7 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
             if (i == 0)
                 cfg.setUserAttributes(F.asMap(DEFAULT_CACHE_NAME, ""));
 
-            cfg.setCacheConfiguration(null);
+            cfg.setCacheConfiguration();
 
             cfg.setClientMode(i == nodes);
 

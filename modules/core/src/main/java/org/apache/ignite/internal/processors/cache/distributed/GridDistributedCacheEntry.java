@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,7 +71,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param ver Lock version.
      * @param topVer Topology version.
      * @param timeout Timeout to acquire lock.
-     * @param reenter Reentry flag.
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
      * @param read Read lock flag.
@@ -85,7 +82,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
-        boolean reenter,
         boolean tx,
         boolean implicitSingle,
         boolean read) throws GridCacheEntryRemovedException {
@@ -116,7 +112,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 threadId,
                 ver,
                 timeout,
-                reenter,
                 tx,
                 implicitSingle,
                 read);
@@ -139,8 +134,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             unlockEntry();
         }
 
-        // Don't link reentries.
-        if (cand != null && !cand.reentry())
+        if (cand != null)
             // Link with other candidates in the same thread.
             cctx.mvcc().addNext(cctx, cand);
 
@@ -150,23 +144,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude) {
-        Collection<GridCacheMvccCandidate> rmts = this.rmts;
-
-        if (rmts.isEmpty() || F.isEmpty(exclude))
-            return rmts;
-
-        Collection<GridCacheMvccCandidate> cands = new ArrayList<>(rmts.size());
-
-        for (GridCacheMvccCandidate c : rmts) {
-            assert !c.reentry();
-
-            // Don't include reentries.
-            if (!U.containsObjectArray(exclude, c.version()))
-                cands.add(c);
-        }
-
-        return cands;
+    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot() {
+        return rmts;
     }
 
     /**
@@ -223,8 +202,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 threadId,
                 ver,
                 tx,
-                implicitSingle,
-                /*near-local*/false
+                implicitSingle
             );
 
             if (owned != null)
@@ -577,7 +555,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      *
      * @param lockVer Done version.
      * @param baseVer Base version.
-     * @param pendingVers Pending versions that are less than lock version.
      * @param committedVers Completed versions for reordering.
      * @param rolledbackVers Rolled back versions for reordering.
      * @param sysInvalidate Flag indicating if this entry is done from invalidated transaction (in case of tx
@@ -588,7 +565,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     public void doneRemote(
         GridCacheVersion lockVer,
         GridCacheVersion baseVer,
-        @Nullable Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         boolean sysInvalidate
@@ -621,10 +597,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 if (sysInvalidate && baseVer != null)
                     mvcc.salvageRemote(baseVer, isNear());
 
-                owner = mvcc.doneRemote(lockVer,
-                    maskNull(pendingVers),
-                    maskNull(committedVers),
-                    maskNull(rolledbackVers));
+                owner = mvcc.doneRemote(lockVer);
 
                 boolean emptyAfter = mvcc.isEmpty();
 
@@ -696,7 +669,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        GridCacheVersion serReadVer,
         boolean read
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
@@ -706,7 +678,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 tx.xidVersion(),
                 tx.topologyVersion(),
                 timeout,
-                /*reenter*/false,
                 /*tx*/true,
                 tx.implicitSingle(),
                 read) != null;
@@ -776,14 +747,6 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
                 }
             }
         }
-    }
-
-    /**
-     * @param col Collection to mask.
-     * @return Empty collection if argument is null.
-     */
-    private Collection<GridCacheVersion> maskNull(Collection<GridCacheVersion> col) {
-        return col == null ? Collections.<GridCacheVersion>emptyList() : col;
     }
 
     /** {@inheritDoc} */

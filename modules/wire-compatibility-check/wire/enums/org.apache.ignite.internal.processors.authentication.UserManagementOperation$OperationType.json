@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.authentication.UserManagementOperation$OperationType",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.internal.processors.authentication.UserManagementOperation$OperationType", "name": "ADD"},
+    {"order": 1, "type": "org.apache.ignite.internal.processors.authentication.UserManagementOperation$OperationType", "name": "UPDATE"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.authentication.UserManagementOperation$OperationType", "name": "REMOVE"}
+  ]
+}

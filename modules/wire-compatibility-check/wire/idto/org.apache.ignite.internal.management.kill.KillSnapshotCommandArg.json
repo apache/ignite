@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.management.kill.KillSnapshotCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "requestId"},
+    {"order": 1, "type": "java.lang.String", "name": "snapshotName"}
+  ]
+}

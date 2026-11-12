@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * DateValue is a representation of a date in bit form:
  *
- * dv = (year << SHIFT_YEAR) | (month << SHIFT_MONTH) | day.
+ * {@code dv = (year << SHIFT_YEAR) | (month << SHIFT_MONTH) | day}.
  */
 public class DateValueUtils {
     /** Calendar with UTC time zone instance. */

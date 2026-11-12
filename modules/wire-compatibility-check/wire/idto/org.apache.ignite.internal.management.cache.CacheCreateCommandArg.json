@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheCreateCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "springxmlconfig"},
+    {"order": 1, "type": "boolean", "name": "skipExisting"},
+    {"order": 2, "type": "java.lang.String", "name": "fileContent"}
+  ]
+}

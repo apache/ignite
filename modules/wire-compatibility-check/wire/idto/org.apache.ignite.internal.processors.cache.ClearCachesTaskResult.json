@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.ClearCachesTaskResult",
+  "fields": [
+    {"order": 0, "type": "java.util.List<java.lang.String>", "name": "clearedCaches"},
+    {"order": 1, "type": "java.util.List<java.lang.String>", "name": "nonExistentCaches"}
+  ]
+}

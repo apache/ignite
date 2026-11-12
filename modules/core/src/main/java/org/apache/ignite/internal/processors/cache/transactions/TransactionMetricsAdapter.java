@@ -26,12 +26,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.LongConsumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.HistogramGauge;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -41,11 +45,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.internal.IgniteKernal.DFLT_LONG_OPERATIONS_DUMP_TIMEOUT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Tx metrics adapter.
@@ -62,6 +67,21 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
     /** Metric name for user time histogram on node. */
     public static final String METRIC_USER_TIME_HISTOGRAM = "nodeUserTimeHistogram";
+
+    /** Metric name for maximum hold time of explicit locks currently held on node. */
+    public static final String METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME = "MaxExplicitLockHoldTime";
+
+    /** Metric name for maximum duration of cache futures currently in progress on node. */
+    public static final String METRIC_MAX_CACHE_FUTURE_DURATION = "MaxCacheFutureDuration";
+
+    /** Metric name for count of long running cache futures currently in progress on node. */
+    public static final String METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT = "LongRunningCacheFuturesCount";
+
+    /** Metric name for released explicit lock hold time histogram on node. */
+    public static final String METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME = "ReleasedExplicitLockHoldTime";
+
+    /** Metric name for histogram of hold times of explicit locks currently held on node. */
+    public static final String METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME = "CurrentExplicitLockHoldTime";
 
     /** Histogram buckets for metrics of system and user time. */
     public static final long[] METRIC_TIME_BUCKETS =
@@ -97,6 +117,9 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Holds the reference to metric for user time histogram on node. */
     private HistogramMetricImpl txUserTimeHistogram;
 
+    /** Holds the reference to metric for explicit lock hold time histogram on node. */
+    private final HistogramMetricImpl explicitLockHoldTimeHistogram;
+
     /**
      * @param ctx Kernal context.
      */
@@ -124,11 +147,17 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             METRIC_TIME_BUCKETS,
             "Transactions user times on node represented as histogram, in milliseconds."
         );
+
+        explicitLockHoldTimeHistogram = mreg.histogram(
+            METRIC_RELEASED_EXPLICIT_LOCK_HOLD_TIME,
+            METRIC_TIME_BUCKETS,
+            "Released explicit locks hold times on node represented as histogram, in milliseconds."
+        );
     }
 
     /** Callback invoked when {@link IgniteTxManager} started. */
     public void onTxManagerStarted() {
-        MetricRegistry mreg = gridKernalCtx.metric().registry(TX_METRICS);
+        MetricRegistryImpl mreg = gridKernalCtx.metric().registry(TX_METRICS);
 
         mreg.register("AllOwnerTransactions",
             this::getAllOwnerTransactions,
@@ -142,6 +171,25 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
         mreg.register("LockedKeysNumber",
             this::txLockedKeysNum,
             "The number of keys locked on the node.");
+
+        mreg.register(METRIC_MAX_EXPLICIT_LOCK_HOLD_TIME,
+            this::maxExplicitLockHoldTime,
+            "Maximum hold time of explicit locks currently held on the node, in milliseconds.");
+
+        mreg.register(new HistogramGauge(
+            metricName(TX_METRICS, METRIC_CURRENT_EXPLICIT_LOCK_HOLD_TIME),
+            "Hold times of explicit locks currently held on the node represented as histogram, in milliseconds.",
+            new long[] {DFLT_LONG_OPERATIONS_DUMP_TIMEOUT},
+            this::explicitLockHoldTimes));
+
+        mreg.register(METRIC_MAX_CACHE_FUTURE_DURATION,
+            this::maxCacheFutureDuration,
+            "Maximum duration of cache futures currently in progress on the node, in milliseconds.");
+
+        mreg.register(METRIC_LONG_RUNNING_CACHE_FUTURES_COUNT,
+            this::longRunningCacheFuturesCount,
+            "The count of cache futures currently in progress on the node whose duration exceeds " +
+                "the long operations dump timeout.");
 
         mreg.register("OwnerTransactionsNumber",
             this::nearTxNum,
@@ -251,6 +299,15 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
 
             txUserTimeHistogram.value(userTime);
         }
+    }
+
+    /**
+     * Explicit lock release callback.
+     *
+     * @param holdTime Lock hold time in milliseconds.
+     */
+    public void onExplicitLockRelease(long holdTime) {
+        explicitLockHoldTimeHistogram.value(holdTime);
     }
 
     /**
@@ -402,6 +459,79 @@ public class TransactionMetricsAdapter implements TransactionMetrics {
             return 0;
 
         return mvccMgr.lockedKeys().size() + mvccMgr.nearLockedKeys().size();
+    }
+
+    /** @return Maximum hold time of explicit locks currently held on the node, in milliseconds. */
+    private long maxExplicitLockHoldTime() {
+        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccMgr == null)
+            return 0;
+
+        long max = 0;
+
+        for (GridCacheExplicitLockSpan span : mvccMgr.activeExplicitLocks())
+            max = Math.max(max, span.maxHoldTime());
+
+        return max;
+    }
+
+    /** @param c Consumer of hold times of explicit locks currently held on the node, in milliseconds. */
+    private void explicitLockHoldTimes(LongConsumer c) {
+        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccMgr == null)
+            return;
+
+        for (GridCacheExplicitLockSpan span : mvccMgr.activeExplicitLocks())
+            span.holdTimes(c);
+    }
+
+    /** @return Maximum duration of cache futures currently in progress on the node, in milliseconds. */
+    private long maxCacheFutureDuration() {
+        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccMgr == null)
+            return 0;
+
+        long now = U.currentTimeMillis();
+
+        long max = 0;
+
+        for (GridCacheFuture<?> fut : mvccMgr.activeFutures())
+            max = Math.max(max, now - fut.startTime());
+
+        for (GridCacheFuture<?> fut : mvccMgr.atomicFutures())
+            max = Math.max(max, now - fut.startTime());
+
+        return max;
+    }
+
+    /** @return Count of cache futures currently in progress whose duration exceeds longOperationsDumpTimeout. */
+    private long longRunningCacheFuturesCount() {
+        GridCacheMvccManager mvccMgr = gridKernalCtx.cache().context().mvcc();
+
+        if (mvccMgr == null)
+            return 0;
+
+        long timeout = gridKernalCtx.cache().context().tm().longOperationsDumpTimeout();
+
+        if (timeout <= 0)
+            return 0;
+
+        long now = U.currentTimeMillis();
+
+        long cnt = 0;
+
+        for (GridCacheFuture<?> fut : mvccMgr.activeFutures())
+            if (now - fut.startTime() > timeout)
+                cnt++;
+
+        for (GridCacheFuture<?> fut : mvccMgr.atomicFutures())
+            if (now - fut.startTime() > timeout)
+                cnt++;
+
+        return cnt;
     }
 
     /** {@inheritDoc} */

@@ -22,11 +22,11 @@ import java.util.UUID;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 
 /** Holds map of thick client or server metrics messages per node id. */
-public class TcpDiscoveryClientNodesMetricsMessage implements Message {
+public class TcpDiscoveryClientNodesMetricsMessage extends AbstractMessage {
     /** Map of nodes metrics messages per node id. */
     @Order(0)
     Map<UUID, ClusterMetricsSnapshot> nodesMetricsMsgs;

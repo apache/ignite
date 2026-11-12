@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.ValidateIndexesCheckSizeIssue",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "idxName"},
+    {"order": 1, "type": "long", "name": "idxSize"},
+    {"order": 2, "type": "java.lang.Throwable", "name": "t"}
+  ]
+}

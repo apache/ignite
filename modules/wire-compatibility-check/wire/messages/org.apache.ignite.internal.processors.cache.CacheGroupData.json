@@ -1,0 +1,17 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.CacheGroupData",
+  "fields": [
+    {"order": 0, "type": "int", "name": "grpId"},
+    {"order": 1, "type": "java.lang.String", "name": "grpName"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "startTopVer"},
+    {"order": 3, "type": "java.util.UUID", "name": "rcvdFrom"},
+    {"order": 4, "type": "org.apache.ignite.lang.IgniteUuid", "name": "deploymentId"},
+    {"order": 5, "type": "byte[]", "name": "cacheCfgBytes"},
+    {"order": 6, "type": "java.util.Map<java.lang.String,java.lang.Integer>", "name": "caches"},
+    {"order": 7, "type": "boolean", "name": "persistenceEnabled"},
+    {"order": 8, "type": "boolean", "name": "walEnabled"},
+    {"order": 9, "type": "java.util.List<org.apache.ignite.internal.processors.cache.WalStateProposeMessage>", "name": "walChangeReqs"},
+    {"order": 10, "type": "org.apache.ignite.internal.processors.cache.CacheConfigurationEnrichment", "name": "cacheCfgEnrichment"},
+    {"type": "org.apache.ignite.configuration.CacheConfiguration<?,?>", "name": "cacheCfg", "annotations": ["@org.apache.ignite.internal.Marshalled(\"cacheCfgBytes\")"]}
+  ]
+}

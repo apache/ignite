@@ -98,11 +98,12 @@ import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcesso
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -177,8 +178,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     /** Marshaller. */
     private final BinaryMarshaller marsh;
 
-    /** Operation context dispacther. */
-    private final OperationContextDispatcher opCtxDispatcher = new OperationContextDispatcher();
+    /** Distributed operation context. */
+    private final DistributedOperationContext distrOpCtx = new DistributedOperationContext();
 
     /**
      * @param log Logger.
@@ -444,6 +445,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public SslFactoryRegistry ssl() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteScheduleProcessorAdapter schedule() {
         return null;
     }
@@ -459,8 +465,8 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public OperationContextDispatcher operationContextDispatcher() {
-        return opCtxDispatcher;
+    @Override public DistributedOperationContext distributedOperationContext() {
+        return distrOpCtx;
     }
 
     /** {@inheritDoc} */

@@ -1,0 +1,9 @@
+{
+  "class": "org.apache.ignite.internal.managers.communication.GridIoUserMessage",
+  "fields": [
+    {"order": 0, "type": "byte[]", "name": "bodyBytes"},
+    {"order": 1, "type": "byte[]", "name": "topicBytes"},
+    {"order": 2, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 3, "type": "java.lang.String", "name": "depClsName"}
+  ]
+}

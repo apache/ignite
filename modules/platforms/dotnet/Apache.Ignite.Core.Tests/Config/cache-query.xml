@@ -47,6 +47,19 @@
             <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
         </property>
 
+        <property name="sqlConfiguration">
+            <bean class="org.apache.ignite.configuration.SqlConfiguration">
+                <property name="queryEnginesConfiguration">
+                    <list>
+                        <bean class="org.apache.ignite.indexing.IndexingQueryEngineConfiguration">
+                            <property name="default" value="true"/>
+                        </bean>
+                        <bean class="org.apache.ignite.calcite.CalciteQueryEngineConfiguration"/>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

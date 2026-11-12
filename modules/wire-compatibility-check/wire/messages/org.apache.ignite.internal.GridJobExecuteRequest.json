@@ -1,0 +1,30 @@
+{
+  "class": "org.apache.ignite.internal.GridJobExecuteRequest",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sesId"},
+    {"order": 1, "type": "org.apache.ignite.lang.IgniteUuid", "name": "jobId"},
+    {"order": 2, "type": "byte[]", "name": "jobBytes"},
+    {"order": 3, "type": "long", "name": "startTaskTime"},
+    {"order": 4, "type": "long", "name": "timeout"},
+    {"order": 5, "type": "java.lang.String", "name": "taskName"},
+    {"order": 6, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 7, "type": "java.lang.String", "name": "taskClsName"},
+    {"order": 8, "type": "byte[]", "name": "sesAttrsBytes"},
+    {"order": 9, "type": "byte[]", "name": "jobAttrsBytes"},
+    {"order": 10, "type": "java.lang.String", "name": "cpSpi"},
+    {"order": 11, "type": "org.apache.ignite.lang.IgniteUuid[]", "name": "siblingJobsIds"},
+    {"order": 12, "type": "boolean", "name": "forceLocDep"},
+    {"order": 13, "type": "boolean", "name": "sesFullSup"},
+    {"order": 14, "type": "boolean", "name": "internal"},
+    {"order": 15, "type": "java.util.Collection<java.util.UUID>", "name": "top"},
+    {"order": 16, "type": "byte[]", "name": "topPredBytes"},
+    {"order": 17, "type": "int[]", "name": "cacheIds"},
+    {"order": 18, "type": "int", "name": "part"},
+    {"order": 19, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 20, "type": "java.lang.String", "name": "execName"},
+    {"type": "java.util.Map<? extends java.io.Serializable,? extends java.io.Serializable>", "name": "jobAttrs", "annotations": ["@org.apache.ignite.internal.Marshalled(\"jobAttrsBytes\")"]},
+    {"type": "java.util.Map<java.lang.Object,java.lang.Object>", "name": "sesAttrs", "annotations": ["@org.apache.ignite.internal.Marshalled(\"sesAttrsBytes\")"]},
+    {"type": "org.apache.ignite.compute.ComputeJob", "name": "job", "annotations": ["@org.apache.ignite.internal.Marshalled(\"jobBytes\")"]},
+    {"type": "org.apache.ignite.lang.IgnitePredicate<org.apache.ignite.cluster.ClusterNode>", "name": "topPred", "annotations": ["@org.apache.ignite.internal.Marshalled(\"topPredBytes\")"]}
+  ]
+}

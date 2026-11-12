@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.managers.communication.SessionChannelMessage",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sesId"}
+  ]
+}

@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /**
  * List of settings that affects key types of index keys.
  */
-public class IndexKeyTypeSettings implements Message {
+public class IndexKeyTypeSettings extends AbstractMessage {
     /** Whether inlining POJO keys as hash is supported. */
     @Order(0)
     boolean inlineObjHash = true;

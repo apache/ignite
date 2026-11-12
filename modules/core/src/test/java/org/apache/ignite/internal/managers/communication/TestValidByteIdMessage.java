@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
 /** Test message with correct direct type. */
-public class TestValidByteIdMessage implements Message {
+public class TestValidByteIdMessage extends AbstractMessage {
     /** Direct type. */
     static final short DIRECT_TYPE = -127;
 

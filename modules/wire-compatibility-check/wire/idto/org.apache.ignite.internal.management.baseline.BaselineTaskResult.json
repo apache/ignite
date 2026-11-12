@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.management.baseline.BaselineTaskResult",
+  "fields": [
+    {"order": 0, "type": "org.apache.ignite.cluster.ClusterState", "name": "clusterState"},
+    {"order": 1, "type": "long", "name": "topVer"},
+    {"order": 2, "type": "java.util.TreeMap<java.lang.String,org.apache.ignite.internal.management.baseline.BaselineNode>", "name": "baseline"},
+    {"order": 3, "type": "java.util.TreeMap<java.lang.String,org.apache.ignite.internal.management.baseline.BaselineNode>", "name": "servers"},
+    {"order": 4, "type": "org.apache.ignite.internal.management.baseline.BaselineAutoAdjustSettings", "name": "autoAdjustSettings"},
+    {"order": 5, "type": "long", "name": "remainingTimeToBaselineAdjust"},
+    {"order": 6, "type": "boolean", "name": "baselineAdjustInProgress"}
+  ]
+}

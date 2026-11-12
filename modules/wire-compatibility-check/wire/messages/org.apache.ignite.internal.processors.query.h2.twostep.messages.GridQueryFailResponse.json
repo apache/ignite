@@ -1,0 +1,8 @@
+{
+  "class": "org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryFailResponse",
+  "fields": [
+    {"order": 0, "type": "long", "name": "qryReqId"},
+    {"order": 1, "type": "java.lang.String", "name": "errMsg"},
+    {"order": 2, "type": "byte", "name": "failCode"}
+  ]
+}

@@ -54,7 +54,6 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         startGrid(0);
 
         checkVersionUpgradeInactive("2.19.0");
-        checkPreviousClusterFeatures(null);
     }
 
     /** */
@@ -89,8 +88,6 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
 
         restartNode(1);
         restartNode(2);
-
-        checkPreviousClusterFeatures(null);
     }
 
     /** */
@@ -180,6 +177,24 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         finalizeClusterVersion(1, "2.19.2");
     }
 
+    /** Tests usage of {@link #MASTER_VER_REF}. */
+    @Test
+    public void testUpgradeWithTheMasterVersionReference() throws Exception {
+        startCluster("2.18.0");
+
+        checkVersionUpgradeInactive("2.18.0");
+
+        ru(0).enableVersionUpgrade();
+
+        forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.18.0", MASTER_VER_REF));
+
+        checkFeaturesActive("2.18.0");
+
+        checkVersionUpgradeInProgress("2.18.0", MASTER_VER_REF);
+
+        finalizeClusterVersion(0, MASTER_VER_REF);
+    }
+
     /** */
     @Test
     public void testJoinAfterClusterVersionFinalization() throws Exception {
@@ -197,7 +212,6 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         checkJoinSuccess(4, "2.19.2", true);
 
         checkVersionUpgradeInactive("2.19.2");
-        checkPreviousClusterFeatures(TEST_DEFAULT_VER);
     }
 
     /** */
@@ -274,21 +288,18 @@ public class CoreVersionRollingUpgradeTest extends AbstractRollingUpgradeTest {
         finalizeClusterVersion(1, "2.19.2");
 
         restartNode(0);
-        checkPreviousClusterFeatures(TEST_DEFAULT_VER);
 
         ru(1).enableVersionUpgrade();
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.19.2", "2.20.0"));
         finalizeClusterVersion(1, "2.20.0");
 
         restartNode(1);
-        checkPreviousClusterFeatures("2.19.2");
 
         ru(1).enableVersionUpgrade();
         forAllNodes(nodeIdx -> upgradeNodeVersion(nodeIdx, "2.20.0", "2.21.0"));
         finalizeClusterVersion(1, "2.21.0");
 
         restartNode(2);
-        checkPreviousClusterFeatures("2.20.0");
     }
 
     /** */

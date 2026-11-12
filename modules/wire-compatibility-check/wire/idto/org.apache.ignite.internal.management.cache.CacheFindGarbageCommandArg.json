@@ -1,0 +1,10 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheFindGarbageCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.lang.String", "name": "value"},
+    {"order": 1, "type": "java.lang.String", "name": "value2"},
+    {"order": 2, "type": "java.lang.String[]", "name": "groups"},
+    {"order": 3, "type": "java.util.UUID[]", "name": "nodeIds"},
+    {"order": 4, "type": "boolean", "name": "delete"}
+  ]
+}

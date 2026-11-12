@@ -74,11 +74,12 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
-import org.apache.ignite.internal.thread.context.OperationContextDispatcher;
+import org.apache.ignite.internal.thread.context.DistributedOperationContext;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.worker.WorkersRegistry;
@@ -222,11 +223,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public MessageFactory messageFactory();
 
     /**
-     * Gets the distributed operation context dispatcher.
+     * Gets the distributed operation context.
      *
-     * @return The distributed operation context dispatcher.
+     * @return The distributed operation context.
      */
-    public OperationContextDispatcher operationContextDispatcher();
+    public DistributedOperationContext distributedOperationContext();
 
     /**
      * Gets transformation processor.
@@ -297,6 +298,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Port processor.
      */
     public GridPortProcessor ports();
+
+    /** */
+    public SslFactoryRegistry ssl();
 
     /**
      * Gets schedule processor.

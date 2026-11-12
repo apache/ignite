@@ -47,6 +47,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySnapshotHistoryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiFailureTimeoutSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiMBeanTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiMetricsTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpiSslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedUntrustedTest;
@@ -69,6 +70,7 @@ import org.junit.runners.Suite;
     TcpDiscoverySpiSslSelfTest.class,
     TcpDiscoverySpiFailureTimeoutSelfTest.class,
     TcpDiscoverySpiMBeanTest.class,
+    TcpDiscoverySpiMetricsTest.class,
     TcpDiscoverySnapshotHistoryTest.class,
     ExponentialBackoffTimeoutStrategyTest.class,
     TcpClientDiscoverySpiSelfTest.class,

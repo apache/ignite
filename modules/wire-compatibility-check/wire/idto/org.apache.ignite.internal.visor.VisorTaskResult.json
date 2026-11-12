@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.visor.VisorTaskResult",
+  "fields": [
+    {"order": 0, "type": "R extends java.lang.Object", "name": "res"},
+    {"order": 1, "type": "java.lang.Exception", "name": "err"}
+  ]
+}

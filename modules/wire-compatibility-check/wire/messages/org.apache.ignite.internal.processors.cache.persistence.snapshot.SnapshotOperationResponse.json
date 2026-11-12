@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationResponse",
+  "fields": [
+    {"order": 0, "type": "java.util.Map<java.lang.String,org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult<org.apache.ignite.plugin.extensions.communication.Message>>", "name": "hndResults"}
+  ]
+}

@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * @see DmsDataWriter#write(String, byte[])
  * @see MetaStorage#write(String, Serializable)
  */
-public class DistributedMetaStorageHistoryItemMessage implements Message {
+public class DistributedMetaStorageHistoryItemMessage extends AbstractMessage {
     /** */
     @Order(0)
     String[] keys;

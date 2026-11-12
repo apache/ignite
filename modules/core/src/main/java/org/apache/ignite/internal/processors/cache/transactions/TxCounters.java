@@ -30,21 +30,11 @@ import org.jetbrains.annotations.Nullable;
  * Values which should be tracked during transaction execution and applied on commit.
  */
 public class TxCounters {
-    /** Size changes for cache partitions made by transaction */
-    private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
-
     /** Per-partition update counter accumulator. */
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
     private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
-
-    /**
-     * @return Map of size changes for cache partitions made by transaction.
-     */
-    public Map<Integer, Map<Integer, AtomicLong>> sizeDeltas() {
-        return sizeDeltas;
-    }
 
     /**
      * @param updCntrs Final update counters.

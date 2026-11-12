@@ -1,0 +1,6 @@
+{
+  "class": "org.apache.ignite.internal.management.cache.CacheIndexesRebuildStatusCommandArg",
+  "fields": [
+    {"order": 0, "type": "java.util.UUID", "name": "nodeId"}
+  ]
+}

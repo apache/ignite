@@ -1756,7 +1756,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     if (id != 0)
                         U.awaitQuiet(lockLatch);
 
-                    cache.invoke(0L, new IncrementClosure(), null);
+                    cache.invoke(0L, new IncrementClosure());
 
                     if (id == 0) {
                         lockLatch.countDown();
@@ -2834,27 +2834,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        int ret = execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME);
-
-        assertEquals(EXIT_CODE_OK, ret);
-
         Pattern ptrn = Pattern.compile("(?m)Node [-0-9a-f]{36}:\n\\s+(?<left>\\d+) KB of data.+");
-        Matcher matcher = ptrn.matcher(testOut.toString());
-        int matchesCnt = 0;
 
-        while (matcher.find()) {
-            assertEquals(1, matcher.groupCount());
+        // Pages left are counted asynchronously after the key change, so the status may report zero at first.
+        assertTrue(waitForCondition(() -> {
+            assertEquals(EXIT_CODE_OK, execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME));
 
-            int pagesLeft = Integer.parseInt(matcher.group("left"));
+            Matcher matcher = ptrn.matcher(testOut.toString());
+            int matchesCnt = 0;
 
-            assertTrue(pagesLeft > 0);
+            while (matcher.find()) {
+                assertEquals(1, matcher.groupCount());
 
-            matchesCnt++;
-        }
+                int pagesLeft = Integer.parseInt(matcher.group("left"));
 
-        assertEquals(srvNodes, matchesCnt);
+                assertTrue(pagesLeft > 0);
 
-        ret = execute("--encryption", REENCRYPTION_SUSPEND, DEFAULT_CACHE_NAME);
+                matchesCnt++;
+            }
+
+            return matchesCnt == srvNodes;
+        }, getTestTimeout()));
+
+        int ret = execute("--encryption", REENCRYPTION_SUSPEND, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),

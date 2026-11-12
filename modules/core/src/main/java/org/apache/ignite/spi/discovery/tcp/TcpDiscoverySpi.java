@@ -38,9 +38,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAuthenticationException;
@@ -416,11 +416,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Node authenticator. */
     protected DiscoverySpiNodeAuthenticator nodeAuth;
 
-    /** SSL server socket factory. */
-    protected SSLServerSocketFactory sslSrvSockFactory;
-
-    /** SSL socket factory. */
-    protected SSLSocketFactory sslSockFactory;
+    /** */
+    @GridToStringExclude
+    private Factory<SSLContext> sslCtxFactory;
 
     /** SSL enable/disable flag. */
     protected boolean sslEnable;
@@ -1660,7 +1658,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         try {
             if (isSslEnabled())
-                sock = sslSockFactory.createSocket();
+                sock = sslSocketFactory().createSocket();
             else
                 sock = new Socket();
 
@@ -1670,12 +1668,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             return sock;
         }
-        catch (IOException e) {
+        catch (IOException | RuntimeException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
-            throw e;
+            if (e instanceof IOException)
+                throw (IOException)e;
+
+            throw new IOException("Failed to create discovery socket.", e);
         }
+    }
+
+    /** */
+    SSLSocketFactory sslSocketFactory() {
+        return sslCtxFactory.create().getSocketFactory();
     }
 
     /**
@@ -1790,11 +1796,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ses.readMessage(timeout);
         }
         catch (IOException | IgniteCheckedException e) {
-            if (X.hasCause(e, SocketTimeoutException.class))
+            if (X.hasCause(e, SocketTimeoutException.class)) {
+                stats.onSocketReadTimeout();
+
                 LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
                     "long GC pauses on remote node) [curTimeout=" + timeout +
                     ", rmtAddr=" + ses.socket().getRemoteSocketAddress() +
                     ", rmtPort=" + ses.socket().getPort() + ']');
+            }
 
             StreamCorruptedException streamCorruptedCause = X.cause(e, StreamCorruptedException.class);
 
@@ -1878,6 +1887,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ses.read(timeout);
         }
         catch (SocketTimeoutException e) {
+            stats.onSocketReadTimeout();
+
             LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
                 "configuration property). Will retry to send message with increased timeout " +
@@ -2094,6 +2105,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
         impl.spiStart(igniteInstanceName);
+
+        if (isSslEnabled())
+            ignite.context().ssl().register("discovery", sslCtxFactory);
     }
 
     /** */
@@ -2101,7 +2115,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         if (impl != null)
             return;
 
-        sslEnable = ignite.configuration().getSslContextFactory() != null;
+        Factory<SSLContext> sslFactory = ignite.configuration().getSslContextFactory();
+
+        sslEnable = sslFactory != null;
 
         initFailureDetectionTimeout();
 
@@ -2149,15 +2165,14 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         if (isSslEnabled()) {
             try {
-                SSLContext sslCtx = ignite.configuration().getSslContextFactory().create();
+                // Validate protocols and ciphers at startup, before binding the plain listener.
+                sslFactory.create().getSocketFactory().createSocket().close();
+            }
+            catch (IOException | IgniteException e) {
+                throw new IgniteSpiException("Failed to initialize discovery SSL. SSL factory: " + sslFactory, e);
+            }
 
-                sslSockFactory = sslCtx.getSocketFactory();
-                sslSrvSockFactory = sslCtx.getServerSocketFactory();
-            }
-            catch (IgniteException e) {
-                throw new IgniteSpiException("Failed to create SSL context. SSL factory: "
-                    + ignite.configuration().getSslContextFactory(), e);
-            }
+            sslCtxFactory = sslFactory;
         }
 
         try {
@@ -2498,6 +2513,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (done.compareAndSet(false, true)) {
                 // Close session - timeout occurred.
                 ses.close();
+
+                stats.onSocketWriteTimeout();
 
                 LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?

@@ -1,0 +1,24 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "cacheId"},
+    {"order": 4, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "ver"},
+    {"order": 5, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "committedVers"},
+    {"order": 6, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.version.GridCacheVersion>", "name": "rolledbackVers"},
+    {"order": 7, "type": "long", "name": "threadId"},
+    {"order": 8, "type": "org.apache.ignite.transactions.TransactionConcurrency", "name": "concurrency"},
+    {"order": 9, "type": "org.apache.ignite.transactions.TransactionIsolation", "name": "isolation"},
+    {"order": 10, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion", "name": "writeVer"},
+    {"order": 11, "type": "long", "name": "timeout"},
+    {"order": 12, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry>", "name": "reads"},
+    {"order": 13, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry>", "name": "writes"},
+    {"order": 14, "type": "java.util.Collection<org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey>", "name": "dhtVerKeys"},
+    {"order": 15, "type": "int", "name": "txSize"},
+    {"order": 16, "type": "java.util.Map<java.util.UUID,java.util.Collection<java.util.UUID>>", "name": "txNodes"},
+    {"order": 17, "type": "byte", "name": "plc"},
+    {"order": 18, "type": "byte", "name": "flags"}
+  ]
+}

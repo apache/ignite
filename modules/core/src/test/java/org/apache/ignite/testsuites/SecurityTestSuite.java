@@ -17,6 +17,8 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.client.thin.ClientSslUtilsTest;
+import org.apache.ignite.internal.management.ssl.SslReloadTaskTest;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
 import org.apache.ignite.internal.processors.security.NodeConnectionCertificateCapturingTest;
@@ -74,10 +76,15 @@ import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteS
 import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
 import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistryTest;
+import org.apache.ignite.internal.thread.context.ComputeTaskOperationContextPropagationTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributePropagationTest;
 import org.apache.ignite.internal.thread.context.OperationContextAttributesTest;
 import org.apache.ignite.plugin.security.SecurityBasicPermissionSetSerializationTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
+import org.apache.ignite.ssl.SSLContextWrapperTest;
+import org.apache.ignite.ssl.SslContextFactoryInitTest;
+import org.apache.ignite.ssl.SslContextReloadTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -140,6 +147,12 @@ import org.junit.runners.Suite;
 
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
+    SSLContextWrapperTest.class,
+    SslContextFactoryInitTest.class,
+    SslFactoryRegistryTest.class,
+    SslReloadTaskTest.class,
+    SslContextReloadTest.class,
+    ClientSslUtilsTest.class,
     MaintenanceModeNodeSecurityTest.class,
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,
@@ -152,6 +165,7 @@ import org.junit.runners.Suite;
     NodeConnectionCertificateCapturingTest.class,
     OperationContextAttributesTest.class,
     OperationContextAttributePropagationTest.class,
+    ComputeTaskOperationContextPropagationTest.class,
     SecurityBasicPermissionSetSerializationTest.class,
 })
 public class SecurityTestSuite {

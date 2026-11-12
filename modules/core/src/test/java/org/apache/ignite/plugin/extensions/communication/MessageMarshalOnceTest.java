@@ -151,7 +151,7 @@ public class MessageMarshalOnceTest extends GridCommonAbstractTest {
     }
 
     /** Fieldless message; only the registered marshaller's invocation count matters. */
-    private static class MarshalOnceCheckMessage implements Message {
+    private static class MarshalOnceCheckMessage extends AbstractMessage {
         // No fields.
     }
 

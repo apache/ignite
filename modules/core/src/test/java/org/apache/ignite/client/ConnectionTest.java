@@ -45,7 +45,7 @@ public class ConnectionTest {
     /** */
     @Test(expected = org.apache.ignite.client.ClientException.class)
     public void testNullNodeAddress() throws Exception {
-        testConnection(IPv4_HOST, null);
+        testConnection(IPv4_HOST, (String[])null);
     }
 
     /** */

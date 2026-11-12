@@ -1,0 +1,16 @@
+{
+  "class": "org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage",
+  "fields": [
+    {"order": 0, "type": "long", "name": "msgId"},
+    {"order": 1, "type": "org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage", "name": "depInfo"},
+    {"order": 2, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "lastAffChangedTopVer"},
+    {"order": 3, "type": "int", "name": "grpId"},
+    {"order": 4, "type": "long", "name": "rebalanceId"},
+    {"order": 5, "type": "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", "name": "topVer"},
+    {"order": 6, "type": "java.util.Map<java.lang.Integer,java.lang.Long>", "name": "last"},
+    {"order": 7, "type": "java.util.Collection<java.lang.Integer>", "name": "missed"},
+    {"order": 8, "type": "java.util.Map<java.lang.Integer,java.util.List<org.apache.ignite.internal.processors.cache.GridCacheEntryInfo>>", "name": "infos"},
+    {"order": 9, "type": "int", "name": "msgSize"},
+    {"order": 10, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"}
+  ]
+}

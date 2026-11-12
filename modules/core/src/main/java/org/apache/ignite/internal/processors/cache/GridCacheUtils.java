@@ -57,6 +57,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CacheConfigurationInternalAccessor;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -110,7 +111,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.transactions.Transaction;
@@ -127,16 +127,12 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
-import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 
 /**
  * Cache utility methods.
  */
 public class GridCacheUtils {
-    /** Cheat cache ID for debugging and benchmarking purposes. */
-    public static final int cheatCacheId;
-
     /** @see IgniteSystemProperties#IGNITE_TTL_EXPIRE_BATCH_SIZE */
     public static final int DFLT_TTL_EXPIRE_BATCH_SIZE = 5;
 
@@ -146,38 +142,6 @@ public class GridCacheUtils {
 
     /** */
     public static final int UNDEFINED_CACHE_ID = 0;
-
-    /*
-     *
-     */
-    static {
-        String cheatCache = System.getProperty("CHEAT_CACHE");
-
-        if (cheatCache != null) {
-            cheatCacheId = cheatCache.hashCode();
-
-            if (cheatCacheId == 0)
-                throw new RuntimeException();
-
-            System.out.println(">>> Cheat cache ID [id=" + cheatCacheId + ", name=" + cheatCache + ']');
-        }
-        else
-            cheatCacheId = 0;
-    }
-
-    /**
-     * Quickly checks if passed in cache ID is a "cheat cache ID" set by -DCHEAT_CACHE=user_cache_name
-     * and resolved in static block above.
-     *
-     * FOR DEBUGGING AND TESTING PURPOSES!
-     *
-     * @param id Cache ID to check.
-     * @return {@code True} if this is cheat cache ID.
-     */
-    @Deprecated
-    public static boolean cheatCache(int id) {
-        return cheatCacheId != 0 && id == cheatCacheId;
-    }
 
     /**
      * Checks whether the separate lock wait timeout expires before the transaction timeout.
@@ -882,25 +846,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Get topic to which replication requests are sent.
-     *
-     * @return Topic to which replication requests are sent.
-     */
-    public static String replicationTopicSend() {
-        return TOPIC_REPLICATION.toString();
-    }
-
-    /**
-     * Get topic to which replication responses are sent.
-     *
-     * @param cacheName Cache name.
-     * @return Topic to which replication responses are sent.
-     */
-    public static String replicationTopicReceive(String cacheName) {
-        return TOPIC_REPLICATION + "-" + mask(cacheName);
-    }
-
-    /**
      * Checks that local and remove configurations have the same value of given attribute.
      *
      * @param log Logger used to log warning message (used only if fail flag is not set).
@@ -1231,44 +1176,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @param cfg Cache configuration.
-     * @param cl Type of cache plugin configuration.
-     * @return Cache plugin configuration by type from cache configuration or <code>null</code>.
-     */
-    public static <C extends CachePluginConfiguration> C cachePluginConfiguration(
-        CacheConfiguration cfg, Class<C> cl) {
-        if (cfg.getPluginConfigurations() != null) {
-            for (CachePluginConfiguration pluginCfg : cfg.getPluginConfigurations()) {
-                if (pluginCfg.getClass() == cl)
-                    return (C)pluginCfg;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param cfg Config.
-     * @param cls Class.
-     * @return Not <code>null</code> list.
-     */
-    public static <T extends CachePluginConfiguration> List<T> cachePluginConfigurations(IgniteConfiguration cfg,
-        Class<T> cls) {
-        List<T> res = new ArrayList<>();
-
-        if (cfg.getCacheConfiguration() != null) {
-            for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
-                for (CachePluginConfiguration pluginCcfg : ccfg.getPluginConfigurations()) {
-                    if (cls == pluginCcfg.getClass())
-                        res.add((T)pluginCcfg);
-                }
-            }
-        }
-
-        return res;
-    }
-
-    /**
      * @param node Node.
      * @param filter Node filter.
      * @return {@code True} if node is not client node and pass given filter.
@@ -1484,6 +1391,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param grpName Cache group name, {@code null} if the cache does not belong to a group.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateCacheGroupName(@Nullable String grpName) throws IllegalArgumentException {
+        A.ensure(grpName == null || !grpName.isEmpty(), "Cache group name must not be empty.");
+    }
+
+    /**
      * @param name Cache name.
      * @throws IllegalArgumentException In case the name is not valid.
      */
@@ -1680,8 +1595,12 @@ public class GridCacheUtils {
      * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @throws IgniteCheckedException If configuration is not valid.
      */
-    public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx, boolean recoveryMode) throws IgniteCheckedException {
+    public static void initializeConfigDefaults(
+        IgniteLogger log,
+        CacheConfiguration cfg,
+        CacheObjectContext cacheObjCtx,
+        boolean recoveryMode
+    ) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -1740,8 +1659,8 @@ public class GridCacheUtils {
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
         if (!F.isEmpty(entities)) {
-            cfg.clearQueryEntities().setQueryEntities(
-                QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
+            CacheConfigurationInternalAccessor.replaceQueryEntities(
+                cfg, QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
         }
     }
 
@@ -2158,8 +2077,11 @@ public class GridCacheUtils {
         boolean isSqlEscape,
         int qryParallelism
     ) {
-        return new CacheConfiguration<>(oldCfg)
-                .setQueryEntities(entities)
+        CacheConfiguration<K, V> newCfg = new CacheConfiguration<>(oldCfg);
+
+        CacheConfigurationInternalAccessor.replaceQueryEntities(newCfg, entities);
+
+        return newCfg
                 .setSqlSchema(sqlSchema)
                 .setSqlEscapeAll(isSqlEscape)
                 .setQueryParallelism(qryParallelism);

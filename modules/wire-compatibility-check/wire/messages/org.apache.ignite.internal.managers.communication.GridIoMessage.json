@@ -1,0 +1,12 @@
+{
+  "class": "org.apache.ignite.internal.managers.communication.GridIoMessage",
+  "fields": [
+    {"order": 0, "type": "byte", "name": "plc"},
+    {"order": 1, "type": "org.apache.ignite.internal.GridTopicMessage", "name": "topicMsg"},
+    {"order": 2, "type": "boolean", "name": "ordered"},
+    {"order": 3, "type": "long", "name": "timeout"},
+    {"order": 4, "type": "boolean", "name": "skipOnTimeout"},
+    {"order": 5, "type": "org.apache.ignite.plugin.extensions.communication.Message", "name": "msg"},
+    {"order": 6, "type": "org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage", "name": "opCtxSnp"}
+  ]
+}
