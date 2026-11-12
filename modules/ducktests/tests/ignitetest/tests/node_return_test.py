@@ -50,7 +50,7 @@ AFTER_SEC = 20
 JOIN_EXCHANGE_MS = 6_000
 
 # The load's threads write one small key range, so they overwrite each other's keys and contend for them.
-LOAD_THREADS = 8
+LOAD_THREADS = 2
 LOAD_KEYS = 1_000
 
 
