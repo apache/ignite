@@ -46,8 +46,8 @@ BEFORE_SEC = 10
 AWAY_SEC = 30
 AFTER_SEC = 20
 
-# The join's exchange may wait for a load transaction until its 1 s timeout and for the returning node's start.
-JOIN_EXCHANGE_MS = 6_000
+# The join's exchange may wait for a load transaction until its 1 s timeout, plus its own work.
+JOIN_EXCHANGE_MS = 2_000
 
 # The load's threads write one small key range, so they overwrite each other's keys and contend for them.
 LOAD_THREADS = 2
