@@ -31,6 +31,8 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -160,9 +162,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
     @Override SSLContext createSslContext() throws SSLException {
         try {
             SSLContext ctx = super.createSslContext();
-            boolean replacement = sslCtx.get() != null;
 
-            renewalTime = renewalEnabled || replacement ? certificateRenewalTime(loadedKeyStore, replacement) : 0;
+            if (sslCtx.get() != null)
+                checkValidity(keyChains(loadedKeyStore));
+
+            if (renewalEnabled)
+                renewalTime = renewalTime(keyChains(loadedKeyStore));
 
             return ctx;
         }
@@ -369,18 +374,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * Validates the key chains and calculates the renewal date.
-     *
      * @param store Loaded key store.
-     * @param replacement Whether the certificates replace an existing context.
-     * @return Start of the renewal window, or {@code 0} if renewal is disabled.
+     * @return X.509 certificate chains of the private keys by alias.
      * @throws GeneralSecurityException If a key or certificate cannot be read.
-     * @throws SSLException If the certificates cannot be accepted.
+     * @throws SSLException If a private key has no X.509 certificate chain.
      */
-    private long certificateRenewalTime(KeyStore store, boolean replacement) throws GeneralSecurityException, SSLException {
-        long earliestExpiry = Long.MAX_VALUE;
-        long selectedStart = Long.MAX_VALUE;
-        Date now = new Date();
+    private Map<String, X509Certificate[]> keyChains(KeyStore store) throws GeneralSecurityException, SSLException {
+        Map<String, X509Certificate[]> chains = new LinkedHashMap<>();
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
             String alias = aliases.nextElement();
@@ -393,26 +393,68 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (chain == null || chain.length == 0)
                 throw new SSLException("Certificate chain is unavailable [alias=" + alias + "]. Remove the key or add its X.509 chain.");
 
-            long chainExpiry = Long.MAX_VALUE;
+            X509Certificate[] x509Chain = new X509Certificate[chain.length];
 
-            for (Certificate cert : chain) {
-                if (!(cert instanceof X509Certificate x509))
+            for (int i = 0; i < chain.length; i++) {
+                if (!(chain[i] instanceof X509Certificate cert))
                     throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
 
-                if (replacement) {
-                    try {
-                        x509.checkValidity(now);
-                    }
-                    catch (CertificateException e) {
-                        throw new SSLException("Certificate is not currently valid [alias=" + alias + ", subject=" +
-                            x509.getSubjectX500Principal() + ']', e);
-                    }
-                }
-
-                chainExpiry = Math.min(chainExpiry, x509.getNotAfter().getTime());
+                x509Chain[i] = cert;
             }
 
-            long chainStart = ((X509Certificate)chain[0]).getNotBefore().getTime();
+            chains.put(alias, x509Chain);
+        }
+
+        return chains;
+    }
+
+    /**
+     * Checks that every certificate in the key chains is valid now.
+     *
+     * @param chains Key chains by alias.
+     * @throws SSLException If a certificate is not valid or expires before the check completes.
+     */
+    private static void checkValidity(Map<String, X509Certificate[]> chains) throws SSLException {
+        Date now = new Date();
+        long earliestExpiry = Long.MAX_VALUE;
+
+        for (Map.Entry<String, X509Certificate[]> chain : chains.entrySet()) {
+            for (X509Certificate cert : chain.getValue()) {
+                try {
+                    cert.checkValidity(now);
+                }
+                catch (CertificateException e) {
+                    throw new SSLException("Certificate is not currently valid [alias=" + chain.getKey() + ", subject=" +
+                        cert.getSubjectX500Principal() + ']', e);
+                }
+
+                earliestExpiry = Math.min(earliestExpiry, cert.getNotAfter().getTime());
+            }
+        }
+
+        if (earliestExpiry < System.currentTimeMillis())
+            throw new SSLException("Replacement certificates expired while loading the SSL context [expiry=" + earliestExpiry + ']');
+    }
+
+    /**
+     * @param chains Key chains by alias.
+     * @return Start of the renewal window of the chain that expires first.
+     * @throws SSLException If there are no key chains.
+     */
+    private static long renewalTime(Map<String, X509Certificate[]> chains) throws SSLException {
+        if (chains.isEmpty())
+            throw new SSLException("Certificate renewal requires a private key with an X.509 certificate chain.");
+
+        long earliestExpiry = Long.MAX_VALUE;
+        long selectedStart = Long.MAX_VALUE;
+
+        for (X509Certificate[] chain : chains.values()) {
+            long chainExpiry = Long.MAX_VALUE;
+
+            for (X509Certificate cert : chain)
+                chainExpiry = Math.min(chainExpiry, cert.getNotAfter().getTime());
+
+            long chainStart = chain[0].getNotBefore().getTime();
 
             if (chainExpiry < earliestExpiry || chainExpiry == earliestExpiry && chainStart < selectedStart) {
                 earliestExpiry = chainExpiry;
@@ -420,14 +462,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             }
         }
 
-        if (renewalEnabled && earliestExpiry == Long.MAX_VALUE)
-            throw new SSLException("Certificate renewal requires a private key with an X.509 certificate chain.");
-
-        if (replacement && earliestExpiry < System.currentTimeMillis())
-            throw new SSLException("Replacement certificates expired while loading the SSL context [expiry=" + earliestExpiry + ']');
-
-        return renewalEnabled ?
-            earliestExpiry - (long)(Math.max(0, earliestExpiry - (double)selectedStart) * RENEWAL_WINDOW_FRACTION) : 0;
+        return earliestExpiry - (long)(Math.max(0, earliestExpiry - (double)selectedStart) * RENEWAL_WINDOW_FRACTION);
     }
 
     /** {@inheritDoc} */
