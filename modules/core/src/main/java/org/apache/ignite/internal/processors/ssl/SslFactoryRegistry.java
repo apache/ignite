@@ -138,7 +138,7 @@ public class SslFactoryRegistry {
             Thread.currentThread().interrupt();
     }
 
-    /** Reloads the factory and resets its automatic renewal schedule and failure count. */
+    /** Reloads the factory and, on success, resets its automatic renewal schedule and failure count. */
     public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
         Future<?> reload;
 

@@ -122,23 +122,28 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * The window covers the last 15% of the earliest-expiring key chain's lifetime.
-     * Its lifetime runs from the leaf's {@code notBefore} to the earliest {@code notAfter} in the chain.
-     * Chains with the same expiry use the longest lifetime.
+     * The renewal time is calculated from the certificates loaded with renewal enabled.
+     * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
+     * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
+     * For chains with the same expiry, the longest lifetime is used.
      *
-     * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} when disabled or not initialized.
+     * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} if renewal is disabled
+     *     or certificates have not yet been loaded with renewal enabled.
      */
     public long getRenewalTime() {
         return renewalEnabled ? renewalTime : 0;
     }
 
     /**
-     * Reloads certificates when their renewal window has started. Disabled renewal and a future window are skipped.
-     * Replacement certificates must be within their validity dates and have a later earliest expiry;
-     * otherwise the current context is kept. An interrupted thread does not load certificates.
+     * Replaces the current SSL context when the renewal window has started.
+     * Does nothing when renewal is disabled, no renewal date has been loaded, or the window has not started.
+     * <p>
+     * Every certificate in the replacement's private-key chains must be valid now.
+     * Their earliest expiry must be later than that of the certificates currently in use.
+     * A failed replacement leaves the current context and renewal time unchanged.
      *
-     * @throws IgniteInterruptedException If the calling thread is interrupted.
-     * @throws IgniteException If replacement certificates cannot be loaded or accepted.
+     * @throws IgniteInterruptedException If the thread is interrupted before a due replacement starts loading.
+     * @throws IgniteException If the replacement cannot be loaded or accepted.
      */
     public void renew() {
         if (!renewalEnabled)
@@ -166,7 +171,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * Builds an SSL context and, with renewal enabled, accepts the dates of the key store it loaded.
+     * Builds an SSL context and updates renewal dates when renewal is enabled.
      *
      * @param replacement Whether the loaded certificates replace the current ones automatically.
      * @return Initialized SSL context.
@@ -385,11 +390,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * Reads renewal dates from the loaded key store. A replacement also requires every certificate in its key chains
-     * to be valid now and the earliest expiry to be later than the current one.
+     * Validates the key chains and updates renewal dates.
      *
      * @param store Loaded key store.
-     * @param replacement Whether the certificates replace the current ones automatically.
+     * @param replacement Whether to check current validity and later expiry for an automatic replacement.
      * @throws GeneralSecurityException If a key or certificate cannot be read.
      * @throws SSLException If the certificates cannot be accepted.
      */
