@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -37,6 +38,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
@@ -103,9 +105,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** */
     private transient volatile long renewalTime;
 
-    /** Key store read by the load in progress. */
-    private transient KeyStore loadedKeyStore;
-
     /**
      * @return Whether automatic certificate renewal is enabled. Defaults to {@code false}.
      */
@@ -147,9 +146,39 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override SSLContext createSslContext() throws SSLException {
+        checkParameters();
+
+        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+        KeyManager[] keyMgrs = createKeyManagers(keyStore);
+        TrustManager[] trustMgrs = createTrustManagers();
+        SSLContext ctx;
+
         try {
-            SSLContext ctx = super.createSslContext();
-            Map<String, X509Certificate[]> chains = keyChains(loadedKeyStore);
+            ctx = SSLContext.getInstance(proto);
+
+            if (cipherSuites != null || protocols != null) {
+                SSLParameters sslParameters = new SSLParameters();
+
+                if (cipherSuites != null)
+                    sslParameters.setCipherSuites(cipherSuites);
+
+                if (protocols != null)
+                    sslParameters.setProtocols(protocols);
+
+                ctx = new SSLContextWrapper(ctx, sslParameters);
+            }
+
+            ctx.init(keyMgrs, trustMgrs, null);
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new SSLException("Unsupported SSL protocol: " + proto, e);
+        }
+        catch (KeyManagementException e) {
+            throw new SSLException("Failed to initialized SSL context.", e);
+        }
+
+        try {
+            Map<String, X509Certificate[]> chains = keyChains(keyStore);
 
             checkValidity(chains);
 
@@ -159,9 +188,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to read TLS material [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
-        }
-        finally {
-            loadedKeyStore = null;
         }
     }
 
@@ -339,12 +365,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+        return createKeyManagers(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd));
+    }
+
+    /** */
+    private KeyManager[] createKeyManagers(KeyStore keyStore) throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
-
-            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-
-            loadedKeyStore = keyStore;
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
