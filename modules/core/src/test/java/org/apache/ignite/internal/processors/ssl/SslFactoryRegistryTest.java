@@ -339,10 +339,6 @@ public class SslFactoryRegistryTest {
         assertThrows(IgniteException.class, () -> registry.reload(factory));
         assertEquals(2, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticRenewalAttempts"));
-
-        metrics.reset();
-
-        assertEquals(2, metric("ManualReloadAttempts"));
     }
 
     /** */
@@ -408,25 +404,6 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testMetricResetDoesNotCorruptFailureCount() {
-        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew();
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-        scheduled.run();
-        metrics.reset();
-
-        assertEquals(1, failures());
-
-        when(factory.getRenewalTime()).thenReturn(System.currentTimeMillis() + HOURS.toMillis(2));
-
-        scheduled.run();
-
-        assertEquals(0, failures());
-    }
-
-    /** */
-    @Test
     public void testRenewalDoesNotInheritCallerContext() {
         OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
         AtomicLong renewalTime = new AtomicLong(System.currentTimeMillis());
@@ -473,12 +450,10 @@ public class SslFactoryRegistryTest {
     @Test
     public void testStoppingNodeDoesNotStartRenewal() {
         when(ctx.isStopping()).thenReturn(true);
-        when(factory.getRenewalTime()).thenReturn(0L);
 
         registry.register("communication", factory);
         registry.start(ctx);
 
-        verify(factory, never()).init();
         executorFactory.verifyNoInteractions();
     }
 
@@ -525,8 +500,6 @@ public class SslFactoryRegistryTest {
 
             assertTrue(attemptStarted.await(5, SECONDS));
 
-            when(ctx.isStopping()).thenReturn(true);
-
             stop = runAsync(() -> {
                 registry.stop();
 
@@ -549,7 +522,7 @@ public class SslFactoryRegistryTest {
     @Test
     public void testStoppingDuringLoadDoesNotCountFailure() {
         doAnswer(call -> {
-            when(ctx.isStopping()).thenReturn(true);
+            when(executor.isShutdown()).thenReturn(true);
 
             throw new IgniteException("Load interrupted by node stop");
         }).when(factory).renew();

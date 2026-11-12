@@ -83,12 +83,10 @@ public class SslFactoryRegistry {
 
         Map<String, Factory<SSLContext>> factories = factories();
         Map<Factory<SSLContext>, Renewal> renewals = new IdentityHashMap<>();
+        IgniteLogger log = ctx.log(getClass());
 
         for (Factory<SSLContext> factory : factories.values()) {
             if (factory instanceof SslContextFactory sslFactory && sslFactory.isRenewalEnabled() && !renewals.containsKey(factory)) {
-                if (ctx.isStopping())
-                    return;
-
                 if (sslFactory.getRenewalTime() == 0)
                     sslFactory.init();
 
@@ -97,7 +95,7 @@ public class SslFactoryRegistry {
                     .map(Map.Entry::getKey)
                     .collect(joining(", "));
 
-                renewals.put(factory, new Renewal(sslFactory, transports, ctx));
+                renewals.put(factory, new Renewal(sslFactory, transports, log));
             }
         }
 
@@ -162,9 +160,6 @@ public class SslFactoryRegistry {
         private final String transports;
 
         /** */
-        private final GridKernalContext ctx;
-
-        /** */
         private final IgniteLogger log;
 
         /** */
@@ -174,17 +169,15 @@ public class SslFactoryRegistry {
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private Renewal(SslContextFactory factory, String transports, GridKernalContext ctx) {
+        private Renewal(SslContextFactory factory, String transports, IgniteLogger log) {
             this.factory = factory;
             this.transports = transports;
-            this.ctx = ctx;
-
-            log = ctx.log(SslFactoryRegistry.class);
+            this.log = log;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            if (stopping())
+            if (executor.isShutdown())
                 return;
 
             automaticRenewalAttempts.incrementAndGet();
@@ -208,7 +201,7 @@ public class SslFactoryRegistry {
 
         /** */
         private void retry(Exception cause) {
-            if (stopping())
+            if (executor.isShutdown())
                 return;
 
             long delay = Math.min(MINUTES.toMillis(1) << Math.min(failures.incrementAndGet() - 1, 6), MINUTES.toMillis(60));
@@ -219,11 +212,6 @@ public class SslFactoryRegistry {
             schedule(nextAttempt);
         }
 
-        /** */
-        private boolean stopping() {
-            return ctx.isStopping() || executor.isShutdown();
-        }
-
         /** Ends the failure streak and schedules the next attempt at the renewal time. */
         private void scheduleRenewal() {
             failures.set(0);
@@ -232,9 +220,6 @@ public class SslFactoryRegistry {
 
         /** */
         private void schedule(long time) {
-            if (stopping())
-                return;
-
             if (pending != null)
                 pending.cancel(false);
 
@@ -245,7 +230,7 @@ public class SslFactoryRegistry {
                 pending = executor.schedule(this, Math.max(0, time - System.currentTimeMillis()), MILLISECONDS);
             }
             catch (RejectedExecutionException e) {
-                if (!stopping())
+                if (!executor.isShutdown())
                     throw e;
 
                 return;
