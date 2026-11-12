@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
@@ -37,6 +38,9 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
  * Contains methods used in metadata definitions.
  */
 public enum IgniteMethod {
+    /** See {@link IgniteSqlFunctions#cyclePathContains(List, Object)}. */
+    CYCLE_PATH_CONTAINS(IgniteSqlFunctions.class, "cyclePathContains", List.class, Object.class),
+
     /** See {@link RowHandler#set(int, Object, Object)} */
     ROW_HANDLER_SET(RowHandler.class, "set", int.class, Object.class, Object.class),
 

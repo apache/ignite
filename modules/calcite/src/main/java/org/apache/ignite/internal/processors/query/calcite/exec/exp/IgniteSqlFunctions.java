@@ -18,6 +18,9 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -25,6 +28,7 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.function.Functions;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.runtime.SqlFunctions;
@@ -45,6 +49,73 @@ import static org.apache.ignite.internal.processors.query.calcite.util.IgniteMat
  * Ignite SQL functions.
  */
 public class IgniteSqlFunctions {
+    /** Calcite 1.42 exposes compareListItems through this comparator, despite its Comparable generic bound. */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static final Comparator<Object> CYCLE_KEY_COMPARATOR = (Comparator)Functions.nullsComparator(false, false);
+
+    /**
+     * Returns whether the path contains a SQL-equal key tuple. UNKNOWN does not close a cycle.
+     * Ported from CALCITE-7814; do not replace row equality with Java deep equality for nullable keys.
+     */
+    public static boolean cyclePathContains(List<?> path, Object key) {
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-29207 Use SqlFunctions.cyclePathContains after upgrading.
+        for (Object previous : path) {
+            if (Boolean.TRUE.equals(rowEq(previous, key)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * SQL row equality: a differing non-null field yields FALSE, otherwise a null field yields UNKNOWN.
+     * Collection-valued fields use total equality; nested ROW fields retain three-valued equality.
+     */
+    private static @Nullable Boolean rowEq(@Nullable Object left, @Nullable Object right) {
+        // TODO: https://issues.apache.org/jira/browse/IGNITE-29207 Use SqlFunctions.rowEq after upgrading.
+        if (left == null || right == null)
+            return null;
+
+        List<?> leftFields = rowAsList(left);
+        List<?> rightFields = rowAsList(right);
+
+        if (leftFields == null || rightFields == null)
+            return CYCLE_KEY_COMPARATOR.compare(left, right) == 0;
+
+        if (leftFields.size() != rightFields.size())
+            return false;
+
+        boolean sawNull = false;
+
+        for (int i = 0; i < leftFields.size(); i++) {
+            Object l = leftFields.get(i);
+            Object r = rightFields.get(i);
+
+            if (l == null || r == null)
+                sawNull = true;
+            else if (l instanceof Object[] && r instanceof Object[]) {
+                Boolean nested = rowEq(l, r);
+
+                if (nested == null)
+                    sawNull = true;
+                else if (!nested)
+                    return false;
+            }
+            else if (CYCLE_KEY_COMPARATOR.compare(l, r) != 0)
+                return false;
+        }
+
+        return sawNull ? null : true;
+    }
+
+    /** Views either runtime representation of a ROW as its fields. */
+    private static @Nullable List<?> rowAsList(Object row) {
+        if (row instanceof Object[])
+            return Arrays.asList((Object[])row);
+
+        return row instanceof List ? (List<?>)row : null;
+    }
+
     /** */
     public static final String NUMERIC_OVERFLOW_ERROR = "Numeric field overflow.";
 

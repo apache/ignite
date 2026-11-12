@@ -28,6 +28,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.fun.SqlLibraryOperators;
+import org.apache.calcite.sql.fun.SqlRowOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -60,6 +61,13 @@ public class IgniteConvertletTable extends ReflectiveConvertletTable {
     /** {@inheritDoc} */
     @Nullable
     @Override public SqlRexConvertlet get(SqlCall call) {
+        // CYCLE gives ROW fields explicit names during validation. Keep that type, but use the standard
+        // ROW operator in executable plans so that local and deserialized expressions are identical.
+        if (call.getOperator() instanceof SqlRowOperator && call.getOperator() != SqlStdOperatorTable.ROW) {
+            return (cx, row) -> cx.getRexBuilder().makeCall(cx.getValidator().getValidatedNodeType(row),
+                SqlStdOperatorTable.ROW, Commons.transform(row.getOperandList(), cx::convertExpression));
+        }
+
         SqlRexConvertlet res = super.get(call);
 
         return res == null ? StandardConvertletTable.INSTANCE.get(call) : res;
