@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.processors.security.SecurityContextWrapper",
-  "fields": [
-    {"order": 0, "type": "java.util.UUID", "name": "subjId"}
-  ]
-}

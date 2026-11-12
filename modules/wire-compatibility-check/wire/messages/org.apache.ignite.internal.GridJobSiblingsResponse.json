@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.GridJobSiblingsResponse",
-  "fields": [
-    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid[]", "name": "siblingJobsIds"}
-  ]
-}

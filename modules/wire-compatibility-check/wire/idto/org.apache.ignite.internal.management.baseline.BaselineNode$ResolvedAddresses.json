@@ -1,7 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.management.baseline.BaselineNode$ResolvedAddresses",
-  "fields": [
-    {"order": 0, "type": "java.lang.String", "name": "hostname"},
-    {"order": 1, "type": "java.lang.String", "name": "addr"}
-  ]
-}

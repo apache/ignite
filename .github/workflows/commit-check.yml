@@ -124,19 +124,12 @@ jobs:
           fi
           exit "$rc"
 
-      - name: Check message wire format descriptions
+      - name: Check all wire format descriptions are collected
         run: |
           missing=$(find modules -path '*/target/classes/META-INF/ignite-wire/*' -type f | sed 's#.*/META-INF/ignite-wire/##' | sort -u \
-            | while read -r f; do [ -f "modules/wire-compatibility-check/wire/$f" ] || echo "$f"; done | paste -sd ' ' -)
+            | while read -r f; do [ -f "modules/wire-compatibility-check/target/classes/META-INF/ignite-wire/$f" ] || echo "$f"; done | paste -sd ' ' -)
           if [ -n "$missing" ]; then
             echo "::error title=Uncollected wire format descriptions::Add the modules that generate these descriptions to modules/wire-compatibility-check/pom.xml: $missing"
-            exit 1
-          fi
-          git add -A modules/wire-compatibility-check/wire
-          if ! git diff --cached --quiet -- modules/wire-compatibility-check/wire; then
-            echo "::error title=Outdated wire format descriptions::modules/wire-compatibility-check/wire differs from the compiled messages. Run './mvnw clean process-classes -pl modules/wire-compatibility-check -am' and commit the changes."
-            git diff --cached --color=always -- modules/wire-compatibility-check/wire
-            { echo '```diff'; git diff --cached -- modules/wire-compatibility-check/wire; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
 
@@ -152,6 +145,71 @@ jobs:
       - name: Documentation code snippets compilation check
         run: |
           ./mvnw test-compile -Pdocs -pl :code-snippets -am -B -V -Dmaven.compiler.useIncrementalCompilation=false
+
+  check-wire:
+    name: Compare wire format descriptions
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout PR merge
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: merge
+          persist-credentials: false
+      - name: Checkout PR target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build wire descriptions
+        run: |
+          for version in base merge; do
+            (
+              cd "$version"
+              rm -rf modules/wire-compatibility-check/wire
+              ./mvnw -B -ntp clean test-compile -pl modules/wire-compatibility-check -am -DskipTests -T 1C
+            )
+            wire="$version/modules/wire-compatibility-check/target/classes/META-INF/ignite-wire"
+            if [ ! -f "$wire/ids.json" ]; then wire="$version/modules/wire-compatibility-check/wire"; fi
+            if [ ! -f "$wire/ids.json" ]; then
+              message="Missing ids.json for $version. Check that this revision supports message ID generation."
+              echo "::error::$message"
+              echo "$message" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+            mv "$wire" "$version-wire"
+          done
+      - name: Compare descriptions and publish summary
+        id: compare
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          status=0
+          diff -ruN base-wire merge-wire > wire.diff || status=$?
+          if [ "$status" -gt 1 ]; then exit "$status"; fi
+          echo "changed=$status" >> "$GITHUB_OUTPUT"
+          exec >> "$GITHUB_STEP_SUMMARY"
+          echo "## Wire diff: target branch $BASE_SHA → PR merge $MERGE_SHA"
+          if [ "$status" = 0 ]; then echo 'No wire format changes.'; exit 0; fi
+          echo '::warning::Wire format changed. Review the job summary before approval.' >&2
+          echo 'Preview: first 200 KB. Complete diff: wire-diff artifact.'
+          echo '```diff'
+          head -c 200000 wire.diff
+          printf '\n```\n'
+      - uses: actions/upload-artifact@v4
+        if: steps.compare.outputs.changed == '1'
+        with:
+          name: wire-diff
+          path: wire.diff
+          retention-days: 14
 
   check-dotnet:
     name: Check .NET code

@@ -1,4 +1,0 @@
-{
-  "class": "org.apache.ignite.spi.discovery.zk.internal.ZkNoServersMessage",
-  "fields": []
-}

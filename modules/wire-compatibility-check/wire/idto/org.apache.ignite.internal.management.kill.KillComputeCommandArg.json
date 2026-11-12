@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.management.kill.KillComputeCommandArg",
-  "fields": [
-    {"order": 0, "type": "org.apache.ignite.lang.IgniteUuid", "name": "sessionId"}
-  ]
-}
