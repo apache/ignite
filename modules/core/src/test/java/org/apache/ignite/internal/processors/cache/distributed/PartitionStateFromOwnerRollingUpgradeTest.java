@@ -24,14 +24,13 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
-import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.exchangeFinished;
-import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossStaleMapTest.mismatches;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -60,7 +59,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
     /** Index of the server that leaves. */
     private static final int LEAVING = 3;
 
-    /** Time to wait for the partition maps to match, in milliseconds. */
+    /** Time to wait for an exchange, in milliseconds. */
     private static final long WAIT = 30_000;
 
     /**
@@ -85,7 +84,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         IgniteEx oldCrd = stopLeavingWithMapsHeld();
 
         for (IgniteEx viewer : new IgniteEx[] {oldCrd, grid(CLIENT)}) {
-            List<String> mismatches = mismatches(viewer, CACHE);
+            List<String> mismatches = partitionMapMismatches(viewer, CACHE);
 
             assertTrue(viewer.name() + " didn't write the new owners' state: " + mismatches, mismatches.isEmpty());
         }
@@ -110,7 +109,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         IgniteEx crd = stopLeavingWithMapsHeld();
 
         for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)}) {
-            List<String> mismatches = mismatches(viewer, CACHE);
+            List<String> mismatches = partitionMapMismatches(viewer, CACHE);
 
             assertFalse(viewer.name() + " wrote the new owners' state itself", mismatches.isEmpty());
 
@@ -120,10 +119,7 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         TestRecordingCommunicationSpi.stopBlockAll();
 
-        for (IgniteEx viewer : new IgniteEx[] {crd, grid(CLIENT)}) {
-            if (!waitForCondition(() -> mismatches(viewer, CACHE).isEmpty(), WAIT))
-                fail("The partition map of " + viewer.name() + " differs from the nodes: " + mismatches(viewer, CACHE));
-        }
+        awaitPartitionMapsMatchLocalStates(CACHE);
     }
 
     /**
@@ -156,5 +152,16 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
         }
 
         return crd;
+    }
+
+    /**
+     * @param node Node.
+     * @param topVer Topology version.
+     * @return Whether the node has finished the exchange for the topology version.
+     */
+    private static boolean exchangeFinished(IgniteEx node, long topVer) {
+        GridDhtPartitionsExchangeFuture fut = node.context().cache().context().exchange().lastFinishedFuture();
+
+        return fut != null && fut.topologyVersion().topologyVersion() >= topVer;
     }
 }
