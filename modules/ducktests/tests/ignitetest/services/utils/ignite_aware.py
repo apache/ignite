@@ -43,6 +43,10 @@ from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
+# Log lines no test expects: hung transactions, explicit locks, cache futures or PME, lost partitions, failed asserts.
+SUSPICIOUS_LOG_PATTERNS = ("long running transactions", "long running explicit locks", "long running cache futures",
+                           "Failed to wait for partition map exchange", "Detected lost partitions", "AssertionError")
+
 
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMixin, JvmVersionMixin, metaclass=ABCMeta):
     """
@@ -351,6 +355,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         """
         for node in self.nodes:
             self.check_event_absent_on_node(evt_message, node, from_the_beginning=from_the_beginning, log_file=log_file)
+
+    def check_logs_clean(self):
+        """
+        Checks that no log of the service's nodes, including the ones rotated by a restart, has a suspicious line.
+        """
+        for pattern in SUSPICIOUS_LOG_PATTERNS:
+            self.check_event_absent(pattern, log_file="ignite*.log*")
 
     @staticmethod
     def event_time(evt_message, node):
