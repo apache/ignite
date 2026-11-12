@@ -85,6 +85,20 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
+    public void testLoadWithRenewalDisabledClearsRenewalTime() throws Exception {
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(
+            authority.keyStore("node", now - HOURS.toMillis(85), now + HOURS.toMillis(15)));
+
+        factory.create();
+        factory.setRenewalEnabled(false);
+        factory.init();
+        factory.setRenewalEnabled(true);
+
+        assertEquals(0, factory.getRenewalTime());
+    }
+
+    /** */
+    @Test
     public void testRenewalWindowUsesLoadedKeyStore() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(
             authority.keyStore("node", now - HOURS.toMillis(85), now + HOURS.toMillis(15)));

@@ -126,11 +126,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
      * For chains with the same expiry, the longest lifetime is used.
      *
-     * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} if renewal is disabled
-     *     or certificates have not yet been loaded with renewal enabled.
+     * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} if the current certificates
+     *     were loaded with renewal disabled or have not been loaded yet.
      */
     public long getRenewalTime() {
-        return renewalEnabled ? renewalTime : 0;
+        return renewalTime;
     }
 
     /**
@@ -166,8 +166,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (sslCtx.get() != null)
                 checkValidity(keyChains(loadedKeyStore));
 
-            if (renewalEnabled)
-                renewalTime = renewalTime(keyChains(loadedKeyStore));
+            renewalTime = renewalEnabled ? renewalTime(keyChains(loadedKeyStore)) : 0;
 
             return ctx;
         }
