@@ -1204,6 +1204,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             ctx.pools().registerMetrics();
 
+            if (ctx.metric().enabled())
+                log.registerMetrics(ctx.metric());
+
             registerMetrics();
 
             registerConfigurationSystemView();
