@@ -966,9 +966,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Local transaction.
      */
     @Nullable public IgniteTxLocalAdapter localTx() {
-        IgniteTxLocalAdapter tx = tx();
+        IgniteInternalTx tx = tx();
 
-        return tx != null && tx.local() ? tx : null;
+        return tx != null && tx.local() ? (IgniteTxLocalAdapter)tx : null;
     }
 
     /**
@@ -1865,15 +1865,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     assert !entry1.detached() : "Expected non-detached entry for near transaction " +
                         "[locNodeId=" + cctx.localNodeId() + ", entry=" + entry1 + ']';
 
-                    GridCacheVersion serReadVer = txEntry1.entryReadVersion();
-
-                    assert serReadVer == null || (tx.optimistic() && tx.serializable()) : txEntry1;
+                    assert txEntry1.entryReadVersion() == null || (tx.optimistic() && tx.serializable()) : txEntry1;
 
                     boolean read = serOrder != null && txEntry1.op() == READ;
 
                     entry1.unswap();
 
-                    if (!entry1.tmLock(tx, timeout, serOrder, serReadVer, read)) {
+                    if (!entry1.tmLock(tx, timeout, serOrder, read)) {
                         // Unlock locks locked so far.
                         for (IgniteTxEntry txEntry2 : entries) {
                             if (txEntry2 == txEntry1)

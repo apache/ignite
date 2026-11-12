@@ -1286,7 +1286,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             clearReaders();
                         else {
                             // Optimize memory usage - do not allocate additional array.
-                            List<GridCacheMvccCandidate> locs = mvcc.localCandidatesNoCopy(false);
+                            List<GridCacheMvccCandidate> locs = mvcc.localCandidatesNoCopy();
 
                             GridCacheVersion txVer = tx.xidVersion();
 
@@ -1295,7 +1295,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             boolean hasOriginatingNodeId = false;
 
                             for (GridCacheMvccCandidate c : locs) {
-                                if (c.reentry() || Objects.equals(c.version(), txVer))
+                                if (Objects.equals(c.version(), txVer))
                                     continue;
 
                                 if (Objects.equals(c.otherNodeId(), originatingNodeId)) {
@@ -2802,22 +2802,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasLockCandidate(long threadId) throws GridCacheEntryRemovedException {
-        lockEntry();
-
-        try {
-            checkObsolete();
-
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc != null && mvcc.localCandidate(threadId) != null;
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean lockedByAny(GridCacheVersion... exclude)
         throws GridCacheEntryRemovedException {
         lockEntry();
@@ -2949,7 +2933,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMvccCandidate> localCandidates(GridCacheVersion... exclude)
+    @Override public Collection<GridCacheMvccCandidate> localCandidates()
         throws GridCacheEntryRemovedException {
         lockEntry();
 
@@ -2958,7 +2942,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheMvcc mvcc = mvccExtras();
 
-            return mvcc == null ? Collections.<GridCacheMvccCandidate>emptyList() : mvcc.localCandidates(exclude);
+            return mvcc == null ? Collections.<GridCacheMvccCandidate>emptyList() : mvcc.localCandidates();
         }
         finally {
             unlockEntry();
@@ -2966,7 +2950,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude) {
+    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot() {
         return Collections.emptyList();
     }
 
@@ -2981,23 +2965,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheMvcc mvcc = mvccExtras();
 
             return mvcc == null ? null : mvcc.candidate(ver);
-        }
-        finally {
-            unlockEntry();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheMvccCandidate localCandidate(long threadId)
-        throws GridCacheEntryRemovedException {
-        lockEntry();
-
-        try {
-            checkObsolete();
-
-            GridCacheMvcc mvcc = mvccExtras();
-
-            return mvcc == null ? null : mvcc.localCandidate(threadId);
         }
         finally {
             unlockEntry();
