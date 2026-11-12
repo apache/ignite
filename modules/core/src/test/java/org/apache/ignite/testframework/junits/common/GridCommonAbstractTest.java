@@ -889,7 +889,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param viewer Server or client whose partition map is checked. A client that hasn't started the cache keeps the
      *      map in a client topology.
      * @param cacheName Cache name.
-     * @return Partitions whose state in the viewer's partition map differs from the state on the server that holds them.
+     * @return Partitions whose state in the viewer's map differs from the state on the server that holds them.
      */
     protected static List<String> partitionMapMismatches(IgniteEx viewer, String cacheName) {
         IgniteInternalCache<?, ?> cache = viewer.cachex(cacheName);
