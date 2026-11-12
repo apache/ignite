@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
@@ -116,35 +112,6 @@ public class CacheNoSupplierPartitionMapTest extends GridCommonAbstractTest {
             return parts.size() == PARTS && parts.stream().allMatch(p -> p.state() == OWNING);
         }, WAIT));
 
-        UUID dataId = data.localNode().id();
-
-        for (int idx = 0; idx <= CLIENT; idx++) {
-            IgniteEx watcher = grid(idx);
-
-            if (!waitForCondition(() -> notOwning(watcher, dataId).isEmpty(), WAIT)) {
-                fail("The partition map of " + watcher.name() + " differs from the data node: " +
-                    notOwning(watcher, dataId));
-            }
-        }
-    }
-
-    /**
-     * @param watcher Node whose partition map is checked.
-     * @param dataId ID of the data node.
-     * @return Partitions that the watcher's copy of the data node's map doesn't show OWNING.
-     */
-    private List<String> notOwning(IgniteEx watcher, UUID dataId) {
-        GridDhtPartitionMap view = watcher.cachex(CACHE).context().topology().partitionMap(false).get(dataId);
-
-        List<String> res = new ArrayList<>();
-
-        for (int p = 0; p < PARTS; p++) {
-            GridDhtPartitionState seen = view == null ? null : view.get(p);
-
-            if (seen != OWNING)
-                res.add("p=" + p + " seen=" + seen);
-        }
-
-        return res;
+        awaitPartitionMapsMatchLocalStates(CACHE);
     }
 }
