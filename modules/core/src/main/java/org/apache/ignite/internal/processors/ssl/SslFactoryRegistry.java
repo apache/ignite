@@ -110,7 +110,7 @@ public class SslFactoryRegistry {
         executor = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
 
         try (Scope ignored = OperationContext.restoreSnapshot(null)) {
-            executor.execute(() -> renewals.values().forEach(Renewal::schedule));
+            executor.execute(() -> renewals.values().forEach(Renewal::scheduleRenewal));
         }
     }
 
@@ -224,14 +224,10 @@ public class SslFactoryRegistry {
 
             long renewalTime = factory.getRenewalTime();
 
-            if (renewalTime != 0 && renewalTime <= System.currentTimeMillis()) {
+            if (renewalTime != 0 && renewalTime <= System.currentTimeMillis())
                 retry(new IgniteException("Loaded certificates are still due for renewal [renewalTime=" + new Date(renewalTime) + ']'));
-
-                return;
-            }
-
-            failures.set(0);
-            schedule(renewalTime);
+            else
+                scheduleRenewal();
         }
 
         /** */
@@ -250,8 +246,7 @@ public class SslFactoryRegistry {
         /** */
         private void reload() {
             reloadFactory(factory);
-            failures.set(0);
-            schedule();
+            scheduleRenewal();
         }
 
         /** */
@@ -259,8 +254,9 @@ public class SslFactoryRegistry {
             return ctx.isStopping() || executor.isShutdown();
         }
 
-        /** */
-        private void schedule() {
+        /** Ends the failure streak and schedules the next attempt at the renewal time. */
+        private void scheduleRenewal() {
+            failures.set(0);
             schedule(factory.getRenewalTime());
         }
 
