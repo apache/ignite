@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.distributed.AtomicInterceptorPutInterruptTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheOperationsInterruptTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
@@ -65,6 +66,8 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, TxDataConsistencyOnCommitFailureTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheOperationsInterruptTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, AtomicInterceptorPutInterruptTest.class, ignoredTests);
 
         // Update counters and historical rebalance.
         GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest.class, ignoredTests);
