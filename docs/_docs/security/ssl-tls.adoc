@@ -228,8 +228,9 @@ If this point has already passed when the node starts, Ignite schedules an attem
 See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getRenewalTime()[getRenewalTime(), window=_blank] for the calculation.
 
 Automatic renewal applies the same certificate checks as <<Upgrading Certificates,manual reload>>.
-An automatic attempt fails if the loaded certificates are still within their renewal window, for example when the source still returns the old certificates.
-Ignite then retries with the intervals below.
+If the loaded certificates are still within their renewal window, Ignite records a failed renewal attempt even though it installed the valid material.
+This can happen when the certificates have not changed, only the trust store changed, or the replacements are already within their renewal window.
+The loaded context remains in use while Ignite retries with the intervals below.
 
 After a manual reload, Ignite schedules the next automatic attempt from the loaded certificates.
 If their renewal window has already started, the attempt runs immediately.
@@ -260,6 +261,7 @@ To recover without waiting for the next retry:
 
 *What a successful command means.*
 The result `reloaded` means that the node loaded the stores and accepted their certificate dates.
+The command also reports `reloaded` when the files have not changed.
 Checking certificate dates does not establish whether peers trust the certificates or whether they have been revoked.
 Verify a new TLS connection after a replacement.
 

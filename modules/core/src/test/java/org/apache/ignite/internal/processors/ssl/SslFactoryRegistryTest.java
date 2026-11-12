@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
@@ -50,6 +52,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.MockedStatic;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -57,6 +60,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -69,6 +73,7 @@ import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -219,10 +224,10 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testInitialSchedulingRunsOnRenewalThread() {
-        AtomicReference<Runnable> initialScheduling = new AtomicReference<>();
+        AtomicReference<Runnable> initScheduling = new AtomicReference<>();
 
         doAnswer(call -> {
-            initialScheduling.set(call.getArgument(0));
+            initScheduling.set(call.getArgument(0));
 
             return null;
         }).when(executor).execute(any(Runnable.class));
@@ -232,9 +237,59 @@ public class SslFactoryRegistryTest {
 
         verify(executor, never()).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
 
-        initialScheduling.get().run();
+        initScheduling.get().run();
 
         verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
+    }
+
+    /** */
+    @Test
+    public void testManualReloadFollowsInitialScheduling() throws Exception {
+        ScheduledExecutorService renewalExecutor = useRealExecutor();
+        AtomicReference<Thread> caller = new AtomicReference<>();
+        AtomicReference<IgniteInternalFuture<?>> reload = new AtomicReference<>();
+
+        when(factory.getRenewalTime()).thenReturn(System.currentTimeMillis() + HOURS.toMillis(2));
+        doAnswer(call -> {
+            IgniteInternalFuture<?> fut = runAsync(() -> {
+                caller.set(Thread.currentThread());
+
+                registry.reload(factory);
+            });
+
+            reload.set(fut);
+
+            long deadline = System.nanoTime() + SECONDS.toNanos(5);
+
+            assertTrue(waitForCondition(() -> {
+                if (fut.isDone())
+                    return true;
+
+                Thread thread = caller.get();
+                ThreadInfo info = thread == null ? null : ManagementFactory.getThreadMXBean().getThreadInfo(thread.getId());
+
+                return info != null && info.getThreadState() == Thread.State.BLOCKED &&
+                    info.getLockInfo().getIdentityHashCode() == System.identityHashCode(registry);
+            }, () -> System.nanoTime() < deadline));
+
+            return call.callRealMethod();
+        }).when(renewalExecutor).execute(any(Runnable.class));
+
+        registry.register("communication", factory);
+
+        try {
+            registry.start(ctx);
+        }
+        finally {
+            if (reload.get() != null)
+                reload.get().get(5_000);
+        }
+
+        InOrder order = inOrder(renewalExecutor, factory);
+
+        order.verify(renewalExecutor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
+        order.verify(factory).init();
+        order.verify(renewalExecutor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
     }
 
     /** */
