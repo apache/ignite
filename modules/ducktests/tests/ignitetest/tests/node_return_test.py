@@ -49,6 +49,10 @@ AFTER_SEC = 20
 # The join's exchange may wait for a load transaction until its 1 s timeout, plus its own work.
 JOIN_EXCHANGE_MS = 2_000
 
+# The load's threads write one small key range, so they overwrite each other's keys and contend for them.
+LOAD_THREADS = 8
+LOAD_KEYS = 1_000
+
 
 class NodeReturnTest(IgniteTest):
     """
@@ -62,7 +66,7 @@ class NodeReturnTest(IgniteTest):
     def test_node_return(self, ignite_version, stop, explicit_locks):
         """
         Stops the server by the signal and starts it again. With explicit locks every load transaction runs under an
-        explicit lock.
+        explicit lock. At the end no transaction is active and the servers' logs are clean.
         """
         caches = [CacheConfiguration(name=name, atomicity_mode="TRANSACTIONAL", backups=1)
                   for name in (CACHE, LOCK_CACHE)]
@@ -87,7 +91,7 @@ class NodeReturnTest(IgniteTest):
             ignite.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignite)),
             java_class_name=LOAD_APP,
             params={"mode": "TX_PUT", "cacheName": CACHE, "continueOnError": True, "progressIntervalMs": 1000,
-                    "lockCache": LOCK_CACHE if explicit_locks else ""})
+                    "threads": LOAD_THREADS, "keyTo": LOAD_KEYS, "lockCache": LOCK_CACHE if explicit_locks else ""})
 
         load.start()
 
@@ -134,7 +138,13 @@ class NodeReturnTest(IgniteTest):
 
         assert after.ok > 0 and after.err == 0, f"The load had errors after the join: {after}"
 
+        txs = control.tx()
+
+        assert not isinstance(txs, list) or not txs, f"Transactions left active: {txs}"
+
         control.idle_verify()
+
+        ignite.check_logs_clean()
 
         return {"away": away._asdict(), "after": after._asdict(), "join_exchange_ms": join_exchange_ms}
 
