@@ -58,7 +58,7 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLostPartitionOwned() throws Exception {
-        checkServerLeft(IGNORE);
+        checkServerLeft(IGNORE, 3);
     }
 
     /**
@@ -66,23 +66,36 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testLostPartitionMarkedLost() throws Exception {
-        checkServerLeft(READ_WRITE_SAFE);
+        checkServerLeft(READ_WRITE_SAFE, 3);
     }
 
     /**
-     * @param plc Partition loss policy.
+     * The coordinator is the only new owner, so only the client learns the state from another node.
+     *
      * @throws Exception If failed.
      */
-    private void checkServerLeft(PartitionLossPolicy plc) throws Exception {
+    @Test
+    public void testLostPartitionOwnedByCoordinator() throws Exception {
+        checkServerLeft(IGNORE, 2);
+    }
+
+    /**
+     * Starts the servers and a client, then stops the last server.
+     *
+     * @param plc Partition loss policy.
+     * @param srvs Number of servers.
+     * @throws Exception If failed.
+     */
+    private void checkServerLeft(PartitionLossPolicy plc, int srvs) throws Exception {
         this.plc = plc;
 
-        startGrids(3);
-        startClientGrid(3);
+        startGrids(srvs);
+        startClientGrid(srvs);
 
-        // Evictions must end first: a node resends its map after its last eviction, and that map brings its new states.
+        // A map resent after a late eviction would carry the new states and hide a missing send.
         awaitPartitionMapExchange(true, true, null);
 
-        stopGrid(2);
+        stopGrid(srvs - 1);
 
         awaitPartitionMapsMatchLocalStates(CACHE);
     }
