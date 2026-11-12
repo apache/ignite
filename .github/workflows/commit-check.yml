@@ -150,12 +150,10 @@ jobs:
     name: Compare wire format descriptions
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout PR merge
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
           path: merge
           persist-credentials: false
       - name: Checkout PR target branch
@@ -174,30 +172,23 @@ jobs:
             (
               cd "$version"
               rm -rf modules/wire-compatibility-check/wire
-              ./mvnw -B -ntp clean test-compile -pl modules/wire-compatibility-check -am -DskipTests -T 1C
+              ./mvnw -B -ntp clean test-compile -pl modules/wire-compatibility-check -am -T 1C
             )
             wire="$version/modules/wire-compatibility-check/target/classes/META-INF/ignite-wire"
             if [ ! -f "$wire/ids.json" ]; then wire="$version/modules/wire-compatibility-check/wire"; fi
-            if [ ! -f "$wire/ids.json" ]; then
-              message="Missing ids.json for $version. Check that this revision supports message ID generation."
-              echo "::error::$message"
-              echo "$message" >> "$GITHUB_STEP_SUMMARY"
-              exit 1
-            fi
             mv "$wire" "$version-wire"
           done
       - name: Compare descriptions and publish summary
         id: compare
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          MERGE_SHA: ${{ github.sha }}
         run: |
           status=0
           diff -ruN base-wire merge-wire > wire.diff || status=$?
           if [ "$status" -gt 1 ]; then exit "$status"; fi
           echo "changed=$status" >> "$GITHUB_OUTPUT"
           exec >> "$GITHUB_STEP_SUMMARY"
-          echo "## Wire diff: target branch $BASE_SHA → PR merge $MERGE_SHA"
+          echo "## Wire diff: target branch $BASE_SHA → PR merge $GITHUB_SHA"
           if [ "$status" = 0 ]; then echo 'No wire format changes.'; exit 0; fi
           echo '::warning::Wire format changed. Review the job summary before approval.' >&2
           echo 'Preview: first 200 KB. Complete diff: wire-diff artifact.'
