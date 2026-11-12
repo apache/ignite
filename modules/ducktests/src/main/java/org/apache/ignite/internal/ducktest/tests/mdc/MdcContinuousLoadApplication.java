@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.ducktest.tests.mdc;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -43,8 +46,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Universal MDC load application. Runs a single-threaded synchronous load of the
- * requested {@link LoadMode} either for a fixed number of iterations (a "burst") or until
+ * Universal MDC load application. Runs a synchronous load of the requested
+ * {@link LoadMode} in one or more threads either for a fixed number of iterations (a "burst") or until
  * externally terminated (a "background" load spanning several test phases, e.g. a
  * network partition and its healing).
  * <p>
@@ -56,8 +59,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *         configuration parameters (see {@link MdcCacheAwareApplication}); otherwise the
  *         cache must already exist;</li>
  *     <li>{@code keyFrom} / {@code keyTo} - key range. Read modes cycle within the range;
- *         write modes advance sequentially from {@code keyFrom} on every success, so on
- *         completion the keys {@code [keyFrom, keyFrom + opsCnt)} are guaranteed written;</li>
+ *         write modes advance sequentially from {@code keyFrom} on every success, so with one
+ *         thread on completion the keys {@code [keyFrom, keyFrom + opsCnt)} are guaranteed written;</li>
+ *     <li>{@code threads} - number of load threads, default 1. Thread {@code i} starts from key
+ *         {@code keyFrom + i}, so the threads overwrite each other's keys;</li>
  *     <li>{@code iterations} - number of operations; {@code 0} means "run until terminated";</li>
  *     <li>{@code inadmissible} - write modes only. {@code false} (default): writes must
  *         succeed; {@code true}: every write must be rejected by the topology validator
@@ -102,7 +107,10 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
     private final AtomicLong errCnt = new AtomicLong();
 
     /** Time of the last successful operation. */
-    private volatile long lastOkTs;
+    private final AtomicLong lastOkTs = new AtomicLong();
+
+    /** Longest time without a successful operation. */
+    private final AtomicLong maxStallMs = new AtomicLong();
 
     /** Cache of the explicit locks ({@code null} unless {@code lockCache} is set). */
     private IgniteCache<Integer, Object> lockCache;
@@ -156,10 +164,10 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
     private long opPauseMs;
 
     /** Whether an operation failure cut the load short. */
-    private boolean stoppedOnError;
+    private volatile boolean stoppedOnError;
 
-    /** Longest time without a successful operation. */
-    private long maxStallMs;
+    /** Set when a load thread ends, so the others end too. */
+    private volatile boolean stop;
 
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) throws Exception {
@@ -186,6 +194,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         String lockCacheName = jNode.path("lockCache").asText("");
         long progressIntervalMs = jNode.path("progressIntervalMs").asLong(0);
+        int threads = jNode.path("threads").asInt(1);
 
         markInitialized();
         waitForActivation();
@@ -204,14 +213,14 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         log.info("MDC load started [dc=" + dcId() + ", mode=" + mode + ", cache=" + cacheName +
             ", keyFrom=" + keyFrom + ", keyTo=" + keyTo + ", iterations=" + iterations +
             ", inadmissible=" + inadmissible + ", continueOnError=" + continueOnError +
-            ", lockCache=" + lockCacheName + "]");
+            ", lockCache=" + lockCacheName + ", threads=" + threads + "]");
 
         long startTs = System.currentTimeMillis();
-        lastOkTs = startTs;
+        lastOkTs.set(startTs);
 
         ScheduledExecutorService progress = progressIntervalMs > 0 ? startProgress(pfx, progressIntervalMs) : null;
 
-        runLoop(keyFrom);
+        runThreads(threads);
 
         if (progress != null) {
             progress.shutdownNow();
@@ -245,9 +254,39 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         return progress;
     }
 
+    /** Runs the load loop in the given number of threads; a thread's failure is thrown. */
+    private void runThreads(int threads) throws Exception {
+        ExecutorService exec = Executors.newFixedThreadPool(threads);
+
+        try {
+            List<Future<?>> futs = new ArrayList<>();
+
+            for (int i = 0; i < threads; i++) {
+                int startKey = keyFrom + i % (keyTo - keyFrom);
+
+                futs.add(exec.submit(() -> {
+                    try {
+                        runLoop(startKey);
+                    }
+                    finally {
+                        stop = true;
+                    }
+
+                    return null;
+                }));
+            }
+
+            for (Future<?> fut : futs)
+                fut.get();
+        }
+        finally {
+            exec.shutdown();
+        }
+    }
+
     /** Runs operations from the given key until the load stops. */
     private void runLoop(int key) throws InterruptedException {
-        while (!terminated() && (iterations == 0 || opsCnt.get() + errCnt.get() < iterations)) {
+        while (!terminated() && !stop && (iterations == 0 || opsCnt.get() + errCnt.get() < iterations)) {
             boolean ok = runOperation(key);
 
             if (ok)
@@ -259,7 +298,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
                     return;
             }
 
-            // Writes advance on success only, so [keyFrom, keyFrom + opsCnt) is guaranteed written.
+            // Writes advance on success only, so with one thread [keyFrom, keyFrom + opsCnt) is guaranteed written.
             // The inadmissible-probe mode advances always to probe distinct keys. Reads cycle the range.
             if (ok || (mode.isWrite() && inadmissible)) {
                 key++;
@@ -296,8 +335,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         long now = System.currentTimeMillis();
 
-        maxStallMs = Math.max(maxStallMs, now - lastOkTs);
-        lastOkTs = now;
+        maxStallMs.accumulateAndGet(now - lastOkTs.getAndSet(now), Math::max);
     }
 
     /** Logs a tolerated failure, cuts the load short, or fails the application. */
@@ -333,7 +371,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         recordResult(pfx + "DerivedTps", String.format(Locale.US, "%.1f", stats.tps()));
 
-        recordResult(pfx + "MaxStallMs", String.valueOf(maxStallMs));
+        recordResult(pfx + "MaxStallMs", maxStallMs.get());
 
         log.info("MDC load finished [dc=" + dcId() + ", mode=" + mode + ", ops=" + opsCnt +
             ", errs=" + errCnt + ", stoppedOnError=" + stoppedOnError + ", durationMs=" + durationMs +
@@ -345,7 +383,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
     private void recordProgress(String pfx) {
         long now = System.currentTimeMillis();
 
-        recordResult(pfx + "Progress", now + " " + opsCnt.get() + " " + errCnt.get() + " " + (now - lastOkTs));
+        recordResult(pfx + "Progress", now + " " + opsCnt.get() + " " + errCnt.get() + " " + (now - lastOkTs.get()));
     }
 
     /** Executes an operation under an explicit lock on its key in the lock cache. */
