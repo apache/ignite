@@ -27,7 +27,6 @@ import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.IgniteClientReconnectCollectionsTest;
 import org.apache.ignite.internal.IgniteClientReconnectComputeTest;
 import org.apache.ignite.internal.IgniteClientReconnectContinuousProcessorTest;
-import org.apache.ignite.internal.IgniteClientReconnectCustomBinaryContextTest;
 import org.apache.ignite.internal.IgniteClientReconnectDelayedSpiTest;
 import org.apache.ignite.internal.IgniteClientReconnectDeploymentTest;
 import org.apache.ignite.internal.IgniteClientReconnectDiscoveryStateTest;
@@ -51,7 +50,6 @@ import org.junit.runners.Suite;
     IgniteClientReconnectDelayedSpiTest.class,
     IgniteClientReconnectBinaryContextTest.class,
     IgniteClientReconnectContinuousProcessorTest.class,
-    IgniteClientReconnectCustomBinaryContextTest.class,
     IgniteClientCheckClusterGroupLocalIdAfterReconnect.class,
     IgniteClientReconnectComputeTest.class,
     IgniteClientReconnectAtomicsTest.class,

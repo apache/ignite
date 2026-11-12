@@ -339,8 +339,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
         reconnectFut = null;
 
-        binaryContext().onReconnect();
-
         return super.onReconnected(clusterRestarted);
     }
 

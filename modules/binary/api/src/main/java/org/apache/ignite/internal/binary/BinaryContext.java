@@ -1455,14 +1455,6 @@ public class BinaryContext {
         return reg;
     }
 
-    /** Restores preconfigured user types after reconnect. */
-    public void onReconnect() {
-        for (BinaryClassDescriptor desc : predefinedTypes.values()) {
-            if (desc.userType())
-                descByCls.put(desc.describedClass(), desc);
-        }
-    }
-
     /**
      * Unregister all binary schemas.
      */
