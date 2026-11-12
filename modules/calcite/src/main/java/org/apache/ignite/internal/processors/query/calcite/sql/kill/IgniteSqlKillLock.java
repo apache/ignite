@@ -60,7 +60,7 @@ public class IgniteSqlKillLock extends IgniteSqlKill {
     }
 
     /**
-     * @return Compute task session id.
+     * @return Lock id.
      */
     public SqlCharStringLiteral xid() {
         return xid;
