@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridLeanSet;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -46,6 +47,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     IgniteUuid miniId;
 
     /** Version. */
+    @GridToStringExclude
     @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     GridCacheVersion ver;
 

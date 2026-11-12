@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -64,6 +65,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     public IgniteUuid futId;
 
     /** Thread ID. */
+    @GridToStringExclude
     @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     public long threadId;
 
@@ -88,6 +90,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     public byte plc;
 
     /** Task name hash. */
+    @GridToStringExclude
     @Order(value = 8, deprecatedBy = "TX_FINISH_TASK_NAME_HASH_DEPRECATED_FEATURE")
     public int taskNameHash;
 

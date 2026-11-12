@@ -24,6 +24,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
+    @GridToStringExclude
     @Order(value = 0, deprecatedBy = "DHT_TX_FINISH_NEAR_NODE_ID_DEPRECATED_FEATURE")
     UUID nearNodeId;
 

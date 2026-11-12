@@ -21,6 +21,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.ErrorMessage;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -38,6 +39,7 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
     int miniId;
 
     /** Near tx thread ID. */
+    @GridToStringExclude
     @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     long nearThreadId;
 
