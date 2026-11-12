@@ -58,12 +58,6 @@ public class SslFactoryRegistry {
     private volatile ScheduledExecutorService executor;
 
     /** */
-    private GridKernalContext ctx;
-
-    /** */
-    private IgniteLogger log;
-
-    /** */
     private final AtomicLong consecutiveFailures = new AtomicLong();
 
     /** */
@@ -85,9 +79,6 @@ public class SslFactoryRegistry {
 
     /** */
     public synchronized void start(GridKernalContext ctx) {
-        this.ctx = ctx;
-        log = ctx.log(getClass());
-
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
         metrics.register("ConsecutiveRenewalFailures", consecutiveFailures::get,
@@ -110,7 +101,7 @@ public class SslFactoryRegistry {
                     .map(Map.Entry::getKey)
                     .collect(joining(", "));
 
-                renewals.put(factory, new Renewal(sslFactory, transports));
+                renewals.put(factory, new Renewal(sslFactory, transports, ctx));
             }
         }
 
@@ -188,11 +179,6 @@ public class SslFactoryRegistry {
     }
 
     /** */
-    private boolean stopping() {
-        return ctx.isStopping() || executor.isShutdown();
-    }
-
-    /** */
     private class Renewal implements Runnable {
         /** */
         private final SslContextFactory factory;
@@ -201,15 +187,24 @@ public class SslFactoryRegistry {
         private final String transports;
 
         /** */
+        private final GridKernalContext ctx;
+
+        /** */
+        private final IgniteLogger log;
+
+        /** */
         private ScheduledFuture<?> pending;
 
         /** */
         private int failures;
 
         /** */
-        private Renewal(SslContextFactory factory, String transports) {
+        private Renewal(SslContextFactory factory, String transports, GridKernalContext ctx) {
             this.factory = factory;
             this.transports = transports;
+            this.ctx = ctx;
+
+            log = ctx.log(SslFactoryRegistry.class);
         }
 
         /** {@inheritDoc} */
@@ -257,6 +252,11 @@ public class SslFactoryRegistry {
             reloadFactory(factory);
             resetFailures();
             schedule();
+        }
+
+        /** */
+        private boolean stopping() {
+            return ctx.isStopping() || executor.isShutdown();
         }
 
         /** */
