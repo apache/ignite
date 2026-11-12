@@ -104,7 +104,8 @@ public class PartitionStateFromOwnerRollingUpgradeTest extends AbstractRollingUp
 
         startGrid(LEAVING, MASTER_VER_REF);
 
-        awaitPartitionMapExchange();
+        // A map resent after a late eviction would be held with the others and show a RENTING copy.
+        awaitPartitionMapExchange(true, true, null);
 
         IgniteEx crd = stopLeavingWithMapsHeld();
 
