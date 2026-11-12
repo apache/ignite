@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -30,12 +31,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -118,7 +122,10 @@ public class SslFactoryRegistry {
         if (executor == null)
             return;
 
-        executor.shutdownNow();
+        for (Runnable task : executor.shutdownNow()) {
+            if (task instanceof Future<?> fut)
+                fut.cancel(false);
+        }
 
         boolean interrupted = false;
 
@@ -139,16 +146,39 @@ public class SslFactoryRegistry {
      * Reloads the factory and resets its automatic renewal schedule and failure count.
      *
      * @param factory Factory to reload.
+     * @throws IgniteCheckedException If renewal has not started, or an asynchronous reload fails or is interrupted.
      */
-    public void reload(AbstractSslContextFactory factory) {
+    public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
+        Future<?> reload;
+
+        synchronized (this) {
+            Renewal renewal = renewals.get(factory);
+
+            if (renewal == null && factory instanceof SslContextFactory sslFactory && sslFactory.isRenewalEnabled())
+                throw new IgniteCheckedException("Automatic TLS renewal has not started.");
+
+            reload = renewal == null ? null : executor.submit(renewal::reload);
+        }
+
+        if (reload == null)
+            reloadFactory(factory);
+        else {
+            try {
+                U.get(reload);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                reload.cancel(true);
+
+                throw e;
+            }
+        }
+    }
+
+    /** */
+    private void reloadFactory(AbstractSslContextFactory factory) {
         manualReloadAttempts.incrementAndGet();
 
         factory.init();
-
-        Renewal renewal = renewals.get(factory);
-
-        if (renewal != null)
-            executor.execute(renewal::scheduleRenewal);
     }
 
     /** */
@@ -210,6 +240,12 @@ public class SslFactoryRegistry {
             log.warning("TLS renewal failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', cause);
 
             schedule(nextAttempt);
+        }
+
+        /** */
+        private void reload() {
+            reloadFactory(factory);
+            scheduleRenewal();
         }
 
         /** Ends the failure streak and schedules the next attempt at the renewal time. */
