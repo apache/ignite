@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Checks the check of a service's logs for suspicious lines.
+Checks the search of a service's logs for suspicious lines.
 """
 
 from types import SimpleNamespace

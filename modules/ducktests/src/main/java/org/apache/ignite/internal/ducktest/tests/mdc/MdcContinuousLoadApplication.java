@@ -262,7 +262,7 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             List<Future<?>> futs = new ArrayList<>();
 
             for (int i = 0; i < threads; i++) {
-                int startKey = keyFrom + i % (keyTo - keyFrom);
+                int startKey = keyFrom + i;
 
                 futs.add(exec.submit(() -> {
                     try {

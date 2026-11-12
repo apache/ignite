@@ -140,7 +140,7 @@ class NodeReturnTest(IgniteTest):
 
         txs = control.tx()
 
-        assert not isinstance(txs, list) or not txs, f"Transactions left active: {txs}"
+        assert not isinstance(txs, list), f"Transactions left active: {txs}"
 
         control.idle_verify()
 

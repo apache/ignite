@@ -43,7 +43,7 @@ from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
-# Log lines no test expects: hung transactions, explicit locks, cache futures or PME, lost partitions, failed asserts.
+# Log lines reporting hung transactions, explicit locks, cache futures or PME, lost partitions, failed asserts.
 SUSPICIOUS_LOG_PATTERNS = ("long running transactions", "long running explicit locks", "long running cache futures",
                            "Failed to wait for partition map exchange", "Detected lost partitions", "AssertionError")
 
