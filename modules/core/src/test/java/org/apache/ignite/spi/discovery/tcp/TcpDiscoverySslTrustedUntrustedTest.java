@@ -121,20 +121,13 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
         checkDiscoveryFailure("node02", "trusttwo", "node01", "trustboth");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testExpired() throws Exception {
-        checkDiscoveryFailure("node02old", "trusttwo", "node03", "trusttwo");
-    }
+    public void testExpired() {
+        keyStore = "node02old";
+        trustStore = "trusttwo";
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testExpiredMismatchingCa() throws Exception {
-        checkDiscoveryFailure("node01", "trustboth", "node02old", "trusttwo");
+        GridTestUtils.assertThrows(log, () -> startGrid(0), IgniteCheckedException.class, "Certificate is not currently valid");
     }
 
     /**

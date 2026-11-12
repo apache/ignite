@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
+ * Every certificate in the private-key chains of the key store must be valid when the factory loads it.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
@@ -162,11 +163,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
     @Override SSLContext createSslContext() throws SSLException {
         try {
             SSLContext ctx = super.createSslContext();
+            Map<String, X509Certificate[]> chains = keyChains(loadedKeyStore);
 
-            if (sslCtx.get() != null)
-                checkValidity(keyChains(loadedKeyStore));
+            checkValidity(chains);
 
-            renewalTime = renewalEnabled ? renewalTime(keyChains(loadedKeyStore)) : 0;
+            renewalTime = renewalEnabled ? renewalTime(chains) : 0;
 
             return ctx;
         }
@@ -432,7 +433,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         }
 
         if (earliestExpiry < System.currentTimeMillis())
-            throw new SSLException("Replacement certificates expired while loading the SSL context [expiry=" + earliestExpiry + ']');
+            throw new SSLException("Certificates expired while loading the SSL context [expiry=" + earliestExpiry + ']');
     }
 
     /**
@@ -461,7 +462,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             }
         }
 
-        return earliestExpiry - (long)(Math.max(0, earliestExpiry - (double)selectedStart) * RENEWAL_WINDOW_FRACTION);
+        return earliestExpiry - (long)((earliestExpiry - selectedStart) * RENEWAL_WINDOW_FRACTION);
     }
 
     /** {@inheritDoc} */

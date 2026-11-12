@@ -176,10 +176,11 @@ The command asks for confirmation; use `--yes` to skip it.
 . Check the command result and the reload logs of any failed nodes, then verify a new connection with the replacement certificates.
 Established connections continue using their existing TLS context.
 
-On reload, `SslContextFactory` checks that every certificate in each private-key chain is valid at that moment.
+`SslContextFactory` checks that every certificate in each private-key chain is valid whenever it loads a key store: at node startup, on reload and during automatic renewal.
+A node with expired or not yet valid certificates does not start, and a reload of such certificates keeps the current ones.
+Client applications and `control.sh` that use `SslContextFactory` apply the same check to their own key stores.
 Replacement certificates may expire earlier than the current ones or have the same expiry date.
 You can also update the trust store without replacing the node's certificate.
-These checks apply even when automatic renewal is disabled.
 
 If a factory fails to reload, it keeps its previous context, and that node stops reloading its remaining factories.
 Successful reloads remain in effect; other nodes continue independently.
