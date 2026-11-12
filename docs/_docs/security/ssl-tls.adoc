@@ -246,10 +246,24 @@ To recover without waiting for the next retry:
 . Correct the replacement stores and run link:tools/control-script#reloading-tls-certificates[`control.sh --ssl reload`].
 . Check the command result and verify a new connection with the replacement certificates.
 
-Manual reload does not enforce certificate validity dates or require later expiry.
-It can therefore apply a trust-store change alone or restore previous certificates.
-After a successful manual reload, Ignite recalculates the schedule and attempts renewal immediately if it is already due.
-If TLS errors prevent the command from connecting, install valid key and trust stores that restore mutual trust, then restart the affected nodes.
+*What a successful command means.*
+Manual reload can apply a trust-store change without changing the node's certificate, or restore certificates from a backup.
+It accepts certificates with unchanged or earlier expiry dates, including expired or not-yet-valid certificates.
+Success means that the stores were loaded.
+Other nodes and clients may still reject the certificates on a new connection.
+
+*What happens to automatic renewal.*
+If enabled, automatic renewal continues after manual reload, using the dates of the certificates just loaded.
+If it is already time to renew them, Ignite schedules an automatic attempt immediately.
+If the source still returns the same certificates, the attempt fails and retries continue.
+That failure does not undo the manual reload.
+
+*If the command cannot connect.*
+First check the command's certificates and trust settings.
+If the problem is on the node, put a valid replacement in its source and wait for an automatic retry.
+Its earliest expiry must be later than that of the certificates currently in use.
+A trust-store change alone cannot be applied by automatic renewal.
+To load corrected stores without the command or waiting for a retry, restart the affected nodes.
 
 === Custom Certificate Sources
 
