@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.ErrorMessage;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -37,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Get response.
  */
-public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
+public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Future ID. */
     @Order(0)
     IgniteUuid futId;
@@ -47,7 +46,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     IgniteUuid miniId;
 
     /** Version. */
-    @Order(2)
+    @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     GridCacheVersion ver;
 
     /** Result. */
@@ -79,14 +78,12 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
      * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Sub ID.
-     * @param ver Version.
      * @param addDepInfo Deployment info.
      */
     public GridNearGetResponse(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion ver,
         boolean addDepInfo
     ) {
         assert futId != null;
@@ -94,7 +91,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
-        this.ver = ver;
         this.addDepInfo = addDepInfo;
     }
 
@@ -106,11 +102,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     /** @return Sub ID. */
     public IgniteUuid miniId() {
         return miniId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return ver;
     }
 
     /**

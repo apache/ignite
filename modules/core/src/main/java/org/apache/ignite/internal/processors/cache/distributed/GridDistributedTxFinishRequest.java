@@ -64,7 +64,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     public IgniteUuid futId;
 
     /** Thread ID. */
-    @Order(2)
+    @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     public long threadId;
 
     /** Commit version. */
@@ -88,7 +88,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     public byte plc;
 
     /** Task name hash. */
-    @Order(8)
+    @Order(value = 8, deprecatedBy = "TX_FINISH_TASK_NAME_HASH_DEPRECATED_FEATURE")
     public int taskNameHash;
 
     /** */
@@ -112,7 +112,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /**
      * @param xidVer Transaction ID.
      * @param futId future ID.
-     * @param threadId Thread ID.
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
@@ -127,15 +126,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         IgniteUuid futId,
         @NotNull AffinityTopologyVersion topVer,
         @Nullable GridCacheVersion commitVer,
-        long threadId,
         boolean commit,
         boolean invalidate,
         byte plc,
         CacheWriteSynchronizationMode syncMode,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash
+        Collection<GridCacheVersion> rolledbackVers
     ) {
         super(xidVer, 0, false);
 
@@ -145,13 +142,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.futId = futId;
         this.topVer = topVer;
         this.commitVer = commitVer;
-        this.threadId = threadId;
         this.commit = commit;
         this.invalidate = invalidate;
         this.plc = plc;
         this.syncMode = syncMode;
         this.baseVer = baseVer;
-        this.taskNameHash = taskNameHash;
 
         completedVersions(committedVers, rolledbackVers);
     }
@@ -202,13 +197,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      */
     public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @return Thread ID.
-     */
-    public long threadId() {
-        return threadId;
     }
 
     /**

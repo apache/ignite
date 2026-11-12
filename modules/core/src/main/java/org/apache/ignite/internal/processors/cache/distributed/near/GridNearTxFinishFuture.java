@@ -737,7 +737,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
             tx.xidVersion(),
-            tx.threadId(),
             commit,
             tx.isInvalidate(),
             tx.ioPolicy(),
@@ -747,8 +746,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.topologyVersion(),
             null,
             null,
-            null,
-            tx.taskNameHash()
+            null
         );
 
         // If this is the primary node for the keys.
@@ -853,13 +851,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      */
     private GridDhtTxFinishRequest checkCommittedRequest(int miniId, boolean waitRemoteTxs) {
         GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
-            cctx.localNodeId(),
             futureId(),
             miniId,
             tx.topologyVersion(),
             tx.xidVersion(),
             tx.commitVersion(),
-            tx.threadId(),
             true,
             false,
             tx.ioPolicy(),
@@ -868,7 +864,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             null,
-            0,
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
             null);

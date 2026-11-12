@@ -38,7 +38,7 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
     int miniId;
 
     /** Near tx thread ID. */
-    @Order(2)
+    @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     long nearThreadId;
 
     /**
@@ -51,14 +51,12 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
     /**
      * @param part Partition.
      * @param xid Xid version.
-     * @param nearThreadId Near tx thread ID.
      * @param futId Future ID.
      * @param miniId Mini future Id.
      * @param err Error.
      */
     public GridNearTxFinishResponse(int part,
         GridCacheVersion xid,
-        long nearThreadId,
         IgniteUuid futId,
         int miniId,
         @Nullable Throwable err
@@ -67,7 +65,6 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
 
         assert miniId != 0;
 
-        this.nearThreadId = nearThreadId;
         this.miniId = miniId;
         errMsg = new ErrorMessage(err);
     }
