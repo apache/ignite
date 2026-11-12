@@ -440,6 +440,8 @@ Register name: `ssl`
 |===
 |Name | Type | Description
 |ConsecutiveRenewalFailures | long | Sum of consecutive automatic renewal failures across the node's SSL factories. Zero when renewal is disabled.
+|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors and unchanged material. Excludes startup loads.
+|AutomaticRenewalAttempts | long | Automatic factory renewal calls, including errors, unchanged material and calls that find renewal is no longer due.
 |===
 
 See link:security/ssl-tls#automatic-certificate-renewal[Automatic Certificate Renewal] for configuration and recovery.

@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -69,6 +70,12 @@ public class SslFactoryRegistry {
     private final AtomicLong consecutiveFailures = new AtomicLong();
 
     /** */
+    private final AtomicLong manualReloadAttempts = new AtomicLong();
+
+    /** */
+    private final AtomicLong automaticRenewalAttempts = new AtomicLong();
+
+    /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
         if (factories.putIfAbsent(transport, factory) != null)
             throw new IllegalStateException("SSL factory is already registered [transport=" + transport + ']');
@@ -83,8 +90,13 @@ public class SslFactoryRegistry {
     public synchronized void start(GridKernalContext ctx) {
         this.ctx = ctx;
         log = ctx.log(getClass());
-        ctx.metric().registry("ssl").register("ConsecutiveRenewalFailures", consecutiveFailures::get,
+
+        MetricRegistryImpl metrics = ctx.metric().registry("ssl");
+
+        metrics.register("ConsecutiveRenewalFailures", consecutiveFailures::get,
             "Sum of consecutive automatic certificate renewal failures across SSL factories.");
+        metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
+        metrics.register("AutomaticRenewalAttempts", automaticRenewalAttempts::get, "Number of automatic SSL factory renewal attempts.");
 
         Map<String, Factory<SSLContext>> factories = factories();
 
@@ -142,9 +154,15 @@ public class SslFactoryRegistry {
             Thread.currentThread().interrupt();
     }
 
-    /** Reloads the factory and, on success, resets its automatic renewal schedule and failure count. */
-    public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
-        Future<?> reload;
+    /**
+     * Reloads the factory and resets its automatic renewal schedule and failure count if a context is replaced.
+     *
+     * @param factory Factory to reload.
+     * @return Whether the context was replaced.
+     * @throws IgniteCheckedException If an asynchronous reload fails or is interrupted.
+     */
+    public boolean reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
+        Future<Boolean> reload;
 
         synchronized (this) {
             Renewal renewal = executor == null ? null : renewals.get(factory);
@@ -153,10 +171,10 @@ public class SslFactoryRegistry {
         }
 
         if (reload == null)
-            factory.init();
+            return reloadFactory(factory);
         else {
             try {
-                U.get(reload);
+                return U.get(reload);
             }
             catch (IgniteInterruptedCheckedException e) {
                 reload.cancel(true);
@@ -164,6 +182,18 @@ public class SslFactoryRegistry {
                 throw e;
             }
         }
+    }
+
+    /** */
+    private boolean reloadFactory(AbstractSslContextFactory factory) {
+        manualReloadAttempts.incrementAndGet();
+
+        if (factory instanceof SslContextFactory)
+            return ((SslContextFactory)factory).reload();
+
+        factory.init();
+
+        return true;
     }
 
     /** */
@@ -200,6 +230,8 @@ public class SslFactoryRegistry {
             long nextAttempt = 0;
 
             try {
+                automaticRenewalAttempts.incrementAndGet();
+
                 factory.renew();
                 nextAttempt = factory.getRenewalTime();
             }
@@ -229,11 +261,14 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private void reload() {
-            factory.init();
+        private boolean reload() {
+            if (!reloadFactory(factory))
+                return false;
 
             resetFailures();
             schedule(nextAttemptTime(factory.getRenewalTime()));
+
+            return true;
         }
 
         /** */

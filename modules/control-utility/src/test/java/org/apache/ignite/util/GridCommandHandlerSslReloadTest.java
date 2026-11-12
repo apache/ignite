@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -88,6 +89,8 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
         int[] loads = factories.stream().mapToInt(factory -> factory.loads.get()).toArray();
 
+        factories.forEach(factory -> factory.setProtocols("TLSv1.2"));
+
         assertEquals(EXIT_CODE_OK, executeTlsReload());
 
         for (int i = 0; i < nodes.size(); i++) {
@@ -97,7 +100,32 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
                 : "communication, client connector, binary REST, discovery";
 
             assertContains(log, testOut.toString(), nodes.get(i).localNode().id() + ": " + transports + ": reloaded");
+            assertEquals(1, nodes.get(i).context().metric().registry("ssl").<LongMetric>findMetric("ManualReloadAttempts").value());
         }
+    }
+
+    /** */
+    @Test
+    public void testUnchangedFactoryDoesNotPreventReloadingNextFactory() throws Exception {
+        SslContextFactory unchanged = (SslContextFactory)sslTrustedFactory("node01", "trustone");
+        SslContextFactory changed = (SslContextFactory)sslTrustedFactory("node01", "trustone");
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setSslContextFactory(unchanged);
+
+        cfg.getClientConnectorConfiguration().setSslEnabled(true).setUseIgniteSslContextFactory(false).setSslContextFactory(changed);
+
+        IgniteEx node = startGrid(cfg);
+        SSLContext unchangedCtx = unchanged.create();
+        SSLContext changedCtx = changed.create();
+
+        changed.setProtocols("TLSv1.2");
+
+        assertEquals(EXIT_CODE_OK, executeTlsReload());
+        assertSame(unchangedCtx, unchanged.create());
+        assertNotSame(changedCtx, changed.create());
+        assertArrayEquals(new String[] {"TLSv1.2"}, changed.create().createSSLEngine().getEnabledProtocols());
+        assertContains(log, testOut.toString(), node.localNode().id() + ": communication, discovery: unchanged");
+        assertContains(log, testOut.toString(), node.localNode().id() + ": client connector: reloaded");
+        assertEquals(2, node.context().metric().registry("ssl").<LongMetric>findMetric("ManualReloadAttempts").value());
     }
 
     /** */
