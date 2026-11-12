@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.prepare.SelectForUpdatePlan.LockTarget;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
@@ -91,7 +92,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     @Override public void onStart(GridKernalContext ctx) {
         super.onStart(ctx);
 
-        distrCfg = queryProcessor(ctx).distributedConfiguration();
+        distrCfg = CalciteQueryProcessor.queryProcessor(ctx).distributedConfiguration();
     }
 
     /** {@inheritDoc} */

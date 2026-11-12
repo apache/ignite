@@ -88,6 +88,7 @@ import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
@@ -813,13 +814,16 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** */
     private SqlValidator createSqlValidator(CalciteCatalogReader catalogReader) {
+        CalciteQueryEngineConfiguration qryEngineCfg = ctx.queryEngineConfiguration();
+
         return new IgniteSqlValidator(
             operatorTbl,
             catalogReader,
             typeFactory,
             validatorCfg,
             ctx.parameters(),
-            ctx.unwrap(IgniteSqlSemantics.class)
+            ctx.unwrap(IgniteSqlSemantics.class),
+            qryEngineCfg != null && qryEngineCfg.isAllowUdfCallsWithoutParentheses()
         );
     }
 

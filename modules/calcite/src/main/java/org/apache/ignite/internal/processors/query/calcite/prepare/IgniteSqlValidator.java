@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -30,6 +31,7 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.runtime.Resources;
+import org.apache.calcite.schema.Function;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
@@ -37,6 +39,8 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlDynamicParam;
+import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlJoin;
@@ -46,15 +50,18 @@ import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlOrderBy;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.fun.SqlCase;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
 import org.apache.calcite.sql.type.SqlOperandTypeChecker;
@@ -62,8 +69,12 @@ import org.apache.calcite.sql.type.SqlOperandTypeInference;
 import org.apache.calcite.sql.type.SqlTypeCoercionRule;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlShuttle;
+import org.apache.calcite.sql.validate.OrderByScope;
 import org.apache.calcite.sql.validate.SelectScope;
+import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlQualified;
+import org.apache.calcite.sql.validate.SqlUserDefinedFunction;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -73,6 +84,8 @@ import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -118,6 +131,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** */
     private final @Nullable IgniteSqlSemantics sqlSem;
 
+    /** */
+    private final boolean allowUdfCallsWithoutParentheses;
+
     /**
      * Creates a validator.
      *
@@ -127,6 +143,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
      * @param cfg Config.
      * @param parameters Dynamic parameters.
      * @param sqlSem SQL semantics.
+     * @param allowUdfCallsWithoutParentheses Whether parameterless UDFs can be called without parentheses.
      */
     public IgniteSqlValidator(
         SqlOperatorTable opTab,
@@ -134,12 +151,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         IgniteTypeFactory typeFactory,
         SqlValidator.Config cfg,
         @Nullable Object[] parameters,
-        @Nullable IgniteSqlSemantics sqlSem
+        @Nullable IgniteSqlSemantics sqlSem,
+        boolean allowUdfCallsWithoutParentheses
     ) {
         super(opTab, catalogReader, typeFactory, cfg);
 
         this.parameters = parameters;
         this.sqlSem = sqlSem;
+        this.allowUdfCallsWithoutParentheses = allowUdfCallsWithoutParentheses;
 
         nullType = typeFactory.createSqlType(SqlTypeName.NULL);
     }
@@ -280,10 +299,162 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected void validateSelect(SqlSelect select, RelDataType targetRowType) {
+        if (allowUdfCallsWithoutParentheses && select.getFetch() != null)
+            select.setFetch(rewriteScalarUdfCalls(select.getFetch(), getEmptyScope(), null));
+
         super.validateSelect(select, targetRowType);
 
         validateFetch(select, "fetch / limit");
         validateFetchOffset(select.getOffset(), "offset");
+    }
+
+    /** {@inheritDoc} */
+    @Override public SqlNode expand(SqlNode expr, SqlValidatorScope scope) {
+        return super.expand(rewriteScalarUdfCalls(expr, scope, null), scope);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateGroupClause(SqlSelect select) {
+        if (allowUdfCallsWithoutParentheses) {
+            // FROM has been validated. Rewrite projections before Calcite expands GROUP BY aliases and ordinals.
+            SqlValidatorScope scope = getWhereScope(select);
+            SqlNodeList projections = select.getSelectList();
+
+            for (int i = 0; i < projections.size(); i++) {
+                SqlNode original = projections.get(i);
+                SqlNode rewritten = rewriteScalarUdfCalls(original, scope, null);
+
+                if (rewritten != original && original instanceof SqlIdentifier) {
+                    SqlIdentifier id = (SqlIdentifier)original;
+
+                    rewritten = SqlStdOperatorTable.AS.createCall(id.getParserPosition(), rewritten,
+                        id.getComponent(id.names.size() - 1));
+                }
+
+                if (rewritten != original)
+                    projections.set(i, rewritten);
+            }
+
+            if (select.getGroup() != null) {
+                select.setGroupBy((SqlNodeList)rewriteScalarUdfCalls(select.getGroup(), getGroupScope(select),
+                    config().conformance().isGroupByAlias() ? select : null));
+            }
+        }
+
+        super.validateGroupClause(select);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateHavingClause(SqlSelect select) {
+        if (select.getHaving() != null) {
+            select.setHaving(rewriteScalarUdfCalls(select.getHaving(), getHavingScope(select),
+                config().conformance().isHavingAlias() ? select : null));
+        }
+
+        super.validateHavingClause(select);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateQualifyClause(SqlSelect select) {
+        if (select.getQualify() != null)
+            select.setQualify(rewriteScalarUdfCalls(select.getQualify(), getSelectScope(select), select));
+
+        super.validateQualifyClause(select);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateValues(SqlCall values, RelDataType targetRowType, SqlValidatorScope scope) {
+        if (allowUdfCallsWithoutParentheses) {
+            SqlValidatorScope valuesScope = scopes.getOrDefault(values, scope);
+
+            for (int i = 0; i < values.operandCount(); i++)
+                values.setOperand(i, rewriteScalarUdfCalls(values.operand(i), valuesScope, null));
+        }
+
+        super.validateValues(values, targetRowType, scope);
+    }
+
+    /** Replaces scalar UDF names in expressions after checking visible columns and aliases. */
+    private SqlNode rewriteScalarUdfCalls(SqlNode expr, SqlValidatorScope scope, @Nullable SqlSelect aliases) {
+        if (!allowUdfCallsWithoutParentheses)
+            return expr;
+
+        return expr.accept(new SqlShuttle() {
+            @Override public SqlNode visit(SqlIdentifier id) {
+                if (id.isStar())
+                    return id;
+
+                SqlOperator op = parameterlessUdf(id, SqlFunctionCategory.USER_DEFINED_FUNCTION);
+
+                if (op == null || hasColumnReference(id, scope, aliases))
+                    return id;
+
+                SqlCall call = op.createCall(id.getParserPosition());
+
+                setOriginal(call, id);
+
+                return call;
+            }
+
+            @Override public SqlNode visit(SqlCall call) {
+                // Subqueries and lambda bodies have their own scopes.
+                if (call.isA(SqlKind.QUERY) || call.getKind() == SqlKind.LAMBDA || call.getKind() == SqlKind.SCALAR_QUERY)
+                    return call;
+
+                CallCopyingArgHandler hnd = new CallCopyingArgHandler(call, false);
+
+                call.getOperator().acceptCall(this, call, true, hnd);
+
+                return hnd.result();
+            }
+        });
+    }
+
+    /** Checks for a column match without suppressing ambiguity errors in Calcite's normal resolution. */
+    private boolean hasColumnReference(SqlIdentifier id, SqlValidatorScope scope, @Nullable SqlSelect aliases) {
+        SqlNameMatcher matcher = getCatalogReader().nameMatcher();
+
+        if (id.isSimple()) {
+            String name = id.getSimple();
+
+            if (scope instanceof OrderByScope && scope.resolveColumn(name, id) != null)
+                return true;
+
+            if (!scope.findQualifyingTableNames(name, id, matcher).isEmpty())
+                return true;
+
+            return aliases != null && aliases.getSelectList().stream().anyMatch(item -> {
+                String alias = SqlValidatorUtil.alias(item);
+
+                return alias != null && matcher.matches(alias, name);
+            });
+        }
+
+        SqlValidatorScope.ResolvedImpl resolved = new SqlValidatorScope.ResolvedImpl();
+
+        scope.resolve(id.names, matcher, true, resolved);
+
+        return resolved.count() != 0;
+    }
+
+    /** Finds a zero-argument Ignite UDF in the requested function category. */
+    private @Nullable SqlOperator parameterlessUdf(SqlIdentifier id, SqlFunctionCategory category) {
+        List<SqlOperator> ops = new ArrayList<>();
+
+        CalciteCatalogReader catalogReader = (CalciteCatalogReader)getCatalogReader();
+
+        catalogReader.lookupOperatorOverloads(id, category, SqlSyntax.FUNCTION, ops, catalogReader.nameMatcher());
+
+        for (SqlOperator op : ops) {
+            if (op instanceof SqlUserDefinedFunction) {
+                Function func = ((SqlUserDefinedFunction)op).getFunction();
+
+                if ((func instanceof IgniteScalarFunction || func instanceof IgniteTableFunction) && func.getParameters().isEmpty())
+                    return op;
+            }
+        }
+
+        return null;
     }
 
     /** Validate fetch expression. */
@@ -476,6 +647,21 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
+        if (node != null && node.getKind() == SqlKind.COLLECTION_TABLE) {
+            SqlCall table = (SqlCall)node;
+
+            if (table.operand(0) instanceof SqlIdentifier) {
+                SqlIdentifier id = table.operand(0);
+                SqlOperator op = allowUdfCallsWithoutParentheses
+                    ? parameterlessUdf(id, SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION) : null;
+
+                if (op == null)
+                    throw newValidationError(id, IgniteResource.INSTANCE.tableFunctionRequiresParentheses(id.toString()));
+
+                table.setOperand(0, op.createCall(id.getParserPosition()));
+            }
+        }
+
         if (node instanceof SqlWithItem)
             RecursiveCteRewriter.rewriteOrderBy((SqlWithItem)node);
 
@@ -789,6 +975,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 scope = newScope;
 
             final SqlCall call = (SqlCall)node;
+
+            if (allowUdfCallsWithoutParentheses && call.getOperator() instanceof SqlFunction
+                && ((SqlFunction)call.getOperator()).getFunctionType().isTableFunction()) {
+                // The scope supplied by Calcite here contains the inputs visible to the table function.
+                SqlCall rewritten = (SqlCall)rewriteScalarUdfCalls(call, scope, null);
+
+                if (rewritten != call) {
+                    for (int i = 0; i < call.operandCount(); i++)
+                        call.setOperand(i, rewritten.operand(i));
+                }
+            }
+
             final SqlOperandTypeInference operandTypeInference = call.getOperator().getOperandTypeInference();
             final SqlOperandTypeChecker operandTypeChecker = call.getOperator().getOperandTypeChecker();
             final SqlCallBinding callBinding = new SqlCallBinding(this, scope, call);

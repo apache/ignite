@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
@@ -74,11 +72,7 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
-
-        assert proc != null;
-
-        qryPlanCache = proc.queryPlanCache();
+        qryPlanCache = CalciteQueryProcessor.queryProcessor(ctx).queryPlanCache();
     }
 
     /** {@inheritDoc} */

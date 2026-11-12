@@ -175,7 +175,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        CalciteQueryProcessor proc = queryProcessor(ctx);
+        CalciteQueryProcessor proc = CalciteQueryProcessor.queryProcessor(ctx);
 
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());

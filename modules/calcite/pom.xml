@@ -451,6 +451,16 @@
                                     value="&lt;FETCH&gt; ( &lt;FIRST&gt; | &lt;NEXT&gt; ) offsetFetch[1] = FetchCount()"
                                     failOnNoReplacements="true"
                                 />
+                                <!-- Allow bare identifiers inside TABLE(...) for validation as parameterless UDFs.
+                                     TODO: https://issues.apache.org/jira/browse/CALCITE-7935
+                                     https://issues.apache.org/jira/browse/IGNITE-29207
+                                     Remove this workaround after upgrading to Calcite 1.43. -->
+                                <replace
+                                    file="${project.build.directory}/generated-sources/fmpp/javacc/Parser.jj"
+                                    token="call = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)"
+                                    value="call = IgniteTableRoutineCall(funcType)"
+                                    failOnNoReplacements="true"
+                                />
                             </target>
                         </configuration>
                     </execution>
