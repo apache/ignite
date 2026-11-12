@@ -66,24 +66,20 @@ public class KillLockTask extends VisorMultiNodeTask<KillLockCommandArg, UUID, U
      * Job to kill explicit lock on node. Returns ID of the node if the lock is found and killed.
      */
     private static class KillLockJob extends VisorJob<KillLockCommandArg, UUID> {
-        /**
-         *
-         */
+        /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * Create job with specified argument.
          *
-         * @param arg   Job argument.
+         * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
         protected KillLockJob(KillLockCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Nullable @Override protected UUID run(KillLockCommandArg arg) throws IgniteException {
             return ignite.context().cache().context().mvcc().releaseExplicitLock(arg.xid()) ? ignite.localNode().id() : null;
         }
