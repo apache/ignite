@@ -120,6 +120,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
         TrustManager[] trustMgrs = createTrustManagers();
 
+        return createSslContext(keyMgrs, trustMgrs);
+    }
+
+    /** */
+    final SSLContext createSslContext(KeyManager[] keyMgrs, TrustManager[] trustMgrs) throws SSLException {
         try {
             SSLContext ctx = SSLContext.getInstance(proto);
 
