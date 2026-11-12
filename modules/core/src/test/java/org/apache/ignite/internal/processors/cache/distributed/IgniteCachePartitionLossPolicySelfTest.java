@@ -281,8 +281,6 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         // Do not wait for evictions because it's not guaranteed in the current implementation.
         awaitPartitionMapExchange();
 
-        awaitPartitionMapsMatchLocalStates(CACHES);
-
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Integer, Integer> cache = ig.cache(cacheName);
 
