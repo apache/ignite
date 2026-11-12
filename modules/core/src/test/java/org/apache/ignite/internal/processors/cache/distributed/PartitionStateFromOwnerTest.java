@@ -75,6 +75,7 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
         this.plc = plc;
 
         startGrids(3);
+        startClientGrid(3);
 
         // Evictions must end first: a node resends its map after its last eviction, and that map brings its new states.
         awaitPartitionMapExchange(true, true, null);
