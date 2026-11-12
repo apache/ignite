@@ -495,7 +495,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
-        boolean reenter,
         boolean tx,
         boolean implicitSingle,
         boolean read) throws GridCacheEntryRemovedException {
@@ -505,7 +504,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             ver,
             topVer,
             timeout,
-            reenter,
+            /*reenter*/false,
             tx,
             implicitSingle,
             read

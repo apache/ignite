@@ -379,7 +379,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 onComplete(false, true, false);
             }
             else {
-                onFailed(false);
+                onFailed();
             }
 
             return null;
@@ -442,21 +442,11 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         cctx.mvcc().recheckPendingLocks();
     }
 
-    /**
-     *
-     * @param dist {@code True} if need to distribute lock release.
-     */
-    private void onFailed(boolean dist) {
-        undoLocks(dist, true);
+    /** */
+    private void onFailed() {
+        undoLocks(false, true);
 
-        complete(false);
-    }
-
-    /**
-     * @param success Success flag.
-     */
-    public void complete(boolean success) {
-        onComplete(success, true);
+        onComplete(false, true);
     }
 
     /**

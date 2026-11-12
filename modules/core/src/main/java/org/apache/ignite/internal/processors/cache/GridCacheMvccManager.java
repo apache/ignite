@@ -880,40 +880,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * This method has poor performance, so use with care. It is currently only used by {@code DGC}.
-     *
-     * @return Remote candidates.
-     */
-    public Collection<GridCacheMvccCandidate> remoteCandidates() {
-        Collection<GridCacheMvccCandidate> rmtCands = new ArrayList<>();
-
-        for (GridDistributedCacheEntry entry : locked())
-            rmtCands.addAll(entry.remoteMvccSnapshot());
-
-        return rmtCands;
-    }
-
-    /**
-     * This method has poor performance, so use with care. It is currently only used by {@code DGC}.
-     *
-     * @return Local candidates.
-     */
-    public Collection<GridCacheMvccCandidate> localCandidates() {
-        Collection<GridCacheMvccCandidate> locCands = new ArrayList<>();
-
-        for (GridDistributedCacheEntry entry : locked()) {
-            try {
-                locCands.addAll(entry.localCandidates());
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                // No-op.
-            }
-        }
-
-        return locCands;
-    }
-
-    /**
      * @param cacheCtx Cache context.
      * @param cand Cache lock candidate to add.
      * @return {@code True} if added as a result of this operation,
@@ -1014,7 +980,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public boolean isLockedByThread(IgniteTxKey key, long threadId) {
         if (threadId < 0) {
             for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
-                GridCacheMvccCandidate cand = span.candidate(key, null);
+                GridCacheMvccCandidate cand = span.candidate(key);
 
                 if (cand != null && cand.owner())
                     return true;
@@ -1024,7 +990,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
             if (span != null) {
-                GridCacheMvccCandidate cand = span.candidate(key, null);
+                GridCacheMvccCandidate cand = span.candidate(key);
 
                 return cand != null && cand.owner();
             }
@@ -1085,24 +1051,23 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     @Nullable public GridCacheMvccCandidate explicitLock(long threadId, IgniteTxKey key) {
         if (threadId < 0)
-            return explicitLock(key, null);
+            return explicitLock(key);
         else {
             GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);
 
-            return span == null ? null : span.candidate(key, null);
+            return span == null ? null : span.candidate(key);
         }
     }
 
     /**
-     * Gets explicit lock candidate added by any thread by given key and lock version.
+     * Gets explicit lock candidate added by any thread by given key.
      *
      * @param key Key.
-     * @param ver Version.
      * @return Lock candidate that satisfies given criteria or {@code null} if no such candidate.
      */
-    @Nullable public GridCacheMvccCandidate explicitLock(IgniteTxKey key, @Nullable GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate explicitLock(IgniteTxKey key) {
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
-            GridCacheMvccCandidate cand = span.candidate(key, ver);
+            GridCacheMvccCandidate cand = span.candidate(key);
 
             if (cand != null)
                 return cand;
