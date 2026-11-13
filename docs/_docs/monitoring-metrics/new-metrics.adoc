@@ -432,19 +432,19 @@ Register name: `communication.tcp.{node_consistent_id}`
 |sentMessagesToNode | long | Total number of messages sent by current node to the given node.
 |===
 
-== Certificate Renewal
+== Certificate Hot Reload
 
 Register name: `ssl`
 
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
-|ConsecutiveRenewalFailures | long | Sum of consecutive automatic renewal failures across the node's SSL factories. Zero when renewal is disabled.
-|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads and manual reloads rejected before renewal starts.
-|AutomaticRenewalAttempts | long | Automatic factory renewal calls, including errors and calls that find renewal is no longer due.
+|ConsecutiveHotReloadFailures | long | Sum of consecutive automatic hot reload failures across the node's SSL factories. Zero when hot reload is disabled.
+|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads and manual reloads rejected before hot reload starts.
+|AutomaticHotReloadAttempts | long | Automatic factory hot reload calls, including errors and calls that find hot reload is no longer due.
 |===
 
-See link:security/ssl-tls#automatic-certificate-renewal[Automatic Certificate Renewal] for configuration and recovery.
+See link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload] for configuration and recovery.
 
 == Communication Connection Pool
 

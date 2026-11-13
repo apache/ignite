@@ -45,7 +45,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 /** */
-public class SslContextFactoryRenewalTest {
+public class SslContextFactoryHotReloadTest {
     /** */
     private final long now = System.currentTimeMillis() / 1_000 * 1_000;
 
@@ -60,50 +60,50 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
-    public void testRenewalIsDisabledByDefault() {
+    public void testHotReloadIsDisabledByDefault() {
         SslContextFactory factory = new SslContextFactory();
 
-        assertFalse(factory.isRenewalEnabled());
-        assertEquals(0, factory.getRenewalTime());
+        assertFalse(factory.isHotReloadEnabled());
+        assertEquals(0, factory.getHotReloadTime());
 
-        factory.renew();
+        factory.hotReload();
     }
 
     /** */
     @Test
-    public void testDisabledRenewalAcceptsStoreWithoutPrivateKeys() throws Exception {
+    public void testDisabledHotReloadAcceptsStoreWithoutPrivateKeys() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
 
-        factory.setRenewalEnabled(false);
+        factory.setHotReloadEnabled(false);
         factory.create();
         factory.init();
 
-        assertEquals(0, factory.getRenewalTime());
+        assertEquals(0, factory.getHotReloadTime());
     }
 
     /** */
     @Test
-    public void testLoadWithRenewalDisabledClearsRenewalTime() throws Exception {
+    public void testLoadWithHotReloadDisabledClearsHotReloadTime() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-85), at(15)));
 
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
         factory.create();
 
-        assertEquals(now, factory.getRenewalTime());
+        assertEquals(now, factory.getHotReloadTime());
 
-        factory.setRenewalEnabled(false);
+        factory.setHotReloadEnabled(false);
         factory.init();
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
 
-        assertEquals(0, factory.getRenewalTime());
+        assertEquals(0, factory.getHotReloadTime());
     }
 
     /**
      * In each key store, the chain that should set the window has 15 of its 100 hours left,
-     * so its renewal window starts now.
+     * so its hot reload window starts now.
      */
     @Test
-    public void testRenewalTimeIsWindowStartOfEarliestExpiringChain() throws Exception {
+    public void testHotReloadTimeIsWindowStartOfEarliestExpiringChain() throws Exception {
         TestCertificateAuthority shortIssuer = new TestCertificateAuthority("short-issuer", now - DAYS.toMillis(365), at(15));
         KeyStore node = authority.keyStore("node", at(-85), at(15));
         KeyStore withSecretKey = KeyStore.getInstance("JCEKS");
@@ -112,26 +112,28 @@ public class SslContextFactoryRenewalTest {
         withSecretKey.setKeyEntry("node", node.getKey("node", PASSWORD), PASSWORD, node.getCertificateChain("node"));
         withSecretKey.setKeyEntry("secret", new SecretKeySpec(new byte[16], "AES"), PASSWORD, null);
 
-        assertRenewalWindowStartsNow(node);
-        assertRenewalWindowStartsNow(shortIssuer.keyStore("node", at(-85), at(100)));
-        assertRenewalWindowStartsNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-200), at(100))));
-        assertRenewalWindowStartsNow(merge(authority.keyStore("first", at(-200), at(100)), authority.keyStore("second", at(-85), at(15))));
-        assertRenewalWindowStartsNow(merge(authority.keyStore("first", at(-5), at(15)), authority.keyStore("second", at(-85), at(15))));
-        assertRenewalWindowStartsNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-5), at(15))));
-        assertRenewalWindowStartsNow(withSecretKey);
+        assertHotReloadWindowStartsNow(node);
+        assertHotReloadWindowStartsNow(shortIssuer.keyStore("node", at(-85), at(100)));
+        assertHotReloadWindowStartsNow(
+            merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-200), at(100))));
+        assertHotReloadWindowStartsNow(
+            merge(authority.keyStore("first", at(-200), at(100)), authority.keyStore("second", at(-85), at(15))));
+        assertHotReloadWindowStartsNow(merge(authority.keyStore("first", at(-5), at(15)), authority.keyStore("second", at(-85), at(15))));
+        assertHotReloadWindowStartsNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-5), at(15))));
+        assertHotReloadWindowStartsNow(withSecretKey);
     }
 
     /** */
     @Test
-    public void testEnabledRenewalRequiresPrivateKey() throws Exception {
+    public void testEnabledHotReloadRequiresPrivateKey() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
 
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
 
         IgniteException err = assertThrows(IgniteException.class, factory::create);
 
         assertTrue(err.getCause().getMessage().contains("private key with an X.509 certificate chain"));
-        assertEquals(0, factory.getRenewalTime());
+        assertEquals(0, factory.getHotReloadTime());
     }
 
     /** */
@@ -139,7 +141,7 @@ public class SslContextFactoryRenewalTest {
     public void testFirstLoadRejectsExpiredCertificates() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-101), at(-1)));
 
-        factory.setRenewalEnabled(false);
+        factory.setHotReloadEnabled(false);
 
         IgniteException err = assertThrows(IgniteException.class, factory::create);
 
@@ -148,35 +150,35 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
-    public void testRenewBeforeWindowDoesNotLoad() throws Exception {
+    public void testHotReloadBeforeWindowDoesNotLoad() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-1), at(99)));
 
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
         factory.create();
 
-        assertEquals(at(84), factory.getRenewalTime());
+        assertEquals(at(84), factory.getHotReloadTime());
 
-        factory.renew();
+        factory.hotReload();
 
         assertEquals(1, factory.keyStoreLoads);
     }
 
     /** */
     @Test
-    public void testRenewAcceptsAnyValidReplacement() throws Exception {
+    public void testHotReloadAcceptsAnyValidReplacement() throws Exception {
         for (long expiry : new long[] {at(10), at(5)}) {
             InMemorySslContextFactory factory = dueFactory();
             SSLContext ctx = factory.create();
 
             factory.keyStore = authority.keyStore("node", at(-1), expiry);
-            factory.renew();
+            factory.hotReload();
 
             assertNotSame(ctx, factory.create());
         }
 
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
         factory.trustStore = authority.trustStore();
         factory.setTrustManagers((TrustManager[])null);
         factory.setTrustStoreFilePath("memory-trust");
@@ -184,35 +186,35 @@ public class SslContextFactoryRenewalTest {
 
         SSLContext ctx = factory.create();
 
-        assertEquals(at(-5), factory.getRenewalTime());
+        assertEquals(at(-5), factory.getHotReloadTime());
 
         TestCertificateAuthority otherIssuer = new TestCertificateAuthority("other-issuer", now - DAYS.toMillis(1), now + DAYS.toMillis(1));
 
         factory.trustStore.setCertificateEntry("other-issuer", otherIssuer.trustStore().getCertificate("CN=other-issuer"));
-        factory.renew();
+        factory.hotReload();
 
         assertNotSame(ctx, factory.create());
     }
 
     /** */
     @Test
-    public void testRenewRejectsCertificatesThatAreNotValid() throws Exception {
+    public void testHotReloadRejectsCertificatesThatAreNotValid() throws Exception {
         TestCertificateAuthority expiredIssuer = new TestCertificateAuthority("expired-issuer", at(-100), now - 1_000);
         InMemorySslContextFactory factory = dueFactory();
 
         factory.keyStore = expiredIssuer.keyStore("replacement", at(-1), at(99));
-        assertRenewKeepsCurrentState(factory, "subject=CN=expired-issuer");
+        assertHotReloadKeepsCurrentState(factory, "subject=CN=expired-issuer");
 
         factory.keyStore = merge(authority.keyStore("first", at(1), at(100)), authority.keyStore("second", at(-1), at(99)));
-        assertRenewKeepsCurrentState(factory, "alias=first");
+        assertHotReloadKeepsCurrentState(factory, "alias=first");
 
         factory.keyStore = merge(authority.keyStore("first", at(-1), at(99)), authority.keyStore("second", at(1), at(100)));
-        assertRenewKeepsCurrentState(factory, "alias=second");
+        assertHotReloadKeepsCurrentState(factory, "alias=second");
     }
 
     /** */
     @Test
-    public void testRenewRecoversAfterFailedTrustStoreLoad() throws Exception {
+    public void testHotReloadRecoversAfterFailedTrustStoreLoad() throws Exception {
         InMemorySslContextFactory factory = dueFactory();
         SSLContext ctx = factory.create();
 
@@ -221,18 +223,18 @@ public class SslContextFactoryRenewalTest {
         factory.setTrustStoreFilePath("missing-trust-store");
         factory.setTrustStorePassword(PASSWORD);
 
-        assertRenewKeepsCurrentState(factory, "missing-trust-store");
+        assertHotReloadKeepsCurrentState(factory, "missing-trust-store");
 
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-        factory.renew();
+        factory.hotReload();
 
         assertNotSame(ctx, factory.create());
-        assertEquals(at(84), factory.getRenewalTime());
+        assertEquals(at(84), factory.getHotReloadTime());
     }
 
     /** */
     @Test
-    public void testRenewRejectsCertificatesExpiredDuringDateValidation() throws Exception {
+    public void testHotReloadRejectsCertificatesExpiredDuringDateValidation() throws Exception {
         InMemorySslContextFactory factory = dueFactory();
         long expiry = System.currentTimeMillis() / 1_000 * 1_000 + 5_000;
         KeyStore replacement = authority.keyStore("replacement", at(-1), expiry);
@@ -253,41 +255,41 @@ public class SslContextFactoryRenewalTest {
         replacement.setKeyEntry("replacement", replacement.getKey("replacement", PASSWORD), PASSWORD, chain);
         factory.keyStore = replacement;
 
-        assertRenewKeepsCurrentState(factory, "expired while loading");
+        assertHotReloadKeepsCurrentState(factory, "expired while loading");
     }
 
-    /** @return Factory that has loaded certificates whose renewal window has started. */
+    /** @return Factory that has loaded certificates whose hot reload window has started. */
     private InMemorySslContextFactory dueFactory() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
         factory.create();
 
-        assertEquals(at(-5), factory.getRenewalTime());
+        assertEquals(at(-5), factory.getHotReloadTime());
 
         return factory;
     }
 
     /** */
-    private void assertRenewalWindowStartsNow(KeyStore keys) {
+    private void assertHotReloadWindowStartsNow(KeyStore keys) {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(keys);
 
-        factory.setRenewalEnabled(true);
+        factory.setHotReloadEnabled(true);
         factory.create();
 
-        assertEquals(now, factory.getRenewalTime());
+        assertEquals(now, factory.getHotReloadTime());
         assertEquals(1, factory.keyStoreLoads);
     }
 
     /** */
-    private static void assertRenewKeepsCurrentState(SslContextFactory factory, String reason) {
+    private static void assertHotReloadKeepsCurrentState(SslContextFactory factory, String reason) {
         SSLContext ctx = factory.create();
-        long renewalTime = factory.getRenewalTime();
-        IgniteException err = assertThrows(IgniteException.class, factory::renew);
+        long hotReloadTime = factory.getHotReloadTime();
+        IgniteException err = assertThrows(IgniteException.class, factory::hotReload);
 
         assertTrue(err.getCause().getMessage(), err.getCause().getMessage().contains(reason));
         assertSame(ctx, factory.create());
-        assertEquals(renewalTime, factory.getRenewalTime());
+        assertEquals(hotReloadTime, factory.getHotReloadTime());
     }
 
     /** */

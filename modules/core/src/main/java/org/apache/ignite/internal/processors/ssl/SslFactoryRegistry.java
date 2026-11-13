@@ -54,7 +54,7 @@ public class SslFactoryRegistry {
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
 
     /** */
-    private volatile Map<Factory<SSLContext>, Renewal> renewals = Collections.emptyMap();
+    private volatile Map<Factory<SSLContext>, HotReload> hotReloads = Collections.emptyMap();
 
     /** */
     private volatile ScheduledExecutorService executor;
@@ -63,7 +63,7 @@ public class SslFactoryRegistry {
     private final AtomicLong manualReloadAttempts = new AtomicLong();
 
     /** */
-    private final AtomicLong automaticRenewalAttempts = new AtomicLong();
+    private final AtomicLong automaticHotReloadAttempts = new AtomicLong();
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
@@ -80,18 +80,19 @@ public class SslFactoryRegistry {
     public synchronized void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveRenewalFailures", () -> renewals.values().stream().mapToLong(r -> r.failures.get()).sum(),
-            "Sum of consecutive automatic certificate renewal failures across SSL factories.");
+        metrics.register("ConsecutiveHotReloadFailures", () -> hotReloads.values().stream().mapToLong(r -> r.failures.get()).sum(),
+            "Sum of consecutive automatic certificate hot reload failures across SSL factories.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
-        metrics.register("AutomaticRenewalAttempts", automaticRenewalAttempts::get, "Number of automatic SSL factory renewal attempts.");
+        metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
+            "Number of automatic SSL factory hot reload attempts.");
 
         Map<String, Factory<SSLContext>> factories = factories();
-        Map<Factory<SSLContext>, Renewal> renewals = new IdentityHashMap<>();
+        Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
         IgniteLogger log = ctx.log(getClass());
 
         for (Factory<SSLContext> factory : factories.values()) {
-            if (factory instanceof SslContextFactory sslFactory && sslFactory.isRenewalEnabled() && !renewals.containsKey(factory)) {
-                if (sslFactory.getRenewalTime() == 0)
+            if (factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled() && !hotReloads.containsKey(factory)) {
+                if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
 
                 String transports = factories.entrySet().stream()
@@ -99,20 +100,20 @@ public class SslFactoryRegistry {
                     .map(Map.Entry::getKey)
                     .collect(joining(", "));
 
-                renewals.put(factory, new Renewal(sslFactory, transports, log));
+                hotReloads.put(factory, new HotReload(sslFactory, transports, log));
             }
         }
 
-        if (renewals.isEmpty() || ctx.isStopping())
+        if (hotReloads.isEmpty() || ctx.isStopping())
             return;
 
-        executor = newSingleThreadScheduledExecutor("ssl-renewal", ctx.igniteInstanceName());
+        executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
         try (Scope ignored = OperationContext.restoreSnapshot(null)) {
-            executor.execute(() -> renewals.values().forEach(Renewal::scheduleRenewal));
+            executor.execute(() -> hotReloads.values().forEach(HotReload::scheduleHotReload));
         }
 
-        this.renewals = renewals;
+        this.hotReloads = hotReloads;
     }
 
     /** */
@@ -143,21 +144,21 @@ public class SslFactoryRegistry {
     }
 
     /**
-     * Reloads the factory and resets its automatic renewal schedule and failure count.
+     * Reloads the factory and resets its automatic hot reload schedule and failure count.
      *
      * @param factory Factory to reload.
-     * @throws IgniteCheckedException If renewal has not started, or an asynchronous reload fails or is interrupted.
+     * @throws IgniteCheckedException If hot reload has not started, or an asynchronous reload fails or is interrupted.
      */
     public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
         Future<?> reload;
 
         synchronized (this) {
-            Renewal renewal = renewals.get(factory);
+            HotReload hotReload = hotReloads.get(factory);
 
-            if (renewal == null && factory instanceof SslContextFactory sslFactory && sslFactory.isRenewalEnabled())
-                throw new IgniteCheckedException("Automatic TLS renewal has not started.");
+            if (hotReload == null && factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled())
+                throw new IgniteCheckedException("Automatic TLS hot reload has not started.");
 
-            reload = renewal == null ? null : executor.submit(renewal::reload);
+            reload = hotReload == null ? null : executor.submit(hotReload::reload);
         }
 
         if (reload == null)
@@ -182,7 +183,7 @@ public class SslFactoryRegistry {
     }
 
     /** */
-    private class Renewal implements Runnable {
+    private class HotReload implements Runnable {
         /** */
         private final SslContextFactory factory;
 
@@ -199,7 +200,7 @@ public class SslFactoryRegistry {
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private Renewal(SslContextFactory factory, String transports, IgniteLogger log) {
+        private HotReload(SslContextFactory factory, String transports, IgniteLogger log) {
             this.factory = factory;
             this.transports = transports;
             this.log = log;
@@ -210,10 +211,10 @@ public class SslFactoryRegistry {
             if (executor.isShutdown())
                 return;
 
-            automaticRenewalAttempts.incrementAndGet();
+            automaticHotReloadAttempts.incrementAndGet();
 
             try {
-                factory.renew();
+                factory.hotReload();
             }
             catch (Exception e) {
                 retry(e);
@@ -221,12 +222,13 @@ public class SslFactoryRegistry {
                 return;
             }
 
-            long renewalTime = factory.getRenewalTime();
+            long hotReloadTime = factory.getHotReloadTime();
 
-            if (renewalTime != 0 && renewalTime <= System.currentTimeMillis())
-                retry(new IgniteException("Loaded certificates are still due for renewal [renewalTime=" + new Date(renewalTime) + ']'));
+            if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
+                retry(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
+                    + new Date(hotReloadTime) + ']'));
             else
-                scheduleRenewal();
+                scheduleHotReload();
         }
 
         /** */
@@ -237,7 +239,7 @@ public class SslFactoryRegistry {
             long delay = Math.min(MINUTES.toMillis(1) << Math.min(failures.incrementAndGet() - 1, 6), MINUTES.toMillis(60));
             long nextAttempt = System.currentTimeMillis() + delay + ThreadLocalRandom.current().nextLong(delay / 2 + 1);
 
-            log.warning("TLS renewal failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', cause);
+            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', cause);
 
             schedule(nextAttempt);
         }
@@ -245,13 +247,13 @@ public class SslFactoryRegistry {
         /** */
         private void reload() {
             reloadFactory(factory);
-            scheduleRenewal();
+            scheduleHotReload();
         }
 
-        /** Ends the failure streak and schedules the next attempt at the renewal time. */
-        private void scheduleRenewal() {
+        /** Ends the failure streak and schedules the next attempt at the hot reload time. */
+        private void scheduleHotReload() {
             failures.set(0);
-            schedule(factory.getRenewalTime());
+            schedule(factory.getHotReloadTime());
         }
 
         /** */
@@ -273,7 +275,7 @@ public class SslFactoryRegistry {
             }
 
             if (log.isInfoEnabled())
-                log.info("TLS renewal scheduled [transports=" + transports + ", nextAttempt=" + new Date(time) + ']');
+                log.info("TLS hot reload scheduled [transports=" + transports + ", nextAttempt=" + new Date(time) + ']');
         }
     }
 }

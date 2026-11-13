@@ -70,8 +70,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
-    /** Fraction of a certificate lifetime reserved for renewal. */
-    private static final double RENEWAL_WINDOW_FRACTION = 0.15;
+    /** Fraction of a certificate lifetime reserved for hot reload. */
+    private static final double HOT_RELOAD_WINDOW_FRACTION = 0.15;
 
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
@@ -98,50 +98,50 @@ public class SslContextFactory extends AbstractSslContextFactory {
     protected TrustManager[] trustMgrs;
 
     /** */
-    private boolean renewalEnabled;
+    private boolean hotReloadEnabled;
 
     /** */
-    private transient volatile long renewalTime;
+    private transient volatile long hotReloadTime;
 
     /** Key store read by the load in progress. */
     private transient KeyStore loadedKeyStore;
 
     /**
-     * @return Whether automatic certificate renewal is enabled. Defaults to {@code false}.
+     * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
      */
-    public boolean isRenewalEnabled() {
-        return renewalEnabled;
+    public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
     }
 
     /**
-     * @param enabled Whether automatic certificate renewal is enabled. Changes require a node restart.
+     * @param enabled Whether automatic certificate hot reload is enabled. Changes require a node restart.
      */
-    public void setRenewalEnabled(boolean enabled) {
-        renewalEnabled = enabled;
+    public void setHotReloadEnabled(boolean enabled) {
+        hotReloadEnabled = enabled;
     }
 
     /**
-     * The renewal time is calculated from the certificates loaded with renewal enabled.
+     * The hot reload time is calculated from the certificates loaded with hot reload enabled.
      * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
      * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
      * For chains with the same expiry, the longest lifetime is used.
      *
-     * @return Start of the renewal window in milliseconds since the epoch, or {@code 0} if the current certificates
-     *     were loaded with renewal disabled or have not been loaded yet.
+     * @return Start of the hot reload window in milliseconds since the epoch, or {@code 0} if the current certificates
+     *     were loaded with hot reload disabled or have not been loaded yet.
      */
-    public long getRenewalTime() {
-        return renewalTime;
+    public long getHotReloadTime() {
+        return hotReloadTime;
     }
 
     /**
-     * Replaces the current SSL context when the renewal window has started.
-     * Does nothing when renewal is disabled, no renewal date has been loaded, or the window has not started.
-     * A failed replacement leaves the current context and renewal time unchanged.
+     * Replaces the current SSL context when the hot reload window has started.
+     * Does nothing when hot reload is disabled, no hot reload date has been loaded, or the window has not started.
+     * A failed replacement leaves the current context and hot reload time unchanged.
      *
      * @throws IgniteException If the replacement cannot be loaded or accepted.
      */
-    public void renew() {
-        if (renewalEnabled && renewalTime != 0 && renewalTime <= System.currentTimeMillis())
+    public void hotReload() {
+        if (hotReloadEnabled && hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
             init();
     }
 
@@ -153,7 +153,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             checkValidity(chains);
 
-            renewalTime = renewalEnabled ? renewalTime(chains) : 0;
+            hotReloadTime = hotReloadEnabled ? hotReloadTime(chains) : 0;
 
             return ctx;
         }
@@ -424,12 +424,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param chains Key chains by alias.
-     * @return Start of the renewal window of the chain that expires first.
+     * @return Start of the hot reload window of the chain that expires first.
      * @throws SSLException If there are no key chains.
      */
-    private static long renewalTime(Map<String, X509Certificate[]> chains) throws SSLException {
+    private static long hotReloadTime(Map<String, X509Certificate[]> chains) throws SSLException {
         if (chains.isEmpty())
-            throw new SSLException("Certificate renewal requires a private key with an X.509 certificate chain.");
+            throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
 
         long earliestExpiry = Long.MAX_VALUE;
         long selectedStart = Long.MAX_VALUE;
@@ -448,7 +448,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             }
         }
 
-        return earliestExpiry - (long)((earliestExpiry - selectedStart) * RENEWAL_WINDOW_FRACTION);
+        return earliestExpiry - (long)((earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
     }
 
     /** {@inheritDoc} */

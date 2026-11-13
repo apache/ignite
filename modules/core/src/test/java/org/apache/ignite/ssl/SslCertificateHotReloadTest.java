@@ -40,14 +40,14 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class SslCertificateRenewalTest extends GridCommonAbstractTest {
+public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     /** */
     @Test
-    public void testNodeRenewsCertificatesForNewConnections() throws Exception {
+    public void testNodeHotReloadsCertificatesForNewConnections() throws Exception {
         long now = System.currentTimeMillis();
         TestCertificateAuthority ca1 = new TestCertificateAuthority("ca1", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
         TestCertificateAuthority ca2 = new TestCertificateAuthority("ca2", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
-        Path dir = Files.createTempDirectory("ssl-renewal");
+        Path dir = Files.createTempDirectory("ssl-hot-reload");
         Path keys = dir.resolve("keys.jks");
         Path trust = dir.resolve("trust.jks");
 
@@ -57,11 +57,11 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
 
             SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
 
-            serverFactory.setRenewalEnabled(true);
+            serverFactory.setHotReloadEnabled(true);
 
             SSLContext initCtx = serverFactory.create();
 
-            assertTrue("Renewal must be due at startup", serverFactory.getRenewalTime() < now);
+            assertTrue("Hot reload must be due at startup", serverFactory.getHotReloadTime() < now);
 
             save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(1)), keys);
             save(ca2.trustStore(), trust);
@@ -70,7 +70,7 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
                 cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
 
-            assertTrue("The renewed context was not installed", waitForCondition(() -> serverFactory.create() != initCtx, 10_000));
+            assertTrue("The reloaded context was not installed", waitForCondition(() -> serverFactory.create() != initCtx, 10_000));
 
             ClientConfiguration clientCfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1:" + node.context().clientListener().port())
@@ -89,15 +89,15 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRenewalFailsWhileSourceHoldsDueCertificates() throws Exception {
+    public void testHotReloadFailsWhileSourceHoldsDueCertificates() throws Exception {
         long now = System.currentTimeMillis();
         TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
-        Path dir = Files.createTempDirectory("ssl-renewal");
+        Path dir = Files.createTempDirectory("ssl-hot-reload");
         Path keys = dir.resolve("keys.jks");
         Path trust = dir.resolve("trust.jks");
         ListeningTestLogger nodeLog = new ListeningTestLogger(log);
-        LogListener failure = LogListener.matches("TLS renewal failed [transports=client connector").build();
-        LogListener reason = LogListener.matches("Loaded certificates are still due for renewal").build();
+        LogListener failure = LogListener.matches("TLS hot reload failed [transports=client connector").build();
+        LogListener reason = LogListener.matches("Loaded certificates are still due for hot reload").build();
 
         nodeLog.registerListener(failure);
         nodeLog.registerListener(reason);
@@ -108,12 +108,12 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
 
             SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
 
-            serverFactory.setRenewalEnabled(true);
+            serverFactory.setHotReloadEnabled(true);
 
             IgniteEx node = startGrid(0, cfg -> {
                 cfg.setGridLogger(nodeLog).setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
-            LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveRenewalFailures");
+            LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveHotReloadFailures");
 
             assertTrue("The automatic attempt did not fail", waitForCondition(() -> failures.value() == 1, 10_000));
             assertTrue(failure.check());
