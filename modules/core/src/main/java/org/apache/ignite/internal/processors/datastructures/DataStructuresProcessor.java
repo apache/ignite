@@ -885,39 +885,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * Would suspend calls for this cache if it is atomics cache.
-     * @param cacheName To suspend.
-     */
-    public void suspend(String cacheName) {
-        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
-            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
-
-            if (cacheName0.equals(cacheName))
-                e.getValue().suspend();
-        }
-    }
-
-    /**
-     * Would return this cache to normal work if it was suspened (and if it is atomics cache).
-     * @param cacheName To restart.
-     */
-    public void restart(String cacheName, IgniteInternalCache cache) {
-        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
-            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
-
-            if (cacheName0.equals(cacheName)) {
-                if (cache != null)
-                    e.getValue().restart(cache);
-                else {
-                    e.getValue().onRemoved();
-
-                    dsMap.remove(e.getKey(), e.getValue());
-                }
-            }
-        }
-    }
-
-    /**
      * Gets an atomic reference from cache or creates one if it's not cached.
      *
      * @param name Name of atomic reference.

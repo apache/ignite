@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -441,8 +440,6 @@ public class SchemaExchangeSelfTest extends AbstractSchemaSelfTest {
         GridCacheContext<Object, Object> ctx0 = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
         node2.cache(CACHE_NAME);
         GridCacheContext<Object, Object> ctx = node2.context().cache().context().cacheContext(CU.cacheId(CACHE_NAME));
-        GridCacheAdapter<Object, Object> entries = node2.context().cache().internalCache(CACHE_NAME);
-        assertTrue(entries.active());
 
         node2.cache(CACHE_NAME);
         assertTypes(node2, ValueClass.class);

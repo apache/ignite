@@ -458,7 +458,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     desc,
                     changeReq.nearCacheConfiguration(),
                     topVer,
-                    changeReq.disabledAfterStart(),
                     true
                 );
             }).collect(Collectors.toList());
@@ -945,20 +944,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert cctx.cacheContext(cacheDesc.cacheId()) == null
                     : "Starting cache has not null context: " + cacheDesc.cacheName();
 
-                IgniteCacheProxyImpl cacheProxy = cctx.cache().jcacheProxy(req.cacheName(), false);
-
-                // If it has proxy then try to start it
-                if (cacheProxy != null) {
-                    // Cache should be in restarting mode
-                    assert cacheProxy.isRestarting()
-                        : "Cache has non restarting proxy " + cacheProxy;
-
-                    startCache = true;
-                }
-                else {
-                    startCache = CU.affinityNode(cctx.localNode(),
-                        cacheDesc.groupDescriptor().config().getNodeFilter());
-                }
+                startCache = CU.affinityNode(cctx.localNode(),
+                    cacheDesc.groupDescriptor().config().getNodeFilter());
             }
 
             if (startCache) {
@@ -967,8 +954,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         req.startCacheConfiguration(),
                         cacheDesc,
                         nearCfg,
-                        evts.topologyVersion(),
-                        req.disabledAfterStart()
+                        evts.topologyVersion()
                     ),
                     req
                 );
@@ -1061,7 +1047,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert exchActions != null && !exchActions.empty() : exchActions;
 
         for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests())
-            cctx.cache().blockGateway(action.request().cacheName(), true, action.request().restart());
+            cctx.cache().blockGateway(action.request().cacheName(), true);
 
         for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop())
             cctx.exchange().clearClientTopology(action.descriptor().groupId());

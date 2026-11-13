@@ -114,4 +114,10 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the cache size estimation task for SQL statistics. */
     public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
+
+    /** Feature that deprecates {@code DynamicCacheChangeRequest#restart}. */
+    public static final IgniteFeature CACHE_RESTART_FLAG_DEPRECATED_FEATURE = new IgniteCoreFeature(6);
+
+    /** Feature that deprecates {@code DynamicCacheChangeRequest#disabledAfterStart}. */
+    public static final IgniteFeature CACHE_DISABLED_AFTER_START_DEPRECATED_FEATURE = new IgniteCoreFeature(7);
 }

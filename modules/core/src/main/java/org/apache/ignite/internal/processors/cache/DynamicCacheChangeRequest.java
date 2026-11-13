@@ -87,7 +87,7 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
     boolean stop;
 
     /** Restart flag. */
-    @Order(9)
+    @Order(value = 9, deprecatedBy = "CACHE_RESTART_FLAG_DEPRECATED_FEATURE")
     boolean restart;
 
     /** Finalize update counters flag. */
@@ -99,7 +99,7 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
     IgniteUuid restartId;
 
     /** Cache active on start or not*/
-    @Order(12)
+    @Order(value = 12, deprecatedBy = "CACHE_DISABLED_AFTER_START_DEPRECATED_FEATURE")
     boolean disabledAfterStart;
 
     /** Cache data destroy flag. Setting to <code>true</code> will cause removing all cache data.*/
@@ -324,20 +324,6 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
     }
 
     /**
-     * @return {@code True} if this is a restart request.
-     */
-    public boolean restart() {
-        return restart;
-    }
-
-    /**
-     * @param restart New restart flag.
-     */
-    public void restart(boolean restart) {
-        this.restart = restart;
-    }
-
-    /**
      * Set finalize partition update counters flag.
      */
     public void markFinalizePartitionCounters() {
@@ -352,7 +338,7 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
     }
 
     /**
-     * @return Id of restart to allow only initiator start the restarting cache.
+     * @return Id of cache restart requester.
      */
     public IgniteUuid restartId() {
         return restartId;
@@ -497,20 +483,6 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
     }
 
     /**
-     * @return state of cache after start
-     */
-    public boolean disabledAfterStart() {
-        return disabledAfterStart;
-    }
-
-    /**
-     * @param disabledAfterStart state of cache after start
-     */
-    public void disabledAfterStart(boolean disabledAfterStart) {
-        this.disabledAfterStart = disabledAfterStart;
-    }
-
-    /**
      * @param encKey Encryption key.
      */
     public void encryptionKey(@Nullable byte[] encKey) {
@@ -572,7 +544,6 @@ public class DynamicCacheChangeRequest extends AbstractMessage implements Serial
             ", clientStartOnly=" + clientStartOnly +
             ", stop=" + stop +
             ", destroy=" + destroy +
-            ", disabledAfterStart=" + disabledAfterStart +
             ']';
     }
 }

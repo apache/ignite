@@ -39,9 +39,6 @@ public class StartCacheInfo {
     /** Exchange topology version in which starting happened. */
     private final AffinityTopologyVersion exchTopVer;
 
-    /** Disable started cache after start or not. */
-    private final boolean disabledAfterStart;
-
     /** Cache is client or not. */
     private final boolean clientCache;
 
@@ -49,12 +46,11 @@ public class StartCacheInfo {
      * @param desc Cache configuration for start.
      * @param reqNearCfg Near cache configuration for start.
      * @param exchTopVer Exchange topology version in which starting happened.
-     * @param disabledAfterStart Disable started cache after start or not.
      */
     public StartCacheInfo(DynamicCacheDescriptor desc,
         NearCacheConfiguration reqNearCfg,
-        AffinityTopologyVersion exchTopVer, boolean disabledAfterStart) {
-        this(desc.cacheConfiguration(), desc, reqNearCfg, exchTopVer, disabledAfterStart);
+        AffinityTopologyVersion exchTopVer) {
+        this(desc.cacheConfiguration(), desc, reqNearCfg, exchTopVer);
     }
 
     /**
@@ -62,12 +58,11 @@ public class StartCacheInfo {
      * @param desc Cache descriptor for start.
      * @param reqNearCfg Near cache configuration for start.
      * @param exchTopVer Exchange topology version in which starting happened.
-     * @param disabledAfterStart Disable started cache after start or not.
      */
     public StartCacheInfo(CacheConfiguration conf, DynamicCacheDescriptor desc,
         NearCacheConfiguration reqNearCfg,
-        AffinityTopologyVersion exchTopVer, boolean disabledAfterStart) {
-        this(conf, desc, reqNearCfg, exchTopVer, disabledAfterStart, false);
+        AffinityTopologyVersion exchTopVer) {
+        this(conf, desc, reqNearCfg, exchTopVer, false);
     }
 
     /**
@@ -75,17 +70,15 @@ public class StartCacheInfo {
      * @param desc Cache descriptor for start.
      * @param reqNearCfg Near cache configuration for start.
      * @param exchTopVer Exchange topology version in which starting happened.
-     * @param disabledAfterStart Disable started cache after start or not.
      * @param clientCache {@code true} in case starting cache on client node.
      */
     public StartCacheInfo(CacheConfiguration conf, DynamicCacheDescriptor desc,
         NearCacheConfiguration reqNearCfg,
-        AffinityTopologyVersion exchTopVer, boolean disabledAfterStart, boolean clientCache) {
+        AffinityTopologyVersion exchTopVer, boolean clientCache) {
         startedConf = conf;
         this.desc = desc;
         this.reqNearCfg = reqNearCfg;
         this.exchTopVer = exchTopVer;
-        this.disabledAfterStart = disabledAfterStart;
         this.clientCache = clientCache;
     }
 
@@ -115,13 +108,6 @@ public class StartCacheInfo {
      */
     public AffinityTopologyVersion getExchangeTopVer() {
         return exchTopVer;
-    }
-
-    /**
-     * @return Disable started cache after start or not.
-     */
-    public boolean isDisabledAfterStart() {
-        return disabledAfterStart;
     }
 
     /**
