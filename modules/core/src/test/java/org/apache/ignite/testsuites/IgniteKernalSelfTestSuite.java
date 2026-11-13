@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cluster.ClusterReadOnlyModeSelfTest
 import org.apache.ignite.internal.processors.cluster.ClusterStateChangeOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
+import org.apache.ignite.internal.processors.metric.GridMetricManagerAssertionMetricTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.util.GridMutableLongTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
@@ -113,6 +114,7 @@ import org.junit.runners.Suite;
     IgniteConnectionConcurrentReserveAndRemoveTest.class,
     LongJVMPauseDetectorTest.class,
     ClusterMetricsSelfTest.class,
+    GridMetricManagerAssertionMetricTest.class,
     DeploymentRequestOfUnknownClassProcessingTest.class,
     ThreadNameValidationTest.class,
     NodeWithFilterRestartTest.class,
