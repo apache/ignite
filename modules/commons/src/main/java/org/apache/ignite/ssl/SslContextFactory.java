@@ -21,11 +21,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -35,14 +33,12 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
@@ -149,10 +145,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** {@inheritDoc} */
     @Override void acceptKeyManagers(KeyManager[] keyMgrs) throws SSLException {
         Map<String, X509Certificate[]> chains = Arrays.stream(keyMgrs)
-            .filter(LoadedKeyManager.class::isInstance)
-            .map(mgr -> ((LoadedKeyManager)mgr).chains)
+            .filter(KeyChains.class::isInstance)
+            .map(mgr -> ((KeyChains)mgr).chains)
             .findFirst()
-            .orElse(Map.of());
+            .orElseThrow();
 
         checkValidity(chains);
 
@@ -331,7 +327,14 @@ public class SslContextFactory extends AbstractSslContextFactory {
         return new DisabledX509TrustManager();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Creates key managers from the key store.
+     * The last element of the array holds the private-key chains of the loaded key store.
+     * It is not an X.509 key manager, and an SSL context ignores it.
+     *
+     * @return Key managers.
+     * @throws SSLException If key managers could not be created.
+     */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
@@ -340,11 +343,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            Map<String, X509Certificate[]> chains = keyChains(keyStore);
+            KeyChains chains = new KeyChains(keyChains(keyStore));
 
-            return Arrays.stream(keyMgrFactory.getKeyManagers())
-                .map(mgr -> mgr instanceof X509KeyManager x509Mgr ? new LoadedKeyManager(x509Mgr, chains) : mgr)
-                .toArray(KeyManager[]::new);
+            return Stream.concat(Arrays.stream(keyMgrFactory.getKeyManagers()), Stream.of(chains)).toArray(KeyManager[]::new);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
@@ -583,62 +584,14 @@ public class SslContextFactory extends AbstractSslContextFactory {
         }
     }
 
-    /** X.509 key manager that keeps the private-key chains of the key store it was created from. */
-    private static class LoadedKeyManager extends X509ExtendedKeyManager {
-        /** */
-        private final X509KeyManager delegate;
-
+    /** Private-key chains of the key store that the other key managers of the array were created from. */
+    private static class KeyChains implements KeyManager {
         /** */
         private final Map<String, X509Certificate[]> chains;
 
         /** */
-        private LoadedKeyManager(X509KeyManager delegate, Map<String, X509Certificate[]> chains) {
-            this.delegate = delegate;
+        private KeyChains(Map<String, X509Certificate[]> chains) {
             this.chains = chains;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String[] getClientAliases(String keyType, Principal[] issuers) {
-            return delegate.getClientAliases(keyType, issuers);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket sock) {
-            return delegate.chooseClientAlias(keyType, issuers, sock);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String[] getServerAliases(String keyType, Principal[] issuers) {
-            return delegate.getServerAliases(keyType, issuers);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String chooseServerAlias(String keyType, Principal[] issuers, Socket sock) {
-            return delegate.chooseServerAlias(keyType, issuers, sock);
-        }
-
-        /** {@inheritDoc} */
-        @Override public X509Certificate[] getCertificateChain(String alias) {
-            return delegate.getCertificateChain(alias);
-        }
-
-        /** {@inheritDoc} */
-        @Override public PrivateKey getPrivateKey(String alias) {
-            return delegate.getPrivateKey(alias);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
-            return delegate instanceof X509ExtendedKeyManager extMgr
-                ? extMgr.chooseEngineClientAlias(keyType, issuers, engine)
-                : super.chooseEngineClientAlias(keyType, issuers, engine);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) {
-            return delegate instanceof X509ExtendedKeyManager extMgr
-                ? extMgr.chooseEngineServerAlias(keyType, issuers, engine)
-                : super.chooseEngineServerAlias(keyType, issuers, engine);
         }
     }
 }
