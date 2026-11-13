@@ -36,9 +36,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import javax.management.DynamicMBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -58,6 +60,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -68,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,6 +87,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CDC_
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH;
 import static org.apache.ignite.internal.cdc.CdcMain.SEGMENT_CONSUMING_TIME;
+import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -170,6 +175,71 @@ public class CdcSelfTest extends AbstractCdcTest {
         U.delete(new File(U.defaultWorkDirectory(), CUSTOM_CACHE_DATA_ROOT));
 
         storagePath = ThreadLocalRandom.current().nextBoolean() ? CUSTOM_CACHE_DATA_ROOT : null;
+    }
+
+    /** CDC exports its own log counters independently from the source node in the same JVM. */
+    @Test
+    public void testLogCountMetrics() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0");
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ACTIVE);
+
+        CountDownLatch consumerStarted = new CountDownLatch(1);
+
+        CdcMain cdc = createCdc(new UserCdcConsumer() {
+            @Override public void start(MetricRegistry mreg) {
+                super.start(mreg);
+
+                consumerStarted.countDown();
+            }
+        }, cfg);
+
+        IgniteInternalFuture<?> fut = runCdcAsync(cdc, consumerStarted);
+
+        try {
+            assertTrue(consumerStarted.await(getTestTimeout(), MILLISECONDS));
+            assertTrue(waitForCondition(() -> Boolean.TRUE.equals(getFieldValue(cdc, "started")) || fut.isDone(),
+                getTestTimeout()));
+            assertTrue("CDC failed to start", Boolean.TRUE.equals(getFieldValue(cdc, "started")));
+
+            DynamicMBean nodeBean = metricRegistry(ignite.name(), "log", "count");
+            DynamicMBean cdcBean = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "log", "count");
+
+            for (String level : new String[] {"trace", "debug", "info", "warning", "error"}) {
+                assertTrue(level, nodeBean.getAttribute(level) instanceof Long);
+                assertTrue(level, cdcBean.getAttribute(level) instanceof Long);
+            }
+
+            StandaloneGridKernalContext cdcCtx = getFieldValue(cdc, "kctx");
+            LongMetric nodeError = ignite.context().metric().registry("log.count").findMetric("error");
+            LongMetric cdcError = cdcCtx.metric().registry("log.count").findMetric("error");
+
+            assertNotSame(nodeError, cdcError);
+
+            long nodeBefore = nodeError.value();
+            long cdcBefore = cdcError.value();
+
+            IgniteLogger cdcLog = getFieldValue(cdc, "log");
+
+            cdcLog.error("Test CDC log counter");
+
+            assertEquals(cdcBefore + 1, cdcError.value());
+            assertEquals(nodeBefore, nodeError.value());
+            assertEquals(cdcError.value(), cdcBean.getAttribute("error"));
+
+            ignite.log().error("Test Ignite log counter");
+
+            assertEquals(nodeBefore + 1, nodeError.value());
+            assertEquals(cdcBefore + 1, cdcError.value());
+            assertEquals(nodeError.value(), nodeBean.getAttribute("error"));
+        }
+        finally {
+            cdc.stop();
+
+            fut.cancel();
+        }
     }
 
     /** Simplest CDC test. */
