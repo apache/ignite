@@ -91,25 +91,6 @@ public interface IgniteEx extends Ignite {
     public boolean destroyCache0(String cacheName, boolean sql) throws CacheException;
 
     /**
-     * Checks if the event type is user-recordable.
-     *
-     * @param type Event type to check.
-     * @return {@code true} if passed event should be recorded, {@code false} - otherwise.
-     */
-    public boolean eventUserRecordable(int type);
-
-    /**
-     * Checks whether all provided events are user-recordable.
-     * <p>
-     * Note that this method supports only predefined Ignite events.
-     *
-     * @param types Event types.
-     * @return Whether all events are recordable.
-     * @throws IllegalArgumentException If {@code types} contains user event type.
-     */
-    public boolean allEventsUserRecordable(int[] types);
-
-    /**
      * Whether or not remote JMX management is enabled for this node.
      *
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.

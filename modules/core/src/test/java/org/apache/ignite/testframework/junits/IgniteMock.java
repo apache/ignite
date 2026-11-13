@@ -245,16 +245,6 @@ public class IgniteMock implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean eventUserRecordable(int type) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allEventsUserRecordable(int[] types) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isJmxRemoteEnabled() {
         return false;
     }
