@@ -45,9 +45,6 @@ public class QueryParameters {
     /** Page size. */
     private final int pageSize;
 
-    /** Data page scan enabled flag. */
-    private final Boolean dataPageScanEnabled;
-
     /** Auto-commit flag. */
     private final boolean autoCommit;
 
@@ -69,7 +66,6 @@ public class QueryParameters {
      * @param timeout Timeout.
      * @param lazy Lazy flag.
      * @param pageSize Page size.
-     * @param dataPageScanEnabled Data page scan enabled flag.
      * @param autoCommit Auto-commit flag.
      * @param batchedArgs Batched arguments.
      * @param updateBatchSize Update internal batch size.
@@ -81,7 +77,6 @@ public class QueryParameters {
         int timeout,
         boolean lazy,
         int pageSize,
-        Boolean dataPageScanEnabled,
         boolean autoCommit,
         List<Object[]> batchedArgs,
         int updateBatchSize
@@ -91,7 +86,6 @@ public class QueryParameters {
         this.timeout = timeout;
         this.lazy = lazy;
         this.pageSize = pageSize;
-        this.dataPageScanEnabled = dataPageScanEnabled;
         this.autoCommit = autoCommit;
         this.batchedArgs = batchedArgs;
         this.updateBatchSize = updateBatchSize;
@@ -135,13 +129,6 @@ public class QueryParameters {
     }
 
     /**
-     * @return Data page scan enabled flag.
-     */
-    public Boolean dataPageScanEnabled() {
-        return dataPageScanEnabled;
-    }
-
-    /**
      * @return Auto-commit flag.
      */
     public boolean autoCommit() {
@@ -179,7 +166,6 @@ public class QueryParameters {
             this.timeout,
             this.lazy,
             this.pageSize,
-            this.dataPageScanEnabled,
             this.autoCommit,
             null,
             this.updateBatchSize

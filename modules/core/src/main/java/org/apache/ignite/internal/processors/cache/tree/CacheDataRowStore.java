@@ -33,13 +33,6 @@ public class CacheDataRowStore extends RowStore {
     private static final ThreadLocal<Boolean> SKIP_VER = ThreadLocal.withInitial(() -> false);
 
     /**
-     * @return Skip version flag.
-     */
-    public static boolean getSkipVersion() {
-        return SKIP_VER.get();
-    }
-
-    /**
      * @param skipVer Skip version flag.
      */
     public static void setSkipVersion(boolean skipVer) {
@@ -58,13 +51,6 @@ public class CacheDataRowStore extends RowStore {
         super(grp, freeList);
 
         this.partId = partId;
-    }
-
-    /**
-     * @return Partition Id.
-     */
-    public int getPartitionId() {
-        return partId;
     }
 
     /**

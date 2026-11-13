@@ -166,7 +166,6 @@ public class QueryParser {
             timeout,
             lazy,
             qry.getPageSize(),
-            null,
             autoCommit,
             batchedArgs,
             qry.getUpdateBatchSize()
