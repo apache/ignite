@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.UnstableT
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsWithoutParenthesesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedTxAwareFunctionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.WindowIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale001Test;
@@ -149,6 +150,7 @@ import org.junit.platform.suite.api.Suite;
     IntervalTest.class,
     UserDefinedFunctionsIntegrationTest.class,
     UserDefinedFunctionsIntegrationTransactionalTest.class,
+    UserDefinedFunctionsWithoutParenthesesIntegrationTest.class,
     CorrelatesIntegrationTest.class,
     SystemViewsIntegrationTest.class,
     IndexRebuildIntegrationTest.class,

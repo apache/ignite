@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -293,17 +294,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         qryReg = new QueryRegistryImpl(ctx);
         injectSvc = new InjectResourcesService(ctx);
 
-        QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
-
-        if (F.isEmpty(qryEnginesCfg))
-            cfg = new CalciteQueryEngineConfiguration();
-        else {
-            cfg = (CalciteQueryEngineConfiguration)Arrays.stream(qryEnginesCfg)
-                .filter(c -> c instanceof CalciteQueryEngineConfiguration)
-                .findAny()
-                .orElse(new CalciteQueryEngineConfiguration());
-        }
-
+        cfg = qryEngineCfg(ctx);
         distrCfg = new DistributedCalciteConfiguration(ctx, log);
     }
 
@@ -722,7 +713,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             log,
             qryPlannerTimeout,
             timeout,
-            fldsQry != null ? fldsQry.getQueryInitiatorId() : null
+            fldsQry != null ? fldsQry.getQueryInitiatorId() : null,
+            cfg
         );
 
         if (qrys != null)
@@ -844,5 +836,27 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public InjectResourcesService injectService() {
         return injectSvc;
+    }
+
+    /** */
+    private static CalciteQueryEngineConfiguration qryEngineCfg(GridKernalContext ctx) {
+        QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+
+        if (F.isEmpty(qryEnginesCfg))
+            return new CalciteQueryEngineConfiguration();
+
+        return Arrays.stream(qryEnginesCfg)
+            .filter(CalciteQueryEngineConfiguration.class::isInstance)
+            .map(CalciteQueryEngineConfiguration.class::cast)
+            .findAny()
+            .orElseGet(CalciteQueryEngineConfiguration::new);
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @return Calcite query processor.
+     */
+    public static CalciteQueryProcessor queryProcessor(GridKernalContext ctx) {
+        return Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
     }
 }

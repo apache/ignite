@@ -108,7 +108,7 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
 
-        CalciteQueryProcessor proc = queryProcessor(ctx);
+        CalciteQueryProcessor proc = CalciteQueryProcessor.queryProcessor(ctx);
 
         taskExecutor(proc.taskExecutor());
 

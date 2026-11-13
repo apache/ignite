@@ -547,6 +547,9 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * FROM binaryTableLength(?)").withParams(bytes).returns(3).check();
         assertQuery("SELECT * FROM TABLE(binaryTableLength(binaryValue()))").returns(3).check();
         assertQuery("SELECT * FROM binaryTable(x'010203')").withResultChecker(binaryResultChecker).check();
+
+        // Parentheses are required by default for parameterless scalar functions.
+        assertThrows("SELECT binaryValue", SqlValidatorException.class, "Column 'BINARYVALUE' not found");
     }
 
     /** */

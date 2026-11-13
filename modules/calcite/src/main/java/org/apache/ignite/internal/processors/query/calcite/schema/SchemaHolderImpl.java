@@ -39,6 +39,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -475,8 +477,10 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         newCalciteSchema.add("OTHER", typeFactory -> ((IgniteTypeFactory)typeFactory).createCustomType(Object.class));
         newCalciteSchema.add(QueryUtils.DFLT_SCHEMA, new IgniteSchema(QueryUtils.DFLT_SCHEMA));
 
+        CalciteQueryEngineConfiguration qryEngineCfg = CalciteQueryProcessor.queryProcessor(ctx).config();
+
         for (IgniteSchema schema : igniteSchemas.values())
-            schema.register(newCalciteSchema, frameworkCfg);
+            schema.register(newCalciteSchema, frameworkCfg, qryEngineCfg);
 
         calciteSchema = newCalciteSchema;
     }

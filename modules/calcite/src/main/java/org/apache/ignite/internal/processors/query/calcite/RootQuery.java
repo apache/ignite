@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -107,6 +108,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     private long planningTime;
 
     /** */
+    private final CalciteQueryEngineConfiguration qryEngineCfg;
+
+    /** */
     public RootQuery(
         String sql,
         SchemaPlus schema,
@@ -120,7 +124,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         IgniteLogger log,
         long plannerTimeout,
         long totalTimeout,
-        String initiatorId
+        String initiatorId,
+        CalciteQueryEngineConfiguration qryEngineCfg
     ) {
         super(
             UUID.randomUUID(),
@@ -144,6 +149,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         this.plannerTimeout = totalTimeout > 0 ? Math.min(plannerTimeout, totalTimeout) : plannerTimeout;
         this.totalTimeout = totalTimeout;
         this.initiatorId = initiatorId;
+        this.qryEngineCfg = qryEngineCfg;
 
         Context parent = Commons.convert(qryCtx);
 
@@ -182,7 +188,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             log,
             plannerTimeout,
             totalTimeout,
-            initiatorId
+            initiatorId,
+            qryEngineCfg
         );
     }
 
@@ -220,7 +227,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             log,
             plannerTimeout,
             remainingTime,
-            initiatorId
+            initiatorId,
+            qryEngineCfg
         );
     }
 
@@ -369,6 +377,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
                     .query(sql)
                     .parameters(params)
                     .plannerTimeout(plannerTimeout)
+                    .queryEngineConfiguration(qryEngineCfg)
                     .build();
 
                 try {
