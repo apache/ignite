@@ -438,6 +438,12 @@ The subsequent `Lock.unlock()` call of the thread that has acquired the killed l
 [tabs]
 --
 
+tab:SQL[]
+[source,sql]
+----
+KILL LOCK 'xid'
+----
+
 tab:Unix[]
 [source,bash]
 ----
