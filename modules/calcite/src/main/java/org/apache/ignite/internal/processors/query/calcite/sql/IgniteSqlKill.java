@@ -25,6 +25,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillLock;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
@@ -91,6 +92,14 @@ public abstract class IgniteSqlKill extends SqlDdl {
         boolean isAsync
     ) {
         return new IgniteSqlKillQuery(pos, globalQueryId, nodeId, queryId, isAsync);
+    }
+
+    /** */
+    public static IgniteSqlKill createLockKill(
+        SqlParserPos pos,
+        SqlCharStringLiteral xid
+    ) {
+        return new IgniteSqlKillLock(pos, xid);
     }
 
     /** */

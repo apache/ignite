@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.sql.SqlUnsupportedSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
+import org.apache.ignite.internal.sql.SqlParserKillLockSelfTest;
 import org.apache.ignite.internal.sql.SqlParserKillQuerySelfTest;
 import org.apache.ignite.internal.sql.SqlParserSetStreamingSelfTest;
 import org.apache.ignite.internal.sql.SqlParserViewSelfTest;
@@ -100,6 +101,7 @@ import org.junit.runners.Suite;
     SqlParserCreateIndexSelfTest.class,
     SqlParserSetStreamingSelfTest.class,
     SqlParserKillQuerySelfTest.class,
+    SqlParserKillLockSelfTest.class,
     SqlParserViewSelfTest.class,
     ClientConnectorConfigurationValidationSelfTest.class,
     SqlSchemaSelfTest.class,

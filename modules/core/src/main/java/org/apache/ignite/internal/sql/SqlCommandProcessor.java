@@ -58,6 +58,7 @@ import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillClientCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillLockCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
@@ -120,6 +121,8 @@ public class SqlCommandProcessor {
             processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
         else if (cmdNative instanceof SqlKillQueryCommand)
             processKillQueryCommand((SqlKillQueryCommand)cmdNative);
+        else if (cmdNative instanceof SqlKillLockCommand)
+            processKillLockCommand((SqlKillLockCommand)cmdNative);
         else if (cmdNative instanceof SqlAnalyzeCommand)
             processAnalyzeCommand((SqlAnalyzeCommand)cmdNative);
         else if (cmdNative instanceof SqlRefreshStatitsicsCommand)
@@ -147,6 +150,7 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlKillScanQueryCommand
             || cmd instanceof SqlKillContinuousQueryCommand
             || cmd instanceof SqlKillQueryCommand
+            || cmd instanceof SqlKillLockCommand
             || cmd instanceof SqlStatisticsCommands
             || cmd instanceof SqlCreateViewCommand
             || cmd instanceof SqlDropViewCommand;
@@ -232,6 +236,15 @@ public class SqlCommandProcessor {
      */
     private void processKillContinuousQueryCommand(SqlKillContinuousQueryCommand cmd) {
         new QueryMXBeanImpl(ctx).cancelContinuous(cmd.getOriginNodeId(), cmd.getRoutineId());
+    }
+
+    /**
+     * Process kill lock cmd.
+     *
+     * @param cmd Command.
+     */
+    private void processKillLockCommand(SqlKillLockCommand cmd) {
+        ctx.cache().context().mvcc().releaseExplicitLockGlobal(cmd.getXid());
     }
 
     /**

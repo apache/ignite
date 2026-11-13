@@ -615,6 +615,18 @@ SqlNode SqlKillQuery():
     }
 }
 
+SqlNode SqlKillLock():
+{
+    final Span s;
+    final SqlCharStringLiteral xid;
+}
+{
+    <KILL> { s = span(); } <LOCK>
+    xid = IgniteUuidLiteral() {
+        return IgniteSqlKill.createLockKill(s.end(this), xid);
+    }
+}
+
 SqlNode SqlCommitTransaction():
 {
     final Span s;
