@@ -130,6 +130,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -164,6 +165,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -852,6 +854,78 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("awaitPartitionMapExchange finished");
+    }
+
+    /**
+     * Waits until every node finishes the exchange on the topology version it knows. Then waits until the partition map
+     * of every node shows the partitions of each server in the states that the server holds locally.
+     *
+     * @param cacheNames Cache names.
+     * @throws Exception If failed.
+     */
+    protected void awaitPartitionMapsMatchLocalStates(String... cacheNames) throws Exception {
+        long timeout = getPartitionMapExchangeTimeout();
+
+        for (Ignite g : G.allGrids()) {
+            IgniteEx node = (IgniteEx)g;
+
+            node.context().cache().context().exchange()
+                .affinityReadyFuture(node.context().discovery().topologyVersionEx()).get(timeout);
+        }
+
+        for (String cacheName : cacheNames) {
+            for (Ignite g : G.allGrids()) {
+                IgniteEx viewer = (IgniteEx)g;
+
+                if (!waitForCondition(() -> partitionMapMismatches(viewer, cacheName).isEmpty(), timeout)) {
+                    fail("The partition map of " + viewer.name() + " differs from the local partition states: " +
+                        partitionMapMismatches(viewer, cacheName));
+                }
+            }
+        }
+    }
+
+    /**
+     * @param viewer Server or client whose partition map is checked. A client that hasn't started the cache keeps the
+     *      map in a client topology.
+     * @param cacheName Cache name.
+     * @return Partitions whose state in the viewer's map differs from the state on the server that holds them.
+     */
+    protected static List<String> partitionMapMismatches(IgniteEx viewer, String cacheName) {
+        IgniteInternalCache<?, ?> cache = viewer.cachex(cacheName);
+
+        GridDhtPartitionTopology viewerTop = cache != null
+            ? cache.context().topology()
+            : viewer.context().cache().context().exchange().clientTopologyIfExists(CU.cacheId(cacheName));
+
+        assertNotNull(viewer.name(), viewerTop);
+
+        List<String> res = new ArrayList<>();
+
+        for (Ignite g : G.allGrids()) {
+            if (g.cluster().localNode().isClient())
+                continue;
+
+            GridDhtPartitionMap view = viewerTop.partitionMap(false).get(g.cluster().localNode().id());
+
+            GridDhtPartitionTopology top = ((IgniteEx)g).cachex(cacheName).context().topology();
+
+            for (int p = 0; p < top.partitions(); p++) {
+                GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false, true);
+
+                GridDhtPartitionState loc = locPart == null ? null : locPart.state();
+                GridDhtPartitionState seen = view == null ? null : view.get(p);
+
+                // The map keeps evicted partitions, the node doesn't.
+                if (seen == EVICTED)
+                    seen = null;
+
+                if (loc != seen)
+                    res.add(g.name() + " p=" + p + " local=" + loc + " seen=" + seen);
+            }
+        }
+
+        return res;
     }
 
     /**

@@ -249,6 +249,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
         }, stopNodes);
 
+        awaitPartitionMapsMatchLocalStates(CACHES);
+
         int[] stopNodesSorted = Arrays.copyOf(stopNodes, stopNodes.length);
         Arrays.sort(stopNodesSorted);
 
@@ -267,6 +269,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
             info("Newly started node: " + grd.cluster().localNode().id());
         }
+
+        awaitPartitionMapsMatchLocalStates(CACHES);
 
         for (int i = 0; i < nodes + 1; i++)
             verifyCacheOps(cacheName, expLostParts, grid(i), safe);

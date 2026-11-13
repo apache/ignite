@@ -114,4 +114,10 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the cache size estimation task for SQL statistics. */
     public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
+
+    /**
+     * Feature that makes only the node holding a partition write its state after loss detection or after the node owns
+     * a partition that no node has. The other nodes take the state from that node's partition map.
+     */
+    public static final IgniteFeature PART_STATE_FROM_OWNER_FEATURE = new IgniteCoreFeature(6);
 }
