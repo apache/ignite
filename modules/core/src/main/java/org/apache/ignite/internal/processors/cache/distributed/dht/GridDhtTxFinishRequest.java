@@ -24,6 +24,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -34,7 +35,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
-    @Order(0)
+    @GridToStringExclude
+    @Order(value = 0, deprecatedBy = "DHT_TX_FINISH_NEAR_NODE_ID_DEPRECATED_FEATURE")
     UUID nearNodeId;
 
     /** Mini future ID. */
@@ -53,12 +55,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
-     * @param nearNodeId Near node ID.
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param topVer Topology version.
      * @param xidVer Transaction ID.
-     * @param threadId Thread ID.
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
@@ -68,19 +68,16 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param taskNameHash Task name hash.
      * @param retVal Need return value
      * @param waitRemoteTxs Wait remote transactions flag
      * @param updCntrs Update counters for Tx.
      */
     public GridDhtTxFinishRequest(
-        UUID nearNodeId,
         IgniteUuid futId,
         int miniId,
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        long threadId,
         boolean commit,
         boolean invalidate,
         byte plc,
@@ -89,7 +86,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash,
         boolean retVal,
         boolean waitRemoteTxs,
         Collection<PartitionUpdateCountersMessage> updCntrs
@@ -99,20 +95,16 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             futId,
             topVer,
             commitVer,
-            threadId,
             commit,
             invalidate,
             plc,
             syncMode,
             baseVer,
             committedVers,
-            rolledbackVers,
-            taskNameHash);
+            rolledbackVers);
 
         assert miniId != 0;
-        assert nearNodeId != null;
 
-        this.nearNodeId = nearNodeId;
         this.miniId = miniId;
         this.updCntrs = updCntrs;
 
@@ -126,13 +118,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public int miniId() {
         return miniId;
-    }
-
-    /**
-     * @return Near node ID.
-     */
-    public UUID nearNodeId() {
-        return nearNodeId;
     }
 
     /**

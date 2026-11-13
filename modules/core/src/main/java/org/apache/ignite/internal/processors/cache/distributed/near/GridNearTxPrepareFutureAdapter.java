@@ -243,8 +243,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             mapping.explicitLock(),
             tx.taskNameHash(),
             firstClientReq,
-            allowWaitTopFut,
-            tx.txState().recovery()
+            allowWaitTopFut
         );
     }
 

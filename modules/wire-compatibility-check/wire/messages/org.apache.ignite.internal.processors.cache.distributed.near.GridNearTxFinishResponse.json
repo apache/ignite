@@ -9,6 +9,6 @@
     {"order": 5, "type": "int", "name": "part"},
     {"order": 6, "type": "org.apache.ignite.internal.util.ErrorMessage", "name": "errMsg"},
     {"order": 7, "type": "int", "name": "miniId"},
-    {"order": 8, "type": "long", "name": "nearThreadId"}
+    {"order": 8, "type": "long", "name": "nearThreadId", "annotations": ["@org.apache.ignite.internal.Order(value=2, deprecatedBy=\"UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE\")"]}
   ]
 }
