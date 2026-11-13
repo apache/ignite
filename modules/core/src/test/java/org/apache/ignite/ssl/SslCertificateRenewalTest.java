@@ -21,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.client.ClientRetryNonePolicy;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -75,10 +74,7 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
             ClientConfiguration clientCfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1:" + node.context().clientListener().port())
                 .setSslMode(SslMode.REQUIRED)
-                .setSslContextFactory(configure(new SslContextFactory(), keys, trust))
-                .setRetryPolicy(new ClientRetryNonePolicy())
-                .setPartitionAwarenessEnabled(false)
-                .setClusterDiscoveryEnabled(false);
+                .setSslContextFactory(configure(new SslContextFactory(), keys, trust));
 
             try (IgniteClient client = Ignition.startClient(clientCfg)) {
                 client.cacheNames();

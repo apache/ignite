@@ -141,7 +141,7 @@ public class SslFactoryRegistryTest {
         });
 
         executorFactory = mockStatic(IgniteScheduledThreadPoolExecutor.class);
-        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor("ssl-renewal", null))
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
             .thenReturn(executor);
     }
 
@@ -398,7 +398,7 @@ public class SslFactoryRegistryTest {
         AtomicLong renewalTime = new AtomicLong(System.currentTimeMillis());
         BlockingQueue<Optional<String>> attemptCallers = new LinkedBlockingQueue<>();
 
-        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor("ssl-renewal", null))
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
             .thenReturn(new OperationContextAwareScheduledExecutorService(executor) { });
         when(factory.getRenewalTime()).thenAnswer(call -> renewalTime.get());
         doAnswer(call -> {
@@ -570,7 +570,7 @@ public class SslFactoryRegistryTest {
     private ScheduledExecutorService useRealExecutor() {
         ScheduledExecutorService renewalExecutor = spy(new IgniteScheduledThreadPoolExecutor("ssl-renewal", null, 1));
 
-        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor("ssl-renewal", null))
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
             .thenReturn(renewalExecutor);
 
         return renewalExecutor;

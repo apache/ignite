@@ -89,8 +89,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
         int[] loads = factories.stream().mapToInt(factory -> factory.loads.get()).toArray();
 
-        factories.forEach(factory -> factory.setProtocols("TLSv1.2"));
-
         assertEquals(EXIT_CODE_OK, executeTlsReload());
 
         for (int i = 0; i < nodes.size(); i++) {
