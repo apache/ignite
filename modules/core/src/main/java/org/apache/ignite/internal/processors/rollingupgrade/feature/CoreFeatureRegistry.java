@@ -111,4 +111,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the snapshot list command. */
     public static final IgniteFeature SNAPSHOT_LIST_FEATURE = new IgniteCoreFeature(4);
+
+    /** Feature that introduces the cache size estimation task for SQL statistics. */
+    public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
 }

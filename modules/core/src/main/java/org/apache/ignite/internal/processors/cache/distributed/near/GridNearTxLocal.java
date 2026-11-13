@@ -651,8 +651,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     this,
                     /*read*/entryProc != null, // Needed to force load from store.
                     retval,
-                    isolation,
-                    isInvalidate(),
                     -1L,
                     -1L);
 
@@ -828,8 +826,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     this,
                     /*read*/invokeVals != null, // Needed to force load from store.
                     retval,
-                    isolation,
-                    isInvalidate(),
                     -1L,
                     -1L);
 
@@ -1733,8 +1729,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 this,
                 false,
                 retval,
-                isolation,
-                isInvalidate(),
                 -1L,
                 -1L);
 
@@ -1928,8 +1922,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     this,
                     true,
                     true,
-                    isolation,
-                    isInvalidate(),
                     createTtl,
                     accessTtl);
 
@@ -4282,10 +4274,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             timeout,
             waitTimeout,
             this,
-            isInvalidate(),
             read,
             retval,
-            isolation,
             createTtl,
             accessTtl,
             skipStore,

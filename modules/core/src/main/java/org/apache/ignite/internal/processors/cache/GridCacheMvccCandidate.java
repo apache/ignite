@@ -243,15 +243,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
     }
 
     /**
-     * @param parent Sets locks parent entry.
-     */
-    public void parent(GridCacheEntryEx parent) {
-        assert parent != null;
-
-        this.parent = parent;
-    }
-
-    /**
      * @return Node ID.
      */
     public UUID nodeId() {
@@ -472,13 +463,6 @@ public class GridCacheMvccCandidate implements CacheLockCandidates {
      */
     public boolean reentry() {
         return REENTRY.get(flags());
-    }
-
-    /**
-     * Sets reentry flag.
-     */
-    public void setReentry() {
-        mask(REENTRY, true);
     }
 
     /**
