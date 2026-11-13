@@ -45,7 +45,13 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartDefault()
         {
-            var cfg = new IgniteConfiguration {JvmClasspath = TestUtils.CreateTestClasspath()};
+            var cfg = new IgniteConfiguration
+            {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+
+                // Default multicast discovery can find nodes of other builds on the same network.
+                DiscoverySpi = TestUtils.GetStaticDiscovery()
+            };
 
             var grid = Ignition.Start(cfg);
 
