@@ -109,9 +109,7 @@ public class SslFactoryRegistry {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        try (Scope ignored = OperationContext.restoreSnapshot(null)) {
-            executor.execute(() -> hotReloads.values().forEach(HotReload::scheduleHotReload));
-        }
+        executor.execute(() -> hotReloads.values().forEach(HotReload::scheduleHotReload));
 
         this.hotReloads = hotReloads;
     }

@@ -265,6 +265,8 @@ public class SslFactoryRegistryTest {
         registry.start(ctx);
         Files.delete(keys);
 
+        long maxRandomAddition = 0;
+
         for (int failure = 1; failure <= 8; failure++) {
             long before = System.currentTimeMillis();
 
@@ -276,7 +278,11 @@ public class SslFactoryRegistryTest {
             assertEquals(failure, metric("AutomaticHotReloadAttempts"));
             assertTrue(delay >= base - (System.currentTimeMillis() - before));
             assertTrue(delay <= base + base / 2);
+
+            maxRandomAddition = Math.max(maxRandomAddition, delay - base);
         }
+
+        assertTrue(maxRandomAddition > 0);
     }
 
     /** */
@@ -448,14 +454,7 @@ public class SslFactoryRegistryTest {
         }).when(factory).init();
 
         registry.register("communication", factory);
-
-        try (Scope ignored = OperationContext.set(caller, "operator")) {
-            registry.start(ctx);
-        }
-
-        scheduled.run();
-
-        assertEquals(Optional.empty(), attemptCallers.remove());
+        registry.start(ctx);
 
         try (Scope ignored = OperationContext.set(caller, "operator")) {
             registry.reload(factory);

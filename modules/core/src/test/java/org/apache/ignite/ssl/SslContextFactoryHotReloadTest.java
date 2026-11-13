@@ -121,6 +121,8 @@ public class SslContextFactoryHotReloadTest {
             merge(authority.keyStore("first", at(-200), at(100)), authority.keyStore("second", at(-85), at(15))));
         assertHotReloadWindowStartsNow(merge(authority.keyStore("first", at(-5), at(15)), authority.keyStore("second", at(-85), at(15))));
         assertHotReloadWindowStartsNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-5), at(15))));
+        assertHotReloadWindowStartsNow(
+            merge(authority.keyStore("first", at(-1980), at(20)), authority.keyStore("second", at(-85), at(15))));
         assertHotReloadWindowStartsNow(withSecretKey);
     }
 
@@ -155,6 +157,18 @@ public class SslContextFactoryHotReloadTest {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-101), at(-1)));
 
         assertNotNull(factory.create());
+    }
+
+    /** */
+    @Test
+    public void testHotReloadWithoutLoadedDateDoesNotLoad() throws Exception {
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
+
+        factory.setHotReloadEnabled(true);
+        factory.hotReload();
+
+        assertEquals(0, factory.keyStoreLoads);
+        assertEquals(0, factory.getHotReloadTime());
     }
 
     /** */
