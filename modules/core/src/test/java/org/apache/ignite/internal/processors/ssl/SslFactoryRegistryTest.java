@@ -194,10 +194,9 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testDisabledFactoryDoesNotStartHotReload() {
-        when(factory.isHotReloadEnabled()).thenReturn(false);
-
-        registry.register("communication", factory);
+    public void testDisabledFactoryDoesNotStartHotReload() throws Exception {
+        writeFreshCertificates(keys);
+        registry.register("communication", factory(keys));
         registry.start(ctx);
 
         executorFactory.verifyNoInteractions();
@@ -258,15 +257,17 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testManualReloadBeforeStartIsRejectedWithoutLoadingOrCounting() {
-        enableHotReload(factory, later());
+    public void testManualReloadBeforeStartIsRejectedWithoutLoadingOrCounting() throws Exception {
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
+        writeFreshCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
 
-        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(factory));
+        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
 
         assertTrue(err.getMessage().contains("has not started"));
-        verify(factory, never()).init();
+        assertEquals(0, communication.getHotReloadTime());
 
         registry.start(ctx);
 
@@ -488,11 +489,13 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testStoppingNodeDoesNotStartHotReload() {
-        enableHotReload(factory, due());
-        when(ctx.isStopping()).thenReturn(true);
+    public void testStoppingNodeDoesNotStartHotReload() throws Exception {
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        when(ctx.isStopping()).thenReturn(true);
+        registry.register("communication", communication);
         registry.start(ctx);
 
         executorFactory.verifyNoInteractions();
