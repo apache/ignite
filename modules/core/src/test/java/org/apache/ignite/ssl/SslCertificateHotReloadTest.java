@@ -89,7 +89,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testHotReloadFailsWhileSourceHoldsDueCertificates() throws Exception {
+    public void testHotReloadRetriesWhileSourceHoldsExpiredCertificates() throws Exception {
         long now = System.currentTimeMillis();
         TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
         Path dir = Files.createTempDirectory("ssl-hot-reload");
@@ -103,7 +103,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
         nodeLog.registerListener(reason);
 
         try {
-            save(ca.keyStore("node", now - MINUTES.toMillis(110), now + MINUTES.toMillis(10)), keys);
+            save(ca.keyStore("node", now - MINUTES.toMillis(120), now - MINUTES.toMillis(1)), keys);
             save(ca.trustStore(), trust);
 
             SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);

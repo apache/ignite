@@ -29,7 +29,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * SSL context factory that provides SSL context configuration with specified key and trust stores.
- * Every certificate in the private-key chains of the key store must be valid when the factory loads it.
  * <p>
  * In some cases it is useful to disable certificate validation of client side (e.g. when connecting
  * to a server with self-signed certificate). This can be achieved by setting a disabled trust manager
@@ -124,6 +122,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * The hot reload time is calculated from the certificates loaded with hot reload enabled.
      * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
      * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
+     * The window never starts after the chain expires.
      * For chains with the same expiry, the longest lifetime is used.
      *
      * @return Start of the hot reload window in milliseconds since the epoch, or {@code 0} if the current certificates
@@ -347,11 +346,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         try {
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            Map<String, X509Certificate[]> chains = keyChains(keyStore);
-
-            checkValidity(chains);
-
-            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(chains) : 0;
+            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(keyChains(keyStore)) : 0;
 
             return keyMgrFactory.getKeyManagers();
         }
@@ -397,34 +392,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * Checks that every certificate in the key chains is valid now.
-     *
-     * @param chains Key chains by alias.
-     * @throws SSLException If a certificate is not valid or expires before the check completes.
-     */
-    private static void checkValidity(Map<String, X509Certificate[]> chains) throws SSLException {
-        Date now = new Date();
-        long earliestExpiry = Long.MAX_VALUE;
-
-        for (Map.Entry<String, X509Certificate[]> chain : chains.entrySet()) {
-            for (X509Certificate cert : chain.getValue()) {
-                try {
-                    cert.checkValidity(now);
-                }
-                catch (CertificateException e) {
-                    throw new SSLException("Certificate is not currently valid [alias=" + chain.getKey() + ", subject=" +
-                        cert.getSubjectX500Principal() + ']', e);
-                }
-
-                earliestExpiry = Math.min(earliestExpiry, cert.getNotAfter().getTime());
-            }
-        }
-
-        if (earliestExpiry < System.currentTimeMillis())
-            throw new SSLException("Certificates expired while loading the SSL context [expiry=" + earliestExpiry + ']');
-    }
-
-    /**
      * @param chains Key chains by alias.
      * @return Start of the hot reload window of the chain that expires first.
      * @throws SSLException If there are no key chains.
@@ -450,7 +417,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             }
         }
 
-        return earliestExpiry - (long)((earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
+        return earliestExpiry - (long)(Math.max(0, earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
     }
 
     /** {@inheritDoc} */

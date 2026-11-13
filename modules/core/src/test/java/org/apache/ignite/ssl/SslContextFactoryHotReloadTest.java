@@ -18,9 +18,6 @@
 package org.apache.ignite.ssl;
 
 import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
@@ -36,9 +33,9 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
@@ -129,6 +126,18 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
+    public void testExpiredChainIsDueBeforeKeyCertificateBecomesValid() throws Exception {
+        TestCertificateAuthority expiredIssuer = new TestCertificateAuthority("expired-issuer", at(-100), at(-1));
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(expiredIssuer.keyStore("node", at(99), at(199)));
+
+        factory.setHotReloadEnabled(true);
+        factory.create();
+
+        assertEquals(at(-1), factory.getHotReloadTime());
+    }
+
+    /** */
+    @Test
     public void testEnabledHotReloadRequiresPrivateKey() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
 
@@ -142,14 +151,10 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
-    public void testFirstLoadRejectsExpiredCertificates() throws Exception {
+    public void testFirstLoadAcceptsExpiredCertificates() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-101), at(-1)));
 
-        factory.setHotReloadEnabled(false);
-
-        IgniteException err = assertThrows(IgniteException.class, factory::create);
-
-        assertTrue(err.getCause().getMessage().contains("not currently valid"));
+        assertNotNull(factory.create());
     }
 
     /** */
@@ -202,18 +207,24 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
-    public void testHotReloadRejectsCertificatesThatAreNotValid() throws Exception {
-        TestCertificateAuthority expiredIssuer = new TestCertificateAuthority("expired-issuer", at(-100), now - 1_000);
-        InMemorySslContextFactory factory = dueFactory();
+    public void testHotReloadAcceptsCertificatesOutsideValidityPeriod() throws Exception {
+        TestCertificateAuthority expiredIssuer = new TestCertificateAuthority("expired-issuer", at(-100), at(-1));
 
-        factory.keyStore = expiredIssuer.keyStore("replacement", at(-1), at(99));
-        assertHotReloadKeepsCurrentState(factory, "subject=CN=expired-issuer");
+        KeyStore[] replacements = {
+            authority.keyStore("node", at(-101), at(-1)),
+            authority.keyStore("node", at(1), at(101)),
+            expiredIssuer.keyStore("node", at(-1), at(99))
+        };
 
-        factory.keyStore = merge(authority.keyStore("first", at(1), at(100)), authority.keyStore("second", at(-1), at(99)));
-        assertHotReloadKeepsCurrentState(factory, "alias=first");
+        for (KeyStore replacement : replacements) {
+            InMemorySslContextFactory factory = dueFactory();
+            SSLContext ctx = factory.create();
 
-        factory.keyStore = merge(authority.keyStore("first", at(-1), at(99)), authority.keyStore("second", at(1), at(100)));
-        assertHotReloadKeepsCurrentState(factory, "alias=second");
+            factory.keyStore = replacement;
+            factory.hotReload();
+
+            assertNotSame(ctx, factory.create());
+        }
     }
 
     /** */
@@ -296,32 +307,6 @@ public class SslContextFactoryHotReloadTest {
         load.checkError();
         assertEquals(hotReloadTime, factory.getHotReloadTime());
         assertSame(ctx, factory.create());
-    }
-
-    /** */
-    @Test
-    public void testHotReloadRejectsCertificatesExpiredDuringDateValidation() throws Exception {
-        InMemorySslContextFactory factory = dueFactory();
-        long expiry = System.currentTimeMillis() / 1_000 * 1_000 + 5_000;
-        KeyStore replacement = authority.keyStore("replacement", at(-1), expiry);
-        Certificate[] chain = replacement.getCertificateChain("replacement");
-        X509Certificate cert = spy((X509Certificate)chain[0]);
-
-        doAnswer(validityCheck -> {
-            validityCheck.callRealMethod();
-
-            long deadline = System.currentTimeMillis() + 10_000;
-
-            assertTrue(waitForCondition(() -> System.currentTimeMillis() > expiry, () -> System.currentTimeMillis() < deadline));
-
-            return null;
-        }).when(cert).checkValidity(any(Date.class));
-
-        chain[0] = cert;
-        replacement.setKeyEntry("replacement", replacement.getKey("replacement", PASSWORD), PASSWORD, chain);
-        factory.keyStore = replacement;
-
-        assertHotReloadKeepsCurrentState(factory, "expired while loading");
     }
 
     /** @return Factory that has loaded certificates whose hot reload window has started. */
