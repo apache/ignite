@@ -234,6 +234,24 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
+    public void testHotReloadRecoversAfterContextCreationFailure() throws Exception {
+        InMemorySslContextFactory factory = dueFactory();
+        SSLContext ctx = factory.create();
+
+        factory.keyStore = authority.keyStore("node", at(-1), at(99));
+        factory.setProtocol("UnsupportedProtocol");
+
+        assertHotReloadKeepsCurrentState(factory, "Unsupported SSL protocol");
+
+        factory.setProtocol("TLS");
+        factory.hotReload();
+
+        assertNotSame(ctx, factory.create());
+        assertEquals(at(84), factory.getHotReloadTime());
+    }
+
+    /** */
+    @Test
     public void testHotReloadRejectsCertificatesExpiredDuringDateValidation() throws Exception {
         InMemorySslContextFactory factory = dueFactory();
         long expiry = System.currentTimeMillis() / 1_000 * 1_000 + 5_000;
