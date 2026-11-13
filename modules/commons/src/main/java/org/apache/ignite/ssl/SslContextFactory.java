@@ -24,15 +24,20 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Enumeration;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -61,6 +66,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
+    /** Fraction of a certificate lifetime reserved for hot reload. */
+    private static final double HOT_RELOAD_WINDOW_FRACTION = 0.15;
+
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
 
@@ -84,6 +92,69 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** Trust managers. */
     protected TrustManager[] trustMgrs;
+
+    /** */
+    private boolean hotReloadEnabled;
+
+    /** */
+    private transient volatile long hotReloadTime;
+
+    /** */
+    private transient long pendingHotReloadTime;
+
+    /**
+     * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
+     */
+    public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
+    }
+
+    /**
+     * @param enabled Whether automatic certificate hot reload is enabled. Changes require a node restart.
+     */
+    public void setHotReloadEnabled(boolean enabled) {
+        hotReloadEnabled = enabled;
+    }
+
+    /**
+     * The hot reload time is calculated from the certificates loaded with hot reload enabled.
+     * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
+     * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
+     * The window never starts after the chain expires.
+     * For chains with the same expiry, the longest lifetime is used.
+     *
+     * @return Start of the hot reload window in milliseconds since the epoch, or {@code 0} if the current certificates
+     *     were loaded with hot reload disabled or have not been loaded yet.
+     */
+    public long getHotReloadTime() {
+        return hotReloadTime;
+    }
+
+    /**
+     * Replaces the current SSL context when the hot reload window has started.
+     * Does nothing when hot reload is disabled, no hot reload date has been loaded, or the window has not started.
+     * A failed replacement leaves the current context and hot reload time unchanged.
+     *
+     * @throws IgniteException If the replacement cannot be loaded or accepted.
+     */
+    public void hotReload() {
+        if (!hotReloadEnabled)
+            return;
+
+        long hotReloadTime = getHotReloadTime();
+
+        if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
+            init();
+    }
+
+    /** {@inheritDoc} */
+    @Override SSLContext createSslContext() throws SSLException {
+        SSLContext ctx = super.createSslContext();
+
+        hotReloadTime = pendingHotReloadTime;
+
+        return ctx;
+    }
 
     /**
      * Gets key store type used for context creation.
@@ -259,22 +330,78 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+        KeyManagerFactory keyMgrFactory;
+
         try {
-            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
-
-            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            return keyMgrFactory.getKeyManagers();
+            keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
+        }
+
+        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+        try {
+            keyMgrFactory.init(keyStore, keyStorePwd);
+
+            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(keyStore) : 0;
+
+            return keyMgrFactory.getKeyManagers();
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
                 keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
         }
+    }
+
+    /**
+     * @param store Loaded key store.
+     * @return Start of the hot reload window of the chain that expires first.
+     * @throws GeneralSecurityException If a key or certificate cannot be read.
+     * @throws SSLException If there are no private keys or a private key has no X.509 certificate chain.
+     */
+    private long hotReloadTime(KeyStore store) throws GeneralSecurityException, SSLException {
+        long earliestExpiry = Long.MAX_VALUE;
+        long selectedStart = Long.MAX_VALUE;
+        boolean hasPrivateKeys = false;
+
+        for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
+            String alias = aliases.nextElement();
+
+            if (!store.isKeyEntry(alias) || !(store.getKey(alias, keyStorePwd) instanceof PrivateKey))
+                continue;
+
+            hasPrivateKeys = true;
+
+            Certificate[] chain = store.getCertificateChain(alias);
+
+            if (chain == null || chain.length == 0)
+                throw new SSLException("Certificate chain is unavailable [alias=" + alias + "]. Remove the key or add its X.509 chain.");
+
+            long chainExpiry = Long.MAX_VALUE;
+
+            for (Certificate certificate : chain) {
+                if (!(certificate instanceof X509Certificate cert))
+                    throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
+
+                chainExpiry = Math.min(chainExpiry, cert.getNotAfter().getTime());
+            }
+
+            long chainStart = ((X509Certificate)chain[0]).getNotBefore().getTime();
+
+            if (chainExpiry < earliestExpiry || chainExpiry == earliestExpiry && chainStart < selectedStart) {
+                earliestExpiry = chainExpiry;
+                selectedStart = chainStart;
+            }
+        }
+
+        if (!hasPrivateKeys)
+            throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
+
+        long time = earliestExpiry - (long)(Math.max(0, earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
+
+        // Zero is reserved for an absent hot reload date.
+        return time == 0 ? -1 : time;
     }
 
     /** {@inheritDoc} */

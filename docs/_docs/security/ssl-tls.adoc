@@ -176,17 +176,114 @@ The command asks for confirmation; use `--yes` to skip it.
 . Check the command result and the reload logs of any failed nodes, then verify a new connection with the replacement certificates.
 Established connections continue using their existing TLS context.
 
+`SslContextFactory` does not check certificate validity dates when loading a key store.
+Peers decide whether to accept the certificates during the TLS handshake using their configured trust managers.
+Replacement certificates may expire earlier than the current ones or have the same expiry date.
+You can also update the trust store without replacing the node's certificate.
+
 If a factory fails to reload, it keeps its previous context, and that node stops reloading its remaining factories.
 Successful reloads remain in effect; other nodes continue independently.
 Check the affected node's log for error details.
 Correct the failed store and run the command again.
-To restore the previous certificates, restore the backed-up files and reload again while peers still trust those certificates.
+To restore the previous certificates, restore the backed-up files and reload again.
+The restored certificates must pass peers' trust checks.
 
 Custom factories must extend javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
 They must reread key and trust data from their sources on reload and supply the updated context for new connections.
 If any factory on a node has another type, the command reports it as unsupported and reloads nothing on that node.
 For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
 If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.
+
+== Automatic Certificate Hot Reload
+
+Automatic hot reload lets nodes load replacement certificates without a reload command.
+You must supply the replacements: Ignite reads them from the configured source and does not issue certificates.
+Hot reload covers the same TCP transports as <<Upgrading Certificates,manual reload>>.
+It does not update the HTTP REST endpoint or external client applications.
+
+=== Enable Hot Reload
+
+Enable hot reload on each configured `SslContextFactory` before starting the node:
+
+[source,java]
+----
+factory.setHotReloadEnabled(true);
+----
+
+Changing this setting requires a node restart.
+The key store must contain a private key, and every private key must have an X.509 certificate chain.
+A chain contains the key's certificate and the certificates of its issuers.
+With hot reload enabled, a store that does not meet these requirements prevents node startup.
+
+Before replacing key stores, prepare peers' trust stores as described in <<Upgrading Certificates>>.
+Once every affected peer trusts the replacement certificates, put the replacement key stores in the configured source.
+Put only certificates whose validity period has already started.
+Ignite installs the replacements without checking their dates, and peers may reject certificates that are not yet valid.
+Keep the configured paths, store types and passwords unchanged.
+Ignite loads the replacements automatically when hot reload is due; no reload command is needed for this step.
+
+=== When Hot Reload Runs
+
+A chain expires when any certificate in it expires, including an issuing certificate.
+Ignite selects the chain that expires first and starts hot reload attempts with 15% of its lifetime remaining.
+If this point has already passed when the node starts, Ignite schedules an attempt immediately.
+See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
+
+If the loaded certificates are still within their hot reload window, Ignite records a failed hot reload attempt even though it installed them.
+This can happen when the certificates have not changed, only the trust store changed, or the replacements are already within their hot reload window.
+The loaded context remains in use while Ignite retries with the intervals below.
+
+After a manual reload, Ignite schedules the next automatic attempt from the loaded certificates.
+If their hot reload window has already started, the attempt runs immediately.
+
+New connections use the loaded certificates; established connections remain open.
+To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.
+
+=== Check Failures and Recover
+
+If loading the stores or creating the TLS context fails, Ignite keeps the current certificates and retries, even after they expire.
+Keeping expired certificates does not extend their validity, so new connections may fail until a valid replacement is available.
+Retry intervals grow from 1–1.5 minutes to 60–90 minutes.
+The base delay doubles after each failure, with a random addition of up to 50%.
+
+Check the node log for the next attempt, affected transports and the reason for a failure.
+The `ssl.ConsecutiveHotReloadFailures` metric sums consecutive failed automatic attempts across the node's factories.
+Each factory's count resets after a successful manual reload or an automatic attempt after which hot reload is no longer due.
+
+`ssl.ManualReloadAttempts` and `ssl.AutomaticHotReloadAttempts` count the node's calls to reload each factory.
+They include errors and automatic attempts that find hot reload is no longer due.
+A factory shared by several transports is counted once per attempt.
+Startup loading and direct application calls to the factory are not counted.
+A manual reload that a starting node rejects before hot reload starts is not counted either.
+
+To recover without waiting for the next retry:
+
+. Correct the replacement stores and run link:tools/control-script#reloading-tls-certificates[`control.sh --ssl reload`].
+. Check the command result and verify a new connection with the replacement certificates.
+
+*What a successful command means.*
+The result `reloaded` means that the node loaded the stores and created a new TLS context.
+The command also reports `reloaded` when the files have not changed.
+Successful loading does not establish whether peers trust the certificates or whether they have been revoked.
+Verify a new TLS connection after a replacement.
+
+*What happens to automatic hot reload.*
+If enabled, automatic hot reload continues after manual reload, as described in <<When Hot Reload Runs>>.
+A failed automatic attempt does not undo the manual reload.
+
+*If the command cannot connect.*
+First check the command's certificates and trust settings.
+If the problem is on the node, put a valid replacement in its source.
+If the node log shows automatic retries, wait for the next attempt.
+Otherwise, or to load the corrected stores without waiting, restart the affected nodes.
+
+=== Custom Certificate Sources
+
+For automatic hot reload, custom sources require a subclass of javadoc:org.apache.ignite.ssl.SslContextFactory[].
+Factories extending only `AbstractSslContextFactory` support manual reload only.
+The key store requirements described above apply to `SslContextFactory`.
+Factories extending only the base class retain their own loading behavior.
+Limit request duration in custom sources: a blocked load can delay other hot reloads, manual reload and node shutdown.
 
 == SslContextFactory Properties
 
@@ -215,6 +312,10 @@ If you configured `trustManagers` directly, the command reuses them instead of r
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`hotReloadEnabled`
+|Enables automatic certificate hot reload. See <<Automatic Certificate Hot Reload>>.
+|`false`
 
 |`trustStoreFilePath`
 |The path to the trust store file.

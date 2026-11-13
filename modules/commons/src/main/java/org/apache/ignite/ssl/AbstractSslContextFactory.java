@@ -113,7 +113,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Initialized SSL context.
      * @throws SSLException If SSL context could not be created.
      */
-    private SSLContext createSslContext() throws SSLException {
+    SSLContext createSslContext() throws SSLException {
         checkParameters();
 
         KeyManager[] keyMgrs = createKeyManagers();
