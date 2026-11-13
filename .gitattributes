@@ -1,0 +1,8 @@
+# Files that the ducktests Docker runner uses inside its Linux containers must keep
+# LF line endings, even in a Windows checkout with core.autocrlf=true. The containers
+# see the checkout through a bind mount, and a CRLF copy fails there: shell scripts
+# stop with "$'\r': command not found", and ssh-config is copied into the image as
+# the SSH client configuration.
+*.sh text eol=lf
+modules/ducktests/tests/docker/ducker-ignite text eol=lf
+modules/ducktests/tests/docker/ssh-config text eol=lf
