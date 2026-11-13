@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
@@ -28,6 +30,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -40,20 +43,26 @@ import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareScheduledExecutorService;
 import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.ssl.TestCertificateAuthority;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
+import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
+import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -64,7 +73,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -108,8 +116,27 @@ public class SslFactoryRegistryTest {
     private long delay;
 
     /** */
+    private Path dir;
+
+    /** Key store file of the factory under test. */
+    private Path keys;
+
+    /** */
+    private Path trust;
+
+    /** */
+    private TestCertificateAuthority authority;
+
+    /** */
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        dir = Files.createTempDirectory("ssl-factory-registry");
+        keys = dir.resolve("keys.jks");
+        trust = dir.resolve("trust.jks");
+        authority = new TestCertificateAuthority("issuer", at(-DAYS.toHours(365)), at(DAYS.toHours(365)));
+
+        save(authority.trustStore(), trust);
+
         GridMetricManager metricMgr = mock(GridMetricManager.class);
 
         when(ctx.metric()).thenReturn(metricMgr);
@@ -152,6 +179,7 @@ public class SslFactoryRegistryTest {
         }
         finally {
             executorFactory.close();
+            U.delete(dir);
         }
     }
 
@@ -180,15 +208,15 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testStartLoadsAndSchedulesSharedFactoryOnce() {
-        when(factory.isHotReloadEnabled()).thenReturn(true);
-        when(factory.getHotReloadTime()).thenReturn(0L, later());
+    public void testStartLoadsSharedFactoryAndSchedulesItOnce() throws Exception {
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
-        registry.register("discovery", factory);
+        writeFreshCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
+        registry.register("discovery", communication);
         registry.start(ctx);
 
-        verify(factory).init();
         verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
         assertTrue(delay > HOURS.toMillis(1));
         assertEquals(0, metric("ManualReloadAttempts"));
@@ -198,14 +226,14 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() {
-        IgniteException err = new IgniteException("Certificate chain is unavailable");
+        SslContextFactory communication = factory(dir.resolve("missing.jks"));
 
-        enableHotReload(factory, 0);
-        doThrow(err).when(factory).init();
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
 
-        registry.register("communication", factory);
+        IgniteException err = assertThrows(IgniteException.class, () -> registry.start(ctx));
 
-        assertSame(err, assertThrows(IgniteException.class, () -> registry.start(ctx)));
+        assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         executorFactory.verifyNoInteractions();
     }
 
@@ -228,12 +256,14 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testFailedAttemptsRetryWithDoublingDelayUpToOneHour() {
-        enableHotReload(factory, due());
-        doThrow(new IgniteException("Source unavailable")).when(factory).hotReload();
+    public void testFailedAttemptsRetryWithDoublingDelayUpToOneHour() throws Exception {
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
         registry.start(ctx);
+        Files.delete(keys);
 
         for (int failure = 1; failure <= 8; failure++) {
             long before = System.currentTimeMillis();
@@ -251,18 +281,19 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testSuccessfulAttemptResetsFailuresAndSchedulesNextHotReload() {
-        enableHotReload(factory, due());
-        doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).hotReload();
+    public void testSuccessfulAttemptResetsFailuresAndSchedulesNextHotReload() throws Exception {
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
         registry.start(ctx);
+        Files.delete(keys);
         scheduled.run();
 
         assertEquals(1, failures());
 
-        when(factory.getHotReloadTime()).thenReturn(later());
-
+        writeFreshCertificates(keys);
         scheduled.run();
 
         assertEquals(0, failures());
@@ -273,46 +304,47 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testManualReloadReplacesRetryWithLoadedHotReloadTime() throws Exception {
-        enableHotReload(factory, due());
-        doThrow(new IgniteException("Source unavailable")).when(factory).hotReload();
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
         registry.start(ctx);
+        Files.delete(keys);
         scheduled.run();
 
         assertEquals(1, failures());
 
         ScheduledFuture<?> retry = pending;
 
-        registry.reload(factory);
+        writeDueCertificates(keys);
+        registry.reload(communication);
 
         verify(retry).cancel(false);
         assertEquals(0, failures());
         assertTrue(delay <= 0);
 
-        when(factory.getHotReloadTime()).thenReturn(later());
+        writeFreshCertificates(keys);
+        registry.reload(communication);
 
-        registry.reload(factory);
-
-        verify(factory, times(2)).init();
         assertTrue(delay > HOURS.toMillis(1));
     }
 
     /** */
     @Test
     public void testManualReloadWithoutHotReloadCountsAppliedAndFailedLoads() throws Exception {
+        SslContextFactory communication = factory(keys);
         AbstractSslContextFactory genericFactory = mock(AbstractSslContextFactory.class);
 
-        when(factory.isHotReloadEnabled()).thenReturn(false);
-        doNothing().doThrow(new IgniteException("Source unavailable")).when(factory).init();
-
-        registry.register("communication", factory);
+        writeFreshCertificates(keys);
+        registry.register("communication", communication);
         registry.register("client connector", genericFactory);
         registry.start(ctx);
-        registry.reload(factory);
+        registry.reload(communication);
         registry.reload(genericFactory);
+        Files.delete(keys);
 
-        assertThrows(IgniteException.class, () -> registry.reload(factory));
+        assertThrows(IgniteException.class, () -> registry.reload(communication));
         verify(genericFactory).init();
         assertEquals(3, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
@@ -320,20 +352,20 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testFailedManualReloadKeepsRetryAndFailures() {
-        enableHotReload(factory, due());
-        doThrow(new IgniteException("Source unavailable")).when(factory).hotReload();
+    public void testFailedManualReloadKeepsRetryAndFailures() throws Exception {
+        SslContextFactory communication = factory(keys);
 
-        registry.register("communication", factory);
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
         registry.start(ctx);
+        Files.delete(keys);
         scheduled.run();
 
         ScheduledFuture<?> retry = pending;
-        IgniteException err = new IgniteException("Invalid replacement");
+        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
 
-        doThrow(err).when(factory).init();
-
-        assertSame(err, assertThrows(IgniteCheckedException.class, () -> registry.reload(factory)).getCause());
+        assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
         assertEquals(1, metric("ManualReloadAttempts"));
         verify(retry, never()).cancel(false);
@@ -364,16 +396,19 @@ public class SslFactoryRegistryTest {
     /** */
     @Test
     public void testManualReloadResetsOnlyItsFactoryFailures() throws Exception {
-        SslContextFactory otherFactory = mock(SslContextFactory.class);
+        Path clientKeys = dir.resolve("client-keys.jks");
+        SslContextFactory communication = factory(keys);
+        SslContextFactory clientConnector = factory(clientKeys);
 
-        enableHotReload(factory, due());
-        enableHotReload(otherFactory, due());
-        doThrow(new IgniteException("Source unavailable")).when(factory).hotReload();
-        doThrow(new IgniteException("Source unavailable")).when(otherFactory).hotReload();
-
-        registry.register("communication", factory);
-        registry.register("client connector", otherFactory);
+        writeDueCertificates(keys);
+        writeDueCertificates(clientKeys);
+        communication.setHotReloadEnabled(true);
+        clientConnector.setHotReloadEnabled(true);
+        registry.register("communication", communication);
+        registry.register("client connector", clientConnector);
         registry.start(ctx);
+        Files.delete(keys);
+        Files.delete(clientKeys);
 
         ArgumentCaptor<Runnable> attempts = ArgumentCaptor.forClass(Runnable.class);
 
@@ -382,7 +417,8 @@ public class SslFactoryRegistryTest {
 
         assertEquals(2, failures());
 
-        registry.reload(factory);
+        writeFreshCertificates(keys);
+        registry.reload(communication);
 
         assertEquals(1, failures());
     }
@@ -585,6 +621,33 @@ public class SslFactoryRegistryTest {
     /** @return Hot reload time two hours ahead. */
     private static long later() {
         return System.currentTimeMillis() + HOURS.toMillis(2);
+    }
+
+    /** @return Factory that reads its key store from {@code keyStore}. */
+    private SslContextFactory factory(Path keyStore) {
+        SslContextFactory sslFactory = new SslContextFactory();
+
+        sslFactory.setKeyStoreFilePath(keyStore.toString());
+        sslFactory.setKeyStorePassword(PASSWORD);
+        sslFactory.setTrustStoreFilePath(trust.toString());
+        sslFactory.setTrustStorePassword(PASSWORD);
+
+        return sslFactory;
+    }
+
+    /** Writes certificates with 10 of their 100 hours left, so their hot reload window has started. */
+    private void writeDueCertificates(Path keyStore) throws Exception {
+        save(authority.keyStore("node", at(-90), at(10)), keyStore);
+    }
+
+    /** Writes certificates whose hot reload window starts in 84 hours. */
+    private void writeFreshCertificates(Path keyStore) throws Exception {
+        save(authority.keyStore("node", at(-1), at(99)), keyStore);
+    }
+
+    /** */
+    private static long at(long hours) {
+        return System.currentTimeMillis() + HOURS.toMillis(hours);
     }
 
     /** */

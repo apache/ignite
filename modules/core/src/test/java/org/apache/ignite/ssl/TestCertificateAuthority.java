@@ -36,9 +36,9 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 /** Test certificates with explicit validity dates. */
-class TestCertificateAuthority {
+public class TestCertificateAuthority {
     /** */
-    static final char[] PASSWORD = "123456".toCharArray();
+    public static final char[] PASSWORD = "123456".toCharArray();
 
     /** */
     private final X500Principal name;
@@ -53,13 +53,13 @@ class TestCertificateAuthority {
     private long serial;
 
     /** */
-    TestCertificateAuthority(String name, long notBefore, long notAfter) throws Exception {
+    public TestCertificateAuthority(String name, long notBefore, long notAfter) throws Exception {
         this.name = new X500Principal("CN=" + name);
         cert = certificate(this.name, keys, notBefore, notAfter, true);
     }
 
     /** */
-    KeyStore keyStore(String alias, long notBefore, long notAfter) throws Exception {
+    public KeyStore keyStore(String alias, long notBefore, long notAfter) throws Exception {
         KeyPair leafKeys = keyPair();
         X509Certificate leaf = certificate(new X500Principal("CN=" + alias), leafKeys, notBefore, notAfter, false);
         KeyStore store = emptyStore();
@@ -70,7 +70,7 @@ class TestCertificateAuthority {
     }
 
     /** */
-    KeyStore trustStore() throws Exception {
+    public KeyStore trustStore() throws Exception {
         KeyStore store = emptyStore();
 
         store.setCertificateEntry(name.getName(), cert);
@@ -91,7 +91,7 @@ class TestCertificateAuthority {
     }
 
     /** */
-    static void save(KeyStore store, Path path) throws Exception {
+    public static void save(KeyStore store, Path path) throws Exception {
         try (OutputStream out = Files.newOutputStream(path)) {
             store.store(out, PASSWORD);
         }
