@@ -37,7 +37,7 @@
         <failureaccess.version>1.0.1</failureaccess.version>
         <immutables.version>2.12.2</immutables.version>
         <janino.version>3.1.12</janino.version>
-        <javacc-maven-plugin>2.4</javacc-maven-plugin>
+        <javacc-maven-plugin>3.2.1</javacc-maven-plugin>
         <joou.version>0.9.5</joou.version>
         <jsonpath.version>2.9.0</jsonpath.version>
         <reflections.version>0.10.2</reflections.version>
