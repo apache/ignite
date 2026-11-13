@@ -1,7 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.management.snapshot.SnapshotDeleteCommandArg",
-  "fields": [
-    {"order": 0, "type": "java.lang.String", "name": "snapshotName"},
-    {"order": 1, "type": "java.lang.String", "name": "src"}
-  ]
-}

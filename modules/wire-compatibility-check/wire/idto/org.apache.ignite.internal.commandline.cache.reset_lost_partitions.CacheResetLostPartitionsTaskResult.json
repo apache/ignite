@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult",
-  "fields": [
-    {"order": 0, "type": "java.util.Map<java.lang.String,java.lang.String>", "name": "msgMap"}
-  ]
-}
