@@ -186,13 +186,13 @@ public class WalRecordsConsumer<K, V> {
      *
      * @param cdcReg CDC metric registry.
      * @param cdcConsumerReg CDC consumer metric registry.
-     * @param cacheEvents The iterator containing previously handled {@link CdcCacheEvent}s.
+     * @param cacheNames The iterator containing previously handled cache names.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, Iterator<CdcCacheEvent> cacheEvents)
+    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, Iterator<String> cacheNames)
             throws IgniteCheckedException {
         if (consumer instanceof CdcConsumerEx)
-            ((CdcConsumerEx)consumer).start(cdcConsumerReg, cacheEvents);
+            ((CdcConsumerEx)consumer).start(cdcConsumerReg, cacheNames);
         else
             consumer.start(cdcConsumerReg);
 

@@ -159,10 +159,11 @@ public class CdcConsumerState {
      *
      * @return Saved state.
      */
-    public <K, V> Map<K, V> loadCaches(Path path) {
+    public <K, V> Map<K, V> loadCaches(Path path, boolean destroyed) {
         Map<K, V> state = loadOrDefaultIfCorrupted(path, HashMap::new, true);
 
-        log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
+        if (!destroyed)
+            log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
 
         if (log.isDebugEnabled()) {
             for (Map.Entry<K, V> entry : state.entrySet())

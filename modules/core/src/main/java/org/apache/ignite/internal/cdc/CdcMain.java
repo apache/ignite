@@ -243,7 +243,10 @@ public class CdcMain implements Runnable {
     private Set<T2<Integer, Byte>> mappingsState;
 
     /** Caches state. */
-    private Map<Integer, Long> cachesState;
+    private Map<Integer, IgniteBiTuple<String, Long>> cachesState;
+
+    /** Destroyed caches state. */
+    private Map<Long, Set<Integer>> destroyedCachesState;
 
     /** CDC mode state. */
     private volatile CdcMode cdcModeState;
@@ -256,9 +259,6 @@ public class CdcMain implements Runnable {
 
     /** Already processed segments. */
     private final Set<Path> processedSegments = new HashSet<>();
-
-    /** Destroyed caches state. */
-    private Map<Long, Set<Integer>> destroyedCachesState;
 
     /**
      * @param cfg Ignite configuration.
@@ -334,8 +334,8 @@ public class CdcMain implements Runnable {
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
-                cachesState = state.loadCaches(ft.cdcCachesState());
-                destroyedCachesState = state.loadCaches(ft.cdcDestroyedCachesState());
+                cachesState = state.loadCaches(ft.cdcCachesState(), false);
+                destroyedCachesState = state.loadCaches(ft.cdcDestroyedCachesState(), true);
                 cdcModeState = state.loadCdcMode();
 
                 if (walState != null) {
@@ -343,28 +343,11 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                //TODO: Just send cacheIds from caches state
-                Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
-                    .readCachesData(
-                        ft,
-                        kctx.marshallerContext().jdkMarshaller(),
-                        igniteCfg)
-                    .entrySet().stream()
-                    .map(data -> {
-                        int cacheId = data.getValue().cacheId();
-                        long lastModified = data.getKey().lastModified();
-
-                        Long lastModified0 = cachesState.get(cacheId);
-
-                        if (lastModified0 != null && lastModified0 == lastModified)
-                            return (CdcCacheEvent)data.getValue();
-
-                        return null;
-                    })
-                    .filter(Objects::nonNull)
+                Iterator<String> cacheNames = cachesState.values().stream()
+                    .map(IgniteBiTuple::get1)
                     .iterator();
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheEvts);
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheNames);
 
                 started = true;
 
@@ -780,7 +763,6 @@ public class CdcMain implements Runnable {
             if (ft.allStorages().noneMatch(File::exists))
                 return;
 
-            //TODO: Need to remove destroyed caches from cachesState
             Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
 
             Iterator<CdcCacheEvent> cacheEvts = GridLocalConfigManager
@@ -795,12 +777,16 @@ public class CdcMain implements Runnable {
 
                     destroyed.remove(cacheId);
 
-                    Long lastModified0 = cachesState.get(cacheId);
+                    IgniteBiTuple<String, Long> state = cachesState.get(cacheId);
+
+                    Long lastModified0 = state == null ? null : state.get2();
 
                     if (lastModified0 != null && lastModified0 == lastModified)
                         return null;
 
-                    cachesState.put(cacheId, lastModified);
+                    String cacheName = data.getValue().configuration().getName();
+
+                    cachesState.put(cacheId, new IgniteBiTuple<>(cacheName, lastModified));
 
                     return (CdcCacheEvent)data.getValue();
                 })
@@ -818,6 +804,8 @@ public class CdcMain implements Runnable {
                 long segment = ft.walSegmentIndex(segments[segments.length - 1].toPath());
 
                 destroyedCachesState.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
+
+                cachesState.keySet().removeAll(destroyed);
             }
 
             state.saveCaches(cachesState, ft.tmpCdcCachesState(), ft.cdcCachesState());
