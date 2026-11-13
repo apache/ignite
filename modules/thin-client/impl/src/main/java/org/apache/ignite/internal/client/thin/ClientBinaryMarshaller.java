@@ -124,7 +124,8 @@ class ClientBinaryMarshaller {
             binCfg,
             Collections.emptyMap(),
             BinaryUtils::affinityFieldName,
-            NullLogger.INSTANCE
+            NullLogger.INSTANCE,
+            null
         );
 
         ctx.registerUserTypesSchema();
