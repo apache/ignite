@@ -243,7 +243,10 @@ public class CdcMain implements Runnable {
     private Set<T2<Integer, Byte>> mappingsState;
 
     /** Caches state. */
-    private Map<Integer, Long> cachesState;
+    private Map<Integer, IgniteBiTuple<String, Long>> cachesState;
+
+    /** Destroyed caches state. */
+    private Map<Long, Set<Integer>> destroyedCachesState;
 
     /** CDC mode state. */
     private volatile CdcMode cdcModeState;
@@ -331,7 +334,8 @@ public class CdcMain implements Runnable {
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
-                cachesState = state.loadCaches();
+                cachesState = state.loadCaches(ft.cdcCachesState(), false);
+                destroyedCachesState = state.loadCaches(ft.cdcDestroyedCachesState(), true);
                 cdcModeState = state.loadCdcMode();
 
                 if (walState != null) {
@@ -339,7 +343,11 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
+                Iterator<String> cacheNames = cachesState.values().stream()
+                    .map(IgniteBiTuple::get1)
+                    .iterator();
+
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheNames);
 
                 started = true;
 
@@ -568,6 +576,17 @@ public class CdcMain implements Runnable {
         else
             consumeSegmentActively(builder);
 
+        Set<Integer> destroyed = destroyedCachesState.remove(segmentIdx);
+
+        if (destroyed != null) {
+            Iterator<Integer> destroyedIter = destroyed.iterator();
+
+            consumer.onCacheDestroyEvents(destroyedIter);
+
+            if (destroyedIter.hasNext())
+                throw new IllegalStateException("Consumer should handle all cache destroy events");
+        }
+
         segmentConsumingTime.value(U.currentTimeMillis() - start);
 
         processedSegments.add(segment);
@@ -758,12 +777,16 @@ public class CdcMain implements Runnable {
 
                     destroyed.remove(cacheId);
 
-                    Long lastModified0 = cachesState.get(cacheId);
+                    IgniteBiTuple<String, Long> state = cachesState.get(cacheId);
+
+                    Long lastModified0 = state == null ? null : state.get2();
 
                     if (lastModified0 != null && lastModified0 == lastModified)
                         return null;
 
-                    cachesState.put(cacheId, lastModified);
+                    String cacheName = data.getValue().configuration().getName();
+
+                    cachesState.put(cacheId, new IgniteBiTuple<>(cacheName, lastModified));
 
                     return (CdcCacheEvent)data.getValue();
                 })
@@ -776,15 +799,17 @@ public class CdcMain implements Runnable {
                 throw new IllegalStateException("Consumer should handle all cache change events");
 
             if (!destroyed.isEmpty()) {
-                Iterator<Integer> destroyedIter = destroyed.iterator();
+                File[] segments = ft.walSegments();
 
-                consumer.onCacheDestroyEvents(destroyedIter);
+                long segment = ft.walSegmentIndex(segments[segments.length - 1].toPath());
 
-                if (destroyedIter.hasNext())
-                    throw new IllegalStateException("Consumer should handle all cache destroy events");
+                destroyedCachesState.computeIfAbsent(segment, k -> new HashSet<>()).addAll(destroyed);
+
+                cachesState.keySet().removeAll(destroyed);
             }
 
-            state.saveCaches(cachesState);
+            state.saveCaches(cachesState, ft.tmpCdcCachesState(), ft.cdcCachesState());
+            state.saveCaches(destroyedCachesState, ft.tmpCdcDestroyedCachesState(), ft.cdcDestroyedCachesState());
         }
         catch (IOException e) {
             throw new IgniteException(e);
