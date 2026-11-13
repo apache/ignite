@@ -35,3 +35,5 @@ class CacheConfiguration(NamedTuple):
     statistics_enabled: bool = True
     affinity: Bean = None
     affinity_mapper: Bean = None
+    external_storage: bool = False
+    keep_binary: bool = False
