@@ -381,6 +381,31 @@ See the following related documentation:
 * link:monitoring-metrics/new-metrics-system#monitoring-checkpointing-operations[Monitoring Checkpointing Operations].
 * link:persistence/persistence-tuning#adjusting-checkpointing-buffer-size[Adjusting Checkpointing Buffer Size]
 
+
+== Several devices support
+
+In case nodes you are deploying Ignite to has several storage devices you can spread load evenly across all of them.
+
+    . Administrator during node configuration set possible storages in:
+        .. `DataStorageConfiguration#storagePaths` - single string to set default storage.
+        .. `DataStorageConfiguration#extraStoragePaths` - array of extra storages to spread load to.
+    . During cache creation actual cache storages set with:
+        .. `CacheConfiguration#storagePaths` - array of storages to use for this particular cache data storage.
+In case several values set, storage for partition selected round-robin fashion: `storagePaths[part % storagePaths.length]`
+        .. `CacheConfiguration#indexPath` - index partition are special and stores data from all partitions.
+So index partition can be significantly bigger than others.
+In case you need fine disk volume management you can set explicit storage for index partition.
+
+=== Snapshots creation
+
+A few word about snapshotting when using several storages.
+Default snapshot directory calculated based on `DataStorageConfiguration#extraStoragePaths` values.
+During names snapshot creation (no absolute path provided) all devices will store corresponding part of snapshot.
+If you want to create sing directory snapshot, please, provide absolute path on snapshot creation.
+If you want to have explicitly set snapshot directories, please, set `DataStorageConfiguration#extraSnapshotPaths` property.
+It stores one to one mapping between `extraStoragePaths` and `extraSnapshotPaths`.
+
+
 == Configuration Properties
 
 The following table describes some properties of link:{javadoc_base_url}/org/apache/ignite/configuration/DataStorageConfiguration.html[DataStorageConfiguration].
@@ -390,9 +415,8 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 | Property Name |Description |Default Value
 
 |`persistenceEnabled` | Set this property to `true` to enable Native Persistence. | `false`
-
 |`storagePath` | The path where data is stored. |  `${IGNITE_HOME}/work/db/node{IDX}-{UUID}`
-
+|`extraStoragePaths` | Extra paths where data is stored. |  null
 | `walPath` | The path to the directory where active WAL segments are stored. | `${IGNITE_HOME}/work/db/wal/`
 | `walArchivePath` | The path to the WAL archive.  | `${IGNITE_HOME}/work/db/wal/archive/`
 | `walCompactionEnabled` | Set to `true` to enable <<WAL Archive Compaction, WAL archive compaction>>. | `false`
@@ -404,4 +428,14 @@ The following table describes some properties of link:{javadoc_base_url}/org/apa
 |`minWalArchiveSize` | The threshold (in bytes) that makes segments eligible for cleanup. The cleanup runs in the background and removes the oldest segments while the archive stays above this value. Segments are removed as whole files, so the remaining size can be below it. | Half of `maxWalArchiveSize`
 |`walSegments` | The number of fixed-size segments used for active WAL rotation when archiving is enabled. Plan space for `walSegments` × `walSegmentSize` bytes plus a rotation reserve. Size the WAL archive separately. | `10`
 |`checkpointFrequency` | The interval between scheduled checkpoints, in milliseconds. | `180000` (3 minutes)
+|=======================================================================
+
+The following table describes some properties of link:{javadoc_base_url}/org/apache/ignite/configuration/CacheConfiguration.html[CacheConfiguration].
+
+[width=100%,cols="1,2,1",options="header"]
+|=======================================================================
+| Property Name |Description |Default Value
+
+|`storagePaths` | Paths to store partitions. |  null
+|`indexPath`  | Path to store index partition. | null
 |=======================================================================
