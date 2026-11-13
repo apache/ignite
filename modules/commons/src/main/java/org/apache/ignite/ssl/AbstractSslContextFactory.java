@@ -113,18 +113,11 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Initialized SSL context.
      * @throws SSLException If SSL context could not be created.
      */
-    SSLContext createSslContext() throws SSLException {
-        return createSslContext(createKeyManagers());
-    }
+    private SSLContext createSslContext() throws SSLException {
+        checkParameters();
 
-    /**
-     * Creates SSL context with the given key managers and the trust managers of this factory.
-     *
-     * @param keyMgrs Key managers.
-     * @return Initialized SSL context.
-     * @throws SSLException If SSL context could not be created.
-     */
-    final SSLContext createSslContext(KeyManager[] keyMgrs) throws SSLException {
+        KeyManager[] keyMgrs = createKeyManagers();
+
         TrustManager[] trustMgrs = createTrustManagers();
 
         try {
@@ -144,6 +137,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
             ctx.init(keyMgrs, trustMgrs, null);
 
+            acceptKeyManagers(keyMgrs);
+
             return ctx;
         }
         catch (NoSuchAlgorithmException e) {
@@ -152,6 +147,17 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
         catch (KeyManagementException e) {
             throw new SSLException("Failed to initialized SSL context.", e);
         }
+    }
+
+    /**
+     * Accepts the key managers of a new SSL context before the context replaces the current one.
+     * Does nothing by default.
+     *
+     * @param keyMgrs Key managers created by {@link #createKeyManagers()} for the new context.
+     * @throws SSLException If the new context must not replace the current one.
+     */
+    void acceptKeyManagers(KeyManager[] keyMgrs) throws SSLException {
+        // No-op.
     }
 
     /**
@@ -191,8 +197,6 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     public final synchronized void init() {
         try {
-            checkParameters();
-
             sslCtx.set(createSslContext());
         }
         catch (SSLException e) {

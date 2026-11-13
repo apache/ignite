@@ -21,9 +21,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -35,10 +37,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedKeyManager;
+import javax.net.ssl.X509KeyManager;
 import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
@@ -143,22 +147,16 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    @Override SSLContext createSslContext() throws SSLException {
-        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-        SSLContext ctx = createSslContext(createKeyManagers(keyStore));
+    @Override void acceptKeyManagers(KeyManager[] keyMgrs) throws SSLException {
+        Map<String, X509Certificate[]> chains = Arrays.stream(keyMgrs)
+            .filter(LoadedKeyManager.class::isInstance)
+            .map(mgr -> ((LoadedKeyManager)mgr).chains)
+            .findFirst()
+            .orElse(Map.of());
 
-        try {
-            Map<String, X509Certificate[]> chains = keyChains(keyStore);
+        checkValidity(chains);
 
-            checkValidity(chains);
-
-            renewalTime = renewalEnabled ? renewalTime(chains) : 0;
-
-            return ctx;
-        }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to read TLS material [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
-        }
+        renewalTime = renewalEnabled ? renewalTime(chains) : 0;
     }
 
     /**
@@ -335,21 +333,18 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        return createKeyManagers(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd));
-    }
-
-    /**
-     * @param keyStore Loaded key store.
-     * @return Key managers for the key store.
-     * @throws SSLException If key managers could not be created.
-     */
-    private KeyManager[] createKeyManagers(KeyStore keyStore) throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
+            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            return keyMgrFactory.getKeyManagers();
+            Map<String, X509Certificate[]> chains = keyChains(keyStore);
+
+            return Arrays.stream(keyMgrFactory.getKeyManagers())
+                .map(mgr -> mgr instanceof X509KeyManager x509Mgr ? new LoadedKeyManager(x509Mgr, chains) : mgr)
+                .toArray(KeyManager[]::new);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
@@ -585,6 +580,65 @@ public class SslContextFactory extends AbstractSslContextFactory {
         /** {@inheritDoc} */
         @Override public X509Certificate[] getAcceptedIssuers() {
             return CERTS;
+        }
+    }
+
+    /** X.509 key manager that keeps the private-key chains of the key store it was created from. */
+    private static class LoadedKeyManager extends X509ExtendedKeyManager {
+        /** */
+        private final X509KeyManager delegate;
+
+        /** */
+        private final Map<String, X509Certificate[]> chains;
+
+        /** */
+        private LoadedKeyManager(X509KeyManager delegate, Map<String, X509Certificate[]> chains) {
+            this.delegate = delegate;
+            this.chains = chains;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getClientAliases(String keyType, Principal[] issuers) {
+            return delegate.getClientAliases(keyType, issuers);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket sock) {
+            return delegate.chooseClientAlias(keyType, issuers, sock);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String[] getServerAliases(String keyType, Principal[] issuers) {
+            return delegate.getServerAliases(keyType, issuers);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String chooseServerAlias(String keyType, Principal[] issuers, Socket sock) {
+            return delegate.chooseServerAlias(keyType, issuers, sock);
+        }
+
+        /** {@inheritDoc} */
+        @Override public X509Certificate[] getCertificateChain(String alias) {
+            return delegate.getCertificateChain(alias);
+        }
+
+        /** {@inheritDoc} */
+        @Override public PrivateKey getPrivateKey(String alias) {
+            return delegate.getPrivateKey(alias);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine) {
+            return delegate instanceof X509ExtendedKeyManager extMgr
+                ? extMgr.chooseEngineClientAlias(keyType, issuers, engine)
+                : super.chooseEngineClientAlias(keyType, issuers, engine);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine) {
+            return delegate instanceof X509ExtendedKeyManager extMgr
+                ? extMgr.chooseEngineServerAlias(keyType, issuers, engine)
+                : super.chooseEngineServerAlias(keyType, issuers, engine);
         }
     }
 }
