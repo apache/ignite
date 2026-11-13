@@ -26,6 +26,7 @@ import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
+import java.util.Collections;
 import java.util.Date;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.x509.BasicConstraints;
@@ -75,6 +76,18 @@ class TestCertificateAuthority {
         store.setCertificateEntry(name.getName(), cert);
 
         return store;
+    }
+
+    /** */
+    static KeyStore merge(KeyStore... stores) throws Exception {
+        KeyStore merged = emptyStore();
+
+        for (KeyStore store : stores) {
+            for (String alias : Collections.list(store.aliases()))
+                merged.setKeyEntry(alias, store.getKey(alias, PASSWORD), PASSWORD, store.getCertificateChain(alias));
+        }
+
+        return merged;
     }
 
     /** */
