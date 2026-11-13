@@ -30,8 +30,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -346,7 +344,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         try {
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(keyChains(keyStore)) : 0;
+            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(keyStore) : 0;
 
             return keyMgrFactory.getKeyManagers();
         }
@@ -358,12 +356,14 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param store Loaded key store.
-     * @return X.509 certificate chains of the private keys by alias.
+     * @return Start of the hot reload window of the chain that expires first.
      * @throws GeneralSecurityException If a key or certificate cannot be read.
-     * @throws SSLException If a private key has no X.509 certificate chain.
+     * @throws SSLException If there are no private keys or a private key has no X.509 certificate chain.
      */
-    private Map<String, X509Certificate[]> keyChains(KeyStore store) throws GeneralSecurityException, SSLException {
-        Map<String, X509Certificate[]> chains = new LinkedHashMap<>();
+    private long hotReloadTime(KeyStore store) throws GeneralSecurityException, SSLException {
+        long earliestExpiry = Long.MAX_VALUE;
+        long selectedStart = Long.MAX_VALUE;
+        boolean hasPrivateKeys = false;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
             String alias = aliases.nextElement();
@@ -371,51 +371,32 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (!store.isKeyEntry(alias) || !(store.getKey(alias, keyStorePwd) instanceof PrivateKey))
                 continue;
 
+            hasPrivateKeys = true;
+
             Certificate[] chain = store.getCertificateChain(alias);
 
             if (chain == null || chain.length == 0)
                 throw new SSLException("Certificate chain is unavailable [alias=" + alias + "]. Remove the key or add its X.509 chain.");
 
-            X509Certificate[] x509Chain = new X509Certificate[chain.length];
-
-            for (int i = 0; i < chain.length; i++) {
-                if (!(chain[i] instanceof X509Certificate cert))
-                    throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
-
-                x509Chain[i] = cert;
-            }
-
-            chains.put(alias, x509Chain);
-        }
-
-        return chains;
-    }
-
-    /**
-     * @param chains Key chains by alias.
-     * @return Start of the hot reload window of the chain that expires first.
-     * @throws SSLException If there are no key chains.
-     */
-    private static long hotReloadTime(Map<String, X509Certificate[]> chains) throws SSLException {
-        if (chains.isEmpty())
-            throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
-
-        long earliestExpiry = Long.MAX_VALUE;
-        long selectedStart = Long.MAX_VALUE;
-
-        for (X509Certificate[] chain : chains.values()) {
             long chainExpiry = Long.MAX_VALUE;
 
-            for (X509Certificate cert : chain)
-                chainExpiry = Math.min(chainExpiry, cert.getNotAfter().getTime());
+            for (Certificate certificate : chain) {
+                if (!(certificate instanceof X509Certificate cert))
+                    throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
 
-            long chainStart = chain[0].getNotBefore().getTime();
+                chainExpiry = Math.min(chainExpiry, cert.getNotAfter().getTime());
+            }
+
+            long chainStart = ((X509Certificate)chain[0]).getNotBefore().getTime();
 
             if (chainExpiry < earliestExpiry || chainExpiry == earliestExpiry && chainStart < selectedStart) {
                 earliestExpiry = chainExpiry;
                 selectedStart = chainStart;
             }
         }
+
+        if (!hasPrivateKeys)
+            throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
 
         long time = earliestExpiry - (long)(Math.max(0, earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
 
