@@ -21,16 +21,21 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.concurrent.CountDownLatch;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.lang.Thread.State.BLOCKED;
+import static java.lang.Thread.State.TERMINATED;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -41,6 +46,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -248,6 +254,59 @@ public class SslContextFactoryHotReloadTest {
 
         assertNotSame(ctx, factory.create());
         assertEquals(at(84), factory.getHotReloadTime());
+    }
+
+    /** */
+    @Test
+    public void testFailedLoadDoesNotExposeReplacementTime() throws Exception {
+        InMemorySslContextFactory factory = spy(dueFactory());
+        long hotReloadTime = factory.getHotReloadTime();
+        SSLContext ctx = factory.create();
+
+        factory.keyStore = authority.keyStore("node", at(-1), at(99));
+        factory.setTrustManagers((TrustManager[])null);
+        factory.setTrustStoreFilePath("memory-trust");
+        factory.setTrustStorePassword(PASSWORD);
+
+        CountDownLatch trustLoadStarted = new CountDownLatch(1);
+        CountDownLatch finishTrustLoad = new CountDownLatch(1);
+        IllegalStateException failure = new IllegalStateException("Trust source unavailable");
+
+        doAnswer(call -> {
+            trustLoadStarted.countDown();
+
+            assertTrue(finishTrustLoad.await(10, SECONDS));
+
+            throw failure;
+        }).when(factory).loadKeyStore(any(), eq("memory-trust"), any());
+
+        GridTestThread load = new GridTestThread(() -> assertSame(failure, assertThrows(IllegalStateException.class, factory::hotReload)));
+        GridTestThread readTime = new GridTestThread(() -> assertEquals(hotReloadTime, factory.getHotReloadTime()));
+
+        load.start();
+
+        try {
+            assertTrue(trustLoadStarted.await(10, SECONDS));
+
+            readTime.start();
+
+            long deadline = System.currentTimeMillis() + 10_000;
+
+            assertTrue(waitForCondition(() -> readTime.getState() == BLOCKED || readTime.getState() == TERMINATED,
+                () -> System.currentTimeMillis() < deadline));
+            assertEquals(BLOCKED, readTime.getState());
+        }
+        finally {
+            finishTrustLoad.countDown();
+            load.join(10_000);
+            readTime.join(10_000);
+        }
+
+        assertFalse(load.isAlive());
+        assertFalse(readTime.isAlive());
+        load.checkError();
+        readTime.checkError();
+        assertSame(ctx, factory.create());
     }
 
     /** */

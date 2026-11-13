@@ -101,7 +101,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
-    private transient volatile long hotReloadTime;
+    private transient long hotReloadTime;
 
     /**
      * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
@@ -122,11 +122,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
      * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
      * For chains with the same expiry, the longest lifetime is used.
+     * Waits for an active context load to finish.
      *
      * @return Start of the hot reload window in milliseconds since the epoch, or {@code 0} if the current certificates
      *     were loaded with hot reload disabled or have not been loaded yet.
      */
-    public long getHotReloadTime() {
+    public synchronized long getHotReloadTime() {
         return hotReloadTime;
     }
 
@@ -138,28 +139,30 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @throws IgniteException If the replacement cannot be loaded or accepted.
      */
     public void hotReload() {
-        if (hotReloadEnabled && hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
+        if (!hotReloadEnabled)
+            return;
+
+        long hotReloadTime = getHotReloadTime();
+
+        if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
             init();
     }
 
     /** {@inheritDoc} */
     @Override SSLContext createSslContext() throws SSLException {
-        checkParameters();
-
-        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-        SSLContext ctx = createSslContext(createKeyManagers(keyStore));
+        long prevHotReloadTime = hotReloadTime;
+        boolean success = false;
 
         try {
-            Map<String, X509Certificate[]> chains = keyChains(keyStore);
+            SSLContext ctx = super.createSslContext();
 
-            checkValidity(chains);
-
-            hotReloadTime = hotReloadEnabled ? hotReloadTime(chains) : 0;
+            success = true;
 
             return ctx;
         }
-        catch (GeneralSecurityException e) {
-            throw new SSLException("Failed to read TLS material [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        finally {
+            if (!success)
+                hotReloadTime = prevHotReloadTime;
         }
     }
 
@@ -337,24 +340,27 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        return createKeyManagers(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd));
-    }
+        KeyManagerFactory keyMgrFactory;
 
-    /**
-     * @param keyStore Loaded key store.
-     * @return Key managers for the key store.
-     * @throws SSLException If key managers could not be created.
-     */
-    private KeyManager[] createKeyManagers(KeyStore keyStore) throws SSLException {
         try {
-            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
-
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            return keyMgrFactory.getKeyManagers();
+            keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
+        }
+
+        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+        try {
+            keyMgrFactory.init(keyStore, keyStorePwd);
+
+            Map<String, X509Certificate[]> chains = keyChains(keyStore);
+
+            checkValidity(chains);
+
+            hotReloadTime = hotReloadEnabled ? hotReloadTime(chains) : 0;
+
+            return keyMgrFactory.getKeyManagers();
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
