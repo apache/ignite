@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -63,9 +62,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -271,25 +268,6 @@ public class SslFactoryRegistryTest {
         assertEquals(0, failures());
         assertTrue(delay > HOURS.toMillis(1));
         assertEquals(2, metric("AutomaticRenewalAttempts"));
-    }
-
-    /** */
-    @Test
-    public void testAttemptLeavingRenewalDueIsLoggedAsFailure() {
-        IgniteLogger log = mock(IgniteLogger.class);
-
-        when(ctx.log(SslFactoryRegistry.class)).thenReturn(log);
-        enableRenewal(factory, due());
-        doNothing().when(factory).renew();
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-        scheduled.run();
-
-        verify(factory).renew();
-        assertEquals(1, failures());
-        verify(log).warning(startsWith("TLS renewal failed [transports=communication, nextAttempt="),
-            argThat((Throwable e) -> e.getMessage().contains("still due for renewal")));
     }
 
     /** */

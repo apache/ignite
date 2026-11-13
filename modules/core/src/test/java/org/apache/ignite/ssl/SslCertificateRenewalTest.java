@@ -27,6 +27,9 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -64,11 +67,7 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
             save(ca2.trustStore(), trust);
 
             IgniteEx node = startGrid(0, cfg -> {
-                cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-                    .setSslEnabled(true)
-                    .setSslClientAuth(true)
-                    .setUseIgniteSslContextFactory(false)
-                    .setSslContextFactory(serverFactory));
+                cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
 
             assertTrue("The renewed context was not installed", waitForCondition(() -> serverFactory.create() != initCtx, 10_000));
@@ -86,6 +85,53 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
             stopAllGrids();
             U.delete(dir);
         }
+    }
+
+    /** */
+    @Test
+    public void testRenewalFailsWhileSourceHoldsDueCertificates() throws Exception {
+        long now = System.currentTimeMillis();
+        TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
+        Path dir = Files.createTempDirectory("ssl-renewal");
+        Path keys = dir.resolve("keys.jks");
+        Path trust = dir.resolve("trust.jks");
+        ListeningTestLogger nodeLog = new ListeningTestLogger(log);
+        LogListener failure = LogListener.matches("TLS renewal failed [transports=client connector").build();
+        LogListener reason = LogListener.matches("Loaded certificates are still due for renewal").build();
+
+        nodeLog.registerListener(failure);
+        nodeLog.registerListener(reason);
+
+        try {
+            save(ca.keyStore("node", now - MINUTES.toMillis(110), now + MINUTES.toMillis(10)), keys);
+            save(ca.trustStore(), trust);
+
+            SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
+
+            serverFactory.setRenewalEnabled(true);
+
+            IgniteEx node = startGrid(0, cfg -> {
+                cfg.setGridLogger(nodeLog).setClientConnectorConfiguration(sslClientConnector(serverFactory));
+            });
+            LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveRenewalFailures");
+
+            assertTrue("The automatic attempt did not fail", waitForCondition(() -> failures.value() == 1, 10_000));
+            assertTrue(failure.check());
+            assertTrue(reason.check());
+        }
+        finally {
+            stopAllGrids();
+            U.delete(dir);
+        }
+    }
+
+    /** */
+    private static ClientConnectorConfiguration sslClientConnector(SslContextFactory factory) {
+        return new ClientConnectorConfiguration()
+            .setSslEnabled(true)
+            .setSslClientAuth(true)
+            .setUseIgniteSslContextFactory(false)
+            .setSslContextFactory(factory);
     }
 
     /** */
