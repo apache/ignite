@@ -116,8 +116,8 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
             LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveHotReloadFailures");
 
             assertTrue("The automatic attempt did not fail", waitForCondition(() -> failures.value() == 1, 10_000));
-            assertTrue(failure.check());
-            assertTrue(reason.check());
+            assertTrue(failure.check(10_000));
+            assertTrue(reason.check(10_000));
         }
         finally {
             stopAllGrids();
