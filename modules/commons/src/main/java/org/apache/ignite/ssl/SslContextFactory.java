@@ -33,9 +33,9 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -143,16 +143,22 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** {@inheritDoc} */
-    @Override void acceptKeyManagers(KeyManager[] keyMgrs) throws SSLException {
-        Map<String, X509Certificate[]> chains = Arrays.stream(keyMgrs)
-            .filter(KeyChains.class::isInstance)
-            .map(mgr -> ((KeyChains)mgr).chains())
-            .findFirst()
-            .orElseThrow();
+    @Override SSLContext createSslContext() throws SSLException {
+        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+        SSLContext ctx = createSslContext(keyManagers(keyStore));
 
-        checkValidity(chains);
+        try {
+            Map<String, X509Certificate[]> chains = keyChains(keyStore);
 
-        renewalTime = renewalEnabled ? renewalTime(chains) : 0;
+            checkValidity(chains);
+
+            renewalTime = renewalEnabled ? renewalTime(chains) : 0;
+
+            return ctx;
+        }
+        catch (GeneralSecurityException e) {
+            throw new SSLException("Failed to read TLS material [type=" + keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
+        }
     }
 
     /**
@@ -327,25 +333,23 @@ public class SslContextFactory extends AbstractSslContextFactory {
         return new DisabledX509TrustManager();
     }
 
+    /** {@inheritDoc} */
+    @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+        return keyManagers(loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd));
+    }
+
     /**
-     * Creates key managers from the key store.
-     * The last element of the array holds the private-key chains of the loaded key store.
-     * It is not an X.509 key manager, and an SSL context ignores it.
-     *
-     * @return Key managers.
+     * @param keyStore Loaded key store.
+     * @return Key managers for the key store.
      * @throws SSLException If key managers could not be created.
      */
-    @Override protected final KeyManager[] createKeyManagers() throws SSLException {
+    private KeyManager[] keyManagers(KeyStore keyStore) throws SSLException {
         try {
             KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
 
-            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            KeyChains chains = new KeyChains(keyChains(keyStore));
-
-            return Stream.concat(Arrays.stream(keyMgrFactory.getKeyManagers()), Stream.of(chains)).toArray(KeyManager[]::new);
+            return keyMgrFactory.getKeyManagers();
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
@@ -583,7 +587,4 @@ public class SslContextFactory extends AbstractSslContextFactory {
             return CERTS;
         }
     }
-
-    /** Private-key chains of the key store that the other key managers of the array were created from. */
-    private record KeyChains(Map<String, X509Certificate[]> chains) implements KeyManager {}
 }
