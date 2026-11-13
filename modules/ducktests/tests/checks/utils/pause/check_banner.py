@@ -21,11 +21,20 @@ nodes it is made of, and the commands offered for looking into them.
 import os
 import time
 
+from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.utils.pause import ALL, DemoPause, _resume_command
 from ignitetest.utils.pause_control import ControlDir, repo_root
 
 from checks.support.demo_pause_control import new_demo_pause, published_status
-from checks.support.ducktape_doubles import FakeBrokenService, FakeIgniteService, FakeRegistry, FakeService
+from checks.support.ducktape_doubles import FakeBrokenService, FakeRegistry, FakeService, FakeTestContext
+
+
+def _ignite_service():
+    """
+    :return: An Ignite service on one fake node, ducker01.
+    """
+    return IgniteService(FakeTestContext(), IgniteConfiguration(), num_nodes=1)
 
 
 def check_elapsed_is_counted_from_test_start(tmp_path):
@@ -49,16 +58,17 @@ def check_banner_is_rendered_from_the_service_registry(tmp_path):
     ducktape's ServiceRegistry, which supports nothing else.
     """
     demo = new_demo_pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=.3)
+    ignite = _ignite_service()
 
     with published_status(tmp_path) as published:
-        demo.pause("split-brain", services=FakeRegistry(FakeService("ducker02"), FakeIgniteService("ducker03")))
+        demo.pause("split-brain", services=FakeRegistry(FakeService("ducker02"), ignite))
 
     banner = "\n".join(published["banner"]).replace("\\", "/")
 
     assert "FakeService-ducker02" in banner
-    assert "FakeIgniteService-ducker03" in banner
+    assert ignite.who_am_i(ignite.nodes[0]) in banner
     assert "/mnt/service/logs/ignite*.log" in banner, "the hints must still follow the Ignite service"
-    assert "ducker02 ducker03" in banner
+    assert "ducker01 ducker02" in banner
 
 
 def check_a_service_that_cannot_answer_is_degraded_not_raised(tmp_path):
@@ -68,17 +78,17 @@ def check_a_service_that_cannot_answer_is_degraded_not_raised(tmp_path):
     would fail the scenario at exactly the point the demo was added to show.
     """
     demo = new_demo_pause(tmp_path, demo_pause=ALL, demo_pause_timeout_sec=.3)
+    ignite = _ignite_service()
 
     with published_status(tmp_path) as published:
-        demo.pause("split-brain",
-                   services=FakeRegistry(FakeBrokenService("ducker02"), FakeIgniteService("ducker03")))
+        demo.pause("split-brain", services=FakeRegistry(FakeBrokenService("ducker02"), ignite))
 
     banner = "\n".join(published["banner"])
 
     assert "FakeBrokenService-ducker02" in banner, "the node must still be named, without asking its service"
     assert "RuntimeError" in banner, "and what could not be read must say so"
-    assert "FakeIgniteService-ducker03" in banner, "a service after the broken one must still be listed"
-    assert "ducker02 ducker03" in banner, "and every node must still be offered by the hints"
+    assert ignite.who_am_i(ignite.nodes[0]) in banner, "a service after the broken one must still be listed"
+    assert "ducker01 ducker02" in banner, "and every node must still be offered by the hints"
 
 
 def check_the_resume_command_is_named_where_it_will_be_typed():
@@ -116,7 +126,7 @@ def check_hints_follow_the_ignite_services():
     """
     # noinspection PyProtectedMember
     hints = "\n".join(DemoPause._hints_section([FakeService("ducker02"),  # pylint: disable=protected-access
-                                                FakeIgniteService("ducker03")]))
+                                                _ignite_service()]))
 
     # The service paths come from os.path.join, which follows the control machine rather than
     # the nodes - a check that runs on Windows would otherwise see its separators.
@@ -128,4 +138,4 @@ def check_hints_follow_the_ignite_services():
     assert "zk-logs" not in hints
 
     # Every node is still offered, whichever service it belongs to.
-    assert "ducker02 ducker03" in hints
+    assert "ducker01 ducker02" in hints
