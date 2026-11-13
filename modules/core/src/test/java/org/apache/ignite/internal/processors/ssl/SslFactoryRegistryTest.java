@@ -65,6 +65,7 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
@@ -360,20 +361,31 @@ public class SslFactoryRegistryTest {
     @Test
     public void testManualReloadWithoutHotReloadCountsAppliedAndFailedLoads() throws Exception {
         SslContextFactory communication = factory(keys);
-        AbstractSslContextFactory genericFactory = mock(AbstractSslContextFactory.class);
 
         writeFreshCertificates(keys);
         registry.register("communication", communication);
-        registry.register("client connector", genericFactory);
         registry.start(ctx);
         registry.reload(communication);
-        registry.reload(genericFactory);
+
+        assertEquals(1, metric("ManualReloadAttempts"));
+
         Files.delete(keys);
 
         assertThrows(IgniteException.class, () -> registry.reload(communication));
-        verify(genericFactory).init();
-        assertEquals(3, metric("ManualReloadAttempts"));
+        assertEquals(2, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
+    }
+
+    /** */
+    @Test
+    public void testManualReloadSupportsAbstractFactory() throws Exception {
+        AbstractSslContextFactory factory = mock(AbstractSslContextFactory.class);
+
+        registry.register("client connector", factory);
+        registry.start(ctx);
+        registry.reload(factory);
+
+        verify(factory).init();
     }
 
     /** */
@@ -503,13 +515,12 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testStopInterruptsAttemptCancelsQueuedReloadAndWaits() throws Exception {
-        ScheduledExecutorService hotReloadExecutor = useRealExecutor();
+    public void testStopInterruptsActiveAttempt() throws Exception {
+        useRealExecutor();
+
         CountDownLatch attemptStarted = new CountDownLatch(1);
         CountDownLatch attemptInterrupted = new CountDownLatch(1);
         CountDownLatch allowCompletion = new CountDownLatch(1);
-        CountDownLatch terminationWaitEntered = new CountDownLatch(1);
-        BlockingQueue<Future<?>> submissions = new LinkedBlockingQueue<>();
 
         enableHotReload(factory, due());
         doAnswer(call -> {
@@ -520,19 +531,93 @@ public class SslFactoryRegistryTest {
             }
             catch (InterruptedException e) {
                 attemptInterrupted.countDown();
-
-                assertTrue(allowCompletion.await(30, SECONDS));
             }
 
             return null;
         }).when(factory).hotReload();
+
+        registry.register("communication", factory);
+
+        try {
+            registry.start(ctx);
+
+            assertTrue(attemptStarted.await(5, SECONDS));
+
+            runAsync(registry::stop).get(5_000);
+
+            assertEquals(0, attemptInterrupted.getCount());
+        }
+        finally {
+            allowCompletion.countDown();
+        }
+    }
+
+    /** */
+    @Test
+    public void testStopCancelsQueuedManualReload() throws Exception {
+        ScheduledExecutorService hotReloadExecutor = useRealExecutor();
+        CountDownLatch releaseWorker = new CountDownLatch(1);
+        BlockingQueue<Future<?>> submissions = new LinkedBlockingQueue<>();
+
+        enableHotReload(factory, later());
         doAnswer(call -> {
-            Future<?> fut = (Future<?>)call.callRealMethod();
+            Future<?> task = (Future<?>)call.callRealMethod();
 
-            submissions.add(fut);
+            submissions.add(task);
 
-            return fut;
+            return task;
         }).when(hotReloadExecutor).submit(any(Runnable.class));
+
+        registry.register("communication", factory);
+        registry.start(ctx);
+        hotReloadExecutor.execute(() -> U.awaitQuiet(releaseWorker));
+
+        IgniteInternalFuture<IgniteCheckedException> reload =
+            runAsync(() -> assertThrows(IgniteCheckedException.class, () -> registry.reload(factory)));
+        IgniteInternalFuture<?> stop = null;
+        Future<?> queuedReload = null;
+
+        try {
+            queuedReload = submissions.poll(5, SECONDS);
+
+            assertNotNull(queuedReload);
+
+            stop = runAsync(registry::stop);
+
+            assertTrue(reload.get(5_000).getCause() instanceof CancellationException);
+            verify(factory, never()).init();
+            assertEquals(0, metric("ManualReloadAttempts"));
+        }
+        finally {
+            if (queuedReload != null)
+                queuedReload.cancel(true);
+            else
+                reload.cancel();
+
+            releaseWorker.countDown();
+
+            if (stop != null)
+                stop.get(5_000);
+
+            reload.get(5_000);
+        }
+    }
+
+    /** */
+    @Test
+    public void testStopWaitsForActiveLoad() throws Exception {
+        ScheduledExecutorService hotReloadExecutor = useRealExecutor();
+        CountDownLatch loadStarted = new CountDownLatch(1);
+        CountDownLatch allowCompletion = new CountDownLatch(1);
+        CountDownLatch terminationWaitEntered = new CountDownLatch(1);
+
+        enableHotReload(factory, due());
+        doAnswer(call -> {
+            loadStarted.countDown();
+            U.awaitQuiet(allowCompletion);
+
+            return null;
+        }).when(factory).hotReload();
         doAnswer(call -> {
             terminationWaitEntered.countDown();
 
@@ -541,42 +626,26 @@ public class SslFactoryRegistryTest {
 
         registry.register("communication", factory);
 
-        IgniteInternalFuture<IgniteCheckedException> reload = null;
         IgniteInternalFuture<?> stop = null;
-        Future<?> queuedReload = null;
 
         try {
             registry.start(ctx);
 
-            assertTrue(attemptStarted.await(5, SECONDS));
-
-            reload = runAsync(() -> assertThrows(IgniteCheckedException.class, () -> registry.reload(factory)));
-            queuedReload = submissions.poll(5, SECONDS);
-
-            assertNotNull(queuedReload);
+            assertTrue(loadStarted.await(5, SECONDS));
 
             stop = runAsync(registry::stop);
 
-            assertTrue(attemptInterrupted.await(5, SECONDS));
             assertTrue(terminationWaitEntered.await(5, SECONDS));
-            assertTrue(reload.get(5_000).getCause() instanceof CancellationException);
+            assertFalse(stop.isDone());
         }
         finally {
             allowCompletion.countDown();
 
-            if (queuedReload != null)
-                queuedReload.cancel(true);
-
             if (stop != null)
                 stop.get(5_000);
-
-            if (reload != null)
-                reload.get(5_000);
         }
 
         assertTrue(hotReloadExecutor.isTerminated());
-        verify(factory, never()).init();
-        assertEquals(0, metric("ManualReloadAttempts"));
     }
 
     /** */

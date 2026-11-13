@@ -188,7 +188,7 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
-    public void testHotReloadAcceptsAnyValidReplacement() throws Exception {
+    public void testHotReloadAcceptsSameOrEarlierExpiry() throws Exception {
         for (long expiry : new long[] {at(10), at(5)}) {
             InMemorySslContextFactory factory = dueFactory();
             SSLContext ctx = factory.create();
@@ -198,7 +198,11 @@ public class SslContextFactoryHotReloadTest {
 
             assertNotSame(ctx, factory.create());
         }
+    }
 
+    /** */
+    @Test
+    public void testHotReloadAcceptsTrustStoreOnlyChange() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
         factory.setHotReloadEnabled(true);
