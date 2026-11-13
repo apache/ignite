@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * {@link MaintenanceRegistry} provides an access to maintenance actions for a {@link MaintenanceTask} with
  * call {@link MaintenanceRegistry#actionsForMaintenanceTask(String)}
- *
  */
 public interface MaintenanceAction<T> {
     /**

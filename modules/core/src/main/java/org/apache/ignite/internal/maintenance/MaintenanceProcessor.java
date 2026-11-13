@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.maintenance;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +38,8 @@ import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.maintenance.MaintenanceTaskState.State;
+
 /** */
 public class MaintenanceProcessor extends GridProcessorAdapter implements MaintenanceRegistry {
     /** */
@@ -46,6 +49,11 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
      * Active {@link MaintenanceTask}s are the ones that were read from disk when node entered Maintenance Mode.
      */
     private final Map<String, MaintenanceTask> activeTasks = new ConcurrentHashMap<>();
+
+    /**
+     * {@link MaintenanceTaskState}s that are logged in acknowledge Node Basic Metrics when the node is in Maintenance Mode.
+     */
+    private final Map<String, MaintenanceTaskState> tasksStates = new ConcurrentHashMap<>();
 
     /**
      * Requested {@link MaintenanceTask}s are collection of tasks requested by user
@@ -184,6 +192,9 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             activeTasks.putAll(fileStorage.getAllTasks());
 
             maintenanceMode = !activeTasks.isEmpty();
+
+            if (maintenanceMode)
+                activeTasks.values().forEach(task -> tasksStates.put(task.name(), new MaintenanceTaskState(task)));
         }
         catch (Throwable t) {
             log.warning("Caught exception when starting MaintenanceProcessor," +
@@ -243,7 +254,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
             if (mntcAct != null) {
                 try {
-                    mntcAct.execute();
+                    trackedAction(cbE.getKey(), mntcAct).execute();
                 }
                 catch (Throwable t) {
                     log.warning("Failed to execute automatic action for maintenance task: " +
@@ -272,8 +283,12 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
 
         boolean deleted;
 
-        if (isMaintenanceMode())
+        if (isMaintenanceMode()) {
             deleted = activeTasks.remove(maintenanceTaskName) != null;
+
+            if (deleted)
+                tasksStates.get(maintenanceTaskName).unregistered();
+        }
         else
             deleted = requestedTasks.remove(maintenanceTaskName) != null;
 
@@ -332,11 +347,78 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
             throw new IgniteException("Maintenance workflow callback for given task name not found, " +
                 "cannot retrieve maintenance actions for it: " + maintenanceTaskName);
 
-        return workflowCallbacks.get(maintenanceTaskName).allActions();
+        List<MaintenanceAction<?>> actions = new ArrayList<>();
+
+        for (MaintenanceAction<?> action : workflowCallbacks.get(maintenanceTaskName).allActions()) {
+            actions.add(trackedAction(maintenanceTaskName, action));
+        }
+
+        return actions;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public MaintenanceTask requestedTask(String maintenanceTaskName) {
         return requestedTasks.get(maintenanceTaskName);
+    }
+
+    /** @return List of the current states of {@link MaintenanceTask maintenance tasks} pending logging. */
+    public List<MaintenanceTaskState> tasksStates() {
+        return new ArrayList<>(tasksStates.values());
+    }
+
+    /** */
+    private <T> MaintenanceAction<T> trackedAction(
+            String taskName,
+            MaintenanceAction<T> action
+    ) {
+        if (!tasksStates.containsKey(taskName))
+            return action;
+
+        MaintenanceTaskState state = tasksStates.get(taskName);
+
+        MaintenanceTaskState.ActionLifecycle lifecycle = state.getActionLifecycle(action.name());
+
+        if (action instanceof AsyncActionStateCallback) {
+            ((AsyncActionStateCallback)action).setStateCallbacks(
+                () -> lifecycle.state(State.COMPLETED),
+                () -> lifecycle.state(State.CANCELLED),
+                error -> lifecycle.state(State.FAILED));
+        }
+
+        return new MaintenanceAction<>() {
+            @Override public String name() {
+                return action.name();
+            }
+
+            @Override public String description() {
+                return action.description();
+            }
+
+            @Override public T execute() {
+                state.addActionLifecycle(lifecycle);
+
+                lifecycle.state(State.ACTIVE);
+
+                try {
+                    T res = action.execute();
+
+                    if (!(action instanceof AsyncActionStateCallback)) {
+                        if (res != null && res.getClass() == Boolean.class) {
+                            lifecycle.state((Boolean)res ? State.COMPLETED : State.FAILED);
+                        }
+                        else {
+                            lifecycle.state(State.COMPLETED);
+                        }
+                    }
+
+                    return res;
+                }
+                catch (Exception e) {
+                    lifecycle.state(State.FAILED);
+
+                    throw e;
+                }
+            }
+        };
     }
 }
