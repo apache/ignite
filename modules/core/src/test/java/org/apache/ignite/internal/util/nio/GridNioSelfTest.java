@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +38,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -706,6 +709,43 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
                 ses.close();
 
             srvr1.stop();
+            srvr2.stop();
+        }
+    }
+
+    /**
+     * Closes the channel right before the NIO worker registers it with the selector and checks that the
+     * session creation future is completed with an error (caused by the ClosedChannelException) instead of
+     * being left waiting forever.
+     *
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testCreateSessionChannelClosedBeforeRegistration() throws Exception {
+        GridNioServer<?> srvr = startServer(new BufferedParser(false), new NoAckNioListener(new CountDownLatch(1)));
+
+        GridNioServer<?> srvr2 = startServer(new BufferedParser(false), new NoAckNioListener(new CountDownLatch(1)));
+
+        try {
+            SocketChannel ch = SocketChannel.open(new InetSocketAddress(U.getLocalHost(), srvr2.port()));
+
+            // The registrar closes the channel right before delegating to the real registration, so the
+            // registration fails with a genuine ClosedChannelException and the session creation future
+            // must be completed with that error.
+            srvr.setChannelRegistrar((channel, selector, ops, attachment) -> {
+                channel.close();
+
+                return channel.register(selector, ops, attachment);
+            });
+
+            IgniteInternalFuture<GridNioSession> fut = srvr.createSession(ch, null, false, null);
+
+            GridTestUtils.assertThrowsWithCause(() -> fut.get(10, TimeUnit.SECONDS), ClosedChannelException.class);
+        }
+        finally {
+            srvr.setChannelRegistrar(null);
+
+            srvr.stop();
             srvr2.stop();
         }
     }
