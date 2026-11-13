@@ -101,7 +101,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
-    private transient long hotReloadTime;
+    private transient volatile long hotReloadTime;
+
+    /** */
+    private transient long pendingHotReloadTime;
 
     /**
      * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
@@ -122,12 +125,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
      * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
      * For chains with the same expiry, the longest lifetime is used.
-     * Waits for an active context load to finish.
      *
      * @return Start of the hot reload window in milliseconds since the epoch, or {@code 0} if the current certificates
      *     were loaded with hot reload disabled or have not been loaded yet.
      */
-    public synchronized long getHotReloadTime() {
+    public long getHotReloadTime() {
         return hotReloadTime;
     }
 
@@ -150,20 +152,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override SSLContext createSslContext() throws SSLException {
-        long prevHotReloadTime = hotReloadTime;
-        boolean success = false;
+        SSLContext ctx = super.createSslContext();
 
-        try {
-            SSLContext ctx = super.createSslContext();
+        hotReloadTime = pendingHotReloadTime;
 
-            success = true;
-
-            return ctx;
-        }
-        finally {
-            if (!success)
-                hotReloadTime = prevHotReloadTime;
-        }
+        return ctx;
     }
 
     /**
@@ -358,7 +351,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             checkValidity(chains);
 
-            hotReloadTime = hotReloadEnabled ? hotReloadTime(chains) : 0;
+            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(chains) : 0;
 
             return keyMgrFactory.getKeyManagers();
         }

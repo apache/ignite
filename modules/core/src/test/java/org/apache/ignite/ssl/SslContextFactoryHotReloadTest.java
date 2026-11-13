@@ -31,8 +31,6 @@ import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.lang.Thread.State.BLOCKED;
-import static java.lang.Thread.State.TERMINATED;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -258,7 +256,7 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
-    public void testFailedLoadDoesNotExposeReplacementTime() throws Exception {
+    public void testHotReloadTimeRemainsReadableDuringLoad() throws Exception {
         InMemorySslContextFactory factory = spy(dueFactory());
         long hotReloadTime = factory.getHotReloadTime();
         SSLContext ctx = factory.create();
@@ -281,31 +279,22 @@ public class SslContextFactoryHotReloadTest {
         }).when(factory).loadKeyStore(any(), eq("memory-trust"), any());
 
         GridTestThread load = new GridTestThread(() -> assertSame(failure, assertThrows(IllegalStateException.class, factory::hotReload)));
-        GridTestThread readTime = new GridTestThread(() -> assertEquals(hotReloadTime, factory.getHotReloadTime()));
 
         load.start();
 
         try {
             assertTrue(trustLoadStarted.await(10, SECONDS));
 
-            readTime.start();
-
-            long deadline = System.currentTimeMillis() + 10_000;
-
-            assertTrue(waitForCondition(() -> readTime.getState() == BLOCKED || readTime.getState() == TERMINATED,
-                () -> System.currentTimeMillis() < deadline));
-            assertEquals(BLOCKED, readTime.getState());
+            assertEquals(hotReloadTime, factory.getHotReloadTime());
         }
         finally {
             finishTrustLoad.countDown();
             load.join(10_000);
-            readTime.join(10_000);
         }
 
         assertFalse(load.isAlive());
-        assertFalse(readTime.isAlive());
         load.checkError();
-        readTime.checkError();
+        assertEquals(hotReloadTime, factory.getHotReloadTime());
         assertSame(ctx, factory.create());
     }
 
