@@ -440,7 +440,7 @@ Register name: `ssl`
 |===
 |Name | Type | Description
 |ConsecutiveRenewalFailures | long | Sum of consecutive automatic renewal failures across the node's SSL factories. Zero when renewal is disabled.
-|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads.
+|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads and manual reloads rejected before renewal starts.
 |AutomaticRenewalAttempts | long | Automatic factory renewal calls, including errors and calls that find renewal is no longer due.
 |===
 

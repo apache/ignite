@@ -123,7 +123,7 @@ public class TcpDiscoverySslTrustedUntrustedTest extends GridCommonAbstractTest 
 
     /** */
     @Test
-    public void testExpired() {
+    public void testNodeWithExpiredCertificateDoesNotStart() {
         keyStore = "node02old";
         trustStore = "trusttwo";
 

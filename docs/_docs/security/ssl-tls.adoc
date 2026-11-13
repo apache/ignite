@@ -254,6 +254,7 @@ Each factory's count resets after a successful manual reload or an automatic att
 They include errors and automatic attempts that find renewal is no longer due.
 A factory shared by several transports is counted once per attempt.
 Startup loading and direct application calls to the factory are not counted.
+A manual reload that a starting node rejects before renewal starts is not counted either.
 
 To recover without waiting for the next retry:
 

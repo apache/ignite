@@ -96,7 +96,7 @@ public class SslContextFactoryRenewalTest {
 
     /** */
     @Test
-    public void testRenewalWindowStartsAtEarliestChainWindow() throws Exception {
+    public void testRenewalTimeIsWindowStartOfEarliestExpiringChain() throws Exception {
         TestCertificateAuthority shortIssuer = new TestCertificateAuthority("short-issuer", now - DAYS.toMillis(365), at(15));
         KeyStore node = authority.keyStore("node", at(-85), at(15));
         KeyStore withSecretKey = KeyStore.getInstance("JCEKS");

@@ -77,7 +77,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** */
+/**
+ * A manual reload is {@link SslFactoryRegistry#reload}, which the TLS reload command calls.
+ * An attempt is an automatic renewal attempt that the registry schedules.
+ */
 public class SslFactoryRegistryTest {
     /** */
     private final SslFactoryRegistry registry = new SslFactoryRegistry();
@@ -181,7 +184,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testEnablingRenewalOnRestartInitializesAndSchedulesSharedFactoryOnce() {
+    public void testStartLoadsAndSchedulesSharedFactoryOnce() {
         when(factory.getRenewalTime()).thenReturn(0L, System.currentTimeMillis() + HOURS.toMillis(2));
 
         registry.register("communication", factory);
@@ -197,7 +200,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testEnablingRenewalRejectsInvalidMaterialAtStartup() {
+    public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() {
         when(factory.getRenewalTime()).thenReturn(0L);
         doThrow(new IgniteException("Certificate chain is unavailable")).when(factory).init();
 
@@ -209,10 +212,12 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testManualReloadBeforeRenewalStartDoesNotLoadFactory() {
+    public void testManualReloadBeforeStartIsRejectedWithoutLoadingOrCounting() {
         registry.register("communication", factory);
 
-        assertThrows(IgniteCheckedException.class, () -> registry.reload(factory));
+        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(factory));
+
+        assertTrue(err.getMessage().contains("has not started"));
         verify(factory, never()).init();
 
         registry.start(ctx);
@@ -222,7 +227,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testFailuresIncreaseRetryDelayUntilLimit() {
+    public void testFailedAttemptsRetryWithDoublingDelayUpToOneHour() {
         doThrow(new IgniteException("Source unavailable")).when(factory).renew();
 
         registry.register("communication", factory);
@@ -244,7 +249,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testNormalReturnResetsFailuresAndReadsNextWindow() {
+    public void testSuccessfulAttemptResetsFailuresAndSchedulesNextRenewal() {
         doThrow(new IgniteException("Source unavailable")).doNothing().when(factory).renew();
 
         registry.register("communication", factory);
@@ -264,7 +269,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testRenewalLeavingCertificatesDueIsFailure() {
+    public void testAttemptLeavingRenewalDueIsLoggedAsFailure() {
         IgniteLogger log = mock(IgniteLogger.class);
 
         when(ctx.log(SslFactoryRegistry.class)).thenReturn(log);
@@ -348,7 +353,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testStoppingAfterManualLoadDoesNotReportFailure() throws Exception {
+    public void testManualReloadSucceedsWhenNodeStopsAfterLoad() throws Exception {
         registry.register("communication", factory);
         registry.start(ctx);
 
@@ -367,7 +372,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testMetricKeepsOtherFactoryFailuresAfterReload() throws Exception {
+    public void testManualReloadResetsOnlyItsFactoryFailures() throws Exception {
         SslContextFactory otherFactory = mock(SslContextFactory.class);
 
         when(otherFactory.isRenewalEnabled()).thenReturn(true);
@@ -393,7 +398,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testRenewalDoesNotInheritCallerContext() throws Exception {
+    public void testAttemptsDoNotInheritCallerContext() throws Exception {
         OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
         AtomicLong renewalTime = new AtomicLong(System.currentTimeMillis());
         BlockingQueue<Optional<String>> attemptCallers = new LinkedBlockingQueue<>();
@@ -525,7 +530,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testInterruptedCallerCancelsQueuedReload() throws Exception {
+    public void testInterruptedManualReloadCancelsQueuedReload() throws Exception {
         Future<?> queuedReload = mock(Future.class);
 
         when(queuedReload.get()).thenThrow(new InterruptedException());
@@ -541,7 +546,7 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testStoppingDuringLoadDoesNotCountFailure() {
+    public void testAttemptFailingDuringStopIsNotCountedOrRetried() {
         doAnswer(call -> {
             when(executor.isShutdown()).thenReturn(true);
 
