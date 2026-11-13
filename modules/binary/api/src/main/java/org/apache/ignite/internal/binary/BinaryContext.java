@@ -1368,25 +1368,14 @@ public class BinaryContext {
         return compactFooter;
     }
 
-    /**
-     * Update binary meta if needed.
-     *
-     * @param writer Binary writer.
-     * @param meta Binary type.
-     * @param typeId Type ID.
-     * @param typeName Type name.
-     * @param affFieldName Affinity name.
-     * @param fieldsMeta Fields meta holder.
-     * @param partialFields It will be {@code true} if found already known object fields.
-     */
+    /** */
     public void updateMetaIfNeeded(
         BinaryWriterEx writer,
         BinaryType meta,
         int typeId,
         String typeName,
         String affFieldName,
-        Map<String, BinaryFieldMetadata> fieldsMeta,
-        boolean partialFields
+        Map<String, BinaryFieldMetadata> fieldsMeta
     ) {
         BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
@@ -1407,8 +1396,20 @@ public class BinaryContext {
 
             registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
 
-            updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName,
-                Collections.singleton(curSchema), false, null, partialFields), writer.failIfUnregistered());
+            BinaryMetadata newMeta = new BinaryMetadata(
+                typeId,
+                typeName,
+                fieldsMeta,
+                affFieldName,
+                Collections.singleton(curSchema),
+                false,
+                null
+            );
+
+            if (meta != null)
+                newMeta = BinaryUtils.mergeMetadata(((BinaryTypeImpl)meta).metadata(), newMeta);
+
+            updateMetadata(typeId, newMeta, writer.failIfUnregistered());
 
             schemaReg.addSchema(curSchema.schemaId(), curSchema);
         }
