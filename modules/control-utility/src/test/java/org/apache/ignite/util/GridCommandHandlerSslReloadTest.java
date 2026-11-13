@@ -104,7 +104,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
 
     /** */
     @Test
-    public void testReloadedFilesApplyToNewConnections() throws Exception {
+    public void testReloadedFilesApplyToNewConnectionsWithHotReloadEnabled() throws Exception {
         Path keys = stores.newFile("keys.jks").toPath();
         Path trust = stores.newFile("trust.jks").toPath();
 
@@ -117,6 +117,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         factory.setKeyStorePassword(keyStorePassword().toCharArray());
         factory.setTrustStoreFilePath(trust.toString());
         factory.setTrustStorePassword(keyStorePassword().toCharArray());
+        factory.setHotReloadEnabled(true);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
