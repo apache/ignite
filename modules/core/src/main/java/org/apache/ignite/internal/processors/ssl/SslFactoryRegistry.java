@@ -37,8 +37,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -262,8 +261,12 @@ public class SslFactoryRegistry {
             if (time == 0)
                 return;
 
-            try (Scope ignored = OperationContext.restoreSnapshot(null)) {
-                pending = executor.schedule(this, Math.max(0, time - System.currentTimeMillis()), MILLISECONDS);
+            try {
+                pending = executor.schedule(
+                    new OperationContextAwareRunnable(this, null),
+                    Math.max(0, time - System.currentTimeMillis()),
+                    MILLISECONDS
+                );
             }
             catch (RejectedExecutionException e) {
                 if (!executor.isShutdown())
