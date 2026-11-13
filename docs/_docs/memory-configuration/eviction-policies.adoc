@@ -45,7 +45,7 @@ To enable eviction, specify the page eviction mode in the link:memory-configurat
 Note that off-heap memory eviction is configured per link:memory-configuration/data-regions[data region].
 If you don't use data regions, you have to explicitly add default data region parameters in your configuration to be able to configure eviction.
 
-By default, eviction starts when the overall RAM consumption by a region gets to 90%.
+By default, eviction starts when the overall RAM consumption by a region gets to 95%.
 Use the `DataRegionConfiguration.setEvictionThreshold(...)` parameter if you need to initiate eviction earlier or later.
 
 === Monitoring Page Eviction

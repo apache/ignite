@@ -58,7 +58,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
         DataRegionConfiguration plcCfg,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
-        super(pageMem, plcCfg, sharedCtx);
+        super(pageMem, sharedCtx);
 
         DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 
@@ -123,7 +123,7 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public void evictDataPage() throws IgniteCheckedException {
+    @Override public boolean evictDataPage() throws IgniteCheckedException {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         int evictAttemptsCnt = 0;
@@ -161,7 +161,19 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                         firstTs = first(trackingData);
 
-                        assert firstTs >= 0 : "[firstTs=" + firstTs + ", secondTs=" + second(trackingData) + "]";
+                        // The link read above may be stale: a concurrently deleted row frees the head page, which can be
+                        // re-used as an intermediate fragment holding a link again. Legal state: skip and resample.
+                        if (firstTs < 0) {
+                            sampleSpinCnt++;
+
+                            if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
+                                LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
+
+                                return false;
+                            }
+
+                            continue;
+                        }
                     }
                 }
 
@@ -187,17 +199,19 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                 if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
                     LT.warn(log, "Too many attempts to choose data page: " + SAMPLE_SPIN_LIMIT);
 
-                    return;
+                    return false;
                 }
             }
 
             if (evictDataPage(pageIdx(lruTrackingIdx)))
-                return;
+                return true;
 
             evictAttemptsCnt++;
         }
 
         LT.warn(log, "Too many failed attempts to evict page: " + EVICT_ATTEMPTS_LIMIT);
+
+        return false;
     }
 
     /** {@inheritDoc} */

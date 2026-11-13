@@ -88,12 +88,18 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
         putRemoveCycles(cache, reuseList);
 
         long recycledPagesCnt1 = reuseList.recycledPagesCount();
+        long loadedPagesCnt1 = loadedPages(ignite);
 
         putRemoveCycles(cache, reuseList);
 
         long recycledPagesCnt2 = reuseList.recycledPagesCount();
+        long loadedPagesCnt2 = loadedPages(ignite);
 
-        assert recycledPagesCnt1 == recycledPagesCnt2 : "Possible recycled pages leak!";
+        // The reservation counts the headroom below the threshold as free, so an unreserved allocation (B+tree, free list
+        // metadata) may take a new page instead of a recycled one: loaded pages may grow a little, but none may get lost.
+        assertEquals("Possible recycled pages leak!", loadedPagesCnt1 - recycledPagesCnt1, loadedPagesCnt2 - recycledPagesCnt2);
+        assertTrue("Loaded pages must not grow beyond the empty pages pool",
+            loadedPagesCnt2 - loadedPagesCnt1 <= defaultRegion(ignite).config().getEmptyPagesPoolSize());
     }
 
     /**
