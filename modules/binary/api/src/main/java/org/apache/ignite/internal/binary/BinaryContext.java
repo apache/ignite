@@ -1396,8 +1396,20 @@ public class BinaryContext {
 
             registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
 
-            updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName,
-                Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
+            BinaryMetadata newMeta = new BinaryMetadata(
+                typeId,
+                typeName,
+                fieldsMeta,
+                affFieldName,
+                Collections.singleton(curSchema),
+                false,
+                null
+            );
+
+            if (meta != null)
+                newMeta = BinaryUtils.mergeMetadata(((BinaryTypeImpl)meta).metadata(), newMeta);
+
+            updateMetadata(typeId, newMeta, writer.failIfUnregistered());
 
             schemaReg.addSchema(curSchema.schemaId(), curSchema);
         }
