@@ -43,7 +43,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -330,7 +329,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
                 InvocationHandler ih = (InvocationHandler)readObject();
 
-                return Proxy.newProxyInstance(clsLdr != null ? clsLdr : CommonUtils.gridClassLoader(), intfs, ih);
+                return Proxy.newProxyInstance(clsLdr, intfs, ih);
 
             case ENUM:
             case EXTERNALIZABLE:

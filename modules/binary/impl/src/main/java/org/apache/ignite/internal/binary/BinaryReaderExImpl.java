@@ -110,7 +110,10 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /** Input stream. */
     private final BinaryInputStream in;
 
-    /** Class loader. */
+    /**
+     * Class loader to resolve classes with: custom loader or {@link BinaryContext#classLoader()}, resolved once here.
+     * {@code null} only when {@link #ctx} is {@code null}; such readers can read primitives only.
+     */
     private final ClassLoader ldr;
 
     /** */
@@ -204,14 +207,14 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      *
      * @param ctx Context.
      * @param in Input stream.
-     * @param ldr Class loader.
+     * @param ldr Custom class loader or {@code null} to use {@link BinaryContext#classLoader()}.
      * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param skipHdrCheck Whether to skip header check.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     public BinaryReaderExImpl(BinaryContext ctx,
         BinaryInputStream in,
-        ClassLoader ldr,
+        @Nullable ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds,
         boolean skipHdrCheck,
         boolean forUnmarshal) {
@@ -220,7 +223,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
         this.ctx = ctx;
         this.in = in;
-        this.ldr = ldr;
+        this.ldr = ctx == null ? ldr : ctx.resolveClassLoader(ldr);
 
         start = in.position();
 
@@ -3278,7 +3281,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
         InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
 
-        return Proxy.newProxyInstance(ldr != null ? ldr : CommonUtils.gridClassLoader(), intfs, ih);
+        return Proxy.newProxyInstance(ldr, intfs, ih);
     }
 
     /**
@@ -3381,9 +3384,9 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr)
+    @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
         throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null));
+        return unmarshal(in, ctx, ctx.resolveClassLoader(ldr), new BinaryReaderHandlesHolder(null), false, false);
     }
 
     /**

@@ -491,7 +491,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos + 1);
 
-                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, ctx.classLoader());
+                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, null);
 
                 return obj;
             }
@@ -843,7 +843,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.OPTM_MARSH: {
                 final BinaryInputStream bin = BinaryStreams.inputStream(arr, pos);
 
-                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, ctx.classLoader());
+                final Object obj = BinaryImplUtils.doReadOptimized(bin, ctx, null);
 
                 pos = bin.position();
 

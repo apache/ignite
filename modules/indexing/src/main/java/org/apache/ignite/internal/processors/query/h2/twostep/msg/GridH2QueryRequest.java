@@ -543,10 +543,8 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
     @Override public void unmarshall(GridKernalContext ctx) {
         assert paramsBytes != null;
 
-        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
-
         // To avoid deserializing of enum types.
-        params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, ldr));
+        params = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(paramsBytes, null));
     }
 
 

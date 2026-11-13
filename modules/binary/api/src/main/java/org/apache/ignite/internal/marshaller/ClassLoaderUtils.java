@@ -29,6 +29,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Utility class to deal with class loading.
  * Contains internal class cache.
+ * <p>
+ * A {@code null} class loader passed to any method of this class means the loader Ignite itself was loaded by,
+ * {@link CommonUtils#gridClassLoader()}. This fallback serves {@link org.apache.ignite.marshaller.Marshaller} API
+ * callers and deployment code.
+ * Binary code resolves loaders through {@code BinaryContext#resolveClassLoader(ClassLoader)} and never passes
+ * {@code null} here.
  */
 public class ClassLoaderUtils {
     /** Primitive class map. */
