@@ -86,7 +86,11 @@ public class SslContextFactoryRenewalTest {
     public void testLoadWithRenewalDisabledClearsRenewalTime() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-85), at(15)));
 
+        factory.setRenewalEnabled(true);
         factory.create();
+
+        assertEquals(now, factory.getRenewalTime());
+
         factory.setRenewalEnabled(false);
         factory.init();
         factory.setRenewalEnabled(true);
@@ -94,7 +98,10 @@ public class SslContextFactoryRenewalTest {
         assertEquals(0, factory.getRenewalTime());
     }
 
-    /** */
+    /**
+     * In each key store, the chain that should set the window has 15 of its 100 hours left,
+     * so its renewal window starts now.
+     */
     @Test
     public void testRenewalTimeIsWindowStartOfEarliestExpiringChain() throws Exception {
         TestCertificateAuthority shortIssuer = new TestCertificateAuthority("short-issuer", now - DAYS.toMillis(365), at(15));
@@ -118,6 +125,9 @@ public class SslContextFactoryRenewalTest {
     @Test
     public void testEnabledRenewalRequiresPrivateKey() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
+
+        factory.setRenewalEnabled(true);
+
         IgniteException err = assertThrows(IgniteException.class, factory::create);
 
         assertTrue(err.getCause().getMessage().contains("private key with an X.509 certificate chain"));
@@ -141,7 +151,11 @@ public class SslContextFactoryRenewalTest {
     public void testRenewBeforeWindowDoesNotLoad() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-1), at(99)));
 
+        factory.setRenewalEnabled(true);
         factory.create();
+
+        assertEquals(at(84), factory.getRenewalTime());
+
         factory.renew();
 
         assertEquals(1, factory.keyStoreLoads);
@@ -162,12 +176,16 @@ public class SslContextFactoryRenewalTest {
 
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
+        factory.setRenewalEnabled(true);
         factory.trustStore = authority.trustStore();
         factory.setTrustManagers((TrustManager[])null);
         factory.setTrustStoreFilePath("memory-trust");
         factory.setTrustStorePassword(PASSWORD);
 
         SSLContext ctx = factory.create();
+
+        assertEquals(at(-5), factory.getRenewalTime());
+
         TestCertificateAuthority otherIssuer = new TestCertificateAuthority("other-issuer", now - DAYS.toMillis(1), now + DAYS.toMillis(1));
 
         factory.trustStore.setCertificateEntry("other-issuer", otherIssuer.trustStore().getCertificate("CN=other-issuer"));
@@ -242,7 +260,10 @@ public class SslContextFactoryRenewalTest {
     private InMemorySslContextFactory dueFactory() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
+        factory.setRenewalEnabled(true);
         factory.create();
+
+        assertEquals(at(-5), factory.getRenewalTime());
 
         return factory;
     }
@@ -251,6 +272,7 @@ public class SslContextFactoryRenewalTest {
     private void assertRenewalWindowStartsNow(KeyStore keys) {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(keys);
 
+        factory.setRenewalEnabled(true);
         factory.create();
 
         assertEquals(now, factory.getRenewalTime());
@@ -294,7 +316,6 @@ public class SslContextFactoryRenewalTest {
             setKeyStoreFilePath("memory");
             setKeyStorePassword(PASSWORD);
             setTrustManagers(getDisabledTrustManager());
-            setRenewalEnabled(true);
         }
 
         /** {@inheritDoc} */

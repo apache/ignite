@@ -58,6 +58,8 @@ public class SslCertificateRenewalTest extends GridCommonAbstractTest {
 
             SSLContext initCtx = serverFactory.create();
 
+            assertTrue("Renewal must be due at startup", serverFactory.getRenewalTime() < now);
+
             save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(1)), keys);
             save(ca2.trustStore(), trust);
 
