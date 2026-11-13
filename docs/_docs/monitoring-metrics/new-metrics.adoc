@@ -803,6 +803,28 @@ Register name: `failure.ignored`
 The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, through the exporters configured in `CdcConfiguration`.
 See link:persistence/change-data-capture#metrics[Change Data Capture] for the list of metrics.
 
+== Logging
+
+Counters of log messages passed through the node's logger proxies, grouped by logging level.
+Counters are shared across all logger categories of the node and start accumulating when the node's logger proxy is created, before the metrics are registered.
+
+Register name: `log.count`
+
+The CDC application also registers these counters in its own metric manager.
+Connect to the Ignite node and CDC application separately to read their respective log counters.
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|trace | long | Number of TRACE messages counted while the TRACE level is enabled.
+|debug | long | Number of DEBUG messages counted while the DEBUG level is enabled.
+|info | long | Number of INFO messages counted while the INFO level is enabled.
+|warning | long | Number of WARN messages passed to the logger.
+|error | long | Number of ERROR messages passed to the logger.
+|===
+
+These counters do not guarantee that messages were written to a file or another destination: the logging backend may apply additional filters.
+
 == Custom Metrics
 
 Registers created by the application through `Ignite.metrics()`. Their names start with `custom.`, see link:monitoring-metrics/custom-metrics[Custom Metrics].
