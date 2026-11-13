@@ -753,20 +753,19 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         catch (Throwable e) {
             boolean isCanceled = qry.isCancelled();
 
+            // Keep the query registered until asynchronous fragment cleanup has completed. In particular,
+            // late start responses must still be able to find a query that is waiting to close.
+            qry.onError(isCanceled ? new QueryCancelledException() : e);
+
             if (qrys != null)
                 qrys.forEach(RootQuery::cancel);
 
             if (isCanceled) {
-                qryReg.unregister(qry.id(), new QueryCancelledException());
-
                 throw new IgniteSQLException("The query was cancelled while planning",
                     IgniteQueryErrorCode.QUERY_CANCELED, e);
             }
-            else {
-                qryReg.unregister(qry.id(), e);
-
+            else
                 throw e;
-            }
         }
     }
 
