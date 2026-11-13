@@ -23,16 +23,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
@@ -45,6 +49,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -862,6 +867,149 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         fut.get();
 
         checkData(map);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearEntryUpdateRacePut() throws Exception {
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> cache.put(0, 1), F.asMap(0, 2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearEntryUpdateRacePutIfAbsent() throws Exception {
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> assertTrue(cache.putIfAbsent(0, 1)), F.asMap(0, 2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearEntryUpdateRaceInvoke() throws Exception {
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> cache.invoke(0, new SetValueEntryProcessor(1)), F.asMap(0, 2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearEntryUpdateRacePutAll() throws Exception {
+        Map<Integer, Integer> initVals = new HashMap<>();
+        Map<Integer, Integer> newVals = new HashMap<>();
+
+        for (int i = 0; i < 100; i++) {
+            initVals.put(i, i);
+            newVals.put(i, i + 10_000);
+        }
+
+        for (CacheWriteSynchronizationMode writeSync : new CacheWriteSynchronizationMode[] {FULL_SYNC, PRIMARY_SYNC})
+            nearEntryUpdateRace(writeSync, cache -> cache.putAll(initVals), newVals);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNearEvictionPolicyOnUpdates() throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        startGrid(0);
+
+        ccfg = null;
+
+        Ignite client = startClientGrid(1);
+
+        IgniteCache<Integer, Integer> nearCache = client.createNearCache(TEST_CACHE,
+            new NearCacheConfiguration<Integer, Integer>()
+                .setNearEvictionPolicyFactory(new FifoEvictionPolicyFactory<>(3, 1, 0)));
+
+        Map<Integer, Integer> vals = new HashMap<>();
+
+        for (int i = 0; i < 100; i++)
+            vals.put(i, i);
+
+        nearCache.putAll(vals);
+
+        assertEquals(3, nearCache.localSize(CachePeekMode.NEAR));
+
+        for (int i = 100; i < 200; i++)
+            nearCache.put(i, i);
+
+        assertEquals(3, nearCache.localSize(CachePeekMode.NEAR));
+    }
+
+    /**
+     * Without any near eviction policy: delete-history tombstones are purged on remove-queue rollover via
+     * {@code markObsoleteVersion}, which is blocked while an update-time eviction reservation is not released.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE", value = "40")
+    public void testNearDeleteHistoryPurgeWithoutEvictionPolicy() throws Exception {
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        startGrid(0);
+
+        ccfg = null;
+
+        Ignite client = startClientGrid(1);
+
+        IgniteCache<Integer, Integer> nearCache = client.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        for (int i = 0; i < 100; i++) {
+            nearCache.put(i, i);
+            nearCache.remove(i);
+        }
+
+        // Remove queue capacity is ceilPow2(historySize / 10) = 4: everything beyond it must be purged.
+        assertEquals(4, ((IgniteKernal)client).internalCache(TEST_CACHE).context().near().map().internalSize());
+    }
+
+    /**
+     * @param writeSync Cache write synchronization mode.
+     * @param nearOp Near cache update.
+     * @param newVals Concurrent update from the primary that must win.
+     * @throws Exception If failed.
+     */
+    private void nearEntryUpdateRace(CacheWriteSynchronizationMode writeSync,
+        Consumer<IgniteCache<Integer, Integer>> nearOp, Map<Integer, Integer> newVals) throws Exception {
+        ccfg = cacheConfiguration(1, writeSync);
+
+        Ignite srv0 = startGrid(0);
+
+        IgniteCache<Integer, Integer> srvCache = srv0.cache(TEST_CACHE);
+
+        ccfg = null;
+
+        Ignite client1 = startClientGrid(1);
+
+        IgniteCache<Integer, Integer> nearCache = client1.createNearCache(TEST_CACHE, new NearCacheConfiguration<>());
+
+        testSpi(srv0).blockMessages(GridNearAtomicUpdateResponse.class, client1.name());
+
+        IgniteInternalFuture<?> nearOpFut = GridTestUtils.runAsync(() -> nearOp.accept(nearCache));
+
+        testSpi(srv0).waitForBlocked();
+
+        srvCache.putAll(newVals);
+
+        assertFalse(nearOpFut.isDone());
+
+        testSpi(srv0).stopBlock();
+
+        nearOpFut.get();
+
+        checkData(newVals);
+
+        stopAllGrids();
     }
 
     /**
