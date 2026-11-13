@@ -85,7 +85,6 @@ import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteTableFunction;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -384,7 +383,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 if (id.isStar())
                     return id;
 
-                SqlOperator op = parameterlessUdf(id, SqlFunctionCategory.USER_DEFINED_FUNCTION);
+                SqlOperator op = parameterlessUdf(id);
 
                 if (op == null || hasColumnReference(id, scope, aliases))
                     return id;
@@ -437,19 +436,20 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         return resolved.count() != 0;
     }
 
-    /** Finds a zero-argument Ignite UDF in the requested function category. */
-    private @Nullable SqlOperator parameterlessUdf(SqlIdentifier id, SqlFunctionCategory category) {
+    /** Finds a zero-argument Ignite scalar UDF. */
+    private @Nullable SqlOperator parameterlessUdf(SqlIdentifier id) {
         List<SqlOperator> ops = new ArrayList<>();
 
         CalciteCatalogReader catalogReader = (CalciteCatalogReader)getCatalogReader();
 
-        catalogReader.lookupOperatorOverloads(id, category, SqlSyntax.FUNCTION, ops, catalogReader.nameMatcher());
+        catalogReader.lookupOperatorOverloads(id, SqlFunctionCategory.USER_DEFINED_FUNCTION, SqlSyntax.FUNCTION, ops,
+            catalogReader.nameMatcher());
 
         for (SqlOperator op : ops) {
             if (op instanceof SqlUserDefinedFunction) {
                 Function func = ((SqlUserDefinedFunction)op).getFunction();
 
-                if ((func instanceof IgniteScalarFunction || func instanceof IgniteTableFunction) && func.getParameters().isEmpty())
+                if (func instanceof IgniteScalarFunction && func.getParameters().isEmpty())
                     return op;
             }
         }
@@ -647,21 +647,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlNode performUnconditionalRewrites(SqlNode node, boolean underFrom) {
-        if (node != null && node.getKind() == SqlKind.COLLECTION_TABLE) {
-            SqlCall table = (SqlCall)node;
-
-            if (table.operand(0) instanceof SqlIdentifier) {
-                SqlIdentifier id = table.operand(0);
-                SqlOperator op = allowUdfCallsWithoutParentheses
-                    ? parameterlessUdf(id, SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION) : null;
-
-                if (op == null)
-                    throw newValidationError(id, IgniteResource.INSTANCE.tableFunctionRequiresParentheses(id.toString()));
-
-                table.setOperand(0, op.createCall(id.getParserPosition()));
-            }
-        }
-
         if (node instanceof SqlWithItem)
             RecursiveCteRewriter.rewriteOrderBy((SqlWithItem)node);
 
@@ -964,8 +949,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             && deriveDynamicParameterType((SqlDynamicParam)node, unknownType.equals(inferredType) ? nullType : inferredType) != null)
             return;
 
-        if (node instanceof SqlCase) {
-            // SqlValidatorImpl assigns context-specific types to WHEN and result operands.
+        if (node instanceof SqlCase || node.isA(SqlKind.QUERY)) {
+            // Let Calcite handle CASE operands and defer inference in subqueries to their own validation.
             super.inferUnknownTypes(inferredType, scope, node);
         }
         else if (node instanceof SqlCall) {
@@ -1046,6 +1031,11 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     @Override protected void validateUnnest(SqlCall call, SqlValidatorScope scope, RelDataType targetRowType) {
         if (call.operandCount() > 1)
             throw newValidationError(call, RESOURCE.invalidArgCount(call.getOperator().getName(), 1));
+
+        if (allowUdfCallsWithoutParentheses) {
+            // The registered scope contains the preceding inputs, but not the UNNEST being validated.
+            scope = scopes.getOrDefault(call, scope);
+        }
 
         super.validateUnnest(call, scope, targetRowType);
     }

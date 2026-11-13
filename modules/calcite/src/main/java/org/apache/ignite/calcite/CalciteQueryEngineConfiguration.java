@@ -111,15 +111,15 @@ public class CalciteQueryEngineConfiguration implements QueryEngineConfiguration
     }
 
     /**
-     * @return Whether parameterless user-defined functions can be called without parentheses.
+     * @return Whether parameterless scalar user-defined functions can be called without parentheses.
      */
     public boolean isAllowUdfCallsWithoutParentheses() {
         return allowUdfCallsWithoutParentheses;
     }
 
     /**
-     * Allows calls to parameterless user-defined functions without parentheses, for example
-     * {@code SELECT my_udf} and {@code SELECT * FROM TABLE(my_table_udf)}.
+     * Allows calls to parameterless scalar user-defined functions without parentheses, for example
+     * {@code SELECT my_udf}.
      * An unparenthesized scalar function name resolves to a column if a matching column is visible.
      * The default is {@code false}.
      *

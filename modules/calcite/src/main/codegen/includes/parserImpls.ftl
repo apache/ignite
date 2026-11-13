@@ -15,25 +15,6 @@
 // limitations under the License.
 -->
 
-// TODO: https://issues.apache.org/jira/browse/CALCITE-7935
-//  https://issues.apache.org/jira/browse/IGNITE-29207
-//  Remove this method and the corresponding replacement in pom.xml after upgrading to Calcite 1.43.
-/** Parses TABLE's operand. The validator checks whether a bare name can be used as a call. */
-SqlNode IgniteTableRoutineCall(SqlFunctionCategory funcType) :
-{
-    final SqlNode node;
-}
-{
-    (
-        LOOKAHEAD(CompoundIdentifier() <LPAREN>)
-        node = NamedRoutineCall(funcType, ExprContext.ACCEPT_CURSOR)
-    |
-        LOOKAHEAD({funcType == SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION})
-        node = CompoundIdentifier()
-    )
-    { return node; }
-}
-
 boolean IfNotExistsOpt() :
 {
 }

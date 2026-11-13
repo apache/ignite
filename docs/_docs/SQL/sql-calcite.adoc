@@ -211,8 +211,8 @@ JDBC connections can also use the standard JDBC savepoint API. See link:SQL/JDBC
 
 === User-Defined Functions Without Parentheses [[udf-calls-without-parentheses]]
 
-The Calcite-based engine can call parameterless link:SQL/custom-sql-func[user-defined functions] without parentheses.
-To enable this syntax for all parameterless scalar and table UDFs, set `allowUdfCallsWithoutParentheses` to `true`
+The Calcite-based engine can call parameterless scalar link:SQL/custom-sql-func[user-defined functions] without parentheses.
+To enable this syntax for all parameterless scalar UDFs, set `allowUdfCallsWithoutParentheses` to `true`
 in `CalciteQueryEngineConfiguration`. The default is `false`.
 
 [source,java]
@@ -224,15 +224,12 @@ IgniteConfiguration cfg = new IgniteConfiguration().setSqlConfiguration(
 );
 ----
 
-With this option enabled, the following queries are valid for registered scalar and table UDFs with no parameters.
+With this option enabled, the following queries are valid for registered scalar UDFs with no parameters.
 
 [source,sql]
 ----
 SELECT my_udf;
 SELECT my_udf();
-
-SELECT * FROM TABLE(my_table_udf);
-SELECT * FROM TABLE(my_table_udf());
 ----
 
 If an unparenthesized scalar UDF name also matches a visible column, the column takes precedence.

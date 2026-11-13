@@ -74,11 +74,58 @@ public class UserDefinedFunctionsWithoutParenthesesIntegrationTest extends Abstr
 
     /** */
     @Test
-    public void testTableFunctions() {
-        assertQuery("SELECT * FROM TABLE(my_table_udf)").returns(1).returns(2).check();
-        assertQuery("SELECT * FROM TABLE(PUBLIC.my_table_udf)").returns(1).returns(2).check();
+    public void testTableFunctionArguments() {
         assertQuery("SELECT * FROM TABLE(my_table_udf())").returns(1).returns(2).check();
         assertQuery("SELECT * FROM TABLE(table_with_argument(my_udf))").returns(42).check();
+    }
+
+    /** Tests names of rewritten projections alongside stars and other expressions. */
+    @Test
+    public void testColumnNames() {
+        assertQuery("SELECT my_udf, my_udf()")
+            .columnNames("MY_UDF", "MY_UDF()").returns(42, 42).check();
+        assertQuery("SELECT *, my_udf, x + 1 AS shifted FROM (VALUES (1)) t(x)")
+            .columnNames("X", "MY_UDF", "SHIFTED").returns(1, 42, 2).check();
+        assertQuery("SELECT *, my_udf, x + 1, my_udf() FROM (VALUES (1)) t(x)")
+            .columnNames("X", "MY_UDF", "X + 1", "MY_UDF()").returns(1, 42, 2, 42).check();
+        assertQuery("SELECT t.*, my_udf, x AS shifted FROM (VALUES (1)) t(x)")
+            .columnNames("X", "MY_UDF", "SHIFTED").returns(1, 42, 1).check();
+    }
+
+    /** Tests UDF calls and column precedence within UNNEST operands. */
+    @Test
+    public void testUnnest() {
+        assertQuery("SELECT * FROM UNNEST(ARRAY[my_udf])").returns(42).check();
+        assertQuery("SELECT * FROM UNNEST(ARRAY[my_udf()])").returns(42).check();
+        assertQuery("SELECT * FROM UNNEST(ARRAY[PUBLIC.my_udf]) AS u(my_udf)").returns(42).check();
+        assertQuery("SELECT v FROM (VALUES (7)) t(my_udf), UNNEST(ARRAY[my_udf]) AS u(v)").returns(7).check();
+        assertQuery("SELECT v FROM (VALUES (7)) t(my_udf), UNNEST(ARRAY[t.my_udf]) AS u(v)").returns(7).check();
+        assertQuery("SELECT v FROM (VALUES (7)) t(x), UNNEST(ARRAY[my_udf + x]) AS u(v)").returns(49).check();
+    }
+
+    /** Tests that scalar subqueries rewrite UDF calls before inferring operand types. */
+    @Test
+    public void testScalarSubqueries() {
+        assertQuery("SELECT (SELECT my_udf + 1), (SELECT 1 + my_udf), (SELECT my_udf() + 1)")
+            .returns(43, 43, 43).check();
+        assertQuery("SELECT (SELECT (SELECT my_udf + 1))").returns(43).check();
+        assertQuery("VALUES ((SELECT my_udf + 1))").returns(43).check();
+        assertQuery("SELECT (SELECT my_udf + ?)").withParams(1).returns(43).check();
+        assertQuery("SELECT (SELECT CASE WHEN my_udf > 0 THEN my_udf + 1 ELSE 0 END)").returns(43).check();
+        assertQuery("SELECT * FROM TABLE(table_with_argument((SELECT my_udf + 1)))").returns(43).check();
+        assertQuery("SELECT (SELECT v FROM UNNEST(ARRAY[my_udf + 1]) AS u(v))").returns(43).check();
+    }
+
+    /** Tests column visibility and precedence in correlated scalar subqueries. */
+    @Test
+    public void testCorrelatedScalarSubqueries() {
+        assertQuery("SELECT x, (SELECT my_udf + x) FROM (VALUES (1), (2)) t(x) ORDER BY x")
+            .ordered().returns(1, 43).returns(2, 44).check();
+        assertQuery("SELECT (SELECT my_udf + 1) FROM (VALUES (7)) t(my_udf)").returns(8).check();
+        assertQuery("SELECT (SELECT my_udf + 1 FROM (VALUES (7)) i(my_udf)) FROM (VALUES (2)) t(my_udf)")
+            .returns(8).check();
+        assertQuery("SELECT x, (SELECT v FROM UNNEST(ARRAY[my_udf + x]) AS u(v)) "
+            + "FROM (VALUES (1), (2)) t(x) ORDER BY x").ordered().returns(1, 43).returns(2, 44).check();
     }
 
     /** */
@@ -122,15 +169,12 @@ public class UserDefinedFunctionsWithoutParenthesesIntegrationTest extends Abstr
     @Test
     public void testInvalidCalls() {
         assertThrows("SELECT with_argument", SqlValidatorException.class, "Column 'WITH_ARGUMENT' not found");
-        assertThrows("SELECT * FROM TABLE(table_with_argument)", SqlValidatorException.class,
-            "No parameterless table function");
-        assertThrows("SELECT * FROM TABLE(my_udf)", SqlValidatorException.class, "No parameterless table function");
     }
 
     /** */
     @Test
     public void testView() {
-        sql("CREATE VIEW parameterless_udf_view AS SELECT my_udf FROM TABLE(my_table_udf)");
+        sql("CREATE VIEW parameterless_udf_view AS SELECT my_udf FROM TABLE(my_table_udf())");
 
         try {
             assertQuery("SELECT my_udf FROM parameterless_udf_view").returns(42).returns(42).check();
@@ -143,7 +187,7 @@ public class UserDefinedFunctionsWithoutParenthesesIntegrationTest extends Abstr
     /** Tests that CREATE TABLE AS SELECT preserves the query engine configuration. */
     @Test
     public void testCreateTableAsSelect() {
-        sql("CREATE TABLE parameterless_udf_ctas AS SELECT x, my_udf AS val FROM TABLE(my_table_udf)");
+        sql("CREATE TABLE parameterless_udf_ctas AS SELECT x, my_udf AS val FROM TABLE(my_table_udf())");
 
         try {
             assertQuery("SELECT x, val FROM parameterless_udf_ctas").returns(1, 42).returns(2, 42).check();

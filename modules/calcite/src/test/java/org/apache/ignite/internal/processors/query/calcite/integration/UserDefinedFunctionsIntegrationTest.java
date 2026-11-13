@@ -538,7 +538,6 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
         // Table function results.
         assertQuery("SELECT * FROM binaryTableValue()").withResultChecker(binaryResultChecker).check();
-        assertQuery("SELECT * FROM TABLE(binaryTableValue())").withResultChecker(binaryResultChecker).check();
         assertQuery("SELECT * FROM binaryTable(?)").withParams(bytes).withResultChecker(binaryResultChecker).check();
         assertQuery("SELECT OCTET_LENGTH(bytes) FROM binaryTableValue()").returns(3).check();
         assertQuery("SELECT binaryLength(bytes) FROM binaryTableValue()").returns(3).check();
@@ -549,10 +548,8 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
         assertQuery("SELECT * FROM TABLE(binaryTableLength(binaryValue()))").returns(3).check();
         assertQuery("SELECT * FROM binaryTable(x'010203')").withResultChecker(binaryResultChecker).check();
 
-        // Parentheses are required by default for parameterless functions.
+        // Parentheses are required by default for parameterless scalar functions.
         assertThrows("SELECT binaryValue", SqlValidatorException.class, "Column 'BINARYVALUE' not found");
-        assertThrows("SELECT * FROM TABLE(binaryTableValue)", SqlValidatorException.class,
-            "No parameterless table function");
     }
 
     /** */

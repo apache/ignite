@@ -103,9 +103,4 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("SELECT FOR UPDATE: could not acquire lock")
     Resources.ExInst<SqlValidatorException> selectForUpdateLockFailed();
-
-    /** */
-    @Resources.BaseMessage("No parameterless table function allowing calls without parentheses found for ''{0}''")
-    Resources.ExInst<SqlValidatorException> tableFunctionRequiresParentheses(String name);
-
 }

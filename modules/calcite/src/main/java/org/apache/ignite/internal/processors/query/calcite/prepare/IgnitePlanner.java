@@ -289,21 +289,9 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                         if (cnt < selectItemsNoStar.size()) {
                             SqlNode noStarItem = selectItemsNoStar.get(cnt);
 
-                            // The validator can transform SqlIdentifier to AS call. We should check whether
-                            // AS call is a real one and take the second operand from original one.
-                            if (isAsCall(noStarItem) && isAsCall(node)) {
-                                SqlBasicCall origItem = (SqlBasicCall)noStarItem;
-                                SqlBasicCall expandedItem = (SqlBasicCall)node;
-
-                                if (Objects.equals(origItem.getParserPosition(), expandedItem.getParserPosition())) {
-                                    derived.add(((SqlIdentifier)origItem.operand(1)).getSimple());
-                                    cnt++;
-
-                                    continue;
-                                }
-                            }
-                            else {
-                                // Other calls should be processed via SqlValidator#deriveAlias
+                            // An AS call introduced for an identifier must not consume the next original expression.
+                            if (node.getKind() != SqlKind.AS
+                                || Objects.equals(noStarItem.getParserPosition(), node.getParserPosition())) {
                                 derived.add(validator().deriveAlias(noStarItem, cnt++));
 
                                 continue;
@@ -328,14 +316,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         }
 
         return new ValidationResult(validatedNode, type, origins, derived);
-    }
-
-    /** */
-    private static boolean isAsCall(SqlNode node) {
-        return node instanceof SqlBasicCall && node.getKind() == SqlKind.AS
-                && ((SqlBasicCall)node).operandCount() == 2
-                && ((SqlBasicCall)node).operand(0) instanceof SqlIdentifier
-                && ((SqlBasicCall)node).operand(1) instanceof SqlIdentifier;
     }
 
     /** {@inheritDoc} */
