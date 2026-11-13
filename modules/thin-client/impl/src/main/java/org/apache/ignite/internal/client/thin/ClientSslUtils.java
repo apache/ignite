@@ -71,12 +71,12 @@ public class ClientSslUtils {
     };
 
     /**
-     * Gets SSL context for the given client configuration.
+     * Gets SSL context factory for the given client configuration.
      *
      * @param cfg Configuration.
-     * @return {@link SSLContext} when SSL is enabled in the configuration; null otherwise.
+     * @return SSL context factory when SSL is enabled in the configuration; {@code null} otherwise.
      */
-    public static SSLContext getSslContext(ClientConfiguration cfg) {
+    public static Factory<SSLContext> getSslContextFactory(ClientConfiguration cfg) {
         if (cfg.getSslMode() == SslMode.DISABLED)
             return null;
 
@@ -84,11 +84,13 @@ public class ClientSslUtils {
 
         if (sslCtxFactory != null) {
             try {
-                return sslCtxFactory.create();
+                sslCtxFactory.create();
             }
             catch (Exception e) {
                 throw new ClientError("SSL Context Factory failed", e);
             }
+
+            return sslCtxFactory;
         }
 
         BiFunction<String, String, String> or = (val, dflt) -> val == null || val.isEmpty() ? dflt : val;
@@ -131,7 +133,9 @@ public class ClientSslUtils {
                 .allMatch(s -> s == null || s.isEmpty())
         ) {
             try {
-                return SSLContext.getDefault();
+                SSLContext sslCtx = SSLContext.getDefault();
+
+                return () -> sslCtx;
             }
             catch (NoSuchAlgorithmException e) {
                 throw new ClientError("Default SSL context cryptographic algorithm is not available", e);
@@ -149,7 +153,7 @@ public class ClientSslUtils {
 
             sslCtx.init(keyManagers, trustManagers, null);
 
-            return sslCtx;
+            return () -> sslCtx;
         }
         catch (NoSuchAlgorithmException e) {
             throw new ClientError("SSL context cryptographic algorithm is not available", e);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -93,9 +92,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** */
     protected boolean explicitLock;
-
-    /** Versions of pending locks for entries of this tx. */
-    private Collection<GridCacheVersion> pendingVers;
 
     /** Flag indicating that originating node has near cache. */
     private boolean nearOnOriginatingNode;
@@ -245,20 +241,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public boolean needsCompletedVersions() {
         return nearOnOriginatingNode;
-    }
-
-    /**
-     * @return Versions for all pending locks that were in queue before tx locks were released.
-     */
-    Collection<GridCacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.emptyList() : pendingVers;
-    }
-
-    /**
-     * @param pendingVers Versions for all pending locks that were in queue before tx locsk were released.
-     */
-    public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
-        this.pendingVers = pendingVers;
     }
 
     /**
@@ -749,10 +731,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             timeout,
             waitTimeout,
             this,
-            isInvalidate(),
             read,
             needRetVal,
-            isolation,
             createTtl,
             accessTtl,
             skipStore,

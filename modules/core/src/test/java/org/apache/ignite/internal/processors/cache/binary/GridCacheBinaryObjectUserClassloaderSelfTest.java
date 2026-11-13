@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
@@ -30,6 +32,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -41,8 +44,17 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbstractTest {
+    /** Key class with an {@code @AffinityKeyMapped} field. Available through the external class loader only. */
+    private static final String AFF_KEY_CLS = "org.apache.ignite.tests.p2p.CacheDeploymentAffinityMappedKey";
+
+    /** Name of the field annotated with {@code @AffinityKeyMapped} in {@link #AFF_KEY_CLS}. */
+    private static final String AFF_FIELD = "aff";
+
     /** */
     private static volatile boolean customBinaryConf = false;
+
+    /** Whether to list {@link #AFF_KEY_CLS} in the binary type configurations. */
+    private static volatile boolean affKeyTypeConf = false;
 
     /** */
     private static volatile boolean deserialized = false;
@@ -102,6 +114,10 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             bcfg.setTypeConfigurations(set);
 
             cfg.setBinaryConfiguration(bcfg);
+        }
+        else if (affKeyTypeConf) {
+            cfg.setBinaryConfiguration(new BinaryConfiguration()
+                .setTypeConfigurations(Collections.singletonList(new BinaryTypeConfiguration(AFF_KEY_CLS))));
         }
 
         return cfg;
@@ -195,6 +211,47 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         finally {
             customBinaryConf = false;
         }
+    }
+
+    /** Type is not listed in the binary configuration: the class is examined when an instance is marshalled. */
+    @Test
+    public void testAffinityKeyFieldOfUnconfiguredType() throws Exception {
+        affKeyTypeConf = false;
+
+        doTestAffinityKeyField();
+    }
+
+    /** Type is listed in the binary configuration: the class is examined on node start. */
+    @Test
+    public void testAffinityKeyFieldOfConfiguredType() throws Exception {
+        affKeyTypeConf = true;
+
+        try {
+            doTestAffinityKeyField();
+        }
+        finally {
+            affKeyTypeConf = false;
+        }
+    }
+
+    /**
+     * Checks that the {@code @AffinityKeyMapped} field of {@link #AFF_KEY_CLS} is detected although the class is
+     * visible through the configured class loader only.
+     */
+    private void doTestAffinityKeyField() throws Exception {
+        assertNull(ClassLoaderUtils.classForName(AFF_KEY_CLS));
+
+        Ignite ignite = startGrid(1);
+
+        if (affKeyTypeConf)
+            assertEquals(AFF_FIELD, ignite.binary().type(AFF_KEY_CLS).affinityKeyFieldName());
+
+        Object key = ignite.configuration().getClassLoader().loadClass(AFF_KEY_CLS).newInstance();
+
+        BinaryObject bo = ignite.binary().toBinary(key);
+
+        assertEquals(AFF_FIELD, bo.type().affinityKeyFieldName());
+        assertEquals(AFF_FIELD, ignite.binary().type(AFF_KEY_CLS).affinityKeyFieldName());
     }
 
     /**

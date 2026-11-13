@@ -310,6 +310,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public ClusterState publicApiState(boolean waitForTransition) {
+        DiscoveryDataClusterState globalState = this.globalState;
+
+        // Fast path without futures.
+        if (!transitionToActive(globalState))
+            return globalState.state();
+
         return publicApiStateAsync(waitForTransition).get();
     }
 
@@ -319,7 +325,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
-        if (globalState.transition() && globalState.state().active()) {
+        if (transitionToActive(globalState)) {
             ClusterState transitionRes = globalState.transitionResult();
 
             if (transitionRes != null)
@@ -354,7 +360,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public boolean publicApiActiveState(boolean waitForTransition) {
-        return publicApiActiveStateAsync(waitForTransition).get();
+        return publicApiState(waitForTransition).active();
     }
 
     /** {@inheritDoc} */
@@ -2031,6 +2037,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 }
             });
         }
+    }
+
+    /** @return {@code True} if a transition to an active state is in progress. */
+    private boolean transitionToActive(DiscoveryDataClusterState state) {
+        return state.transition() && state.state().active();
     }
 
     /**

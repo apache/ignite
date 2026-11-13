@@ -157,6 +157,9 @@ namespace ignite
                 case ResponseStatus::COLUMN_ALREADY_EXISTS:
                     return SqlState::S42S21_COLUMN_ALREADY_EXISTS;
 
+                case ResponseStatus::SCHEMA_NOT_FOUND:
+                    return SqlState::S3F000_INVALID_SCHEMA_NAME;
+
                 case ResponseStatus::CACHE_NOT_FOUND:
                 case ResponseStatus::NULL_TABLE_DESCRIPTOR:
                 case ResponseStatus::CONVERSION_FAILED:

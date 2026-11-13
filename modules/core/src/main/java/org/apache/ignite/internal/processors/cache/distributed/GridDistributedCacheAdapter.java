@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -106,14 +105,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
-        TransactionIsolation isolation,
-        boolean isInvalidate,
         long createTtl,
         long accessTtl
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, waitTimeout, tx, isInvalidate, isRead, retval, isolation, createTtl, accessTtl);
+        return lockAllAsync(keys, timeout, waitTimeout, tx, isRead, retval, createTtl, accessTtl);
     }
 
     /** {@inheritDoc} */
@@ -126,9 +123,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             timeout,
             tx,
             false,
-            false,
             /*retval*/true,
-            null,
             -1L,
             -1L);
     }
@@ -138,10 +133,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param timeout Transaction timeout.
      * @param waitTimeout Lock wait timeout.
      * @param tx Transaction
-     * @param isInvalidate Invalidation flag.
      * @param isRead Indicates whether value is read or written.
      * @param retval Flag to return value.
-     * @param isolation Transaction isolation.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Future for locks.
@@ -150,10 +143,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         long timeout,
         long waitTimeout,
         @Nullable IgniteTxLocalEx tx,
-        boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable TransactionIsolation isolation,
         long createTtl,
         long accessTtl);
 

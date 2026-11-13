@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTes
 import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLockChangingTopologyTest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsNearTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsTest;
@@ -180,8 +179,6 @@ public class IgniteCacheTestSuite3 {
         // Memory leak tests.
         GridTestUtils.addTestIfNeeded(suite, GridCacheReferenceCleanupSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheReloadSelfTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, GridCacheMixedModeSelfTest.class, ignoredTests);
 
         // Cache interceptor tests.
         suite.addAll(IgniteCacheInterceptorSelfTestSuite.suite(ignoredTests));

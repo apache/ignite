@@ -160,6 +160,44 @@ control.bat --state --ssl-factory client-connector-ssl-factory.xml
 
 Enable it in the configuration (`IgniteConfiguration#setClientConnectorConfiguration`).
 
+== Reloading TLS Certificates
+
+Use `--ssl reload` to load replaced key and trust stores on all server and thick-client nodes in the current topology.
+It reloads discovery, communication, client connector, and binary REST transports that started with TLS.
+New connections use the replacement context; established connections stay open.
+The command does not reload TLS for the HTTP REST endpoint (Jetty).
+
+Follow link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] to prepare peer trust, replace the files, and verify the result.
+Add the <<connecting-to-cluster,connection parameters>> required by your cluster:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --ssl reload [--yes]
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --ssl reload [--yes]
+----
+--
+
+The command requires `ADMIN_OPS` permission when security is enabled and asks for confirmation unless `--yes` is given.
+Each node logs its reload results.
+When security is enabled, logs identify the initiator by login and subject ID.
+This is the control-script user, or the node receiving a JMX call.
+
+The report lists every target node, even if none of its TCP transports use TLS.
+Each node first checks that all registered factories extend `AbstractSslContextFactory`.
+If any factory is unsupported, that node reloads none of its factories.
+Otherwise, it reloads them until the first failure and reports the error.
+Other nodes continue independently.
+It exits with code `4` if any reload fails, any factory is unsupported, or a target node leaves before responding.
+A result received from a node stays in the report even if the node leaves later.
+Successful reloads remain in effect even if a later reload fails; their results are recorded in the node logs.
+
 == Activation, Deactivation and Topology Management
 
 You can use the control script to activate or deactivate your cluster, and manage the link:clustering/baseline-topology[Baseline Topology].
@@ -1117,6 +1155,12 @@ control.bat --metric --configure-max-value max-value-metric-name 60000
 --
 
 NOTE: For metric command use following format as metric name: `<register-name>.<metric-name>`. For example: `io.datastorage.WalLoggingRate` must be set for `WalLoggingRate` metric.
+
+NOTE: For the `PageTimestampHistogram` metric, the values set
+link:monitoring-metrics/system-views#pages_timestamp_histogram[time intervals] rather than bounds:
+the interval length in milliseconds is the difference between the first two values, the number of intervals is
+the number of values, and the other values are ignored.
+For example, `0,600000,0` sets three 10-minute intervals.
 
 == Indexes Management
 

@@ -59,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -592,18 +591,16 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         long timeout,
         long waitTimeout,
         @Nullable IgniteTxLocalEx tx,
-        boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        @Nullable TransactionIsolation isolation,
         long createTtl,
         long accessTtl) {
         return dht.lockAllAsync(null, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        dht.unlockAll(keys);
+    @Override public boolean unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        return dht.unlockAll(keys);
     }
 
     /** {@inheritDoc} */

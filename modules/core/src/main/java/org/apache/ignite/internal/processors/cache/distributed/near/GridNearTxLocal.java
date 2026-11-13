@@ -651,8 +651,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     this,
                     /*read*/entryProc != null, // Needed to force load from store.
                     retval,
-                    isolation,
-                    isInvalidate(),
                     -1L,
                     -1L);
 
@@ -828,8 +826,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     this,
                     /*read*/invokeVals != null, // Needed to force load from store.
                     retval,
-                    isolation,
-                    isInvalidate(),
                     -1L,
                     -1L);
 
@@ -1271,7 +1267,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
                         entry.lockedByThread(threadId, xidVer)) {
                         throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
-                            "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
+                            "externally held [key=" + U.toStringSafe(cacheKey) +
                             ", entry=" + entry +
                             ", xidVer=" + xidVer +
                             ", threadId=" + threadId +
@@ -1506,7 +1502,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else {
             if (entryProc == null && txEntry.op() == TRANSFORM)
                 throw new IgniteCheckedException("Failed to enlist write value for key (cannot have update value in " +
-                    "transaction after EntryProcessor is applied): " + CU.value(cacheKey, cacheCtx, false));
+                    "transaction after EntryProcessor is applied): " + U.toStringSafe(cacheKey));
 
             GridCacheEntryEx entry = txEntry.cached();
 
@@ -1733,8 +1729,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 this,
                 false,
                 retval,
-                isolation,
-                isInvalidate(),
                 -1L,
                 -1L);
 
@@ -1928,8 +1922,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     this,
                     true,
                     true,
-                    isolation,
-                    isInvalidate(),
                     createTtl,
                     accessTtl);
 
@@ -4282,10 +4274,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             timeout,
             waitTimeout,
             this,
-            isInvalidate(),
             read,
             retval,
-            isolation,
             createTtl,
             accessTtl,
             skipStore,

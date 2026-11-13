@@ -52,6 +52,8 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.systemview.view.ComputeTaskView;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -67,6 +69,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -130,6 +133,42 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         assertTrue(out.contains("Cluster  ID: " + clId));
         assertTrue(out.contains("Cluster tag: " + clTag));
+    }
+
+    /** */
+    @Test
+    public void testSslReloadRequiresAdminOps() throws Exception {
+        startGrid(
+            0,
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, systemPermissions(ADMIN_OPS))
+        );
+
+        List<String> cmdArgs = asList("--ssl", "reload");
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmdArgs, TEST_NO_PERMISSIONS_LOGIN));
+        assertTrue(testOut.toString().contains("Authorization failed"));
+
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(cmdArgs, TEST_LOGIN));
+    }
+
+    /** */
+    @Test
+    public void testSslReloadLogsAuthenticatedInitiator() throws Exception {
+        LogListener reloadLog = LogListener.matches(msg -> msg.contains("TLS reload: ")
+            && msg.contains(": reloaded [initiator=" + TEST_LOGIN + ", subjectId=")).build();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+
+        cfg.setGridLogger(new ListeningTestLogger(log, reloadLog));
+        cfg.setSslContextFactory(sslFactory());
+        cfg.setPluginProviders(new TestSecurityPluginProvider(cfg.getIgniteInstanceName(), DEFAULT_PWD, ALL_PERMISSIONS, false,
+            userData(TEST_LOGIN, systemPermissions(ADMIN_OPS))));
+
+        startGrid(cfg);
+
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(asList("--ssl", "reload"), TEST_LOGIN));
+        assertTrue(reloadLog.check());
     }
 
     /** */

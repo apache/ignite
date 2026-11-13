@@ -162,11 +162,6 @@ public class ClusterNodeFunc {
     /**
      * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
      * <p>
-     * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in Apache Ignite 3.0 the semantic of equality between
-     * grid nodes has changed. Since rich node wraps thin node instance and in the same time
-     * implements {@link org.apache.ignite.cluster.ClusterNode} interface, the proper semantic of comparing two grid node is
-     * to ignore their runtime types and compare only by their IDs. This method implements this logic.
-     * <p>
      * End users rarely, if ever, need to directly compare two grid nodes for equality. This method is
      * intended primarily for discovery SPI developers that provide implementations of {@link org.apache.ignite.cluster.ClusterNode}
      * interface.

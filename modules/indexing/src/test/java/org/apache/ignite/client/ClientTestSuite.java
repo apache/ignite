@@ -52,6 +52,7 @@ import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessMultiD
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessResourceReleaseTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessStableTopologyTest;
 import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstableTopologyTest;
+import org.apache.ignite.internal.client.thin.ThinClientPutAllConflictKeepBinaryTest;
 import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
@@ -101,6 +102,7 @@ import org.junit.runners.Suite;
     BinaryConfigurationTest.class,
     IgniteSetTest.class,
     DataReplicationOperationsTest.class,
+    ThinClientPutAllConflictKeepBinaryTest.class,
     MetadataRegistrationTest.class,
     IgniteClientConnectionEventListenerTest.class,
     IgniteClientRequestEventListenerTest.class,

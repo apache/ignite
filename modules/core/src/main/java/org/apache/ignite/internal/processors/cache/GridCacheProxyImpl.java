@@ -1288,11 +1288,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+    @Override public boolean unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            delegate.unlockAll(keys);
+            return delegate.unlockAll(keys);
         }
         finally {
             gate.leave(prev);
