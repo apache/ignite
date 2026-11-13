@@ -357,7 +357,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
             e.add(Collections.singleton(cctx.toCacheKeyObject(key)), cause);
 
-            completeFuture(null, e, null);
+            completeFuture(null, e);
 
             return;
         }
@@ -393,8 +393,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 null,
                 cctx.shared().cache().isCacheRestarting(cache.name()) ?
                     new IgniteCacheRestartingException(cache.name()) :
-                    new CacheStoppedException(cache.name()),
-                null);
+                    new CacheStoppedException(cache.name()));
 
             return;
         }
@@ -405,7 +404,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             Throwable err = fut.validateCache(cctx, recovery, /*read*/false, key, null);
 
             if (err != null) {
-                completeFuture(null, err, null);
+                completeFuture(null, err);
 
                 return;
             }
@@ -463,7 +462,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         sendSingleRequest(reqState0.req.nodeId(), reqState0.req);
 
         if (syncMode == FULL_ASYNC) {
-            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null, null);
+            completeFuture(new GridCacheReturn(cctx, true, true, null, null, true), null);
 
             return;
         }
