@@ -251,7 +251,8 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            if (!(stmt != null && stmt.isCancelled()) && (!finished || (isQuery && !autoClose)))
+            // Static (metadata) result sets are built without a statement and have no server cursor.
+            if (stmt != null && !stmt.isCancelled() && (!finished || (isQuery && !autoClose)))
                 stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId), stmt, stickyIO);
         }
         finally {
@@ -1487,7 +1488,7 @@ public class JdbcThinResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() throws SQLException {
-        return closed || stmt == null || stmt.connection().isClosed();
+        return closed || (stmt != null && stmt.connection().isClosed());
     }
 
     /** {@inheritDoc} */
