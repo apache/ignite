@@ -218,7 +218,7 @@ With hot reload enabled, a store that does not meet these requirements prevents 
 Before replacing key stores, prepare peers' trust stores as described in <<Upgrading Certificates>>.
 Once every affected peer trusts the replacement certificates, put the replacement key stores in the configured source.
 Put only certificates whose validity period has already started.
-Ignite installs the replacements without checking their dates, and peers reject certificates that are not yet valid.
+Ignite installs the replacements without checking their dates, and peers may reject certificates that are not yet valid.
 Keep the configured paths, store types and passwords unchanged.
 Ignite loads the replacements automatically when hot reload is due; no reload command is needed for this step.
 
@@ -273,8 +273,9 @@ A failed automatic attempt does not undo the manual reload.
 
 *If the command cannot connect.*
 First check the command's certificates and trust settings.
-If the problem is on the node, put a valid replacement in its source and wait for an automatic retry.
-To load corrected stores without the command or waiting for a retry, restart the affected nodes.
+If the problem is on the node, put a valid replacement in its source.
+If the node log shows automatic retries, wait for the next attempt.
+Otherwise, or to load the corrected stores without waiting, restart the affected nodes.
 
 === Custom Certificate Sources
 

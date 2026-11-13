@@ -225,6 +225,25 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
+    public void testHotReloadAtEpochLoadsReplacement() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        save(authority.keyStore("node", -HOURS.toMillis(85), HOURS.toMillis(15)), keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
+        registry.start(ctx);
+
+        assertNotNull(scheduled);
+        assertEquals(0, delay);
+
+        writeFreshCertificates(keys);
+        scheduled.run();
+
+        assertTrue(communication.getHotReloadTime() > System.currentTimeMillis());
+    }
+
+    /** */
+    @Test
     public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() {
         SslContextFactory communication = factory(dir.resolve("missing.jks"));
 

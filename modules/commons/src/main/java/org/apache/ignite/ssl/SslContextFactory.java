@@ -417,7 +417,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
             }
         }
 
-        return earliestExpiry - (long)(Math.max(0, earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
+        long time = earliestExpiry - (long)(Math.max(0, earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
+
+        // Zero is reserved for an absent hot reload date.
+        return time == 0 ? -1 : time;
     }
 
     /** {@inheritDoc} */
