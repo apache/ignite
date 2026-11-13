@@ -308,7 +308,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 }
             }
 
-            U.join(tasks.values(), log);
+            U.join(tasks.values(), -1L, log);
         }
 
         // Remove discovery and message listeners.
