@@ -146,7 +146,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     @Override void acceptKeyManagers(KeyManager[] keyMgrs) throws SSLException {
         Map<String, X509Certificate[]> chains = Arrays.stream(keyMgrs)
             .filter(KeyChains.class::isInstance)
-            .map(mgr -> ((KeyChains)mgr).chains)
+            .map(mgr -> ((KeyChains)mgr).chains())
             .findFirst()
             .orElseThrow();
 
@@ -585,13 +585,5 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /** Private-key chains of the key store that the other key managers of the array were created from. */
-    private static class KeyChains implements KeyManager {
-        /** */
-        private final Map<String, X509Certificate[]> chains;
-
-        /** */
-        private KeyChains(Map<String, X509Certificate[]> chains) {
-            this.chains = chains;
-        }
-    }
+    private record KeyChains(Map<String, X509Certificate[]> chains) implements KeyManager {}
 }
