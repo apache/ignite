@@ -66,4 +66,11 @@ public interface InlineIndexRowHandler {
      * @return Cache value.
      */
     public Object cacheValue(CacheDataRow row);
+
+    /**
+     * @return Cache ID of the cache the index belongs to, or {@code 0} if undefined.
+     */
+    public default int cacheId() {
+        return 0;
+    }
 }

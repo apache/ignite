@@ -19,7 +19,6 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -75,11 +74,42 @@ public class IndexRowCache implements GridQueryRowCacheCleaner {
     }
 
     /**
+     * Get a row by link if it was cached for the given cache. Evicts the entry and returns {@code null}
+     * if it was cached for another cache of the group: the link has been reused by a row of that cache
+     * after a bulk free that bypassed per-row row-cache cleanup, so the caller must fall back to
+     * reading the row from the link.
+     *
+     * @param link Link.
+     * @param cacheId Cache ID the row must be cached for.
+     * @return Cached on-heap row, or {@code null} if there is no entry for the link cached for the given cache.
+     * @throws IgniteCheckedException On error.
+     */
+    public IndexRowImpl get(long link, int cacheId) throws IgniteCheckedException {
+        IndexRowImpl row = rows.get(link);
+
+        if (row == null)
+            return null;
+
+        if (row.ownerCacheId() != cacheId) {
+            rows.remove(link);
+
+            return null;
+        }
+
+        touch(link);
+
+        return row;
+    }
+
+    /**
      * Put row by link.
      *
      * @param row Row.
+     * @param cacheId Cache ID to cache the row for.
      */
-    public void put(IndexRowImpl row) {
+    public void put(IndexRowImpl row, int cacheId) {
+        row.ownerCacheId(cacheId);
+
         rows.put(row.link(), row);
     }
 
@@ -129,7 +159,7 @@ public class IndexRowCache implements GridQueryRowCacheCleaner {
         while (iter.hasNext()) {
             IndexRowImpl row = iter.next().getValue();
 
-            if (Objects.equals(cacheId, row.cacheId()))
+            if (row.ownerCacheId() == cacheId)
                 iter.remove();
         }
     }
