@@ -729,6 +729,26 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
+    /** Test the set-state command with checking the cluster name in confirmation. */
+    @Test
+    public void testSetStateWithCheckClusterNameInConfirmation() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        autoConfirmation = false;
+        injectTestSystemOut();
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
+
+        if (cliCommandHandler()) {
+            assertContains(
+                log,
+                testOut.toString(),
+                "Warning: the command will change state of cluster with name \"" + ignite.cluster().id() + "\" to ACTIVE."
+            );
+        }
+    }
+
     /**
      * Test cluster active state works via control.sh
      *

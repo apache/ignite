@@ -17,17 +17,25 @@
 
 package org.apache.ignite.internal.management;
 
+import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.NativeCommand;
+import org.apache.ignite.internal.management.api.PreparableCommand;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class SetStateCommand implements NativeCommand<SetStateCommandArg, Boolean> {
+public class SetStateCommand implements NativeCommand<SetStateCommandArg, Boolean>, PreparableCommand<SetStateCommandArg, Boolean> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change cluster state";
@@ -69,5 +77,30 @@ public class SetStateCommand implements NativeCommand<SetStateCommandArg, Boolea
     @Override public String confirmationPrompt(SetStateCommandArg arg) {
         return "Warning: the command will change state of cluster " +
             "with name \"" + arg.clusterName() + "\" to " + arg.state() + ".";
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean prepare(
+        @Nullable IgniteClient client,
+        @Nullable Ignite ignite,
+        SetStateCommandArg arg,
+        Consumer<String> printer
+    ) throws Exception {
+        arg.clusterName(clusterName(client, ignite));
+
+        return true;
+    }
+
+    /** */
+    static String clusterName(@Nullable IgniteClient client, @Nullable Ignite ignite) throws Exception {
+        if (ignite != null)
+            return ((IgniteEx)ignite).context().cluster().clusterName();
+
+        ClusterNode node = F.first(CommandUtils.nodes(client, ignite));
+
+        VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, ignite,
+            VisorIdAndTagViewTask.class, null, Collections.singleton(node));
+
+        return idAndTag.clusterName();
     }
 }
