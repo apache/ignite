@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.AbstractMessage;
 
@@ -35,6 +37,9 @@ public class GridQueryFailResponse extends AbstractMessage {
 
     /** Execution error. Query should be retried. */
     public static final byte RETRY_QUERY = 2;
+
+    /** SQL error. */
+    public static final byte SQL_ERROR = 3;
 
     /** */
     @Order(0)
@@ -67,6 +72,8 @@ public class GridQueryFailResponse extends AbstractMessage {
             failCode = CANCELLED_BY_ORIGINATOR;
         else if (err instanceof QueryRetryException)
             failCode = RETRY_QUERY;
+        else if (X.cause(err, IgniteSQLException.class) != null)
+            failCode = SQL_ERROR;
         else
             failCode = GENERAL_ERROR;
     }

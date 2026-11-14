@@ -57,8 +57,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
@@ -215,6 +217,7 @@ public class GridReduceQueryExecutor {
      * @param r Query run.
      * @param nodeId Failed node ID.
      * @param msg Error message.
+     * @param failCode Fail code.
      */
     private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode) {
         if (r != null) {
@@ -227,6 +230,8 @@ public class GridReduceQueryExecutor {
                 e = new CacheException(mapperFailedMsg, new QueryCancelledException());
             else if (failCode == GridQueryFailResponse.RETRY_QUERY)
                 e = new CacheException(mapperFailedMsg, new QueryRetryException(msg));
+            else if (failCode == GridQueryFailResponse.SQL_ERROR)
+                e = new CacheException(mapperFailedMsg, new IgniteSQLException(msg, IgniteQueryErrorCode.UNKNOWN));
             else
                 e = new CacheException(mapperFailedMsg);
 
