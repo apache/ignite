@@ -1772,6 +1772,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
+     * Logs an unexpected error of the update, fails all keys of the request and sends the response.
+     *
+     * @param req Update request.
+     * @param res Update response.
+     * @param completionCb Completion callback.
+     * @param e Error.
+     */
+    private void onUnexpectedUpdateError(
+        GridNearAtomicAbstractUpdateRequest req,
+        GridNearAtomicUpdateResponse res,
+        UpdateReplyClosure completionCb,
+        Throwable e
+    ) {
+        U.error(log, "Unexpected exception during cache update", e);
+
+        res.addFailedKeys(req.keys(), e);
+
+        completionCb.apply(req, res);
+
+        if (e instanceof Error)
+            throw (Error)e;
+    }
+
+    /**
      * Executes local update after preloader fetched values.
      *
      * @param node Node.
@@ -1800,6 +1824,29 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.events().isRecordable(EVT_CACHE_OBJECT_REMOVED);
 
         String taskName = needTaskName ? ctx.kernalContext().task().resolveTaskName(req.taskNameHash()) : null;
+
+        // Makes the bytes of all new values before the checkpoint lock and before any key is written, so the classes
+        // they use are registered here. If this fails (for example, because the thread is interrupted), the whole
+        // request fails and nothing is written. Like the other failed keys in this class, the error is sent back to the
+        // caller and is not logged.
+        if (req.operation() == UPDATE) {
+            try {
+                for (int i = 0; i < req.size(); i++)
+                    req.value(i).valueBytes(ctx.cacheObjectContext());
+            }
+            catch (IgniteCheckedException | IgniteException e) {
+                res.addFailedKeys(req.keys(), e);
+
+                completionCb.apply(req, res);
+
+                return;
+            }
+            catch (Throwable e) {
+                onUnexpectedUpdateError(req, res, completionCb, e);
+
+                return;
+            }
+        }
 
         ctx.shared().database().checkpointReadLock();
 
@@ -1877,8 +1924,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
 
-                        ((CacheObjectBinaryProcessorImpl)cacheObjProc)
-                            .binaryContext().registerType(ex.cls(), true, false);
+                        try {
+                            ((CacheObjectBinaryProcessorImpl)cacheObjProc)
+                                .binaryContext().registerType(ex.cls(), true, false);
+                        }
+                        catch (IgniteException e) {
+                            // The class could not be registered, for example because the thread is interrupted. This
+                            // fails the request as expected, so it is not logged as an error.
+                            res.addFailedKeys(req.keys(), e);
+
+                            completionCb.apply(req, res);
+
+                            return;
+                        }
                     }
                     catch (UnregisteredBinaryTypeException ex) {
                         if (ex.future() != null) {
@@ -1934,14 +1992,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         catch (Throwable e) {
             // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
             // an attempt to use cleaned resources.
-            U.error(log, "Unexpected exception during cache update", e);
-
-            res.addFailedKeys(req.keys(), e);
-
-            completionCb.apply(req, res);
-
-            if (e instanceof Error)
-                throw (Error)e;
+            onUnexpectedUpdateError(req, res, completionCb, e);
 
             return;
         }
@@ -2224,8 +2275,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             validation = true;
 
-                            if (updated != null)
+                            if (updated != null) {
                                 ctx.validateKeyAndValue(entry.key(), updated);
+
+                                // Makes the bytes of the new value here, so the classes it uses are registered outside
+                                // the tree. If this fails, the key is skipped, as for a value that fails validation.
+                                updated.valueBytes(ctx.cacheObjectContext());
+                            }
                         }
                     }
                     catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {

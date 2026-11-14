@@ -4548,15 +4548,29 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             oldVal = (oldRow != null) ? oldRow.value() : null;
 
             if (oldVal == null && readThrough) {
-                storeLoadedVal = cctx.toCacheObject(cctx.store().load(null, entry.key));
+                try {
+                    storeLoadedVal = cctx.toCacheObject(cctx.store().load(null, entry.key));
 
-                if (storeLoadedVal != null) {
-                    oldVal = cctx.kernalContext().cacheObjects().prepareForCache(storeLoadedVal, cctx);
+                    if (storeLoadedVal != null) {
+                        oldVal = cctx.kernalContext().cacheObjects().prepareForCache(storeLoadedVal, cctx);
 
-                    entry.val = oldVal;
+                        entry.val = oldVal;
 
-                    if (entry.deletedUnlocked())
-                        entry.deletedUnlocked(false);
+                        if (entry.deletedUnlocked())
+                            entry.deletedUnlocked(false);
+                    }
+                }
+                catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                    throw e;
+                }
+                catch (RuntimeException e) {
+                    if (op != TRANSFORM)
+                        throw e;
+
+                    // A RuntimeException thrown here, inside the tree, would be reported as a corrupted tree and stop
+                    // the node. A checked error fails only this key. This happens, for example, when the class
+                    // registration of a value loaded from the store is interrupted.
+                    throw new IgniteCheckedException("Failed to load the old value of the entry from the store.", e);
                 }
             }
             else if (oldVal != null && entry.deletedUnlocked())
@@ -4564,6 +4578,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             CacheInvokeEntry<Object, Object> invokeEntry = null;
             IgniteBiTuple<Object, Exception> invokeRes = null;
+            Exception newValErr = null;
 
             boolean invoke = op == TRANSFORM;
 
@@ -4573,6 +4588,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 invokeEntry = new CacheInvokeEntry<>(entry.key, oldVal, entry.ver, keepBinary, entry);
 
                 invokeRes = runEntryProcessor(invokeEntry);
+
+                // Makes the bytes of the new value before the tree writes anything, so a failure (for example, an
+                // interrupted class registration) cancels only this update. It is handled below like a value that
+                // fails validation.
+                if (invokeEntry.modified() && writeObj != null
+                    && (invokeRes == null || invokeRes.getValue() == null)) {
+                    try {
+                        ((CacheObject)writeObj).valueBytes(cctx.cacheObjectContext());
+                    }
+                    catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        newValErr = e;
+                    }
+                }
 
                 op = writeObj == null ? DELETE : UPDATE;
 
@@ -4644,16 +4675,27 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return;
                 }
                 else if ((invokeRes == null || invokeRes.getValue() == null) && writeObj != null) {
-                    try {
-                        cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
+                    // A value whose bytes could not be made after the entry processor ran is cancelled like a value
+                    // that fails validation. A merge by the conflict resolver replaces that value, so then its error
+                    // does not apply.
+                    Exception err = conflictCtx != null && conflictCtx.isMerge() ? null : newValErr;
+
+                    if (err == null) {
+                        try {
+                            cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
+                        }
+                        catch (Exception e) {
+                            err = e;
+                        }
                     }
-                    catch (Exception e) {
+
+                    if (err != null) {
                         initResultOnCancelUpdate(null, true);
 
                         updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INVOKE_NO_OP,
                             oldVal,
                             null,
-                            new IgniteBiTuple<>(null, e),
+                            new IgniteBiTuple<>(null, err),
                             CU.TTL_ETERNAL,
                             CU.EXPIRE_TIME_ETERNAL,
                             null,
