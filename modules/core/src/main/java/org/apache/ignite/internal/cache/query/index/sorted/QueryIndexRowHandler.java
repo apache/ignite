@@ -87,6 +87,11 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public int cacheId() {
+        return cacheInfo.cacheId();
+    }
+
+    /** {@inheritDoc} */
     @Override public IndexKey indexKey(int idx, CacheDataRow row) {
         try {
             return IndexKeyFactory.wrap(

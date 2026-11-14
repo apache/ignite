@@ -38,6 +38,9 @@ public class IndexRowImpl implements IndexRow {
     /** Schema of an index. */
     private final InlineIndexRowHandler rowHnd;
 
+    /** Cache ID the row is cached for in the index row cache; {@code 0} if the row is not cached. */
+    private int ownerCacheId;
+
     /** Constructor. */
     public IndexRowImpl(InlineIndexRowHandler rowHnd, CacheDataRow row) {
         this(rowHnd, row, null);
@@ -97,6 +100,20 @@ public class IndexRowImpl implements IndexRow {
      */
     public int cacheId() {
         return cacheDataRow().cacheId();
+    }
+
+    /**
+     * @return Cache ID the row is cached for in the index row cache, or {@code 0} if the row is not cached.
+     */
+    public int ownerCacheId() {
+        return ownerCacheId;
+    }
+
+    /**
+     * @param cacheId Cache ID the row is cached for in the index row cache.
+     */
+    void ownerCacheId(int cacheId) {
+        ownerCacheId = cacheId;
     }
 
     /** Initialize a cache for index keys. Useful for inserting rows as there are a lot of comparisons. */

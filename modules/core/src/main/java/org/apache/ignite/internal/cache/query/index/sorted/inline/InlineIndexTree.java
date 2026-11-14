@@ -353,7 +353,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** Creates an index row for this tree. */
     public IndexRowImpl createIndexRow(long link) throws IgniteCheckedException {
-        IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link);
+        IndexRowImpl cachedRow = idxRowCache == null ? null : idxRowCache.get(link, rowHandler().cacheId());
 
         if (cachedRow != null) {
             return cachedRow.rowHandler() == rowHandler() ? cachedRow :
@@ -367,7 +367,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         IndexRowImpl r = new IndexRowImpl(rowHandler(), row);
 
         if (idxRowCache != null)
-            idxRowCache.put(r);
+            idxRowCache.put(r, rowHandler().cacheId());
 
         return r;
     }
