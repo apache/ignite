@@ -17,21 +17,14 @@
 
 package org.apache.ignite.internal.management;
 
-import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.api.PreparableCommand;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
-import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -83,20 +76,7 @@ public class DeactivateCommand implements NativeCommand<DeactivateCommandArg, No
         DeactivateCommandArg arg,
         Consumer<String> printer
     ) throws Exception {
-        String clusterName;
-
-        if (ignite != null)
-            clusterName = ((IgniteEx)ignite).context().cluster().clusterName();
-        else {
-            ClusterNode node = F.first(CommandUtils.nodes(client, ignite));
-
-            VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, ignite,
-                VisorIdAndTagViewTask.class, null, Collections.singleton(node));
-
-            clusterName = idAndTag.clusterName();
-        }
-
-        arg.clusterName(clusterName);
+        arg.clusterName(SetStateCommand.clusterName(client, ignite));
 
         return true;
     }
