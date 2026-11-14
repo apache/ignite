@@ -38,9 +38,8 @@ public class GridQueryFailResponse extends AbstractMessage {
     /** Execution error. Query should be retried. */
     public static final byte RETRY_QUERY = 2;
 
-    /** SQL error status code is absent (for example, when the error carries no SQL status code or came from an
-     * older node). */
-    public static final int NO_STATUS_CODE = 0;
+    /** SQL error. */
+    public static final byte SQL_ERROR = 3;
 
     /** */
     @Order(0)
@@ -53,10 +52,6 @@ public class GridQueryFailResponse extends AbstractMessage {
     /** */
     @Order(2)
     byte failCode;
-
-    /** Ignite SQL error status code, or {@code 0} if absent (for example, when the error came from an older node). */
-    @Order(value = 3, introducedBy = "QUERY_FAIL_RESPONSE_ERROR_CODE_FEATURE")
-    int statusCode;
 
     /**
      * Default constructor.
@@ -77,12 +72,10 @@ public class GridQueryFailResponse extends AbstractMessage {
             failCode = CANCELLED_BY_ORIGINATOR;
         else if (err instanceof QueryRetryException)
             failCode = RETRY_QUERY;
+        else if (X.cause(err, IgniteSQLException.class) != null)
+            failCode = SQL_ERROR;
         else
             failCode = GENERAL_ERROR;
-
-        IgniteSQLException sqlErr = X.cause(err, IgniteSQLException.class);
-
-        statusCode = sqlErr != null ? sqlErr.statusCode() : NO_STATUS_CODE;
     }
 
     /**
@@ -104,13 +97,6 @@ public class GridQueryFailResponse extends AbstractMessage {
      */
     public byte failCode() {
         return failCode;
-    }
-
-    /**
-     * @return Ignite SQL error status code, or {@code 0} if it is absent.
-     */
-    public int statusCode() {
-        return statusCode;
     }
 
     /** {@inheritDoc} */
