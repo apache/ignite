@@ -1496,8 +1496,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 c.call(dataRow);
             }
-            else
+            else {
+                if (op == GridCacheOperation.TRANSFORM)
+                    c.prepareInvoke(cctx.offheap().read(this));
+
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
+            }
 
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
 
@@ -4439,6 +4443,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         /** Disable interceptor invocation onAfter* methods flag. */
         private boolean wasIntercepted;
 
+        /** Old value. */
+        private CacheObject oldVal;
+
+        /** Value loaded from the store. */
+        private CacheObject storeLoadedVal;
+
+        /** Entry passed to the entry processor, set if the processor has already run. */
+        private CacheInvokeEntry<Object, Object> invokeEntry;
+
+        /** Entry processor result. */
+        private IgniteBiTuple<Object, Exception> invokeRes;
+
+        /** Error from making the bytes of the new value in prepareInvoke(), or {@code null}. */
+        private Exception newValErr;
+
         /** */
         AtomicCacheUpdateClosure(
             GridCacheMapEntry entry,
@@ -4527,52 +4546,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             GridCacheContext cctx = entry.context();
 
-            CacheObject oldVal;
-            CacheObject storeLoadedVal = null;
+            // If the entry processor has already run before the tree, the old value is already read.
+            if (invokeEntry != null) {
+                this.oldRow = oldRow;
 
-            this.oldRow = oldRow;
-
-            if (oldRow != null) {
-                oldRow.key(entry.key());
-
-                // unswap
-                entry.update(oldRow.value(), oldRow.expireTime(), 0, oldRow.version(), false);
-
-                if (checkRowExpired(oldRow)) {
-                    oldRowExpiredFlag = true;
-
-                    oldRow = null;
-                }
+                if (oldRow != null)
+                    oldRow.key(entry.key());
             }
-
-            oldVal = (oldRow != null) ? oldRow.value() : null;
-
-            if (oldVal == null && readThrough) {
-                storeLoadedVal = cctx.toCacheObject(cctx.store().load(null, entry.key));
-
-                if (storeLoadedVal != null) {
-                    oldVal = cctx.kernalContext().cacheObjects().prepareForCache(storeLoadedVal, cctx);
-
-                    entry.val = oldVal;
-
-                    if (entry.deletedUnlocked())
-                        entry.deletedUnlocked(false);
-                }
-            }
-            else if (oldVal != null && entry.deletedUnlocked())
-                entry.deletedUnlocked(false);
-
-            CacheInvokeEntry<Object, Object> invokeEntry = null;
-            IgniteBiTuple<Object, Exception> invokeRes = null;
+            else
+                readOldValue(oldRow);
 
             boolean invoke = op == TRANSFORM;
 
             boolean transformed = false;
 
             if (invoke) {
-                invokeEntry = new CacheInvokeEntry<>(entry.key, oldVal, entry.ver, keepBinary, entry);
-
-                invokeRes = runEntryProcessor(invokeEntry);
+                assert invokeEntry != null : "prepareInvoke() must run before call() for an invoke";
 
                 op = writeObj == null ? DELETE : UPDATE;
 
@@ -4644,16 +4633,27 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return;
                 }
                 else if ((invokeRes == null || invokeRes.getValue() == null) && writeObj != null) {
-                    try {
-                        cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
+                    // A value whose bytes could not be made in prepareInvoke() is cancelled like a value that fails
+                    // validation. A merge by the conflict resolver replaces that value, so then its error does not
+                    // apply.
+                    Exception err = conflictCtx != null && conflictCtx.isMerge() ? null : newValErr;
+
+                    if (err == null) {
+                        try {
+                            cctx.validateKeyAndValue(entry.key, (CacheObject)writeObj);
+                        }
+                        catch (Exception e) {
+                            err = e;
+                        }
                     }
-                    catch (Exception e) {
+
+                    if (err != null) {
                         initResultOnCancelUpdate(null, true);
 
                         updateRes = new GridCacheUpdateAtomicResult(UpdateOutcome.INVOKE_NO_OP,
                             oldVal,
                             null,
-                            new IgniteBiTuple<>(null, e),
+                            new IgniteBiTuple<>(null, err),
                             CU.TTL_ETERNAL,
                             CU.EXPIRE_TIME_ETERNAL,
                             null,
@@ -4683,6 +4683,87 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             assert updateRes != null && treeOp != null;
+        }
+
+        /**
+         * Reads the old value: unswaps the old row, checks if it expired, and loads the value from the store if needed.
+         *
+         * @param oldRow Old row.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void readOldValue(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            GridCacheContext cctx = entry.context();
+
+            this.oldRow = oldRow;
+
+            if (oldRow != null) {
+                oldRow.key(entry.key());
+
+                // unswap
+                entry.update(oldRow.value(), oldRow.expireTime(), 0, oldRow.version(), false);
+
+                if (checkRowExpired(oldRow)) {
+                    oldRowExpiredFlag = true;
+
+                    oldRow = null;
+                }
+            }
+
+            oldVal = (oldRow != null) ? oldRow.value() : null;
+
+            if (oldVal == null && readThrough) {
+                storeLoadedVal = cctx.toCacheObject(cctx.store().load(null, entry.key));
+
+                if (storeLoadedVal != null) {
+                    oldVal = cctx.kernalContext().cacheObjects().prepareForCache(storeLoadedVal, cctx);
+
+                    entry.val = oldVal;
+
+                    if (entry.deletedUnlocked())
+                        entry.deletedUnlocked(false);
+                }
+            }
+            else if (oldVal != null && entry.deletedUnlocked())
+                entry.deletedUnlocked(false);
+        }
+
+        /**
+         * Runs the entry processor before the B+tree is entered, so its new value is marshalled outside the tree.
+         *
+         * @param oldRow Old row, read under the entry lock.
+         * @throws IgniteCheckedException If failed.
+         */
+        void prepareInvoke(@Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            try {
+                readOldValue(oldRow);
+            }
+            catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                throw e;
+            }
+            catch (RuntimeException e) {
+                // A checked error makes GridDhtAtomicCache.updateSingle() fail only this key, while a RuntimeException
+                // would fail the whole request. This happens, for example, when the class registration of a value
+                // loaded from the store is interrupted.
+                throw new IgniteCheckedException("Failed to read the old value of the entry.", e);
+            }
+
+            invokeEntry = new CacheInvokeEntry<>(entry.key, oldVal, entry.ver, keepBinary, entry);
+
+            invokeRes = runEntryProcessor(invokeEntry);
+
+            // Makes the bytes of the new value here, so the classes it uses are registered outside the tree.
+            // If this fails, call() writes nothing, as for a value that fails validation.
+            if (invokeEntry.modified() && writeObj != null && (invokeRes == null || invokeRes.getValue() == null)) {
+                try {
+                    ((CacheObject)writeObj).valueBytes(entry.context().cacheObjectContext());
+                }
+                catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                    throw e;
+                }
+                catch (Exception e) {
+                    newValErr = e;
+                }
+            }
         }
 
         /**
