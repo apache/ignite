@@ -68,9 +68,31 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     @Order(6)
     boolean compatibleRemapVer;
 
-    /** {@code True} if requested locks were acquired. */
+    /** Requested locks were acquired, or a conditional batch completed with individual {@link #lockResults}. */
     @Order(7)
     boolean lockAcquired = true;
+
+    /** Conditional lock outcomes in request-key order. The common success flag describes batch completion. */
+    @Order(value = 8, introducedBy = "VERSIONED_TX_LOCK_FEATURE")
+    boolean[] lockResults;
+
+    /** @param results Conditional lock outcomes in request-key order. */
+    public void lockResults(boolean[] results) {
+        lockResults = results;
+    }
+
+    /** @return Whether this response contains individual conditional lock outcomes. */
+    public boolean hasLockResults() {
+        return lockResults != null;
+    }
+
+    /**
+     * @param idx Request key index.
+     * @return Whether the key was locked.
+     */
+    public boolean lockResult(int idx) {
+        return lockResults == null ? lockAcquired : lockResults[idx];
+    }
 
     /**
      * Empty constructor.
@@ -129,14 +151,14 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     }
 
     /**
-     * @return {@code True} if requested locks were acquired.
+     * @return Whether lock acquisition completed; consult {@link #lockResult(int)} for conditional outcomes.
      */
     public boolean lockAcquired() {
         return lockAcquired;
     }
 
     /**
-     * @param lockAcquired {@code True} if requested locks were acquired.
+     * @param lockAcquired Whether lock acquisition completed, possibly with individual conditional outcomes.
      */
     public void lockAcquired(boolean lockAcquired) {
         this.lockAcquired = lockAcquired;

@@ -643,7 +643,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean isRead,
         boolean retval,
         long createTtl,
-        long accessTtl
+        long accessTtl,
+        boolean skipLocked
     ) {
         assert tx == null || tx instanceof GridNearTxLocal : tx;
 
@@ -664,7 +665,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.keepBinaryInInterceptor(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery());
+            opCtx != null && opCtx.recovery(),
+            skipLocked);
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -913,6 +915,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Lock future.
      */
     IgniteInternalFuture<Exception> lockAllAsync(
@@ -931,7 +934,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final boolean skipStore,
         final boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
-        final boolean keepBinary
+        final boolean keepBinary,
+        boolean skipLocked
     ) {
         assert keys != null;
 
@@ -958,7 +962,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipStore,
                 skipReadThrough,
                 keepBinaryInInterceptor,
-                keepBinary);
+                keepBinary,
+                skipLocked);
         }
         else {
             return new GridEmbeddedFuture<>(keyFut,
@@ -982,7 +987,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             skipStore,
                             skipReadThrough,
                             keepBinaryInInterceptor,
-                            keepBinary);
+                            keepBinary,
+                            skipLocked);
                     }
                 }
             );
@@ -1005,6 +1011,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipStore Skip store flag.
      * @param skipReadThrough Skip read-through cache store flag.
      * @param keepBinaryInInterceptor Handle binary in interceptor operation flag.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Lock future.
      */
     private IgniteInternalFuture<Exception> lockAllAsync0(
@@ -1023,7 +1030,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipStore,
         boolean skipReadThrough,
         boolean keepBinaryInInterceptor,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean skipLocked) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -1043,7 +1051,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipStore,
                 skipReadThrough,
                 keepBinaryInInterceptor,
-                keepBinary);
+                keepBinary,
+                skipLocked);
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))
@@ -1114,7 +1123,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipReadThrough,
                 keepBinaryInInterceptor,
                 keepBinary,
-                waitTimeout);
+                waitTimeout,
+                skipLocked);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {

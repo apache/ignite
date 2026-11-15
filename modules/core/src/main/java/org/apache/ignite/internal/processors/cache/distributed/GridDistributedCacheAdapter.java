@@ -106,11 +106,12 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isRead,
         boolean retval,
         long createTtl,
-        long accessTtl
+        long accessTtl,
+        boolean skipLocked
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, waitTimeout, tx, isRead, retval, createTtl, accessTtl);
+        return lockAllAsync(keys, timeout, waitTimeout, tx, isRead, retval, createTtl, accessTtl, skipLocked);
     }
 
     /** {@inheritDoc} */
@@ -125,7 +126,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             false,
             /*retval*/true,
             -1L,
-            -1L);
+            -1L,
+            false);
     }
 
     /**
@@ -137,6 +139,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param retval Flag to return value.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
+     * @param skipLocked Whether a per-key rejection permits the remaining lock attempts.
      * @return Future for locks.
      */
     protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<KeyCacheObject> keys,
@@ -146,7 +149,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isRead,
         boolean retval,
         long createTtl,
-        long accessTtl);
+        long accessTtl,
+        boolean skipLocked);
 
     /**
      * @param key Key to remove.
