@@ -38,6 +38,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
+import static org.apache.ignite.testframework.GridTestUtils.waitForNextClockTick;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -53,8 +54,8 @@ public class CacheLockWaitTimeoutTest extends GridCommonAbstractTest {
 
     /** @return Cache configurations. */
     @Parameterized.Parameters(name = "near={0}")
-    public static Collection<Object[]> parameters() {
-        return List.of(new Object[] {false}, new Object[] {true});
+    public static Collection<Boolean> parameters() {
+        return List.of(false, true);
     }
 
     /** {@inheritDoc} */
@@ -144,7 +145,7 @@ public class CacheLockWaitTimeoutTest extends GridCommonAbstractTest {
                 assertTrue(spi(grid(0)).waitForBlocked(1, 10_000));
 
                 // Send the second batch on a later clock tick so that its remaining wait budget is smaller.
-                GridTestUtils.waitForNextClockTick();
+                waitForNextClockTick();
 
                 assertFalse(fut.isDone());
             }
