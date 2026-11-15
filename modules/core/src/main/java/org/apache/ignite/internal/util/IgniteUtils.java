@@ -85,7 +85,6 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -3550,28 +3549,6 @@ public abstract class IgniteUtils extends CommonUtils {
             return null;
 
         Set<E> set = new HashSet(size, 1.0f);
-
-        for (int i = 0; i < size; i++)
-            set.add((E)in.readObject());
-
-        return set;
-    }
-
-    /**
-     * @param in Input.
-     * @return Deserialized set.
-     * @throws IOException If deserialization failed.
-     * @throws ClassNotFoundException If deserialized class could not be found.
-     */
-    @Nullable public static <E> LinkedHashSet<E> readLinkedSet(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        int size = in.readInt();
-
-        // Check null flag.
-        if (size == -1)
-            return null;
-
-        LinkedHashSet<E> set = new LinkedHashSet<>(size);
 
         for (int i = 0; i < size; i++)
             set.add((E)in.readObject());

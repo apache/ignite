@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -112,30 +111,6 @@ public class GridReflectionCache implements Externalizable {
             }
             catch (IllegalAccessException e) {
                 throw new IgniteCheckedException("Failed to access field for object [field=" + f + ", obj=" + o + ']', e);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets method return value for object.
-     *
-     * @param o Key to get affinity key for.
-     * @return Method return value for given object or {@code null} if method was not found.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public Object firstMethodValue(Object o) throws IgniteCheckedException {
-        assert o != null;
-
-        Method m = firstMethod(o.getClass());
-
-        if (m != null) {
-            try {
-                return m.invoke(o);
-            }
-            catch (IllegalAccessException | InvocationTargetException e) {
-                throw new IgniteCheckedException("Failed to invoke method for object [mtd=" + m + ", obj=" + o + ']', e);
             }
         }
 
