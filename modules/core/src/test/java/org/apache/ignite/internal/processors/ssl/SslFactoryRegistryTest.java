@@ -385,11 +385,13 @@ public class SslFactoryRegistryTest {
         Files.delete(keys);
         scheduled.run();
 
+        assertEquals(1, failures());
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
         scheduled.run();
 
+        assertEquals(0, failures());
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
     }
 

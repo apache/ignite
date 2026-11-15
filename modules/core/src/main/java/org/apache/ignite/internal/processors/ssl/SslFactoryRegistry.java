@@ -103,7 +103,7 @@ public class SslFactoryRegistry {
             }
         }
 
-        if (hotReloads.isEmpty() || ctx.isStopping())
+        if (hotReloads.isEmpty())
             return;
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
