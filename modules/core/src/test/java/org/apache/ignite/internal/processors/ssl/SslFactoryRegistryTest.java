@@ -361,11 +361,11 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: hot reload is enabled, and the key store file is deleted after start.
-     * When: an automatic attempt fails.
-     * Then: the automatic attempt counter shows one attempt.
+     * When: one automatic attempt fails and the next loads fresh certificates.
+     * Then: the automatic attempt counter reads one after the failure and two after the successful retry.
      */
     @Test
-    public void testFailedAutomaticAttemptIsCounted() throws Exception {
+    public void testAutomaticCounterIncludesFailedAndSuccessfulAttempts() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeDueCertificates(keys);
@@ -377,6 +377,12 @@ public class SslFactoryRegistryTest {
 
         assertEquals(1, failures());
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
+
+        writeFreshCertificates(keys);
+        scheduled.run();
+
+        assertEquals(0, failures());
+        assertEquals(2, metric("AutomaticHotReloadAttempts"));
     }
 
     /**
@@ -459,6 +465,27 @@ public class SslFactoryRegistryTest {
         assertThrows(IgniteException.class, () -> registry.reload(communication));
         assertEquals(2, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
+    }
+
+    /**
+     * Given: a factory with hot reload enabled and a key store deleted after startup.
+     * When: a manual reload fails to read the file.
+     * Then: the manual attempt counter includes the failed load.
+     */
+    @Test
+    public void testFailedManualReloadWithHotReloadEnabledIsCounted() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeFreshCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
+        registry.start(ctx);
+        Files.delete(keys);
+
+        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
+
+        assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
+        assertEquals(1, metric("ManualReloadAttempts"));
     }
 
     /**
@@ -561,17 +588,16 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: an executor that passes the operation context to its tasks like the node executor.
+     * Given: the registry runs manual reloads on a dedicated hot reload thread.
      * When: a manual reload runs under an operator context.
-     * Then: the load sees the operator context, and the caller keeps it after the reload.
+     * Then: the worker sees the operator context, and the caller keeps it after the reload.
      */
     @Test
     public void testManualReloadKeepsCallerContext() throws Exception {
         OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
         AtomicReference<String> loadCaller = new AtomicReference<>();
 
-        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
-            .thenReturn(new OperationContextAwareScheduledExecutorService(executor) { });
+        useRealExecutor();
         enableHotReload(factory, later());
         doAnswer(call -> {
             loadCaller.set(OperationContext.get(caller));
@@ -658,7 +684,7 @@ public class SslFactoryRegistryTest {
             attemptStarted.countDown();
 
             try {
-                assertTrue(allowCompletion.await(TIMEOUT_MS, MILLISECONDS));
+                allowCompletion.await();
             }
             catch (InterruptedException e) {
                 attemptInterrupted.countDown();

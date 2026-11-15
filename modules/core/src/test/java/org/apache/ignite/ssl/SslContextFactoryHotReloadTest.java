@@ -43,6 +43,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
 /** */
@@ -355,6 +356,26 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
+     * Given: replacement keys with a later hot reload date.
+     * When: the trust manager source throws an unchecked exception during hot reload.
+     * Then: the factory keeps the previous context and date.
+     */
+    @Test
+    public void testUncheckedTrustManagerFailureKeepsContextAndDate() throws Exception {
+        InMemorySslContextFactory factory = spy(dueFactory());
+        SSLContext ctx = factory.create();
+        long hotReloadTime = factory.getHotReloadTime();
+
+        factory.keyStore = authority.keyStore("node", at(-1), at(99));
+        doThrow(new IllegalStateException("Trust source unavailable")).when(factory).createTrustManagers();
+
+        assertThrows(IllegalStateException.class, factory::hotReload);
+
+        assertSame(ctx, factory.create());
+        assertEquals(hotReloadTime, factory.getHotReloadTime());
+    }
+
+    /**
      * Given: due certificates, a replacement in the source, and an unsupported protocol.
      * When: hot reload runs, and then runs again with a supported protocol.
      * Then: the first run fails after the key store loads and keeps the current context and date.
@@ -388,23 +409,23 @@ public class SslContextFactoryHotReloadTest {
         long hotReloadTime = factory.getHotReloadTime();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
+        factory.trustStore = authority.trustStore();
         factory.setTrustManagers((TrustManager[])null);
         factory.setTrustStoreFilePath("memory-trust");
         factory.setTrustStorePassword(PASSWORD);
 
         CountDownLatch trustLoadStarted = new CountDownLatch(1);
         CountDownLatch finishTrustLoad = new CountDownLatch(1);
-        IllegalStateException failure = new IllegalStateException("Trust source unavailable");
 
         doAnswer(call -> {
             trustLoadStarted.countDown();
 
             assertTrue(finishTrustLoad.await(TIMEOUT_MS, MILLISECONDS));
 
-            throw failure;
+            return call.callRealMethod();
         }).when(factory).loadKeyStore(any(), eq("memory-trust"), any());
 
-        GridTestThread load = new GridTestThread(() -> assertSame(failure, assertThrows(IllegalStateException.class, factory::hotReload)));
+        GridTestThread load = new GridTestThread(factory::hotReload);
 
         load.start();
 
